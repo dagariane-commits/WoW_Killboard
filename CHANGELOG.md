@@ -82,6 +82,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Standardized all frames on 1px razor borders (`Interface\Buttons\WHITE8X8`), dark slate backgrounds (`0.06, 0.07, 0.10, 0.97`), and custom class color hex palettes.
 
 ### Fixed
+- **Bounty Hall of Fame & Tab Switch Rendering Failure**:
+  - Implemented missing `formatDuration` telemetry helper in `web/static/app.js` which caused an unhandled `ReferenceError` preventing the Bounty Hall of Fame and Debt Ledger view from rendering when switching tabs.
+  - Added visual loading state and error rendering directly within `#main-content-area` during tab navigation.
+- **Top Ad Banner Removal for True 100% Ad-Free Experience**:
+  - Excised the remaining programmatic 728x90 ad container from `web/static/index.html` and `web/static/style.css` in strict adherence to the executive zero-ad mandate.
 - **Blizzard UI Taint & Action Blocked Eradication**:
   - Completely eradicated Blizzard XML template dependencies (`UIPanelCloseButton`, `UIPanelButtonTemplate`, `BasicFrameTemplateWithInset`) across all frames.
   - Replaced Blizzard `UISpecialFrames` registration with custom ESC key down handlers (`SetPropagateKeyboardInput(false)` on modal hide), preventing secure button taint during combat lockdown.
