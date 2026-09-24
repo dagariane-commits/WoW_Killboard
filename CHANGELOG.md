@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
+- **In-Game Death Bounty Prompt & Combat Lockdown Gating**:
+  - Implemented automated death prompt frame in `UI.lua` triggered on PvP demise (`PLAYER_DEAD`) asking `"[Killer] has killed you. Would you like to place a bounty?"` with gold amount input and 1-click submission.
+  - Strict Guardrail 1 compliance via `InCombatLockdown()` gating with deferred delivery via `PLAYER_REGEN_ENABLED` buffer.
+- **Anti-Name Change Evasion Engine via Character GUID**:
+  - Bound all bounty contracts and debt ledger entries to permanent, immutable character `targetGUID` (`Player-XXXX-XXXXXXXX`).
+  - Added automated reconciliation in ingestion pipeline: renaming a character via the Blizzard shop preserves active contracts and debt history under the new name.
+- **Contract Acceptance & Killing Blow Exclusivity**:
+  - Added contract tracking workflow (`BE:AcceptBounty`, `/api/bounties/accept`) requiring hunters to accept bounties before hunting.
+  - Enforced killing blow exclusivity: only the certified killing blow hunter who accepted the contract collects the reward; non-addon players cannot claim.
+- **Cold Cases Archival (>30 Days)**:
+  - Added automated cold case transition for bounties unclaimed after 30 days (`COLD_CASE` status) in both addon ledger and web backend (`GET /api/bounties/archive`).
+- **FBI Most Wanted Web Showcase & Outlaw Gallery**:
+  - Implemented horizontal Top 10 Most Wanted gallery with class avatars, gold reward badges, faction crests, and last seen zone telemetry.
+  - Added 1-click contract acceptance (`🎯 Accept Contract` / `✓ Tracking Contract`).
+  - Added Opt-In Bounty Hunter Mode toggle (`[ 🎯 Bounty Hunter Mode: ON/OFF ]`) enabling classic leaderboard purists to collapse the wanted section.
+- **zKillboard Sidebar Intelligence Overhaul**:
+  - Added 7-day rolling activity box (`/api/stats/activity-7d`) tracking active characters, active guilds, total kills, Alliance vs Horde breakdown, and active zones.
+  - Added Top Characters (7D), Top Guilds (7D), Top Classes (7D), and Hotspot Zones (7D) ranking cards alongside direct Armory and intelligence links.
 - **Bounty Hall of Fame Records & Ingestion Auto-Claim Engine**:
   - Built 4-category Hall of Fame grid (`GET /api/bounties/leaderboards`): Top Bounty Hunters (by claims and gold earned), Highest Bounty Contracts, Most Elusive Outlaws (longest outstanding), and Fastest Collected Manhunts.
   - Automated auto-claim pipeline inside `/api/kills`: Slain targets with active bounties automatically transition contract status to `CLAIMED` and attribute rewards to the executing hunter.

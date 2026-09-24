@@ -20,10 +20,173 @@ const CLASS_COLORS = {
   UNKNOWN: "#94a3b8"
 };
 
+const CLASS_SYMBOLS = {
+  WARRIOR: "⚔️",
+  PALADIN: "🛡️",
+  HUNTER: "🏹",
+  ROGUE: "🗡️",
+  PRIEST: "☀️",
+  DEATHKNIGHT: "💀",
+  SHAMAN: "⚡",
+  MAGE: "🔮",
+  WARLOCK: "🔥",
+  MONK: "🥋",
+  DRUID: "🐾",
+  DEMONHUNTER: "👁️",
+  EVOKER: "🐉",
+  UNKNOWN: "👤"
+};
+
 let currentTab = "FEED";
 let currentMode = "ALL";
 let searchQuery = "";
 let cachedKills = [];
+
+// Bounty Acceptance & Opt-In Helpers
+function isBountyAcceptedLocally(bountyId) {
+  try {
+    const list = JSON.parse(localStorage.getItem("wow_killboard_accepted_bounties") || "[]");
+    return list.includes(bountyId);
+  } catch (e) {
+    return false;
+  }
+}
+
+function markBountyAcceptedLocally(bountyId) {
+  try {
+    let list = JSON.parse(localStorage.getItem("wow_killboard_accepted_bounties") || "[]");
+    if (!list.includes(bountyId)) {
+      list.push(bountyId);
+      localStorage.setItem("wow_killboard_accepted_bounties", JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
+async function acceptBountyContract(bountyId, targetName) {
+  let hunter = localStorage.getItem("wow_killboard_hunter_name");
+  if (!hunter) {
+    hunter = prompt(`Accept Bounty Contract on ${targetName}?\nEnter your Hunter Character Name:`);
+    if (!hunter || !hunter.trim()) return;
+    localStorage.setItem("wow_killboard_hunter_name", hunter.trim());
+  }
+
+  try {
+    const res = await fetch("/api/bounties/accept", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bountyId: bountyId,
+        hunterName: hunter.trim()
+      })
+    });
+    if (res.ok) {
+      markBountyAcceptedLocally(bountyId);
+      alert(`Contract accepted! You are now tracking ${targetName}. Deliver the certified killing blow to claim the reward!`);
+      loadMostWanted();
+    } else {
+      alert("Failed to accept bounty contract.");
+    }
+  } catch (err) {
+    console.error("Failed to accept contract:", err);
+  }
+}
+
+function isBountyModeActive() {
+  const val = localStorage.getItem("wow_killboard_bounty_mode");
+  return val !== "0"; // Default to ON (1)
+}
+
+function toggleBountyMode() {
+  const current = isBountyModeActive();
+  const next = !current;
+  localStorage.setItem("wow_killboard_bounty_mode", next ? "1" : "0");
+  updateBountyModeUI();
+}
+
+function updateBountyModeUI() {
+  const active = isBountyModeActive();
+  const section = document.getElementById("most-wanted-section");
+  const btn = document.getElementById("toggle-bounty-mode-btn");
+  if (btn) {
+    if (active) {
+      btn.innerText = "🎯 Bounty Hunter Mode: ON";
+      btn.classList.remove("off");
+    } else {
+      btn.innerText = "🎯 Bounty Hunter Mode: OFF";
+      btn.classList.add("off");
+    }
+  }
+  if (section) {
+    if (active && currentTab === "FEED") {
+      section.classList.remove("collapsed");
+      loadMostWanted();
+    } else {
+      section.classList.add("collapsed");
+    }
+  }
+}
+
+async function loadMostWanted() {
+  const container = document.getElementById("most-wanted-cards-container");
+  if (!container || !isBountyModeActive()) return;
+
+  try {
+    const isSupporter = isSupporterActive();
+    const res = await fetch(`/api/bounties/most-wanted?supporter=${isSupporter ? '1' : '0'}`);
+    if (!res.ok) return;
+    const outlaws = await res.json();
+    renderMostWanted(outlaws);
+  } catch (err) {
+    console.error("Failed to load Most Wanted:", err);
+  }
+}
+
+function renderMostWanted(outlaws) {
+  const container = document.getElementById("most-wanted-cards-container");
+  if (!container) return;
+
+  if (!outlaws || outlaws.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1/-1; text-align:center; padding:20px; color:#64748b; font-size:0.85rem;">
+        No active wanted contracts currently registered. Slay enemy outlaws to issue bounties!
+      </div>
+    `;
+    return;
+  }
+
+  let html = "";
+  outlaws.slice(0, 10).forEach((b, idx) => {
+    const cls = (b.target_class || "WARRIOR").toUpperCase();
+    const clsColor = CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN;
+    const symbol = CLASS_SYMBOLS[cls] || "👤";
+    const accepted = isBountyAcceptedLocally(b.id);
+    const lastSeenText = b.lastSeen && b.lastSeen.hasTelemetry 
+      ? `📍 ${b.lastSeen.displayText}` 
+      : "📍 Last Seen: Unknown";
+
+    const btnHtml = accepted 
+      ? `<button class="wanted-btn accepted" disabled>✓ Tracking Contract</button>`
+      : `<button class="wanted-btn" onclick="acceptBountyContract('${b.id}', '${b.target_name}')">🎯 Accept Contract</button>`;
+
+    html += `
+      <div class="wanted-card">
+        <span class="wanted-stamp">#${idx + 1} WANTED</span>
+        <div class="wanted-avatar-wrap" style="border: 2px solid ${clsColor}; box-shadow: 0 0 10px ${clsColor}33;">
+          <span class="wanted-avatar-symbol">${symbol}</span>
+        </div>
+        <div class="wanted-name" onclick="openCharacterProfile('${b.target_name}')">
+          ${colorizeClass(b.target_name, cls)}
+        </div>
+        <div class="wanted-guild">&lt;${b.target_faction || 'Neutral'}&gt;</div>
+        <div class="wanted-reward">💰 ${formatNumber(b.amount_gold)} Gold</div>
+        <div class="wanted-lastseen" title="${lastSeenText}">${lastSeenText}</div>
+        ${btnHtml}
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
 
 function formatNumber(num) {
   num = Number(num) || 0;
@@ -84,11 +247,116 @@ async function loadKills() {
 
 async function loadSidebar() {
   try {
-    const res = await fetch(`/api/leaderboard?mode=${currentMode}`);
+    const res = await fetch("/api/stats/activity-7d");
+    if (!res.ok) return;
     const data = await res.json();
-    renderSidebar(data);
+    renderSidebarActivity(data);
   } catch (err) {
-    console.error("Failed to load sidebar:", err);
+    console.error("Failed to load 7d activity sidebar:", err);
+  }
+}
+
+function renderSidebarActivity(data) {
+  // 1. Current Activity Table Numbers
+  const charsEl = document.getElementById("act-7d-chars");
+  if (charsEl) charsEl.innerText = formatNumber(data.characters || 0);
+
+  const guildsEl = document.getElementById("act-7d-guilds");
+  if (guildsEl) guildsEl.innerText = formatNumber(data.guilds || 0);
+
+  const killsEl = document.getElementById("act-7d-kills");
+  if (killsEl) killsEl.innerText = formatNumber(data.kills || 0);
+
+  const allEl = document.getElementById("act-7d-alliance");
+  if (allEl) allEl.innerText = formatNumber(data.allianceKills || 0);
+
+  const hordeEl = document.getElementById("act-7d-horde");
+  if (hordeEl) hordeEl.innerText = formatNumber(data.hordeKills || 0);
+
+  const zonesEl = document.getElementById("act-7d-zones");
+  if (zonesEl) zonesEl.innerText = formatNumber(data.zones || 0);
+
+  // 2. Top Characters (7 Days)
+  const charListEl = document.getElementById("sidebar-7d-characters");
+  if (charListEl) {
+    if (!data.topCharacters || data.topCharacters.length === 0) {
+      charListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No character kills logged in last 7 days</div>`;
+    } else {
+      charListEl.innerHTML = data.topCharacters.map((c, i) => {
+        const guildPart = (c.guild && c.guild !== 'None') 
+          ? `<span class="clickable-guild" onclick="openGuildProfile('${c.guild}')">&lt;${c.guild}&gt;</span>`
+          : '';
+        return `
+          <div class="sidebar-rank-item">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="rank-badge">#${i + 1}</span>
+              <div>
+                <span class="clickable-player" onclick="openCharacterProfile('${c.name}')">${colorizeClass(c.name, c.class)}</span>
+                <div style="font-size:0.7rem; color:#94a3b8;">${guildPart}</div>
+              </div>
+            </div>
+            <span style="color:#10b981; font-weight:800; font-size:0.85rem;">${c.kills} kills</span>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // 3. Top Guilds (7 Days)
+  const guildListEl = document.getElementById("sidebar-7d-guilds");
+  if (guildListEl) {
+    if (!data.topGuilds || data.topGuilds.length === 0) {
+      guildListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No active guild combat in last 7 days</div>`;
+    } else {
+      guildListEl.innerHTML = data.topGuilds.map((g, i) => {
+        const factionColor = g.faction === 'Alliance' ? 'var(--alliance-blue)' : (g.faction === 'Horde' ? 'var(--horde-red)' : '#94a3b8');
+        return `
+          <div class="sidebar-rank-item">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="rank-badge">#${i + 1}</span>
+              <div>
+                <span class="clickable-guild" onclick="openGuildProfile('${g.guild}')" style="font-weight:700;">&lt;${g.guild}&gt;</span>
+                <div style="font-size:0.68rem; color:${factionColor};">${g.faction || 'Neutral'}</div>
+              </div>
+            </div>
+            <span style="color:var(--accent-gold); font-weight:800; font-size:0.85rem;">${g.kills} kills</span>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // 4. Top Classes (7 Days)
+  const classListEl = document.getElementById("sidebar-7d-classes");
+  if (classListEl) {
+    if (!data.topClasses || data.topClasses.length === 0) {
+      classListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No class telemetry logged</div>`;
+    } else {
+      classListEl.innerHTML = data.topClasses.map(cls => {
+        const color = CLASS_COLORS[cls.class] || CLASS_COLORS.UNKNOWN;
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:5px 8px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
+            <span style="color:${color}; font-weight:700;">${cls.class}</span>
+            <span style="color:#e2e8f0; font-weight:700;">${cls.kills} kills</span>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // 5. Top Zones (7 Days)
+  const zoneListEl = document.getElementById("sidebar-7d-zones-list");
+  if (zoneListEl) {
+    if (!data.topZones || data.topZones.length === 0) {
+      zoneListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No conflict zones logged</div>`;
+    } else {
+      zoneListEl.innerHTML = data.topZones.map(z => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:5px 8px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
+          <span style="color:#e2e8f0;">${z.zone}</span>
+          <span style="color:#ef4444; font-weight:700;">${z.kills} kills</span>
+        </div>
+      `).join('');
+    }
   }
 }
 
@@ -194,7 +462,16 @@ function renderFeed(kills) {
     return;
   }
 
-  let html = `<div style="display: flex; flex-direction: column; gap: 8px;">`;
+  let html = `
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid #1e293b;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:1.1rem;">⚔️</span>
+          <span style="font-size:1.05rem; font-weight:800; color:var(--accent-cyan); letter-spacing:-0.3px;">Most Recent Kills</span>
+        </div>
+        <span style="font-size:0.75rem; color:#94a3b8;">${kills.length} recent combat events</span>
+      </div>
+  `;
   kills.forEach(km => {
     const badge = km.isSolo 
       ? `<span class="km-badge-solo">SOLO</span>` 
@@ -235,48 +512,6 @@ function renderFeed(kills) {
   });
   html += `</div>`;
   container.innerHTML = html;
-}
-
-function renderSidebar(data) {
-  const topList = document.getElementById("sidebar-top-killers");
-  if (!topList) return;
-
-  let html = "";
-  (data.topKillers || []).slice(0, 8).forEach((p, idx) => {
-    const guildHtml = (p.guild && p.guild !== 'None')
-      ? `<div style="font-size:0.7rem;"><span class="clickable-guild" onclick="openGuildProfile('${p.guild}')">&lt;${p.guild}&gt;</span></div>`
-      : '';
-    html += `
-      <div class="leader-item">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span class="leader-rank">#${idx + 1}</span>
-          <div>
-            <span class="clickable-player" onclick="openCharacterProfile('${p.name}')">${colorizeClass(p.name, p.class)}</span>
-            ${guildHtml}
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-weight:700; color:#10b981;">${p.kills} Kills</div>
-          <div style="font-size:0.7rem; color:#00e5ff;">${p.solo_kills || 0} Solo</div>
-        </div>
-      </div>
-    `;
-  });
-  topList.innerHTML = html || "<div style='color:#64748b;'>No rankings yet</div>";
-
-  const topZones = document.getElementById("sidebar-top-zones");
-  if (!topZones) return;
-
-  let zHtml = "";
-  (data.topZones || []).slice(0, 5).forEach((z, idx) => {
-    zHtml += `
-      <div class="leader-item">
-        <span style="color:#e2e8f0;">${z.zone}</span>
-        <span style="color:#ef4444; font-weight:700;">${z.kills} kills</span>
-      </div>
-    `;
-  });
-  topZones.innerHTML = zHtml || "<div style='color:#64748b;'>No zone data</div>";
 }
 
 function renderLeaderboardView(data) {
@@ -985,7 +1220,12 @@ function switchTab(tab) {
   const activeBtn = document.getElementById(`nav-${tab.toLowerCase()}`);
   if (activeBtn) activeBtn.classList.add("active");
 
-  if (tab === "FEED") loadKills();
+  updateBountyModeUI();
+
+  if (tab === "FEED") {
+    loadKills();
+    loadMostWanted();
+  }
   else if (tab === "LEADERBOARDS") loadLeaderboards();
   else if (tab === "GUILDS") loadGuildsView();
   else if (tab === "BG_METRICS") loadBgGladiators();
@@ -1000,6 +1240,7 @@ function setFilterMode(mode) {
 
   loadKills();
   loadSidebar();
+  if (currentTab === "FEED") loadMostWanted();
   if (currentTab === "LEADERBOARDS") loadLeaderboards();
 }
 
@@ -1020,6 +1261,7 @@ function openPlaceBountyModal() {
   }).then(() => {
     alert(`Bounty of ${gold}g placed on ${target}!`);
     loadBounties();
+    loadMostWanted();
   });
 }
 
@@ -1035,6 +1277,9 @@ function toggleSupporterMode() {
   updateSupporterButton();
   if (currentTab === "BOUNTIES") {
     loadBounties();
+  }
+  if (currentTab === "FEED") {
+    loadMostWanted();
   }
 }
 
@@ -1066,12 +1311,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   updateSupporterButton();
+  updateBountyModeUI();
   loadKills();
+  loadMostWanted();
   loadSidebar();
 
   // Polling update every 6 seconds
   setInterval(() => {
-    if (currentTab === "FEED") loadKills();
+    if (currentTab === "FEED") {
+      loadKills();
+      loadMostWanted();
+    }
     loadSidebar();
   }, 6000);
 });

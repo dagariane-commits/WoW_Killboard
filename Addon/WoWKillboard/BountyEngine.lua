@@ -15,10 +15,11 @@ local frame = CreateFrame("Frame")
 function BE:InitDB()
     WoWKillboardBounties = WoWKillboardBounties or {}
     WoWKillboardDebtLedger = WoWKillboardDebtLedger or {}
+    WoWKillboardAcceptedBounties = WoWKillboardAcceptedBounties or {}
 end
 
--- Validate and place a new bounty
-function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount)
+-- Validate and place a new bounty (with permanent Character GUID binding)
+function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount, targetGUID)
     if not targetName or targetName == "" then
         print("|cffff0000[WoWKB Error]|r Target name cannot be empty.")
         return false, "Target name empty"
@@ -43,6 +44,7 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount)
     local bounty = {
         id = bountyId,
         targetName = targetName,
+        targetGUID = targetGUID or "UNKNOWN",
         targetClass = targetClass or "UNKNOWN",
         targetFaction = targetFaction or "Unknown",
         placerName = placerName,
@@ -52,10 +54,12 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount)
         hunterName = nil,
         killId = nil,
         timestamp = time(),
-        expiry = time() + (86400 * 7), -- 7 days active
+        expiry = time() + (86400 * 30), -- 30 days active before Cold Case archive
         paymentDeadline = nil,
+        aliasHistory = {},
     }
 
+    BE:InitDB()
     WoWKillboardBounties[bountyId] = bounty
 
     print(string.format("|cffffd700[WoWKB Bounty Placed]|r Bounty of %s placed on |cffff3333%s|r!", KB.Utils.FormatMoney(copper), targetName))
@@ -66,6 +70,23 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount)
     end
 
     return true, bounty
+end
+
+-- Hunter Bounty Contract Acceptance (Opt-In Requirement)
+function BE:AcceptBounty(bountyId)
+    BE:InitDB()
+    if not WoWKillboardBounties or not WoWKillboardBounties[bountyId] then return false end
+    WoWKillboardAcceptedBounties[bountyId] = time()
+    local b = WoWKillboardBounties[bountyId]
+    print(string.format("|cff00ff00[WoWKB Contract Accepted]|r Tracking bounty on |cffff3333%s|r! Deliver the final killing blow to claim %s.",
+        b.targetName, KB.Utils.FormatMoney(b.amountCopper)))
+    if KB.UI and KB.UI.RefreshIfVisible then KB.UI:RefreshIfVisible() end
+    return true
+end
+
+function BE:IsBountyAccepted(bountyId)
+    BE:InitDB()
+    return WoWKillboardAcceptedBounties and (WoWKillboardAcceptedBounties[bountyId] ~= nil)
 end
 
 -- Taint-free Floating Screen Alert Frame (Anonymous, Zero Layout Serialization)
@@ -126,28 +147,46 @@ function BE:CheckKillForBounty(killmail)
     BE:InitDB()
 
     for bountyId, bounty in pairs(WoWKillboardBounties) do
-        if bounty.status == KB.STATUS.ACTIVE and bounty.targetName:lower() == killmail.victim.name:lower() then
-            local verified, reason = BE:VerifyBountyKill(bounty, killmail)
-            if verified then
-                bounty.status = KB.STATUS.CLAIMED
-                bounty.hunterName = killmail.killer.name
-                bounty.killId = killmail.killId
-                bounty.paymentDeadline = time() + (86400 * 2) -- 48 hours to pay
+        -- Check if target matches name OR permanent character GUID (Anti-Name Change Evasion)
+        local targetMatches = (bounty.targetName:lower() == killmail.victim.name:lower())
+        if not targetMatches and bounty.targetGUID and killmail.victim.guid and bounty.targetGUID ~= "UNKNOWN" and bounty.targetGUID == killmail.victim.guid then
+            targetMatches = true
+            bounty.aliasHistory = bounty.aliasHistory or {}
+            table.insert(bounty.aliasHistory, bounty.targetName)
+            print(string.format("|cffff9900[WoWKB Name Change Tracked]|r Outlaw %s renamed to %s! Bounty locked to permanent character GUID.",
+                bounty.targetName, killmail.victim.name))
+            bounty.targetName = killmail.victim.name
+        end
 
-                local goldStr = KB.Utils.FormatMoney(bounty.amountCopper)
-                print(string.format("|cffffd700[WoWKB BOUNTY CLAIMED]|r Hunter |cff00ff00%s|r defeated |cffff3333%s|r! Reward: %s. Placer |cff00ccff%s|r has 48h to honor the contract.",
-                    bounty.hunterName, bounty.targetName, goldStr, bounty.placerName))
-
-                if KB.DefaultSettings.soundAlerts then
-                    PlaySound(KB.SoundAlerts.BOUNTY_CLAIMED, "Master")
-                end
-
-                -- If current player placed bounty, alert them safely
-                if bounty.placerName == UnitName("player") then
-                    BE:ShowAlert(string.format("PAYMENT DUE: Bounty on %s claimed by %s!", bounty.targetName, bounty.hunterName), 1, 0.8, 0)
-                end
+        if bounty.status == KB.STATUS.ACTIVE and targetMatches then
+            -- Killing Blow Eligibility: Hunter must have accepted the contract
+            local isPlayerKiller = (killmail.killer.name == UnitName("player"))
+            if isPlayerKiller and not BE:IsBountyAccepted(bountyId) then
+                print(string.format("|cffff9900[WoWKB Bounty Unclaimed]|r Slain outlaw %s had an active bounty of %s, but you had not accepted the contract!",
+                    bounty.targetName, KB.Utils.FormatMoney(bounty.amountCopper)))
             else
-                print(string.format("|cffff9900[WoWKB Bounty Unverified]|r Kill on %s rejected: %s", bounty.targetName, reason))
+                local verified, reason = BE:VerifyBountyKill(bounty, killmail)
+                if verified then
+                    bounty.status = KB.STATUS.CLAIMED
+                    bounty.hunterName = killmail.killer.name
+                    bounty.killId = killmail.killId
+                    bounty.paymentDeadline = time() + (86400 * 2) -- 48 hours to pay
+
+                    local goldStr = KB.Utils.FormatMoney(bounty.amountCopper)
+                    print(string.format("|cffffd700[WoWKB BOUNTY CLAIMED]|r Hunter |cff00ff00%s|r defeated |cffff3333%s|r! Reward: %s. Placer |cff00ccff%s|r has 48h to honor the contract.",
+                        bounty.hunterName, bounty.targetName, goldStr, bounty.placerName))
+
+                    if KB.DefaultSettings.soundAlerts then
+                        PlaySound(KB.SoundAlerts.BOUNTY_CLAIMED, "Master")
+                    end
+
+                    -- If current player placed bounty, alert them safely
+                    if bounty.placerName == UnitName("player") then
+                        BE:ShowAlert(string.format("PAYMENT DUE: Bounty on %s claimed by %s!", bounty.targetName, bounty.hunterName), 1, 0.8, 0)
+                    end
+                else
+                    print(string.format("|cffff9900[WoWKB Bounty Unverified]|r Kill on %s rejected: %s", bounty.targetName, reason))
+                end
             end
         end
     end
@@ -157,6 +196,14 @@ end
 function BE:AuditDebtLedger()
     BE:InitDB()
     local now = time()
+
+    -- Audit for 30-day uncollected bounties (Move to Cold Case Archive)
+    for bountyId, bounty in pairs(WoWKillboardBounties) do
+        if bounty.status == KB.STATUS.ACTIVE and (now - (bounty.timestamp or now)) > (86400 * 30) then
+            bounty.status = "COLD_CASE"
+            bounty.archivedAt = now
+        end
+    end
 
     for bountyId, bounty in pairs(WoWKillboardBounties) do
         if bounty.status == KB.STATUS.CLAIMED and bounty.paymentDeadline and now > bounty.paymentDeadline then

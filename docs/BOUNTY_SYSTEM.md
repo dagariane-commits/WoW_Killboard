@@ -96,3 +96,57 @@ To guarantee fair play and prevent stream-sniping or targeted harassment:
 - **Supporter Perk**: Unlocks exact **Subzone** intelligence (e.g. `Booty Bay`) as a quality-of-life benefit for supporters of **Forged By Valor (501(c)(3))**.
 - **100% Ad-Free Experience**: The platform contains zero third-party commercial advertisements, operating entirely through community and non-profit veteran support.
 
+---
+
+## 7. In-Game Death Bounty Prompt & Combat Lockdown Gating
+
+When a player is slain in PvP combat by an enemy player, the addon automatically triggers a bounty placement modal:
+- **Dialog Appearance**: `"[Killer] has killed you. Would you like to place a bounty?"` with a customizable gold input box and `[ Place Bounty ]` / `[ Decline ]` buttons.
+- **Combat Lockdown Protection**: In accordance with Guardrail 1 (Zero Blizzard UI Taint), frame creation and interaction are gated:
+  ```lua
+  if InCombatLockdown() then
+      CT.PendingDeathBounty = killerData
+      return
+  end
+  ```
+  If the player dies while in combat lockdown, the prompt is safely deferred and rendered upon `PLAYER_REGEN_ENABLED`.
+
+---
+
+## 8. Anti-Name Change Evasion via Character GUID
+
+To prevent outlaws from racking up large bounties and evading contracts by purchasing a character name change:
+- Every bounty contract records the immutable character `targetGUID` (`Player-XXXX-XXXXXXXX`).
+- Ingestion and tracking routines inspect both character name and GUID:
+  ```sql
+  UPDATE bounties SET target_name = ? WHERE target_guid = ? AND target_name != ?;
+  ```
+  If a player renames their character, the permanent GUID immediately updates the active contract to their new name.
+
+---
+
+## 9. Contract Acceptance & Killing Blow Exclusivity
+
+To collect a bounty reward:
+1. **Contract Acceptance Required**: The hunter must explicitly accept the bounty contract beforehand (either via the in-game UI `[ Accept Contract ]` or via the web platform `POST /api/bounties/accept`).
+2. **Addon Requirement**: Players without the addon cannot claim bounty rewards because they never accepted the contract.
+3. **Certified Killing Blow**: In group combats or gang encounters, only the single hunter who delivers the certified final killing blow claims the bounty reward.
+
+---
+
+## 10. Cold Cases Archival (>30 Days)
+
+Bounties remaining active and unclaimed for more than 30 days are automatically archived:
+- Status transitions from `ACTIVE` to `COLD_CASE`.
+- Cold cases are cataloged in a dedicated Cold Cases Archive view in both the addon and web platform, preventing backlog clutter while preserving historical outlaw records.
+
+---
+
+## 11. FBI Most Wanted Web Showcase & zKillboard Layout
+
+The web platform features an authentic FBI Most Wanted showcase:
+- **Top 10 Outlaw Gallery**: Top 10 active bounties displayed as high-contrast wanted posters with class portraits, faction badges, bounty rewards, and last-seen zone telemetry.
+- **Opt-In Bounty Hunter Mode**: Players who prefer standard leaderboards can toggle Bounty Hunter Mode ON/OFF at any time to collapse the wanted cards.
+- **Most Recent Kills Feed**: Real-time killmail stream positioned directly beneath the Most Wanted cards.
+- **zKillboard Sidebar Intelligence**: 7-day rolling activity metrics, top characters, top guilds, top classes, and hotspot zones alongside official Armory links.
+

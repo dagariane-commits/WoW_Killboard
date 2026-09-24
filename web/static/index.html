@@ -69,6 +69,26 @@
         </div>
       </div>
 
+      <!-- FBI Most Wanted Top 10 Showcase (Opt-In) -->
+      <section id="most-wanted-section" class="most-wanted-section">
+        <div class="most-wanted-header">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size: 1.3rem;">🎯</span>
+            <div>
+              <div class="most-wanted-title">FBI MOST WANTED — TOP 10 PVP OUTLAWS</div>
+              <div class="most-wanted-subtitle">Certified bounties across Azeroth &bull; Killing blow claims the gold</div>
+            </div>
+          </div>
+          <button id="toggle-bounty-mode-btn" class="bounty-mode-toggle" onclick="toggleBountyMode()">
+            🎯 Bounty Hunter Mode: ON
+          </button>
+        </div>
+
+        <div id="most-wanted-cards-container" class="most-wanted-grid">
+          <!-- Populated by app.js -->
+        </div>
+      </section>
+
       <!-- Dynamic Content Area (Feed / Leaderboard / BG Stats / Bounties) -->
       <div id="main-content-area">
         <!-- Rendered by app.js -->
@@ -77,27 +97,108 @@
 
     <!-- Sidebar Column -->
     <aside class="sidebar-column">
-      <!-- Top Killers Leaderboard -->
+      <!-- Armory & Intelligence Links -->
       <div class="sidebar-card">
         <div class="section-header">
           <div class="section-title">
-            <span>🏆</span> Top Assassins
+            <span>🔗</span> Armory &amp; Intel
           </div>
         </div>
-        <div id="sidebar-top-killers">
-          <!-- Rendered by app.js -->
+        <div class="armory-links-stack">
+          <a class="armory-link-row" href="https://worldofwarcraft.blizzard.com/en-us/character" target="_blank" rel="noopener">
+            <span>⚔️ Official Blizzard Armory</span>
+            <span class="ext-icon">&nearr;</span>
+          </a>
+          <a class="armory-link-row" href="https://ironforge.pro/" target="_blank" rel="noopener">
+            <span>📊 Ironforge.pro (PvP Intel)</span>
+            <span class="ext-icon">&nearr;</span>
+          </a>
+          <a class="armory-link-row" href="https://www.warcraftlogs.com/" target="_blank" rel="noopener">
+            <span>📜 Warcraft Logs PvP</span>
+            <span class="ext-icon">&nearr;</span>
+          </a>
+          <a class="armory-link-row" href="https://forgedbyvalor.org" target="_blank" rel="noopener" style="border-left: 3px solid var(--accent-gold);">
+            <span>🎖️ Forged By Valor (501c3)</span>
+            <span class="ext-icon">&nearr;</span>
+          </a>
         </div>
       </div>
 
-      <!-- Hotspot Conflict Zones -->
+      <!-- Current Activity (Active PVP - Last 7 Days) -->
       <div class="sidebar-card">
         <div class="section-header">
           <div class="section-title">
-            <span>🔥</span> Deadliest Zones
+            <span>📊</span> Current Activity (7 Days)
           </div>
         </div>
-        <div id="sidebar-top-zones">
-          <!-- Rendered by app.js -->
+        <table class="activity-table">
+          <tbody>
+            <tr>
+              <td>Active Characters</td>
+              <td id="act-7d-chars" class="act-val">--</td>
+            </tr>
+            <tr>
+              <td>Active Guilds</td>
+              <td id="act-7d-guilds" class="act-val">--</td>
+            </tr>
+            <tr>
+              <td>Total Kills</td>
+              <td id="act-7d-kills" class="act-val" style="color:var(--accent-green); font-weight:800;">--</td>
+            </tr>
+            <tr>
+              <td>Alliance Kills</td>
+              <td id="act-7d-alliance" class="act-val" style="color:var(--alliance-blue);">--</td>
+            </tr>
+            <tr>
+              <td>Horde Kills</td>
+              <td id="act-7d-horde" class="act-val" style="color:var(--horde-red);">--</td>
+            </tr>
+            <tr>
+              <td>Active Conflict Zones</td>
+              <td id="act-7d-zones" class="act-val">--</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Top Characters (Last 7 Days) -->
+      <div class="sidebar-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🏆</span> Top Characters (7 Days)
+          </div>
+        </div>
+        <div id="sidebar-7d-characters" class="sidebar-rank-list">
+          <div style="color:#64748b; font-size:0.8rem;">Gathering telemetry...</div>
+        </div>
+      </div>
+
+      <!-- Top Guilds (Last 7 Days) -->
+      <div class="sidebar-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🛡️</span> Top Guilds (7 Days)
+          </div>
+        </div>
+        <div id="sidebar-7d-guilds" class="sidebar-rank-list">
+          <div style="color:#64748b; font-size:0.8rem;">Gathering telemetry...</div>
+        </div>
+      </div>
+
+      <!-- Top Classes & Hotspot Zones -->
+      <div class="sidebar-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>⚡</span> Top Classes &amp; Zones
+          </div>
+        </div>
+        <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:8px; font-weight:700;">TOP CLASSES (7D)</div>
+        <div id="sidebar-7d-classes" style="display:flex; flex-direction:column; gap:4px; margin-bottom:14px;">
+          <!-- Populated by app.js -->
+        </div>
+        <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:8px; font-weight:700;">TOP HOTSPOT ZONES (7D)</div>
+        <div id="sidebar-7d-zones-list" style="display:flex; flex-direction:column; gap:4px;">
+          <!-- Populated by app.js -->
         </div>
       </div>
 
