@@ -91,44 +91,14 @@ async function acceptBountyContract(bountyId, targetName) {
   }
 }
 
-function isBountyModeActive() {
-  const val = localStorage.getItem("wow_killboard_bounty_mode");
-  return val !== "0"; // Default to ON (1)
-}
-
-function toggleBountyMode() {
-  const current = isBountyModeActive();
-  const next = !current;
-  localStorage.setItem("wow_killboard_bounty_mode", next ? "1" : "0");
-  updateBountyModeUI();
-}
-
-function updateBountyModeUI() {
-  const active = isBountyModeActive();
-  const section = document.getElementById("most-wanted-section");
-  const btn = document.getElementById("toggle-bounty-mode-btn");
-  if (btn) {
-    if (active) {
-      btn.innerText = "🎯 Bounty Hunter Mode: ON";
-      btn.classList.remove("off");
-    } else {
-      btn.innerText = "🎯 Bounty Hunter Mode: OFF";
-      btn.classList.add("off");
-    }
-  }
-  if (section) {
-    if (active && currentTab === "FEED") {
-      section.classList.remove("collapsed");
-      loadMostWanted();
-    } else {
-      section.classList.add("collapsed");
-    }
-  }
-}
+// Purge any legacy toggle state so Most Wanted is always static
+try {
+  localStorage.removeItem("wow_killboard_bounty_mode");
+} catch (e) {}
 
 async function loadMostWanted() {
   const container = document.getElementById("most-wanted-cards-container");
-  if (!container || !isBountyModeActive()) return;
+  if (!container) return;
 
   try {
     const isSupporter = isSupporterActive();
@@ -1220,7 +1190,8 @@ function switchTab(tab) {
   const activeBtn = document.getElementById(`nav-${tab.toLowerCase()}`);
   if (activeBtn) activeBtn.classList.add("active");
 
-  updateBountyModeUI();
+  const mwSection = document.getElementById("most-wanted-section");
+  if (mwSection) mwSection.style.display = (tab === "FEED") ? "block" : "none";
 
   if (tab === "FEED") {
     loadKills();
@@ -1230,6 +1201,258 @@ function switchTab(tab) {
   else if (tab === "GUILDS") loadGuildsView();
   else if (tab === "BG_METRICS") loadBgGladiators();
   else if (tab === "BOUNTIES") loadBounties();
+  else if (tab === "INFO") loadInfoView();
+}
+
+function openInfoPage(subpage) {
+  switchTab("INFO");
+  loadInfoView(subpage);
+}
+
+function loadInfoView(subpage = "about") {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  const tabs = [
+    { id: "about", label: "📖 About" },
+    { id: "features", label: "⚡ Features" },
+    { id: "faq", label: "❓ FAQ" },
+    { id: "delayed", label: "⏱️ Delayed Intel" },
+    { id: "payments", label: "⭐ Supporter Perks" },
+    { id: "streambox", label: "📺 StreamBox (OBS)" },
+    { id: "legal", label: "⚖️ Legal & Compliance" }
+  ];
+
+  let tabsHtml = `<div class="info-nav-bar">`;
+  tabs.forEach(t => {
+    const activeCls = (t.id === subpage) ? "active" : "";
+    tabsHtml += `<button class="info-subtab-btn ${activeCls}" onclick="loadInfoView('${t.id}')">${t.label}</button>`;
+  });
+  tabsHtml += `</div>`;
+
+  let contentHtml = "";
+  if (subpage === "about") {
+    contentHtml = `
+      <div class="info-card">
+        <h1>📖 About WoW Killboard</h1>
+        <p><strong>WoW Killboard</strong> is the premier open-source combat intelligence, ranking, and bounty platform for World of Warcraft PvP, engineered to mirror the analytical depth of EVE Online's legendary zKillboard.</p>
+
+        <div class="info-callout">
+          <strong>Mission &amp; Non-Profit Vision:</strong><br>
+          Founded by <strong>Scott Quick</strong>, Founder &amp; Executive Director of <strong>Forged By Valor (501(c)(3))</strong>, WoW Killboard is dedicated to empowering veteran mental health, camaraderie, and suicide prevention through competitive gaming communities. 100% free of charge and 100% ad-free.
+        </div>
+
+        <h2>🛡️ The 5 Non-Negotiable Engineering Guardrails</h2>
+        <ol>
+          <li><strong>Zero Blizzard UI Taint:</strong> Anonymous pure Lua frames using <code>BackdropTemplate</code>, custom ESC key propagation, and strict <code>InCombatLockdown()</code> gating. Never triggers protected Blizzard UI action blocked popups.</li>
+          <li><strong>Cross-Client Parity:</strong> Single unified codebase operating cleanly across <strong>WoW Forever Beta</strong> (<code>_classic_beta_</code>), <strong>Classic Era</strong> (<code>_classic_era_</code>), <strong>Anniversary</strong> (<code>_anniversary_</code>), and <strong>Modern Retail</strong> (<code>_retail_</code>).</li>
+          <li><strong>Zero Documentation Drift:</strong> Code and documentation are twin artifacts. Every commit updates semantic changelogs and architectural specifications.</li>
+          <li><strong>Telemetry-First &amp; Cryptographic Determinism:</strong> Every combat engagement generates a deterministic 32-bit FNV-1a hash Kill ID based on timestamp, participant GUIDs, and map coordinates for zero-duplicate distributed ingestion.</li>
+          <li><strong>Zero-Barrier Player UX:</strong> Desktop ingestion runs via a single self-contained binary (<code>WoWKillboardSync.exe</code>) with automated multi-drive auto-discovery across <code>C:</code>, <code>D:</code>, and <code>E:</code> drives. No Python or terminal required.</li>
+        </ol>
+
+        <h2>🏛️ Technology Stack</h2>
+        <ul>
+          <li><strong>In-Game Client:</strong> Pure Lua 5.1 / World of Warcraft Addon Engine with Classic &amp; ElvUI theme parity.</li>
+          <li><strong>Sync Pipeline:</strong> Standalone Python 3.12 / PyInstaller multi-threaded SavedVariables directory watcher.</li>
+          <li><strong>Backend Engine:</strong> Python Flask REST API with SQLite WAL journal mode and FNV-1a hash indexing.</li>
+          <li><strong>Web Platform:</strong> High-performance, zero-framework CSS Grid / Vanilla JavaScript client.</li>
+        </ul>
+      </div>
+    `;
+  } else if (subpage === "features") {
+    contentHtml = `
+      <div class="info-card">
+        <h1>⚡ Comprehensive Feature Matrix</h1>
+        <p>Explore the full suite of combat analytics, tournament-grade dueling, battleground metrics, and outlaw contracts built into WoW Killboard.</p>
+
+        <h2>⚔️ Core Combat Intelligence</h2>
+        <ul>
+          <li><strong>Deterministic Killmail Generation:</strong> Microsecond combat log parsing via <code>COMBAT_LOG_EVENT_UNFILTERED</code> with full damage, healing, and overkill calculations.</li>
+          <li><strong>Solo vs. Gang Temporal Clustering:</strong> 15-second sliding temporal window strictly distinguishes certified 1v1 solo triumphs from group gang ganks.</li>
+          <li><strong>Clickable Character Combat Dossiers:</strong> Interactive modals displaying lifetime kills, deaths, K/D, solo kills, and recent combat histories.</li>
+          <li><strong>Everywhere-Clickable Armory Links:</strong> 1-click external intelligence links to the Official Blizzard Armory, Ironforge.pro (Classic), and Warcraft Logs.</li>
+        </ul>
+
+        <h2>🏆 Dueling &amp; Battleground Gladiators</h2>
+        <ul>
+          <li><strong>1v1 Duel Match Engine:</strong> Hooks into system duel messages to track knockouts, forfeits ("fled"), and duel win/loss records.</li>
+          <li><strong>Battleground Scoreboards:</strong> Damage done, healing done, and objective caps tracked in Warsong Gulch, Arathi Basin, and Alterac Valley.</li>
+          <li><strong>5-Way Multi-Mode Filtering:</strong> Instant switching between <code>ALL</code>, <code>WORLD</code>, <code>BG</code>, <code>ARENA</code>, and <code>DUEL</code> telemetry.</li>
+        </ul>
+
+        <h2>🎯 Bounty Contracts &amp; Oathbreaker Debt Ledger</h2>
+        <ul>
+          <li><strong>In-Game Post-Death Bounty Prompt:</strong> Safe prompt outside combat lockdown asking players if they wish to place a bounty upon falling to an enemy.</li>
+          <li><strong>Anti-Name Change Evasion:</strong> Contracts bound to immutable character <code>Player-GUID</code>. Renaming character in Blizzard shop preserves active debt contracts.</li>
+          <li><strong>Contract Acceptance &amp; Killing Blow Exclusivity:</strong> Only hunters who accept the contract and land the certified killing blow collect the gold.</li>
+          <li><strong>Cold Cases Archival:</strong> Uncollected bounties > 30 days automatically archive to prevent backlog clutter.</li>
+          <li><strong>Proximity Wanted Debtor Radar:</strong> In-game audio sirens (SoundKit 8959) and visual alerts trigger when an Oathbreaker debtor is nearby.</li>
+        </ul>
+      </div>
+    `;
+  } else if (subpage === "faq") {
+    contentHtml = `
+      <div class="info-card">
+        <h1>❓ Frequently Asked Questions</h1>
+
+        <h2>General &amp; Installation</h2>
+        <h3>How do I install the addon?</h3>
+        <p>Extract <code>WoWKillboard-v1.0.0.zip</code> into your World of Warcraft <code>Interface/AddOns/</code> directory. Run <code>WoWKillboardSync.exe</code> in the background to automatically synchronize your combat logs to the web killboard.</p>
+
+        <h3>Do I need to install Python or use the command line?</h3>
+        <p>No. <code>WoWKillboardSync.exe</code> is a self-contained zero-Python Windows binary with automated drive scanning across C:, D:, and E: drives.</p>
+
+        <h2>Combat &amp; Scoring</h2>
+        <h3>Why didn't my kill register as a Solo Kill?</h3>
+        <p>If another player damaged or debuffed the victim within 15 seconds prior to death, our temporal clustering algorithm classifies the kill as a <strong>Gang</strong> kill to protect competitive integrity.</p>
+
+        <h3>Why did a kill not appear on the board?</h3>
+        <p>Kills against "grey" trivial low-level characters or honorless targets are filtered out to prevent grief-farming from polluting realm leaderboards.</p>
+
+        <h2>Bounties &amp; Contracts</h2>
+        <h3>Can players without the addon claim bounties?</h3>
+        <p>No. Bounties require active contract acceptance. Only an addon hunter who accepted the contract and landed the certified killing blow can collect the bounty gold.</p>
+
+        <h3>Can a bounty target avoid their bounty by changing character names?</h3>
+        <p>No. All contracts and debts are permanently bound to the character's internal <code>Player-XXXX-XXXXXXXX</code> GUID. When a player renames, their existing bounty contracts immediately update to their new name.</p>
+
+        <h3>What happens if a bounty goes unclaimed for a long time?</h3>
+        <p>Bounties active for over 30 days are automatically archived into the <strong>Cold Cases</strong> register.</p>
+      </div>
+    `;
+  } else if (subpage === "delayed") {
+    contentHtml = `
+      <div class="info-card">
+        <h1>⏱️ Delayed Combat Telemetry &amp; OpSec</h1>
+        <p>In competitive PvP, real-time spatial coordinates can inadvertently enable stream-sniping, flight-path camping, and unfair griefing. WoW Killboard implements strict vicinity telemetry delays to safeguard operational security (OpSec).</p>
+
+        <h2>🔒 The Telemetry Gating Framework</h2>
+        <ul>
+          <li><strong>Public / Free Tier:</strong> Displays confirmed combat <strong>Zone</strong> only with temporal delay (e.g. <code>Last Sighted: Stranglethorn Vale ~14m ago</code>). Exact subzone landmarks and micro-coordinates are masked.</li>
+          <li><strong>Supporter Perk (Subzone Recon Intel):</strong> Quality-of-life benefit unlocking exact subzone telemetry (e.g. <code>Booty Bay</code>) for community donors supporting <strong>Forged By Valor (501(c)(3))</strong>.</li>
+          <li><strong>Anti-Camping Offset:</strong> In-game killmail broadcasting does not leak real-time player GPS coordinates to public chat channels.</li>
+        </ul>
+
+        <div class="info-callout">
+          <strong>Cold Cases Archival:</strong><br>
+          To maintain active board responsiveness, bounty contracts remaining uncollected for more than 30 days transition from <code>ACTIVE</code> to <code>COLD_CASE</code> status.
+        </div>
+      </div>
+    `;
+  } else if (subpage === "payments") {
+    contentHtml = `
+      <div class="info-card">
+        <h1>⭐ Supporter Perks &amp; 100% Ad-Free Experience</h1>
+        <p>WoW Killboard operates under a strict <strong>100% Ad-Free Guarantee</strong>. We display zero commercial advertisements, popups, or user-tracking scripts.</p>
+
+        <div class="info-callout" style="border-left-color: var(--accent-gold);">
+          <strong>🎖️ Forged By Valor (501(c)(3)) Community Support:</strong><br>
+          WoW Killboard is built and maintained as a non-profit technology project. All financial contributions directly fund realm server infrastructure and Forged By Valor's charitable veteran mental health initiatives.
+        </div>
+
+        <h2>🌟 Supporter Perks &amp; Recognition</h2>
+        <ul>
+          <li><strong>⭐ Subzone Recon Intel:</strong> Unlocks exact landmark subzone coordinates across active bounty contracts.</li>
+          <li><strong>👑 Golden Champion Crest:</strong> Supporter badges and shiny cosmetic glows rendered on character dossiers.</li>
+          <li><strong>🎯 Killmail Sponsorship:</strong> Sponsor epic world PvP battles to pin them to the top of realm highlights.</li>
+          <li><strong>100% Tax-Deductible:</strong> Donations to Forged By Valor are fully deductible under IRS Section 501(c)(3).</li>
+        </ul>
+      </div>
+    `;
+  } else if (subpage === "streambox") {
+    contentHtml = `
+      <div class="info-card">
+        <h1>📺 StreamBox — Live OBS Streamer Overlay</h1>
+        <p>Inspired by zKillboard's popular streamer tool, <strong>StreamBox</strong> is a lightweight, zero-configuration HUD overlay built specifically for Twitch and YouTube World of Warcraft PvP streamers.</p>
+
+        <div class="streambox-generator">
+          <h3 style="color:var(--accent-cyan); margin-bottom:6px;">🚀 Quick StreamBox URL Builder</h3>
+          <p style="font-size:0.8rem; color:#94a3b8;">Enter your character name to generate an instant OBS Studio Browser Source URL:</p>
+          <div class="streambox-input-group">
+            <input type="text" id="sb-input-char" class="search-input" placeholder="Character Name (e.g. Hawkeye)" style="max-width:240px;">
+            <button class="nav-btn active" onclick="generateStreamBoxUrl()">Generate OBS URL</button>
+          </div>
+          <div id="sb-url-result" style="margin-top:10px; font-size:0.8rem; display:none;">
+            <span style="color:#10b981; font-weight:700;">OBS Browser Source URL:</span><br>
+            <code id="sb-url-text" style="background:#000; padding:4px 8px; border-radius:4px; border:1px solid #334155; display:inline-block; margin-top:4px; color:var(--accent-cyan);"></code>
+            <button class="nav-btn" style="padding:4px 8px; font-size:0.75rem; margin-left:8px;" onclick="copyStreamBoxUrl()">📋 Copy</button>
+          </div>
+        </div>
+
+        <h2>⚙️ How to Add to OBS Studio or Streamlabs</h2>
+        <ol>
+          <li>In OBS Studio, click <strong>+ (Add Source)</strong> in your Sources dock.</li>
+          <li>Select <strong>Browser</strong>.</li>
+          <li>Paste your StreamBox URL (e.g. <code>http://localhost:8080/streambox/YourCharacterName</code>).</li>
+          <li>Set Width: <strong>800</strong>, Height: <strong>140</strong> (or Width: <strong>320</strong>, Height: <strong>480</strong> for vertical with <code>?vertical=1</code>).</li>
+          <li>Check <strong>"Shutdown source when not visible"</strong> and click OK.</li>
+        </ol>
+
+        <h2>💡 StreamBox Features</h2>
+        <ul>
+          <li><strong>Transparent HUD:</strong> Blends cleanly into any game stream layout with sleek glassmorphism cards.</li>
+          <li><strong>Automatic Live Updates:</strong> Polls every 5 seconds to display your latest kills, deaths, and K/D ratio without requiring any interaction.</li>
+          <li><strong>Solo &amp; Gang Badges:</strong> Distinguishes certified 1v1 solo kills from group skirmishes.</li>
+        </ul>
+      </div>
+    `;
+  } else if (subpage === "legal") {
+    contentHtml = `
+      <div class="info-card">
+        <h1>⚖️ Legal, Copyright &amp; Blizzard Policy Compliance</h1>
+
+        <h2>Blizzard Entertainment Trademark &amp; IP Notice</h2>
+        <p>World of Warcraft®, Warcraft®, and Blizzard Entertainment® are trademarks or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other countries.</p>
+        <p>WoW Killboard is an independent open-source combat analysis tool created by <strong>Scott Quick</strong> and supported by <strong>Forged By Valor (501(c)(3))</strong>. It is not affiliated with, endorsed, sponsored, or specifically approved by Blizzard Entertainment, Inc. Blizzard Entertainment is not responsible for the content or operation of this software.</p>
+
+        <h2>Strict Compliance with Blizzard's UI Add-On Development Policy</h2>
+        <ul>
+          <li><strong>100% Free of Charge:</strong> The addon and web platform are free for all players. We charge zero subscription fees, paywalls, or fees to download or use the software.</li>
+          <li><strong>Zero In-Game Commercial Advertising:</strong> The addon displays zero third-party commercial advertisements, popups, or marketing inside the World of Warcraft client.</li>
+          <li><strong>Non-Obfuscated Open Source Code:</strong> All addon Lua code and web backend code are 100% human-readable and licensed under the <strong>AGPLv3</strong> open-source license.</li>
+          <li><strong>Zero Game Automation (No Taint):</strong> The addon never automates gameplay, triggers protected spells, or circumvents game mechanics. It strictly observes public combat log events.</li>
+        </ul>
+
+        <h2>Privacy &amp; Data Protection</h2>
+        <ul>
+          <li><strong>Zero Personally Identifiable Information (PII):</strong> We never collect, store, or transmit real names, email addresses, IP addresses, or Blizzard Battle.net account credentials.</li>
+          <li><strong>Public Telemetry Only:</strong> The software exclusively records publicly broadcast combat log event strings (character names, combat damage, zone names) generated during gameplay.</li>
+        </ul>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div class="info-hub">
+      ${tabsHtml}
+      ${contentHtml}
+    </div>
+  `;
+}
+
+function generateStreamBoxUrl() {
+  const charInput = document.getElementById("sb-input-char");
+  if (!charInput || !charInput.value.trim()) {
+    alert("Please enter a character name.");
+    return;
+  }
+  const name = charInput.value.trim();
+  const url = `${window.location.origin}/streambox/${encodeURIComponent(name)}`;
+  const resEl = document.getElementById("sb-url-result");
+  const textEl = document.getElementById("sb-url-text");
+  if (resEl && textEl) {
+    textEl.innerText = url;
+    resEl.style.display = "block";
+  }
+}
+
+function copyStreamBoxUrl() {
+  const textEl = document.getElementById("sb-url-text");
+  if (!textEl) return;
+  navigator.clipboard.writeText(textEl.innerText).then(() => {
+    alert("StreamBox OBS URL copied to clipboard!");
+  });
 }
 
 function setFilterMode(mode) {
@@ -1311,7 +1534,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   updateSupporterButton();
-  updateBountyModeUI();
   loadKills();
   loadMostWanted();
   loadSidebar();

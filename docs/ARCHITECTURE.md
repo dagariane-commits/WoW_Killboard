@@ -102,4 +102,11 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
 4. **Bounty Hall of Fame Engine (`GET /api/bounties/leaderboards`)**:
    - Real-time aggregation of Top Bounty Hunters, Highest Bounty Contracts, Most Elusive Outlaws, and Fastest Collected Manhunts.
    - Ingestion-driven auto-claim pipeline that transitions active bounties on slain targets to claimed status automatically.
+5. **StreamBox OBS Overlay HUD (`GET /streambox/<name>`)**:
+   - Zero-dependency transparent HTML/CSS/JS HUD designed for streaming software (OBS Studio Browser Source, Twitch/YouTube).
+   - Dynamic real-time event polling every 5s with class-colored combatants and killer/victim telemetry.
+   - Dual layout options: Horizontal bottom-ticker or vertical side-panel (`?vertical=1`).
+6. **zKillboard Intelligence Hub & Static Outlaw Gallery**:
+   - Static Top 10 Most Wanted FBI outlaw gallery rendered unconditionally without collapse toggle traps.
+   - 7-section technical & policy documentation hub mirroring zKillboard: Features, FAQ, About, Delayed Intel, Payments/Supporters, StreamBox Generator, and Legal/Fair Play policies.
 

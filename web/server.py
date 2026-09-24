@@ -11,7 +11,7 @@ import sys
 import json
 import time
 import sqlite3
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template_string
 from flask_cors import CORS
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -155,6 +155,201 @@ def index():
 @app.route("/static/<path:path>")
 def static_files(path):
     return send_from_directory(STATIC_DIR, path)
+
+# ----------------- StreamBox (OBS Overlay) -----------------
+
+STREAMBOX_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WoW Killboard — StreamBox: {{ character_name }}</title>
+  <style>
+    :root {
+      --cls-warrior: #c79c6e; --cls-paladin: #f58cba; --cls-hunter: #abd473;
+      --cls-rogue: #fff569; --cls-priest: #ffffff; --cls-dk: #c41f3b;
+      --cls-shaman: #0070de; --cls-mage: #40c7eb; --cls-warlock: #8787ed;
+      --cls-monk: #00ff96; --cls-druid: #ff7d0a; --cls-dh: #a330c9;
+      --cls-evoker: #33937f; --cls-unknown: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: transparent;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 8px;
+      overflow: hidden;
+    }
+    .sb-container {
+      display: flex;
+      flex-direction: {{ 'column' if vertical else 'row' }};
+      gap: 8px;
+      align-items: {{ 'stretch' if vertical else 'center' }};
+    }
+    .sb-header {
+      background: rgba(10, 14, 22, 0.88);
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      border-radius: 6px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+    }
+    .sb-name {
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+    .sb-stats {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      display: flex;
+      gap: 8px;
+    }
+    .sb-kills-feed {
+      display: flex;
+      flex-direction: {{ 'column' if vertical else 'row' }};
+      gap: 6px;
+      overflow: hidden;
+    }
+    .sb-card {
+      background: rgba(13, 17, 26, 0.85);
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(6px);
+      animation: fadeIn 0.3s ease;
+      white-space: nowrap;
+    }
+    .sb-card.kill { border-left: 3px solid #10b981; }
+    .sb-card.death { border-left: 3px solid #ef4444; }
+    .sb-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .sb-badge-kill { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .sb-badge-death { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="sb-container">
+    <div class="sb-header">
+      <div style="font-size: 1.2rem;">⚔️</div>
+      <div>
+        <div id="sb-char-name" class="sb-name">{{ character_name }}</div>
+        <div class="sb-stats">
+          <span>K: <strong id="sb-kills" style="color:#10b981;">0</strong></span>
+          <span>D: <strong id="sb-deaths" style="color:#ef4444;">0</strong></span>
+          <span>K/D: <strong id="sb-kd" style="color:#fbbf24;">0.0</strong></span>
+        </div>
+      </div>
+    </div>
+    <div id="sb-events" class="sb-kills-feed">
+      <div class="sb-card" style="color:#94a3b8;">Listening for combat telemetry...</div>
+    </div>
+  </div>
+
+  <script>
+    const CHAR_NAME = "{{ character_name }}";
+    const LIMIT = {{ limit }};
+    const CLASS_COLORS = {
+      WARRIOR: "#c79c6e", PALADIN: "#f58cba", HUNTER: "#abd473", ROGUE: "#fff569",
+      PRIEST: "#ffffff", DEATHKNIGHT: "#c41f3b", SHAMAN: "#0070de", MAGE: "#40c7eb",
+      WARLOCK: "#8787ed", MONK: "#00ff96", DRUID: "#ff7d0a", DEMONHUNTER: "#a330c9",
+      EVOKER: "#33937f", UNKNOWN: "#94a3b8"
+    };
+
+    function colorClass(name, cls) {
+      const col = CLASS_COLORS[(cls||'').toUpperCase()] || CLASS_COLORS.UNKNOWN;
+      return `<strong style="color:${col}">${name}</strong>`;
+    }
+
+    function timeAgo(epoch) {
+      const diff = Math.max(0, Math.floor(Date.now() / 1000) - Number(epoch));
+      if (diff < 60) return diff + "s ago";
+      if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+      return Math.floor(diff / 3600) + "h ago";
+    }
+
+    async function updateStreamBox() {
+      try {
+        const res = await fetch(`/api/character/${encodeURIComponent(CHAR_NAME)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const nameEl = document.getElementById("sb-char-name");
+        if (nameEl) nameEl.innerHTML = colorClass(data.name, data.class);
+        document.getElementById("sb-kills").innerText = (data.stats && data.stats.kills) || 0;
+        document.getElementById("sb-deaths").innerText = (data.stats && data.stats.deaths) || 0;
+        document.getElementById("sb-kd").innerText = (data.stats && data.stats.kd) || "0.0";
+
+        const events = [];
+        (data.recentKills || []).forEach(k => {
+          events.push({ type: 'kill', target: k.victim_name, targetClass: k.victim_class, zone: k.zone, timestamp: k.timestamp });
+        });
+        (data.recentDeaths || []).forEach(d => {
+          events.push({ type: 'death', target: d.killer_name, targetClass: d.killer_class, zone: d.zone, timestamp: d.timestamp });
+        });
+        events.sort((a, b) => b.timestamp - a.timestamp);
+
+        const feedEl = document.getElementById("sb-events");
+        if (!events.length) {
+          feedEl.innerHTML = `<div class="sb-card" style="color:#64748b;">No recent combat logged</div>`;
+          return;
+        }
+
+        feedEl.innerHTML = events.slice(0, LIMIT).map(ev => {
+          if (ev.type === 'kill') {
+            return `
+              <div class="sb-card kill">
+                <span class="sb-badge sb-badge-kill">KILL</span>
+                <span>Defeated ${colorClass(ev.target, ev.targetClass)}</span>
+                <span style="color:#64748b;">&bull;</span>
+                <span style="color:#94a3b8;">${ev.zone}</span>
+                <span style="color:#64748b; font-size:0.7rem;">${timeAgo(ev.timestamp)}</span>
+              </div>
+            `;
+          } else {
+            return `
+              <div class="sb-card death">
+                <span class="sb-badge sb-badge-death">DEATH</span>
+                <span>Fell to ${colorClass(ev.target, ev.targetClass)}</span>
+                <span style="color:#64748b;">&bull;</span>
+                <span style="color:#94a3b8;">${ev.zone}</span>
+                <span style="color:#64748b; font-size:0.7rem;">${timeAgo(ev.timestamp)}</span>
+              </div>
+            `;
+          }
+        }).join('');
+      } catch (e) {
+        console.error("StreamBox update error:", e);
+      }
+    }
+
+    updateStreamBox();
+    setInterval(updateStreamBox, 5000);
+  </script>
+</body>
+</html>
+"""
+
+@app.route("/streambox/<character_name>")
+def streambox_view(character_name):
+    vertical = request.args.get("vertical") == "1"
+    limit = min(int(request.args.get("limit", 5)), 25)
+    return render_template_string(STREAMBOX_HTML, character_name=character_name, vertical=vertical, limit=limit)
 
 # ----------------- Kills API -----------------
 

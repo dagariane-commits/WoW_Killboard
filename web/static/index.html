@@ -24,6 +24,7 @@
       <button id="nav-guilds" class="nav-btn" onclick="switchTab('GUILDS')">Guilds</button>
       <button id="nav-bg_metrics" class="nav-btn" onclick="switchTab('BG_METRICS')">BG Gladiators</button>
       <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Bounties & Debt Ledger</button>
+      <button id="nav-info" class="nav-btn" onclick="switchTab('INFO')">ℹ️ Docs &amp; Intel</button>
     </nav>
 
     <!-- Context Switcher & Tools -->
@@ -69,7 +70,7 @@
         </div>
       </div>
 
-      <!-- FBI Most Wanted Top 10 Showcase (Opt-In) -->
+      <!-- FBI Most Wanted Top 10 Showcase (Static) -->
       <section id="most-wanted-section" class="most-wanted-section">
         <div class="most-wanted-header">
           <div style="display:flex; align-items:center; gap:10px;">
@@ -79,9 +80,9 @@
               <div class="most-wanted-subtitle">Certified bounties across Azeroth &bull; Killing blow claims the gold</div>
             </div>
           </div>
-          <button id="toggle-bounty-mode-btn" class="bounty-mode-toggle" onclick="toggleBountyMode()">
-            🎯 Bounty Hunter Mode: ON
-          </button>
+          <div class="most-wanted-status-badge">
+            <span class="live-dot"></span> LIVE CONTRACTS
+          </div>
         </div>
 
         <div id="most-wanted-cards-container" class="most-wanted-grid">
@@ -260,6 +261,25 @@
       </div>
     </div>
   </div>
+
+  <!-- zKillboard-Style Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <strong>WoW Killboard</strong> &bull; Non-Profit World of Warcraft PvP Intelligence Suite<br>
+        <span style="font-size:0.75rem; color:#64748b;">Powered by Forged By Valor (501(c)(3)). Not affiliated with Blizzard Entertainment, Inc.</span>
+      </div>
+      <div class="footer-links">
+        <a href="javascript:void(0)" onclick="openInfoPage('about')">About</a> &bull;
+        <a href="javascript:void(0)" onclick="openInfoPage('features')">Features</a> &bull;
+        <a href="javascript:void(0)" onclick="openInfoPage('faq')">FAQ</a> &bull;
+        <a href="javascript:void(0)" onclick="openInfoPage('delayed')">Delayed Intel</a> &bull;
+        <a href="javascript:void(0)" onclick="openInfoPage('payments')">Supporter Perks</a> &bull;
+        <a href="javascript:void(0)" onclick="openInfoPage('streambox')">StreamBox (OBS)</a> &bull;
+        <a href="javascript:void(0)" onclick="openInfoPage('legal')">Legal &amp; Compliance</a>
+      </div>
+    </div>
+  </footer>
 
   <script src="/static/app.js"></script>
 </body>

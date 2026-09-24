@@ -494,7 +494,12 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertIn("topClasses", act_data)
         self.assertIn("topZones", act_data)
         self.assertGreater(act_data["kills"], 0)
-        print("[PASS] Verified Supporter Gating, Most Wanted, Contract Acceptance, Cold Cases, and 7-Day Activity.")
+
+        # 7. Check StreamBox OBS Overlay endpoint
+        res_sb = self.client.get("/streambox/Hawkeye")
+        self.assertEqual(res_sb.status_code, 200)
+        self.assertIn("StreamBox", res_sb.get_data(as_text=True))
+        print("[PASS] Verified Supporter Gating, Most Wanted, Contract Acceptance, Cold Cases, 7-Day Activity, and StreamBox.")
 
 if __name__ == "__main__":
     unittest.main()

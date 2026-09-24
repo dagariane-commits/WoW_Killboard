@@ -104,6 +104,8 @@ flowchart TD
 - **Combat Dossiers**: Click any killmail to open detailed combatant cards, damage meters, and location telemetry.
 - **Wall of Shame**: Pinned public registry of Oathbreakers in default with days-in-default counters.
 - **Battleground Gladiators**: Ranked leaderboards for Top Damage Dealers and Combat Medics.
+- **StreamBox Native OBS Overlay**: Direct `/streambox/<CharacterName>` overlay for OBS Studio and Twitch/YouTube streamers with transparent background and auto-updating kill/death ticker.
+- **zKillboard Docs & Intelligence Hub**: 7-section informational hub and global footer covering Features, FAQ, About, Delayed Intel, Supporter/Payments, StreamBox Generator, and Legal/Fair Play policies.
 - **100% Ad-Free Experience**: Zero commercial banners, tracking scripts, or ad networks. Supported entirely through voluntary contributions to **Forged By Valor (501(c)(3))** empowering veteran mental health through gaming.
 
 ---
