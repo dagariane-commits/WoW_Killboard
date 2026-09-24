@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller & Build artifacts
+build/
+dist/
+*.spec
+
+# Database files
+*.db
+*.sqlite3
+
+# Archives (except distribution releases if desired)
+# *.zip
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# SavedVariables local dumps
+*.bak

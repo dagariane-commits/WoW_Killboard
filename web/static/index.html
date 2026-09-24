@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <div class="logo-group">
+      <span style="font-size: 1.5rem;">⚔️</span>
+      <div class="logo-title">WoW Killboard</div>
+      <span class="logo-badge">zKillboard Edition</span>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="nav-links">
+      <button id="nav-feed" class="nav-btn active" onclick="switchTab('FEED')">Live Feed</button>
+      <button id="nav-leaderboards" class="nav-btn" onclick="switchTab('LEADERBOARDS')">Leaderboards</button>
+      <button id="nav-bg_metrics" class="nav-btn" onclick="switchTab('BG_METRICS')">BG Gladiators</button>
+      <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Bounties & Debt Ledger</button>
+    </nav>
+
+    <!-- Context Switcher & Tools -->
+    <div class="header-right">
+      <!-- 5-State Filter Mode -->
+      <div class="filter-pills">
+        <button id="pill-all" class="pill-btn active" onclick="setFilterMode('ALL')">All PvP</button>
+        <button id="pill-world" class="pill-btn" onclick="setFilterMode('WORLD')">World</button>
+        <button id="pill-bg" class="pill-btn" onclick="setFilterMode('BG')">BGs</button>
+        <button id="pill-arena" class="pill-btn" onclick="setFilterMode('ARENA')">Arenas</button>
+        <button id="pill-duel" class="pill-btn" onclick="setFilterMode('DUEL')">Duels</button>
+      </div>
+
+      <input type="text" id="search-box" class="search-input" placeholder="Search Player, Guild, Zone...">
+
+      <button class="supporter-btn" onclick="alert('Killboard Pro: Zero Ads, Custom Profile Badges, Instant Sync & Discord Bot integration.')">
+        ★ Pro Supporter
+      </button>
+    </div>
+  </header>
+
+  <!-- High-CPM Ad Network Placement (NitroPay / Playwire Container) -->
+  <div class="ad-slot-top" id="ad-banner-top">
+    <span>[ Programmatic Gaming Ad Slot — NitroPay / Playwire 728x90 Banner ] (Supporters Browse Ad-Free)</span>
+  </div>
+
+  <!-- Container -->
+  <div class="container">
+    <!-- Main Center Column -->
+    <main class="main-column">
+      <!-- High-Level Stats Bar -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total Kills Logged</span>
+          <span class="stat-val" id="stat-total-kills">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Solo Kill Ratio</span>
+          <span class="stat-val" id="stat-solo-percent" style="color: #10b981;">0%</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Win / Loss Telemetry</span>
+          <span class="stat-val" id="stat-wl-record" style="color: #f59e0b; font-size: 0.95rem; padding-top: 4px;">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Current View Filter</span>
+          <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 1.1rem; padding-top: 4px;">All PvP</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Content Area (Feed / Leaderboard / BG Stats / Bounties) -->
+      <div id="main-content-area">
+        <!-- Rendered by app.js -->
+      </div>
+    </main>
+
+    <!-- Sidebar Column -->
+    <aside class="sidebar-column">
+      <!-- Top Killers Leaderboard -->
+      <div class="sidebar-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🏆</span> Top Assassins
+          </div>
+        </div>
+        <div id="sidebar-top-killers">
+          <!-- Rendered by app.js -->
+        </div>
+      </div>
+
+      <!-- Hotspot Conflict Zones -->
+      <div class="sidebar-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🔥</span> Deadliest Zones
+          </div>
+        </div>
+        <div id="sidebar-top-zones">
+          <!-- Rendered by app.js -->
+        </div>
+      </div>
+
+      <!-- Sidebar Ad Slot -->
+      <div class="sidebar-card" style="text-align: center; color: #64748b; font-size: 0.75rem; min-height: 250px; display: flex; align-items: center; justify-content: center; background: #0c0f17;">
+        [ NitroPay / Playwire 300x250 Medium Rectangle ]
+      </div>
+    </aside>
+  </div>
+
+  <!-- Detailed Killmail Modal -->
+  <div class="modal-overlay" id="kill-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <strong style="color: var(--accent-cyan); font-size: 1.1rem;">Killmail Intelligence Dossier</strong>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div id="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- Filled by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
