@@ -60,7 +60,11 @@ flowchart TD
 ## Core Feature Highlights
 
 ### 1. In-Game Addon (`Addon/WoWKillboard/`)
-- **Zero-Taint Gunmetal Dashboard (`/kb`)**:
+- **Dual Theme Architecture (Classic WoW & ElvUI Minimalist)**:
+  - **Classic WoW Theme**: Authentic Blizzard dialog stone backgrounds, gold/brass bevels (`UI-DialogBox-Border`), and warm parchment tooltips.
+  - **ElvUI Minimalist Theme**: Sleek obsidian dark gunmetal backdrop with 1px razor borders and high-contrast cyan accents.
+  - **Instant 1-Click Switcher**: Toggle between themes instantly in-game via the header button `[Theme: Classic]` / `[Theme: ElvUI]` or `/killboard theme`.
+- **Zero-Taint Isolated Dashboard (`/kb`)**:
   - 100% template-free Lua design. Zero XML template dependencies. Zero `UISpecialFrames` pollution.
   - Safe ESC key event propagation (`SetPropagateKeyboardInput`).
   - Guaranteed **88px clear margin** eliminating navigation tab and filter button overlap.
@@ -150,10 +154,11 @@ WoW_Killboard/
    - **Modern Retail**: `World of Warcraft/_retail_/Interface/AddOns/WoWKillboard`
 2. Start WoW and ensure **WoW Killboard** is checked in your AddOns menu.
 3. In-game commands:
-   - `/kb` — Open the Killboard dashboard.
-   - `/kb stats` — View current session damage, healing, kills, and K/D.
-   - `/kb bounty <Name> <Gold>` — Place a bounty on an enemy player.
-   - `/kb reset` — Clear local kill database.
+   - `/killboard` or `/wowkb` — Open the Killboard dashboard.
+   - `/killboard theme [classic|elvui]` — Switch between Classic WoW and ElvUI themes.
+   - `/killboard stats` — View current session damage, healing, kills, and K/D.
+   - `/killboard bounty <Name> <Gold>` — Place a bounty on an enemy player.
+   - `/killboard reset` — Clear local kill database.
 
 ### 2. Standalone Desktop Sync (Zero-Python)
 1. Launch [`WoWKillboardSync.exe`](file:///c:/Users/SQUICK/WoW_Killboard/dist/WoWKillboardSync.exe).

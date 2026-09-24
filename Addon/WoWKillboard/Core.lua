@@ -76,9 +76,19 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         else
             print("|cffff9900Usage:|r /killboard bounty <TargetName> <GoldAmount> (e.g. /killboard bounty Thrall 250)")
         end
+    elseif cmd == "theme" then
+        local tArg = arg and arg:lower():trim() or ""
+        if tArg == "classic" or tArg == "elvui" then
+            if KB.UI then KB.UI:SetTheme(tArg) end
+        else
+            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "elvui"
+            local nextTheme = (cur == "elvui") and "classic" or "elvui"
+            if KB.UI then KB.UI:SetTheme(nextTheme) end
+        end
     else
         print("|cff00ccffWoW Killboard Commands:|r")
         print("  |cffffd100/killboard|r or |cffffd100/wowkb|r - Toggle the Killboard Dashboard")
+        print("  |cffffd100/killboard theme [classic|elvui]|r - Switch between Classic WoW and ElvUI themes")
         print("  |cffffd100/killboard stats|r - Show current combat session statistics")
         print("  |cffffd100/killboard bounty <Name> <Gold>|r - Place a gold bounty on a player")
         print("  |cffffd100/killboard reset|r - Clear local kill database")
