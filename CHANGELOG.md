@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-09-24
 
+### Fixed
+- **Eradicated Taint Log Warning Popup**: Removed developer diagnostic `SetCVar("taintLog", "2")` from `Core.lua` and added automatic cleanup resetting `taintLog` back to `"0"`, eliminating Blizzard's *"You have the Taint Log enabled. This causes significant increase in loading times"* warning prompt on login and UI reload.
+
 ### Added
 - **Native Realm Player Armory & Classic Military Honor Rank Titles**:
   - Implemented authoritative realm-wide combat directory API (`GET /api/armory`) supporting dynamic search, faction filtering (All, Alliance, Horde), class filtering (all 13 classes), and sorting (Most Lethal, Highest K/D, Solo Specialists, Level, Recently Active).
