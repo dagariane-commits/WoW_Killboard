@@ -93,6 +93,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added strict `InCombatLockdown()` gating to frame dragging, sizing, and dialog creation.
 - **Runtime Nil Method Error (`GetDeadliestZones`)**:
   - Fixed `UI.lua:747: attempt to call a nil value` by defining `LB:GetDeadliestZones(limit)` in `Leaderboard.lua` with multi-tier fallback checks in `UI.lua`.
+- **Killmail Detail Modal Click Interception & Dismiss Button Fix**:
+  - Elevated modal frame strata to `DIALOG` and frame level to `mainFrame:GetFrameLevel() + 50`, with explicit `EnableMouse(true)` and `SetClampedToScreen(true)`.
+  - Assigned `DIALOG` strata and `modal:GetFrameLevel() + 10` to the bottom `Dismiss` button and top-right `[X]` button, completely preventing background scroll rows from intercepting or swallowing clicks.
+  - Expanded modal dimensions from 480x320 to 520x360 with dedicated header spacing, eliminating visual overlap between the title and combatant dossier cards.
+  - Intercepted `ESCAPE` key listeners so pressing ESC dismisses the active detail modal before closing the main dashboard.
+- **Authentic Neutral ElvUI Palette Calibration**:
+  - Overhauled ElvUI theme colors from navy blue/cyan (`0.06, 0.07, 0.10`) to true ElvUI matte charcoal/jet black (`0.05, 0.05, 0.05, 0.98`), 1px solid black razor outlines (`0.0, 0.0, 0.0, 1.0`), and signature ElvUI gold accents (`#ffd100`).
+  - Eradicated out-of-place neon cyan elements across feed tags, leaderboard rankings, and filter pills.
+- **Classic WoW Theme Polish & Texture Assets**:
+  - Replaced missing Unicode glyph `✕` (which rendered as a broken empty box `[]` in WoW font tables) with authentic Blizzard round red jewel minimize buttons (`Interface\Buttons\UI-Panel-MinimizeButton-Up`) in Classic and crisp ASCII `|cffff3333X|r` in ElvUI.
+  - Calibrated Battleground badges (`[BG x%d]`) and metrics to Blizzard soft blue (`#69ccf0`) and warm gold (`#ffd100`) across all modes.
 - **Scoreboard Type Comparison Exception**:
   - Fixed `CombatTracker.lua: attempt to compare number with string` by wrapping `GetBattlefieldWinner()` comparisons in type-safe casts `(tonumber(winner) == pFactionIndex) or (tostring(winner) == tostring(pFaction))`.
 - **Cross-Client Combat Log Unification**:
