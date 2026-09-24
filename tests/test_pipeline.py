@@ -423,6 +423,19 @@ class TestKillboardPipeline(unittest.TestCase):
         res_bnt_g = self.client.post("/api/bounties", json=bounty_grimjaw)
         self.assertEqual(res_bnt_g.status_code, 201)
 
+        # Hunter accepts the contract before hunting
+        res_accept = self.client.post("/api/bounties/accept", json={"bountyId": "BNT-GRIMJAW01", "hunterName": "Hawkeye"})
+        self.assertEqual(res_accept.status_code, 200)
+
+        # Test Most Wanted endpoint before kill
+        res_mw = self.client.get("/api/bounties/most-wanted")
+        self.assertEqual(res_mw.status_code, 200)
+        mw_data = res_mw.get_json()
+        self.assertGreater(len(mw_data), 0)
+        grimjaw_mw = next((b for b in mw_data if b["target_name"] == "Grimjaw"), None)
+        self.assertIsNotNone(grimjaw_mw)
+        self.assertEqual(grimjaw_mw["acceptedCount"], 1)
+
         kill_claim = {
             "killId": "KB-BOUNTY-CLAIM-01",
             "timestamp": int(time.time()),
@@ -432,6 +445,7 @@ class TestKillboardPipeline(unittest.TestCase):
             "isSolo": True,
             "attackersCount": 1,
             "totalDamage": 5200,
+            "acceptedBounties": ["BNT-GRIMJAW01"],
             "killer": {
                 "name": "Hawkeye", "level": 60, "class": "HUNTER",
                 "guild": "ApexPredators", "faction": "Alliance", "partySize": 1,
@@ -462,7 +476,25 @@ class TestKillboardPipeline(unittest.TestCase):
         hawkeye_hunter = next((h for h in lb_data["topHunters"] if h["hunter_name"] == "Hawkeye"), None)
         self.assertIsNotNone(hawkeye_hunter, "Hawkeye should be recorded as a claiming bounty hunter")
         self.assertGreater(hawkeye_hunter["claimed_count"], 0)
-        print("[PASS] Verified Supporter Subzone Gating, Auto-Claim on Slay, and Bounty Hall of Fame Leaderboards.")
+
+        # 5. Check Cold Cases Archive endpoint
+        res_archive = self.client.get("/api/bounties/archive")
+        self.assertEqual(res_archive.status_code, 200)
+        self.assertIsInstance(res_archive.get_json(), list)
+
+        # 6. Check 7-Day Activity Telemetry for zKillboard sidebar
+        res_act = self.client.get("/api/stats/activity-7d")
+        self.assertEqual(res_act.status_code, 200)
+        act_data = res_act.get_json()
+        self.assertIn("kills", act_data)
+        self.assertIn("characters", act_data)
+        self.assertIn("guilds", act_data)
+        self.assertIn("topCharacters", act_data)
+        self.assertIn("topGuilds", act_data)
+        self.assertIn("topClasses", act_data)
+        self.assertIn("topZones", act_data)
+        self.assertGreater(act_data["kills"], 0)
+        print("[PASS] Verified Supporter Gating, Most Wanted, Contract Acceptance, Cold Cases, and 7-Day Activity.")
 
 if __name__ == "__main__":
     unittest.main()

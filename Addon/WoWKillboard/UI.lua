@@ -903,6 +903,18 @@ function UI:RenderBounties()
             txt:SetText(string.format("WANTED: |cffff3333%s|r (%s)  |  Reward: |cffffd700%s|r  |  By: |cffcbd5e1%s|r%s",
                 b.targetName, b.targetClass, KB.Utils.FormatMoney(b.amountCopper), b.placerName, lastSeenStr))
 
+            local bId = b.id
+            local isAccepted = KB.BountyEngine and KB.BountyEngine:IsBountyAccepted(bId)
+            local acceptBtn = UI:CreateButton(row, 115, 22, isAccepted and "|cff00ff66Tracking|r" or "Accept Contract")
+            acceptBtn:SetPoint("RIGHT", -8, 0)
+            if not isAccepted then
+                acceptBtn:SetScript("OnClick", function()
+                    if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
+                        KB.BountyEngine:AcceptBounty(bId)
+                    end
+                end)
+            end
+
             yOffset = yOffset - 36
         end
     end
@@ -911,6 +923,44 @@ function UI:RenderBounties()
         local emptyB = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
         emptyB:SetPoint("TOPLEFT", 10, yOffset)
         emptyB:SetText("No active bounties. Be the first to place one on an enemy!")
+        yOffset = yOffset - 25
+    end
+
+    -- Archived Cold Cases Section (>30 Days Uncollected)
+    yOffset = yOffset - 20
+    local coldTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    coldTitle:SetPoint("TOPLEFT", 10, yOffset)
+    coldTitle:SetText("📁 Cold Cases Archive — Uncollected Outlaws (>30 Days)")
+
+    yOffset = yOffset - 32
+    local hasCold = false
+    for _, b in pairs(WoWKillboardBounties) do
+        if b.status == "COLD_CASE" then
+            hasCold = true
+            local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+            row:SetSize(820, 30)
+            row:SetPoint("TOPLEFT", 0, yOffset)
+            local theme = UI:GetTheme()
+            row:SetBackdrop(theme.rowBackdrop)
+            row:SetBackdropColor(0.08, 0.08, 0.10, 0.85)
+            row:SetBackdropBorderColor(0.25, 0.25, 0.30, 0.7)
+
+            local icon = UI:CreateClassIcon(row, b.targetClass, 20)
+            icon:SetPoint("LEFT", 12, 0)
+
+            local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+            txt:SetText(string.format("|cff888888[ARCHIVED]|r |cffffffff%s|r (%s)  |  Unclaimed Reward: |cffffd700%s|r  |  Placed by: %s",
+                b.targetName, b.targetClass, KB.Utils.FormatMoney(b.amountCopper), b.placerName))
+
+            yOffset = yOffset - 34
+        end
+    end
+
+    if not hasCold then
+        local emptyC = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+        emptyC:SetPoint("TOPLEFT", 10, yOffset)
+        emptyC:SetText("No archived cold cases. All manhunts remain actively pursued.")
         yOffset = yOffset - 25
     end
 
@@ -1307,4 +1357,89 @@ function UI:ShowBountyPrompt()
     UI.BountyDialog.editBox:SetText("")
     UI.BountyDialog:Show()
     UI.BountyDialog.editBox:SetFocus()
+end
+
+-- Death Bounty Prompt Dialog: Triggered when player is slain in PvP
+function UI:ShowDeathBountyPrompt(killerData)
+    if not killerData or not killerData.name then return end
+    if InCombatLockdown() then return end
+
+    if not UI.DeathBountyDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(440, 210)
+        dlg:SetPoint("CENTER", 0, 80)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(100)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+
+        local theme = UI:GetTheme()
+        dlg:SetBackdrop(theme and theme.modalBackdrop or {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        dlg:SetBackdropColor(0.08, 0.05, 0.05, 0.98)
+        dlg:SetBackdropBorderColor(1.0, 0.25, 0.25, 1.0)
+
+        local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", 0, -16)
+        title:SetText("|cffffd100FALLEN IN COMBAT — PLACE BOUNTY|r")
+
+        local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        desc:SetPoint("TOP", 0, -46)
+        desc:SetJustifyH("CENTER")
+        dlg.DescText = desc
+
+        local goldLabel = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        goldLabel:SetPoint("TOPLEFT", 60, -96)
+        goldLabel:SetText("Bounty Gold Amount:")
+
+        local eb = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        eb:SetSize(140, 26)
+        eb:SetPoint("LEFT", goldLabel, "RIGHT", 12, 0)
+        eb:SetAutoFocus(false)
+        eb:SetNumeric(true)
+        eb:SetNumber(50)
+        eb:SetFontObject("GameFontHighlight")
+        eb:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        eb:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        eb:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        eb:SetTextInsets(6, 6, 0, 0)
+        dlg.editBox = eb
+
+        local note = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        note:SetPoint("TOP", 0, -132)
+        note:SetText("|cff888888Only a hunter who accepts the contract and lands the final blow wins.|r")
+
+        local okBtn = UI:CreateButton(dlg, 130, 26, "Place Bounty")
+        okBtn:SetPoint("BOTTOMLEFT", 45, 16)
+        okBtn:SetScript("OnClick", function()
+            local gold = tonumber(eb:GetText()) or 50
+            if gold > 0 and dlg.CurrentKiller then
+                local k = dlg.CurrentKiller
+                KB.BountyEngine:PlaceBounty(k.name, k.class or "UNKNOWN", k.faction or "Unknown", gold, k.guid)
+                dlg:Hide()
+                if UI.RefreshIfVisible then UI:RefreshIfVisible() end
+            end
+        end)
+
+        local cancelBtn = UI:CreateButton(dlg, 130, 26, "Decline")
+        cancelBtn:SetPoint("BOTTOMRIGHT", -45, 16)
+        cancelBtn:SetScript("OnClick", function()
+            dlg:Hide()
+        end)
+
+        UI.DeathBountyDialog = dlg
+    end
+
+    UI.DeathBountyDialog.CurrentKiller = killerData
+    UI.DeathBountyDialog.DescText:SetText(string.format("|cffff3333%s|r has slain you in combat!\nWould you like to put a contract on their head?", killerData.name))
+    UI.DeathBountyDialog.editBox:SetText("50")
+    UI.DeathBountyDialog:Show()
+    if UI.DeathBountyDialog.Raise then UI.DeathBountyDialog:Raise() end
 end

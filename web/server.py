@@ -77,6 +77,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS bounties (
                 id TEXT PRIMARY KEY,
                 target_name TEXT,
+                target_guid TEXT,
                 target_class TEXT,
                 target_faction TEXT,
                 placer_name TEXT,
@@ -88,6 +89,19 @@ def init_db():
                 timestamp INTEGER,
                 expiry INTEGER,
                 payment_deadline INTEGER
+            )
+        """)
+        try:
+            conn.execute("ALTER TABLE bounties ADD COLUMN target_guid TEXT")
+        except sqlite3.OperationalError:
+            pass
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS bounty_acceptances (
+                bounty_id TEXT,
+                hunter_name TEXT,
+                accepted_at INTEGER,
+                PRIMARY KEY (bounty_id, hunter_name)
             )
         """)
         conn.execute("""
@@ -292,18 +306,33 @@ def post_kill():
                 pass
 
         # Auto-claim active bounty on victim if killed by another player
+        # Anti-Name-Change Evasion: Check if victim renamed using permanent Character GUID
+        victim_guid = v.get("guid") or "UNKNOWN"
         if victim_name != "Unknown" and killer_name != "Unknown" and killer_name != victim_name:
-            active_bounty = conn.execute("""
-                SELECT id, amount_gold FROM bounties
-                WHERE target_name = ? AND status = 'ACTIVE'
-                ORDER BY amount_gold DESC LIMIT 1
-            """, (victim_name,)).fetchone()
-            if active_bounty:
+            if victim_guid != "UNKNOWN":
                 conn.execute("""
                     UPDATE bounties
-                    SET status = 'CLAIMED', hunter_name = ?, kill_id = ?, payment_deadline = ?
-                    WHERE id = ?
-                """, (killer_name, kill_id, timestamp, active_bounty["id"]))
+                    SET target_name = ?
+                    WHERE target_guid = ? AND target_name != ?
+                """, (victim_name, victim_guid, victim_name))
+
+            active_bounty = conn.execute("""
+                SELECT id, amount_gold FROM bounties
+                WHERE (target_name = ? OR (target_guid = ? AND target_guid != 'UNKNOWN')) AND status = 'ACTIVE'
+                ORDER BY amount_gold DESC LIMIT 1
+            """, (victim_name, victim_guid)).fetchone()
+
+            if active_bounty:
+                b_id = active_bounty["id"]
+                # Requirement: Killing blow hunter must have accepted the contract
+                accepted = conn.execute("SELECT 1 FROM bounty_acceptances WHERE bounty_id = ? AND hunter_name = ?", (b_id, killer_name)).fetchone()
+                accepted_via_addon = (data.get("acceptedBounties") and b_id in data.get("acceptedBounties"))
+                if accepted or accepted_via_addon:
+                    conn.execute("""
+                        UPDATE bounties
+                        SET status = 'CLAIMED', hunter_name = ?, kill_id = ?, payment_deadline = ?
+                        WHERE id = ?
+                    """, (killer_name, kill_id, timestamp, b_id))
 
         conn.commit()
 
@@ -747,6 +776,7 @@ def create_bounty():
     data = request.json
     b_id = data.get("id") or f"BNT-{int(time.time()*1000)}"
     target = data.get("targetName", "Unknown")
+    target_guid = data.get("targetGuid", "UNKNOWN")
     gold = int(data.get("amountGold", 100))
     copper = int(data.get("amountCopper", gold * 10000))
     placer = data.get("placerName", "Anonymous")
@@ -754,16 +784,202 @@ def create_bounty():
     with get_db() as conn:
         conn.execute("""
             INSERT OR REPLACE INTO bounties (
-                id, target_name, target_class, target_faction, placer_name,
+                id, target_name, target_guid, target_class, target_faction, placer_name,
                 amount_copper, amount_gold, status, timestamp, expiry
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
         """, (
-            b_id, target, data.get("targetClass", "UNKNOWN"), data.get("targetFaction", "Unknown"),
+            b_id, target, target_guid, data.get("targetClass", "UNKNOWN"), data.get("targetFaction", "Unknown"),
             placer, copper, gold, int(time.time()), int(time.time() + 86400 * 7)
         ))
         conn.commit()
 
     return jsonify({"success": True, "bountyId": b_id}), 201
+
+@app.route("/api/bounties/most-wanted", methods=["GET"])
+def get_most_wanted():
+    is_supporter = request.args.get("supporter") == "1"
+    now = int(time.time())
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT id, target_name, target_guid, target_class, target_faction, placer_name,
+                   amount_gold, amount_copper, timestamp
+            FROM bounties
+            WHERE status = 'ACTIVE'
+            ORDER BY amount_gold DESC
+            LIMIT 10
+        """).fetchall()
+        most_wanted = []
+        for r in rows:
+            b = dict(r)
+            target = b["target_name"]
+            last_kill = conn.execute("""
+                SELECT timestamp, zone, subzone
+                FROM kills
+                WHERE killer_name = ? OR victim_name = ?
+                ORDER BY timestamp DESC
+                LIMIT 1
+            """, (target, target)).fetchone()
+
+            if last_kill:
+                kill_time = last_kill["timestamp"]
+                elapsed = max(0, now - kill_time)
+                zone_name = last_kill["zone"] or "Unknown"
+                subzone_name = last_kill["subzone"] or ""
+                b["lastSeen"] = {
+                    "hasTelemetry": True,
+                    "zone": zone_name,
+                    "subzone": subzone_name if is_supporter else None,
+                    "hasSubzoneAccess": is_supporter,
+                    "displayText": f"{zone_name} ({subzone_name})" if (is_supporter and subzone_name) else zone_name,
+                    "elapsedSeconds": elapsed,
+                    "minutesAgo": max(1, elapsed // 60)
+                }
+            else:
+                b["lastSeen"] = {
+                    "hasTelemetry": False,
+                    "displayText": "Unknown (No combat logged)"
+                }
+
+            acc_row = conn.execute("SELECT COUNT(*) FROM bounty_acceptances WHERE bounty_id = ?", (b["id"],)).fetchone()
+            b["acceptedCount"] = acc_row[0] if acc_row else 0
+            most_wanted.append(b)
+
+    return jsonify(most_wanted)
+
+@app.route("/api/bounties/accept", methods=["POST"])
+def accept_bounty():
+    data = request.json
+    if not data or "bountyId" not in data or "hunterName" not in data:
+        return jsonify({"error": "Missing bountyId or hunterName"}), 400
+    b_id = data["bountyId"]
+    hunter = data["hunterName"]
+    with get_db() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO bounty_acceptances (bounty_id, hunter_name, accepted_at)
+            VALUES (?, ?, ?)
+        """, (b_id, hunter, int(time.time())))
+        conn.commit()
+    return jsonify({"success": True, "bountyId": b_id, "hunterName": hunter})
+
+@app.route("/api/bounties/archive", methods=["GET"])
+def get_bounties_archive():
+    now = int(time.time())
+    thirty_days_ago = now - (30 * 86400)
+    with get_db() as conn:
+        # Move bounties older than 30 days to COLD_CASE
+        conn.execute("""
+            UPDATE bounties
+            SET status = 'COLD_CASE'
+            WHERE status = 'ACTIVE' AND timestamp < ?
+        """, (thirty_days_ago,))
+        conn.commit()
+
+        rows = conn.execute("""
+            SELECT * FROM bounties
+            WHERE status = 'COLD_CASE'
+            ORDER BY timestamp DESC
+        """).fetchall()
+        cold_cases = [dict(r) for r in rows]
+    return jsonify(cold_cases)
+
+@app.route("/api/stats/activity-7d", methods=["GET"])
+def get_activity_7d():
+    now = int(time.time())
+    seven_days_ago = now - (7 * 86400)
+    with get_db() as conn:
+        # Total kills in 7 days
+        total_kills = conn.execute(
+            "SELECT COUNT(*) FROM kills WHERE timestamp >= ?", (seven_days_ago,)
+        ).fetchone()[0]
+
+        # Active characters
+        char_count = conn.execute("""
+            SELECT COUNT(DISTINCT name) FROM (
+                SELECT killer_name AS name FROM kills WHERE timestamp >= ? AND killer_name != 'Unknown'
+                UNION
+                SELECT victim_name AS name FROM kills WHERE timestamp >= ? AND victim_name != 'Unknown'
+            )
+        """, (seven_days_ago, seven_days_ago)).fetchone()[0]
+
+        # Active guilds
+        guild_count = conn.execute("""
+            SELECT COUNT(DISTINCT guild) FROM (
+                SELECT killer_guild AS guild FROM kills WHERE timestamp >= ? AND killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''
+                UNION
+                SELECT victim_guild AS guild FROM kills WHERE timestamp >= ? AND victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''
+            )
+        """, (seven_days_ago, seven_days_ago)).fetchone()[0]
+
+        # Faction breakdown
+        alliance_kills = conn.execute(
+            "SELECT COUNT(*) FROM kills WHERE timestamp >= ? AND killer_faction = 'Alliance'", (seven_days_ago,)
+        ).fetchone()[0]
+        horde_kills = conn.execute(
+            "SELECT COUNT(*) FROM kills WHERE timestamp >= ? AND killer_faction = 'Horde'", (seven_days_ago,)
+        ).fetchone()[0]
+
+        # Active zones
+        zone_count = conn.execute("""
+            SELECT COUNT(DISTINCT zone) FROM kills
+            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown'
+        """, (seven_days_ago,)).fetchone()[0]
+
+        # Top Characters (top 5)
+        top_chars_rows = conn.execute("""
+            SELECT killer_name AS name, killer_class AS class, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
+            FROM kills
+            WHERE timestamp >= ? AND killer_name != 'Unknown'
+            GROUP BY killer_name
+            ORDER BY kills DESC
+            LIMIT 5
+        """, (seven_days_ago,)).fetchall()
+        top_chars = [dict(r) for r in top_chars_rows]
+
+        # Top Guilds (top 5)
+        top_guilds_rows = conn.execute("""
+            SELECT killer_guild AS guild, killer_faction AS faction, COUNT(*) AS kills
+            FROM kills
+            WHERE timestamp >= ? AND killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''
+            GROUP BY killer_guild
+            ORDER BY kills DESC
+            LIMIT 5
+        """, (seven_days_ago,)).fetchall()
+        top_guilds = [dict(r) for r in top_guilds_rows]
+
+        # Top Classes (top 5)
+        top_classes_rows = conn.execute("""
+            SELECT killer_class AS class, COUNT(*) AS kills
+            FROM kills
+            WHERE timestamp >= ? AND killer_class IS NOT NULL AND killer_class != ''
+            GROUP BY killer_class
+            ORDER BY kills DESC
+            LIMIT 5
+        """, (seven_days_ago,)).fetchall()
+        top_classes = [dict(r) for r in top_classes_rows]
+
+        # Top Zones (top 5)
+        top_zones_rows = conn.execute("""
+            SELECT zone, COUNT(*) AS kills
+            FROM kills
+            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown'
+            GROUP BY zone
+            ORDER BY kills DESC
+            LIMIT 5
+        """, (seven_days_ago,)).fetchall()
+        top_zones = [dict(r) for r in top_zones_rows]
+
+    return jsonify({
+        "kills": total_kills,
+        "characters": char_count,
+        "guilds": guild_count,
+        "allianceKills": alliance_kills,
+        "hordeKills": horde_kills,
+        "zones": zone_count,
+        "topCharacters": top_chars,
+        "topGuilds": top_guilds,
+        "topClasses": top_classes,
+        "topZones": top_zones
+    })
 
 @app.route("/api/bounties/debt-ledger", methods=["GET"])
 def get_debt_ledger():
