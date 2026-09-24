@@ -46,10 +46,10 @@ The in-game addon is a modular Lua package designed to run without third-party l
 | **`UnitScanner.lua`** | Proximity level, class, race, and guild cache | `UnitLevel`, `UnitClass`, `UnitRace`, `UnitFactionGroup`, `GetGuildInfo` |
 | **`CombatTracker.lua`**| Real-time combat logging, hostile gang clustering, meter aggregation | `COMBAT_LOG_EVENT_UNFILTERED`, `CHAT_MSG_SYSTEM`, `UPDATE_BATTLEFIELD_SCORE` |
 | **`Killmail.lua`** | Standardized telemetry generation, chat broadcast, sound triggers | `PlaySound`, `SendChatMessage`, SavedVariables persistence |
-| **`BountyEngine.lua`** | Gold escrow, anti-win-trade verification, debtor sirens | `GetMoney`, `SendMail`, proximity nameplate hooks |
+| **`BountyEngine.lua`** | Blood bounties, execution contracts, open-world gating (`IsInInstance()`), anti-win-trade, debtor sirens | `GetMoney`, `SendMail`, proximity nameplate hooks |
 | **`Leaderboard.lua`** | In-memory aggregation engine supporting `ALL`, `WORLD`, `BG`, and `DUEL` | Internal Aggregation Tables |
 | **`Sync.lua`** | Peer-to-peer gossip protocol over party, raid, and guild channels | `C_ChatInfo.SendAddonMessage`, `CHAT_MSG_ADDON` |
-| **`Reinforcements.lua`** | Call for Backup (SOS distress beacons), open auto-invite party engine, and guild reinforcement alerts | `C_PartyInfo.InviteUnit`, `InviteUnit`, `ConvertToRaid`, `SendChatMessage` |
+| **`Reinforcements.lua`** | War Horn: Call to Arms (open-world emergency distress), open auto-invite engine (`rally`/`war`/`backup`), guild alerts | `C_PartyInfo.InviteUnit`, `InviteUnit`, `ConvertToRaid`, `SendChatMessage` |
 | **`UI.lua`** | Dual-theme dashboard (Classic Stone & Gold vs ElvUI Charcoal/Black) with 3 KPI cards, 5 tabs, 4 filter pills, and strata-isolated Detail Modal | `CreateFrame("Frame", nil, UIParent, "BackdropTemplate")` |
 
 #### Data Integrity & Cryptographic Hashing
@@ -103,15 +103,16 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
 4. **Bounty Hall of Fame Engine (`GET /api/bounties/leaderboards`)**:
    - Real-time aggregation of Top Bounty Hunters, Highest Bounty Contracts, Most Elusive Outlaws, and Fastest Collected Manhunts.
    - Ingestion-driven auto-claim pipeline that transitions active bounties on slain targets to claimed status automatically.
-5. **StreamBox OBS Overlay HUD (`GET /streambox/<name>`)**:
+5. **War Correspondent HUD OBS Overlay (`GET /war-hud/<name>`)**:
    - Zero-dependency transparent HTML/CSS/JS HUD designed for streaming software (OBS Studio Browser Source, Twitch/YouTube).
    - Dynamic real-time event polling every 5s with class-colored combatants and killer/victim telemetry.
    - Dual layout options: Horizontal bottom-ticker or vertical side-panel (`?vertical=1`).
-6. **zKillboard Intelligence Hub & Static Outlaw Gallery**:
-   - Static Top 10 Most Wanted FBI outlaw gallery rendered unconditionally without collapse toggle traps.
-   - 7-section technical & policy documentation hub mirroring zKillboard: Features, FAQ, About, Delayed Intel, Payments/Supporters, StreamBox Generator, and Legal/Fair Play policies.
-7. **Guild Defense Operations & Discord Webhook Gateway (`/api/backup/distress`, `/api/events`, `/api/discord/config`)**:
-   - Ingestion of live SOS distress beacons and tactical guild event rallies.
+   - Backwards-compatible alias preserved at `/streambox/<name>`.
+6. **Frontline Field Manual & Codex, War Room Outlaw Gallery**:
+   - Static Top 10 High Command Execution List outlaw gallery rendered unconditionally without collapse toggle traps.
+   - Comprehensive tactical & policy documentation hub: Frontline Chronicles & Arsenal, FAQ, About, Tactical Fog of War, Vanguard Benefactor, War Correspondent HUD, and the Warcraft Accord.
+7. **War Council & Rallies Discord Webhook Gateway (`/api/backup/distress`, `/api/events`, `/api/discord/config`)**:
+   - Ingestion of live War Horn distress calls (strictly gated to Open World PvP) and tactical guild event rallies.
    - Zero-dependency Discord embed dispatcher notifying guild channels in real-time with automated party auto-invite instructions.
 
 

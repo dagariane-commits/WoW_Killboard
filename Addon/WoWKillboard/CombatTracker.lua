@@ -232,8 +232,12 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         killerInfo.guild = pGuild or "None"
     end
 
-    -- Trigger Death Bounty Opportunity if player was killed by an enemy player
-    if victimGUID == playerGUID and killerInfo and killerInfo.name and killerInfo.name ~= "Unknown" and killerInfo.name ~= UnitName("player") then
+    -- Trigger Death Bounty Opportunity if player was killed by an enemy player in the open world
+    local inInst, instType = false, "none"
+    if IsInInstance then inInst, instType = IsInInstance() end
+    local isInstanceCombat = inInst or (instType and instType ~= "none") or context.isBattleground or context.isArena
+
+    if not isInstanceCombat and victimGUID == playerGUID and killerInfo and killerInfo.name and killerInfo.name ~= "Unknown" and killerInfo.name ~= UnitName("player") then
         CT.LastPvpKiller = {
             name = killerInfo.name,
             guid = killerInfo.guid,
@@ -500,7 +504,11 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "PLAYER_DEAD" then
         CT.SessionStats.deaths = CT.SessionStats.deaths + 1
-        if CT.LastPvpKiller then
+        local inInst, instType = false, "none"
+        if IsInInstance then inInst, instType = IsInInstance() end
+        local isInstanceCombat = inInst or (instType and instType ~= "none")
+
+        if not isInstanceCombat and CT.LastPvpKiller then
             local settings = WoWKillboardSettings or {}
             if settings.promptBountyOnDeath ~= false then
                 if InCombatLockdown() then
@@ -517,7 +525,11 @@ frame:SetScript("OnEvent", function(self, event, ...)
         if CT.PendingDeathBounty then
             local pending = CT.PendingDeathBounty
             CT.PendingDeathBounty = nil
-            if not InCombatLockdown() and KB.UI and KB.UI.ShowDeathBountyPrompt then
+            local inInst, instType = false, "none"
+            if IsInInstance then inInst, instType = IsInInstance() end
+            local isInstanceCombat = inInst or (instType and instType ~= "none")
+
+            if not isInstanceCombat and not InCombatLockdown() and KB.UI and KB.UI.ShowDeathBountyPrompt then
                 KB.UI:ShowDeathBountyPrompt(pending)
             end
         end

@@ -1,23 +1,44 @@
-# Bounty Escrow & Oathbreaker Debt Ledger
+# Blood Bounties, Execution Contracts & The Traitor's Gibbet
 
-## 1. The Bounty Ecosystem
+## 1. The Blood Bounty Ecosystem
 
-The WoW Killboard bounty system brings real player-driven economic assassination contracts to Azeroth, complete with anti-fraud safeguards and automated debt enforcement.
+The WoW Killboard bounty system brings real player-driven economic assassination contracts to Azeroth, steeped in the brutal wartime rivalry between the Alliance and the Horde, complete with anti-fraud safeguards, strict open-world battleground gating, and automated debt enforcement.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> ActiveBounty: Player places bounty (/kb bounty <Target> <Gold>)
-    ActiveBounty --> Fulfilled: Target killed by certified hunter
+    [*] --> ActiveBounty: Slain victim declares blood bounty (/kb bounty <Target> <Gold>)
+    ActiveBounty --> Fulfilled: Target executed in open combat by certified hunter
     ActiveBounty --> Defaulted: Poster fails to pay escrow within grace period
-    Defaulted --> Oathbreaker: Poster permanently branded on Wall of Shame
-    Oathbreaker --> Redeemed: Debtor repays principal + 10% penalty
+    Defaulted --> Traitor: Poster consigned to The Traitor's Gibbet
+    Traitor --> Redeemed: Debtor repays principal + 10% penalty
     Redeemed --> [*]
     Fulfilled --> [*]
 ```
 
 ---
 
-## 2. Anti-Win-Trade & Anti-Exploit Rules
+## 2. Strict Open-World PvP Gating (Zero Instance Taint)
+
+To preserve the tactical sanctity of instanced play and focus player bounties on raw open-world warfare:
+
+1. **Open-World Enforcement**:
+   - Blood bounties can **strictly only be declared in the open world**.
+   - The addon inspects `IsInInstance()`: if the player is currently inside a dungeon (`"party"`), raid (`"raid"`), battleground (`"pvp"`), or arena (`"arena"`), bounty creation is immediately rejected:
+     ```text
+     "Blood bounties can only be declared upon the open battlefields of Azeroth (Open World PvP only)."
+     ```
+2. **Death Revenge Gating**:
+   - The on-screen revenge prompt (`FALLEN IN BATTLE — DECLARE BLOOD BOUNTY`) is suppressed if the player falls inside an instance, battleground, or arena.
+3. **Ingestion & REST API Security**:
+   - Ingestion endpoints (`POST /api/bounties`) evaluate the incoming context payload:
+     ```python
+     if data.get("is_instance") or data.get("battleground"):
+         return jsonify({"error": "Blood bounties can only be declared in Open World PvP."}), 400
+     ```
+
+---
+
+## 3. Anti-Win-Trade & Anti-Exploit Rules
 
 To prevent players from laundering gold or colluding with friends to collect fake bounties, [`BountyEngine.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/BountyEngine.lua) enforces strict validation heuristics:
 
@@ -33,7 +54,7 @@ To prevent players from laundering gold or colluding with friends to collect fak
 
 ---
 
-## 3. The Oathbreaker Debt State Machine & "Wall of Shame"
+## 4. The Traitor's Gibbet State Machine (Oathbreakers & Defaulted Debts)
 
 When a player promises a bounty payout or participates in an escrow contract that goes unfulfilled, their record transitions to default:
 
@@ -41,13 +62,13 @@ When a player promises a bounty payout or participates in an escrow contract tha
 1. **Active Default**: The contract enters default status. The poster is designated an **Oathbreaker**.
 2. **P2P & Web Propagation**:
    - Addon broadcasts the debt status across party, raid, and guild channels using `Sync.lua`.
-   - The desktop watcher pushes the debt record to the web platform's **Wall of Shame** ledger.
+   - The desktop watcher pushes the debt record to the web platform's **Traitor's Gibbet** ledger.
 3. **Public Stigmatization**:
-   - The debtor's name, defaulted gold amount, and timestamp are displayed on the public web ledger and in-game Bounties tab.
+   - The debtor's name, defaulted gold amount, and timestamp are displayed on the public web ledger and in-game Traitor's Gibbet tab.
 
 ---
 
-## 4. Proximity Wanted Debtor Radar
+## 5. Proximity Wanted Debtor Radar
 
 The addon maintains an active proximity radar hooked into nameplate creation and mouseover events:
 
@@ -67,7 +88,7 @@ flowchart LR
 
 ---
 
-## 5. Redemption & Debt Clearance Workflow
+## 6. Redemption & Debt Clearance Workflow
 
 Debtors can clear their name and restore their reputation via the in-game Redemption Portal:
 
@@ -77,11 +98,11 @@ Debtors can clear their name and restore their reputation via the in-game Redemp
 3. **Receipt Generation**:
    - Once mailed, the local debt record is updated to `PAID`.
    - P2P sync broadcasts the clearance across the network.
-   - The web platform moves the record from the active Wall of Shame to the Historical Redemption Archive.
+   - The web platform moves the record from The Traitor's Gibbet to the Historical Redemption Archive.
 
 ---
 
-## 6. Bounty Hall of Fame & Supporter Subzone Recon
+## 7. Bounty Hall of Fame & Supporter Subzone Recon
 
 ### 4-Card Bounty Records Grid
 The platform automatically aggregates real-time bounty metrics into four distinct Hall of Fame leaderboards (`GET /api/bounties/leaderboards`):
@@ -98,10 +119,11 @@ To guarantee fair play and prevent stream-sniping or targeted harassment:
 
 ---
 
-## 7. In-Game Death Bounty Prompt & Combat Lockdown Gating
+## 8. In-Game Death Revenge Prompt & Combat Lockdown Gating
 
-When a player is slain in PvP combat by an enemy player, the addon automatically triggers a bounty placement modal:
-- **Dialog Appearance**: `"[Killer] has killed you. Would you like to place a bounty?"` with a customizable gold input box and `[ Place Bounty ]` / `[ Decline ]` buttons.
+When a player is slain in open-world PvP combat by an enemy player, the addon automatically triggers a vengeance bounty declaration modal:
+- **Dialog Appearance**: `"FALLEN IN BATTLE — DECLARE BLOOD BOUNTY"` with a customizable gold input box and `[ Place Bounty ]` / `[ Decline ]` buttons.
+- **Strict World-Only Gating**: Only triggers if `IsInInstance()` is false and neither `isBattleground` nor `isArena` is active.
 - **Combat Lockdown Protection**: In accordance with Guardrail 1 (Zero Blizzard UI Taint), frame creation and interaction are gated:
   ```lua
   if InCombatLockdown() then
@@ -113,7 +135,7 @@ When a player is slain in PvP combat by an enemy player, the addon automatically
 
 ---
 
-## 8. Anti-Name Change Evasion via Character GUID
+## 9. Anti-Name Change Evasion via Character GUID
 
 To prevent outlaws from racking up large bounties and evading contracts by purchasing a character name change:
 - Every bounty contract records the immutable character `targetGUID` (`Player-XXXX-XXXXXXXX`).
@@ -125,7 +147,7 @@ To prevent outlaws from racking up large bounties and evading contracts by purch
 
 ---
 
-## 9. Contract Acceptance & Killing Blow Exclusivity
+## 10. Contract Acceptance & Killing Blow Exclusivity
 
 To collect a bounty reward:
 1. **Contract Acceptance Required**: The hunter must explicitly accept the bounty contract beforehand (either via the in-game UI `[ Accept Contract ]` or via the web platform `POST /api/bounties/accept`).
@@ -134,19 +156,19 @@ To collect a bounty reward:
 
 ---
 
-## 10. Cold Cases Archival (>30 Days)
+## 11. Archive of Unclaimed Bounties (>30 Days)
 
 Bounties remaining active and unclaimed for more than 30 days are automatically archived:
 - Status transitions from `ACTIVE` to `COLD_CASE`.
-- Cold cases are cataloged in a dedicated Cold Cases Archive view in both the addon and web platform, preventing backlog clutter while preserving historical outlaw records.
+- Archived contracts are cataloged in a dedicated Archive of Unclaimed Bounties tab in both the addon and web platform, preventing backlog clutter while preserving historical outlaw records.
 
 ---
 
-## 11. FBI Most Wanted Web Showcase & zKillboard Layout
+## 12. High Command Execution List & Frontline Web Layout
 
-The web platform features an authentic FBI Most Wanted showcase:
-- **Top 10 Outlaw Gallery**: Top 10 active bounties displayed as high-contrast wanted posters with class portraits, faction badges, bounty rewards, and last-seen zone telemetry.
-- **Opt-In Bounty Hunter Mode**: Players who prefer standard leaderboards can toggle Bounty Hunter Mode ON/OFF at any time to collapse the wanted cards.
-- **Most Recent Kills Feed**: Real-time killmail stream positioned directly beneath the Most Wanted cards.
-- **zKillboard Sidebar Intelligence**: 7-day rolling activity metrics, top characters, top guilds, top classes, and hotspot zones alongside official Armory links.
+The web platform features an authentic High Command Execution List showcase:
+- **Top 10 Outlaw Gallery**: Top 10 active bounties displayed as high-contrast wanted posters with class portraits, faction crests, blood rewards, and last-seen zone telemetry.
+- **Opt-In Bounty Hunter Mode**: Players who prefer standard leaderboards can toggle Bounty Hunter Mode ON/OFF at any time to collapse the execution cards.
+- **Frontline Carnage Feed**: Real-time killmail stream positioned directly beneath the Execution List cards.
+- **War Council Sidebar Intelligence**: 7-day rolling activity metrics, top vanguard champions, top war guilds, top classes, and conflict zones alongside official Armory links.
 

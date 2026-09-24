@@ -65,7 +65,7 @@ function markBountyAcceptedLocally(bountyId) {
 async function acceptBountyContract(bountyId, targetName) {
   let hunter = localStorage.getItem("wow_killboard_hunter_name");
   if (!hunter) {
-    hunter = prompt(`Accept Bounty Contract on ${targetName}?\nEnter your Hunter Character Name:`);
+    hunter = prompt(`Declare Hunt: Accept Execution Contract on ${targetName}?\nEnter your Vanguard Hunter Character Name:`);
     if (!hunter || !hunter.trim()) return;
     localStorage.setItem("wow_killboard_hunter_name", hunter.trim());
   }
@@ -81,10 +81,10 @@ async function acceptBountyContract(bountyId, targetName) {
     });
     if (res.ok) {
       markBountyAcceptedLocally(bountyId);
-      alert(`Contract accepted! You are now tracking ${targetName}. Deliver the certified killing blow to claim the reward!`);
+      alert(`⚔️ Blood contract accepted! You are now hunting ${targetName}. Deliver the certified killing blow in open combat to claim the gold!`);
       loadMostWanted();
     } else {
-      alert("Failed to accept bounty contract.");
+      alert("Failed to accept blood bounty contract.");
     }
   } catch (err) {
     console.error("Failed to accept contract:", err);
@@ -1215,13 +1215,13 @@ function loadInfoView(subpage = "about") {
   if (!container) return;
 
   const tabs = [
-    { id: "about", label: "📖 About" },
-    { id: "features", label: "⚡ Features" },
-    { id: "faq", label: "❓ FAQ" },
-    { id: "delayed", label: "⏱️ Delayed Intel" },
-    { id: "payments", label: "⭐ Supporter Perks" },
-    { id: "streambox", label: "📺 StreamBox (OBS)" },
-    { id: "legal", label: "⚖️ Legal & Compliance" }
+    { id: "about", label: "📖 Codex & Chronicles" },
+    { id: "features", label: "⚡ Tactical Features" },
+    { id: "faq", label: "❓ Frontline FAQ" },
+    { id: "delayed", label: "⏱️ Tactical Fog of War" },
+    { id: "payments", label: "⭐ Vanguard Benefactor" },
+    { id: "streambox", label: "🔭 War HUD (OBS)" },
+    { id: "legal", label: "⚖️ Warcraft Accord" }
   ];
 
   let tabsHtml = `<div class="info-nav-bar">`;
@@ -1235,8 +1235,8 @@ function loadInfoView(subpage = "about") {
   if (subpage === "about") {
     contentHtml = `
       <div class="info-card">
-        <h1>📖 About WoW Killboard</h1>
-        <p><strong>WoW Killboard</strong> is the premier open-source combat intelligence, ranking, and bounty platform for World of Warcraft PvP, engineered to mirror the analytical depth of EVE Online's legendary zKillboard.</p>
+        <h1>📖 Chronicles of the Frontline War Room</h1>
+        <p><strong>WoW Killboard</strong> is the premier combat intelligence, ranking, and execution contract platform for World of Warcraft open-world PvP, engineered to bring back the raw darkness, grit, and faction pride of the Alliance and Horde war.</p>
 
         <div class="info-callout">
           <strong>Mission &amp; Non-Profit Vision:</strong><br>
@@ -1264,8 +1264,8 @@ function loadInfoView(subpage = "about") {
   } else if (subpage === "features") {
     contentHtml = `
       <div class="info-card">
-        <h1>⚡ Comprehensive Feature Matrix</h1>
-        <p>Explore the full suite of combat analytics, tournament-grade dueling, battleground metrics, and outlaw contracts built into WoW Killboard.</p>
+        <h1>⚡ Tactical Arsenal &amp; War Room Capabilities</h1>
+        <p>Explore the full suite of combat analytics, tournament-grade dueling, battleground metrics, and outlaw execution contracts built into WoW Killboard.</p>
 
         <h2>⚔️ Core Combat Intelligence</h2>
         <ul>
@@ -1275,27 +1275,27 @@ function loadInfoView(subpage = "about") {
           <li><strong>Everywhere-Clickable Armory Links:</strong> 1-click external intelligence links to the Official Blizzard Armory, Ironforge.pro (Classic), and Warcraft Logs.</li>
         </ul>
 
-        <h2>🏆 Dueling &amp; Battleground Gladiators</h2>
+        <h2>📯 War Horn: Call to Arms &amp; Guild Defense</h2>
         <ul>
-          <li><strong>1v1 Duel Match Engine:</strong> Hooks into system duel messages to track knockouts, forfeits ("fled"), and duel win/loss records.</li>
-          <li><strong>Battleground Scoreboards:</strong> Damage done, healing done, and objective caps tracked in Warsong Gulch, Arathi Basin, and Alterac Valley.</li>
-          <li><strong>5-Way Multi-Mode Filtering:</strong> Instant switching between <code>ALL</code>, <code>WORLD</code>, <code>BG</code>, <code>ARENA</code>, and <code>DUEL</code> telemetry.</li>
+          <li><strong>Vanguard Signal Flare:</strong> Sound the War Horn in the open world via <code>/warhorn</code> or the header button to alert guild, group, and local allies.</li>
+          <li><strong>Automated War Party Muster:</strong> Whispering <code>'rally'</code> or <code>'invite'</code> automatically drafts allies into your squad with raid auto-conversion.</li>
+          <li><strong>Open World Exclusivity:</strong> The War Horn and distress beacons can strictly only be sounded on the open battlefields of Azeroth (never inside instances).</li>
         </ul>
 
-        <h2>🎯 Bounty Contracts &amp; Oathbreaker Debt Ledger</h2>
+        <h2>🩸 Blood Bounties &amp; The Traitor's Gibbet</h2>
         <ul>
-          <li><strong>In-Game Post-Death Bounty Prompt:</strong> Safe prompt outside combat lockdown asking players if they wish to place a bounty upon falling to an enemy.</li>
-          <li><strong>Anti-Name Change Evasion:</strong> Contracts bound to immutable character <code>Player-GUID</code>. Renaming character in Blizzard shop preserves active debt contracts.</li>
-          <li><strong>Contract Acceptance &amp; Killing Blow Exclusivity:</strong> Only hunters who accept the contract and land the certified killing blow collect the gold.</li>
-          <li><strong>Cold Cases Archival:</strong> Uncollected bounties > 30 days automatically archive to prevent backlog clutter.</li>
-          <li><strong>Proximity Wanted Debtor Radar:</strong> In-game audio sirens (SoundKit 8959) and visual alerts trigger when an Oathbreaker debtor is nearby.</li>
+          <li><strong>Post-Death Retribution Prompt:</strong> Prompt triggered upon falling in open combat to immediately declare a blood bounty on your slayer.</li>
+          <li><strong>Anti-Name Change Evasion:</strong> Contracts permanently bound to immutable character <code>Player-GUID</code>. Renaming character in Blizzard shop preserves active contracts.</li>
+          <li><strong>Certified Final Blow Exclusivity:</strong> Only hunters who accepted the execution contract and landed the certified final blow claim the escrowed gold.</li>
+          <li><strong>The Traitor's Gibbet:</strong> Contractors who default on blood debts are condemned to the realm Gibbet as marked deadbeats with public proximity alerts.</li>
+          <li><strong>Open World Exclusivity:</strong> Bounties can only be declared and claimed in open world combat (instances prohibited).</li>
         </ul>
       </div>
     `;
   } else if (subpage === "faq") {
     contentHtml = `
       <div class="info-card">
-        <h1>❓ Frequently Asked Questions</h1>
+        <h1>❓ Frontline War Room FAQ</h1>
 
         <h2>General &amp; Installation</h2>
         <h3>How do I install the addon?</h3>
@@ -1308,8 +1308,8 @@ function loadInfoView(subpage = "about") {
         <h3>Why didn't my kill register as a Solo Kill?</h3>
         <p>If another player damaged or debuffed the victim within 15 seconds prior to death, our temporal clustering algorithm classifies the kill as a <strong>Gang</strong> kill to protect competitive integrity.</p>
 
-        <h3>Why did a kill not appear on the board?</h3>
-        <p>Kills against "grey" trivial low-level characters or honorless targets are filtered out to prevent grief-farming from polluting realm leaderboards.</p>
+        <h3>Can bounties or backup calls happen inside dungeons or battlegrounds?</h3>
+        <p>No! Blood bounties and War Horn calls can strictly only occur in the open world. Instances, raids, arenas, and battlegrounds are strictly gated to preserve the purity of open world warfare.</p>
 
         <h2>Bounties &amp; Contracts</h2>
         <h3>Can players without the addon claim bounties?</h3>
@@ -1319,24 +1319,24 @@ function loadInfoView(subpage = "about") {
         <p>No. All contracts and debts are permanently bound to the character's internal <code>Player-XXXX-XXXXXXXX</code> GUID. When a player renames, their existing bounty contracts immediately update to their new name.</p>
 
         <h3>What happens if a bounty goes unclaimed for a long time?</h3>
-        <p>Bounties active for over 30 days are automatically archived into the <strong>Cold Cases</strong> register.</p>
+        <p>Bounties active for over 30 days are automatically archived into the <strong>Archive of Unclaimed Bounties</strong>.</p>
       </div>
     `;
   } else if (subpage === "delayed") {
     contentHtml = `
       <div class="info-card">
-        <h1>⏱️ Delayed Combat Telemetry &amp; OpSec</h1>
-        <p>In competitive PvP, real-time spatial coordinates can inadvertently enable stream-sniping, flight-path camping, and unfair griefing. WoW Killboard implements strict vicinity telemetry delays to safeguard operational security (OpSec).</p>
+        <h1>⏱️ Tactical Fog of War &amp; OpSec</h1>
+        <p>In competitive open-world PvP, real-time spatial coordinates can inadvertently enable stream-sniping, flight-path camping, and unfair griefing. WoW Killboard implements strict vicinity telemetry delays to safeguard operational security (OpSec).</p>
 
         <h2>🔒 The Telemetry Gating Framework</h2>
         <ul>
           <li><strong>Public / Free Tier:</strong> Displays confirmed combat <strong>Zone</strong> only with temporal delay (e.g. <code>Last Sighted: Stranglethorn Vale ~14m ago</code>). Exact subzone landmarks and micro-coordinates are masked.</li>
-          <li><strong>Supporter Perk (Subzone Recon Intel):</strong> Quality-of-life benefit unlocking exact subzone telemetry (e.g. <code>Booty Bay</code>) for community donors supporting <strong>Forged By Valor (501(c)(3))</strong>.</li>
+          <li><strong>Vanguard Benefactor Perk (Subzone Recon Intel):</strong> Quality-of-life benefit unlocking exact subzone telemetry (e.g. <code>Booty Bay</code>) for community donors supporting <strong>Forged By Valor (501(c)(3))</strong>.</li>
           <li><strong>Anti-Camping Offset:</strong> In-game killmail broadcasting does not leak real-time player GPS coordinates to public chat channels.</li>
         </ul>
 
         <div class="info-callout">
-          <strong>Cold Cases Archival:</strong><br>
+          <strong>Archived Unclaimed Contracts:</strong><br>
           To maintain active board responsiveness, bounty contracts remaining uncollected for more than 30 days transition from <code>ACTIVE</code> to <code>COLD_CASE</code> status.
         </div>
       </div>
@@ -1344,7 +1344,7 @@ function loadInfoView(subpage = "about") {
   } else if (subpage === "payments") {
     contentHtml = `
       <div class="info-card">
-        <h1>⭐ Supporter Perks &amp; 100% Ad-Free Experience</h1>
+        <h1>⭐ Vanguard Benefactor &amp; 100% Ad-Free War Room</h1>
         <p>WoW Killboard operates under a strict <strong>100% Ad-Free Guarantee</strong>. We display zero commercial advertisements, popups, or user-tracking scripts.</p>
 
         <div class="info-callout" style="border-left-color: var(--accent-gold);">
@@ -1352,11 +1352,11 @@ function loadInfoView(subpage = "about") {
           WoW Killboard is built and maintained as a non-profit technology project. All financial contributions directly fund realm server infrastructure and Forged By Valor's charitable veteran mental health initiatives.
         </div>
 
-        <h2>🌟 Supporter Perks &amp; Recognition</h2>
+        <h2>🌟 Benefactor Recognition &amp; Perks</h2>
         <ul>
           <li><strong>⭐ Subzone Recon Intel:</strong> Unlocks exact landmark subzone coordinates across active bounty contracts.</li>
-          <li><strong>👑 Golden Champion Crest:</strong> Supporter badges and shiny cosmetic glows rendered on character dossiers.</li>
-          <li><strong>🎯 Killmail Sponsorship:</strong> Sponsor epic world PvP battles to pin them to the top of realm highlights.</li>
+          <li><strong>👑 Golden Vanguard Crest:</strong> Supporter badges and shiny cosmetic glows rendered on character dossiers.</li>
+          <li><strong>🎯 Killmail Sponsorship:</strong> Sponsor epic open-world battles to pin them to the top of realm highlights.</li>
           <li><strong>100% Tax-Deductible:</strong> Donations to Forged By Valor are fully deductible under IRS Section 501(c)(3).</li>
         </ul>
       </div>
@@ -1364,15 +1364,15 @@ function loadInfoView(subpage = "about") {
   } else if (subpage === "streambox") {
     contentHtml = `
       <div class="info-card">
-        <h1>📺 StreamBox — Live OBS Streamer Overlay</h1>
-        <p>Inspired by zKillboard's popular streamer tool, <strong>StreamBox</strong> is a lightweight, zero-configuration HUD overlay built specifically for Twitch and YouTube World of Warcraft PvP streamers.</p>
+        <h1>🔭 Scout's Spyglass — War Correspondent HUD (OBS)</h1>
+        <p>The <strong>War Correspondent HUD</strong> is a lightweight, zero-configuration battlefield overlay built specifically for Twitch and YouTube World of Warcraft PvP streamers.</p>
 
         <div class="streambox-generator">
-          <h3 style="color:var(--accent-cyan); margin-bottom:6px;">🚀 Quick StreamBox URL Builder</h3>
+          <h3 style="color:var(--accent-cyan); margin-bottom:6px;">🚀 Quick War HUD URL Builder</h3>
           <p style="font-size:0.8rem; color:#94a3b8;">Enter your character name to generate an instant OBS Studio Browser Source URL:</p>
           <div class="streambox-input-group">
             <input type="text" id="sb-input-char" class="search-input" placeholder="Character Name (e.g. Hawkeye)" style="max-width:240px;">
-            <button class="nav-btn active" onclick="generateStreamBoxUrl()">Generate OBS URL</button>
+            <button class="nav-btn active" onclick="generateStreamBoxUrl()">Generate HUD URL</button>
           </div>
           <div id="sb-url-result" style="margin-top:10px; font-size:0.8rem; display:none;">
             <span style="color:#10b981; font-weight:700;">OBS Browser Source URL:</span><br>
@@ -1385,14 +1385,14 @@ function loadInfoView(subpage = "about") {
         <ol>
           <li>In OBS Studio, click <strong>+ (Add Source)</strong> in your Sources dock.</li>
           <li>Select <strong>Browser</strong>.</li>
-          <li>Paste your StreamBox URL (e.g. <code>http://localhost:8080/streambox/YourCharacterName</code>).</li>
+          <li>Paste your War HUD URL (e.g. <code>http://localhost:8080/war-hud/YourCharacterName</code>).</li>
           <li>Set Width: <strong>800</strong>, Height: <strong>140</strong> (or Width: <strong>320</strong>, Height: <strong>480</strong> for vertical with <code>?vertical=1</code>).</li>
           <li>Check <strong>"Shutdown source when not visible"</strong> and click OK.</li>
         </ol>
 
-        <h2>💡 StreamBox Features</h2>
+        <h2>💡 War HUD Features</h2>
         <ul>
-          <li><strong>Transparent HUD:</strong> Blends cleanly into any game stream layout with sleek glassmorphism cards.</li>
+          <li><strong>Transparent Battlefield HUD:</strong> Blends cleanly into any game stream layout with sleek glassmorphism cards.</li>
           <li><strong>Automatic Live Updates:</strong> Polls every 5 seconds to display your latest kills, deaths, and K/D ratio without requiring any interaction.</li>
           <li><strong>Solo &amp; Gang Badges:</strong> Distinguishes certified 1v1 solo kills from group skirmishes.</li>
         </ul>
@@ -1401,7 +1401,7 @@ function loadInfoView(subpage = "about") {
   } else if (subpage === "legal") {
     contentHtml = `
       <div class="info-card">
-        <h1>⚖️ Legal, Copyright &amp; Blizzard Policy Compliance</h1>
+        <h1>⚖️ Warcraft Accord &amp; Policy Compliance</h1>
 
         <h2>Blizzard Entertainment Trademark &amp; IP Notice</h2>
         <p>World of Warcraft®, Warcraft®, and Blizzard Entertainment® are trademarks or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other countries.</p>
@@ -1439,7 +1439,7 @@ function generateStreamBoxUrl() {
     return;
   }
   const name = charInput.value.trim();
-  const url = `${window.location.origin}/streambox/${encodeURIComponent(name)}`;
+  const url = `${window.location.origin}/war-hud/${encodeURIComponent(name)}`;
   const resEl = document.getElementById("sb-url-result");
   const textEl = document.getElementById("sb-url-text");
   if (resEl && textEl) {
@@ -1452,7 +1452,7 @@ function copyStreamBoxUrl() {
   const textEl = document.getElementById("sb-url-text");
   if (!textEl) return;
   navigator.clipboard.writeText(textEl.innerText).then(() => {
-    alert("StreamBox OBS URL copied to clipboard!");
+    alert("War Correspondent HUD URL copied to clipboard!");
   });
 }
 
@@ -1814,9 +1814,9 @@ function setFilterMode(mode) {
 }
 
 function openPlaceBountyModal() {
-  const target = prompt("Enter Target Player Name:");
+  const target = prompt("Enter Target Outlaw Name (Open World PvP only):");
   if (!target) return;
-  const gold = prompt("Enter Gold Amount (e.g. 500):", "500");
+  const gold = prompt("Enter Blood Bounty Gold Amount (e.g. 500):", "500");
   if (!gold) return;
 
   fetch("/api/bounties", {
@@ -1828,7 +1828,7 @@ function openPlaceBountyModal() {
       placerName: "WebUser"
     })
   }).then(() => {
-    alert(`Bounty of ${gold}g placed on ${target}!`);
+    alert(`⚔️ Blood Bounty of ${gold}g declared on ${target}! The execution contract is now active across the realm.`);
     loadBounties();
     loadMostWanted();
   });

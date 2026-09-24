@@ -1,6 +1,6 @@
 # WoW Killboard — Technical Wiki & Knowledge Base
 
-Welcome to the official developer and operator documentation for **WoW Killboard** — an open-source, enterprise-grade combat telemetry, in-game leaderboard, bounty escrow platform, and real-time intelligence network inspired by EVE Online's **zKillboard**, purpose-built for **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and **Retail**.
+Welcome to the official developer and operator documentation for **WoW Killboard [Frontline War Room]** — an open-source, enterprise-grade combat telemetry, in-game leaderboard, blood bounty escrow platform, and real-time war intelligence network, capturing the raw, brutal darkness of the Alliance vs. Horde conflict across **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and **Retail**.
 
 ---
 
@@ -11,7 +11,7 @@ flowchart TD
     WIKI["WoW Killboard Master Wiki\n(docs/README.md)"]
     WIKI --> ARCH["System Architecture\n(docs/ARCHITECTURE.md)"]
     WIKI --> CE["Combat Telemetry & Gang Engine\n(docs/COMBAT_ENGINE.md)"]
-    WIKI --> BS["Bounties & Oathbreaker Ledger\n(docs/BOUNTY_SYSTEM.md)"]
+    WIKI --> BS["Blood Bounties & Traitor's Gibbet\n(docs/BOUNTY_SYSTEM.md)"]
     WIKI --> SEC["Taint Security & Compatibility\n(docs/TAINT_AND_COMPATIBILITY.md)"]
     WIKI --> ROAD["Forward Strategic Roadmap\n(docs/ROADMAP.md)"]
     WIKI --> PUB["Public Release & Distribution\n(docs/PUBLIC_RELEASE_PLAYBOOK.md)"]
@@ -30,9 +30,9 @@ flowchart TD
    - 1v1 Duel detection (knockouts vs forfeits) and Battleground objective/match scoring.
    - Map coordinate resolution via `C_Map`.
 
-3. **[Bounty Escrow & Oathbreaker Debt Ledger](BOUNTY_SYSTEM.md)**
-   - Gold bounty mechanics and anti-win-trade heuristics.
-   - The Oathbreaker state machine: default penalties and the public "Wall of Shame".
+3. **[Blood Bounties & The Traitor's Gibbet](BOUNTY_SYSTEM.md)**
+   - Gold blood bounty mechanics and strict open-world PvP gating (`IsInInstance()` protection).
+   - The Traitor's Gibbet state machine: default penalties and the public registry of oathbreakers.
    - Wanted Debtor proximity radar with visual alarms and siren audio.
    - 1-click in-game C.O.D. redemption workflow.
 

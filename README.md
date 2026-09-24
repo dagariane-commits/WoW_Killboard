@@ -1,4 +1,4 @@
-# WoW Killboard — zKillboard for World of Warcraft
+# WoW Killboard — Frontline War Room
 
 [![Release](https://img.shields.io/badge/Release-v1.0.0-00e5ff.svg)](CHANGELOG.md)
 [![WoW Flavors](https://img.shields.io/badge/WoW-Forever%20%7C%20Classic%20Era%20%7C%20Anniversary%20%7C%20Retail-ffd700.svg)](docs/TAINT_AND_COMPATIBILITY.md)
@@ -6,7 +6,7 @@
 [![Desktop Sync](https://img.shields.io/badge/Desktop%20Sync-Standalone%20EXE-blue.svg)](dist/WoWKillboardSync.exe)
 [![License](https://img.shields.io/badge/License-GPLv3-lightgrey.svg)](LICENSE)
 
-An enterprise-grade PvP combat intelligence suite, in-game running leaderboard, bounty escrow platform, and real-time web telemetry network inspired directly by **EVE Online's zKillboard.com**, purpose-built for **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and modern **Retail** clients.
+An enterprise-grade World of Warcraft PvP combat intelligence suite, frontline running leaderboard, blood bounty escrow platform, and real-time war telemetry network, capturing the raw, brutal darkness of the Alliance vs. Horde conflict across **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and modern **Retail** clients.
 
 ---
 
@@ -17,7 +17,7 @@ Comprehensive technical documentation is maintained in the [`docs/`](docs/) dire
 - 📖 **[Master Technical Wiki](docs/README.md)** — Architectural index and developer portal.
 - 🏛️ **[System Architecture Specification](docs/ARCHITECTURE.md)** — In-depth breakdown of the 3-tier model, data contracts, and FNV-1a hashing.
 - ⚔️ **[Combat Telemetry & Gang Engine](docs/COMBAT_ENGINE.md)** — 15-second sliding gang clustering, 1v1 duels, and BG scoreboard telemetry.
-- 💰 **[Bounty Escrow & Oathbreaker Ledger](docs/BOUNTY_SYSTEM.md)** — Bounty contracts, "Wall of Shame", anti-win-trade rules, and debtor radar.
+- 🩸 **[Blood Bounties & The Traitor's Gibbet](docs/BOUNTY_SYSTEM.md)** — Execution contracts, strict open-world PvP gating, anti-win-trade rules, and debtor radar.
 - 🛡️ **[Taint Security & Compatibility](docs/TAINT_AND_COMPATIBILITY.md)** — Complete guide to our zero-taint standard across all 4 WoW client flavors.
 - 🗺️ **[Forward Strategic Roadmap](docs/ROADMAP.md)** — Phased roadmap covering public launch, guild war rooms, and ranked seasons.
 - 🚀 **[Public Release & Distribution Playbook](docs/PUBLIC_RELEASE_PLAYBOOK.md)** — Guide for packaging, CurseForge/Wago distribution, and hosting.
@@ -49,9 +49,9 @@ flowchart TD
         Watcher --> API["HTTPS REST Ingestion"]
     end
 
-    subgraph Web ["zKillboard Web Platform"]
+    subgraph Web ["Frontline War Room Web Platform"]
         API --> Server["web/server.py (Flask API + SQLite)"]
-        Server --> WebUI["Tactical Dark Web UI\n(Live Ticker, BGs, Bounties, Wall of Shame)"]
+        Server --> WebUI["Tactical Dark Web UI\n(Live Ticker, BGs, Blood Bounties, Traitor's Gibbet)"]
     end
 ```
 
@@ -82,16 +82,20 @@ flowchart TD
 - **Guild War Tracking & In-Game Leaderboards**:
   - In-game guild affiliation indexing via `GetGuildInfo(unit)`.
   - In-game Top War Guilds ranking table inside the `/kb` dashboard.
-- **Call for Backup (SOS) & Auto-Invite Group Engine**:
-  - Emergency SOS beacon via `/killboard backup`, `/kbsos`, or header button `[ 🚨 CALL BACKUP ]`.
+- **War Horn: Call to Arms & Vanguard Muster (World PvP Only)**:
+  - Sound the emergency War Horn via `/warhorn`, `/killboard warhorn`, `/kbrally`, or header button `[ 📯 WAR HORN ]`.
+  - **Strict Open-World PvP Gating**: Cannot be sounded in dungeons, raids, battlegrounds, or arenas (`IsInInstance()` protection).
   - Transmits exact GPS coordinates, zone, subzone, and hostile attacker telemetry to Guild Chat, Party/Raid, Yell, and P2P addon channels.
-  - Automatically enables a 10-minute Auto-Invite listener (`EnsureRaidConversion`): whispering `"backup"` or `"invite"` automatically invites the player to the squad!
-  - Pops up an on-screen Reinforcement Alert dialog for guildmates with 1-click `"⚔️ Join Squad & Assist"` response.
-- **Bounty Escrow, Delayed Last-Seen Intel & Debt Ledger**:
-  - Place gold bounties (`/kb bounty <Target> <Gold>`).
+  - Automatically enables a 10-minute Auto-Invite listener (`EnsureRaidConversion`): whispering `"rally"`, `"war"`, `"backup"`, or `"invite"` automatically invites the ally to the vanguard squad!
+  - Pops up an on-screen Reinforcement Alert dialog for guildmates with 1-click `"⚔️ Answer the Call"` response.
+- **Blood Bounties, Execution Contracts & The Traitor's Gibbet (World PvP Only)**:
+  - Place gold bounties upon enemy players via `/kb bounty <Target> <Gold>`.
+  - **Strict Open-World PvP Gating**: Bounties can strictly only be declared on the open battlefields of Azeroth. Blocked inside instances/BGs.
+  - In-game death vengeance prompt: Falling to an enemy in open-world combat prompts the victim to immediately declare a blood bounty.
   - **Delayed Last-Seen Vicinity**: Bounty rows display the last confirmed combat zone and elapsed time (`Last Sighted: Stranglethorn Vale ~14m ago`).
   - Anti-win-trade heuristics (level deltas, guild collusion protection, duplicate kill cooldowns).
-  - Oathbreaker state machine: Debtor sirens (`PlaySound(8959)`) and screen alarms when an Oathbreaker is near.
+  - Anti-name-change evasion via permanent character GUID tracking (`Player-XXXX-XXXXXXXX`).
+  - **The Traitor's Gibbet (Defaulted Debts)**: Debtor sirens (`PlaySound(8959)`) and screen alarms when an Oathbreaker is near.
   - 1-click mail redemption portal with a 10% administrative fee.
 
 ### 2. Desktop Ingestion Agent (`WoWKillboardSync.exe`)
@@ -99,18 +103,19 @@ flowchart TD
 - **Multi-Drive Auto-Discovery**: Automatically discovers `SavedVariables/WoWKillboard.lua` across `C:`, `D:`, and `E:` drives for Retail, Classic, Classic Era, and Forever Beta.
 - **Streaming Lua Tokenizer**: High-speed recursive-descent parser.
 
-### 3. zKillboard-Style Web Intelligence Platform (`web/`)
-- **Live Kill Ticker**: Tactical dark-slate UI modeled directly on **zkillboard.com**.
+### 3. Frontline War Room Web Intelligence Platform (`web/`)
+- **Live Frontline Carnage Ticker**: Tactical dark-slate combat stream capturing open-world skirmishes and battleground massacres.
+- **High Command Execution List — Realm's Most Notorious**: Authentic top 10 most wanted outlaw gallery showcasing active blood targets with portraits, bounties, and last-seen zone telemetry.
 - **Bounty Hall of Fame & Records**: Dedicated 4-card leaderboards (`/api/bounties/leaderboards`) celebrating Top Bounty Hunters, Highest Bounty Contracts, Most Elusive Outlaws, and Fastest Collected Manhunts.
 - **Delayed Last-Seen Intel & Tiered Recon**: Public contracts show confirmed combat Zone (e.g. `Last Sighted: Stranglethorn Vale ~14m ago`), with exact Subzone landmark (`Booty Bay`) unlocked for community supporters.
 - **Interactive Character Combat Dossiers**: Click any character name to view lifetime kills, deaths, K/D, solo kills, damage/healing meters, and historical guild affiliation timeline.
 - **External Armory Links**: 1-click links to Official Blizzard Armory, Classic Vanilla Armory (`Ironforge.pro`), and Warcraft Logs.
-- **Guild War Leaderboards & Guild Dossiers**: Dedicated Guilds tab ranking top guilds by kills, deaths, K/D, and active combatant count, with roster inspection.
+- **War Guilds Leaderboards & Guild Dossiers**: Dedicated Guilds tab ranking top guilds by kills, deaths, K/D, and active combatant count, with roster inspection.
 - **Combat Dossiers**: Click any killmail to open detailed combatant cards, damage meters, and location telemetry.
-- **Wall of Shame**: Pinned public registry of Oathbreakers in default with days-in-default counters.
-- **Guild Defense Operations & Discord Gateway**: Dedicated **"🛡️ Guild Defense & Events"** platform featuring real-time SOS distress beacon tracking, interactive guild rally event scheduling, and Discord Webhook forwarding.
-- **StreamBox Native OBS Overlay**: Direct `/streambox/<CharacterName>` overlay for OBS Studio and Twitch/YouTube streamers with transparent background and auto-updating kill/death ticker.
-- **zKillboard Docs & Intelligence Hub**: 7-section informational hub and global footer covering Features, FAQ, About, Delayed Intel, Supporter/Payments, StreamBox Generator, and Legal/Fair Play policies.
+- **The Traitor's Gibbet**: Public pillory of Oathbreakers in default with days-in-default counters.
+- **War Council & Rallies (Discord Gateway)**: Real-time distress call tracking, guild rally muster scheduling, and Discord Webhook forwarding.
+- **War Correspondent HUD (OBS Overlay)**: Direct `/war-hud/<CharacterName>` (and `/streambox/<CharacterName>`) overlay for OBS Studio and streamers with transparent background and auto-updating kill/death ticker.
+- **Frontline Field Manual & Codex**: Comprehensive tactical archives covering Features, FAQ, About, Tactical Fog of War, Vanguard Benefactor, War Correspondent HUD, and the Warcraft Accord.
 - **100% Ad-Free Experience**: Zero commercial banners, tracking scripts, or ad networks. Supported entirely through voluntary contributions to **Forged By Valor (501(c)(3))** empowering veteran mental health through gaming.
 
 ---
@@ -171,10 +176,11 @@ WoW_Killboard/
    - **Modern Retail**: `World of Warcraft/_retail_/Interface/AddOns/WoWKillboard`
 2. Start WoW and ensure **WoW Killboard** is checked in your AddOns menu.
 3. In-game commands:
-   - `/killboard` or `/wowkb` — Open the Killboard dashboard.
+   - `/killboard` or `/wowkb` — Open the Frontline War Room dashboard.
+   - `/warhorn` or `/kbrally` — Sound the War Horn (open-world emergency distress & auto-invite rally).
    - `/killboard theme [classic|elvui]` — Switch between Classic WoW and ElvUI themes.
    - `/killboard stats` — View current session damage, healing, kills, and K/D.
-   - `/killboard bounty <Name> <Gold>` — Place a bounty on an enemy player.
+   - `/killboard bounty <Name> <Gold>` — Declare a blood bounty upon an enemy player (open world only).
    - `/killboard reset` — Clear local kill database.
 
 ### 2. Standalone Desktop Sync (Zero-Python)

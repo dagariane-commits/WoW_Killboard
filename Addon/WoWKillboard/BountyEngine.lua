@@ -20,6 +20,15 @@ end
 
 -- Validate and place a new bounty (with permanent Character GUID binding)
 function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount, targetGUID)
+    -- Guard: Open World PvP only!
+    if IsInInstance then
+        local inInstance, instanceType = IsInInstance()
+        if inInstance or (instanceType and instanceType ~= "none") then
+            print("|cffff0000[WoWKB Error]|r Blood bounties can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
+            return false, "Instances prohibited"
+        end
+    end
+
     if not targetName or targetName == "" then
         print("|cffff0000[WoWKB Error]|r Target name cannot be empty.")
         return false, "Target name empty"
@@ -27,7 +36,7 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount, targ
 
     goldAmount = tonumber(goldAmount) or 0
     if goldAmount <= 0 then
-        print("|cffff0000[WoWKB Error]|r Bounty amount must be greater than 0 gold.")
+        print("|cffff0000[WoWKB Error]|r Blood bounty amount must be greater than 0 gold.")
         return false, "Invalid amount"
     end
 
@@ -62,7 +71,7 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount, targ
     BE:InitDB()
     WoWKillboardBounties[bountyId] = bounty
 
-    print(string.format("|cffffd700[WoWKB Bounty Placed]|r Bounty of %s placed on |cffff3333%s|r!", KB.Utils.FormatMoney(copper), targetName))
+    print(string.format("|cffffd700[WoWKB Blood Bounty Declared]|r Blood Bounty of %s declared on |cffff3333%s|r!", KB.Utils.FormatMoney(copper), targetName))
 
     -- Broadcast to P2P peers
     if KB.Sync and KB.Sync.BroadcastBounty then
@@ -78,7 +87,7 @@ function BE:AcceptBounty(bountyId)
     if not WoWKillboardBounties or not WoWKillboardBounties[bountyId] then return false end
     WoWKillboardAcceptedBounties[bountyId] = time()
     local b = WoWKillboardBounties[bountyId]
-    print(string.format("|cff00ff00[WoWKB Contract Accepted]|r Tracking bounty on |cffff3333%s|r! Deliver the final killing blow to claim %s.",
+    print(string.format("|cff00ff00[WoWKB Contract Accepted]|r Tracking blood bounty on |cffff3333%s|r! Deliver the final killing blow to claim %s.",
         b.targetName, KB.Utils.FormatMoney(b.amountCopper)))
     if KB.UI and KB.UI.RefreshIfVisible then KB.UI:RefreshIfVisible() end
     return true
@@ -153,7 +162,7 @@ function BE:CheckKillForBounty(killmail)
             targetMatches = true
             bounty.aliasHistory = bounty.aliasHistory or {}
             table.insert(bounty.aliasHistory, bounty.targetName)
-            print(string.format("|cffff9900[WoWKB Name Change Tracked]|r Outlaw %s renamed to %s! Bounty locked to permanent character GUID.",
+            print(string.format("|cffff9900[WoWKB Retribution Tracked]|r Outlaw %s renamed to %s! Blood contract locked to permanent character GUID.",
                 bounty.targetName, killmail.victim.name))
             bounty.targetName = killmail.victim.name
         end
@@ -162,7 +171,7 @@ function BE:CheckKillForBounty(killmail)
             -- Killing Blow Eligibility: Hunter must have accepted the contract
             local isPlayerKiller = (killmail.killer.name == UnitName("player"))
             if isPlayerKiller and not BE:IsBountyAccepted(bountyId) then
-                print(string.format("|cffff9900[WoWKB Bounty Unclaimed]|r Slain outlaw %s had an active bounty of %s, but you had not accepted the contract!",
+                print(string.format("|cffff9900[WoWKB Blood Debt Unclaimed]|r Slain enemy %s had an active execution contract of %s, but you had not accepted the contract!",
                     bounty.targetName, KB.Utils.FormatMoney(bounty.amountCopper)))
             else
                 local verified, reason = BE:VerifyBountyKill(bounty, killmail)
@@ -173,7 +182,7 @@ function BE:CheckKillForBounty(killmail)
                     bounty.paymentDeadline = time() + (86400 * 2) -- 48 hours to pay
 
                     local goldStr = KB.Utils.FormatMoney(bounty.amountCopper)
-                    print(string.format("|cffffd700[WoWKB BOUNTY CLAIMED]|r Hunter |cff00ff00%s|r defeated |cffff3333%s|r! Reward: %s. Placer |cff00ccff%s|r has 48h to honor the contract.",
+                    print(string.format("|cffffd700[WoWKB CONTRACT EXECUTED]|r Vanguard Hunter |cff00ff00%s|r executed |cffff3333%s|r! Reward: %s. Contractor |cff00ccff%s|r has 48h to honor the blood debt.",
                         bounty.hunterName, bounty.targetName, goldStr, bounty.placerName))
 
                     if KB.DefaultSettings.soundAlerts then
@@ -182,7 +191,7 @@ function BE:CheckKillForBounty(killmail)
 
                     -- If current player placed bounty, alert them safely
                     if bounty.placerName == UnitName("player") then
-                        BE:ShowAlert(string.format("PAYMENT DUE: Bounty on %s claimed by %s!", bounty.targetName, bounty.hunterName), 1, 0.8, 0)
+                        BE:ShowAlert(string.format("BLOOD DEBT DUE: Contract on %s executed by %s!", bounty.targetName, bounty.hunterName), 1, 0.8, 0)
                     end
                 else
                     print(string.format("|cffff9900[WoWKB Bounty Unverified]|r Kill on %s rejected: %s", bounty.targetName, reason))
@@ -226,7 +235,7 @@ function BE:AuditDebtLedger()
 
             bounty.status = KB.STATUS.OATHBREAKER
 
-            print(string.format("|cffff0000[WoWKB OATHBREAKER ALERT]|r %s failed to pay bounty debt of %s! Now branded as an Oathbreaker on the public killboard.",
+            print(string.format("|cffff0000[WoWKB TRAITOR'S GIBBET ALERT]|r %s defaulted on blood debt of %s! Now condemned to the Traitor's Gibbet on the realm killboard.",
                 placer, KB.Utils.FormatMoney(totalOwed)))
         end
     end
@@ -244,7 +253,7 @@ function BE:CheckUnitForDebt(unit)
     local debt = WoWKillboardDebtLedger[name]
     if debt and debt.status == KB.STATUS.OATHBREAKER then
         local owedStr = KB.Utils.FormatMoney(debt.amountOwedCopper)
-        BE:ShowAlert(string.format("⚠️ WANTED DEADBEAT: %s (Owes %s to %s)!", name, owedStr, debt.creditor), 1, 0.2, 0.2)
+        BE:ShowAlert(string.format("⚠️ CONDEMNED TRAITOR SIGHTED: %s (Owes %s to %s)!", name, owedStr, debt.creditor), 1, 0.2, 0.2)
         if KB.DefaultSettings.soundAlerts then
             PlaySound(KB.SoundAlerts.DEBTOR_SIGHTED, "Master")
         end

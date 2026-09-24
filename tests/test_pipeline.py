@@ -586,7 +586,27 @@ class TestKillboardPipeline(unittest.TestCase):
         active_after = [b for b in res_beacons_after.get_json() if b["id"] == "SOS-TEST-Hawkeye"]
         self.assertEqual(len(active_after), 0, "Resolved beacon should not be active")
 
-        print("[PASS] Verified Call for Backup SOS beacons, Guild Events, and Discord Defense Gateway.")
+        # 8. Verify Open-World PvP Gating (Instances strictly rejected)
+        res_instance_sos = self.client.post("/api/backup/distress", json={
+            "character_name": "Hawkeye",
+            "is_instance": True,
+            "zone": "Warsong Gulch"
+        })
+        self.assertEqual(res_instance_sos.status_code, 400, "Distress beacon inside instances must be rejected")
+
+        res_instance_bounty = self.client.post("/api/bounties", json={
+            "targetName": "Gorehowl",
+            "amountGold": 100,
+            "is_instance": True
+        })
+        self.assertEqual(res_instance_bounty.status_code, 400, "Bounty inside instances must be rejected")
+
+        # 9. Verify War Correspondent HUD endpoint
+        res_hud = self.client.get("/war-hud/Hawkeye")
+        self.assertEqual(res_hud.status_code, 200)
+        self.assertIn("War Correspondent HUD", res_hud.get_data(as_text=True))
+
+        print("[PASS] Verified Call for Backup SOS beacons, Guild Events, Discord Defense Gateway, and Open-World PvP Gating.")
 
 if __name__ == "__main__":
     unittest.main()

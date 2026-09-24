@@ -26,6 +26,7 @@ local frame = CreateFrame("Frame")
 
 -- Auto-invite whisper keywords
 local AUTO_INVITE_KEYWORDS = {
+    ["rally"]  = true,
     ["backup"] = true,
     ["invite"] = true,
     ["inv"]    = true,
@@ -33,6 +34,7 @@ local AUTO_INVITE_KEYWORDS = {
     ["help"]   = true,
     ["join"]   = true,
     ["squad"]  = true,
+    ["war"]    = true,
 }
 
 -- Cross-client safe player invitation
@@ -89,11 +91,20 @@ function RF:GetBeaconLocationStr()
     return "Unknown Location"
 end
 
--- Trigger Call for Backup (SOS Distress Beacon)
+-- Trigger Call for Backup (War Horn Distress Beacon)
 function RF:TriggerCallForBackup()
+    -- Guard: Open World PvP only!
+    if IsInInstance then
+        local inInstance, instanceType = IsInInstance()
+        if inInstance or (instanceType and instanceType ~= "none") then
+            print("|cffff0000[WoWKB Error]|r The War Horn cannot be sounded within dungeons, raids, or battlegrounds! Open world PvP only.")
+            return false, "Instances prohibited"
+        end
+    end
+
     local now = time()
     if (now - RF.LastDistressTime) < 15 then
-        print("|cffff9900[WoWKB SOS]|r Distress beacon on cooldown. Please wait a few seconds before broadcasting again.")
+        print("|cffff9900[WoWKB War Horn]|r War Horn on cooldown. Please wait a few seconds before sounding the horn again.")
         return false, "Cooldown active"
     end
     RF.LastDistressTime = now
@@ -187,25 +198,25 @@ function RF:TriggerCallForBackup()
     PlaySound(8959)
 
     -- Local system notice
-    print(string.format("|cffff0000[WoWKB SOS]|r |cffffffffDISTRESS BEACON ACTIVATED!|r Broadcasting coordinates |cff00ffcc(%s)|r in |cffffd100%s|r.", coordsFormatted, zone))
-    print("|cff00ccff[WoWKB SOS]|r Auto-Invite is |cff00ff00ACTIVE|r. Anyone whispering |cffffd100'backup'|r or |cffffd100'invite'|r will automatically join your group.")
+    print(string.format("|cffff0000[WoWKB WAR HORN]|r |cffffffffTHE WAR HORN SOUNDS!|r Broadcasting frontline coordinates |cff00ffcc(%s)|r in |cffffd100%s|r.", coordsFormatted, zone))
+    print("|cff00ccff[WoWKB WAR HORN]|r War Party Muster is |cff00ff00ACTIVE|r. Anyone whispering |cffffd100'rally'|r, |cffffd100'backup'|r, or |cffffd100'invite'|r will automatically join your unit.")
 
     -- Broadcast to Guild Chat
     if IsInGuild() then
-        SendChatMessage(string.format("[WoWKillboard] 🚨 SOS! Under attack in %s (%s) by %d hostile(s) (%s)! Whisper 'backup' for auto-invite!",
+        SendChatMessage(string.format("[WoWKillboard] 📯 WAR HORN SOUNDED! Vanguard under attack in %s (%s) by %d hostile(s) (%s)! Whisper 'rally' or 'invite' to muster!",
             zone, coordsFormatted, hostileCount, hostileNamesStr), "GUILD")
     end
 
     -- Broadcast to Group/Raid
     if IsInGroup() then
-        SendChatMessage(string.format("[WoWKillboard] 🚨 CALL FOR BACKUP: %s (%s) engaged by %s! Whisper 'backup' for auto-invite!",
+        SendChatMessage(string.format("[WoWKillboard] 📯 CALL TO ARMS: %s (%s) engaged by %s! Whisper 'rally' to reinforce!",
             zone, coordsFormatted, hostileNamesStr), IsInRaid() and "RAID" or "PARTY")
     end
 
     -- Local Yell (if outside instances)
     local inInstance = IsInInstance()
     if not inInstance then
-        SendChatMessage(string.format("[WoWKillboard] 🚨 CALL FOR BACKUP at %s (%s)! Engaged by %s!",
+        SendChatMessage(string.format("[WoWKillboard] 📯 WAR HORN SOUNDED at %s (%s)! Engaged by %s! To arms!",
             zone, coordsFormatted, hostileNamesStr), "YELL")
     end
 
@@ -233,9 +244,9 @@ function RF:ResolveBeacon(silent)
     RF.AutoInviteExpiry = 0
 
     if not silent then
-        print("|cff00ff00[WoWKB SOS]|r Distress beacon has been RESOLVED and auto-invite closed.")
+        print("|cff00ff00[WoWKB WAR HORN]|r The front is secured. War Horn dismissed and recruitment closed.")
         if IsInGuild() then
-            SendChatMessage("[WoWKillboard] ✅ Distress beacon resolved. Target clear / reinforcements arrived. Thank you!", "GUILD")
+            SendChatMessage("[WoWKillboard] ⚔️ The front is secured. The enemy has fallen or retreated. War Horn dismissed. Blood and Honor!", "GUILD")
         end
     end
 
@@ -254,7 +265,7 @@ function RF:OnWhisper(msg, sender)
         EnsureRaidConversion()
         InvitePlayer(sender)
         local loc = RF:GetBeaconLocationStr()
-        SendChatMessage(string.format("[WoWKillboard] Auto-inviting you to reinforce! Rally coordinates: %s. Watch out for enemy hostiles!", loc), "WHISPER", nil, sender)
+        SendChatMessage(string.format("[WoWKillboard] Drafting you into the Vanguard! Rally coordinates: %s. Watch for enemy hostiles!", loc), "WHISPER", nil, sender)
     end
 end
 
@@ -269,7 +280,7 @@ function RF:OnIncomingDistress(beaconData)
 
     -- Print tactical notification to chat frame
     local coordsStr = string.format("%.1f, %.1f", beaconData.coord_x or 0, beaconData.coord_y or 0)
-    print(string.format("|cffff2222[WoWKB SOS ALERT]|r |cffffd100%s|r (%s) is taking fire in |cff00ccff%s|r at |cff00ffcc(%s)|r! Engaged by |cffff4444%d|r hostiles (%s). Whisper |cffffd100'/w %s backup'|r to reinforce!",
+    print(string.format("|cffff2222[WoWKB WAR HORN ALERT]|r |cffffd100%s|r (%s) is engaged in mortal combat in |cff00ccff%s|r at |cff00ffcc(%s)|r! Swarmed by |cffff4444%d|r hostiles (%s). Whisper |cffffd100'/w %s rally'|r to join the war party!",
         beaconData.character_name,
         beaconData.character_class or "WARRIOR",
         beaconData.zone or "Wilderness",

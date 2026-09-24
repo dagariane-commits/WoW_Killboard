@@ -203,7 +203,7 @@ STREAMBOX_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WoW Killboard — StreamBox: {{ character_name }}</title>
+  <title>WoW Killboard — War Correspondent HUD: {{ character_name }}</title>
   <style>
     :root {
       --cls-warrior: #c79c6e; --cls-paladin: #f58cba; --cls-hunter: #abd473;
@@ -386,6 +386,7 @@ STREAMBOX_HTML = """<!DOCTYPE html>
 </html>
 """
 
+@app.route("/war-hud/<character_name>")
 @app.route("/streambox/<character_name>")
 def streambox_view(character_name):
     vertical = request.args.get("vertical") == "1"
@@ -1009,7 +1010,10 @@ def get_bounties_leaderboards():
 
 @app.route("/api/bounties", methods=["POST"])
 def create_bounty():
-    data = request.json
+    data = request.json or {}
+    if data.get("is_instance") or data.get("isBattleground") or data.get("isArena"):
+        return jsonify({"error": "Blood bounties can only be placed upon the open battlefields of Azeroth (Open World PvP only)."}), 400
+
     b_id = data.get("id") or f"BNT-{int(time.time()*1000)}"
     target = data.get("targetName", "Unknown")
     target_guid = data.get("targetGuid", "UNKNOWN")
@@ -1297,8 +1301,11 @@ def get_discord_config_for_guild(guild_name: str = None) -> dict:
 
 @app.route("/api/backup/distress", methods=["POST"])
 def post_distress_beacon():
-    """Receives in-game Call for Backup (SOS) distress beacons and broadcasts to Discord."""
+    """Receives in-game Call for Backup (SOS / War Horn) distress beacons and broadcasts to Discord."""
     data = request.json or {}
+    if data.get("is_instance") or data.get("isBattleground") or data.get("isArena"):
+        return jsonify({"error": "The War Horn and Call for Backup are restricted to Open World PvP only."}), 400
+
     beacon_id = data.get("id") or f"SOS-{int(time.time())}-{data.get('character_name', 'Unknown')}"
     char_name = data.get("character_name")
     if not char_name:
@@ -1336,20 +1343,20 @@ def post_distress_beacon():
     cfg = get_discord_config_for_guild(guild_name)
     if cfg and cfg.get("webhook_url") and cfg.get("alerts_enabled", 1):
         discord_payload = {
-            "content": f"🚨 **CALL FOR BACKUP — GUILD DISTRESS BEACON ACTIVATED!**",
+            "content": f"📯 **THE WAR HORN HAS BEEN SOUNDED — VANGUARD DISTRESS CALL!**",
             "embeds": [{
-                "title": f"🚨 SOS: {char_name} is Taking Fire in {zone}!",
-                "description": f"**{char_name}** has triggered an emergency distress beacon. Immediate reinforcements requested!",
+                "title": f"📯 WAR HORN: {char_name} is Engaged in Mortal Combat in {zone}!",
+                "description": f"Blood calls to blood! **{char_name}** has sounded the War Horn. Vanguard reinforcements requested immediately on the front line!",
                 "color": 0xDD2E44,  # Red
                 "fields": [
-                    {"name": "Combatant", "value": f"**{char_name}** (Lvl {char_level} {char_class})", "inline": True},
+                    {"name": "Vanguard Combatant", "value": f"**{char_name}** (Lvl {char_level} {char_class})", "inline": True},
                     {"name": "Guild", "value": f"<{guild_name}>" if guild_name and guild_name != "None" else "Unaligned", "inline": True},
                     {"name": "Faction", "value": f"{faction}", "inline": True},
-                    {"name": "Spatial GPS Location", "value": f"**{zone}** {f'({subzone})' if subzone else ''}\n`({coord_x:.1f}, {coord_y:.1f})`", "inline": True},
+                    {"name": "Frontline GPS Location", "value": f"**{zone}** {f'({subzone})' if subzone else ''}\n`({coord_x:.1f}, {coord_y:.1f})`", "inline": True},
                     {"name": "Hostiles Engaging", "value": f"**{hostile_count} Hostile(s)**: {hostile_names}", "inline": True},
-                    {"name": "In-Game Reinforcements", "value": f"Whisper `/w {char_name} backup` in-game for **instant auto-invite** to the squad!", "inline": False}
+                    {"name": "Muster War Party", "value": f"Whisper `/w {char_name} rally` in-game for **instant auto-invite** into the war party!", "inline": False}
                 ],
-                "footer": {"text": "WoW Killboard Tactical Defense Network | Forged By Valor 501(c)(3)"},
+                "footer": {"text": "WoW Killboard Frontline War Room | Forged By Valor 501(c)(3)"},
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
             }]
         }
@@ -1384,7 +1391,7 @@ def resolve_distress_beacon(beacon_id):
     cfg = get_discord_config_for_guild(beacon.get("guild_name"))
     if cfg and cfg.get("webhook_url") and cfg.get("alerts_enabled", 1):
         discord_payload = {
-            "content": f"✅ **DISTRESS RESOLVED**: Reinforcements arrived for **{beacon.get('character_name')}** in **{beacon.get('zone')}**. Area secure!",
+            "content": f"⚔️ **FRONT SECURED**: Reinforcements arrived for **{beacon.get('character_name')}** in **{beacon.get('zone')}**. The enemy has fallen or retreated. Blood and Honor!",
         }
         send_discord_webhook(cfg["webhook_url"], discord_payload)
 
@@ -1399,7 +1406,7 @@ def create_guild_event():
         return jsonify({"error": "Missing title"}), 400
 
     evt_id = data.get("id") or f"EVT-{int(time.time())}-{data.get('creator_name', 'Player')}"
-    desc = data.get("description", "Guild PvP Rally and Operations")
+    desc = data.get("description", "Guild PvP Rally and Frontline Operations")
     guild_name = data.get("guild_name", "Forged By Valor")
     creator = data.get("creator_name", "Officer")
     zone = data.get("zone", "World PvP Zone")
@@ -1418,19 +1425,19 @@ def create_guild_event():
     cfg = get_discord_config_for_guild(guild_name)
     if cfg and cfg.get("webhook_url") and cfg.get("events_enabled", 1):
         discord_payload = {
-            "content": f"⚔️ **NEW GUILD EVENT ANNOUNCED: {title}**",
+            "content": f"⚔️ **WAR COUNCIL BATTLE ORDER: {title}**",
             "embeds": [{
-                "title": f"⚔️ {guild_name} Event: {title}",
+                "title": f"⚔️ {guild_name} War Council: {title}",
                 "description": desc,
                 "color": 0x00CCFF,  # Cyan
                 "fields": [
-                    {"name": "Guild", "value": f"<{guild_name}>", "inline": True},
-                    {"name": "Organizer", "value": f"{creator}", "inline": True},
+                    {"name": "War Guild", "value": f"<{guild_name}>", "inline": True},
+                    {"name": "Commander", "value": f"{creator}", "inline": True},
                     {"name": "Rally Location", "value": f"**{zone}**", "inline": True},
-                    {"name": "Event Time", "value": f"**{time_str}**", "inline": True},
-                    {"name": "How to Join In-Game", "value": f"Whisper `/w {creator} invite` in-game to join the raid/party!", "inline": False}
+                    {"name": "Battle Hour", "value": f"**{time_str}**", "inline": True},
+                    {"name": "Join Frontline Unit", "value": f"Whisper `/w {creator} invite` in-game to join the raid/party!", "inline": False}
                 ],
-                "footer": {"text": "WoW Killboard Guild Operations | Forged By Valor 501(c)(3)"},
+                "footer": {"text": "WoW Killboard Frontline War Room | Forged By Valor 501(c)(3)"},
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(created_at))
             }]
         }
