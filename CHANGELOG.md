@@ -93,6 +93,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added strict `InCombatLockdown()` gating to frame dragging, sizing, and dialog creation.
 - **Runtime Nil Method Error (`GetDeadliestZones`)**:
   - Fixed `UI.lua:747: attempt to call a nil value` by defining `LB:GetDeadliestZones(limit)` in `Leaderboard.lua` with multi-tier fallback checks in `UI.lua`.
+- **Button Texture Clearing C++ Engine Binding Exception (`SetNormalTexture`)**:
+  - Fixed `UI.lua:114: bad argument #1 to 'SetNormalTexture' (Usage: self:SetNormalTexture(asset))` caused by passing `nil` to WoW's C++ texture setter when switching to or loading the ElvUI theme.
+  - Replaced illegal `SetNormalTexture(nil)` calls with safe texture clearing and hiding via `GetNormalTexture():SetTexture(nil)` and `GetNormalTexture():Hide()`.
 - **Killmail Detail Modal Click Interception & Dismiss Button Fix**:
   - Elevated modal frame strata to `DIALOG` and frame level to `mainFrame:GetFrameLevel() + 50`, with explicit `EnableMouse(true)` and `SetClampedToScreen(true)`.
   - Assigned `DIALOG` strata and `modal:GetFrameLevel() + 10` to the bottom `Dismiss` button and top-right `[X]` button, completely preventing background scroll rows from intercepting or swallowing clicks.
