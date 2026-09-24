@@ -98,7 +98,34 @@ function UI:ApplyTheme()
         UI.ThemeButton.Label:SetText(theme.themeBtnText)
     end
     if UI.CloseButton then
-        UI.CloseButton:SetBackdrop(theme.btnBackdrop)
+        if theme.id == "classic" then
+            UI.CloseButton:SetSize(28, 28)
+            UI.CloseButton:ClearAllPoints()
+            UI.CloseButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -4, -4)
+            UI.CloseButton:SetBackdrop(nil)
+            UI.CloseButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+            UI.CloseButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+            UI.CloseButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
+            if UI.CloseButton.Label then UI.CloseButton.Label:SetText("") end
+        else
+            UI.CloseButton:SetSize(18, 18)
+            UI.CloseButton:ClearAllPoints()
+            UI.CloseButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -8, -8)
+            UI.CloseButton:SetNormalTexture(nil)
+            UI.CloseButton:SetPushedTexture(nil)
+            UI.CloseButton:SetHighlightTexture(nil)
+            UI.CloseButton:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+            })
+            UI.CloseButton:SetBackdropColor(0.12, 0.12, 0.12, 1.0)
+            UI.CloseButton:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+            if UI.CloseButton.Label then
+                UI.CloseButton.Label:SetFontObject("GameFontHighlightSmall")
+                UI.CloseButton.Label:SetText("|cffff3333X|r")
+            end
+        end
     end
     if UI.Divider then
         UI.Divider:SetColorTexture(unpack(theme.dividerColor))
@@ -108,12 +135,81 @@ function UI:ApplyTheme()
             card:SetBackdrop(theme.cardBackdrop)
             card:SetBackdropColor(unpack(theme.cardBg))
             card:SetBackdropBorderColor(unpack(theme.cardBorder))
+            if card.TitleLabel and card.rawTitle then
+                local tColor = (theme.id == "classic") and "|cffffd100" or "|cffffffff"
+                card.TitleLabel:SetText(tColor .. card.rawTitle .. "|r")
+            end
         end
     end
     if UI.DetailModal then
         UI.DetailModal:SetBackdrop(theme.modalBackdrop)
         UI.DetailModal:SetBackdropColor(unpack(theme.modalBg))
         UI.DetailModal:SetBackdropBorderColor(unpack(theme.modalBorder))
+        if UI.DetailModal.Title then
+            local mColor = (theme.id == "classic") and "|cffffd100" or "|cffffffff"
+            UI.DetailModal.Title:SetText(mColor .. "KILLMAIL INTELLIGENCE DOSSIER|r")
+        end
+        if UI.DetailModal.CloseBtn then
+            if theme.id == "classic" then
+                UI.DetailModal.CloseBtn:SetSize(24, 24)
+                UI.DetailModal.CloseBtn:ClearAllPoints()
+                UI.DetailModal.CloseBtn:SetPoint("TOPRIGHT", UI.DetailModal, "TOPRIGHT", -4, -4)
+                UI.DetailModal.CloseBtn:SetBackdrop(nil)
+                UI.DetailModal.CloseBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+                UI.DetailModal.CloseBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+                UI.DetailModal.CloseBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
+                if UI.DetailModal.CloseBtn.Label then UI.DetailModal.CloseBtn.Label:SetText("") end
+            else
+                UI.DetailModal.CloseBtn:SetSize(18, 18)
+                UI.DetailModal.CloseBtn:ClearAllPoints()
+                UI.DetailModal.CloseBtn:SetPoint("TOPRIGHT", UI.DetailModal, "TOPRIGHT", -8, -8)
+                UI.DetailModal.CloseBtn:SetNormalTexture(nil)
+                UI.DetailModal.CloseBtn:SetPushedTexture(nil)
+                UI.DetailModal.CloseBtn:SetHighlightTexture(nil)
+                UI.DetailModal.CloseBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+                UI.DetailModal.CloseBtn:SetBackdropColor(0.12, 0.12, 0.12, 1.0)
+                UI.DetailModal.CloseBtn:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+                if UI.DetailModal.CloseBtn.Label then UI.DetailModal.CloseBtn.Label:SetText("|cffff3333X|r") end
+            end
+        end
+        if UI.DetailModal.DismissBtn then
+            UI.DetailModal.DismissBtn:SetBackdrop(theme.btnBackdrop)
+            UI.DetailModal.DismissBtn:SetBackdropColor(unpack(theme.btnBg))
+            UI.DetailModal.DismissBtn:SetBackdropBorderColor(unpack(theme.btnBorder))
+        end
+        if UI.DetailModal.KillerCard then
+            if theme.id == "classic" then
+                UI.DetailModal.KillerCard:SetBackdrop(theme.cardBackdrop)
+                UI.DetailModal.KillerCard:SetBackdropColor(0.08, 0.14, 0.10, 0.95)
+                UI.DetailModal.KillerCard:SetBackdropBorderColor(0.2, 0.7, 0.3, 0.9)
+            else
+                UI.DetailModal.KillerCard:SetBackdrop(theme.cardBackdrop)
+                UI.DetailModal.KillerCard:SetBackdropColor(0.08, 0.12, 0.09, 0.95)
+                UI.DetailModal.KillerCard:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+            end
+        end
+        if UI.DetailModal.VictimCard then
+            if theme.id == "classic" then
+                UI.DetailModal.VictimCard:SetBackdrop(theme.cardBackdrop)
+                UI.DetailModal.VictimCard:SetBackdropColor(0.14, 0.08, 0.08, 0.95)
+                UI.DetailModal.VictimCard:SetBackdropBorderColor(0.8, 0.25, 0.25, 0.9)
+            else
+                UI.DetailModal.VictimCard:SetBackdrop(theme.cardBackdrop)
+                UI.DetailModal.VictimCard:SetBackdropColor(0.12, 0.07, 0.07, 0.95)
+                UI.DetailModal.VictimCard:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+            end
+        end
+        if UI.DetailModal.InfoPanel then
+            if theme.id == "classic" then
+                UI.DetailModal.InfoPanel:SetBackdrop(theme.cardBackdrop)
+                UI.DetailModal.InfoPanel:SetBackdropColor(0.08, 0.07, 0.05, 0.95)
+                UI.DetailModal.InfoPanel:SetBackdropBorderColor(unpack(theme.cardBorder))
+            else
+                UI.DetailModal.InfoPanel:SetBackdrop(theme.cardBackdrop)
+                UI.DetailModal.InfoPanel:SetBackdropColor(0.07, 0.07, 0.07, 0.95)
+                UI.DetailModal.InfoPanel:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+            end
+        end
     end
 end
 
@@ -121,6 +217,7 @@ end
 function UI:CreateButton(parent, w, h, text, fontSize)
     local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
     btn:SetSize(w, h)
+    btn:EnableMouse(true)
     local theme = UI:GetTheme()
     if theme and theme.btnBackdrop then
         btn:SetBackdrop(theme.btnBackdrop)
@@ -216,6 +313,11 @@ function UI:CreateMainWindow()
     mainFrame:SetPropagateKeyboardInput(true)
     mainFrame:SetScript("OnKeyDown", function(self, key)
         if key == "ESCAPE" then
+            if UI.DetailModal and UI.DetailModal:IsShown() then
+                self:SetPropagateKeyboardInput(false)
+                UI.DetailModal:Hide()
+                return
+            end
             self:SetPropagateKeyboardInput(false)
             self:Hide()
         else
@@ -229,48 +331,34 @@ function UI:CreateMainWindow()
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
     })
-    mainFrame:SetBackdropColor(0.06, 0.07, 0.10, 0.97)
-    mainFrame:SetBackdropBorderColor(0.18, 0.22, 0.28, 1.0)
+    mainFrame:SetBackdropColor(0.05, 0.05, 0.05, 0.98)
+    mainFrame:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
 
     -- Window Title Header
     local titleIcon = mainFrame:CreateTexture(nil, "OVERLAY")
     titleIcon:SetSize(18, 18)
     titleIcon:SetPoint("TOPLEFT", 14, -12)
-    titleIcon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
+    titleIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
 
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("LEFT", titleIcon, "RIGHT", 8, 0)
-    title:SetText("|cff00e5ffWoW Killboard|r |cffffd100[zKillboard]|r")
+    title:SetText("|cffffffffWoW Killboard|r |cffffd100[zKillboard]|r")
     UI.TitleText = title
 
     local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     subtitle:SetPoint("LEFT", title, "RIGHT", 10, 0)
-    subtitle:SetText("|cff64748bv" .. KB.Version .. " | PvP Intelligence & Telemetry|r")
+    subtitle:SetText("|cff888888v" .. KB.Version .. " | PvP Intelligence & Telemetry|r")
     UI.SubtitleText = subtitle
 
     -- Template-Free Close Button
     local closeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    closeBtn:SetSize(22, 22)
-    closeBtn:SetPoint("TOPRIGHT", -10, -10)
-    closeBtn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    closeBtn:SetBackdropColor(0.15, 0.08, 0.08, 0.9)
-    closeBtn:SetBackdropBorderColor(0.35, 0.15, 0.15, 0.9)
-
-    local closeLabel = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    closeBtn:SetSize(20, 20)
+    closeBtn:SetPoint("TOPRIGHT", -8, -8)
+    closeBtn:EnableMouse(true)
+    local closeLabel = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     closeLabel:SetPoint("CENTER", 0, 0)
-    closeLabel:SetText("|cffff5555✕|r")
-    closeBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropColor(0.35, 0.10, 0.10, 1.0)
-        self:SetBackdropBorderColor(1.0, 0.2, 0.2, 1.0)
-    end)
-    closeBtn:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(0.15, 0.08, 0.08, 0.9)
-        self:SetBackdropBorderColor(0.35, 0.15, 0.15, 0.9)
-    end)
+    closeLabel:SetText("|cffff3333X|r")
+    closeBtn.Label = closeLabel
     closeBtn:SetScript("OnClick", function()
         mainFrame:Hide()
     end)
@@ -278,8 +366,9 @@ function UI:CreateMainWindow()
 
     -- Template-Free Theme Switcher Button
     local themeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    themeBtn:SetSize(108, 20)
-    themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -8, 0)
+    themeBtn:SetSize(112, 20)
+    themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -6, 0)
+    themeBtn:EnableMouse(true)
     local themeLabel = themeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     themeLabel:SetPoint("CENTER", 0, 0)
     themeBtn.Label = themeLabel
@@ -306,9 +395,9 @@ function UI:CreateMainWindow()
 
     -- 3 KPI Tactical Header Stat Cards (K/D, Duels, Battlegrounds) - Clean & Balanced
     local cardConfigs = {
-        { id = "KD",    title = "SESSION COMBAT K/D",   color = "00e5ff", w = 268 },
+        { id = "KD",    title = "SESSION COMBAT K/D",   color = "ffd100", w = 268 },
         { id = "DUELS", title = "1v1 DUELS RECORD",     color = "ffd700", w = 268 },
-        { id = "BGS",   title = "BATTLEGROUNDS RECORD", color = "00ccff", w = 268 },
+        { id = "BGS",   title = "BATTLEGROUNDS RECORD", color = "69ccf0", w = 268 },
     }
 
     UI.StatCards = {}
@@ -321,17 +410,12 @@ function UI:CreateMainWindow()
         else
             card:SetPoint("LEFT", prevCard, "RIGHT", 14, 0)
         end
-        card:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1,
-        })
-        card:SetBackdropColor(0.08, 0.10, 0.14, 0.95)
-        card:SetBackdropBorderColor(0.16, 0.20, 0.28, 0.8)
+        card.rawTitle = cfg.title
 
         local topLabel = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         topLabel:SetPoint("TOPLEFT", 8, -4)
         topLabel:SetText(string.format("|cff%s%s|r", cfg.color, cfg.title))
+        card.TitleLabel = topLabel
 
         local valLabel = card:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         valLabel:SetPoint("BOTTOMLEFT", 8, 4)
@@ -347,7 +431,7 @@ function UI:CreateMainWindow()
     divider:SetPoint("TOPLEFT", 14, -80)
     divider:SetPoint("TOPRIGHT", -14, -80)
     divider:SetHeight(1)
-    divider:SetColorTexture(0.16, 0.20, 0.28, 0.8)
+    divider:SetColorTexture(0.0, 0.0, 0.0, 1.0)
     UI.Divider = divider
 
     -- Navigation Bar (Tabs on Left, Filter Pills on Right - Zero Overlap)
@@ -380,9 +464,9 @@ function UI:CreateMainWindow()
     -- 4-Way Mode Filter Pills (Duels | BGs | World | All PvP - Arenas Removed for Vanilla/Forever)
     local filterConfigs = {
         { id = "DUEL",  text = "Duels",   w = 54, color = {1.0, 0.84, 0.0} },
-        { id = "BG",    text = "BGs",     w = 50, color = {0.0, 0.8, 1.0} },
-        { id = "WORLD", text = "World",   w = 56, color = {0.0, 0.9, 0.4} },
-        { id = "ALL",   text = "All PvP", w = 62, color = {0.0, 0.9, 1.0} },
+        { id = "BG",    text = "BGs",     w = 50, color = {0.3, 0.65, 1.0} },
+        { id = "WORLD", text = "World",   w = 56, color = {0.2, 0.85, 0.3} },
+        { id = "ALL",   text = "All PvP", w = 62, color = {1.0, 0.82, 0.0} },
     }
 
     filterButtons = {}
@@ -457,7 +541,7 @@ function UI:Refresh()
             UI.StatCards.DUELS.ValueLabel:SetText(string.format("|cffffffff%d|rW - |cffff4444%d|rL  (|cffffd700%d%%|r)", dW, dL, dRate))
         end
         if UI.StatCards.BGS and UI.StatCards.BGS.ValueLabel then
-            UI.StatCards.BGS.ValueLabel:SetText(string.format("|cffffffff%d|rW - |cffff4444%d|rL  (|cff00ccff%d%%|r)", bgW, bgL, bgRate))
+            UI.StatCards.BGS.ValueLabel:SetText(string.format("|cffffffff%d|rW - |cffff4444%d|rL  (|cff69ccf0%d%%|r)", bgW, bgL, bgRate))
         end
     end
 
@@ -470,13 +554,13 @@ function UI:Refresh()
             btn.isActive = true
             btn:SetBackdropColor(unpack(theme.btnActiveBg))
             btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder))
-            local activeColor = (theme.id == "classic") and "|cffffd100" or "|cff00ffff"
+            local activeColor = (theme.id == "classic") and "|cffffd100" or "|cffffd100"
             btn.Label:SetText(activeColor .. btn.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
         else
             btn.isActive = false
             btn:SetBackdropColor(unpack(theme.btnBg))
             btn:SetBackdropBorderColor(unpack(theme.btnBorder))
-            local normalColor = (theme.id == "classic") and "|cffd0c0a0" or "|cff94a3b8"
+            local normalColor = (theme.id == "classic") and "|cffc7b28c" or "|cffa0a0a0"
             btn.Label:SetText(normalColor .. btn.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
         end
     end
@@ -484,17 +568,23 @@ function UI:Refresh()
     -- Update Filter Pill Active Glow
     for fid, pill in pairs(filterButtons) do
         if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
-        local c = pill.BaseColor or {0, 0.8, 1}
+        local c = pill.BaseColor or {1.0, 0.82, 0.0}
         if fid == currentMode then
             pill.isActive = true
-            pill:SetBackdropColor(c[1] * 0.35, c[2] * 0.35, c[3] * 0.35, 1.0)
-            pill:SetBackdropBorderColor(c[1], c[2], c[3], 1.0)
-            pill.Label:SetText(string.format("|cff%02x%02x%02x%s|r", math.floor(c[1]*255), math.floor(c[2]*255), math.floor(c[3]*255), pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")))
+            if theme.id == "elvui" then
+                pill:SetBackdropColor(0.20, 0.20, 0.20, 1.0)
+                pill:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
+                pill.Label:SetText(string.format("|cffffd100%s|r", pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")))
+            else
+                pill:SetBackdropColor(c[1] * 0.35, c[2] * 0.35, c[3] * 0.35, 1.0)
+                pill:SetBackdropBorderColor(c[1], c[2], c[3], 1.0)
+                pill.Label:SetText(string.format("|cff%02x%02x%02x%s|r", math.floor(c[1]*255), math.floor(c[2]*255), math.floor(c[3]*255), pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")))
+            end
         else
             pill.isActive = false
             pill:SetBackdropColor(unpack(theme.btnBg))
             pill:SetBackdropBorderColor(unpack(theme.btnBorder))
-            local pillNormal = (theme.id == "classic") and "|cffa09080" or "|cff64748b"
+            local pillNormal = (theme.id == "classic") and "|cffc7b28c" or "|cffa0a0a0"
             pill.Label:SetText(pillNormal .. pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
         end
     end
@@ -536,7 +626,7 @@ function UI:RenderLiveFeed()
             UI.EmptyFeedText = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             UI.EmptyFeedText:SetPoint("TOP", 0, -40)
         end
-        UI.EmptyFeedText:SetText(string.format("|cff94a3b8No PvP kill records under mode:|r |cff00e5ff[%s]|r\n|cff64748bEngage in world PvP, 1v1 duels, or battlegrounds to populate the feed.|r", currentMode))
+        UI.EmptyFeedText:SetText(string.format("|cff94a3b8No PvP kill records under mode:|r |cffffd100[%s]|r\n|cff888888Engage in world PvP, 1v1 duels, or battlegrounds to populate the feed.|r", currentMode))
         UI.EmptyFeedText:Show()
         return
     elseif UI.EmptyFeedText then
@@ -565,8 +655,8 @@ function UI:RenderLiveFeed()
             accent:SetColorTexture(1.0, 0.84, 0.0, 1.0) -- Gold
             badgeStr = "|cffffd700[DUEL]|r"
         elseif km.isBattleground then
-            accent:SetColorTexture(0.0, 0.8, 1.0, 1.0) -- Cyan
-            badgeStr = string.format("|cff00ccff[BG x%d]|r", km.attackersCount or 1)
+            accent:SetColorTexture(0.3, 0.65, 1.0, 1.0) -- Soft Blue
+            badgeStr = string.format("|cff69ccf0[BG x%d]|r", km.attackersCount or 1)
         elseif km.isSolo then
             accent:SetColorTexture(0.0, 1.0, 0.4, 1.0) -- Emerald
             badgeStr = "|cff00ff66[SOLO]|r"
@@ -656,7 +746,7 @@ function UI:RenderLeaderboard()
 
     local header = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     header:SetPoint("TOPLEFT", 10, -10)
-    header:SetText(string.format("Top PvP Assassins & Solo Kings — Mode: |cff00e5ff[%s]|r", currentMode))
+    header:SetText(string.format("Top PvP Assassins & Solo Kings — Mode: |cffffd100[%s]|r", currentMode))
 
     local yOffset = -40
     for rank, p in ipairs(topKillers) do
@@ -687,7 +777,7 @@ function UI:RenderLeaderboard()
         local statsText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         statsText:SetPoint("RIGHT", -15, 0)
         local kd = (p.deaths > 0) and string.format("%.2f", p.kills / p.deaths) or tostring(p.kills)
-        statsText:SetText(string.format("|cff00ff66%d Kills|r  |  |cff00e5ff%d Solo|r  |  |cffff4444%d Deaths|r  |  K/D: |cffffd100%s|r",
+        statsText:SetText(string.format("|cff00ff66%d Kills|r  |  |cffffd100%d Solo|r  |  |cffff4444%d Deaths|r  |  K/D: |cffffd100%s|r",
             p.kills, p.soloKills, p.deaths, kd))
 
         yOffset = yOffset - 34
@@ -891,7 +981,7 @@ function UI:RenderBGMetrics()
 
         local statsText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         statsText:SetPoint("RIGHT", -15, 0)
-        statsText:SetText(string.format("Damage: |cffff7700%s|r  |  Healing: |cff00ff00%s|r  |  Score: |cff00e5ff%s|r",
+        statsText:SetText(string.format("Damage: |cffff7700%s|r  |  Healing: |cff00ff00%s|r  |  Score: |cffffd100%s|r",
             KB.Utils.FormatNumber(g.damageDone), KB.Utils.FormatNumber(g.healingDone), KB.Utils.FormatNumber(g.bgScore)))
 
         yOffset = yOffset - 34
@@ -949,26 +1039,51 @@ end
 function UI:CreateDetailModal()
     local modal = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
     UI.DetailModal = modal
-    modal:SetSize(480, 320)
-    modal:SetPoint("CENTER")
+    modal:SetSize(520, 360)
+    modal:SetPoint("CENTER", mainFrame, "CENTER", 0, 0)
+    modal:SetFrameStrata("DIALOG")
+    modal:SetFrameLevel(mainFrame:GetFrameLevel() + 50)
+    modal:EnableMouse(true)
+    modal:SetClampedToScreen(true)
+
     local theme = UI:GetTheme()
     modal:SetBackdrop(theme.modalBackdrop or {
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
     })
-    modal:SetBackdropColor(unpack(theme.modalBg or {0.05, 0.06, 0.08, 0.98}))
-    modal:SetBackdropBorderColor(unpack(theme.modalBorder or {0.0, 0.8, 1.0, 0.9}))
+    modal:SetBackdropColor(unpack(theme.modalBg or {0.05, 0.05, 0.05, 0.98}))
+    modal:SetBackdropBorderColor(unpack(theme.modalBorder or {0.0, 0.0, 0.0, 1.0}))
     modal:Hide()
 
+    -- Title Bar
     local title = modal:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", 0, -14)
-    title:SetText("|cff00e5ffKILLMAIL DOSSIER|r")
+    title:SetPoint("TOP", 0, -12)
+    local mColor = (theme.id == "classic") and "|cffffd100" or "|cffffffff"
+    title:SetText(mColor .. "KILLMAIL INTELLIGENCE DOSSIER|r")
+    modal.Title = title
+
+    -- Top-Right Close Button
+    local closeBtn = CreateFrame("Button", nil, modal, "BackdropTemplate")
+    closeBtn:SetSize(18, 18)
+    closeBtn:SetPoint("TOPRIGHT", -8, -8)
+    closeBtn:SetFrameStrata("DIALOG")
+    closeBtn:SetFrameLevel(modal:GetFrameLevel() + 10)
+    closeBtn:EnableMouse(true)
+    local closeLabel = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    closeLabel:SetPoint("CENTER", 0, 0)
+    closeBtn.Label = closeLabel
+    closeBtn:SetScript("OnClick", function()
+        modal:Hide()
+    end)
+    modal.CloseBtn = closeBtn
 
     -- Left Card: Killer Dossier
     local killerCard = CreateFrame("Frame", nil, modal, "BackdropTemplate")
-    killerCard:SetSize(215, 115)
-    killerCard:SetPoint("TOPLEFT", 18, -42)
+    killerCard:SetSize(236, 118)
+    killerCard:SetPoint("TOPLEFT", 16, -38)
+    killerCard:SetFrameStrata("DIALOG")
+    killerCard:SetFrameLevel(modal:GetFrameLevel() + 2)
     killerCard:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -996,8 +1111,10 @@ function UI:CreateDetailModal()
 
     -- Right Card: Victim Dossier
     local victimCard = CreateFrame("Frame", nil, modal, "BackdropTemplate")
-    victimCard:SetSize(215, 115)
-    victimCard:SetPoint("TOPRIGHT", -18, -42)
+    victimCard:SetSize(236, 118)
+    victimCard:SetPoint("TOPRIGHT", -16, -38)
+    victimCard:SetFrameStrata("DIALOG")
+    victimCard:SetFrameLevel(modal:GetFrameLevel() + 2)
     victimCard:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -1025,8 +1142,10 @@ function UI:CreateDetailModal()
 
     -- Context & GPS Info Bar
     local infoPanel = CreateFrame("Frame", nil, modal, "BackdropTemplate")
-    infoPanel:SetPoint("TOPLEFT", 18, -165)
-    infoPanel:SetPoint("BOTTOMRIGHT", -18, 50)
+    infoPanel:SetPoint("TOPLEFT", 16, -164)
+    infoPanel:SetPoint("BOTTOMRIGHT", -16, 48)
+    infoPanel:SetFrameStrata("DIALOG")
+    infoPanel:SetFrameLevel(modal:GetFrameLevel() + 2)
     infoPanel:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -1041,12 +1160,21 @@ function UI:CreateDetailModal()
     details:SetJustifyH("LEFT")
     details:SetJustifyV("TOP")
     modal.DetailsText = details
+    modal.InfoPanel = infoPanel
 
-    local close = UI:CreateButton(modal, 100, 26, "Dismiss")
-    close:SetPoint("BOTTOM", 0, 14)
-    close:SetScript("OnClick", function() modal:Hide() end)
+    -- Dismiss Button (Elevated frame level and strata so it's impossible to intercept)
+    local dismiss = UI:CreateButton(modal, 120, 26, "Dismiss")
+    dismiss:SetPoint("BOTTOM", 0, 14)
+    dismiss:SetFrameStrata("DIALOG")
+    dismiss:SetFrameLevel(modal:GetFrameLevel() + 10)
+    dismiss:EnableMouse(true)
+    dismiss:SetScript("OnClick", function()
+        modal:Hide()
+    end)
+    modal.DismissBtn = dismiss
 
-    UI.DetailModal = modal
+    -- Apply current theme styling
+    UI:ApplyTheme()
 end
 
 function UI:ShowKillDetail(km)
@@ -1074,7 +1202,7 @@ function UI:ShowKillDetail(km)
     if km.isDuel then
         modeStr = "|cffffd7001v1 Duel Match|r"
     elseif km.isBattleground then
-        modeStr = string.format("|cff00ccffBattleground [%s]|r", km.battlegroundName or "BG")
+        modeStr = string.format("|cff69ccf0Battleground [%s]|r", km.battlegroundName or "BG")
     else
         modeStr = "|cff00ff66Open World PvP|r"
     end
@@ -1083,12 +1211,14 @@ function UI:ShowKillDetail(km)
     local subzoneStr = (km.location.subZone and km.location.subZone ~= "") and (" (" .. km.location.subZone .. ")") or ""
 
     m.DetailsText:SetText(string.format(
-        "|cffffd100Engagement:|r %s  •  %s\n|cffffd100Location:|r %s%s  (GPS: %.1f, %.1f | MapID: %s)\n|cffffd100Timestamp:|r %s  (|cff64748b%s|r)\n|cffffd100Kill ID:|r %s",
+        "|cffffd100Engagement:|r %s  •  %s\n|cffffd100Location:|r %s%s  (GPS: %.1f, %.1f | MapID: %s)\n|cffffd100Timestamp:|r %s  (|cff888888%s|r)\n|cffffd100Kill ID:|r %s",
         modeStr, soloStr, km.location.zone or "Unknown", subzoneStr, km.location.x or 0, km.location.y or 0, tostring(km.location.mapId or 0),
         date("%Y-%m-%d %H:%M:%S", km.timestamp), KB.Utils.FormatTimeAgo(km.timestamp), km.killId
     ))
 
+    UI:ApplyTheme()
     m:Show()
+    if m.Raise then m:Raise() end
 end
 
 -- Isolated, Taint-Free Bounty Dialog Frame (Anonymous, 100% Template-Free)
