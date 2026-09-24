@@ -1103,3 +1103,159 @@ header {
   letter-spacing: 0.5px;
 }
 
+/* ----------------- Tactical Intel Sighting Wire ----------------- */
+
+.intel-sighting-wire {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.25) 50%, rgba(245, 158, 11, 0.15) 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.intel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.25);
+  border: 1px solid #f59e0b;
+  color: #f59e0b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* ----------------- Blood Feuds & ROE Contests ----------------- */
+
+.feuds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 16px;
+}
+
+.feud-card {
+  background: #090a0f;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 18px;
+  position: relative;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.feud-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-gold);
+}
+
+.feud-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 8px;
+}
+
+.feud-vs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0;
+  background: #0f131d;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.feud-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #1e293b;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 8px 0;
+  display: flex;
+}
+
+.feud-progress-fill-challenger {
+  height: 100%;
+  background: #3b82f6;
+  transition: width 0.3s ease;
+}
+
+.feud-progress-fill-target {
+  height: 100%;
+  background: #ef4444;
+  transition: width 0.3s ease;
+}
+
+.roe-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.roe-pill {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+/* ----------------- Realm KOS Blacklist & Deserters ----------------- */
+
+.kos-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.deserter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.deserter-card {
+  background: #100a0e;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  padding: 14px;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.15);
+}
+
+.deserter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.deserter-badge {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #f87171;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.days-pill {
+  background: #7f1d1d;
+  color: #fecaca;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+

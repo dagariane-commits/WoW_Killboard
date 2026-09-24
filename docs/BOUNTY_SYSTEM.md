@@ -168,7 +168,55 @@ Bounties remaining active and unclaimed for more than 30 days are automatically 
 
 The web platform features an authentic High Command Execution List showcase:
 - **Top 10 Outlaw Gallery**: Top 10 active bounties displayed as high-contrast wanted posters with class portraits, faction crests, blood rewards, and last-seen zone telemetry.
-- **Opt-In Bounty Hunter Mode**: Players who prefer standard leaderboards can toggle Bounty Hunter Mode ON/OFF at any time to collapse the execution cards.
+- **Permanent Showcase**: Always accessible on the primary frontline feed with certified contract tracking.
 - **Frontline Carnage Feed**: Real-time killmail stream positioned directly beneath the Execution List cards.
 - **War Council Sidebar Intelligence**: 7-day rolling activity metrics, top vanguard champions, top war guilds, top classes, and conflict zones alongside official Armory links.
+
+---
+
+## 13. Head-to-Head Blood Feuds & Rules of Engagement (ROE)
+
+To settle bitter faction rivalries and guild grudges without handling or escrowing gold:
+
+1. **Contest Declaration**:
+   - Guild Masters and combatants can declare a Head-to-Head Blood Feud via `/api/feuds/challenge` or the web platform (`⚔️ Declare Blood Feud`).
+   - Contests set a race to $N$ kills (e.g., first to 100 kills) over a 30-day duration.
+2. **Rules of Engagement (ROE) Enforcement**:
+   - **Anti-Lowbie Floor**: Victims below the minimum level threshold (e.g. Level 55+) award 0 points, eliminating low-level grief farming.
+   - **Underdog Multiplier**: Solo combatants prevailing over outnumbered hostile squads (1v2, 1v3) receive double points (2 points per victory).
+   - **Anti-Zerg Filter**: Cheap zerg ganks (3+ attackers on a lone target) yield 0 points under ROE.
+   - **Zone Boundaries**: Contests can optionally be restricted to specific theaters (e.g. Stranglethorn Vale).
+3. **Deciding Blow & Consequence**:
+   - The first entity to reach the target score wins the feud.
+   - The losing entity is automatically consigned to the **Realm KOS Blacklist**.
+
+---
+
+## 14. Zero-Gold Stakes & The Realm KOS Blacklist
+
+Rather than handling gold bets or custody, defeat carries lasting faction consequences:
+- **Consignment to KOS**: Defeated guilds and disgraced gankers are permanently branded onto the public Realm KOS Blacklist (`kos_blacklist`).
+- **In-Game Target Acquisition**: The addon proximity scanner flags blacklisted guild members instantly upon mouseover or target acquisition, sounding an air-raid siren (`PlaySound(8959)`) and rendering an alert dialog (`UI:ShowKOSAlert`).
+
+---
+
+## 15. 30-Day Anti-Guild-Hop Deserter Stain
+
+To prevent members of a defeated guild from dodging public retribution by using `/gquit` or jumping to an alt guild:
+- **Automated Roster Stamping**: When a guild is blacklisted, all known member character GUIDs are recorded in `kos_deserters` with a 30-day penance expiration (`expires_at = now + 30 * 86400`).
+- **Permanent GUID Tracking**: The stain attaches to the character's internal Blizzard `Player-GUID`. Even if they switch guilds or rename, their deserter mark persists.
+- **Proximity Deserter Sirens**: When a marked deserter enters range, in-game proximity alerts announce:
+  ```text
+  [🚨 KOS DESERTER DETECTED] CharacterName (Ex-Guild: <DefeatedGuild>) - SERVING 30-DAY DESERTER PENANCE! KILL ON SIGHT!
+  ```
+
+---
+
+## 16. Tactical Intel & Gank Sighting Recon Wire
+
+Allows scouts and field commanders to report hostile sightings in real time:
+- **In-Game Recon Command**: `/spot [notes]`, `/scout [notes]`, or `/kb spot` captures target name, class, level, guild, faction, and normalized GPS coordinates.
+- **P2P Wire**: Immediately broadcasts sightings across Guild chat (`/g`), Party/Raid (`/p`, `/ra`), and peer-to-peer addon message channels (`SPT:` protocol via `Sync.lua`).
+- **Live Web Wire & Discord Embeds**: Real-time tactical reconnaissance ticker (`#intel-sighting-wire`) with 6-second polling updates and Discord Webhook integration.
+
 

@@ -1625,3 +1625,86 @@ function UI:ShowReinforcementAlert(beaconData)
     if UI.ReinforcementDialog.Raise then UI.ReinforcementDialog:Raise() end
 end
 
+-- KOS Blacklist & Deserter Alert Dialog
+function UI:ShowKOSAlert(targetName, guildOrFormer, alertType, reason)
+    if InCombatLockdown() then return end
+    if not targetName then return end
+
+    if not UI.KOSDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(460, 210)
+        dlg:SetPoint("CENTER", 0, 160)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(115)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+
+        dlg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 2,
+        })
+        dlg:SetBackdropColor(0.12, 0.02, 0.02, 0.98)
+        dlg:SetBackdropBorderColor(1.0, 0.0, 0.0, 1.0)
+
+        dlg:EnableKeyboard(true)
+        dlg:SetPropagateKeyboardInput(true)
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                self:SetPropagateKeyboardInput(false)
+                self:Hide()
+            else
+                self:SetPropagateKeyboardInput(true)
+            end
+        end)
+
+        local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", 0, -16)
+        dlg.TitleText = title
+
+        local body = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        body:SetPoint("TOP", 0, -48)
+        body:SetJustifyH("CENTER")
+        dlg.BodyText = body
+
+        local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        sub:SetPoint("TOP", 0, -110)
+        dlg.SubText = sub
+
+        local spotBtn = UI:CreateButton(dlg, 180, 28, "👁️ Broadcast Spot")
+        spotBtn:SetPoint("BOTTOMLEFT", 30, 20)
+        spotBtn:SetScript("OnClick", function()
+            if KB.IntelScanner then
+                KB.IntelScanner:SpotTarget("KOS Target Spotted!")
+            end
+            dlg:Hide()
+        end)
+
+        local dismissBtn = UI:CreateButton(dlg, 130, 28, "Dismiss")
+        dismissBtn:SetPoint("BOTTOMRIGHT", -30, 20)
+        dismissBtn:SetScript("OnClick", function()
+            dlg:Hide()
+        end)
+
+        UI.KOSDialog = dlg
+    end
+
+    if alertType == "DESERTER" then
+        UI.KOSDialog.TitleText:SetText("|cffff0000🚨 KOS DESERTER DETECTED!|r")
+        UI.KOSDialog.BodyText:SetText(string.format("Enemy |cffffd100%s|r is serving a |cffff333330-Day Deserter Penance|r!\nFormer Guild: |cffff5555<%s>|r", targetName, guildOrFormer or "Unknown"))
+        UI.KOSDialog.SubText:SetText("Branded for deserting a defeated guild. Kill on sight with zero mercy!")
+    elseif alertType == "GUILD_KOS" then
+        UI.KOSDialog.TitleText:SetText("|cffff0000🚨 GUILD KOS BLACKLIST!|r")
+        UI.KOSDialog.BodyText:SetText(string.format("Enemy |cffffd100%s|r (<%s>) belongs to a |cffff3333Blacklisted Guild|r!\nReason: %s", targetName, guildOrFormer or "Unknown", reason or "Realm Feud Defeat"))
+        UI.KOSDialog.SubText:SetText("The entire guild is marked for eradication across all territories.")
+    else
+        UI.KOSDialog.TitleText:SetText("|cffff0000🚨 KOS BLACKLIST TARGET!|r")
+        UI.KOSDialog.BodyText:SetText(string.format("Hostile |cffffd100%s|r is officially branded on the |cffff3333KOS Blacklist|r!", targetName))
+        UI.KOSDialog.SubText:SetText(reason or "Realm KOS Order")
+    end
+
+    UI.KOSDialog:Show()
+    if UI.KOSDialog.Raise then UI.KOSDialog:Raise() end
+end
+
+

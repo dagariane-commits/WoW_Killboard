@@ -10,6 +10,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
+- **Head-to-Head Blood Feuds & Custom Rules of Engagement (ROE)**:
+  - Added `blood_feuds` database schema and real-time kill scoring engine in `web/server.py`.
+  - Supports both Guild Wars and 1v1 Grudge Matches with custom kill goals (e.g. first to 100 kills) and 30-day contest windows.
+  - Strict Rules of Engagement (ROE) logic built directly into combat ingestion:
+    - **Anti-Lowbie Filter**: Kills against victims below minimum level (e.g. Level 55+) award 0 points.
+    - **Underdog Multiplier**: Solo combatants triumphing over outnumbered enemy squads (1v2, 1v3) earn 2x points.
+    - **Anti-Zerg Filter**: Cheap zerg ganks (3+ attackers on a solo victim) award 0 points.
+    - **Zone Restrictions**: Contests can be confined to specific combat theaters (e.g. Stranglethorn Vale).
+  - Web UI tab **"⚔️ Blood Feuds & Blacklist"** (`#nav-feuds`) renders interactive progress bars, active ROE badges, victor announcements, and feud challenge modal (`/api/feuds/challenge`, `/api/feuds`).
+- **Zero-Gold Wagers & Realm KOS Blacklist**:
+  - High-stakes honor consequences with zero gold custody: Defeated guilds and rogue gankers are permanently branded onto the **Realm KOS Blacklist** (`kos_blacklist`, `/api/kos/blacklist`).
+  - Manual KOS branding and war council pardons supported via `/api/kos/blacklist` and `/api/kos/pardon`.
+- **30-Day Anti-Guild-Hop Deserter Stain**:
+  - Implemented `kos_deserters` database engine stamping all roster members of a blacklisted/defeated guild with a 30-day penance stain bound to immutable character `Player-GUID`.
+  - Leaving or `/gquit`ing a blacklisted guild preserves the stain for the full 30 days (`expires_at = now + 30*86400`).
+  - In-game air-raid sirens (`PlaySound(8959)`) and dedicated alert dialog (`UI:ShowKOSAlert`) trigger whenever a marked deserter or blacklisted guild member enters targeting or mouseover range.
+  - Web UI displays active deserter countdown cards with remaining days (`⏳ X Days Remaining`).
+- **Tactical Intel & Gank Sighting Wire**:
+  - Implemented `Addon/WoWKillboard/IntelScanner.lua` providing in-game recon commands (`/spot [notes]`, `/scout [notes]`, `/kb spot`, `/kb scout`).
+  - Instantly captures enemy name, class, level, guild, faction, and spatial GPS coordinates (`C_Map`).
+  - Broadcasts sightings across Guild chat (`/g`), Party/Raid (`/p`, `/ra`), and P2P addon message wire (`SPT:` protocol via `Sync.lua`).
+  - Backend ingestion (`POST /api/intel/sighting`, `GET /api/intel/sightings`) with strict Open-World PvP gating and automated Discord Webhook rich embed broadcast.
+  - Live Tactical Intel Sighting Wire (`#intel-sighting-wire`) displayed above the frontline feed with 6-second polling updates.
+- **Complete Decoupling from Forged By Valor**:
+  - 100% eradication of all references to *Forged By Valor*, *FBV*, and *501(c)(3)* across all codebase files, TOC files, manifests, documentation, tests, and web UI.
+  - Updated client-side localStorage keys from `fbv_supporter` to `wowkb_supporter`.
+
 - **Dark Warcraft War Room Lore & Open-World PvP Gating**:
   - **Frontline War Room Theming**: Eradicated generic modern terms in favor of gritty, war-torn Alliance vs. Horde Warcraft lore across Addon, Web, and Discord notifications.
   - **War Horn: Call to Arms**: Rebranded backup calls into sounding the War Horn (`/warhorn`, `/kbwarhorn`, `/kbrally`, `[ 📯 WAR HORN ]`). Auto-invite keyword `"rally"` drafts reinforcements into the vanguard.
