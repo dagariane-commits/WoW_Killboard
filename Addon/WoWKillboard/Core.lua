@@ -152,6 +152,8 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             end
             if count == 0 then print("  (No active KOS blacklist targets)") end
         end
+    elseif cmd == "armory" then
+        KB:PrintArmoryDossier(arg)
     elseif cmd == "theme" then
         local tArg = arg and arg:lower():trim() or ""
         if tArg == "classic" or tArg == "elvui" then
@@ -164,6 +166,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     else
         print("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
         print("  |cffffd100/killboard|r or |cffffd100/wowkb|r - Toggle the Frontline War Room Dashboard")
+        print("  |cffffd100/armory [Name]|r or |cffffd100/killboard armory [Name]|r - Inspect Character Combat Dossier")
         print("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
         print("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
         print("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
@@ -173,6 +176,154 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         print("  |cffffd100/killboard stats|r - Review current combat session battle statistics")
         print("  |cffffd100/killboard bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
         print("  |cffffd100/killboard reset|r - Clear local battle records")
+    end
+end
+
+-- Dedicated Quick-Slash Commands for Player Armory Dossier Lookup
+SLASH_WOWKB_ARMORY1 = "/armory"
+SLASH_WOWKB_ARMORY2 = "/kbarmory"
+SlashCmdList["WOWKB_ARMORY"] = function(msg)
+    KB:PrintArmoryDossier(msg)
+end
+
+function KB:PrintArmoryDossier(targetName)
+    local name = targetName and targetName:trim() or ""
+    if name == "" then
+        if UnitExists("target") and UnitIsPlayer("target") then
+            name = UnitName("target")
+        else
+            name = UnitName("player")
+        end
+    end
+
+    if not name or name == "" then
+        print("|cffff9900Usage:|r /killboard armory <CharacterName> (or target a player and type /armory)")
+        return
+    end
+
+    -- Query local battle records
+    local killsCount = 0
+    local deathsCount = 0
+    local soloCount = 0
+    local duelCount = 0
+    local bgCount = 0
+    local charClass = "UNKNOWN"
+    local charLevel = 60
+    local charGuild = "None"
+    local charFaction = "Unknown"
+
+    if WoWKillboardDB and WoWKillboardDB.kills then
+        for _, k in ipairs(WoWKillboardDB.kills) do
+            local killer = k.killer or {}
+            local victim = k.victim or {}
+            if killer.name and killer.name:lower() == name:lower() then
+                killsCount = killsCount + 1
+                if k.isSolo then soloCount = soloCount + 1 end
+                if k.isDuel then duelCount = duelCount + 1 end
+                if k.isBattleground then bgCount = bgCount + 1 end
+                charClass = killer.class or charClass
+                charLevel = killer.level or charLevel
+                charGuild = killer.guild or charGuild
+                charFaction = killer.faction or charFaction
+            end
+            if victim.name and victim.name:lower() == name:lower() then
+                deathsCount = deathsCount + 1
+                charClass = victim.class or charClass
+                charLevel = victim.level or charLevel
+                charGuild = victim.guild or charGuild
+                charFaction = victim.faction or charFaction
+            end
+        end
+    end
+
+    -- If target was current target or player, get live unit info
+    if UnitExists("target") and UnitIsPlayer("target") and UnitName("target"):lower() == name:lower() then
+        charLevel = UnitLevel("target") or charLevel
+        local _, c = UnitClass("target")
+        if c then charClass = c end
+        local f = UnitFactionGroup("target")
+        if f then charFaction = f end
+        local g = GetGuildInfo("target")
+        if g then charGuild = g end
+    elseif UnitName("player") and UnitName("player"):lower() == name:lower() then
+        charLevel = UnitLevel("player") or charLevel
+        local _, c = UnitClass("player")
+        if c then charClass = c end
+        local f = UnitFactionGroup("player")
+        if f then charFaction = f end
+        local g = GetGuildInfo("player")
+        if g then charGuild = g end
+    end
+
+    local kd = (deathsCount > 0) and string.format("%.2f", killsCount / deathsCount) or tostring(killsCount)
+
+    -- Authentic Classic PvP Military Honor Rank Calculation
+    local score = killsCount * (1.0 + math.min(tonumber(kd) or 0, 3.0) * 0.2)
+    local rankTitle = "Private"
+    if charFaction == "Horde" then
+        if score >= 100 then rankTitle = "High Warlord"
+        elseif score >= 75 then rankTitle = "General"
+        elseif score >= 55 then rankTitle = "Lieutenant General"
+        elseif score >= 40 then rankTitle = "Champion"
+        elseif score >= 30 then rankTitle = "Centurion"
+        elseif score >= 22 then rankTitle = "Legionnaire"
+        elseif score >= 16 then rankTitle = "Blood Guard"
+        elseif score >= 11 then rankTitle = "Stone Guard"
+        elseif score >= 7 then rankTitle = "First Sergeant"
+        elseif score >= 4 then rankTitle = "Senior Sergeant"
+        elseif score >= 2 then rankTitle = "Sergeant"
+        elseif score >= 1 then rankTitle = "Grunt"
+        else rankTitle = "Scout"
+        end
+    else
+        if score >= 100 then rankTitle = "Grand Marshal"
+        elseif score >= 75 then rankTitle = "Field Marshal"
+        elseif score >= 55 then rankTitle = "Marshal"
+        elseif score >= 40 then rankTitle = "Commander"
+        elseif score >= 30 then rankTitle = "Lieutenant Commander"
+        elseif score >= 22 then rankTitle = "Knight-Champion"
+        elseif score >= 16 then rankTitle = "Knight-Captain"
+        elseif score >= 11 then rankTitle = "Knight-Lieutenant"
+        elseif score >= 7 then rankTitle = "Knight"
+        elseif score >= 4 then rankTitle = "Sergeant Major"
+        elseif score >= 2 then rankTitle = "Master Sergeant"
+        elseif score >= 1 then rankTitle = "Corporal"
+        else rankTitle = "Private"
+        end
+    end
+
+    local colorHex = "ffffffff"
+    if KB.Themes and KB.Themes.CLASS_COLORS and KB.Themes.CLASS_COLORS[charClass:upper()] then
+        local rgb = KB.Themes.CLASS_COLORS[charClass:upper()]
+        colorHex = string.format("ff%02x%02x%02x", math.floor(rgb[1]*255), math.floor(rgb[2]*255), math.floor(rgb[3]*255))
+    end
+
+    local guildPart = (charGuild and charGuild ~= "None" and charGuild ~= "") and string.format(" <%s>", charGuild) or ""
+    local factionColor = (charFaction == "Alliance") and "|cff3b82f6Alliance|r" or ((charFaction == "Horde") and "|cffef4444Horde|r" or "|cff94a3b8Neutral|r")
+
+    print(string.format("|cff00e5ff[WoWKB Player Armory]|r |c%s%s|r (Lvl %d %s)%s - %s", colorHex, name, charLevel, charClass, guildPart, factionColor))
+    print(string.format("  |cffffd700🎖️ Honor Rank:|r |cffffffff%s|r | |cff00ff00K/D:|r |cffffffff%s|r (|cff00ff00%d|r Kills / |cffff3333%d|r Deaths)",
+        rankTitle, kd, killsCount, deathsCount))
+    print(string.format("  |cff00e5ffSolo Kills:|r %d | |cffffd700Duels (1v1):|r %d | |cff3b82f6BGs:|r %d", soloCount, duelCount, bgCount))
+
+    -- Check KOS Blacklist or Deserter status
+    if WoWKillboardDB then
+        if (WoWKillboardDB.kosGuilds and charGuild and WoWKillboardDB.kosGuilds[charGuild]) or (WoWKillboardDB.kosPlayers and WoWKillboardDB.kosPlayers[name]) then
+            print("  |cffff0000🚨 TARGET IS ON REALM KOS BLACKLIST! Execute on sight!|r")
+        end
+        if WoWKillboardDB.kosDeserters and WoWKillboardDB.kosDeserters[name] then
+            print("  |cffffaa00⚡ TARGET IS A MARKED GUILD-HOP DESERTER!|r")
+        end
+    end
+
+    -- Check Active Bounties
+    if WoWKillboardBounties then
+        for _, b in pairs(WoWKillboardBounties) do
+            if b.target_name and b.target_name:lower() == name:lower() and b.status == "ACTIVE" then
+                print(string.format("  |cffffd100💰 ACTIVE BLOOD BOUNTY:|r %d Gold! Deliver the killing blow to collect!", b.amount_gold or 0))
+                break
+            end
+        end
     end
 end
 

@@ -865,9 +865,186 @@ def get_bg_stats():
         "topKd": top_kd,
     })
 
-# ----------------- Character & Guild Profiles API -----------------
+# ----------------- Character & Player Armory API -----------------
+
+def calculate_pvp_rank_title(kills: int, kd: float, faction: str) -> str:
+    """Calculates authentic World of Warcraft PvP Military Honor Title based on combat rating."""
+    is_alliance = (faction or "").lower() == "alliance"
+    score = kills * (1.0 + min(kd, 3.0) * 0.2)
+    if is_alliance:
+        if score >= 500: return "Grand Marshal"
+        elif score >= 350: return "Field Marshal"
+        elif score >= 250: return "Marshal"
+        elif score >= 175: return "Commander"
+        elif score >= 120: return "Lieutenant Commander"
+        elif score >= 80:  return "Knight-Champion"
+        elif score >= 50:  return "Knight-Captain"
+        elif score >= 30:  return "Knight-Lieutenant"
+        elif score >= 15:  return "Knight"
+        elif score >= 8:   return "Sergeant Major"
+        elif score >= 4:   return "Master Sergeant"
+        elif score >= 2:   return "Corporal"
+        else:              return "Private"
+    else:
+        if score >= 500: return "High Warlord"
+        elif score >= 350: return "Warlord"
+        elif score >= 250: return "General"
+        elif score >= 175: return "Lieutenant General"
+        elif score >= 120: return "Champion"
+        elif score >= 80:  return "Centurion"
+        elif score >= 50:  return "Legionnaire"
+        elif score >= 30:  return "Blood Guard"
+        elif score >= 15:  return "Stone Guard"
+        elif score >= 8:   return "First Sergeant"
+        elif score >= 4:   return "Senior Sergeant"
+        elif score >= 2:   return "Grunt"
+        else:              return "Scout"
+
+@app.route("/api/armory", methods=["GET"])
+def get_armory_directory():
+    """Returns the realm combat directory for all known players with PvP honors and stats."""
+    search = request.args.get("search", "").strip().lower()
+    faction = request.args.get("faction", "").strip()
+    char_class = request.args.get("class", "").strip()
+    sort_by = request.args.get("sort", "kills")
+    limit = min(int(request.args.get("limit", 60)), 150)
+
+    with get_db() as conn:
+        names_query = """
+            SELECT DISTINCT killer_name AS name FROM kills WHERE killer_name IS NOT NULL AND killer_name != 'Unknown' AND killer_name != ''
+            UNION
+            SELECT DISTINCT victim_name AS name FROM kills WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''
+            UNION
+            SELECT DISTINCT character_name AS name FROM character_guild_history WHERE character_name IS NOT NULL AND character_name != ''
+        """
+        all_names = [r[0] for r in conn.execute(names_query).fetchall()]
+        
+        characters = []
+        now_ts = int(time.time())
+
+        # Preload active bounties map
+        bounties_map = {}
+        b_rows = conn.execute("SELECT target_name, amount_gold FROM bounties WHERE status = 'ACTIVE'").fetchall()
+        for b in b_rows:
+            bounties_map[b["target_name"]] = b["amount_gold"]
+
+        # Preload KOS and Deserter sets
+        kos_set = {r[0] for r in conn.execute("SELECT entity_name FROM kos_blacklist WHERE status = 'KOS'").fetchall()}
+        deserter_map = {}
+        d_rows = conn.execute("SELECT player_name, former_guild, expires_at FROM kos_deserters WHERE expires_at > ?", (now_ts,)).fetchall()
+        for d in d_rows:
+            deserter_map[d["player_name"]] = {
+                "former_guild": d["former_guild"],
+                "days_remaining": max(1, (d["expires_at"] - now_ts) // 86400)
+            }
+
+        for name in all_names:
+            char_row = conn.execute("""
+                SELECT killer_name AS name, killer_class AS class, killer_level AS level, killer_guild AS guild, killer_faction AS faction
+                FROM kills WHERE killer_name = ?
+                UNION
+                SELECT victim_name AS name, victim_class AS class, victim_level AS level, victim_guild AS guild, victim_faction AS faction
+                FROM kills WHERE victim_name = ?
+                LIMIT 1
+            """, (name, name)).fetchone()
+
+            if not char_row:
+                continue
+
+            c_data = dict(char_row)
+            c_class = c_data.get("class", "UNKNOWN")
+            c_faction = c_data.get("faction", "Unknown")
+            c_level = c_data.get("level", 60)
+            c_guild = c_data.get("guild", "None")
+
+            # Check guild history for latest guild
+            latest_gh = conn.execute("SELECT guild_name, faction FROM character_guild_history WHERE character_name = ? ORDER BY last_seen DESC LIMIT 1", (name,)).fetchone()
+            if latest_gh:
+                if latest_gh["guild_name"]: c_guild = latest_gh["guild_name"]
+                if latest_gh["faction"] and latest_gh["faction"] != "Unknown": c_faction = latest_gh["faction"]
+
+            if faction and faction.lower() != "all" and c_faction.lower() != faction.lower():
+                continue
+            if char_class and char_class.upper() != "ALL" and c_class.upper() != char_class.upper():
+                continue
+
+            if search and (search not in name.lower() and search not in (c_guild or "").lower()):
+                continue
+
+            # Stats
+            k_stat = conn.execute("""
+                SELECT COUNT(*) AS total_kills,
+                       COALESCE(SUM(is_solo), 0) AS solo_kills,
+                       COALESCE(SUM(is_duel), 0) AS duel_kills,
+                       COALESCE(SUM(is_battleground), 0) AS bg_kills,
+                       COALESCE(SUM(killer_damage_done), 0) AS total_damage,
+                       COALESCE(SUM(killer_healing_done), 0) AS total_healing
+                FROM kills WHERE killer_name = ?
+            """, (name,)).fetchone()
+
+            d_stat = conn.execute("SELECT COUNT(*) FROM kills WHERE victim_name = ?", (name,)).fetchone()
+
+            # Last seen
+            ls_row = conn.execute("""
+                SELECT zone, subzone, timestamp FROM kills
+                WHERE killer_name = ? OR victim_name = ?
+                ORDER BY timestamp DESC LIMIT 1
+            """, (name, name)).fetchone()
+
+            kills = k_stat["total_kills"] or 0
+            deaths = d_stat[0] or 0
+            kd = round(kills / deaths, 2) if deaths > 0 else float(kills)
+
+            rank_title = calculate_pvp_rank_title(kills, kd, c_faction)
+
+            char_obj = {
+                "name": name,
+                "class": c_class,
+                "level": c_level,
+                "faction": c_faction,
+                "guild": c_guild,
+                "kills": kills,
+                "deaths": deaths,
+                "kd": kd,
+                "soloKills": k_stat["solo_kills"] or 0,
+                "duelKills": k_stat["duel_kills"] or 0,
+                "bgKills": k_stat["bg_kills"] or 0,
+                "totalDamage": k_stat["total_damage"] or 0,
+                "totalHealing": k_stat["total_healing"] or 0,
+                "rankTitle": rank_title,
+                "activeBountyGold": bounties_map.get(name, 0),
+                "isKos": (name in kos_set) or (c_guild in kos_set),
+                "deserter": deserter_map.get(name),
+                "lastSeen": {
+                    "zone": ls_row["zone"] if ls_row else "Azeroth",
+                    "subzone": ls_row["subzone"] if ls_row else "",
+                    "timestamp": ls_row["timestamp"] if ls_row else 0
+                } if ls_row else None
+            }
+            characters.append(char_obj)
+
+        # Sorting
+        if sort_by == "kd":
+            characters.sort(key=lambda x: (x["kd"], x["kills"]), reverse=True)
+        elif sort_by == "solo":
+            characters.sort(key=lambda x: (x["soloKills"], x["kills"]), reverse=True)
+        elif sort_by == "level":
+            characters.sort(key=lambda x: (x["level"], x["kills"]), reverse=True)
+        elif sort_by == "recent":
+            characters.sort(key=lambda x: (x["lastSeen"]["timestamp"] if x["lastSeen"] else 0), reverse=True)
+        else: # "kills" default
+            characters.sort(key=lambda x: (x["kills"], x["kd"]), reverse=True)
+
+        total_count = len(characters)
+        paged_characters = characters[:limit]
+
+    return jsonify({
+        "total": total_count,
+        "characters": paged_characters
+    })
 
 @app.route("/api/character/<name>", methods=["GET"])
+
 def get_character_profile(name):
     with get_db() as conn:
         char_row = conn.execute("""
@@ -935,6 +1112,25 @@ def get_character_profile(name):
         recent_deaths = [dict(r) for r in recent_deaths_rows]
 
         current_guild = guild_history[0]["guild_name"] if guild_history else (char_data.get("guild") or "None")
+        faction = char_data.get("faction", "Unknown")
+
+        # Honor Rank Title
+        rank_title = calculate_pvp_rank_title(total_kills, kd, faction)
+
+        # Active Bounty Check
+        bounty_row = conn.execute("SELECT amount_gold FROM bounties WHERE target_name = ? AND status = 'ACTIVE' LIMIT 1", (name,)).fetchone()
+        active_bounty_gold = bounty_row[0] if bounty_row else 0
+
+        # KOS & Deserter Check
+        now_ts = int(time.time())
+        is_kos = bool(conn.execute("SELECT 1 FROM kos_blacklist WHERE entity_name = ? OR entity_name = ?", (name, current_guild)).fetchone())
+        deserter_row = conn.execute("SELECT former_guild, expires_at FROM kos_deserters WHERE (player_name = ? OR former_guild = ?) AND expires_at > ? LIMIT 1", (name, current_guild, now_ts)).fetchone()
+        deserter_data = None
+        if deserter_row:
+            deserter_data = {
+                "former_guild": deserter_row[0],
+                "days_remaining": max(1, (deserter_row[1] - now_ts) // 86400)
+            }
 
         realm = "classic"
         armory_urls = {
@@ -947,8 +1143,12 @@ def get_character_profile(name):
             "name": name,
             "class": char_data.get("class", "UNKNOWN"),
             "level": char_data.get("level", 60),
-            "faction": char_data.get("faction", "Unknown"),
+            "faction": faction,
             "currentGuild": current_guild,
+            "rankTitle": rank_title,
+            "activeBountyGold": active_bounty_gold,
+            "isKos": is_kos,
+            "deserter": deserter_data,
             "stats": {
                 "kills": total_kills,
                 "deaths": total_deaths,

@@ -934,10 +934,20 @@ async function openCharacterProfile(charName) {
     body.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:16px; border-radius:8px; border:1px solid #1e293b;">
         <div>
-          <div style="font-size:1.4rem; font-weight:800;">${colorizeClass(data.name, data.class)}</div>
-          <div style="font-size:0.85rem; color:#94a3b8; margin-top:2px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="font-size:1.4rem; font-weight:800;">${colorizeClass(data.name, data.class)}</div>
+            ${data.rankTitle ? `<span class="armory-rank-pill">🎖️ ${data.rankTitle}</span>` : ''}
+          </div>
+          <div style="font-size:0.85rem; color:#94a3b8; margin-top:4px;">
             Level ${data.level} ${data.class} &bull; <span style="color:${factionColor}; font-weight:700;">${data.faction}</span> &bull; ${guildText}
           </div>
+          ${(data.isKos || data.deserter || data.activeBountyGold > 0) ? `
+            <div class="armory-tags-row">
+              ${data.isKos ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}
+              ${data.deserter ? `<span class="armory-badge-deserter">⚡ DESERTER (${data.deserter.days_remaining}d)</span>` : ''}
+              ${data.activeBountyGold > 0 ? `<span class="armory-badge-bounty">💰 ACTIVE BOUNTY: ${data.activeBountyGold}g</span>` : ''}
+            </div>
+          ` : ''}
         </div>
         <div class="armory-group">
           <a class="armory-btn" href="${data.armoryUrls.official}" target="_blank" rel="noopener">⚔️ Blizzard Armory</a>
@@ -1183,6 +1193,235 @@ async function loadGuildsView() {
   }
 }
 
+// ----------------- Player Armory Directory & Sidebar Search -----------------
+
+let armoryState = {
+  search: "",
+  faction: "",
+  class: "",
+  sort: "kills"
+};
+
+let armorySearchTimeout = null;
+
+function setArmoryFaction(faction) {
+  armoryState.faction = faction;
+  loadArmoryView();
+}
+
+function setArmoryClass(cls) {
+  armoryState.class = cls;
+  loadArmoryView();
+}
+
+function setArmorySort(sort) {
+  armoryState.sort = sort;
+  loadArmoryView();
+}
+
+function handleArmorySearchInput(e) {
+  clearTimeout(armorySearchTimeout);
+  const val = e.target.value;
+  armorySearchTimeout = setTimeout(() => {
+    armoryState.search = val;
+    fetchArmoryDataAndRender();
+  }, 300);
+}
+
+function handleSidebarArmoryKey(event) {
+  if (event.key === "Enter") {
+    handleSidebarArmorySearch();
+  }
+}
+
+function handleSidebarArmorySearch() {
+  const input = document.getElementById("sidebar-armory-input");
+  if (!input) return;
+  const name = input.value.trim();
+  if (name) {
+    openCharacterProfile(name);
+  }
+}
+
+async function fetchArmoryDataAndRender() {
+  const gridContainer = document.getElementById("armory-cards-grid");
+  const countBadge = document.getElementById("armory-total-count");
+  if (gridContainer) {
+    gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#94a3b8;">Searching Realm Combat Archives...</div>`;
+  }
+
+  try {
+    const params = new URLSearchParams();
+    if (armoryState.search) params.append("search", armoryState.search);
+    if (armoryState.faction) params.append("faction", armoryState.faction);
+    if (armoryState.class) params.append("class", armoryState.class);
+    if (armoryState.sort) params.append("sort", armoryState.sort);
+
+    const res = await fetch(`/api/armory?${params.toString()}`);
+    if (!res.ok) throw new Error("Failed to query armory records");
+    const data = await res.json();
+    const characters = data.characters || [];
+    const total = data.total || 0;
+
+    if (countBadge) {
+      countBadge.innerText = `Showing ${characters.length} of ${total} Realm Combatants`;
+    }
+
+    if (!gridContainer) return;
+
+    if (characters.length === 0) {
+      gridContainer.innerHTML = `
+        <div style="grid-column:1/-1; background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:32px; text-align:center; color:#64748b;">
+          <div style="font-size:2rem; margin-bottom:8px;">⚔️</div>
+          <div style="color:#e2e8f0; font-weight:700; font-size:1.05rem;">No Character Records Found</div>
+          <p style="font-size:0.8rem; margin-top:4px;">No players match your search filter criteria. Try adjusting class, faction, or search term.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let cardsHtml = "";
+    characters.forEach(c => {
+      const cls = (c.class || "WARRIOR").toUpperCase();
+      const clsColor = CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN;
+      const symbol = CLASS_SYMBOLS[cls] || "👤";
+      const factionColor = c.faction === "Alliance" ? "var(--alliance-blue)" : (c.faction === "Horde" ? "var(--horde-red)" : "#94a3b8");
+      const guildHtml = (c.guild && c.guild !== "None")
+        ? `<span class="armory-card-guild" onclick="openGuildProfile('${c.guild}')">&lt;${c.guild}&gt;</span>`
+        : `<span style="font-size:0.75rem; color:#64748b;">No Guild</span>`;
+
+      const lastSeen = c.lastSeen || {};
+      const lastSeenText = lastSeen.zone ? `${lastSeen.zone} &bull; ${timeAgo(lastSeen.timestamp)}` : "Unknown";
+
+      cardsHtml += `
+        <div class="armory-card" style="border-top: 3px solid ${clsColor};">
+          <div>
+            <div class="armory-card-header">
+              <div class="armory-avatar" style="border: 2px solid ${clsColor}; box-shadow: 0 0 10px ${clsColor}33;">
+                <span>${symbol}</span>
+              </div>
+              <div class="armory-card-info">
+                <div class="armory-card-name" onclick="openCharacterProfile('${c.name}')">
+                  ${colorizeClass(c.name, cls)}
+                </div>
+                <div class="armory-card-meta">
+                  Level ${c.level} ${c.class} &bull; <span style="color:${factionColor}; font-weight:700;">${c.faction}</span>
+                </div>
+                ${guildHtml}
+              </div>
+            </div>
+
+            ${c.rankTitle ? `<div class="armory-rank-pill">🎖️ ${c.rankTitle}</div>` : ''}
+
+            <div class="armory-tags-row">
+              ${c.isKos ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}
+              ${c.deserter ? `<span class="armory-badge-deserter">⚡ DESERTER (${c.deserter.days_remaining}d)</span>` : ''}
+              ${c.activeBountyGold > 0 ? `<span class="armory-badge-bounty">💰 ${c.activeBountyGold}g BOUNTY</span>` : ''}
+            </div>
+
+            <div class="armory-stats-matrix">
+              <div>
+                <div class="armory-stat-cell-label">Kills</div>
+                <div class="armory-stat-cell-val" style="color:var(--accent-green);">${c.kills}</div>
+              </div>
+              <div>
+                <div class="armory-stat-cell-label">Deaths</div>
+                <div class="armory-stat-cell-val" style="color:var(--accent-red);">${c.deaths}</div>
+              </div>
+              <div>
+                <div class="armory-stat-cell-label">K/D</div>
+                <div class="armory-stat-cell-val" style="color:var(--accent-gold);">${c.kd}</div>
+              </div>
+              <div>
+                <div class="armory-stat-cell-label">Solo</div>
+                <div class="armory-stat-cell-val" style="color:var(--accent-cyan);">${c.soloKills}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="armory-footer-row">
+            <div class="armory-lastseen-txt" title="Last confirmed combat zone">
+              📍 ${lastSeenText}
+            </div>
+            <button class="armory-dossier-btn" onclick="openCharacterProfile('${c.name}')">
+              ⚔️ Dossier
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    gridContainer.innerHTML = cardsHtml;
+  } catch (err) {
+    if (gridContainer) {
+      gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#ef4444;">Failed to load Armory records: ${err.message}</div>`;
+    }
+  }
+}
+
+async function loadArmoryView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  const classes = [
+    "ALL", "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST",
+    "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "MONK", "DRUID",
+    "DEMONHUNTER", "EVOKER"
+  ];
+
+  const html = `
+    <div class="armory-view-container">
+      <div class="armory-header-row">
+        <div class="armory-title-wrap">
+          <span style="font-size:1.5rem;">🏰</span>
+          <div>
+            <div class="armory-title">REALM PLAYER ARMORY — COMBAT DIRECTORY</div>
+            <div class="armory-subtitle">Authoritative PvP profiles, Classic Military Honor Titles, and lifetime battle records across Azeroth</div>
+          </div>
+        </div>
+        <div id="armory-total-count" class="armory-count-badge">Loading combatants...</div>
+      </div>
+
+      <!-- Tactical Filters & Search Bar -->
+      <div class="armory-filters-bar">
+        <input type="text" id="armory-search-box" class="armory-search-input" placeholder="Search Character Name or Guild..." value="${armoryState.search}" oninput="handleArmorySearchInput(event)">
+
+        <!-- Faction Filter Pills -->
+        <div class="faction-pill-group">
+          <button class="faction-pill ${armoryState.faction === '' ? 'active-all' : ''}" onclick="setArmoryFaction('')">All Factions</button>
+          <button class="faction-pill ${armoryState.faction === 'Alliance' ? 'active-alliance' : ''}" onclick="setArmoryFaction('Alliance')">Alliance</button>
+          <button class="faction-pill ${armoryState.faction === 'Horde' ? 'active-horde' : ''}" onclick="setArmoryFaction('Horde')">Horde</button>
+        </div>
+
+        <!-- Class Filter Dropdown -->
+        <select class="armory-select" onchange="setArmoryClass(this.value)">
+          <option value="" ${armoryState.class === '' ? 'selected' : ''}>⚔️ All Classes</option>
+          ${classes.filter(c => c !== "ALL").map(c => `
+            <option value="${c}" ${armoryState.class === c ? 'selected' : ''}>${c.charAt(0) + c.slice(1).toLowerCase()}</option>
+          `).join('')}
+        </select>
+
+        <!-- Sort Filter Dropdown -->
+        <select class="armory-select" onchange="setArmorySort(this.value)">
+          <option value="kills" ${armoryState.sort === 'kills' ? 'selected' : ''}>🏆 Most Lethal (Kills)</option>
+          <option value="kd" ${armoryState.sort === 'kd' ? 'selected' : ''}>⚡ Highest K/D Ratio</option>
+          <option value="solo" ${armoryState.sort === 'solo' ? 'selected' : ''}>🎯 Solo Specialists</option>
+          <option value="level" ${armoryState.sort === 'level' ? 'selected' : ''}>🎖️ Character Level</option>
+          <option value="recent" ${armoryState.sort === 'recent' ? 'selected' : ''}>⏱️ Recently Active</option>
+        </select>
+      </div>
+
+      <!-- Character Directory Grid -->
+      <div id="armory-cards-grid" class="armory-grid">
+        <!-- Rendered by fetchArmoryDataAndRender -->
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  fetchArmoryDataAndRender();
+}
+
 // Tab Switching
 function switchTab(tab) {
   currentTab = tab;
@@ -1198,6 +1437,7 @@ function switchTab(tab) {
     loadMostWanted();
   }
   else if (tab === "LEADERBOARDS") loadLeaderboards();
+  else if (tab === "ARMORY") loadArmoryView();
   else if (tab === "GUILDS") loadGuildsView();
   else if (tab === "FEUDS") loadFeudsView();
   else if (tab === "DEFENSE") loadDefenseView();
