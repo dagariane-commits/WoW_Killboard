@@ -60,7 +60,7 @@ flowchart TD
    - Standards, style rules, and verification requirements for open-source contributors.
 
 9. **[Legal, Safety & Compliance Guide](LEGAL_AND_COMPLIANCE.md)**
-   - Authorship by Scott Quick / Forged By Valor, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
+   - Authorship by Scott Quick, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
 
 ---
 

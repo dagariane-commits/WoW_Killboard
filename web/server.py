@@ -1276,7 +1276,7 @@ def send_discord_webhook(webhook_url: str, payload: dict) -> bool:
             data=data,
             headers={
                 "Content-Type": "application/json",
-                "User-Agent": "WoWKillboard/1.0 (Discord Webhook Engine; Forged By Valor)"
+                "User-Agent": "WoWKillboard/1.0 (Discord Webhook Engine)"
             },
             method="POST"
         )
@@ -1356,7 +1356,7 @@ def post_distress_beacon():
                     {"name": "Hostiles Engaging", "value": f"**{hostile_count} Hostile(s)**: {hostile_names}", "inline": True},
                     {"name": "Muster War Party", "value": f"Whisper `/w {char_name} rally` in-game for **instant auto-invite** into the war party!", "inline": False}
                 ],
-                "footer": {"text": "WoW Killboard Frontline War Room | Forged By Valor 501(c)(3)"},
+                "footer": {"text": "WoW Killboard Frontline War Room"},
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
             }]
         }
@@ -1407,7 +1407,7 @@ def create_guild_event():
 
     evt_id = data.get("id") or f"EVT-{int(time.time())}-{data.get('creator_name', 'Player')}"
     desc = data.get("description", "Guild PvP Rally and Frontline Operations")
-    guild_name = data.get("guild_name", "Forged By Valor")
+    guild_name = data.get("guild_name", "Vanguard Brigade")
     creator = data.get("creator_name", "Officer")
     zone = data.get("zone", "World PvP Zone")
     time_str = data.get("time_str", "NOW")
@@ -1437,7 +1437,7 @@ def create_guild_event():
                     {"name": "Battle Hour", "value": f"**{time_str}**", "inline": True},
                     {"name": "Join Frontline Unit", "value": f"Whisper `/w {creator} invite` in-game to join the raid/party!", "inline": False}
                 ],
-                "footer": {"text": "WoW Killboard Frontline War Room | Forged By Valor 501(c)(3)"},
+                "footer": {"text": "WoW Killboard Frontline War Room"},
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(created_at))
             }]
         }
@@ -1533,14 +1533,14 @@ def test_discord_webhook():
         "content": "🔔 **WoW Killboard Tactical Defense — Discord Webhook Test Connection**",
         "embeds": [{
             "title": "🛡️ Connection Verified: Discord Defense Gateway Active",
-            "description": "Your Discord channel is now connected to the WoW Killboard intelligence network. You will receive live **Call for Backup (SOS)** alerts and **Guild Rally Announcements** here.",
+            "description": "Your Discord channel is now connected to the WoW Killboard intelligence network. You will receive live **War Horn** alerts and **Guild Rally Announcements** here.",
             "color": 0x00FF66,  # Green
             "fields": [
                 {"name": "Status", "value": "ONLINE & READY", "inline": True},
                 {"name": "Platform", "value": "WoW Killboard v1.0.0", "inline": True},
-                {"name": "Sponsor", "value": "Forged By Valor 501(c)(3)", "inline": True}
+                {"name": "Network", "value": "Frontline War Room", "inline": True}
             ],
-            "footer": {"text": "WoW Killboard | Veteran Mental Health & Community Defense"},
+            "footer": {"text": "WoW Killboard | Frontline War Room"},
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         }]
     }

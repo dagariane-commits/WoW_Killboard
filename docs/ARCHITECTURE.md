@@ -98,7 +98,7 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - Character Intelligence & Armory Integration (`GET /api/character/<name>`): Lifetime combat KPI stats, historical guild timeline, recent kills/deaths, and external Armory links (Blizzard Armory, Classic Ironforge.pro, and Warcraft Logs).
 3. **Supporter Framework & 100% Ad-Free Architecture**:
    - Zero commercial ad units, banners, or tracking networks.
-   - Non-Profit Veteran Support (**Forged By Valor 501(c)(3)**) with voluntary player donation options.
+   - Community-supported infrastructure with voluntary player and guild patron options.
    - Quality-of-life perks: Unlocks exact Subzone Recon Intel on active bounties and supporter visual badges.
 4. **Bounty Hall of Fame Engine (`GET /api/bounties/leaderboards`)**:
    - Real-time aggregation of Top Bounty Hunters, Highest Bounty Contracts, Most Elusive Outlaws, and Fastest Collected Manhunts.

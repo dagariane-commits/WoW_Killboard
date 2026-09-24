@@ -510,7 +510,7 @@ class TestKillboardPipeline(unittest.TestCase):
             "character_name": "Hawkeye",
             "character_class": "HUNTER",
             "character_level": 60,
-            "guild_name": "Forged By Valor",
+            "guild_name": "Vanguard Brigade",
             "faction": "Alliance",
             "zone": "Stranglethorn Vale",
             "subzone": "Gurubashi Arena",
@@ -539,7 +539,7 @@ class TestKillboardPipeline(unittest.TestCase):
 
         # 3. Configure Discord Webhook
         discord_cfg_payload = {
-            "guild_name": "Forged By Valor",
+            "guild_name": "Vanguard Brigade",
             "webhook_url": "https://discord.com/api/webhooks/1234567890/testtoken",
             "alerts_enabled": True,
             "events_enabled": True
@@ -548,7 +548,7 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertEqual(res_cfg.status_code, 200)
 
         # 4. Verify Discord config is returned with masked token
-        res_get_cfg = self.client.get("/api/discord/config?guild=Forged By Valor")
+        res_get_cfg = self.client.get("/api/discord/config?guild=Vanguard Brigade")
         self.assertEqual(res_get_cfg.status_code, 200)
         cfg_data = res_get_cfg.get_json()
         self.assertTrue(cfg_data["configured"])
@@ -559,7 +559,7 @@ class TestKillboardPipeline(unittest.TestCase):
             "id": "EVT-TEST-001",
             "title": "STV Zone Defense & Outlaw Manhunt",
             "description": "Repel Horde gank squad operating outside Booty Bay. Form up at Rebel Camp!",
-            "guild_name": "Forged By Valor",
+            "guild_name": "Vanguard Brigade",
             "creator_name": "Hawkeye",
             "zone": "Stranglethorn Vale",
             "time_str": "8:00 PM EST"

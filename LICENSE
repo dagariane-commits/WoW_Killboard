@@ -1,7 +1,7 @@
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
- Copyright (C) 2026 Scott Quick / Forged By Valor, 501(c)(3).
+ Copyright (C) 2026 Scott Quick.
  All rights reserved.
 
  Everyone is permitted to copy and distribute verbatim copies
@@ -64,9 +64,9 @@ World of Warcraft, Warcraft, Battle.net, and Blizzard Entertainment are trademar
 or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other
 countries.
 
-WoW Killboard is an independent, community-developed add-on created by Scott Quick
-and Forged By Valor. This project is not affiliated with, authorized by, sponsored
-by, or endorsed by Blizzard Entertainment, Inc.
+WoW Killboard is an independent, community-developed add-on created by Scott Quick.
+This project is not affiliated with, authorized by, sponsored by, or endorsed by
+Blizzard Entertainment, Inc.
 
 All textures, sounds, and UI components referenced in the in-game add-on are
 retrieved at runtime from the user's locally installed World of Warcraft game files

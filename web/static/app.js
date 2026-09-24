@@ -1239,8 +1239,8 @@ function loadInfoView(subpage = "about") {
         <p><strong>WoW Killboard</strong> is the premier combat intelligence, ranking, and execution contract platform for World of Warcraft open-world PvP, engineered to bring back the raw darkness, grit, and faction pride of the Alliance and Horde war.</p>
 
         <div class="info-callout">
-          <strong>Mission &amp; Non-Profit Vision:</strong><br>
-          Founded by <strong>Scott Quick</strong>, Founder &amp; Executive Director of <strong>Forged By Valor (501(c)(3))</strong>, WoW Killboard is dedicated to empowering veteran mental health, camaraderie, and suicide prevention through competitive gaming communities. 100% free of charge and 100% ad-free.
+          <strong>Mission &amp; Vision:</strong><br>
+          Architected and developed by <strong>Scott Quick</strong>, WoW Killboard is dedicated to pure, high-performance combat telemetry, competitive camaraderie, and frontline guild coordination across the Alliance and Horde. 100% free of charge and 100% ad-free.
         </div>
 
         <h2>🛡️ The 5 Non-Negotiable Engineering Guardrails</h2>
@@ -1331,7 +1331,7 @@ function loadInfoView(subpage = "about") {
         <h2>🔒 The Telemetry Gating Framework</h2>
         <ul>
           <li><strong>Public / Free Tier:</strong> Displays confirmed combat <strong>Zone</strong> only with temporal delay (e.g. <code>Last Sighted: Stranglethorn Vale ~14m ago</code>). Exact subzone landmarks and micro-coordinates are masked.</li>
-          <li><strong>Vanguard Benefactor Perk (Subzone Recon Intel):</strong> Quality-of-life benefit unlocking exact subzone telemetry (e.g. <code>Booty Bay</code>) for community donors supporting <strong>Forged By Valor (501(c)(3))</strong>.</li>
+          <li><strong>Vanguard Benefactor Perk (Subzone Recon Intel):</strong> Quality-of-life benefit unlocking exact subzone telemetry (e.g. <code>Booty Bay</code>) for community supporters and realm infrastructure patrons.</li>
           <li><strong>Anti-Camping Offset:</strong> In-game killmail broadcasting does not leak real-time player GPS coordinates to public chat channels.</li>
         </ul>
 
@@ -1348,8 +1348,8 @@ function loadInfoView(subpage = "about") {
         <p>WoW Killboard operates under a strict <strong>100% Ad-Free Guarantee</strong>. We display zero commercial advertisements, popups, or user-tracking scripts.</p>
 
         <div class="info-callout" style="border-left-color: var(--accent-gold);">
-          <strong>🎖️ Forged By Valor (501(c)(3)) Community Support:</strong><br>
-          WoW Killboard is built and maintained as a non-profit technology project. All financial contributions directly fund realm server infrastructure and Forged By Valor's charitable veteran mental health initiatives.
+          <strong>⭐ Vanguard Benefactor Community Support:</strong><br>
+          WoW Killboard is built and maintained as an independent community technology project. All financial contributions directly fund high-performance realm server infrastructure and cloud hosting.
         </div>
 
         <h2>🌟 Benefactor Recognition &amp; Perks</h2>
@@ -1357,7 +1357,7 @@ function loadInfoView(subpage = "about") {
           <li><strong>⭐ Subzone Recon Intel:</strong> Unlocks exact landmark subzone coordinates across active bounty contracts.</li>
           <li><strong>👑 Golden Vanguard Crest:</strong> Supporter badges and shiny cosmetic glows rendered on character dossiers.</li>
           <li><strong>🎯 Killmail Sponsorship:</strong> Sponsor epic open-world battles to pin them to the top of realm highlights.</li>
-          <li><strong>100% Tax-Deductible:</strong> Donations to Forged By Valor are fully deductible under IRS Section 501(c)(3).</li>
+          <li><strong>⚡ High-Priority Sync Queue:</strong> Expedited real-time telemetry processing for patron guilds and combatants.</li>
         </ul>
       </div>
     `;
@@ -1405,7 +1405,7 @@ function loadInfoView(subpage = "about") {
 
         <h2>Blizzard Entertainment Trademark &amp; IP Notice</h2>
         <p>World of Warcraft®, Warcraft®, and Blizzard Entertainment® are trademarks or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other countries.</p>
-        <p>WoW Killboard is an independent open-source combat analysis tool created by <strong>Scott Quick</strong> and supported by <strong>Forged By Valor (501(c)(3))</strong>. It is not affiliated with, endorsed, sponsored, or specifically approved by Blizzard Entertainment, Inc. Blizzard Entertainment is not responsible for the content or operation of this software.</p>
+        <p>WoW Killboard is an independent open-source combat analysis tool created and developed by <strong>Scott Quick</strong>. It is not affiliated with, endorsed, sponsored, or specifically approved by Blizzard Entertainment, Inc. Blizzard Entertainment is not responsible for the content or operation of this software.</p>
 
         <h2>Strict Compliance with Blizzard's UI Add-On Development Policy</h2>
         <ul>
@@ -1590,7 +1590,7 @@ async function loadDefenseView() {
           </div>
           <div>
             <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Target Guild Tag / Scope:</label>
-            <input type="text" id="discord-guild-name" class="search-input" style="width:100%;" placeholder="e.g. Forged By Valor or default" value="${discordCfg && discordCfg.guild_name ? discordCfg.guild_name : 'default'}">
+            <input type="text" id="discord-guild-name" class="search-input" style="width:100%;" placeholder="e.g. Vanguard Brigade or default" value="${discordCfg && discordCfg.guild_name ? discordCfg.guild_name : 'default'}">
           </div>
         </div>
 
@@ -1681,7 +1681,7 @@ async function submitGuildEvent() {
   const zone = document.getElementById("event-input-zone")?.value.trim();
   const timeStr = document.getElementById("event-input-time")?.value.trim() || "NOW";
   const creator = document.getElementById("event-input-creator")?.value.trim() || "Officer";
-  const guild = document.getElementById("event-input-guild")?.value.trim() || "Forged By Valor";
+  const guild = document.getElementById("event-input-guild")?.value.trim() || "Vanguard Brigade";
   const desc = document.getElementById("event-input-desc")?.value.trim() || "Guild PvP Operation";
 
   if (!title || !zone) {

@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automated auto-claim pipeline inside `/api/kills`: Slain targets with active bounties automatically transition contract status to `CLAIMED` and attribute rewards to the executing hunter.
 - **Supporter Subzone Recon Gating & 100% Ad-Free Experience**:
   - Eliminated all commercial third-party ad containers and placeholders, guaranteeing a 100% ad-free, player-supported web experience.
-  - Introduced non-profit **Forged By Valor (501(c)(3))** Community Supporter card to fund realm infrastructure and veteran mental health gaming programs.
+  - Introduced Frontline Vanguard Community Supporter card to fund realm infrastructure and cloud compute.
   - Tiered vicinity telemetry: Public view displays confirmed combat Zone (`Last Sighted: Stranglethorn Vale ~14m ago`), with exact Subzone landmark (`Booty Bay`) unlocked for community supporters.
   - In-game `/kb` bounty contract rows updated to show `Last Sighted: <Zone> (~<mins>m ago)`.
 - **Guild War Tracking & Historical Guild Ledger**:
@@ -103,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Proximity Wanted Debtor Radar triggering audio sirens and screen notifications when a debtor is nearby.
   - 1-click in-game redemption workflow via C.O.D. mail with a 10% administrative surcharge.
 - **Legal, Safety & Compliance Framework**:
-  - Formal declaration of sole authorship and copyright: Scott Quick / Forged By Valor, 501(c)(3).
+  - Formal declaration of sole authorship and copyright: Scott Quick.
   - Published comprehensive compliance audit in `docs/LEGAL_AND_COMPLIANCE.md`.
   - Formally certified 100% compliance with Blizzard Entertainment's UI Customization Policy (zero in-game ads, free distribution, open source, no RMT).
   - Enforced zero-PII privacy standards (no collection of Real IDs, IPs, emails, or credentials) and zero-Warden-risk filesystem architecture.

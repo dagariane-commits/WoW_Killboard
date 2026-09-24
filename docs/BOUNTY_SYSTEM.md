@@ -114,8 +114,8 @@ The platform automatically aggregates real-time bounty metrics into four distinc
 ### Vicinity Recon & Tiered Supporter Access
 To guarantee fair play and prevent stream-sniping or targeted harassment:
 - **Public / Free Tier**: Displays confirmed combat **Zone** only (e.g. `Last Sighted: Stranglethorn Vale ~14m ago`).
-- **Supporter Perk**: Unlocks exact **Subzone** intelligence (e.g. `Booty Bay`) as a quality-of-life benefit for supporters of **Forged By Valor (501(c)(3))**.
-- **100% Ad-Free Experience**: The platform contains zero third-party commercial advertisements, operating entirely through community and non-profit veteran support.
+- **Supporter Perk**: Unlocks exact **Subzone** intelligence (e.g. `Booty Bay`) as a quality-of-life benefit for community supporters and realm patrons.
+- **100% Ad-Free Experience**: The platform contains zero third-party commercial advertisements, operating entirely through player and guild contributions.
 
 ---
 

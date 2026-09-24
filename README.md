@@ -116,7 +116,7 @@ flowchart TD
 - **War Council & Rallies (Discord Gateway)**: Real-time distress call tracking, guild rally muster scheduling, and Discord Webhook forwarding.
 - **War Correspondent HUD (OBS Overlay)**: Direct `/war-hud/<CharacterName>` (and `/streambox/<CharacterName>`) overlay for OBS Studio and streamers with transparent background and auto-updating kill/death ticker.
 - **Frontline Field Manual & Codex**: Comprehensive tactical archives covering Features, FAQ, About, Tactical Fog of War, Vanguard Benefactor, War Correspondent HUD, and the Warcraft Accord.
-- **100% Ad-Free Experience**: Zero commercial banners, tracking scripts, or ad networks. Supported entirely through voluntary contributions to **Forged By Valor (501(c)(3))** empowering veteran mental health through gaming.
+- **100% Ad-Free Experience**: Zero commercial banners, tracking scripts, or ad networks. Supported entirely through voluntary contributions from players and community guild patrons.
 
 ---
 
@@ -211,7 +211,7 @@ python -m unittest discover tests
 
 ## Legal, Safety & Privacy Compliance
 
-- **Sole Authorship & Ownership**: Architected and created by **Scott Quick** (Founder & Executive Director of **Forged By Valor**, a registered 501(c)(3) organization).
+- **Sole Authorship & Ownership**: Architected and created by **Scott Quick**.
 - **Blizzard Add-on Policy Compliant**: 100% free of charge, open-source visible code, zero in-game commercial ads, zero in-game donation solicitations, and zero real-money trading (RMT).
 - **Anti-Cheat & Warden Safe**: Operates purely within Blizzard's sandboxed Lua environment. Zero process memory reading/writing, zero DLL injection, and zero executable patching. The desktop sync agent reads plain-text SavedVariables files from disk (identical to *Warcraft Logs* and *Raider.IO*).
 - **Zero PII (Personally Identifiable Information)**: Does not collect, transmit, or store real names, emails, IP addresses, BattleTags, account credentials, or hardware IDs.
@@ -222,4 +222,4 @@ python -m unittest discover tests
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 (GPLv3). Copyright (c) 2026 Scott Quick / Forged By Valor, 501(c)(3). See [LICENSE](LICENSE) for details.
+This project is licensed under the GNU General Public License v3.0 (GPLv3). Copyright (c) 2026 Scott Quick. See [LICENSE](LICENSE) for details.

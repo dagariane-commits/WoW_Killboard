@@ -2,7 +2,7 @@
 
 ## Executive Statement of Legitimacy & Authorship
 
-**WoW Killboard** is an original, clean-room software application architected, created, and published by **Scott Quick** (Founder & Executive Director of **Forged By Valor**, a registered 501(c)(3) non-profit organization).
+**WoW Killboard** is an original, clean-room software application architected, created, and published by **Scott Quick**.
 
 Every line of Lua code, Python synchronization logic, and web platform code was authored from first principles to ensure 100% legal legitimacy, strict adherence to intellectual property laws, zero violation of Blizzard Entertainment's End User License Agreement (EULA), zero privacy infringement, and absolute safety for end users.
 
@@ -110,8 +110,7 @@ The desktop sync utility ([`dist/WoWKillboardSync.exe`](file:///c:/Users/SQUICK/
 ================================================================================
 Project:       WoW Killboard (In-Game Addon, Desktop Sync, Web Platform)
 Author:        Scott Quick
-Organization:  Forged By Valor (501(c)(3) Non-Profit Corporation)
-Copyright:     Copyright (c) 2026 Scott Quick / Forged By Valor. All rights reserved.
+Copyright:     Copyright (c) 2026 Scott Quick. All rights reserved.
 License:       GNU General Public License v3.0 (GPLv3)
 ================================================================================
 ```
