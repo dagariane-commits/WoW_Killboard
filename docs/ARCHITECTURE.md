@@ -26,7 +26,7 @@ flowchart TD
         HTTP --> EP["Ingestion Endpoint\n(/api/sync/push)"]
         EP --> SQL[("Relational Database\nSQLite (killboard.db)")]
         SQL --> REST["Public REST API\n(/api/kills, /api/leaderboard)"]
-        REST --> WEB["Tactical Dark Web Interface\n(Live Ticker, Dossiers, Ad Units)"]
+        REST --> WEB["Tactical Dark Web Interface\n(Live Ticker, Dossiers, Supporter Perks)"]
     end
 ```
 
@@ -95,7 +95,11 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - Aggregated telemetry: Top Killers, Top Victims, Deadliest Zones, Battleground Gladiators (Damage vs Healing).
    - Guild War Intelligence (`GET /api/guilds`, `GET /api/guild/<name>`): Guild K/D rankings, member counts, rosters, and recent guild combat records.
    - Character Intelligence & Armory Integration (`GET /api/character/<name>`): Lifetime combat KPI stats, historical guild timeline, recent kills/deaths, and external Armory links (Blizzard Armory, Classic Ironforge.pro, and Warcraft Logs).
-3. **Advertising & Monetization Integration**:
-   - High-CPM gaming display containers (NitroPay / Playwire standard units: 728x90, 300x250).
-   - "Killboard Pro" role checking to suppress ads and enable gilded profile badges.
+3. **Supporter Framework & 100% Ad-Free Architecture**:
+   - Zero commercial ad units, banners, or tracking networks.
+   - Non-Profit Veteran Support (**Forged By Valor 501(c)(3)**) with voluntary player donation options.
+   - Quality-of-life perks: Unlocks exact Subzone Recon Intel on active bounties and supporter visual badges.
+4. **Bounty Hall of Fame Engine (`GET /api/bounties/leaderboards`)**:
+   - Real-time aggregation of Top Bounty Hunters, Highest Bounty Contracts, Most Elusive Outlaws, and Fastest Collected Manhunts.
+   - Ingestion-driven auto-claim pipeline that transitions active bounties on slain targets to claimed status automatically.
 

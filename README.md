@@ -96,14 +96,15 @@ flowchart TD
 
 ### 3. zKillboard-Style Web Intelligence Platform (`web/`)
 - **Live Kill Ticker**: Tactical dark-slate UI modeled directly on **zkillboard.com**.
-- **Tactical Intel Radar & Combat Heatmap**: Interactive HTML5 Canvas radar screen (`/api/bounty/intel/<target>`) displaying zone combat heat blooms, sweeping radar lines, fuzzed sector coordinates (±500m), and an enforced 10-minute anti-stream-sniping tactical buffer.
+- **Bounty Hall of Fame & Records**: Dedicated 4-card leaderboards (`/api/bounties/leaderboards`) celebrating Top Bounty Hunters, Highest Bounty Contracts, Most Elusive Outlaws, and Fastest Collected Manhunts.
+- **Delayed Last-Seen Intel & Tiered Recon**: Public contracts show confirmed combat Zone (e.g. `Last Sighted: Stranglethorn Vale ~14m ago`), with exact Subzone landmark (`Booty Bay`) unlocked for community supporters.
 - **Interactive Character Combat Dossiers**: Click any character name to view lifetime kills, deaths, K/D, solo kills, damage/healing meters, and historical guild affiliation timeline.
 - **External Armory Links**: 1-click links to Official Blizzard Armory, Classic Vanilla Armory (`Ironforge.pro`), and Warcraft Logs.
 - **Guild War Leaderboards & Guild Dossiers**: Dedicated Guilds tab ranking top guilds by kills, deaths, K/D, and active combatant count, with roster inspection.
 - **Combat Dossiers**: Click any killmail to open detailed combatant cards, damage meters, and location telemetry.
 - **Wall of Shame**: Pinned public registry of Oathbreakers in default with days-in-default counters.
 - **Battleground Gladiators**: Ranked leaderboards for Top Damage Dealers and Combat Medics.
-- **Monetization Ready**: Responsive placement containers for high-CPM gaming ad networks (NitroPay / Playwire) and Killboard Pro supporter status.
+- **100% Ad-Free Experience**: Zero commercial banners, tracking scripts, or ad networks. Supported entirely through voluntary contributions to **Forged By Valor (501(c)(3))** empowering veteran mental health through gaming.
 
 ---
 

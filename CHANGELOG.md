@@ -10,10 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
-- **Delayed Bounty Intelligence & Tactical Heatmap Radar**:
-  - Attached delayed `lastSeen` vicinity telemetry (`zone`, `subzone`, `minutesAgo`, `displayText`) directly to active bounty contracts on both the web interface and in-game addon.
-  - Implemented 10-minute anti-stream-sniping tactical buffer and coordinate sector fuzzing (±500m) to guarantee 100% compliance with Blizzard UI and Fair Play standards.
-  - Interactive HTML5 Canvas Heatmap Radar modal (`/api/bounty/intel/<target_name>`) displaying animated radial radar sweep, zone combat heat blooms, and pulsing target ping.
+- **Bounty Hall of Fame Records & Ingestion Auto-Claim Engine**:
+  - Built 4-category Hall of Fame grid (`GET /api/bounties/leaderboards`): Top Bounty Hunters (by claims and gold earned), Highest Bounty Contracts, Most Elusive Outlaws (longest outstanding), and Fastest Collected Manhunts.
+  - Automated auto-claim pipeline inside `/api/kills`: Slain targets with active bounties automatically transition contract status to `CLAIMED` and attribute rewards to the executing hunter.
+- **Supporter Subzone Recon Gating & 100% Ad-Free Experience**:
+  - Eliminated all commercial third-party ad containers and placeholders, guaranteeing a 100% ad-free, player-supported web experience.
+  - Introduced non-profit **Forged By Valor (501(c)(3))** Community Supporter card to fund realm infrastructure and veteran mental health gaming programs.
+  - Tiered vicinity telemetry: Public view displays confirmed combat Zone (`Last Sighted: Stranglethorn Vale ~14m ago`), with exact Subzone landmark (`Booty Bay`) unlocked for community supporters.
   - In-game `/kb` bounty contract rows updated to show `Last Sighted: <Zone> (~<mins>m ago)`.
 - **Guild War Tracking & Historical Guild Ledger**:
   - In-game guild affiliation tracking via `GetGuildInfo(unit)` indexed into leaderboards with `Leaderboard:GetTopGuilds(mode, limit)` and rendered in the in-game dashboard.

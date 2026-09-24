@@ -78,3 +78,21 @@ Debtors can clear their name and restore their reputation via the in-game Redemp
    - Once mailed, the local debt record is updated to `PAID`.
    - P2P sync broadcasts the clearance across the network.
    - The web platform moves the record from the active Wall of Shame to the Historical Redemption Archive.
+
+---
+
+## 6. Bounty Hall of Fame & Supporter Subzone Recon
+
+### 4-Card Bounty Records Grid
+The platform automatically aggregates real-time bounty metrics into four distinct Hall of Fame leaderboards (`GET /api/bounties/leaderboards`):
+1. **🎯 Top Bounty Hunters**: Ranked by total contracts successfully claimed and total gold bounty rewards earned.
+2. **💰 Highest Bounty Contracts**: Ranked by highest escrowed reward amounts.
+3. **⏳ Most Elusive Outlaws**: Ranked by survival duration under active bounty contracts without falling.
+4. **⚡ Fastest Collected Manhunts**: Record execution times measuring the interval from contract creation to confirmed target slaying.
+
+### Vicinity Recon & Tiered Supporter Access
+To guarantee fair play and prevent stream-sniping or targeted harassment:
+- **Public / Free Tier**: Displays confirmed combat **Zone** only (e.g. `Last Sighted: Stranglethorn Vale ~14m ago`).
+- **Supporter Perk**: Unlocks exact **Subzone** intelligence (e.g. `Booty Bay`) as a quality-of-life benefit for supporters of **Forged By Valor (501(c)(3))**.
+- **100% Ad-Free Experience**: The platform contains zero third-party commercial advertisements, operating entirely through community and non-profit veteran support.
+
