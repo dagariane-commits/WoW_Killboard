@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - "Wall of Shame" Debt Ledger branding players who default on bounty promises as **Oathbreakers**.
   - Proximity Wanted Debtor Radar triggering audio sirens and screen notifications when a debtor is nearby.
   - 1-click in-game redemption workflow via C.O.D. mail with a 10% administrative surcharge.
+- **Legal, Safety & Compliance Framework**:
+  - Formal declaration of sole authorship and copyright: Scott Quick / Forged By Valor, 501(c)(3).
+  - Published comprehensive compliance audit in `docs/LEGAL_AND_COMPLIANCE.md`.
+  - Formally certified 100% compliance with Blizzard Entertainment's UI Customization Policy (zero in-game ads, free distribution, open source, no RMT).
+  - Enforced zero-PII privacy standards (no collection of Real IDs, IPs, emails, or credentials) and zero-Warden-risk filesystem architecture.
 
 ### Changed
 - **In-Game Navigation & Filter Bar Overlap Elimination**:

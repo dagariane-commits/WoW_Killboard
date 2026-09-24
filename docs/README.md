@@ -59,6 +59,9 @@ flowchart TD
 8. **[Contributing Guide](file:///c:/Users/SQUICK/WoW_Killboard/CONTRIBUTING.md)**
    - Standards, style rules, and verification requirements for open-source contributors.
 
+9. **[Legal, Safety & Compliance Guide](LEGAL_AND_COMPLIANCE.md)**
+   - Authorship by Scott Quick / Forged By Valor, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
+
 ---
 
 ## Project Guiding Principles

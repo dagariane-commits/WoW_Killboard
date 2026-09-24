@@ -1,7 +1,8 @@
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
- Copyright (C) 2026 Forged By Valor
+ Copyright (C) 2026 Scott Quick / Forged By Valor, 501(c)(3).
+ All rights reserved.
 
  Everyone is permitted to copy and distribute verbatim copies
  of this license document, but changing it is not allowed.
@@ -54,3 +55,28 @@ modification follow.
                        TERMS AND CONDITIONS
 
   [Full GNU General Public License text preserved under GNU GPL v3.0]
+
+--------------------------------------------------------------------------------
+
+BLIZZARD ENTERTAINMENT TRADEMARK & ADD-ON POLICY NOTICE:
+
+World of Warcraft, Warcraft, Battle.net, and Blizzard Entertainment are trademarks
+or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other
+countries.
+
+WoW Killboard is an independent, community-developed add-on created by Scott Quick
+and Forged By Valor. This project is not affiliated with, authorized by, sponsored
+by, or endorsed by Blizzard Entertainment, Inc.
+
+All textures, sounds, and UI components referenced in the in-game add-on are
+retrieved at runtime from the user's locally installed World of Warcraft game files
+via standard Blizzard Lua API functions. No proprietary Blizzard game assets, art,
+or sound files are bundled, redistributed, or sold with this software.
+
+This add-on complies strictly with Blizzard Entertainment's World of Warcraft UI
+Customization Policy:
+1. It is distributed 100% free of charge.
+2. The source code is completely visible, un-obfuscated, and public.
+3. It does not negatively impact game servers, performance, or other players.
+4. It does not solicit donations or display commercial advertisements in-game.
+5. It does not enable real-money trading (RMT) or out-of-game monetary transactions.
