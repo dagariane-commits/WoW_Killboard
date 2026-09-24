@@ -21,10 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enforced killing blow exclusivity: only the certified killing blow hunter who accepted the contract collects the reward; non-addon players cannot claim.
 - **Cold Cases Archival (>30 Days)**:
   - Added automated cold case transition for bounties unclaimed after 30 days (`COLD_CASE` status) in both addon ledger and web backend (`GET /api/bounties/archive`).
-- **FBI Most Wanted Web Showcase & Outlaw Gallery**:
-  - Implemented horizontal Top 10 Most Wanted gallery with class avatars, gold reward badges, faction crests, and last seen zone telemetry.
+- **Static FBI Most Wanted Web Showcase & Outlaw Gallery**:
+  - Implemented horizontal Top 10 Most Wanted outlaw gallery with class avatars, gold reward badges, faction crests, and last seen zone telemetry.
+  - Made showcase permanently static on the main feed view, completely removing collapse toggle traps and client-side localStorage state traps.
   - Added 1-click contract acceptance (`🎯 Accept Contract` / `✓ Tracking Contract`).
-  - Added Opt-In Bounty Hunter Mode toggle (`[ 🎯 Bounty Hunter Mode: ON/OFF ]`) enabling classic leaderboard purists to collapse the wanted section.
+- **StreamBox Native OBS Overlay (`/streambox/<character_name>`)**:
+  - Added dedicated transparent streamer HUD endpoint formatted for Open Broadcaster Software (OBS Studio) and Twitch/YouTube livestreams.
+  - Supports horizontal ticker and vertical tower layouts (`?vertical=1`) with live combat event polling every 5 seconds.
+  - Class-color coded combatants, faction crests, and live-updating kill/death feeds.
+- **zKillboard-Style Information Hub & Footer Integration**:
+  - Implemented comprehensive docs and intelligence hub (`openInfoPage()`) accessible via top navigation (`Docs & Intel`) and the new global footer.
+  - 7 standard informational sections mirroring zKillboard: Features, FAQ, About, Delayed Intel, Supporter/Payments, StreamBox Generator, and Legal/Fair Play policies.
+  - Interactive StreamBox URL generator with copy-to-clipboard functionality.
 - **zKillboard Sidebar Intelligence Overhaul**:
   - Added 7-day rolling activity box (`/api/stats/activity-7d`) tracking active characters, active guilds, total kills, Alliance vs Horde breakdown, and active zones.
   - Added Top Characters (7D), Top Guilds (7D), Top Classes (7D), and Hotspot Zones (7D) ranking cards alongside direct Armory and intelligence links.

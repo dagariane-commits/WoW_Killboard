@@ -545,10 +545,6 @@ header {
   transition: all 0.3s ease;
 }
 
-.most-wanted-section.collapsed {
-  display: none;
-}
-
 .most-wanted-header {
   display: flex;
   justify-content: space-between;
@@ -573,27 +569,33 @@ header {
   margin-top: 2px;
 }
 
-.bounty-mode-toggle {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid var(--accent-gold);
-  color: var(--accent-gold);
-  padding: 6px 12px;
+.most-wanted-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #10b981;
+  padding: 4px 10px;
   border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
 }
 
-.bounty-mode-toggle:hover {
-  background: var(--accent-gold);
-  color: #000;
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseDot 2s infinite;
 }
 
-.bounty-mode-toggle.off {
-  background: rgba(148, 163, 184, 0.1);
-  border-color: #475569;
-  color: #94a3b8;
+@keyframes pulseDot {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 .most-wanted-grid {
@@ -794,6 +796,153 @@ header {
   color: var(--accent-gold);
   font-weight: 800;
   min-width: 22px;
+}
+
+/* ==========================================================================
+   zKillboard-Style Information Hub & Footer
+   ========================================================================== */
+.site-footer {
+  margin-top: 40px;
+  background: #080a10;
+  border-top: 1px solid #1e293b;
+  padding: 20px 24px;
+}
+
+.footer-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.footer-links a:hover {
+  color: var(--accent-cyan);
+}
+
+.info-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-nav-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.info-subtab-btn {
+  background: #0b0e14;
+  border: 1px solid #1e293b;
+  color: #94a3b8;
+  padding: 8px 14px;
+  border-radius: 6px 6px 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.info-subtab-btn:hover {
+  background: #1e293b;
+  color: #fff;
+}
+
+.info-subtab-btn.active {
+  background: #131722;
+  border-color: var(--accent-cyan);
+  border-bottom: 2px solid var(--accent-cyan);
+  color: #fff;
+}
+
+.info-card {
+  background: #131722;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 24px;
+  line-height: 1.6;
+}
+
+.info-card h1 {
+  font-size: 1.4rem;
+  color: var(--accent-cyan);
+  margin-bottom: 12px;
+}
+
+.info-card h2 {
+  font-size: 1.15rem;
+  color: var(--accent-gold);
+  margin: 20px 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.info-card h3 {
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  margin: 14px 0 6px 0;
+}
+
+.info-card p {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+}
+
+.info-card ul, .info-card ol {
+  margin-left: 20px;
+  margin-bottom: 12px;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+.info-card li {
+  margin-bottom: 4px;
+}
+
+.info-callout {
+  background: #07090e;
+  border-left: 4px solid var(--accent-cyan);
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin: 14px 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.streambox-generator {
+  background: #07090e;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.streambox-input-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 
