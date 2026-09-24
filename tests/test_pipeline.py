@@ -387,27 +387,82 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertIn("GankSquad", history_guilds)
         print("[PASS] Verified Guild Leaderboards, Guild Profiles, Character Profiles, and Guild Transfer History.")
 
-    def test_07_bounty_delayed_last_seen_and_intel_radar(self):
-        """Verify delayed lastSeen vicinity telemetry and zone heatmap intel endpoint."""
-        # 1. Check /api/bounties contains lastSeen telemetry
-        res_bnt = self.client.get("/api/bounties")
-        self.assertEqual(res_bnt.status_code, 200)
-        bounties = res_bnt.get_json()
-        target_b = next((b for b in bounties if b["target_name"] == "Frostweaver"), None)
+    def test_07_bounty_supporter_gating_and_leaderboards(self):
+        """Verify supporter subzone gating, bounty Hall of Fame leaderboards, and auto-claim mechanics."""
+        # 1. Free/Public Bounties endpoint (Zone only, Subzone gated)
+        res_bnt_free = self.client.get("/api/bounties")
+        self.assertEqual(res_bnt_free.status_code, 200)
+        bounties_free = res_bnt_free.get_json()
+        target_b = next((b for b in bounties_free if b["target_name"] == "Frostweaver"), None)
         self.assertIsNotNone(target_b, "Frostweaver bounty should exist")
         self.assertIn("lastSeen", target_b)
         self.assertTrue(target_b["lastSeen"]["hasTelemetry"])
         self.assertEqual(target_b["lastSeen"]["zone"], "Stranglethorn Vale")
+        self.assertIsNone(target_b["lastSeen"]["subzone"], "Subzone should be masked for free tier")
+        self.assertFalse(target_b["lastSeen"]["hasSubzoneAccess"])
 
-        # 2. Check /api/bounty/intel/<target> endpoint
-        res_intel = self.client.get("/api/bounty/intel/Frostweaver")
-        self.assertEqual(res_intel.status_code, 200)
-        intel = res_intel.get_json()
-        self.assertTrue(intel["hasTelemetry"])
-        self.assertEqual(intel["zone"], "Stranglethorn Vale")
-        self.assertGreater(len(intel["zoneHeat"]), 0, "Expected combat heat kills in Stranglethorn Vale")
-        self.assertEqual(intel["tacticalDelayMinutes"], 10)
-        print("[PASS] Verified Bounty Delayed Last-Seen Telemetry and Heatmap Intel Radar.")
+        # 2. Supporter Bounties endpoint (Subzone unlocked)
+        res_bnt_supporter = self.client.get("/api/bounties?supporter=1")
+        self.assertEqual(res_bnt_supporter.status_code, 200)
+        bounties_supporter = res_bnt_supporter.get_json()
+        target_supp = next((b for b in bounties_supporter if b["target_name"] == "Frostweaver"), None)
+        self.assertIsNotNone(target_supp)
+        self.assertTrue(target_supp["lastSeen"]["hasSubzoneAccess"])
+        self.assertEqual(target_supp["lastSeen"]["subzone"], "Booty Bay")
+
+        # 3. Auto-claim Bounty: Place bounty on Grimjaw, then Hawkeye slays Grimjaw
+        bounty_grimjaw = {
+            "id": "BNT-GRIMJAW01",
+            "targetName": "Grimjaw",
+            "targetClass": "WARRIOR",
+            "targetFaction": "Horde",
+            "placerName": "SlickGanker",
+            "amountGold": 750,
+            "amountCopper": 7500000
+        }
+        res_bnt_g = self.client.post("/api/bounties", json=bounty_grimjaw)
+        self.assertEqual(res_bnt_g.status_code, 201)
+
+        kill_claim = {
+            "killId": "KB-BOUNTY-CLAIM-01",
+            "timestamp": int(time.time()),
+            "isBattleground": False,
+            "isArena": False,
+            "battlegroundName": "",
+            "isSolo": True,
+            "attackersCount": 1,
+            "totalDamage": 5200,
+            "killer": {
+                "name": "Hawkeye", "level": 60, "class": "HUNTER",
+                "guild": "ApexPredators", "faction": "Alliance", "partySize": 1,
+                "damageDone": 5200, "healingDone": 0
+            },
+            "victim": {
+                "name": "Grimjaw", "level": 60, "class": "WARRIOR",
+                "guild": "Bloodfang", "faction": "Horde", "partySize": 1
+            },
+            "location": {
+                "mapId": 1434, "zone": "Stranglethorn Vale", "subZone": "Booty Bay",
+                "x": 26.5, "y": 74.2
+            }
+        }
+        res_claim_kill = self.client.post("/api/kills", json=kill_claim)
+        self.assertEqual(res_claim_kill.status_code, 201)
+
+        # 4. Check Bounty Hall of Fame Leaderboards
+        res_lb = self.client.get("/api/bounties/leaderboards")
+        self.assertEqual(res_lb.status_code, 200)
+        lb_data = res_lb.get_json()
+        self.assertIn("topHunters", lb_data)
+        self.assertIn("highestBounties", lb_data)
+        self.assertIn("longestOutstanding", lb_data)
+        self.assertIn("fastestCollected", lb_data)
+
+        # Hawkeye should now appear in Top Hunters or Fastest Collected
+        hawkeye_hunter = next((h for h in lb_data["topHunters"] if h["hunter_name"] == "Hawkeye"), None)
+        self.assertIsNotNone(hawkeye_hunter, "Hawkeye should be recorded as a claiming bounty hunter")
+        self.assertGreater(hawkeye_hunter["claimed_count"], 0)
+        print("[PASS] Verified Supporter Subzone Gating, Auto-Claim on Slay, and Bounty Hall of Fame Leaderboards.")
 
 if __name__ == "__main__":
     unittest.main()

@@ -100,13 +100,16 @@ async function loadBgGladiators() {
 
 async function loadBounties() {
   try {
-    const [bntRes, debtRes] = await Promise.all([
-      fetch(`/api/bounties`),
-      fetch(`/api/bounties/debt-ledger`)
+    const isSupporter = isSupporterActive();
+    const [bntRes, debtRes, lbRes] = await Promise.all([
+      fetch(`/api/bounties?supporter=${isSupporter ? '1' : '0'}`),
+      fetch(`/api/bounties/debt-ledger`),
+      fetch(`/api/bounties/leaderboards`)
     ]);
     const bounties = await bntRes.json();
     const debts = await debtRes.json();
-    renderBountiesView(bounties, debts);
+    const leaderboards = await lbRes.json();
+    renderBountiesView(bounties, debts, leaderboards);
   } catch (err) {
     console.error("Failed to load bounties:", err);
   }
@@ -332,35 +335,52 @@ function renderBgGladiatorsView(data) {
   container.innerHTML = html;
 }
 
-function renderBountiesView(bounties, debts) {
+function renderBountiesView(bounties, debts, leaderboards) {
   const container = document.getElementById("main-content-area");
+  leaderboards = leaderboards || {};
+  const isSupporter = isSupporterActive();
+
   let html = `
     <div style="display: flex; flex-direction: column; gap: 24px;">
-      <!-- Active Bounties -->
+      <!-- Active Bounties Section -->
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h2 style="font-size: 1.2rem; color: var(--accent-gold);">Active Bounty Contracts</h2>
+          <div>
+            <h2 style="font-size: 1.2rem; color: var(--accent-gold);">Active Bounty Contracts</h2>
+            <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Track and execute targets to claim escrowed gold.</div>
+          </div>
           <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Place Bounty</button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
   `;
 
   if (!bounties || bounties.length === 0) {
-    html += `<div style="color: #64748b;">No active bounties right now. Place one to ignite a manhunt!</div>`;
+    html += `<div style="color: #64748b; padding:16px;">No active bounties right now. Place one to ignite a manhunt!</div>`;
   } else {
     bounties.forEach(b => {
       const lastSeen = b.lastSeen || {};
       let lastSeenHtml = "";
       if (lastSeen.hasTelemetry) {
-        lastSeenHtml = `
-          <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.displayText}
-              <div style="font-size:0.7rem; color:#94a3b8;">~${lastSeen.minutesAgo}m ago &bull; <span style="color:#f59e0b; font-weight:700;">(Delayed Intel)</span></div>
+        if (isSupporter && lastSeen.subzone) {
+          lastSeenHtml = `
+            <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
+              <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.zone} <span style="color:#fbbf24;">(${lastSeen.subzone})</span>
+              <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">
+                ~${lastSeen.minutesAgo}m ago &bull; <span style="color:#fbbf24; font-weight:700;">⭐ Subzone Intel</span>
+              </div>
             </div>
-            <button class="radar-btn" onclick="openHeatmapModal('${b.target_name}')">📍 Heatmap</button>
-          </div>
-        `;
+          `;
+        } else {
+          lastSeenHtml = `
+            <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.zone}
+                <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">~${lastSeen.minutesAgo}m ago</div>
+              </div>
+              <span style="color:#64748b; font-size:0.7rem; cursor:pointer;" onclick="toggleSupporterMode()" title="Toggle Supporter Mode to unlock Subzone Recon">[🔒 Subzone]</span>
+            </div>
+          `;
+        }
       } else {
         lastSeenHtml = `
           <div style="font-size:0.72rem; color:#64748b; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
@@ -376,7 +396,7 @@ function renderBountiesView(bounties, debts) {
             <span style="color:var(--accent-gold); font-weight:800; font-size:1.1rem;">${b.amount_gold || Math.floor(b.amount_copper/10000)}g</span>
           </div>
           <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">
-            Placed by: <strong style="color:#e2e8f0;">${b.placer_name}</strong>
+            Target: <span style="color:#cbd5e1;">Level ${b.target_class || 'UNKNOWN'}</span> &bull; Placer: <strong style="color:#e2e8f0;">${b.placer_name}</strong>
           </div>
           <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">
             Status: <span style="color:#10b981; font-weight:700;">${b.status}</span> ${b.hunter_name ? `(Claimed by ${b.hunter_name})` : ''}
@@ -391,6 +411,102 @@ function renderBountiesView(bounties, debts) {
         </div>
       </div>
 
+      <!-- Bounty Leaderboards: Hall of Fame -->
+      <div>
+        <h2 style="font-size: 1.2rem; color: var(--accent-gold); margin-bottom: 12px;">🏆 Bounty Hall of Fame &amp; Records</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          
+          <!-- 1. Top Bounty Hunters -->
+          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="color:#10b981; font-size:0.95rem;">🎯 Top Bounty Hunters</h3>
+              <span style="font-size:0.7rem; color:#64748b;">Most Bounties Claimed</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              ${(leaderboards.topHunters && leaderboards.topHunters.length > 0) 
+                ? leaderboards.topHunters.map((h, i) => `
+                  <div class="leader-item">
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile('${h.hunter_name}')">${h.hunter_name}</span></span>
+                    <span style="text-align:right;">
+                      <span style="color:#10b981; font-weight:700;">${h.claimed_count} Claimed</span>
+                      <small style="color:var(--accent-gold); margin-left:6px;">(${h.total_gold}g)</small>
+                    </span>
+                  </div>
+                `).join('')
+                : '<div style="color:#64748b; font-size:0.8rem;">No bounties claimed yet.</div>'
+              }
+            </div>
+          </div>
+
+          <!-- 2. Highest Bounty Contracts -->
+          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="color:var(--accent-gold); font-size:0.95rem;">💰 Highest Bounty Contracts</h3>
+              <span style="font-size:0.7rem; color:#64748b;">Biggest Escrow Rewards</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              ${(leaderboards.highestBounties && leaderboards.highestBounties.length > 0)
+                ? leaderboards.highestBounties.map((b, i) => `
+                  <div class="leader-item">
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile('${b.target_name}')">${b.target_name}</span></span>
+                    <span style="text-align:right;">
+                      <span style="color:var(--accent-gold); font-weight:800;">${b.amount_gold}g</span>
+                      <small style="color:${b.status === 'CLAIMED' ? '#10b981' : '#f59e0b'}; margin-left:6px;">[${b.status}]</small>
+                    </span>
+                  </div>
+                `).join('')
+                : '<div style="color:#64748b; font-size:0.8rem;">No bounty records found.</div>'
+              }
+            </div>
+          </div>
+
+          <!-- 3. Longest Outstanding (Most Elusive Outlaws) -->
+          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="color:#f97316; font-size:0.95rem;">⏳ Most Elusive Outlaws</h3>
+              <span style="font-size:0.7rem; color:#64748b;">Longest Surviving Bounties</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              ${(leaderboards.longestOutstanding && leaderboards.longestOutstanding.length > 0)
+                ? leaderboards.longestOutstanding.map((o, i) => `
+                  <div class="leader-item">
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile('${o.target_name}')">${o.target_name}</span></span>
+                    <span style="text-align:right;">
+                      <span style="color:#f97316; font-weight:700;">Survived ${formatDuration(o.elapsed_seconds)}</span>
+                      <small style="color:var(--accent-gold); margin-left:6px;">(${o.amount_gold}g)</small>
+                    </span>
+                  </div>
+                `).join('')
+                : '<div style="color:#64748b; font-size:0.8rem;">No active outstanding bounties.</div>'
+              }
+            </div>
+          </div>
+
+          <!-- 4. Fastest Collected Manhunts -->
+          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="color:var(--accent-cyan); font-size:0.95rem;">⚡ Fastest Collected Manhunts</h3>
+              <span style="font-size:0.7rem; color:#64748b;">Record Execution Times</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              ${(leaderboards.fastestCollected && leaderboards.fastestCollected.length > 0)
+                ? leaderboards.fastestCollected.map((f, i) => `
+                  <div class="leader-item">
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile('${f.target_name}')">${f.target_name}</span></span>
+                    <span style="text-align:right;">
+                      <span style="color:var(--accent-cyan); font-weight:700;">${formatDuration(f.duration_seconds)}</span>
+                      <small style="color:#94a3b8; margin-left:4px;">by ${f.hunter_name || 'Hunter'}</small>
+                    </span>
+                  </div>
+                `).join('')
+                : '<div style="color:#64748b; font-size:0.8rem;">No timed executions on record.</div>'
+              }
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- Wall of Shame: Oathbreaker Debt Ledger -->
       <div>
         <h2 style="font-size: 1.2rem; color: var(--accent-red); margin-bottom: 12px;">
@@ -400,7 +516,7 @@ function renderBountiesView(bounties, debts) {
   `;
 
   if (!debts || debts.length === 0) {
-    html += `<div style="color: #10b981;">No active defaulters. The realm's honor is preserved!</div>`;
+    html += `<div style="color: #10b981; padding:12px;">No active defaulters. The realm's honor is preserved!</div>`;
   } else {
     debts.forEach(d => {
       html += `
@@ -408,7 +524,7 @@ function renderBountiesView(bounties, debts) {
           <div class="debt-header">
             <div>
               <span class="debt-badge">OATHBREAKER</span>
-              <strong style="color:#fff; font-size:1rem; margin-left:8px;">${d.player_name}</strong>
+              <strong style="color:#fff; font-size:1rem; margin-left:8px;" class="clickable-player" onclick="openCharacterProfile('${d.player_name}')">${d.player_name}</strong>
             </div>
             <span style="color:var(--accent-red); font-weight:800; font-size:1.1rem;">${formatCopper(d.amount_owed_copper)} Owed</span>
           </div>
@@ -886,181 +1002,35 @@ function openPlaceBountyModal() {
   });
 }
 
-// Tactical Heatmap & Recon Radar Modal Handlers
-let radarAnimId = null;
+// Supporter Mode & Subzone Intel Helpers
+function isSupporterActive() {
+  const val = localStorage.getItem("fbv_supporter");
+  return val !== "0"; // Default to active (1) unless explicitly disabled (0)
+}
 
-function closeHeatmapModal() {
-  document.getElementById("heatmap-modal").style.display = "none";
-  if (radarAnimId) {
-    cancelAnimationFrame(radarAnimId);
-    radarAnimId = null;
+function toggleSupporterMode() {
+  const current = isSupporterActive();
+  localStorage.setItem("fbv_supporter", current ? "0" : "1");
+  updateSupporterButton();
+  if (currentTab === "BOUNTIES") {
+    loadBounties();
   }
 }
 
-async function openHeatmapModal(targetName) {
-  const modal = document.getElementById("heatmap-modal");
-  const body = document.getElementById("heatmap-modal-body");
-  const title = document.getElementById("heatmap-modal-title");
-  if (!modal || !body) return;
-
-  title.innerText = `Tactical Intel Radar: ${targetName}`;
-  body.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">Scanning tactical frequency for ${targetName}...</div>`;
-  modal.style.display = "flex";
-
-  try {
-    const res = await fetch(`/api/bounty/intel/${encodeURIComponent(targetName)}`);
-    const data = await res.json();
-
-    if (!data.hasTelemetry) {
-      body.innerHTML = `
-        <div style="text-align:center; padding:40px; color:#94a3b8;">
-          <h3 style="color:#ef4444; margin-bottom:8px;">Zero Combat Telemetry</h3>
-          <p>No recent engagements or GPS pings have been recorded for <strong style="color:#fff;">${targetName}</strong>.</p>
-        </div>
-      `;
-      return;
-    }
-
-    body.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:12px 16px; border-radius:6px; border:1px solid #1e293b; font-size:0.85rem;">
-        <div>
-          <div style="font-weight:800; font-size:1.1rem; color:var(--accent-red);">${data.targetName}</div>
-          <div style="color:#94a3b8; font-size:0.75rem; margin-top:2px;">
-            Last Sighted: <strong style="color:#38bdf8;">${data.zone}</strong> (${data.subzone})
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <div style="background:rgba(245, 158, 11, 0.15); border:1px solid #f59e0b; color:#fbbf24; font-size:0.75rem; font-weight:700; padding:3px 8px; border-radius:4px; display:inline-block;">
-            ⏱️ ${data.tacticalDelayMinutes}m INTEL BUFFER
-          </div>
-          <div style="font-size:0.7rem; color:#94a3b8; margin-top:3px;">
-            Reported: ~${data.minutesAgo} mins ago &bull; Sector: ${data.coordX}%, ${data.coordY}%
-          </div>
-        </div>
-      </div>
-
-      <div style="position:relative; width:100%; border-radius:8px; overflow:hidden; border:1px solid #1e293b; background:#040609;">
-        <canvas id="heatmap-canvas" width="700" height="380" style="display:block; width:100%; height:auto;"></canvas>
-      </div>
-
-      <div style="background:#090d14; border:1px solid #1e293b; border-radius:6px; padding:10px 14px; font-size:0.75rem; color:#94a3b8; line-height:1.4;">
-        <strong style="color:var(--accent-cyan);">🛡️ Anti-Griefing & Fair Play Guarantee:</strong>
-        This radar view is intentionally delayed by at least 10 minutes and fuzzed to broad zone sectors (±500m).
-        Real-time coordinates and stealth detection are strictly omitted to eliminate stream-sniping and uphold 100% compliance with Blizzard UI and Fair Play policies.
-      </div>
-    `;
-
-    // Render Canvas Radar
-    const canvas = document.getElementById("heatmap-canvas");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const width = canvas.width;
-    const height = canvas.height;
-
-    let scanAngle = 0;
-
-    function renderRadarFrame() {
-      ctx.clearRect(0, 0, width, height);
-
-      // 1. Grid Background
-      ctx.strokeStyle = "rgba(0, 229, 255, 0.12)";
-      ctx.lineWidth = 1;
-      const step = 40;
-      for (let x = 0; x < width; x += step) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-      }
-      for (let y = 0; y < height; y += step) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-      }
-
-      // 2. Concentric Radar Rings
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const maxRadius = Math.min(centerX, centerY) - 20;
-
-      for (let r = 50; r <= maxRadius; r += 50) {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(0, 229, 255, 0.18)";
-        ctx.stroke();
-      }
-
-      // Radar Crosshairs
-      ctx.beginPath();
-      ctx.moveTo(centerX - maxRadius, centerY);
-      ctx.lineTo(centerX + maxRadius, centerY);
-      ctx.moveTo(centerX, centerY - maxRadius);
-      ctx.lineTo(centerX, centerY + maxRadius);
-      ctx.strokeStyle = "rgba(0, 229, 255, 0.25)";
-      ctx.stroke();
-
-      // 3. Combat Heatmap Blobs (Recent Kills in Zone)
-      const heatKills = data.zoneHeat || [];
-      heatKills.forEach(k => {
-        const kx = (k.coord_x || 50) / 100 * width;
-        const ky = (k.coord_y || 50) / 100 * height;
-        const grad = ctx.createRadialGradient(kx, ky, 2, kx, ky, 35);
-        grad.addColorStop(0, "rgba(239, 68, 68, 0.65)");
-        grad.addColorStop(0.5, "rgba(249, 115, 22, 0.35)");
-        grad.addColorStop(1, "rgba(239, 68, 68, 0)");
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(kx, ky, 35, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // 4. Target Last-Seen Sector Ping
-      const targetPx = (data.coordX / 100) * width;
-      const targetPy = (data.coordY / 100) * height;
-
-      // Pulsing outer ripple ring
-      const pulse = (Date.now() / 400) % 3;
-      ctx.beginPath();
-      ctx.arc(targetPx, targetPy, 18 + pulse * 12, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(251, 191, 36, ${Math.max(0, 0.8 - pulse * 0.25)})`;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Inner target circle
-      ctx.beginPath();
-      ctx.arc(targetPx, targetPy, 8, 0, Math.PI * 2);
-      ctx.fillStyle = "#fbbf24";
-      ctx.fill();
-
-      // Target Label
-      ctx.font = "bold 11px sans-serif";
-      ctx.fillStyle = "#fff";
-      ctx.fillText(`${data.targetName} [SECTOR LAST SEEN]`, targetPx + 14, targetPy + 4);
-      ctx.font = "10px sans-serif";
-      ctx.fillStyle = "#f59e0b";
-      ctx.fillText(`~${data.minutesAgo}m ago (±500m)`, targetPx + 14, targetPy + 16);
-
-      // 5. Radar Sweep Line
-      scanAngle += 0.025;
-      const sweepX = centerX + Math.cos(scanAngle) * maxRadius;
-      const sweepY = centerY + Math.sin(scanAngle) * maxRadius;
-
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(sweepX, sweepY);
-      ctx.strokeStyle = "rgba(0, 229, 255, 0.6)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      radarAnimId = requestAnimationFrame(renderRadarFrame);
-    }
-
-    if (radarAnimId) cancelAnimationFrame(radarAnimId);
-    radarAnimId = requestAnimationFrame(renderRadarFrame);
-
-  } catch (err) {
-    body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Failed to compile tactical radar: ${err.message}</div>`;
+function updateSupporterButton() {
+  const btn = document.getElementById("supporter-toggle-btn");
+  if (!btn) return;
+  const active = isSupporterActive();
+  if (active) {
+    btn.innerText = "⭐ Supporter: ON";
+    btn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
+    btn.style.color = "#ffffff";
+    btn.title = "Supporter Perks Active (Subzone Intel Unlocked)";
+  } else {
+    btn.innerText = "🔒 Unlock Subzones";
+    btn.style.background = "#1e293b";
+    btn.style.color = "#94a3b8";
+    btn.title = "Click to activate Supporter Mode";
   }
 }
 
@@ -1074,6 +1044,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  updateSupporterButton();
   loadKills();
   loadSidebar();
 

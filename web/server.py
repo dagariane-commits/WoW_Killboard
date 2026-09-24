@@ -291,6 +291,20 @@ def post_kill():
             except Exception:
                 pass
 
+        # Auto-claim active bounty on victim if killed by another player
+        if victim_name != "Unknown" and killer_name != "Unknown" and killer_name != victim_name:
+            active_bounty = conn.execute("""
+                SELECT id, amount_gold FROM bounties
+                WHERE target_name = ? AND status = 'ACTIVE'
+                ORDER BY amount_gold DESC LIMIT 1
+            """, (victim_name,)).fetchone()
+            if active_bounty:
+                conn.execute("""
+                    UPDATE bounties
+                    SET status = 'CLAIMED', hunter_name = ?, kill_id = ?, payment_deadline = ?
+                    WHERE id = ?
+                """, (killer_name, kill_id, timestamp, active_bounty["id"]))
+
         conn.commit()
 
     return jsonify({"success": True, "killId": kill_id}), 201
@@ -635,6 +649,7 @@ def get_guild_profile(guild_name):
 
 @app.route("/api/bounties", methods=["GET"])
 def get_bounties():
+    is_supporter = request.args.get("supporter") == "1"
     with get_db() as conn:
         rows = conn.execute("SELECT * FROM bounties ORDER BY timestamp DESC").fetchall()
         bounties = [dict(r) for r in rows]
@@ -643,7 +658,7 @@ def get_bounties():
         for b in bounties:
             target = b["target_name"]
             last_kill = conn.execute("""
-                SELECT timestamp, zone, subzone, coord_x, coord_y
+                SELECT timestamp, zone, subzone
                 FROM kills
                 WHERE killer_name = ? OR victim_name = ?
                 ORDER BY timestamp DESC
@@ -653,76 +668,79 @@ def get_bounties():
             if last_kill:
                 kill_time = last_kill["timestamp"]
                 elapsed = max(0, now - kill_time)
-                # Fuzzy coordinate rounding to general sector grid (nearest 4%)
-                fuzzy_x = round((last_kill["coord_x"] or 50.0) / 4.0) * 4.0
-                fuzzy_y = round((last_kill["coord_y"] or 50.0) / 4.0) * 4.0
+                zone_name = last_kill["zone"] or "Unknown"
+                subzone_name = last_kill["subzone"] or ""
+
                 b["lastSeen"] = {
                     "hasTelemetry": True,
-                    "zone": last_kill["zone"] or "Unknown",
-                    "subzone": last_kill["subzone"] or "Wilderness",
-                    "coordX": fuzzy_x,
-                    "coordY": fuzzy_y,
+                    "zone": zone_name,
+                    "subzone": subzone_name if is_supporter else None,
+                    "hasSubzoneAccess": is_supporter,
                     "timestamp": kill_time,
                     "elapsedSeconds": elapsed,
                     "minutesAgo": max(1, elapsed // 60),
-                    "displayText": f"{last_kill['zone']}{(' (' + last_kill['subzone'] + ')') if last_kill['subzone'] else ''}"
+                    "displayText": f"{zone_name} ({subzone_name})" if (is_supporter and subzone_name) else zone_name
                 }
             else:
                 b["lastSeen"] = {
                     "hasTelemetry": False,
-                    "displayText": "Unknown (No recent combat logged)"
+                    "displayText": "Unknown (No combat logged)"
                 }
 
     return jsonify(bounties)
 
-@app.route("/api/bounty/intel/<target_name>", methods=["GET"])
-def get_bounty_intel(target_name):
+@app.route("/api/bounties/leaderboards", methods=["GET"])
+def get_bounties_leaderboards():
+    now = int(time.time())
     with get_db() as conn:
-        last_kill = conn.execute("""
-            SELECT timestamp, zone, subzone, coord_x, coord_y, killer_name, victim_name
-            FROM kills
-            WHERE killer_name = ? OR victim_name = ?
-            ORDER BY timestamp DESC
-            LIMIT 1
-        """, (target_name, target_name)).fetchone()
+        # 1. Top Bounty Hunters
+        top_hunters_rows = conn.execute("""
+            SELECT hunter_name, COUNT(*) AS claimed_count, SUM(amount_gold) AS total_gold
+            FROM bounties
+            WHERE status = 'CLAIMED' AND hunter_name IS NOT NULL AND hunter_name != ''
+            GROUP BY hunter_name
+            ORDER BY claimed_count DESC, total_gold DESC
+            LIMIT 10
+        """).fetchall()
+        top_hunters = [dict(r) for r in top_hunters_rows]
 
-        if not last_kill:
-            return jsonify({
-                "targetName": target_name,
-                "hasTelemetry": False,
-                "message": "No combat telemetry on record for this target."
-            })
+        # 2. Highest Bounty Contracts
+        highest_rows = conn.execute("""
+            SELECT id, target_name, target_class, target_faction, placer_name, amount_gold, status, hunter_name, timestamp
+            FROM bounties
+            ORDER BY amount_gold DESC
+            LIMIT 10
+        """).fetchall()
+        highest_bounties = [dict(r) for r in highest_rows]
 
-        zone = last_kill["zone"]
-        kill_time = last_kill["timestamp"]
-        now = int(time.time())
-        elapsed = max(0, now - kill_time)
-        fuzzy_x = round((last_kill["coord_x"] or 50.0) / 4.0) * 4.0
-        fuzzy_y = round((last_kill["coord_y"] or 50.0) / 4.0) * 4.0
+        # 3. Longest Outstanding Bounties (Most Elusive Outlaws)
+        longest_rows = conn.execute("""
+            SELECT id, target_name, target_class, target_faction, placer_name, amount_gold, timestamp,
+                   (? - timestamp) AS elapsed_seconds
+            FROM bounties
+            WHERE status = 'ACTIVE'
+            ORDER BY timestamp ASC
+            LIMIT 10
+        """, (now,)).fetchall()
+        longest_outstanding = [dict(r) for r in longest_rows]
 
-        # Query up to 30 recent kills in the same zone to form the combat heatmap
-        zone_kills_rows = conn.execute("""
-            SELECT kill_id, timestamp, coord_x, coord_y, total_damage, is_solo
-            FROM kills
-            WHERE zone = ?
-            ORDER BY timestamp DESC
-            LIMIT 30
-        """, (zone,)).fetchall()
-        zone_heat = [dict(r) for r in zone_kills_rows]
+        # 4. Fastest Collected Bounties
+        fastest_rows = conn.execute("""
+            SELECT id, target_name, target_class, placer_name, hunter_name, amount_gold, timestamp, payment_deadline,
+                   (payment_deadline - timestamp) AS duration_seconds
+            FROM bounties
+            WHERE status = 'CLAIMED' AND payment_deadline IS NOT NULL AND payment_deadline >= timestamp
+            ORDER BY duration_seconds ASC
+            LIMIT 10
+        """).fetchall()
+        fastest_collected = [dict(r) for r in fastest_rows]
 
-        return jsonify({
-            "targetName": target_name,
-            "hasTelemetry": True,
-            "zone": zone,
-            "subzone": last_kill["subzone"] or "Wilderness",
-            "coordX": fuzzy_x,
-            "coordY": fuzzy_y,
-            "timestamp": kill_time,
-            "elapsedSeconds": elapsed,
-            "minutesAgo": max(1, elapsed // 60),
-            "tacticalDelayMinutes": 10,
-            "zoneHeat": zone_heat
-        })
+    return jsonify({
+        "topHunters": top_hunters,
+        "highestBounties": highest_bounties,
+        "longestOutstanding": longest_outstanding,
+        "fastestCollected": fastest_collected
+    })
 
 @app.route("/api/bounties", methods=["POST"])
 def create_bounty():
