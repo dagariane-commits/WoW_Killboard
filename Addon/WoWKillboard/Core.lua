@@ -81,7 +81,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         else
             print("|cffff9900Usage:|r /killboard bounty <TargetName> <GoldAmount> (e.g. /killboard bounty Thrall 250)")
         end
-    elseif cmd == "backup" or cmd == "sos" then
+    elseif cmd == "backup" or cmd == "sos" or cmd == "warhorn" or cmd == "calltoarms" then
         if arg == "stop" or arg == "resolve" or arg == "clear" or arg == "off" then
             if KB.Reinforcements then KB.Reinforcements:ResolveBeacon(false) end
         else
@@ -124,21 +124,24 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             if KB.UI then KB.UI:SetTheme(nextTheme) end
         end
     else
-        print("|cff00ccffWoW Killboard Commands:|r")
-        print("  |cffffd100/killboard|r or |cffffd100/wowkb|r - Toggle the Killboard Dashboard")
-        print("  |cffffd100/killboard backup|r or |cffffd100/kbsos|r - Broadcast Call for Backup SOS & enable Auto-Invite")
-        print("  |cffffd100/killboard backup stop|r - Resolve active SOS beacon and close Auto-Invite")
-        print("  |cffffd100/killboard event <Title> | <Zone> | <Time>|r - Announce Guild Event / Rally")
-        print("  |cffffd100/killboard theme [classic|elvui]|r - Switch between Classic WoW and ElvUI themes")
-        print("  |cffffd100/killboard stats|r - Show current combat session statistics")
-        print("  |cffffd100/killboard bounty <Name> <Gold>|r - Place a gold bounty on a player")
-        print("  |cffffd100/killboard reset|r - Clear local kill database")
+        print("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
+        print("  |cffffd100/killboard|r or |cffffd100/wowkb|r - Toggle the Frontline War Room Dashboard")
+        print("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
+        print("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
+        print("  |cffffd100/killboard event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
+        print("  |cffffd100/killboard theme [classic|elvui]|r - Switch between Classic and ElvUI aesthetics")
+        print("  |cffffd100/killboard stats|r - Review current combat session battle statistics")
+        print("  |cffffd100/killboard bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
+        print("  |cffffd100/killboard reset|r - Clear local battle records")
     end
 end
 
--- Dedicated Emergency Quick-Slash Commands for Call for Backup
+-- Dedicated Emergency Quick-Slash Commands for War Horn / Call for Backup
 SLASH_WOWKILLBOARDSOS1 = "/kbsos"
 SLASH_WOWKILLBOARDSOS2 = "/kbbackup"
+SLASH_WOWKILLBOARDSOS3 = "/warhorn"
+SLASH_WOWKILLBOARDSOS4 = "/kbwarhorn"
+SLASH_WOWKILLBOARDSOS5 = "/kbrally"
 SlashCmdList["WOWKILLBOARDSOS"] = function(msg)
     local arg = msg and msg:lower():trim() or ""
     if arg == "stop" or arg == "resolve" or arg == "clear" or arg == "off" then

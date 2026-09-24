@@ -365,12 +365,12 @@ function UI:CreateMainWindow()
 
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("LEFT", titleIcon, "RIGHT", 8, 0)
-    title:SetText("|cffffffffWoW Killboard|r |cffffd100[zKillboard]|r")
+    title:SetText("|cffffffffWoW Killboard|r |cffff3333[Frontline War Room]|r")
     UI.TitleText = title
 
     local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     subtitle:SetPoint("LEFT", title, "RIGHT", 10, 0)
-    subtitle:SetText("|cff888888v" .. KB.Version .. " | PvP Intelligence & Telemetry|r")
+    subtitle:SetText("|cff888888v" .. KB.Version .. " | Blood & Iron: Open World PvP Carnage & Telemetry|r")
     UI.SubtitleText = subtitle
 
     -- Template-Free Close Button
@@ -416,24 +416,31 @@ function UI:CreateMainWindow()
     end)
     UI.ThemeButton = themeBtn
 
-    -- Template-Free Call for Backup SOS Button
+    -- Template-Free War Horn / Call to Arms Button (Open World PvP Only)
     local backupBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
     backupBtn:SetSize(125, 20)
     backupBtn:SetPoint("RIGHT", themeBtn, "LEFT", -6, 0)
     backupBtn:EnableMouse(true)
     local backupLabel = backupBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     backupLabel:SetPoint("CENTER", 0, 0)
-    backupLabel:SetText("|cffff4444🚨 CALL BACKUP|r")
+    backupLabel:SetText("|cffff4444📯 WAR HORN|r")
     backupBtn.Label = backupLabel
     backupBtn:SetScript("OnClick", function()
         if KB.Reinforcements and KB.Reinforcements.IsBeaconActive and KB.Reinforcements:IsBeaconActive() then
             KB.Reinforcements:ResolveBeacon(false)
-            backupLabel:SetText("|cffff4444🚨 CALL BACKUP|r")
+            backupLabel:SetText("|cffff4444📯 WAR HORN|r")
         else
+            if IsInInstance then
+                local inInst, instType = IsInInstance()
+                if inInst or (instType and instType ~= "none") then
+                    print("|cffff0000[WoWKB Error]|r The War Horn can only be sounded upon the open battlefields of Azeroth (Open World PvP only).")
+                    return
+                end
+            end
             if KB.Reinforcements and KB.Reinforcements.TriggerCallForBackup then
                 local ok, _ = KB.Reinforcements:TriggerCallForBackup()
                 if ok then
-                    backupLabel:SetText("|cff00ff00✓ SOS ACTIVE|r")
+                    backupLabel:SetText("|cff00ff00✓ RALLY ACTIVE|r")
                 end
             end
         end
@@ -446,12 +453,13 @@ function UI:CreateMainWindow()
         end
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         if KB.Reinforcements and KB.Reinforcements.IsBeaconActive and KB.Reinforcements:IsBeaconActive() then
-            GameTooltip:AddLine("|cff00ff00Distress Beacon Active|r", 1, 1, 1)
-            GameTooltip:AddLine("Click to resolve beacon and close auto-invite.", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("|cff00ff00War Horn & Rally Active|r", 1, 1, 1)
+            GameTooltip:AddLine("Click to dismiss War Horn and close war party recruitment.", 0.8, 0.8, 0.8)
         else
-            GameTooltip:AddLine("|cffff3333Call for Backup (SOS Beacon)|r", 1, 1, 1)
-            GameTooltip:AddLine("Broadcasts emergency coordinates, zone & threat to Guild, Group & P2P.", 0.8, 0.8, 0.8)
-            GameTooltip:AddLine("Activates 10-minute Auto-Invite squad recruitment.", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("|cffff3333📯 War Horn: Call to Arms|r", 1, 1, 1)
+            GameTooltip:AddLine("Sounds the War Horn across Guild, Group & P2P network.", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("Broadcasts emergency coordinates, zone & threat telemetry.", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("Activates 10-minute Auto-Invite squad recruitment (Open World only).", 0.8, 0.8, 0.8)
         end
         GameTooltip:Show()
     end)
@@ -508,11 +516,11 @@ function UI:CreateMainWindow()
 
     -- Navigation Bar (Tabs on Left, Filter Pills on Right - Zero Overlap)
     local tabs = {
-        { id = "FEED",        text = "Live Feed",       w = 95 },
-        { id = "LEADERBOARD", text = "Leaderboards",    w = 105 },
-        { id = "BOUNTIES",    text = "Bounties & Debt", w = 110 },
-        { id = "BG_METRICS",  text = "BG Gladiators",   w = 100 },
-        { id = "ZONES",       text = "Zone Intel",      w = 88 },
+        { id = "FEED",        text = "Frontline Feed",  w = 100 },
+        { id = "LEADERBOARD", text = "Hall of Heroes",  w = 100 },
+        { id = "BOUNTIES",    text = "Blood Bounties",  w = 100 },
+        { id = "BG_METRICS",  text = "Warfronts",       w = 88 },
+        { id = "ZONES",       text = "Zone Intel",      w = 84 },
     }
 
     tabButtons = {}
@@ -906,10 +914,10 @@ function UI:RenderBounties()
 
     local bntTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bntTitle:SetPoint("TOPLEFT", 10, yOffset)
-    bntTitle:SetText("Active Bounty Contracts")
+    bntTitle:SetText("⚔️ Active Blood Bounties & Execution Contracts")
 
     -- Place Bounty Button
-    local placeBtn = UI:CreateButton(UI.ContentFrame, 140, 24, "+ Place Bounty")
+    local placeBtn = UI:CreateButton(UI.ContentFrame, 140, 24, "+ Declare Bounty")
     placeBtn:SetPoint("TOPRIGHT", -20, yOffset)
     placeBtn:SetScript("OnClick", function()
         UI:ShowBountyPrompt()
@@ -954,7 +962,7 @@ function UI:RenderBounties()
 
             local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-            txt:SetText(string.format("WANTED: |cffff3333%s|r (%s)  |  Reward: |cffffd700%s|r  |  By: |cffcbd5e1%s|r%s",
+            txt:SetText(string.format("EXECUTION CONTRACT: |cffff3333%s|r (%s)  |  Reward: |cffffd700%s|r  |  Declared by: |cffcbd5e1%s|r%s",
                 b.targetName, b.targetClass, KB.Utils.FormatMoney(b.amountCopper), b.placerName, lastSeenStr))
 
             local bId = b.id
@@ -976,7 +984,7 @@ function UI:RenderBounties()
     if not hasBounties then
         local emptyB = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
         emptyB:SetPoint("TOPLEFT", 10, yOffset)
-        emptyB:SetText("No active bounties. Be the first to place one on an enemy!")
+        emptyB:SetText("No active blood bounties. Declare one upon an enemy to ignite the manhunt!")
         yOffset = yOffset - 25
     end
 
@@ -984,7 +992,7 @@ function UI:RenderBounties()
     yOffset = yOffset - 20
     local coldTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     coldTitle:SetPoint("TOPLEFT", 10, yOffset)
-    coldTitle:SetText("📁 Cold Cases Archive — Uncollected Outlaws (>30 Days)")
+    coldTitle:SetText("📜 Archive of Unclaimed Bounties — Escaped Targets (>30 Days)")
 
     yOffset = yOffset - 32
     local hasCold = false
@@ -1004,7 +1012,7 @@ function UI:RenderBounties()
 
             local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-            txt:SetText(string.format("|cff888888[ARCHIVED]|r |cffffffff%s|r (%s)  |  Unclaimed Reward: |cffffd700%s|r  |  Placed by: %s",
+            txt:SetText(string.format("|cff888888[ESCAPED]|r |cffffffff%s|r (%s)  |  Unclaimed Reward: |cffffd700%s|r  |  Contractor: %s",
                 b.targetName, b.targetClass, KB.Utils.FormatMoney(b.amountCopper), b.placerName))
 
             yOffset = yOffset - 34
@@ -1014,15 +1022,15 @@ function UI:RenderBounties()
     if not hasCold then
         local emptyC = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
         emptyC:SetPoint("TOPLEFT", 10, yOffset)
-        emptyC:SetText("No archived cold cases. All manhunts remain actively pursued.")
+        emptyC:SetText("No archived bounties. All execution contracts remain actively pursued.")
         yOffset = yOffset - 25
     end
 
-    -- Wall of Shame (Oathbreaker Debt Ledger)
+    -- The Traitor's Gibbet (Oathbreaker Debt Ledger)
     yOffset = yOffset - 24
     local debtTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     debtTitle:SetPoint("TOPLEFT", 10, yOffset)
-    debtTitle:SetText("⚠️ Wall of Shame — Oathbreakers in Default")
+    debtTitle:SetText("⛓️ The Traitor's Gibbet — Oathbreakers & Defaulted Debts")
 
     yOffset = yOffset - 36
     WoWKillboardDebtLedger = WoWKillboardDebtLedger or {}
@@ -1041,12 +1049,12 @@ function UI:RenderBounties()
 
             local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             txt:SetPoint("LEFT", 14, 0)
-            txt:SetText(string.format("|cffff2222[OATHBREAKER]|r |cffffffff%s|r owes |cffffd700%s|r to %s (%d days unpaid)",
+            txt:SetText(string.format("|cffff2222[TRAITOR]|r |cffffffff%s|r defaulted on |cffffd700%s|r owed to %s (%d days in default)",
                 playerName, KB.Utils.FormatMoney(debt.amountOwedCopper), debt.creditor, debt.daysInDefault or 1))
 
             -- If player is the debtor, show redemption button
             if playerName == UnitName("player") then
-                local payBtn = UI:CreateButton(row, 120, 24, "Pay Off Debt")
+                local payBtn = UI:CreateButton(row, 130, 24, "⚔️ Settle Debt")
                 payBtn:SetPoint("RIGHT", -10, 0)
                 local pName = playerName
                 payBtn:SetScript("OnClick", function()
@@ -1350,6 +1358,14 @@ function UI:ShowBountyPrompt()
         return
     end
 
+    if IsInInstance then
+        local inInst, instType = IsInInstance()
+        if inInst or (instType and instType ~= "none") then
+            print("|cffff0000[WoWKB Error]|r Blood bounties can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
+            return
+        end
+    end
+
     if not UI.BountyDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
         dlg:SetSize(400, 160)
@@ -1366,7 +1382,7 @@ function UI:ShowBountyPrompt()
 
         local t = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         t:SetPoint("TOP", 0, -16)
-        t:SetText("|cffffd100Place Gold Bounty|r")
+        t:SetText("|cffff3333Declare Blood Bounty|r")
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         desc:SetPoint("TOP", 0, -42)
@@ -1387,7 +1403,7 @@ function UI:ShowBountyPrompt()
         eb:SetTextInsets(6, 6, 0, 0)
         dlg.editBox = eb
 
-        local okBtn = UI:CreateButton(dlg, 110, 24, "Place Bounty")
+        local okBtn = UI:CreateButton(dlg, 120, 24, "Declare Bounty")
         okBtn:SetPoint("BOTTOMLEFT", 40, 18)
         okBtn:SetScript("OnClick", function()
             local text = eb:GetText()
@@ -1413,10 +1429,15 @@ function UI:ShowBountyPrompt()
     UI.BountyDialog.editBox:SetFocus()
 end
 
--- Death Bounty Prompt Dialog: Triggered when player is slain in PvP
+-- Death Bounty Prompt Dialog: Triggered when player is slain in PvP (Open World Only)
 function UI:ShowDeathBountyPrompt(killerData)
     if not killerData or not killerData.name then return end
     if InCombatLockdown() then return end
+
+    if IsInInstance then
+        local inInst, instType = IsInInstance()
+        if inInst or (instType and instType ~= "none") then return end
+    end
 
     if not UI.DeathBountyDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
@@ -1438,7 +1459,7 @@ function UI:ShowDeathBountyPrompt(killerData)
 
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffffd100FALLEN IN COMBAT — PLACE BOUNTY|r")
+        title:SetText("|cffff2222FALLEN IN BATTLE — DECLARE BLOOD BOUNTY|r")
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         desc:SetPoint("TOP", 0, -46)
@@ -1468,9 +1489,9 @@ function UI:ShowDeathBountyPrompt(killerData)
 
         local note = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         note:SetPoint("TOP", 0, -132)
-        note:SetText("|cff888888Only a hunter who accepts the contract and lands the final blow wins.|r")
+        note:SetText("|cff888888Execution contract awarded only to the hunter who lands the final blow (Open World only).|r")
 
-        local okBtn = UI:CreateButton(dlg, 130, 26, "Place Bounty")
+        local okBtn = UI:CreateButton(dlg, 140, 26, "⚔️ Declare Bounty")
         okBtn:SetPoint("BOTTOMLEFT", 45, 16)
         okBtn:SetScript("OnClick", function()
             local gold = tonumber(eb:GetText()) or 50
@@ -1492,13 +1513,13 @@ function UI:ShowDeathBountyPrompt(killerData)
     end
 
     UI.DeathBountyDialog.CurrentKiller = killerData
-    UI.DeathBountyDialog.DescText:SetText(string.format("|cffff3333%s|r has slain you in combat!\nWould you like to put a contract on their head?", killerData.name))
+    UI.DeathBountyDialog.DescText:SetText(string.format("The soil drinks your blood! |cffff3333%s|r has slain you in open combat.\nDeclare a blood bounty for their head upon a pike!", killerData.name))
     UI.DeathBountyDialog.editBox:SetText("50")
     UI.DeathBountyDialog:Show()
     if UI.DeathBountyDialog.Raise then UI.DeathBountyDialog:Raise() end
 end
 
--- Reinforcement Alert Dialog: Displayed to guildmates and allies when an SOS beacon is received
+-- Reinforcement Alert Dialog: Displayed to guildmates and allies when a War Horn is sounded
 function UI:ShowReinforcementAlert(beaconData)
     if not beaconData or not beaconData.character_name then return end
     if InCombatLockdown() then return end
@@ -1534,7 +1555,7 @@ function UI:ShowReinforcementAlert(beaconData)
 
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffff2222🚨 GUILD DISTRESS BEACON — CALL FOR BACKUP!|r")
+        title:SetText("|cffff2222📯 WAR HORN: CALL TO ARMS!|r")
 
         local body = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         body:SetPoint("TOP", 0, -48)
@@ -1550,13 +1571,13 @@ function UI:ShowReinforcementAlert(beaconData)
         gps:SetPoint("TOP", 0, -140)
         dlg.GpsText = gps
 
-        local joinBtn = UI:CreateButton(dlg, 180, 28, "⚔️ Join Squad & Assist")
+        local joinBtn = UI:CreateButton(dlg, 180, 28, "⚔️ Answer the Call")
         joinBtn:SetPoint("BOTTOMLEFT", 30, 20)
         joinBtn:SetScript("OnClick", function()
             if dlg.CurrentBeacon and dlg.CurrentBeacon.character_name then
                 local target = dlg.CurrentBeacon.character_name
-                SendChatMessage("backup", "WHISPER", nil, target)
-                print(string.format("|cff00ff00[WoWKB]|r Whispered 'backup' to |cffffd100%s|r. Rallying to assist in %s!", target, dlg.CurrentBeacon.zone or "Wilderness"))
+                SendChatMessage("rally", "WHISPER", nil, target)
+                print(string.format("|cff00ff00[WoWKB]|r Answering the call for |cffffd100%s|r! Marching to reinforce in %s!", target, dlg.CurrentBeacon.zone or "Wilderness"))
                 dlg:Hide()
             end
         end)
@@ -1578,7 +1599,7 @@ function UI:ShowReinforcementAlert(beaconData)
     end
 
     UI.ReinforcementDialog.BodyText:SetText(string.format(
-        "|cff%s%s|r (Lvl %d %s) is under attack in |cffffd100%s|r%s!",
+        "Blood calls to blood! Ally |cff%s%s|r (Lvl %d %s) is taking fire in |cffffd100%s|r%s!",
         classColor,
         beaconData.character_name,
         beaconData.character_level or 60,
@@ -1588,7 +1609,7 @@ function UI:ShowReinforcementAlert(beaconData)
     ))
 
     UI.ReinforcementDialog.ThreatText:SetText(string.format(
-        "Hostiles Engaging: |cffff4444%d Enemy Player(s)|r\n|cffffaa00%s|r",
+        "Ambushed by: |cffff4444%d Enemy Player(s)|r\n|cffffaa00%s|r",
         beaconData.hostile_count or 1,
         beaconData.hostile_names or "Unknown Hostiles"
     ))

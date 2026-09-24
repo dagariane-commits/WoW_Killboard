@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
+- **Dark Warcraft War Room Lore & Open-World PvP Gating**:
+  - **Frontline War Room Theming**: Eradicated generic modern terms in favor of gritty, war-torn Alliance vs. Horde Warcraft lore across Addon, Web, and Discord notifications.
+  - **War Horn: Call to Arms**: Rebranded backup calls into sounding the War Horn (`/warhorn`, `/kbwarhorn`, `/kbrally`, `[ 📯 WAR HORN ]`). Auto-invite keyword `"rally"` drafts reinforcements into the vanguard.
+  - **High Command Execution List**: Rebranded outlaw board into High Command kill contracts with open-world final-blow execution requirements.
+  - **The Traitor's Gibbet**: Condemned debtors to the public gibbet as branded traitors with proximity alerts.
+  - **Scout's Spyglass / War Correspondent HUD**: Introduced `/war-hud/<character_name>` streaming HUD while maintaining `/streambox/<character_name>` backwards-compatible alias.
+  - **Strict Open-World PvP Gating**: Enforced `IsInInstance()` checks across `BountyEngine.lua`, `CombatTracker.lua`, `Reinforcements.lua`, and `UI.lua`. Bounties and War Horn calls can strictly only occur in the open world, never inside instances, raids, battlegrounds, or arenas. Backend APIs reject instance submissions with HTTP 400.
 - **Call for Backup (SOS Distress Beacon) & Open Auto-Invite Party Engine**:
   - Implemented `Reinforcements.lua` providing 1-click tactical distress beacons via header button (`[ 🚨 CALL BACKUP ]`) and slash commands (`/killboard backup`, `/kbsos`, `/kbbackup`).
   - Gathers real-time spatial GPS coordinates, active hostile attackers, class, and threat count from `CombatTracker.lua`.

@@ -1086,3 +1086,20 @@ header {
   padding: 3px 8px;
   border-radius: 4px;
 }
+
+/* Frontline War Room Dark Aesthetics */
+.war-banner-accent {
+  box-shadow: 0 1px 0 rgba(220, 38, 38, 0.4);
+}
+
+.traitor-gibbet-badge {
+  background: rgba(185, 28, 28, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #f87171;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
