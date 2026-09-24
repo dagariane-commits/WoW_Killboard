@@ -793,6 +793,71 @@ class TestKillboardPipeline(unittest.TestCase):
 
         print("[PASS] Verified Head-to-Head Blood Feuds, ROE Scoring, and 30-Day Deserter KOS Blacklist.")
 
+    def test_11_player_armory_directory(self):
+        """Verify Native Player Armory directory endpoint, PvP honor rank titles, and search filters."""
+        # 1. Base Armory query
+        res = self.client.get("/api/armory")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("total", data)
+        self.assertIn("characters", data)
+        self.assertGreater(data["total"], 0, "Armory directory should contain ingested combatants")
+
+        chars = data["characters"]
+        first_char = chars[0]
+        for field in ["name", "class", "level", "faction", "guild", "kills", "deaths", "kd", "soloKills", "rankTitle"]:
+            self.assertIn(field, first_char, f"Armory character missing required field: {field}")
+
+        # 2. Search filter test
+        res_search = self.client.get("/api/armory?search=Hawkeye")
+        self.assertEqual(res_search.status_code, 200)
+        search_data = res_search.get_json()
+        self.assertGreater(search_data["total"], 0)
+        self.assertTrue(any(c["name"] == "Hawkeye" for c in search_data["characters"]))
+
+        res_empty = self.client.get("/api/armory?search=GhostInTheMachine999")
+        self.assertEqual(res_empty.status_code, 200)
+        self.assertEqual(res_empty.get_json()["total"], 0)
+
+        # 3. Faction filter test
+        res_ally = self.client.get("/api/armory?faction=Alliance")
+        self.assertEqual(res_ally.status_code, 200)
+        ally_chars = res_ally.get_json()["characters"]
+        for c in ally_chars:
+            self.assertEqual(c["faction"], "Alliance")
+
+        res_horde = self.client.get("/api/armory?faction=Horde")
+        self.assertEqual(res_horde.status_code, 200)
+        horde_chars = res_horde.get_json()["characters"]
+        for c in horde_chars:
+            self.assertEqual(c["faction"], "Horde")
+
+        # 4. Class filter test
+        res_class = self.client.get("/api/armory?class=HUNTER")
+        self.assertEqual(res_class.status_code, 200)
+        hunter_chars = res_class.get_json()["characters"]
+        for c in hunter_chars:
+            self.assertEqual(c["class"], "HUNTER")
+
+        # 5. Sorting test (by kd)
+        res_sort_kd = self.client.get("/api/armory?sort=kd")
+        self.assertEqual(res_sort_kd.status_code, 200)
+        kd_chars = res_sort_kd.get_json()["characters"]
+        if len(kd_chars) >= 2:
+            self.assertGreaterEqual(kd_chars[0]["kd"], kd_chars[1]["kd"])
+
+        # 6. Character dossier detail enrichment test
+        res_profile = self.client.get("/api/character/Hawkeye")
+        self.assertEqual(res_profile.status_code, 200)
+        profile_data = res_profile.get_json()
+        self.assertIn("rankTitle", profile_data)
+        self.assertIn("activeBountyGold", profile_data)
+        self.assertIn("isKos", profile_data)
+        self.assertIn("deserter", profile_data)
+        self.assertIn("armoryUrls", profile_data)
+
+        print(f"[PASS] Verified Player Armory directory ({data['total']} combatants indexed) and Military Rank Titles.")
+
 if __name__ == "__main__":
     unittest.main()
 

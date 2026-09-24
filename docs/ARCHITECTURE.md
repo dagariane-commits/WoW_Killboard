@@ -114,5 +114,13 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
 7. **War Council & Rallies Discord Webhook Gateway (`/api/backup/distress`, `/api/events`, `/api/discord/config`)**:
    - Ingestion of live War Horn distress calls (strictly gated to Open World PvP) and tactical guild event rallies.
    - Zero-dependency Discord embed dispatcher notifying guild channels in real-time with automated party auto-invite instructions.
+8. **Native Realm Player Armory & Military Honor Rank Titles (`GET /api/armory`, `calculate_pvp_rank_title`)**:
+   - High-performance character directory aggregating all realm combatants from `kills`, `character_guild_history`, and `bounties`.
+   - Real-time search by character name or guild name with dynamic filters for Faction (Alliance / Horde) and Class (all 13 WoW classes).
+   - Multi-mode sorting: Most Lethal (Kills), Highest K/D Ratio, Solo Specialists, Character Level, and Recently Active.
+   - Dynamic Classic PvP Military Honor Rank Title calculation: Scout through High Warlord (Horde) and Private through Grand Marshal (Alliance) based on weighted kill volume and K/D efficiency.
+   - Retribution status indicators: Realm KOS Blacklist flags, 30-Day Anti-Guild-Hop Deserter countdowns, and active blood bounty escrow gold badges.
+   - Dual-access paradigm: Web directory view (`#nav-armory`), sidebar quick-search jump tool, and in-game slash commands (`/armory [Name]`, `/killboard armory [Name]`).
+
 
 

@@ -110,6 +110,8 @@ flowchart TD
 - **Tactical Intel & Gank Sighting Recon Wire**:
   - In-game enemy spotting commands (`/spot [notes]`, `/scout [notes]`, `/kb spot`) capture targets and GPS coordinates.
   - Broadcasts across Guild, Group/Raid, and P2P Addon channels. Live web recon ticker with Discord embeds.
+- **In-Game Player Armory Lookup (`/armory [Name]`, `/killboard armory [Name]`)**:
+  - Direct chat combat dossier: reports character class, level, faction, Classic Military Honor Rank, K/D, solo triumphs, KOS status, and active blood bounties without leaving the game client.
 
 ### 2. Desktop Ingestion Agent (`WoWKillboardSync.exe`)
 - **Standalone Windows Executable**: Zero Python installation required for players.
@@ -117,6 +119,12 @@ flowchart TD
 - **Streaming Lua Tokenizer**: High-speed recursive-descent parser.
 
 ### 3. Frontline War Room Web Intelligence Platform (`web/`)
+- **Native Realm Player Armory Directory (`#nav-armory`, `/api/armory`)**:
+  - Authoritative realm-wide character directory indexing all active PvP combatants.
+  - Multi-faceted filters: live name/guild search, Faction pills (All, Alliance, Horde), Class dropdown (all 13 classes), and sorting (Most Lethal, Highest K/D, Solo Specialists, Level, Recently Active).
+  - Authentic Classic PvP Military Honor Ranks: calculates Scout through High Warlord (Horde) and Private through Grand Marshal (Alliance) based on kills and K/D.
+  - Retribution and Bounty indicators: highlighted KOS Blacklist, 30-Day Deserter stains, and active blood bounty gold tags.
+  - Native sidebar **"🏰 Player Armory"** quick-search jump tool with external mirrors (Blizzard Armory, Ironforge.pro, Warcraft Logs).
 - **Live Frontline Carnage Ticker**: Tactical dark-slate combat stream capturing open-world skirmishes and battleground massacres.
 - **Tactical Intel Sighting Wire**: Live battlefield recon ticker streaming enemy player sightings and ambush reports.
 - **Head-to-Head Blood Feuds & Realm Blacklist**: Real-time feud progress bars, custom ROE metrics, defeated guild blacklists, and 30-day deserter countdown cards.

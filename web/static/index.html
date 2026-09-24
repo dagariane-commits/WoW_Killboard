@@ -21,6 +21,7 @@
     <nav class="nav-links">
       <button id="nav-feed" class="nav-btn active" onclick="switchTab('FEED')">⚔️ Frontline Feed</button>
       <button id="nav-leaderboards" class="nav-btn" onclick="switchTab('LEADERBOARDS')">🏆 Hall of Heroes</button>
+      <button id="nav-armory" class="nav-btn" onclick="switchTab('ARMORY')">🏰 Player Armory</button>
       <button id="nav-guilds" class="nav-btn" onclick="switchTab('GUILDS')">🛡️ War Guilds</button>
       <button id="nav-feuds" class="nav-btn" onclick="switchTab('FEUDS')">⚔️ Blood Feuds &amp; Blacklist</button>
       <button id="nav-defense" class="nav-btn" onclick="switchTab('DEFENSE')">📯 War Council &amp; Rallies</button>
@@ -108,13 +109,26 @@
 
     <!-- Sidebar Column -->
     <aside class="sidebar-column">
-      <!-- Armory & Intelligence Links -->
+      <!-- Native Realm Player Armory Quick Search & Directory -->
       <div class="sidebar-card">
         <div class="section-header">
           <div class="section-title">
-            <span>🔗</span> Armory &amp; Intel
+            <span>🏰</span> Player Armory
           </div>
+          <span style="font-size:0.7rem; color:var(--accent-cyan); font-weight:700;">REALM INTEL</span>
         </div>
+        <div class="sidebar-armory-wrap">
+          <div class="sidebar-armory-search-row">
+            <input type="text" id="sidebar-armory-input" class="sidebar-search-input" placeholder="Inspect Character Dossier..." onkeydown="handleSidebarArmoryKey(event)">
+            <button class="sidebar-armory-search-btn" onclick="handleSidebarArmorySearch()" title="Inspect Character">⚔️</button>
+          </div>
+          <button class="sidebar-armory-browse-btn" onclick="switchTab('ARMORY')">
+            <span>Open Realm Directory</span>
+            <span>&rarr;</span>
+          </button>
+        </div>
+        <div class="sidebar-armory-divider"></div>
+        <div class="armory-mirrors-label">External Intelligence Mirrors:</div>
         <div class="armory-links-stack">
           <a class="armory-link-row" href="https://worldofwarcraft.blizzard.com/en-us/character" target="_blank" rel="noopener">
             <span>⚔️ Official Blizzard Armory</span>

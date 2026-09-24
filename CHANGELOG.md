@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
+- **Native Realm Player Armory & Classic Military Honor Rank Titles**:
+  - Implemented authoritative realm-wide combat directory API (`GET /api/armory`) supporting dynamic search, faction filtering (All, Alliance, Horde), class filtering (all 13 classes), and sorting (Most Lethal, Highest K/D, Solo Specialists, Level, Recently Active).
+  - Engineered `calculate_pvp_rank_title` calculating authentic World of Warcraft Classic PvP Military Honor Ranks (Scout through High Warlord for the Horde; Private through Grand Marshal for the Alliance) dynamically from combat kills and K/D performance.
+  - Added dedicated top navigation tab **"🏰 Player Armory"** (`#nav-armory` -> `switchTab('ARMORY')`).
+  - Built responsive Player Armory Directory frontend view in `web/static/app.js` and `web/static/style.css` featuring glassmorphic character cards, class color accents, honor rank badges, KOS/Deserter/Bounty status tags, and instant dossier inspection.
+  - Upgraded sidebar intelligence module into native **"🏰 Player Armory"** quick search and character lookup with fallback external mirrors (Official Blizzard Armory, Ironforge.pro, Warcraft Logs).
+  - Added in-game slash commands `/armory [Name]` and `/killboard armory [Name]` in `Addon/WoWKillboard/Core.lua` reporting character class, level, honor rank, K/D, solo triumphs, KOS blacklist status, and active blood bounties directly to in-game chat.
+  - Added comprehensive automated unit test `test_11_player_armory_directory` in `tests/test_pipeline.py`.
 - **Head-to-Head Blood Feuds & Custom Rules of Engagement (ROE)**:
   - Added `blood_feuds` database schema and real-time kill scoring engine in `web/server.py`.
   - Supports both Guild Wars and 1v1 Grudge Matches with custom kill goals (e.g. first to 100 kills) and 30-day contest windows.
