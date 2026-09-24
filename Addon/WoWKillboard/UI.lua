@@ -693,7 +693,49 @@ function UI:RenderLeaderboard()
         yOffset = yOffset - 34
     end
 
-    UI.ContentFrame:SetHeight(math.abs(yOffset) + 30)
+    -- Top War Guilds Section
+    yOffset = yOffset - 15
+    local guildHeader = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    guildHeader:SetPoint("TOPLEFT", 10, yOffset)
+    guildHeader:SetText(string.format("Top War Guilds — Mode: |cffffd100[%s]|r", currentMode))
+
+    yOffset = yOffset - 30
+    local topGuilds = KB.Leaderboard:GetTopGuilds(currentMode, 8)
+    if #topGuilds == 0 then
+        local emptyGuildText = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+        emptyGuildText:SetPoint("TOPLEFT", 15, yOffset)
+        emptyGuildText:SetText("No guild PvP telemetry recorded for this filter mode.")
+        yOffset = yOffset - 25
+    else
+        for gRank, g in ipairs(topGuilds) do
+            local gRow = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+            gRow:SetSize(820, 28)
+            gRow:SetPoint("TOPLEFT", 0, yOffset)
+            local theme = UI:GetTheme()
+            local isEven = (gRank % 2 == 0)
+            local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+            gRow:SetBackdrop(theme.rowBackdrop)
+            gRow:SetBackdropColor(unpack(baseBg))
+            gRow:SetBackdropBorderColor(unpack(theme.rowBorder))
+
+            local gRankColor = (gRank == 1 and "ffd700") or (gRank == 2 and "c0c0c0") or (gRank == 3 and "cd7f32") or "8899aa"
+            local gRankText = gRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            gRankText:SetPoint("LEFT", 12, 0)
+            gRankText:SetText(string.format("|cff%s#%d|r", gRankColor, gRank))
+
+            local gName = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            gName:SetPoint("LEFT", 45, 0)
+            gName:SetText(string.format("|cffffd700<%s>|r", g.guild))
+
+            local gKills = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            gKills:SetPoint("RIGHT", -15, 0)
+            gKills:SetText(string.format("|cff00ff66%d Kills Logged|r", g.kills))
+
+            yOffset = yOffset - 32
+        end
+    end
+
+    UI.ContentFrame:SetHeight(math.abs(yOffset) + 40)
 end
 
 -- 3. Render Bounties & Debt Ledger (Wall of Shame)

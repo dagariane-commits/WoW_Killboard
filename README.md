@@ -79,6 +79,9 @@ flowchart TD
   - Sliding 15-second window correlates all hostile combatants engaging a victim to distinguish certified 1v1 solo kills from gang ganks.
 - **Battleground Telemetry**:
   - Scoreboard integration (`UPDATE_BATTLEFIELD_SCORE`): Real-time damage done, healing done, and objective scores.
+- **Guild War Tracking & In-Game Leaderboards**:
+  - In-game guild affiliation indexing via `GetGuildInfo(unit)`.
+  - In-game Top War Guilds ranking table inside the `/kb` dashboard.
 - **Bounty Escrow & "Wall of Shame" Debt Ledger**:
   - Place gold bounties (`/kb bounty <Target> <Gold>`).
   - Anti-win-trade heuristics (level deltas, guild collusion protection, duplicate kill cooldowns).
@@ -92,6 +95,9 @@ flowchart TD
 
 ### 3. zKillboard-Style Web Intelligence Platform (`web/`)
 - **Live Kill Ticker**: Tactical dark-slate UI modeled directly on **zkillboard.com**.
+- **Interactive Character Combat Dossiers**: Click any character name to view lifetime kills, deaths, K/D, solo kills, damage/healing meters, and historical guild affiliation timeline.
+- **External Armory Links**: 1-click links to Official Blizzard Armory, Classic Vanilla Armory (`Ironforge.pro`), and Warcraft Logs.
+- **Guild War Leaderboards & Guild Dossiers**: Dedicated Guilds tab ranking top guilds by kills, deaths, K/D, and active combatant count, with roster inspection.
 - **Combat Dossiers**: Click any killmail to open detailed combatant cards, damage meters, and location telemetry.
 - **Wall of Shame**: Pinned public registry of Oathbreakers in default with days-in-default counters.
 - **Battleground Gladiators**: Ranked leaderboards for Top Damage Dealers and Combat Medics.

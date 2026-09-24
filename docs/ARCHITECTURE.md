@@ -89,9 +89,13 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - `attackers`: Normalized relation tracking individual damage contributions and spell names.
    - `bounties`: Active and fulfilled bounty records.
    - `debt_ledger`: The public Oathbreaker registry recording default amounts and days in default.
+   - `character_guild_history`: Historical ledger tracking character guild transfers, memberships, factions, and tenure timestamps (`first_seen`, `last_seen`).
 2. **Query & Ranking Engine**:
    - Filter modes: `ALL`, `WORLD`, `BG`, `DUEL`.
    - Aggregated telemetry: Top Killers, Top Victims, Deadliest Zones, Battleground Gladiators (Damage vs Healing).
+   - Guild War Intelligence (`GET /api/guilds`, `GET /api/guild/<name>`): Guild K/D rankings, member counts, rosters, and recent guild combat records.
+   - Character Intelligence & Armory Integration (`GET /api/character/<name>`): Lifetime combat KPI stats, historical guild timeline, recent kills/deaths, and external Armory links (Blizzard Armory, Classic Ironforge.pro, and Warcraft Logs).
 3. **Advertising & Monetization Integration**:
    - High-CPM gaming display containers (NitroPay / Playwire standard units: 728x90, 300x250).
    - "Killboard Pro" role checking to suppress ads and enable gilded profile badges.
+
