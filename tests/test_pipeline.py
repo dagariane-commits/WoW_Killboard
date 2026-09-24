@@ -46,6 +46,7 @@ class TestKillboardPipeline(unittest.TestCase):
             "BountyEngine.lua",
             "Sync.lua",
             "Reinforcements.lua",
+            "IntelScanner.lua",
             "Leaderboard.lua",
             "UI.lua",
             "Core.lua"
@@ -56,7 +57,8 @@ class TestKillboardPipeline(unittest.TestCase):
             with open(fpath, "r", encoding="utf-8") as f:
                 content = f.read()
                 self.assertGreater(len(content), 10, f"File {fname} is empty")
-        print("[PASS] All 12 Addon Lua and TOC files verified.")
+        print("[PASS] All 13 Addon Lua and TOC files verified.")
+
 
     def test_02_ingest_synthetic_kills(self):
         """Ingest synthetic World PvP, Gang, and Battleground killmails."""
@@ -608,5 +610,189 @@ class TestKillboardPipeline(unittest.TestCase):
 
         print("[PASS] Verified Call for Backup SOS beacons, Guild Events, Discord Defense Gateway, and Open-World PvP Gating.")
 
+    def test_09_tactical_intel_sighting_wire(self):
+        """Verify Tactical Intel Sighting Wire, scout recon telemetry, and open-world gating."""
+        # 1. Post a valid open-world enemy sighting
+        sighting_payload = {
+            "id": "SPT-TEST-001",
+            "reporter_name": "ScoutHawkeye",
+            "reporter_guild": "Vanguard Brigade",
+            "target_name": "SneakyRogue",
+            "target_class": "ROGUE",
+            "target_level": 60,
+            "target_guild": "HordeVanguard",
+            "target_faction": "Horde",
+            "zone": "Stranglethorn Vale",
+            "subzone": "Rebel Camp",
+            "coord_x": 37.5,
+            "coord_y": 12.4,
+            "notes": "Stalking Alliance questers outside Rebel Camp",
+            "timestamp": int(time.time())
+        }
+        res_spot = self.client.post("/api/intel/sighting", json=sighting_payload)
+        self.assertEqual(res_spot.status_code, 201)
+        data = res_spot.get_json()
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["sighting_id"], "SPT-TEST-001")
+
+        # 2. Query sightings wire
+        res_wire = self.client.get("/api/intel/sightings")
+        self.assertEqual(res_wire.status_code, 200)
+        sightings = res_wire.get_json()
+        found = next((s for s in sightings if s["id"] == "SPT-TEST-001"), None)
+        self.assertIsNotNone(found, "Sighting should be present in intel wire")
+        self.assertEqual(found["target_name"], "SneakyRogue")
+        self.assertEqual(found["reporter_name"], "ScoutHawkeye")
+
+        # 3. Verify open-world gating (instances/BGs must be rejected)
+        res_inst = self.client.post("/api/intel/sighting", json={
+            "reporter_name": "ScoutHawkeye",
+            "target_name": "SneakyRogue",
+            "is_instance": True,
+            "zone": "Arathi Basin"
+        })
+        self.assertEqual(res_inst.status_code, 400, "Intel sighting inside instances must be rejected")
+        print("[PASS] Verified Tactical Intel Sighting Wire and Open-World Recon Gating.")
+
+    def test_10_blood_feuds_roe_and_kos_blacklist(self):
+        """Verify Head-to-Head Blood Feuds, ROE scoring rules, and 30-Day Deserter KOS Blacklist."""
+        # 1. Setup guild history for casualty guild roster
+        with get_db() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO character_guild_history (character_name, guild_name, faction, first_seen, last_seen)
+                VALUES ('TraitorTim', 'Crimson Horde', 'Horde', 1000, 2000)
+            """)
+            conn.commit()
+
+        # 2. Declare Blood Feud challenge with ROE parameters
+        feud_payload = {
+            "id": "FEUD-TEST-001",
+            "feud_type": "GUILD",
+            "challenger_name": "CommanderHawkeye",
+            "challenger_guild": "Vanguard Brigade",
+            "challenger_faction": "Alliance",
+            "target_name": "WarlordBloodaxe",
+            "target_guild": "Crimson Horde",
+            "target_faction": "Horde",
+            "target_score": 3,
+            "roe_min_level": 55,
+            "roe_underdog_bonus": 1,
+            "roe_zone": "Stranglethorn Vale",
+            "status": "ACTIVE"
+        }
+        res_challenge = self.client.post("/api/feuds/challenge", json=feud_payload)
+        self.assertEqual(res_challenge.status_code, 201)
+
+        # Verify feud exists and is ACTIVE
+        res_feuds = self.client.get("/api/feuds")
+        self.assertEqual(res_feuds.status_code, 200)
+        feuds = res_feuds.get_json()
+        active_feud = next((f for f in feuds if f["id"] == "FEUD-TEST-001"), None)
+        self.assertIsNotNone(active_feud)
+        self.assertEqual(active_feud["status"], "ACTIVE")
+        self.assertEqual(active_feud["challenger_score"], 0)
+
+        # 3. Ingestion ROE Test 1: Kill in wrong zone (Duskwood != Stranglethorn Vale)
+        res_k1 = self.client.post("/api/kills", json={
+            "killId": "KB-FEUD-01",
+            "timestamp": int(time.time()),
+            "killer": {"name": "Hawkeye", "level": 60, "class": "HUNTER", "guild": "Vanguard Brigade", "faction": "Alliance", "partySize": 1},
+            "victim": {"name": "Bloodaxe", "level": 60, "class": "WARRIOR", "guild": "Crimson Horde", "faction": "Horde", "partySize": 1},
+            "location": {"zone": "Duskwood", "subZone": "", "x": 10.0, "y": 10.0}
+        })
+        self.assertEqual(res_k1.status_code, 201)
+        with get_db() as conn:
+            f = conn.execute("SELECT challenger_score FROM blood_feuds WHERE id = 'FEUD-TEST-001'").fetchone()
+            self.assertEqual(f[0], 0, "Kill outside ROE zone must not award feud points")
+
+        # 4. Ingestion ROE Test 2: Lowbie victim (< 55 min level)
+        res_k2 = self.client.post("/api/kills", json={
+            "killId": "KB-FEUD-02",
+            "timestamp": int(time.time()),
+            "killer": {"name": "Hawkeye", "level": 60, "class": "HUNTER", "guild": "Vanguard Brigade", "faction": "Alliance", "partySize": 1},
+            "victim": {"name": "GruntGoretusk", "level": 48, "class": "WARRIOR", "guild": "Crimson Horde", "faction": "Horde", "partySize": 1},
+            "location": {"zone": "Stranglethorn Vale", "subZone": "", "x": 30.0, "y": 20.0}
+        })
+        self.assertEqual(res_k2.status_code, 201)
+        with get_db() as conn:
+            f = conn.execute("SELECT challenger_score FROM blood_feuds WHERE id = 'FEUD-TEST-001'").fetchone()
+            self.assertEqual(f[0], 0, "Lowbie gank (< 55) must not award feud points")
+
+        # 5. Ingestion ROE Test 3: Cheap Zerg Gank (3+ attackers on 1 solo victim)
+        res_k3 = self.client.post("/api/kills", json={
+            "killId": "KB-FEUD-03",
+            "timestamp": int(time.time()),
+            "killer": {"name": "Hawkeye", "level": 60, "class": "HUNTER", "guild": "Vanguard Brigade", "faction": "Alliance", "partySize": 3},
+            "victim": {"name": "Bloodaxe", "level": 60, "class": "WARRIOR", "guild": "Crimson Horde", "faction": "Horde", "partySize": 1},
+            "attackersCount": 3,
+            "location": {"zone": "Stranglethorn Vale", "subZone": "", "x": 30.0, "y": 20.0}
+        })
+        self.assertEqual(res_k3.status_code, 201)
+        with get_db() as conn:
+            f = conn.execute("SELECT challenger_score FROM blood_feuds WHERE id = 'FEUD-TEST-001'").fetchone()
+            self.assertEqual(f[0], 0, "Zerg gank (3+ attackers) must award 0 points under ROE")
+
+        # 6. Ingestion ROE Test 4: Underdog 2x Bonus (1 solo killer vs 2-man enemy squad)
+        res_k4 = self.client.post("/api/kills", json={
+            "killId": "KB-FEUD-04",
+            "timestamp": int(time.time()),
+            "killer": {"name": "Hawkeye", "level": 60, "class": "HUNTER", "guild": "Vanguard Brigade", "faction": "Alliance", "partySize": 1},
+            "victim": {"name": "Bloodaxe", "level": 60, "class": "WARRIOR", "guild": "Crimson Horde", "faction": "Horde", "partySize": 2},
+            "attackersCount": 1,
+            "location": {"zone": "Stranglethorn Vale", "subZone": "", "x": 30.0, "y": 20.0}
+        })
+        self.assertEqual(res_k4.status_code, 201)
+        with get_db() as conn:
+            f = conn.execute("SELECT challenger_score FROM blood_feuds WHERE id = 'FEUD-TEST-001'").fetchone()
+            self.assertEqual(f[0], 2, "Outnumbered 1v2 underdog win must award 2x bonus points")
+
+        # 7. Ingestion ROE Test 5: Deciding 1v1 Kill (Reaches target score 3)
+        res_k5 = self.client.post("/api/kills", json={
+            "killId": "KB-FEUD-05",
+            "timestamp": int(time.time()),
+            "killer": {"name": "Hawkeye", "level": 60, "class": "HUNTER", "guild": "Vanguard Brigade", "faction": "Alliance", "partySize": 1},
+            "victim": {"name": "Bloodaxe", "level": 60, "class": "WARRIOR", "guild": "Crimson Horde", "faction": "Horde", "partySize": 1},
+            "attackersCount": 1,
+            "location": {"zone": "Stranglethorn Vale", "subZone": "", "x": 30.0, "y": 20.0}
+        })
+        self.assertEqual(res_k5.status_code, 201)
+
+        # 8. Verify Feud Completion and Victor
+        with get_db() as conn:
+            f = conn.execute("SELECT status, winner_name, challenger_score FROM blood_feuds WHERE id = 'FEUD-TEST-001'").fetchone()
+            self.assertEqual(f["status"], "COMPLETED", "Feud should be COMPLETED upon reaching target score")
+            self.assertEqual(f["winner_name"], "Vanguard Brigade")
+            self.assertEqual(f["challenger_score"], 3)
+
+        # 9. Verify Defeated Guild consigned to KOS Blacklist & 30-Day Deserters
+        res_kos = self.client.get("/api/kos/blacklist")
+        self.assertEqual(res_kos.status_code, 200)
+        kos_data = res_kos.get_json()
+
+        # Defeated guild check
+        kos_guild = next((g for g in kos_data["guilds"] if g["entity_name"] == "Crimson Horde"), None)
+        self.assertIsNotNone(kos_guild, "Defeated guild must be consigned to KOS Blacklist")
+        self.assertEqual(kos_guild["status"], "KOS")
+
+        # 30-day deserter stain check
+        deserter = next((d for d in kos_data["deserters"] if d["player_name"] == "TraitorTim"), None)
+        self.assertIsNotNone(deserter, "Guild member TraitorTim must be stamped as KOS Deserter")
+        self.assertEqual(deserter["former_guild"], "Crimson Horde")
+        self.assertGreaterEqual(deserter["days_remaining"], 29)
+
+        # 10. Verify Manual KOS and Pardon
+        res_add_kos = self.client.post("/api/kos/blacklist", json={
+            "entity_name": "RogueGanker",
+            "entity_type": "PLAYER",
+            "reason": "Serial flight-path camper"
+        })
+        self.assertEqual(res_add_kos.status_code, 201)
+
+        res_pardon = self.client.post("/api/kos/pardon", json={"entity_name": "RogueGanker"})
+        self.assertEqual(res_pardon.status_code, 200)
+
+        print("[PASS] Verified Head-to-Head Blood Feuds, ROE Scoring, and 30-Day Deserter KOS Blacklist.")
+
 if __name__ == "__main__":
     unittest.main()
+

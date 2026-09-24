@@ -169,6 +169,64 @@ def init_db():
                 events_enabled INTEGER DEFAULT 1
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS blood_feuds (
+                id TEXT PRIMARY KEY,
+                feud_type TEXT DEFAULT 'GUILD',
+                challenger_name TEXT,
+                challenger_guild TEXT,
+                challenger_faction TEXT,
+                target_name TEXT,
+                target_guild TEXT,
+                target_faction TEXT,
+                target_score INTEGER DEFAULT 100,
+                challenger_score INTEGER DEFAULT 0,
+                target_score_current INTEGER DEFAULT 0,
+                roe_min_level INTEGER DEFAULT 55,
+                roe_underdog_bonus INTEGER DEFAULT 1,
+                roe_zone TEXT,
+                status TEXT DEFAULT 'ACTIVE',
+                winner_name TEXT,
+                created_at INTEGER,
+                expires_at INTEGER
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS kos_blacklist (
+                entity_name TEXT PRIMARY KEY,
+                entity_type TEXT DEFAULT 'GUILD',
+                reason TEXT,
+                branded_at INTEGER,
+                status TEXT DEFAULT 'KOS'
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS kos_deserters (
+                player_guid TEXT PRIMARY KEY,
+                player_name TEXT,
+                former_guild TEXT,
+                branded_at INTEGER,
+                expires_at INTEGER
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS intel_sightings (
+                id TEXT PRIMARY KEY,
+                reporter_name TEXT,
+                reporter_guild TEXT,
+                target_name TEXT,
+                target_class TEXT,
+                target_level INTEGER,
+                target_guild TEXT,
+                target_faction TEXT,
+                zone TEXT,
+                subzone TEXT,
+                coord_x REAL,
+                coord_y REAL,
+                notes TEXT,
+                timestamp INTEGER
+            )
+        """)
         # Backfill character_guild_history from existing kills if any
         try:
             conn.execute("""
@@ -570,6 +628,98 @@ def post_kill():
                         SET status = 'CLAIMED', hunter_name = ?, kill_id = ?, payment_deadline = ?
                         WHERE id = ?
                     """, (killer_name, kill_id, timestamp, b_id))
+
+        # Process Active Blood Feuds & ROE scoring
+        if killer_name != "Unknown" and victim_name != "Unknown" and killer_name != victim_name:
+            active_feuds = conn.execute("SELECT * FROM blood_feuds WHERE status = 'ACTIVE'").fetchall()
+            for feud in active_feuds:
+                f_id = feud["id"]
+                c_name = feud["challenger_name"]
+                c_guild = feud["challenger_guild"]
+                t_name = feud["target_name"]
+                t_guild = feud["target_guild"]
+                f_type = feud["feud_type"]
+                roe_min_lvl = feud["roe_min_level"] or 0
+                v_lvl = v.get("level", 60)
+                zone_name = loc.get("zone", "")
+                roe_zone = feud["roe_zone"]
+
+                # ROE Check 1: Zone restriction
+                if roe_zone and roe_zone.strip() and roe_zone.lower() not in zone_name.lower():
+                    continue
+
+                # ROE Check 2: Minimum level (Anti-lowbie filter)
+                if roe_min_lvl > 0 and v_lvl < roe_min_lvl:
+                    continue
+
+                # ROE Check 3: Underdog Multiplier & Zerg Filter
+                victim_party = v.get("partySize", 1)
+                points = 1
+                if feud["roe_underdog_bonus"]:
+                    if attackers_count == 1 and victim_party >= 2:
+                        points = 2  # Outnumbered underdog win!
+                    elif attackers_count >= 3 and victim_party <= 1:
+                        points = 0  # Zero points for cheap zerg ganks
+
+                if points == 0:
+                    continue
+
+                is_challenger_kill = False
+                is_target_kill = False
+
+                if f_type == "GUILD":
+                    if killer_guild and c_guild and killer_guild == c_guild and victim_guild == t_guild:
+                        is_challenger_kill = True
+                    elif killer_guild and t_guild and killer_guild == t_guild and victim_guild == c_guild:
+                        is_target_kill = True
+                else:
+                    if killer_name == c_name and victim_name == t_name:
+                        is_challenger_kill = True
+                    elif killer_name == t_name and victim_name == c_name:
+                        is_target_kill = True
+
+                now_ts = int(time.time())
+                exp_ts = now_ts + (30 * 86400)  # 30-day deserter stain
+
+                if is_challenger_kill:
+                    new_score = feud["challenger_score"] + points
+                    conn.execute("UPDATE blood_feuds SET challenger_score = ? WHERE id = ?", (new_score, f_id))
+                    if new_score >= feud["target_score"]:
+                        winner = c_guild if f_type == "GUILD" else c_name
+                        loser = t_guild if f_type == "GUILD" else t_name
+                        conn.execute("UPDATE blood_feuds SET status = 'COMPLETED', winner_name = ? WHERE id = ?", (winner, f_id))
+                        conn.execute("""
+                            INSERT OR REPLACE INTO kos_blacklist (entity_name, entity_type, reason, branded_at, status)
+                            VALUES (?, ?, ?, ?, 'KOS')
+                        """, (loser, f_type, f"Defeated in Blood Feud by {winner}", now_ts))
+                        if f_type == "GUILD":
+                            roster = conn.execute("SELECT DISTINCT character_name FROM character_guild_history WHERE guild_name = ?", (loser,)).fetchall()
+                            for m in roster:
+                                m_name = m["character_name"]
+                                conn.execute("""
+                                    INSERT OR REPLACE INTO kos_deserters (player_guid, player_name, former_guild, branded_at, expires_at)
+                                    VALUES (?, ?, ?, ?, ?)
+                                """, (f"Player-KOS-{m_name}", m_name, loser, now_ts, exp_ts))
+
+                elif is_target_kill:
+                    new_score = feud["target_score_current"] + points
+                    conn.execute("UPDATE blood_feuds SET target_score_current = ? WHERE id = ?", (new_score, f_id))
+                    if new_score >= feud["target_score"]:
+                        winner = t_guild if f_type == "GUILD" else t_name
+                        loser = c_guild if f_type == "GUILD" else c_name
+                        conn.execute("UPDATE blood_feuds SET status = 'COMPLETED', winner_name = ? WHERE id = ?", (winner, f_id))
+                        conn.execute("""
+                            INSERT OR REPLACE INTO kos_blacklist (entity_name, entity_type, reason, branded_at, status)
+                            VALUES (?, ?, ?, ?, 'KOS')
+                        """, (loser, f_type, f"Defeated in Blood Feud by {winner}", now_ts))
+                        if f_type == "GUILD":
+                            roster = conn.execute("SELECT DISTINCT character_name FROM character_guild_history WHERE guild_name = ?", (loser,)).fetchall()
+                            for m in roster:
+                                m_name = m["character_name"]
+                                conn.execute("""
+                                    INSERT OR REPLACE INTO kos_deserters (player_guid, player_name, former_guild, branded_at, expires_at)
+                                    VALUES (?, ?, ?, ?, ?)
+                                """, (f"Player-KOS-{m_name}", m_name, loser, now_ts, exp_ts))
 
         conn.commit()
 
@@ -1545,13 +1695,223 @@ def test_discord_webhook():
         }]
     }
     success = send_discord_webhook(webhook_url, payload)
-    if success:
-        return jsonify({"status": "ok", "message": "Test announcement sent to Discord!"})
-    else:
-        return jsonify({"error": "Failed to send test announcement. Please check the webhook URL."}), 500
+# ----------------- Tactical Intel & Gank Sighting Wire API -----------------
+
+@app.route("/api/intel/sighting", methods=["POST"])
+def post_intel_sighting():
+    """Receives tactical scout/gank sightings from the field and broadcasts to the war network."""
+    data = request.json or {}
+    if data.get("is_instance") or data.get("isBattleground") or data.get("isArena"):
+        return jsonify({"error": "Intel sightings can only be recorded in the Open World."}), 400
+
+    s_id = data.get("id") or f"SPT-{int(time.time()*1000)}"
+    reporter_name = data.get("reporter_name", "Scout")
+    reporter_guild = data.get("reporter_guild", "")
+    target_name = data.get("target_name")
+    if not target_name:
+        return jsonify({"error": "Missing target_name"}), 400
+
+    target_class = data.get("target_class", "WARRIOR")
+    target_level = int(data.get("target_level", 60))
+    target_guild = data.get("target_guild", "")
+    target_faction = data.get("target_faction", "Unknown")
+    zone = data.get("zone", "Azeroth")
+    subzone = data.get("subzone", "")
+    coord_x = float(data.get("coord_x", 0.0))
+    coord_y = float(data.get("coord_y", 0.0))
+    notes = data.get("notes", "Hostile spotted")
+    ts = int(data.get("timestamp") or time.time())
+
+    with get_db() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO intel_sightings (
+                id, reporter_name, reporter_guild, target_name, target_class, target_level,
+                target_guild, target_faction, zone, subzone, coord_x, coord_y, notes, timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            s_id, reporter_name, reporter_guild, target_name, target_class, target_level,
+            target_guild, target_faction, zone, subzone, coord_x, coord_y, notes, ts
+        ))
+        conn.commit()
+
+    # Optional Discord Webhook Broadcast
+    cfg = get_discord_config_for_guild(reporter_guild)
+    if cfg and cfg.get("webhook_url") and cfg.get("alerts_enabled", 1):
+        discord_payload = {
+            "content": f"👁️ **TACTICAL INTEL SPOT: Hostile {target_name} Spotted in {zone}!**",
+            "embeds": [{
+                "title": f"👁️ SCOUT REPORT: {target_name} ({target_faction})",
+                "description": f"Scout **{reporter_name}** has flagged enemy presence: *\"{notes}\"*",
+                "color": 0xFFA500,  # Orange
+                "fields": [
+                    {"name": "Hostile Target", "value": f"**{target_name}** (Lvl {target_level} {target_class})", "inline": True},
+                    {"name": "Guild", "value": f"<{target_guild}>" if target_guild else "Unaligned", "inline": True},
+                    {"name": "Sector / GPS", "value": f"**{zone}** {f'({subzone})' if subzone else ''}\n`({coord_x:.1f}, {coord_y:.1f})`", "inline": True},
+                    {"name": "Reported By", "value": f"{reporter_name} <{reporter_guild}>" if reporter_guild else reporter_name, "inline": True}
+                ],
+                "footer": {"text": "WoW Killboard Tactical Intel Wire"},
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
+            }]
+        }
+        send_discord_webhook(cfg["webhook_url"], discord_payload)
+
+    return jsonify({"status": "ok", "sighting_id": s_id}), 201
+
+@app.route("/api/intel/sightings", methods=["GET"])
+def get_intel_sightings():
+    """Returns tactical sightings from the last 30 minutes."""
+    cutoff = int(time.time()) - 1800  # 30 minutes
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT * FROM intel_sightings
+            WHERE timestamp >= ?
+            ORDER BY timestamp DESC
+            LIMIT 50
+        """, (cutoff,)).fetchall()
+        sightings = [dict(r) for r in rows]
+    return jsonify(sightings)
+
+# ----------------- Head-to-Head Blood Feuds & ROE API -----------------
+
+@app.route("/api/feuds/challenge", methods=["POST"])
+def create_blood_feud():
+    """Declares a Head-to-Head Blood Feud between two guilds or characters."""
+    data = request.json or {}
+    feud_id = data.get("id") or f"FEUD-{int(time.time()*1000)}"
+    feud_type = data.get("feud_type", "GUILD")
+    c_name = data.get("challenger_name", "Challenger")
+    c_guild = data.get("challenger_guild", "")
+    c_faction = data.get("challenger_faction", "Unknown")
+    t_name = data.get("target_name", "Target")
+    t_guild = data.get("target_guild", "")
+    t_faction = data.get("target_faction", "Unknown")
+    target_score = int(data.get("target_score", 100))
+    roe_min_lvl = int(data.get("roe_min_level", 55))
+    roe_underdog = 1 if data.get("roe_underdog_bonus", True) else 0
+    roe_zone = data.get("roe_zone", "").strip()
+    status = data.get("status", "ACTIVE")
+    now_ts = int(time.time())
+    expires_at = now_ts + (86400 * 30)  # 30 day contest window
+
+    with get_db() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO blood_feuds (
+                id, feud_type, challenger_name, challenger_guild, challenger_faction,
+                target_name, target_guild, target_faction, target_score, challenger_score,
+                target_score_current, roe_min_level, roe_underdog_bonus, roe_zone,
+                status, created_at, expires_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)
+        """, (
+            feud_id, feud_type, c_name, c_guild, c_faction,
+            t_name, t_guild, t_faction, target_score,
+            roe_min_lvl, roe_underdog, roe_zone,
+            status, now_ts, expires_at
+        ))
+        conn.commit()
+
+    return jsonify({"status": "ok", "feud_id": feud_id, "message": f"Blood Feud declared: {c_guild or c_name} vs {t_guild or t_name}"}), 201
+
+@app.route("/api/feuds", methods=["GET"])
+def get_blood_feuds():
+    """Returns active, pending, and completed Blood Feuds."""
+    with get_db() as conn:
+        rows = conn.execute("SELECT * FROM blood_feuds ORDER BY created_at DESC LIMIT 50").fetchall()
+        feuds = [dict(r) for r in rows]
+    return jsonify(feuds)
+
+@app.route("/api/feuds/<feud_id>/accept", methods=["POST"])
+def accept_blood_feud(feud_id):
+    """Accepts a pending Blood Feud challenge."""
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM blood_feuds WHERE id = ?", (feud_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "Feud not found"}), 404
+        conn.execute("UPDATE blood_feuds SET status = 'ACTIVE' WHERE id = ?", (feud_id,))
+        conn.commit()
+    return jsonify({"status": "ok", "feud_id": feud_id, "message": "Blood Feud challenge accepted!"})
+
+# ----------------- Realm KOS Blacklist & 30-Day Deserters API -----------------
+
+@app.route("/api/kos/blacklist", methods=["GET"])
+def get_kos_blacklist():
+    """Returns current KOS Blacklist entities and marked Deserters."""
+    now_ts = int(time.time())
+    with get_db() as conn:
+        # Guild / Entity blacklist
+        guild_rows = conn.execute("SELECT * FROM kos_blacklist WHERE status = 'KOS' ORDER BY branded_at DESC").fetchall()
+        guilds = [dict(r) for r in guild_rows]
+
+        # Deserters with active penalty
+        deserter_rows = conn.execute("""
+            SELECT player_guid, player_name, former_guild, branded_at, expires_at
+            FROM kos_deserters
+            WHERE expires_at > ?
+            ORDER BY expires_at DESC
+        """, (now_ts,)).fetchall()
+
+        deserters = []
+        for r in deserter_rows:
+            d = dict(r)
+            remaining_seconds = max(0, d["expires_at"] - now_ts)
+            d["days_remaining"] = max(1, remaining_seconds // 86400)
+            deserters.append(d)
+
+    return jsonify({
+        "guilds": guilds,
+        "deserters": deserters
+    })
+
+@app.route("/api/kos/blacklist", methods=["POST"])
+def add_kos_blacklist():
+    """Brands a guild or player onto the KOS Blacklist."""
+    data = request.json or {}
+    entity_name = data.get("entity_name")
+    if not entity_name:
+        return jsonify({"error": "Missing entity_name"}), 400
+
+    entity_type = data.get("entity_type", "GUILD")
+    reason = data.get("reason", "Branded KOS by Realm War Council")
+    now_ts = int(time.time())
+
+    with get_db() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO kos_blacklist (entity_name, entity_type, reason, branded_at, status)
+            VALUES (?, ?, ?, ?, 'KOS')
+        """, (entity_name, entity_type, reason, now_ts))
+
+        # If blacklisting a guild, mark current known members as deserters for 30 days
+        if entity_type == "GUILD":
+            exp_ts = now_ts + (30 * 86400)
+            roster = conn.execute("SELECT DISTINCT character_name FROM character_guild_history WHERE guild_name = ?", (entity_name,)).fetchall()
+            for m in roster:
+                m_name = m["character_name"]
+                conn.execute("""
+                    INSERT OR REPLACE INTO kos_deserters (player_guid, player_name, former_guild, branded_at, expires_at)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (f"Player-KOS-{m_name}", m_name, entity_name, now_ts, exp_ts))
+
+        conn.commit()
+
+    return jsonify({"status": "ok", "message": f"{entity_name} consigned to the KOS Blacklist."}), 201
+
+@app.route("/api/kos/pardon", methods=["POST"])
+def pardon_kos_entity():
+    """Pardons an entity or deserter from the KOS Blacklist."""
+    data = request.json or {}
+    entity_name = data.get("entity_name")
+    if not entity_name:
+        return jsonify({"error": "Missing entity_name"}), 400
+
+    with get_db() as conn:
+        conn.execute("DELETE FROM kos_blacklist WHERE entity_name = ?", (entity_name,))
+        conn.execute("DELETE FROM kos_deserters WHERE player_name = ? OR former_guild = ?", (entity_name, entity_name))
+        conn.commit()
+
+    return jsonify({"status": "ok", "message": f"{entity_name} pardoned from KOS Blacklist."})
 
 if __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", 8080))
     print(f"[*] WoW Killboard Web Server running at http://127.0.0.1:{port}")
     app.run(host="0.0.0.0", port=port, debug=True)
+

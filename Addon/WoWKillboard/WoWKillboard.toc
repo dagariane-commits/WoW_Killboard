@@ -19,6 +19,8 @@ Killmail.lua
 BountyEngine.lua
 Sync.lua
 Reinforcements.lua
+IntelScanner.lua
 Leaderboard.lua
 UI.lua
 Core.lua
+

@@ -66,8 +66,91 @@ function US:ScanUnit(unit)
     US.NameCache[fullName] = guid
     US.NameCache[name] = guid
 
+    -- KOS Blacklist & 30-Day Deserter Check (Hostile units only)
+    if UnitCanAttack and UnitCanAttack("player", unit) then
+        US:CheckKOS(info)
+    end
+
     return info
 end
+
+US.LastAlertTime = {}
+
+-- Proximity evaluation for KOS Blacklist & Deserter stain
+function US:CheckKOS(info)
+    if not info or not info.name then return end
+    local name = info.name
+    local guid = info.guid
+    local guild = info.guild
+    local now = time()
+
+    if (now - (US.LastAlertTime[name] or 0)) < 45 then
+        return -- Throttle alert to once every 45s per target
+    end
+
+    local isDeserter = false
+    local deserterInfo = nil
+    local isKosGuild = false
+    local kosGuildReason = nil
+    local isKosPlayer = false
+    local kosPlayerReason = nil
+
+    if WoWKillboardDB then
+        if WoWKillboardDB.kosDeserters then
+            deserterInfo = WoWKillboardDB.kosDeserters[name] or (guid and WoWKillboardDB.kosDeserters[guid])
+            if deserterInfo then
+                -- Check 30-day expiration if timestamped
+                if deserterInfo.expires_at and now > deserterInfo.expires_at then
+                    WoWKillboardDB.kosDeserters[name] = nil
+                    deserterInfo = nil
+                else
+                    isDeserter = true
+                end
+            end
+        end
+
+        if not isDeserter and guild and guild ~= "None" and WoWKillboardDB.kosGuilds then
+            if WoWKillboardDB.kosGuilds[guild] then
+                isKosGuild = true
+                kosGuildReason = WoWKillboardDB.kosGuilds[guild].reason or "Defeated in Blood Feud / Blacklisted"
+            end
+        end
+
+        if not isDeserter and not isKosGuild and WoWKillboardDB.kosPlayers then
+            if WoWKillboardDB.kosPlayers[name] then
+                isKosPlayer = true
+                kosPlayerReason = WoWKillboardDB.kosPlayers[name].reason or "Branded KOS"
+            end
+        end
+    end
+
+    if isDeserter or isKosGuild or isKosPlayer then
+        US.LastAlertTime[name] = now
+        PlaySound(8959) -- Air-raid alarm sound
+
+        if isDeserter then
+            local former = deserterInfo and deserterInfo.former_guild or guild or "Enemy Guild"
+            print(string.format("|cffff0000[🚨 KOS DESERTER DETECTED]|r |cffffd100%s|r (Ex-Guild: |cffff5555<%s>|r) - SERVING 30-DAY DESERTER PENANCE! KILL ON SIGHT!",
+                name, former))
+            if KB.UI and KB.UI.ShowKOSAlert then
+                KB.UI:ShowKOSAlert(name, former, "DESERTER", "Serving 30-Day Deserter Penance")
+            end
+        elseif isKosGuild then
+            print(string.format("|cffff0000[🚨 GUILD KOS BLACKLIST]|r |cffffd100%s|r (<%s>) - CONSIGNED TO THE REALM BLACKLIST (%s)! DESTROY ON SIGHT!",
+                name, guild, kosGuildReason))
+            if KB.UI and KB.UI.ShowKOSAlert then
+                KB.UI:ShowKOSAlert(name, guild, "GUILD_KOS", kosGuildReason)
+            end
+        elseif isKosPlayer then
+            print(string.format("|cffff0000[🚨 ENEMY KOS TARGET]|r |cffffd100%s|r is BRANDED KOS (%s)! ENGAGE IMMEDIATELY!",
+                name, kosPlayerReason))
+            if KB.UI and KB.UI.ShowKOSAlert then
+                KB.UI:ShowKOSAlert(name, guild, "PLAYER_KOS", kosPlayerReason)
+            end
+        end
+    end
+end
+
 
 -- Retrieve cached unit info by GUID or name
 function US:GetUnitInfo(guid)

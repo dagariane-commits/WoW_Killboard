@@ -35,6 +35,11 @@ function KB:Initialize()
         KB.Reinforcements:Init()
     end
 
+    -- Initialize Intel Scanner & KOS Blacklist engine
+    if KB.IntelScanner and KB.IntelScanner.Init then
+        KB.IntelScanner:Init()
+    end
+
     -- Pre-instantiate UI frames cleanly at load time (Zero frame allocation inside OnClick)
     if KB.UI and KB.UI.CreateMainWindow then
         KB.UI:CreateMainWindow()
@@ -114,6 +119,39 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         else
             print("|cffff9900Usage:|r /killboard event <Title> | <Zone> | <Time> (e.g. /killboard event STV Defense | Stranglethorn Vale | 8:00 PM EST)")
         end
+    elseif cmd == "spot" or cmd == "scout" then
+        if KB.IntelScanner then
+            KB.IntelScanner:SpotTarget(arg)
+        end
+    elseif cmd == "kos" then
+        local action, entity = arg:match("^(%S*)%s*(.-)$")
+        action = action and action:lower() or "list"
+        WoWKillboardDB = WoWKillboardDB or {}
+        WoWKillboardDB.kosGuilds = WoWKillboardDB.kosGuilds or {}
+        WoWKillboardDB.kosDeserters = WoWKillboardDB.kosDeserters or {}
+        WoWKillboardDB.kosPlayers = WoWKillboardDB.kosPlayers or {}
+
+        if action == "add" and entity ~= "" then
+            WoWKillboardDB.kosGuilds[entity] = { reason = "Manual KOS Branding", time = time() }
+            print(string.format("|cffff0000[WoWKB KOS]|r Added |cffffd100%s|r to KOS Blacklist.", entity))
+        elseif action == "remove" and entity ~= "" then
+            WoWKillboardDB.kosGuilds[entity] = nil
+            WoWKillboardDB.kosPlayers[entity] = nil
+            WoWKillboardDB.kosDeserters[entity] = nil
+            print(string.format("|cff00ff00[WoWKB KOS]|r Removed |cffffd100%s|r from KOS Blacklist.", entity))
+        else
+            print("|cffff0000[WoWKB Realm KOS Blacklist & Deserters]:|r")
+            local count = 0
+            for g, d in pairs(WoWKillboardDB.kosGuilds) do
+                print(string.format("  - Guild: |cffff5555<%s>|r (%s)", g, d.reason or "KOS"))
+                count = count + 1
+            end
+            for dName, dInfo in pairs(WoWKillboardDB.kosDeserters) do
+                print(string.format("  - Deserter: |cffff5555%s|r (Ex-<%s>)", dName, dInfo.former_guild or "None"))
+                count = count + 1
+            end
+            if count == 0 then print("  (No active KOS blacklist targets)") end
+        end
     elseif cmd == "theme" then
         local tArg = arg and arg:lower():trim() or ""
         if tArg == "classic" or tArg == "elvui" then
@@ -126,13 +164,26 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     else
         print("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
         print("  |cffffd100/killboard|r or |cffffd100/wowkb|r - Toggle the Frontline War Room Dashboard")
+        print("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
         print("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
         print("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
+        print("  |cffffd100/killboard kos [add|remove|list]|r - View or manage realm KOS Blacklist")
         print("  |cffffd100/killboard event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
         print("  |cffffd100/killboard theme [classic|elvui]|r - Switch between Classic and ElvUI aesthetics")
         print("  |cffffd100/killboard stats|r - Review current combat session battle statistics")
         print("  |cffffd100/killboard bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
         print("  |cffffd100/killboard reset|r - Clear local battle records")
+    end
+end
+
+-- Dedicated Quick-Slash Commands for Tactical Intel Spotting
+SLASH_WOWKB_SPOT1 = "/spot"
+SLASH_WOWKB_SPOT2 = "/scout"
+SLASH_WOWKB_SPOT3 = "/kbspot"
+SLASH_WOWKB_SPOT4 = "/kbscout"
+SlashCmdList["WOWKB_SPOT"] = function(msg)
+    if KB.IntelScanner then
+        KB.IntelScanner:SpotTarget(msg)
     end
 end
 

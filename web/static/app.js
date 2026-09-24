@@ -1199,6 +1199,7 @@ function switchTab(tab) {
   }
   else if (tab === "LEADERBOARDS") loadLeaderboards();
   else if (tab === "GUILDS") loadGuildsView();
+  else if (tab === "FEUDS") loadFeudsView();
   else if (tab === "DEFENSE") loadDefenseView();
   else if (tab === "BG_METRICS") loadBgGladiators();
   else if (tab === "BOUNTIES") loadBounties();
@@ -1836,13 +1837,13 @@ function openPlaceBountyModal() {
 
 // Supporter Mode & Subzone Intel Helpers
 function isSupporterActive() {
-  const val = localStorage.getItem("fbv_supporter");
+  const val = localStorage.getItem("wowkb_supporter");
   return val !== "0"; // Default to active (1) unless explicitly disabled (0)
 }
 
 function toggleSupporterMode() {
   const current = isSupporterActive();
-  localStorage.setItem("fbv_supporter", current ? "0" : "1");
+  localStorage.setItem("wowkb_supporter", current ? "0" : "1");
   updateSupporterButton();
   if (currentTab === "BOUNTIES") {
     loadBounties();
@@ -1869,6 +1870,277 @@ function updateSupporterButton() {
   }
 }
 
+// ----------------- Blood Feuds & KOS Blacklist -----------------
+
+async function loadFeudsView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading Blood Feud contracts and Realm KOS Blacklist...</div>`;
+
+  try {
+    const [feudsRes, kosRes] = await Promise.all([
+      fetch("/api/feuds"),
+      fetch("/api/kos/blacklist")
+    ]);
+    const feuds = await feudsRes.json();
+    const kosData = await kosRes.json();
+    const guilds = kosData.guilds || [];
+    const deserters = kosData.deserters || [];
+
+    let html = `
+      <div style="display:flex; flex-direction:column; gap:24px;">
+        <!-- Header & Action -->
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h2 style="font-size:1.3rem; color:var(--accent-red); letter-spacing:-0.5px; display:flex; align-items:center; gap:8px;">
+              <span>⚔️</span> Head-to-Head Blood Feuds &amp; Rules of Engagement
+            </h2>
+            <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">
+              Guild Wars &amp; 1v1 Grudge Matches &bull; First to target score wins &bull; Defeated guilds condemned to the Realm KOS Blacklist!
+            </div>
+          </div>
+          <button class="supporter-btn" style="background:linear-gradient(135deg, #b91c1c, #991b1b); border:1px solid #ef4444; color:#fff;" onclick="openDeclareFeudModal()">
+            ⚔️ Declare Blood Feud
+          </button>
+        </div>
+
+        <!-- Active Contests Grid -->
+        <div class="feuds-grid">
+    `;
+
+    if (!feuds || feuds.length === 0) {
+      html += `
+        <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:24px; text-align:center; color:#64748b; grid-column:1/-1;">
+          <div style="font-size:1.5rem; margin-bottom:6px;">⚔️</div>
+          <div style="color:#e2e8f0; font-weight:700;">No Blood Feuds Active</div>
+          <p style="font-size:0.8rem; margin-top:4px;">Challenge an enemy guild or player to a grudge match with custom Rules of Engagement!</p>
+        </div>
+      `;
+    } else {
+      feuds.forEach(f => {
+        const isCompleted = f.status === 'COMPLETED';
+        const cScore = f.challenger_score || 0;
+        const tScore = f.target_score_current || 0;
+        const maxScore = f.target_score || 100;
+        const cPct = Math.min(100, Math.round((cScore / maxScore) * 100));
+        const tPct = Math.min(100, Math.round((tScore / maxScore) * 100));
+
+        const cEntity = f.feud_type === 'GUILD' ? (f.challenger_guild || f.challenger_name) : f.challenger_name;
+        const tEntity = f.feud_type === 'GUILD' ? (f.target_guild || f.target_name) : f.target_name;
+
+        html += `
+          <div class="feud-card" style="${isCompleted ? 'border-color:#475569; opacity:0.85;' : 'border-color:#dc2626;'}">
+            <div class="feud-card-header">
+              <span style="font-size:0.75rem; font-weight:800; color:${isCompleted ? '#94a3b8' : '#ef4444'};">
+                ${f.feud_type} CONTEST &bull; ${f.status}
+              </span>
+              <span style="font-size:0.72rem; color:#94a3b8;">Goal: First to ${maxScore} Kills</span>
+            </div>
+
+            <div class="feud-vs-row">
+              <div style="text-align:left;">
+                <div style="font-size:0.7rem; color:#3b82f6; font-weight:700;">CHALLENGER</div>
+                <div style="font-size:1.05rem; font-weight:800; color:#fff;">${cEntity}</div>
+                <div style="font-size:0.85rem; color:#3b82f6; font-weight:800; margin-top:2px;">${cScore} / ${maxScore}</div>
+              </div>
+
+              <div style="font-size:1.2rem; font-weight:900; color:#ef4444;">VS</div>
+
+              <div style="text-align:right;">
+                <div style="font-size:0.7rem; color:#ef4444; font-weight:700;">DEFENDER</div>
+                <div style="font-size:1.05rem; font-weight:800; color:#fff;">${tEntity}</div>
+                <div style="font-size:0.85rem; color:#ef4444; font-weight:800; margin-top:2px;">${tScore} / ${maxScore}</div>
+              </div>
+            </div>
+
+            <!-- Double Progress Bar -->
+            <div class="feud-progress-bar">
+              <div class="feud-progress-fill-challenger" style="width:${cPct}%;"></div>
+              <div style="flex:1; background:transparent;"></div>
+              <div class="feud-progress-fill-target" style="width:${tPct}%;"></div>
+            </div>
+
+            <!-- Rules of Engagement Badges -->
+            <div class="roe-pill-group">
+              <span class="roe-pill">🛡️ Min Level ${f.roe_min_level || 55}+</span>
+              ${f.roe_underdog_bonus ? '<span class="roe-pill" style="border-color:#10b981; color:#10b981;">⚡ 2x Underdog Bonus</span>' : ''}
+              <span class="roe-pill" style="border-color:#f59e0b; color:#f59e0b;">🚫 Zerg Filter (0 Pts)</span>
+              ${f.roe_zone ? `<span class="roe-pill">📍 Zone: ${f.roe_zone}</span>` : ''}
+            </div>
+
+            ${isCompleted ? `
+              <div style="background:#110d14; border:1px solid #10b981; border-radius:4px; padding:8px 10px; margin-top:10px; font-size:0.75rem; text-align:center;">
+                🏆 <strong>Victor:</strong> <span style="color:#10b981; font-weight:800;">${f.winner_name}</span> &bull; Loser Consigned to KOS Blacklist!
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+    }
+
+    html += `
+        </div>
+
+        <!-- Realm KOS Blacklist Section -->
+        <div class="kos-section">
+          <div style="border-top:1px solid #1e293b; padding-top:20px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h2 style="font-size:1.25rem; color:var(--accent-red); display:flex; align-items:center; gap:8px;">
+                <span>🚨</span> Realm KOS Blacklist &amp; Deserter Ledger
+              </h2>
+              <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
+                Zero-Gold Retribution &bull; Defeated Guilds &amp; Outlaws Branded for Immediate Eradication &bull; In-Game Proximity Sirens Active
+              </div>
+            </div>
+            <button class="nav-btn" style="border:1px solid #dc2626; color:#f87171; font-size:0.75rem;" onclick="openBrandKosModal()">
+              + Brand KOS Target
+            </button>
+          </div>
+
+          <!-- Blacklisted Guilds Table -->
+          <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:16px;">
+            <h3 style="font-size:0.95rem; color:#f87171; margin-bottom:10px;">💀 Blacklisted Enemy Guilds</h3>
+            ${guilds.length === 0 ? '<div style="color:#64748b; font-size:0.8rem;">No enemy guilds currently blacklisted.</div>' : `
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                ${guilds.map(g => `
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:#0f121a; padding:10px 14px; border-radius:6px; border-left:4px solid #dc2626;">
+                    <div>
+                      <strong style="color:#fff; font-size:0.95rem;" class="clickable-guild" onclick="openGuildProfile('${g.entity_name}')">&lt;${g.entity_name}&gt;</strong>
+                      <span style="font-size:0.75rem; color:#94a3b8; margin-left:8px;">${g.reason}</span>
+                    </div>
+                    <span style="font-size:0.72rem; color:#f87171; background:rgba(220,38,38,0.2); padding:3px 8px; border-radius:4px; font-weight:800;">
+                      🚨 KILL ON SIGHT
+                    </span>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+
+          <!-- 30-Day Anti-Guild-Hop Deserters Grid -->
+          <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div>
+                <h3 style="font-size:0.95rem; color:#fbbf24;">⚡ 30-Day Anti-Guild-Hop Deserter Stain</h3>
+                <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">
+                  Leaving (/gquit) a blacklisted guild does not erase your shame. Tracked by permanent character Player-GUID.
+                </div>
+              </div>
+              <span style="font-size:0.75rem; color:#f59e0b; font-weight:700;">${deserters.length} Marked Deserters</span>
+            </div>
+
+            <div class="deserter-grid">
+              ${deserters.length === 0 ? '<div style="color:#64748b; font-size:0.8rem; grid-column:1/-1;">No deserters currently serving penance.</div>' : deserters.map(d => `
+                <div class="deserter-card">
+                  <div class="deserter-header">
+                    <span class="deserter-badge">DESERTER STAIN</span>
+                    <span class="days-pill">⏳ ${d.days_remaining} Days Remaining</span>
+                  </div>
+                  <div style="font-size:1rem; font-weight:800; color:#fff; margin:4px 0;">
+                    <span class="clickable-player" onclick="openCharacterProfile('${d.player_name}')">${d.player_name}</span>
+                  </div>
+                  <div style="font-size:0.75rem; color:#cbd5e1;">
+                    Former Guild: <strong style="color:#f87171;">&lt;${d.former_guild}&gt;</strong>
+                  </div>
+                  <div style="font-size:0.68rem; color:#64748b; margin-top:6px; font-family:monospace;">
+                    GUID: ${d.player_guid}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Blood Feuds: ${err.message}</div>`;
+  }
+}
+
+function openDeclareFeudModal() {
+  const cGuild = prompt("Enter Challenger Guild (or Character Name):");
+  if (!cGuild) return;
+  const tGuild = prompt("Enter Defender Guild (or Character Name):");
+  if (!tGuild) return;
+  const targetScore = prompt("Enter Target Score (e.g. 100 kills):", "100");
+  if (!targetScore) return;
+  const minLvl = prompt("Enter Minimum Level ROE (Anti-Lowbie Filter, e.g. 55):", "55");
+
+  fetch("/api/feuds/challenge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      feud_type: "GUILD",
+      challenger_guild: cGuild.trim(),
+      challenger_name: cGuild.trim(),
+      target_guild: tGuild.trim(),
+      target_name: tGuild.trim(),
+      target_score: parseInt(targetScore) || 100,
+      roe_min_level: parseInt(minLvl) || 55,
+      roe_underdog_bonus: true
+    })
+  }).then(res => res.json()).then(d => {
+    alert("⚔️ " + (d.message || "Blood Feud challenge declared!"));
+    loadFeudsView();
+  }).catch(e => alert("Error declaring feud: " + e.message));
+}
+
+function openBrandKosModal() {
+  const target = prompt("Enter Guild or Character Name to brand as KOS:");
+  if (!target) return;
+  const reason = prompt("Enter Reason for KOS Branding:", "Flagged KOS by Realm War Council");
+  if (!reason) return;
+
+  fetch("/api/kos/blacklist", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      entity_name: target.trim(),
+      entity_type: "GUILD",
+      reason: reason.trim()
+    })
+  }).then(res => res.json()).then(d => {
+    alert("🚨 " + (d.message || "Entity consigned to KOS Blacklist!"));
+    loadFeudsView();
+  }).catch(e => alert("Error blacklisting entity: " + e.message));
+}
+
+// ----------------- Tactical Intel Recon Wire -----------------
+
+async function checkIntelSightings() {
+  const wire = document.getElementById("intel-sighting-wire");
+  if (!wire) return;
+  try {
+    const res = await fetch("/api/intel/sightings");
+    if (!res.ok) return;
+    const sightings = await res.json();
+    if (sightings && sightings.length > 0) {
+      const topS = sightings[0];
+      const classColor = CLASS_COLORS[(topS.target_class || "").toUpperCase()] || CLASS_COLORS.UNKNOWN;
+      wire.style.display = "flex";
+      wire.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="intel-badge">👁️ LIVE RECON WIRE</span>
+          <div style="font-size:0.82rem; color:#cbd5e1;">
+            Scout <strong>${topS.reporter_name}</strong> spotted <strong style="color:${classColor};">${topS.target_name}</strong>
+            (Lvl ${topS.target_level} ${topS.target_class}${topS.target_guild ? ' &lt;' + topS.target_guild + '&gt;' : ''})
+            in <strong style="color:#fff;">${topS.zone}</strong>${topS.subzone ? ' (' + topS.subzone + ')' : ''} &bull; <em>"${topS.notes}"</em>
+          </div>
+        </div>
+        <div style="font-size:0.72rem; color:#f59e0b; font-weight:700;">
+          (${topS.coord_x.toFixed(1)}, ${topS.coord_y.toFixed(1)}) &bull; ${timeAgo(topS.timestamp)}
+        </div>
+      `;
+    } else {
+      wire.style.display = "none";
+    }
+  } catch (e) {
+    wire.style.display = "none";
+  }
+}
+
 // Initialization
 document.addEventListener("DOMContentLoaded", () => {
   const searchEl = document.getElementById("search-box");
@@ -1884,6 +2156,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadMostWanted();
   loadSidebar();
   checkGlobalSosBeacons();
+  checkIntelSightings();
 
   // Polling update every 6 seconds
   setInterval(() => {
@@ -1893,5 +2166,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     loadSidebar();
     checkGlobalSosBeacons();
+    checkIntelSightings();
   }, 6000);
 });
+

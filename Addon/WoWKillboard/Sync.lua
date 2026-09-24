@@ -122,6 +122,38 @@ function S:BroadcastEvent(evt)
     end
 end
 
+-- Broadcast a tactical scout/gank sighting
+function S:BroadcastSighting(sighting)
+    if not KB.DefaultSettings.p2pSyncEnabled or not sighting then return end
+
+    local safeNotes = (sighting.notes or "Hostile spotted"):gsub(":", ";")
+    -- Format: "SPT:id:repName:repGuild:tgtName:tgtClass:tgtLvl:tgtGuild:tgtFaction:zone:subzone:x:y:notes:ts"
+    local payload = string.format("SPT:%s:%s:%s:%s:%s:%d:%s:%s:%s:%s:%.1f:%.1f:%s:%d",
+        sighting.id or "SPT",
+        sighting.reporter_name or "Scout",
+        sighting.reporter_guild or "None",
+        sighting.target_name or "Unknown",
+        sighting.target_class or "WARRIOR",
+        sighting.target_level or 60,
+        sighting.target_guild or "None",
+        sighting.target_faction or "Unknown",
+        sighting.zone or "Wilderness",
+        sighting.subzone or "",
+        sighting.coord_x or 0,
+        sighting.coord_y or 0,
+        safeNotes,
+        sighting.timestamp or time()
+    )
+
+    if IsInGuild() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    end
+    if IsInGroup() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, IsInRaid() and "RAID" or "PARTY")
+    end
+end
+
+
 -- Parse incoming peer message
 function S:OnAddonMessage(prefix, message, channel, sender)
     if prefix ~= KB.Prefix then return end
@@ -245,6 +277,27 @@ function S:OnAddonMessage(prefix, message, channel, sender)
         local timeStr = parts[7] or "NOW"
         print(string.format("|cff00ccff[GUILD EVENT]|r |cffffd100%s|r in |cffffffff%s|r announced by |cff00ff00%s|r (<%s>)! Time: %s.",
             title, zone, creator, guild, timeStr))
+
+    elseif msgType == "SPT" and #parts >= 14 then
+        local sighting = {
+            id = parts[2],
+            reporter_name = parts[3],
+            reporter_guild = parts[4],
+            target_name = parts[5],
+            target_class = parts[6],
+            target_level = tonumber(parts[7]) or 60,
+            target_guild = parts[8],
+            target_faction = parts[9],
+            zone = parts[10],
+            subzone = parts[11],
+            coord_x = tonumber(parts[12]) or 0,
+            coord_y = tonumber(parts[13]) or 0,
+            notes = parts[14] or "Hostile spotted",
+            timestamp = tonumber(parts[15]) or time(),
+        }
+        if KB.IntelScanner and KB.IntelScanner.OnIncomingSighting then
+            KB.IntelScanner:OnIncomingSighting(sighting)
+        end
     end
 end
 

@@ -98,6 +98,19 @@ flowchart TD
   - **The Traitor's Gibbet (Defaulted Debts)**: Debtor sirens (`PlaySound(8959)`) and screen alarms when an Oathbreaker is near.
   - 1-click mail redemption portal with a 10% administrative fee.
 
+- **Head-to-Head Blood Feuds & Rules of Engagement (ROE)**:
+  - Supports 1v1 and Guild Wars with customized kill goals (e.g. first to 100 kills).
+  - Anti-Lowbie Floor (Level 55+), 2x Underdog Multipliers (1v2, 1v3), and Zerg Filter (0 points for 3+ on 1).
+  - Web UI tab **"⚔️ Blood Feuds & Blacklist"** tracks real-time progress and declares victors.
+- **Zero-Gold Wagers & Realm KOS Blacklist**:
+  - Defeated guilds and rogue gankers permanently branded onto the **Realm KOS Blacklist**.
+  - Proximity warning sirens (`PlaySound(8959)`) and alert dialogs (`UI:ShowKOSAlert`) in-game.
+- **30-Day Anti-Guild-Hop Deserter Stain**:
+  - Stamped 30-day penance bound to permanent `Player-GUID`. Leaving or `/gquit`ing a blacklisted guild preserves the KOS stain.
+- **Tactical Intel & Gank Sighting Recon Wire**:
+  - In-game enemy spotting commands (`/spot [notes]`, `/scout [notes]`, `/kb spot`) capture targets and GPS coordinates.
+  - Broadcasts across Guild, Group/Raid, and P2P Addon channels. Live web recon ticker with Discord embeds.
+
 ### 2. Desktop Ingestion Agent (`WoWKillboardSync.exe`)
 - **Standalone Windows Executable**: Zero Python installation required for players.
 - **Multi-Drive Auto-Discovery**: Automatically discovers `SavedVariables/WoWKillboard.lua` across `C:`, `D:`, and `E:` drives for Retail, Classic, Classic Era, and Forever Beta.
@@ -105,6 +118,8 @@ flowchart TD
 
 ### 3. Frontline War Room Web Intelligence Platform (`web/`)
 - **Live Frontline Carnage Ticker**: Tactical dark-slate combat stream capturing open-world skirmishes and battleground massacres.
+- **Tactical Intel Sighting Wire**: Live battlefield recon ticker streaming enemy player sightings and ambush reports.
+- **Head-to-Head Blood Feuds & Realm Blacklist**: Real-time feud progress bars, custom ROE metrics, defeated guild blacklists, and 30-day deserter countdown cards.
 - **High Command Execution List — Realm's Most Notorious**: Authentic top 10 most wanted outlaw gallery showcasing active blood targets with portraits, bounties, and last-seen zone telemetry.
 - **Bounty Hall of Fame & Records**: Dedicated 4-card leaderboards (`/api/bounties/leaderboards`) celebrating Top Bounty Hunters, Highest Bounty Contracts, Most Elusive Outlaws, and Fastest Collected Manhunts.
 - **Delayed Last-Seen Intel & Tiered Recon**: Public contracts show confirmed combat Zone (e.g. `Last Sighted: Stranglethorn Vale ~14m ago`), with exact Subzone landmark (`Booty Bay`) unlocked for community supporters.
@@ -129,15 +144,17 @@ WoW_Killboard/
 │       ├── WoWKillboard.toc         # Multi-client TOC descriptor (11503, 11504, 110002)
 │       ├── Config.lua               # Constants, sound IDs, class colors
 │       ├── Utils.lua                # FNV-1a hash generator, formatters, GPS resolution
-│       ├── UnitScanner.lua          # Proximity level/class/guild cache
+│       ├── UnitScanner.lua          # Proximity level/class/guild cache & KOS sirens
 │       ├── CombatTracker.lua        # Combat log, gang clustering, duel/BG telemetry
 │       ├── Killmail.lua             # Standardized killmail model & persistence
 │       ├── BountyEngine.lua         # Bounties, anti-win-trade, debtor sirens
 │       ├── Sync.lua                 # P2P Addon networking (C_ChatInfo)
 │       ├── Reinforcements.lua       # SOS distress beacons, auto-invite party engine
+│       ├── IntelScanner.lua         # Tactical Intel & enemy recon spotting (/spot, /scout)
 │       ├── Leaderboard.lua          # Multi-mode rankings (All / World / BG / Duel)
 │       ├── UI.lua                   # 100% taint-free dark dashboard (/kb)
 │       └── Core.lua                 # Lifecycle, slash commands, minimap button
+
 ├── docs/                            # Comprehensive Technical Wiki
 │   ├── README.md                    # Master Wiki index & portal
 │   ├── ARCHITECTURE.md              # 3-tier architectural specification
