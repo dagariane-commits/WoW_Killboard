@@ -349,18 +349,39 @@ function renderBountiesView(bounties, debts) {
     html += `<div style="color: #64748b;">No active bounties right now. Place one to ignite a manhunt!</div>`;
   } else {
     bounties.forEach(b => {
+      const lastSeen = b.lastSeen || {};
+      let lastSeenHtml = "";
+      if (lastSeen.hasTelemetry) {
+        lastSeenHtml = `
+          <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.displayText}
+              <div style="font-size:0.7rem; color:#94a3b8;">~${lastSeen.minutesAgo}m ago &bull; <span style="color:#f59e0b; font-weight:700;">(Delayed Intel)</span></div>
+            </div>
+            <button class="radar-btn" onclick="openHeatmapModal('${b.target_name}')">📍 Heatmap</button>
+          </div>
+        `;
+      } else {
+        lastSeenHtml = `
+          <div style="font-size:0.72rem; color:#64748b; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
+            📍 Last Sighted: <em>No recent combat logged</em>
+          </div>
+        `;
+      }
+
       html += `
         <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.4);">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="color:var(--accent-red); font-weight:800; font-size:1.1rem;">${b.target_name}</span>
-            <span style="color:var(--accent-gold); font-weight:800;">${b.amount_gold || Math.floor(b.amount_copper/10000)}g</span>
+            <span class="clickable-player" onclick="openCharacterProfile('${b.target_name}')" style="color:var(--accent-red); font-weight:800; font-size:1.15rem;">${b.target_name}</span>
+            <span style="color:var(--accent-gold); font-weight:800; font-size:1.1rem;">${b.amount_gold || Math.floor(b.amount_copper/10000)}g</span>
           </div>
           <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">
             Placed by: <strong style="color:#e2e8f0;">${b.placer_name}</strong>
           </div>
           <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">
-            Status: <span style="color:#10b981;">${b.status}</span> ${b.hunter_name ? `(Claimed by ${b.hunter_name})` : ''}
+            Status: <span style="color:#10b981; font-weight:700;">${b.status}</span> ${b.hunter_name ? `(Claimed by ${b.hunter_name})` : ''}
           </div>
+          ${lastSeenHtml}
         </div>
       `;
     });
@@ -863,6 +884,184 @@ function openPlaceBountyModal() {
     alert(`Bounty of ${gold}g placed on ${target}!`);
     loadBounties();
   });
+}
+
+// Tactical Heatmap & Recon Radar Modal Handlers
+let radarAnimId = null;
+
+function closeHeatmapModal() {
+  document.getElementById("heatmap-modal").style.display = "none";
+  if (radarAnimId) {
+    cancelAnimationFrame(radarAnimId);
+    radarAnimId = null;
+  }
+}
+
+async function openHeatmapModal(targetName) {
+  const modal = document.getElementById("heatmap-modal");
+  const body = document.getElementById("heatmap-modal-body");
+  const title = document.getElementById("heatmap-modal-title");
+  if (!modal || !body) return;
+
+  title.innerText = `Tactical Intel Radar: ${targetName}`;
+  body.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">Scanning tactical frequency for ${targetName}...</div>`;
+  modal.style.display = "flex";
+
+  try {
+    const res = await fetch(`/api/bounty/intel/${encodeURIComponent(targetName)}`);
+    const data = await res.json();
+
+    if (!data.hasTelemetry) {
+      body.innerHTML = `
+        <div style="text-align:center; padding:40px; color:#94a3b8;">
+          <h3 style="color:#ef4444; margin-bottom:8px;">Zero Combat Telemetry</h3>
+          <p>No recent engagements or GPS pings have been recorded for <strong style="color:#fff;">${targetName}</strong>.</p>
+        </div>
+      `;
+      return;
+    }
+
+    body.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:12px 16px; border-radius:6px; border:1px solid #1e293b; font-size:0.85rem;">
+        <div>
+          <div style="font-weight:800; font-size:1.1rem; color:var(--accent-red);">${data.targetName}</div>
+          <div style="color:#94a3b8; font-size:0.75rem; margin-top:2px;">
+            Last Sighted: <strong style="color:#38bdf8;">${data.zone}</strong> (${data.subzone})
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="background:rgba(245, 158, 11, 0.15); border:1px solid #f59e0b; color:#fbbf24; font-size:0.75rem; font-weight:700; padding:3px 8px; border-radius:4px; display:inline-block;">
+            ⏱️ ${data.tacticalDelayMinutes}m INTEL BUFFER
+          </div>
+          <div style="font-size:0.7rem; color:#94a3b8; margin-top:3px;">
+            Reported: ~${data.minutesAgo} mins ago &bull; Sector: ${data.coordX}%, ${data.coordY}%
+          </div>
+        </div>
+      </div>
+
+      <div style="position:relative; width:100%; border-radius:8px; overflow:hidden; border:1px solid #1e293b; background:#040609;">
+        <canvas id="heatmap-canvas" width="700" height="380" style="display:block; width:100%; height:auto;"></canvas>
+      </div>
+
+      <div style="background:#090d14; border:1px solid #1e293b; border-radius:6px; padding:10px 14px; font-size:0.75rem; color:#94a3b8; line-height:1.4;">
+        <strong style="color:var(--accent-cyan);">🛡️ Anti-Griefing & Fair Play Guarantee:</strong>
+        This radar view is intentionally delayed by at least 10 minutes and fuzzed to broad zone sectors (±500m).
+        Real-time coordinates and stealth detection are strictly omitted to eliminate stream-sniping and uphold 100% compliance with Blizzard UI and Fair Play policies.
+      </div>
+    `;
+
+    // Render Canvas Radar
+    const canvas = document.getElementById("heatmap-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+
+    let scanAngle = 0;
+
+    function renderRadarFrame() {
+      ctx.clearRect(0, 0, width, height);
+
+      // 1. Grid Background
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.12)";
+      ctx.lineWidth = 1;
+      const step = 40;
+      for (let x = 0; x < width; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      // 2. Concentric Radar Rings
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const maxRadius = Math.min(centerX, centerY) - 20;
+
+      for (let r = 50; r <= maxRadius; r += 50) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(0, 229, 255, 0.18)";
+        ctx.stroke();
+      }
+
+      // Radar Crosshairs
+      ctx.beginPath();
+      ctx.moveTo(centerX - maxRadius, centerY);
+      ctx.lineTo(centerX + maxRadius, centerY);
+      ctx.moveTo(centerX, centerY - maxRadius);
+      ctx.lineTo(centerX, centerY + maxRadius);
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.25)";
+      ctx.stroke();
+
+      // 3. Combat Heatmap Blobs (Recent Kills in Zone)
+      const heatKills = data.zoneHeat || [];
+      heatKills.forEach(k => {
+        const kx = (k.coord_x || 50) / 100 * width;
+        const ky = (k.coord_y || 50) / 100 * height;
+        const grad = ctx.createRadialGradient(kx, ky, 2, kx, ky, 35);
+        grad.addColorStop(0, "rgba(239, 68, 68, 0.65)");
+        grad.addColorStop(0.5, "rgba(249, 115, 22, 0.35)");
+        grad.addColorStop(1, "rgba(239, 68, 68, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(kx, ky, 35, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 4. Target Last-Seen Sector Ping
+      const targetPx = (data.coordX / 100) * width;
+      const targetPy = (data.coordY / 100) * height;
+
+      // Pulsing outer ripple ring
+      const pulse = (Date.now() / 400) % 3;
+      ctx.beginPath();
+      ctx.arc(targetPx, targetPy, 18 + pulse * 12, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(251, 191, 36, ${Math.max(0, 0.8 - pulse * 0.25)})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Inner target circle
+      ctx.beginPath();
+      ctx.arc(targetPx, targetPy, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "#fbbf24";
+      ctx.fill();
+
+      // Target Label
+      ctx.font = "bold 11px sans-serif";
+      ctx.fillStyle = "#fff";
+      ctx.fillText(`${data.targetName} [SECTOR LAST SEEN]`, targetPx + 14, targetPy + 4);
+      ctx.font = "10px sans-serif";
+      ctx.fillStyle = "#f59e0b";
+      ctx.fillText(`~${data.minutesAgo}m ago (±500m)`, targetPx + 14, targetPy + 16);
+
+      // 5. Radar Sweep Line
+      scanAngle += 0.025;
+      const sweepX = centerX + Math.cos(scanAngle) * maxRadius;
+      const sweepY = centerY + Math.sin(scanAngle) * maxRadius;
+
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(sweepX, sweepY);
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.6)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      radarAnimId = requestAnimationFrame(renderRadarFrame);
+    }
+
+    if (radarAnimId) cancelAnimationFrame(radarAnimId);
+    radarAnimId = requestAnimationFrame(renderRadarFrame);
+
+  } catch (err) {
+    body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Failed to compile tactical radar: ${err.message}</div>`;
+  }
 }
 
 // Initialization

@@ -152,6 +152,22 @@
     </div>
   </div>
 
+  <!-- Tactical Bounty Heatmap & Radar Modal -->
+  <div class="modal-overlay" id="heatmap-modal">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:1.2rem;">📡</span>
+          <strong style="color: var(--accent-cyan); font-size: 1.1rem;" id="heatmap-modal-title">Tactical Intel Radar & Combat Heatmap</strong>
+        </div>
+        <button class="modal-close" onclick="closeHeatmapModal()">&times;</button>
+      </div>
+      <div id="heatmap-modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- Rendered by app.js -->
+      </div>
+    </div>
+  </div>
+
   <script src="/static/app.js"></script>
 </body>
 </html>

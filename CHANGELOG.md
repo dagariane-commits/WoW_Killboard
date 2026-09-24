@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
+- **Delayed Bounty Intelligence & Tactical Heatmap Radar**:
+  - Attached delayed `lastSeen` vicinity telemetry (`zone`, `subzone`, `minutesAgo`, `displayText`) directly to active bounty contracts on both the web interface and in-game addon.
+  - Implemented 10-minute anti-stream-sniping tactical buffer and coordinate sector fuzzing (±500m) to guarantee 100% compliance with Blizzard UI and Fair Play standards.
+  - Interactive HTML5 Canvas Heatmap Radar modal (`/api/bounty/intel/<target_name>`) displaying animated radial radar sweep, zone combat heat blooms, and pulsing target ping.
+  - In-game `/kb` bounty contract rows updated to show `Last Sighted: <Zone> (~<mins>m ago)`.
 - **Guild War Tracking & Historical Guild Ledger**:
   - In-game guild affiliation tracking via `GetGuildInfo(unit)` indexed into leaderboards with `Leaderboard:GetTopGuilds(mode, limit)` and rendered in the in-game dashboard.
   - Dedicated `character_guild_history` database ledger tracking character guild transfers, memberships, and tenure timestamps (`first_seen`, `last_seen`).

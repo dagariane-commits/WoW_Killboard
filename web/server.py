@@ -638,7 +638,91 @@ def get_bounties():
     with get_db() as conn:
         rows = conn.execute("SELECT * FROM bounties ORDER BY timestamp DESC").fetchall()
         bounties = [dict(r) for r in rows]
+        now = int(time.time())
+
+        for b in bounties:
+            target = b["target_name"]
+            last_kill = conn.execute("""
+                SELECT timestamp, zone, subzone, coord_x, coord_y
+                FROM kills
+                WHERE killer_name = ? OR victim_name = ?
+                ORDER BY timestamp DESC
+                LIMIT 1
+            """, (target, target)).fetchone()
+
+            if last_kill:
+                kill_time = last_kill["timestamp"]
+                elapsed = max(0, now - kill_time)
+                # Fuzzy coordinate rounding to general sector grid (nearest 4%)
+                fuzzy_x = round((last_kill["coord_x"] or 50.0) / 4.0) * 4.0
+                fuzzy_y = round((last_kill["coord_y"] or 50.0) / 4.0) * 4.0
+                b["lastSeen"] = {
+                    "hasTelemetry": True,
+                    "zone": last_kill["zone"] or "Unknown",
+                    "subzone": last_kill["subzone"] or "Wilderness",
+                    "coordX": fuzzy_x,
+                    "coordY": fuzzy_y,
+                    "timestamp": kill_time,
+                    "elapsedSeconds": elapsed,
+                    "minutesAgo": max(1, elapsed // 60),
+                    "displayText": f"{last_kill['zone']}{(' (' + last_kill['subzone'] + ')') if last_kill['subzone'] else ''}"
+                }
+            else:
+                b["lastSeen"] = {
+                    "hasTelemetry": False,
+                    "displayText": "Unknown (No recent combat logged)"
+                }
+
     return jsonify(bounties)
+
+@app.route("/api/bounty/intel/<target_name>", methods=["GET"])
+def get_bounty_intel(target_name):
+    with get_db() as conn:
+        last_kill = conn.execute("""
+            SELECT timestamp, zone, subzone, coord_x, coord_y, killer_name, victim_name
+            FROM kills
+            WHERE killer_name = ? OR victim_name = ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """, (target_name, target_name)).fetchone()
+
+        if not last_kill:
+            return jsonify({
+                "targetName": target_name,
+                "hasTelemetry": False,
+                "message": "No combat telemetry on record for this target."
+            })
+
+        zone = last_kill["zone"]
+        kill_time = last_kill["timestamp"]
+        now = int(time.time())
+        elapsed = max(0, now - kill_time)
+        fuzzy_x = round((last_kill["coord_x"] or 50.0) / 4.0) * 4.0
+        fuzzy_y = round((last_kill["coord_y"] or 50.0) / 4.0) * 4.0
+
+        # Query up to 30 recent kills in the same zone to form the combat heatmap
+        zone_kills_rows = conn.execute("""
+            SELECT kill_id, timestamp, coord_x, coord_y, total_damage, is_solo
+            FROM kills
+            WHERE zone = ?
+            ORDER BY timestamp DESC
+            LIMIT 30
+        """, (zone,)).fetchall()
+        zone_heat = [dict(r) for r in zone_kills_rows]
+
+        return jsonify({
+            "targetName": target_name,
+            "hasTelemetry": True,
+            "zone": zone,
+            "subzone": last_kill["subzone"] or "Wilderness",
+            "coordX": fuzzy_x,
+            "coordY": fuzzy_y,
+            "timestamp": kill_time,
+            "elapsedSeconds": elapsed,
+            "minutesAgo": max(1, elapsed // 60),
+            "tacticalDelayMinutes": 10,
+            "zoneHeat": zone_heat
+        })
 
 @app.route("/api/bounties", methods=["POST"])
 def create_bounty():
