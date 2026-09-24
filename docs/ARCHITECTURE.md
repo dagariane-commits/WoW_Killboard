@@ -49,6 +49,7 @@ The in-game addon is a modular Lua package designed to run without third-party l
 | **`BountyEngine.lua`** | Gold escrow, anti-win-trade verification, debtor sirens | `GetMoney`, `SendMail`, proximity nameplate hooks |
 | **`Leaderboard.lua`** | In-memory aggregation engine supporting `ALL`, `WORLD`, `BG`, and `DUEL` | Internal Aggregation Tables |
 | **`Sync.lua`** | Peer-to-peer gossip protocol over party, raid, and guild channels | `C_ChatInfo.SendAddonMessage`, `CHAT_MSG_ADDON` |
+| **`Reinforcements.lua`** | Call for Backup (SOS distress beacons), open auto-invite party engine, and guild reinforcement alerts | `C_PartyInfo.InviteUnit`, `InviteUnit`, `ConvertToRaid`, `SendChatMessage` |
 | **`UI.lua`** | Dual-theme dashboard (Classic Stone & Gold vs ElvUI Charcoal/Black) with 3 KPI cards, 5 tabs, 4 filter pills, and strata-isolated Detail Modal | `CreateFrame("Frame", nil, UIParent, "BackdropTemplate")` |
 
 #### Data Integrity & Cryptographic Hashing
@@ -109,4 +110,8 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
 6. **zKillboard Intelligence Hub & Static Outlaw Gallery**:
    - Static Top 10 Most Wanted FBI outlaw gallery rendered unconditionally without collapse toggle traps.
    - 7-section technical & policy documentation hub mirroring zKillboard: Features, FAQ, About, Delayed Intel, Payments/Supporters, StreamBox Generator, and Legal/Fair Play policies.
+7. **Guild Defense Operations & Discord Webhook Gateway (`/api/backup/distress`, `/api/events`, `/api/discord/config`)**:
+   - Ingestion of live SOS distress beacons and tactical guild event rallies.
+   - Zero-dependency Discord embed dispatcher notifying guild channels in real-time with automated party auto-invite instructions.
+
 

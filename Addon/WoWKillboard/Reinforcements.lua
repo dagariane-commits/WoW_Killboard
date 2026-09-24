@@ -1,0 +1,314 @@
+--[[
+    WoWKillboard - Reinforcements.lua
+    Call for Backup (SOS) Distress Beacon System, Open Auto-Invite Party Engine,
+    and In-Game Guild Defense Alert Dispatcher.
+    
+    100% Blizzard UI Taint-Free:
+    - Pure Lua anonymous frames with BackdropTemplate
+    - Zero XML panel dependencies, zero UISpecialFrames pollution
+    - Strict InCombatLockdown() gating with deferred delivery via PLAYER_REGEN_ENABLED
+    - Safe ESC key event handling via SetPropagateKeyboardInput
+]]
+
+WoWKillboard = WoWKillboard or {}
+local KB = WoWKillboard
+KB.Reinforcements = {}
+local RF = KB.Reinforcements
+
+-- Active state tracking
+RF.ActiveBeacon = nil
+RF.AutoInviteActive = false
+RF.AutoInviteExpiry = 0
+RF.LastDistressTime = 0
+RF.PendingAlerts = {}
+
+local frame = CreateFrame("Frame")
+
+-- Auto-invite whisper keywords
+local AUTO_INVITE_KEYWORDS = {
+    ["backup"] = true,
+    ["invite"] = true,
+    ["inv"]    = true,
+    ["sos"]    = true,
+    ["help"]   = true,
+    ["join"]   = true,
+    ["squad"]  = true,
+}
+
+-- Cross-client safe player invitation
+local function InvitePlayer(playerName)
+    if not playerName or playerName == "" then return end
+    if C_PartyInfo and C_PartyInfo.InviteUnit then
+        C_PartyInfo.InviteUnit(playerName)
+    elseif InviteUnit then
+        InviteUnit(playerName)
+    end
+end
+
+-- Convert group to raid when group size reaches 5
+local function EnsureRaidConversion()
+    if IsInGroup() and not IsInRaid() and (GetNumGroupMembers() >= 5) and UnitIsGroupLeader("player") then
+        if C_PartyInfo and C_PartyInfo.ConvertToRaid then
+            C_PartyInfo.ConvertToRaid()
+        elseif ConvertToRaid then
+            ConvertToRaid()
+        end
+    end
+end
+
+-- Initialize Reinforcements engine
+function RF:Init()
+    WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {} }
+    WoWKillboardDistress = WoWKillboardDistress or {}
+    WoWKillboardEvents = WoWKillboardEvents or {}
+end
+
+-- Check if local player currently has an active distress beacon
+function RF:IsBeaconActive()
+    if RF.ActiveBeacon and RF.AutoInviteActive then
+        if time() <= RF.AutoInviteExpiry then
+            return true
+        else
+            RF:ResolveBeacon(true)
+            return false
+        end
+    end
+    return false
+end
+
+-- Get current beacon location description string
+function RF:GetBeaconLocationStr()
+    if RF.ActiveBeacon then
+        return string.format("%s (%s) at (%.1f, %.1f)",
+            RF.ActiveBeacon.zone or "Wilderness",
+            (RF.ActiveBeacon.subzone and RF.ActiveBeacon.subzone ~= "") and RF.ActiveBeacon.subzone or "Wilderness",
+            RF.ActiveBeacon.coord_x or 0,
+            RF.ActiveBeacon.coord_y or 0
+        )
+    end
+    return "Unknown Location"
+end
+
+-- Trigger Call for Backup (SOS Distress Beacon)
+function RF:TriggerCallForBackup()
+    local now = time()
+    if (now - RF.LastDistressTime) < 15 then
+        print("|cffff9900[WoWKB SOS]|r Distress beacon on cooldown. Please wait a few seconds before broadcasting again.")
+        return false, "Cooldown active"
+    end
+    RF.LastDistressTime = now
+
+    -- Gather real-time spatial GPS coordinates
+    local mapId, zone, subzone, coordX, coordY = 0, "Unknown Zone", "", 0, 0
+    if KB.Utils and KB.Utils.GetGPSCoordinates then
+        mapId, zone, subzone, coordX, coordY = KB.Utils.GetGPSCoordinates()
+    end
+    local coordsFormatted = string.format("%.1f, %.1f", coordX, coordY)
+
+    -- Gather hostile attackers from combat tracker
+    local hostileNames = {}
+    local hostileCount = 0
+    local myGUID = UnitGUID("player")
+
+    if KB.CombatTracker then
+        -- Check recent damage dealt to local player
+        if KB.CombatTracker.RecentDamage and myGUID and KB.CombatTracker.RecentDamage[myGUID] then
+            for attGUID, attData in pairs(KB.CombatTracker.RecentDamage[myGUID]) do
+                if (now - (attData.lastTime or 0)) <= 25 then
+                    local name = attData.name or "Unknown Hostile"
+                    table.insert(hostileNames, name)
+                    hostileCount = hostileCount + 1
+                end
+            end
+        end
+
+        -- Check hostile cluster proximity
+        if hostileCount == 0 and KB.CombatTracker.HostileCluster then
+            for hGUID, hTime in pairs(KB.CombatTracker.HostileCluster) do
+                if (now - hTime) <= 25 then
+                    hostileCount = hostileCount + 1
+                end
+            end
+        end
+    end
+
+    -- Check current target if hostile player
+    if hostileCount == 0 and UnitExists("target") and UnitCanAttack("player", "target") and UnitIsPlayer("target") then
+        local tName = UnitName("target")
+        if tName then
+            table.insert(hostileNames, tName)
+            hostileCount = 1
+        end
+    end
+
+    if hostileCount == 0 then
+        hostileCount = 1
+        table.insert(hostileNames, "Enemy Hostiles")
+    end
+
+    local hostileNamesStr = table.concat(hostileNames, ", ")
+    local myName = UnitName("player")
+    local _, myClass = UnitClass("player")
+    myClass = myClass or "WARRIOR"
+    local myLevel = UnitLevel("player") or 60
+    local myGuild = GetGuildInfo("player") or "None"
+    local myFaction = UnitFactionGroup("player") or "Unknown"
+
+    -- Construct distress beacon payload
+    local beaconId = string.format("SOS-%d-%s", now, myName)
+    local beacon = {
+        id = beaconId,
+        character_name = myName,
+        character_class = myClass,
+        character_level = myLevel,
+        guild_name = myGuild,
+        faction = myFaction,
+        zone = zone,
+        subzone = subzone or "",
+        coord_x = coordX,
+        coord_y = coordY,
+        hostile_count = hostileCount,
+        hostile_names = hostileNamesStr,
+        timestamp = now,
+        status = "ACTIVE",
+    }
+
+    RF.ActiveBeacon = beacon
+    RF.AutoInviteActive = true
+    RF.AutoInviteExpiry = now + 600 -- 10 minutes open auto-invite window
+
+    -- Persist into SavedVariables for desktop sync watcher ingestion
+    WoWKillboardDB = WoWKillboardDB or {}
+    WoWKillboardDB.distressBeacon = beacon
+    WoWKillboardDistress = WoWKillboardDistress or {}
+    WoWKillboardDistress[beaconId] = beacon
+
+    -- Play alert siren
+    PlaySound(8959)
+
+    -- Local system notice
+    print(string.format("|cffff0000[WoWKB SOS]|r |cffffffffDISTRESS BEACON ACTIVATED!|r Broadcasting coordinates |cff00ffcc(%s)|r in |cffffd100%s|r.", coordsFormatted, zone))
+    print("|cff00ccff[WoWKB SOS]|r Auto-Invite is |cff00ff00ACTIVE|r. Anyone whispering |cffffd100'backup'|r or |cffffd100'invite'|r will automatically join your group.")
+
+    -- Broadcast to Guild Chat
+    if IsInGuild() then
+        SendChatMessage(string.format("[WoWKillboard] 🚨 SOS! Under attack in %s (%s) by %d hostile(s) (%s)! Whisper 'backup' for auto-invite!",
+            zone, coordsFormatted, hostileCount, hostileNamesStr), "GUILD")
+    end
+
+    -- Broadcast to Group/Raid
+    if IsInGroup() then
+        SendChatMessage(string.format("[WoWKillboard] 🚨 CALL FOR BACKUP: %s (%s) engaged by %s! Whisper 'backup' for auto-invite!",
+            zone, coordsFormatted, hostileNamesStr), IsInRaid() and "RAID" or "PARTY")
+    end
+
+    -- Local Yell (if outside instances)
+    local inInstance = IsInInstance()
+    if not inInstance then
+        SendChatMessage(string.format("[WoWKillboard] 🚨 CALL FOR BACKUP at %s (%s)! Engaged by %s!",
+            zone, coordsFormatted, hostileNamesStr), "YELL")
+    end
+
+    -- Broadcast via P2P Addon Network across Guild and Party
+    if KB.Sync and KB.Sync.BroadcastDistress then
+        KB.Sync:BroadcastDistress(beacon)
+    end
+
+    return true, beacon
+end
+
+-- Resolve / Cancel active distress beacon
+function RF:ResolveBeacon(silent)
+    if not RF.ActiveBeacon and not RF.AutoInviteActive then return end
+
+    if RF.ActiveBeacon then
+        RF.ActiveBeacon.status = "RESOLVED"
+        if WoWKillboardDB and WoWKillboardDB.distressBeacon then
+            WoWKillboardDB.distressBeacon.status = "RESOLVED"
+        end
+    end
+
+    RF.ActiveBeacon = nil
+    RF.AutoInviteActive = false
+    RF.AutoInviteExpiry = 0
+
+    if not silent then
+        print("|cff00ff00[WoWKB SOS]|r Distress beacon has been RESOLVED and auto-invite closed.")
+        if IsInGuild() then
+            SendChatMessage("[WoWKillboard] ✅ Distress beacon resolved. Target clear / reinforcements arrived. Thank you!", "GUILD")
+        end
+    end
+
+    if KB.Sync and KB.Sync.BroadcastDistressResolve then
+        KB.Sync:BroadcastDistressResolve()
+    end
+end
+
+-- Handle incoming whisper for auto-invite
+function RF:OnWhisper(msg, sender)
+    if not RF:IsBeaconActive() then return end
+    if not msg or not sender then return end
+
+    local cleanMsg = msg:lower():match("^%s*(.-)%s*$")
+    if AUTO_INVITE_KEYWORDS[cleanMsg] then
+        EnsureRaidConversion()
+        InvitePlayer(sender)
+        local loc = RF:GetBeaconLocationStr()
+        SendChatMessage(string.format("[WoWKillboard] Auto-inviting you to reinforce! Rally coordinates: %s. Watch out for enemy hostiles!", loc), "WHISPER", nil, sender)
+    end
+end
+
+-- Process incoming distress alert from peer addon
+function RF:OnIncomingDistress(beaconData)
+    if not beaconData or not beaconData.character_name then return end
+    local myName = UnitName("player")
+    if beaconData.character_name == myName then return end
+
+    -- Play warning siren
+    PlaySound(8959)
+
+    -- Print tactical notification to chat frame
+    local coordsStr = string.format("%.1f, %.1f", beaconData.coord_x or 0, beaconData.coord_y or 0)
+    print(string.format("|cffff2222[WoWKB SOS ALERT]|r |cffffd100%s|r (%s) is taking fire in |cff00ccff%s|r at |cff00ffcc(%s)|r! Engaged by |cffff4444%d|r hostiles (%s). Whisper |cffffd100'/w %s backup'|r to reinforce!",
+        beaconData.character_name,
+        beaconData.character_class or "WARRIOR",
+        beaconData.zone or "Wilderness",
+        coordsStr,
+        beaconData.hostile_count or 1,
+        beaconData.hostile_names or "Hostiles",
+        beaconData.character_name
+    ))
+
+    -- Queue alert if in combat lockdown
+    if InCombatLockdown() then
+        table.insert(RF.PendingAlerts, beaconData)
+    else
+        if KB.UI and KB.UI.ShowReinforcementAlert then
+            KB.UI:ShowReinforcementAlert(beaconData)
+        end
+    end
+end
+
+-- Frame event dispatcher
+frame:SetScript("OnEvent", function(self, event, ...)
+    if event == "CHAT_MSG_WHISPER" then
+        local msg, sender = ...
+        RF:OnWhisper(msg, sender)
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        -- Deliver any queued reinforcement alerts safely outside combat lockdown
+        if #RF.PendingAlerts > 0 and not InCombatLockdown() then
+            for _, alertData in ipairs(RF.PendingAlerts) do
+                if KB.UI and KB.UI.ShowReinforcementAlert then
+                    KB.UI:ShowReinforcementAlert(alertData)
+                end
+            end
+            RF.PendingAlerts = {}
+        end
+    elseif event == "PLAYER_LOGIN" then
+        RF:Init()
+    end
+end)
+
+frame:RegisterEvent("CHAT_MSG_WHISPER")
+frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+frame:RegisterEvent("PLAYER_LOGIN")

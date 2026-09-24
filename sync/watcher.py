@@ -148,6 +148,8 @@ class KillboardWatcher:
         self.api_url = api_url.rstrip("/")
         self.last_mtime = 0
         self.known_kills = set()
+        self.known_events = set()
+        self.last_distress_time = 0
         self.warned_missing = False
 
     def process_file(self) -> int:
@@ -194,6 +196,30 @@ class KillboardWatcher:
 
         if stats:
             self.upload_stats(stats)
+
+        # Ingest Call for Backup distress beacons
+        distress = parsed.get("WoWKillboardDistress", {})
+        if not distress and isinstance(parsed.get("WoWKillboardDB"), dict):
+            distress_beacon = parsed.get("WoWKillboardDB", {}).get("distressBeacon")
+            if distress_beacon and isinstance(distress_beacon, dict):
+                distress = {distress_beacon.get("id", "SOS"): distress_beacon}
+
+        for sos_id, sos_data in distress.items():
+            if isinstance(sos_data, dict):
+                ts = sos_data.get("timestamp", 0)
+                if ts > self.last_distress_time:
+                    self.upload_distress(sos_data)
+                    self.last_distress_time = ts
+
+        # Ingest Guild Events and Rallies
+        events = parsed.get("WoWKillboardEvents", {})
+        if not events and isinstance(parsed.get("WoWKillboardDB"), dict):
+            events = parsed.get("WoWKillboardDB", {}).get("guildEvents", {})
+
+        for evt_id, evt_data in events.items():
+            if evt_id not in self.known_events and isinstance(evt_data, dict):
+                if self.upload_event(evt_data):
+                    self.known_events.add(evt_id)
 
         print(f"[Watcher] Synced {new_count} new kills, {len(bounties)} bounties, {len(debts)} debt records.")
         return new_count
@@ -316,6 +342,38 @@ class KillboardWatcher:
             urllib.request.urlopen(req, timeout=5)
         except Exception:
             pass
+
+    def upload_distress(self, data: dict) -> bool:
+        url = f"{self.api_url}/api/backup/distress"
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(data).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                print(f"[Watcher] 🚨 Broadcasted Call for Backup SOS beacon for {data.get('character_name')} in {data.get('zone')}!")
+                return resp.status in (200, 201)
+        except Exception as e:
+            print(f"[Watcher] Distress upload notice: {e}")
+            return False
+
+    def upload_event(self, data: dict) -> bool:
+        url = f"{self.api_url}/api/events"
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(data).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                print(f"[Watcher] ⚔️ Broadcasted Guild Event: {data.get('title')} in {data.get('zone')}!")
+                return resp.status in (200, 201)
+        except Exception as e:
+            print(f"[Watcher] Event upload notice: {e}")
+            return False
 
     def run_daemon(self, poll_interval: float = 3.0):
         print(f"[Watcher] Watching '{self.filepath}' -> API: '{self.api_url}'")

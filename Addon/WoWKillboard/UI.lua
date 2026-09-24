@@ -97,6 +97,11 @@ function UI:ApplyTheme()
         UI.ThemeButton:SetBackdropBorderColor(unpack(theme.btnBorder))
         UI.ThemeButton.Label:SetText(theme.themeBtnText)
     end
+    if UI.CallBackupButton then
+        UI.CallBackupButton:SetBackdrop(theme.btnBackdrop)
+        UI.CallBackupButton:SetBackdropColor(unpack(theme.btnBg))
+        UI.CallBackupButton:SetBackdropBorderColor(unpack(theme.btnBorder))
+    end
     if UI.CloseButton then
         if theme.id == "classic" then
             UI.CloseButton:SetSize(28, 28)
@@ -410,6 +415,55 @@ function UI:CreateMainWindow()
         end
     end)
     UI.ThemeButton = themeBtn
+
+    -- Template-Free Call for Backup SOS Button
+    local backupBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    backupBtn:SetSize(125, 20)
+    backupBtn:SetPoint("RIGHT", themeBtn, "LEFT", -6, 0)
+    backupBtn:EnableMouse(true)
+    local backupLabel = backupBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    backupLabel:SetPoint("CENTER", 0, 0)
+    backupLabel:SetText("|cffff4444🚨 CALL BACKUP|r")
+    backupBtn.Label = backupLabel
+    backupBtn:SetScript("OnClick", function()
+        if KB.Reinforcements and KB.Reinforcements.IsBeaconActive and KB.Reinforcements:IsBeaconActive() then
+            KB.Reinforcements:ResolveBeacon(false)
+            backupLabel:SetText("|cffff4444🚨 CALL BACKUP|r")
+        else
+            if KB.Reinforcements and KB.Reinforcements.TriggerCallForBackup then
+                local ok, _ = KB.Reinforcements:TriggerCallForBackup()
+                if ok then
+                    backupLabel:SetText("|cff00ff00✓ SOS ACTIVE|r")
+                end
+            end
+        end
+    end)
+    backupBtn:SetScript("OnEnter", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(1.0, 0.3, 0.3, 1.0)
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        if KB.Reinforcements and KB.Reinforcements.IsBeaconActive and KB.Reinforcements:IsBeaconActive() then
+            GameTooltip:AddLine("|cff00ff00Distress Beacon Active|r", 1, 1, 1)
+            GameTooltip:AddLine("Click to resolve beacon and close auto-invite.", 0.8, 0.8, 0.8)
+        else
+            GameTooltip:AddLine("|cffff3333Call for Backup (SOS Beacon)|r", 1, 1, 1)
+            GameTooltip:AddLine("Broadcasts emergency coordinates, zone & threat to Guild, Group & P2P.", 0.8, 0.8, 0.8)
+            GameTooltip:AddLine("Activates 10-minute Auto-Invite squad recruitment.", 0.8, 0.8, 0.8)
+        end
+        GameTooltip:Show()
+    end)
+    backupBtn:SetScript("OnLeave", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
+        end
+        GameTooltip:Hide()
+    end)
+    UI.CallBackupButton = backupBtn
 
     -- 3 KPI Tactical Header Stat Cards (K/D, Duels, Battlegrounds) - Clean & Balanced
     local cardConfigs = {
@@ -1443,3 +1497,110 @@ function UI:ShowDeathBountyPrompt(killerData)
     UI.DeathBountyDialog:Show()
     if UI.DeathBountyDialog.Raise then UI.DeathBountyDialog:Raise() end
 end
+
+-- Reinforcement Alert Dialog: Displayed to guildmates and allies when an SOS beacon is received
+function UI:ShowReinforcementAlert(beaconData)
+    if not beaconData or not beaconData.character_name then return end
+    if InCombatLockdown() then return end
+
+    if not UI.ReinforcementDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(460, 230)
+        dlg:SetPoint("CENTER", 0, 100)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(110)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+
+        dlg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 2,
+        })
+        dlg:SetBackdropColor(0.08, 0.04, 0.04, 0.98)
+        dlg:SetBackdropBorderColor(1.0, 0.2, 0.2, 1.0)
+
+        -- Safe ESC key handling (100% taint-free)
+        dlg:EnableKeyboard(true)
+        dlg:SetPropagateKeyboardInput(true)
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                self:SetPropagateKeyboardInput(false)
+                self:Hide()
+            else
+                self:SetPropagateKeyboardInput(true)
+            end
+        end)
+
+        local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", 0, -16)
+        title:SetText("|cffff2222🚨 GUILD DISTRESS BEACON — CALL FOR BACKUP!|r")
+
+        local body = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        body:SetPoint("TOP", 0, -48)
+        body:SetJustifyH("CENTER")
+        dlg.BodyText = body
+
+        local threat = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        threat:SetPoint("TOP", 0, -100)
+        threat:SetJustifyH("CENTER")
+        dlg.ThreatText = threat
+
+        local gps = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        gps:SetPoint("TOP", 0, -140)
+        dlg.GpsText = gps
+
+        local joinBtn = UI:CreateButton(dlg, 180, 28, "⚔️ Join Squad & Assist")
+        joinBtn:SetPoint("BOTTOMLEFT", 30, 20)
+        joinBtn:SetScript("OnClick", function()
+            if dlg.CurrentBeacon and dlg.CurrentBeacon.character_name then
+                local target = dlg.CurrentBeacon.character_name
+                SendChatMessage("backup", "WHISPER", nil, target)
+                print(string.format("|cff00ff00[WoWKB]|r Whispered 'backup' to |cffffd100%s|r. Rallying to assist in %s!", target, dlg.CurrentBeacon.zone or "Wilderness"))
+                dlg:Hide()
+            end
+        end)
+
+        local dismissBtn = UI:CreateButton(dlg, 130, 28, "Dismiss")
+        dismissBtn:SetPoint("BOTTOMRIGHT", -30, 20)
+        dismissBtn:SetScript("OnClick", function()
+            dlg:Hide()
+        end)
+
+        UI.ReinforcementDialog = dlg
+    end
+
+    UI.ReinforcementDialog.CurrentBeacon = beaconData
+    local classColor = "00ccff"
+    if KB.Config and KB.Config.ClassColors and beaconData.character_class then
+        local c = KB.Config.ClassColors[beaconData.character_class:upper()]
+        if c then classColor = string.format("%02x%02x%02x", math.floor(c[1]*255), math.floor(c[2]*255), math.floor(c[3]*255)) end
+    end
+
+    UI.ReinforcementDialog.BodyText:SetText(string.format(
+        "|cff%s%s|r (Lvl %d %s) is under attack in |cffffd100%s|r%s!",
+        classColor,
+        beaconData.character_name,
+        beaconData.character_level or 60,
+        beaconData.character_class or "WARRIOR",
+        beaconData.zone or "Wilderness",
+        (beaconData.subzone and beaconData.subzone ~= "") and string.format(" (|cffaaaaaa%s|r)", beaconData.subzone) or ""
+    ))
+
+    UI.ReinforcementDialog.ThreatText:SetText(string.format(
+        "Hostiles Engaging: |cffff4444%d Enemy Player(s)|r\n|cffffaa00%s|r",
+        beaconData.hostile_count or 1,
+        beaconData.hostile_names or "Unknown Hostiles"
+    ))
+
+    UI.ReinforcementDialog.GpsText:SetText(string.format(
+        "GPS Telemetry: (%.1f, %.1f) | Guild: <%s>",
+        beaconData.coord_x or 0,
+        beaconData.coord_y or 0,
+        beaconData.guild_name or "Unaligned"
+    ))
+
+    UI.ReinforcementDialog:Show()
+    if UI.ReinforcementDialog.Raise then UI.ReinforcementDialog:Raise() end
+end
+

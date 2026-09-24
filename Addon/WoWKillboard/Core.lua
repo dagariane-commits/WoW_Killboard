@@ -30,6 +30,11 @@ function KB:Initialize()
         KB.Leaderboard:Rebuild()
     end
 
+    -- Initialize Reinforcements engine
+    if KB.Reinforcements and KB.Reinforcements.Init then
+        KB.Reinforcements:Init()
+    end
+
     -- Pre-instantiate UI frames cleanly at load time (Zero frame allocation inside OnClick)
     if KB.UI and KB.UI.CreateMainWindow then
         KB.UI:CreateMainWindow()
@@ -76,6 +81,39 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         else
             print("|cffff9900Usage:|r /killboard bounty <TargetName> <GoldAmount> (e.g. /killboard bounty Thrall 250)")
         end
+    elseif cmd == "backup" or cmd == "sos" then
+        if arg == "stop" or arg == "resolve" or arg == "clear" or arg == "off" then
+            if KB.Reinforcements then KB.Reinforcements:ResolveBeacon(false) end
+        else
+            if KB.Reinforcements then KB.Reinforcements:TriggerCallForBackup() end
+        end
+    elseif cmd == "event" or cmd == "rally" then
+        local title, zone, timeStr = arg:match("^([^|]+)%s*|%s*([^|]+)%s*|?%s*(.*)$")
+        if title and zone then
+            local myGuild = GetGuildInfo("player") or "Guild"
+            local myName = UnitName("player")
+            local evt = {
+                id = "EVT-" .. tostring(time()) .. "-" .. myName,
+                title = title:trim(),
+                guild_name = myGuild,
+                creator_name = myName,
+                zone = zone:trim(),
+                time_str = (timeStr and timeStr:trim() ~= "") and timeStr:trim() or "NOW",
+                created_at = time(),
+            }
+            WoWKillboardEvents = WoWKillboardEvents or {}
+            WoWKillboardEvents[evt.id] = evt
+            if KB.Sync and KB.Sync.BroadcastEvent then
+                KB.Sync:BroadcastEvent(evt)
+            end
+            if IsInGuild() then
+                SendChatMessage(string.format("[WoWKillboard Event] ⚔️ %s in %s! Announced by %s. Time: %s.",
+                    evt.title, evt.zone, myName, evt.time_str), "GUILD")
+            end
+            print(string.format("|cff00ccff[WoWKB Event]|r Created Guild Rally: |cffffd100%s|r in |cffffffff%s|r!", evt.title, evt.zone))
+        else
+            print("|cffff9900Usage:|r /killboard event <Title> | <Zone> | <Time> (e.g. /killboard event STV Defense | Stranglethorn Vale | 8:00 PM EST)")
+        end
     elseif cmd == "theme" then
         local tArg = arg and arg:lower():trim() or ""
         if tArg == "classic" or tArg == "elvui" then
@@ -88,10 +126,25 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     else
         print("|cff00ccffWoW Killboard Commands:|r")
         print("  |cffffd100/killboard|r or |cffffd100/wowkb|r - Toggle the Killboard Dashboard")
+        print("  |cffffd100/killboard backup|r or |cffffd100/kbsos|r - Broadcast Call for Backup SOS & enable Auto-Invite")
+        print("  |cffffd100/killboard backup stop|r - Resolve active SOS beacon and close Auto-Invite")
+        print("  |cffffd100/killboard event <Title> | <Zone> | <Time>|r - Announce Guild Event / Rally")
         print("  |cffffd100/killboard theme [classic|elvui]|r - Switch between Classic WoW and ElvUI themes")
         print("  |cffffd100/killboard stats|r - Show current combat session statistics")
         print("  |cffffd100/killboard bounty <Name> <Gold>|r - Place a gold bounty on a player")
         print("  |cffffd100/killboard reset|r - Clear local kill database")
+    end
+end
+
+-- Dedicated Emergency Quick-Slash Commands for Call for Backup
+SLASH_WOWKILLBOARDSOS1 = "/kbsos"
+SLASH_WOWKILLBOARDSOS2 = "/kbbackup"
+SlashCmdList["WOWKILLBOARDSOS"] = function(msg)
+    local arg = msg and msg:lower():trim() or ""
+    if arg == "stop" or arg == "resolve" or arg == "clear" or arg == "off" then
+        if KB.Reinforcements then KB.Reinforcements:ResolveBeacon(false) end
+    else
+        if KB.Reinforcements then KB.Reinforcements:TriggerCallForBackup() end
     end
 end
 

@@ -65,6 +65,63 @@ function S:BroadcastBounty(bounty)
     end
 end
 
+-- Broadcast a Call for Backup SOS distress beacon
+function S:BroadcastDistress(beacon)
+    if not KB.DefaultSettings.p2pSyncEnabled or not beacon then return end
+
+    -- Serialize SOS payload: "SOS:id:name:class:lvl:guild:faction:zone:subzone:x:y:hCount:hNames:ts"
+    local payload = string.format("SOS:%s:%s:%s:%d:%s:%s:%s:%s:%.1f:%.1f:%d:%s:%d",
+        beacon.id or "SOS",
+        beacon.character_name or "Unknown",
+        beacon.character_class or "WARRIOR",
+        beacon.character_level or 60,
+        beacon.guild_name or "None",
+        beacon.faction or "Unknown",
+        beacon.zone or "Wilderness",
+        beacon.subzone or "",
+        beacon.coord_x or 0,
+        beacon.coord_y or 0,
+        beacon.hostile_count or 1,
+        beacon.hostile_names or "Hostiles",
+        beacon.timestamp or time()
+    )
+
+    if IsInGuild() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    end
+    if IsInGroup() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, IsInRaid() and "RAID" or "PARTY")
+    end
+end
+
+-- Broadcast resolution of a distress beacon
+function S:BroadcastDistressResolve()
+    local myName = UnitName("player")
+    local payload = string.format("SOS_RES:%s", myName)
+    if IsInGuild() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    end
+    if IsInGroup() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, IsInRaid() and "RAID" or "PARTY")
+    end
+end
+
+-- Broadcast a Guild Event / Rally
+function S:BroadcastEvent(evt)
+    if not KB.DefaultSettings.p2pSyncEnabled or not evt then return end
+    local payload = string.format("EVT:%s:%s:%s:%s:%s:%s",
+        evt.id or "EVT",
+        evt.title or "Guild Rally",
+        evt.guild_name or "Guild",
+        evt.creator_name or "Officer",
+        evt.zone or "Wilderness",
+        evt.time_str or "NOW"
+    )
+    if IsInGuild() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    end
+end
+
 -- Parse incoming peer message
 function S:OnAddonMessage(prefix, message, channel, sender)
     if prefix ~= KB.Prefix then return end
@@ -150,6 +207,44 @@ function S:OnAddonMessage(prefix, message, channel, sender)
                 KB.UI:RefreshIfVisible()
             end
         end
+
+    elseif msgType == "SOS" and #parts >= 12 then
+        local beaconData = {
+            id = parts[2],
+            character_name = parts[3],
+            character_class = parts[4],
+            character_level = tonumber(parts[5]) or 60,
+            guild_name = parts[6],
+            faction = parts[7],
+            zone = parts[8],
+            subzone = parts[9],
+            coord_x = tonumber(parts[10]) or 0,
+            coord_y = tonumber(parts[11]) or 0,
+            hostile_count = tonumber(parts[12]) or 1,
+            hostile_names = parts[13] or "Hostiles",
+            timestamp = tonumber(parts[14]) or time(),
+            status = "ACTIVE",
+        }
+        if KB.Reinforcements and KB.Reinforcements.OnIncomingDistress then
+            KB.Reinforcements:OnIncomingDistress(beaconData)
+        end
+
+    elseif msgType == "SOS_RES" and #parts >= 2 then
+        local charName = parts[2]
+        if KB.UI and KB.UI.ReinforcementAlert and KB.UI.ReinforcementAlert.CurrentBeacon then
+            if KB.UI.ReinforcementAlert.CurrentBeacon.character_name == charName then
+                KB.UI.ReinforcementAlert:Hide()
+            end
+        end
+
+    elseif msgType == "EVT" and #parts >= 6 then
+        local title = parts[3]
+        local guild = parts[4]
+        local creator = parts[5]
+        local zone = parts[6]
+        local timeStr = parts[7] or "NOW"
+        print(string.format("|cff00ccff[GUILD EVENT]|r |cffffd100%s|r in |cffffffff%s|r announced by |cff00ff00%s|r (<%s>)! Time: %s.",
+            title, zone, creator, guild, timeStr))
     end
 end
 

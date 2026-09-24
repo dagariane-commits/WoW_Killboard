@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
+- **Call for Backup (SOS Distress Beacon) & Open Auto-Invite Party Engine**:
+  - Implemented `Reinforcements.lua` providing 1-click tactical distress beacons via header button (`[ 🚨 CALL BACKUP ]`) and slash commands (`/killboard backup`, `/kbsos`, `/kbbackup`).
+  - Gathers real-time spatial GPS coordinates, active hostile attackers, class, and threat count from `CombatTracker.lua`.
+  - Broadcasts emergency signals across Guild Chat (`/g`), Party/Raid (`/p`, `/ra`), local Defense/Yell, and peer-to-peer Addon messages (`Sync.lua`).
+  - Activates a 10-minute Open Auto-Invite listener: players whispering `"backup"`, `"invite"`, `"inv"`, or `"sos"` are immediately invited to the party/raid (`EnsureRaidConversion`).
+  - Implemented 100% taint-free Reinforcement Alert dialog (`UI:ShowReinforcementAlert`) for nearby guildmates and allies with 1-click `"⚔️ Join Squad & Assist"` and ESC key handling.
+- **Discord Defense Gateway & Guild Event Announcement Engine**:
+  - Built zero-dependency Discord Webhook dispatcher in `web/server.py` supporting rich embeds for emergency Call for Backup beacons and Guild Operations.
+  - Added Guild Events & Tactical Rallies subsystem (`/api/events`, `/kb event <Title> | <Zone> | <Time>`) allowing guild leaders to coordinate defense operations and publish announcements straight to Discord.
+  - Added dedicated Web **"🛡️ Guild Defense & Events"** tab (`#nav-defense`) with live SOS beacon monitoring, interactive event scheduling, and Discord Webhook setup.
+  - Added high-priority pulsing emergency banner (`#global-sos-banner`) pinned to the top of the live kill feed when a guildmate is under fire.
 - **In-Game Death Bounty Prompt & Combat Lockdown Gating**:
   - Implemented automated death prompt frame in `UI.lua` triggered on PvP demise (`PLAYER_DEAD`) asking `"[Killer] has killed you. Would you like to place a bounty?"` with gold amount input and 1-click submission.
   - Strict Guardrail 1 compliance via `InCombatLockdown()` gating with deferred delivery via `PLAYER_REGEN_ENABLED` buffer.
