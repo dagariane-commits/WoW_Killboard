@@ -43,17 +43,90 @@ local CLASS_COORDS = CLASS_ICON_TCOORDS or {
     EVOKER      = {0, 0.25, 0.75, 1.0},
 }
 
+-- Theme Engine: Classic WoW UI vs ElvUI Minimalist
+function UI:GetCurrentThemeName()
+    if WoWKillboardSettings and WoWKillboardSettings.theme then
+        local t = WoWKillboardSettings.theme:lower()
+        if KB.Themes and KB.Themes[t] then return t end
+    end
+    return "elvui"
+end
+
+function UI:GetTheme()
+    local name = UI:GetCurrentThemeName()
+    return (KB.Themes and KB.Themes[name]) or (KB.Themes and KB.Themes["elvui"]) or {}
+end
+
+function UI:SetTheme(themeName)
+    themeName = (themeName or ""):lower()
+    if not KB.Themes or not KB.Themes[themeName] then
+        print(string.format("|cffff9900[WoWKB]|r Unknown theme '%s'. Available: 'classic', 'elvui'.", tostring(themeName)))
+        return
+    end
+
+    WoWKillboardSettings = WoWKillboardSettings or {}
+    WoWKillboardSettings.theme = themeName
+
+    UI:ApplyTheme()
+    if mainFrame and mainFrame:IsShown() then
+        UI:Refresh()
+    end
+
+    local th = KB.Themes[themeName]
+    print(string.format("|cff00ccff[WoWKB]|r Theme switched to: |cffffd100%s|r", th.name))
+end
+
+function UI:ApplyTheme()
+    if not mainFrame then return end
+    local theme = UI:GetTheme()
+    if not theme or not theme.mainBackdrop then return end
+
+    mainFrame:SetBackdrop(theme.mainBackdrop)
+    mainFrame:SetBackdropColor(unpack(theme.mainBg))
+    mainFrame:SetBackdropBorderColor(unpack(theme.mainBorder))
+
+    if UI.TitleText then
+        UI.TitleText:SetText(theme.titleText)
+    end
+    if UI.SubtitleText then
+        UI.SubtitleText:SetText(string.format(theme.subtitleText, KB.Version))
+    end
+    if UI.ThemeButton and UI.ThemeButton.Label then
+        UI.ThemeButton:SetBackdrop(theme.btnBackdrop)
+        UI.ThemeButton:SetBackdropColor(unpack(theme.btnBg))
+        UI.ThemeButton:SetBackdropBorderColor(unpack(theme.btnBorder))
+        UI.ThemeButton.Label:SetText(theme.themeBtnText)
+    end
+    if UI.CloseButton then
+        UI.CloseButton:SetBackdrop(theme.btnBackdrop)
+    end
+    if UI.Divider then
+        UI.Divider:SetColorTexture(unpack(theme.dividerColor))
+    end
+    if UI.StatCards then
+        for _, card in pairs(UI.StatCards) do
+            card:SetBackdrop(theme.cardBackdrop)
+            card:SetBackdropColor(unpack(theme.cardBg))
+            card:SetBackdropBorderColor(unpack(theme.cardBorder))
+        end
+    end
+    if UI.DetailModal then
+        UI.DetailModal:SetBackdrop(theme.modalBackdrop)
+        UI.DetailModal:SetBackdropColor(unpack(theme.modalBg))
+        UI.DetailModal:SetBackdropBorderColor(unpack(theme.modalBorder))
+    end
+end
+
 -- Standalone Tactical Button (Zero UIPanelButtonTemplate or sound XML taint)
 function UI:CreateButton(parent, w, h, text, fontSize)
     local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
     btn:SetSize(w, h)
-    btn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    btn:SetBackdropColor(0.10, 0.12, 0.16, 0.92)
-    btn:SetBackdropBorderColor(0.22, 0.26, 0.34, 0.9)
+    local theme = UI:GetTheme()
+    if theme and theme.btnBackdrop then
+        btn:SetBackdrop(theme.btnBackdrop)
+        btn:SetBackdropColor(unpack(theme.btnBg))
+        btn:SetBackdropBorderColor(unpack(theme.btnBorder))
+    end
 
     local label = btn:CreateFontString(nil, "OVERLAY", fontSize or "GameFontHighlightSmall")
     label:SetPoint("CENTER", 0, 0)
@@ -62,14 +135,20 @@ function UI:CreateButton(parent, w, h, text, fontSize)
 
     btn:SetScript("OnEnter", function(self)
         if not self.isActive then
-            self:SetBackdropColor(0.18, 0.22, 0.30, 1.0)
-            self:SetBackdropBorderColor(0.0, 0.8, 1.0, 0.8)
+            local t = UI:GetTheme()
+            if t and t.btnHoverBg then
+                self:SetBackdropColor(unpack(t.btnHoverBg))
+                self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
+            end
         end
     end)
     btn:SetScript("OnLeave", function(self)
         if not self.isActive then
-            self:SetBackdropColor(0.10, 0.12, 0.16, 0.92)
-            self:SetBackdropBorderColor(0.22, 0.26, 0.34, 0.9)
+            local t = UI:GetTheme()
+            if t and t.btnBg then
+                self:SetBackdropColor(unpack(t.btnBg))
+                self:SetBackdropBorderColor(unpack(t.btnBorder))
+            end
         end
     end)
 
@@ -162,10 +241,12 @@ function UI:CreateMainWindow()
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("LEFT", titleIcon, "RIGHT", 8, 0)
     title:SetText("|cff00e5ffWoW Killboard|r |cffffd100[zKillboard]|r")
+    UI.TitleText = title
 
     local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     subtitle:SetPoint("LEFT", title, "RIGHT", 10, 0)
     subtitle:SetText("|cff64748bv" .. KB.Version .. " | PvP Intelligence & Telemetry|r")
+    UI.SubtitleText = subtitle
 
     -- Template-Free Close Button
     local closeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
@@ -193,6 +274,35 @@ function UI:CreateMainWindow()
     closeBtn:SetScript("OnClick", function()
         mainFrame:Hide()
     end)
+    UI.CloseButton = closeBtn
+
+    -- Template-Free Theme Switcher Button
+    local themeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    themeBtn:SetSize(108, 20)
+    themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -8, 0)
+    local themeLabel = themeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    themeLabel:SetPoint("CENTER", 0, 0)
+    themeBtn.Label = themeLabel
+    themeBtn:SetScript("OnClick", function()
+        local cur = UI:GetCurrentThemeName()
+        local nextTheme = (cur == "elvui") and "classic" or "elvui"
+        UI:SetTheme(nextTheme)
+    end)
+    themeBtn:SetScript("OnEnter", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
+        end
+    end)
+    themeBtn:SetScript("OnLeave", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
+        end
+    end)
+    UI.ThemeButton = themeBtn
 
     -- 3 KPI Tactical Header Stat Cards (K/D, Duels, Battlegrounds) - Clean & Balanced
     local cardConfigs = {
@@ -238,6 +348,7 @@ function UI:CreateMainWindow()
     divider:SetPoint("TOPRIGHT", -14, -80)
     divider:SetHeight(1)
     divider:SetColorTexture(0.16, 0.20, 0.28, 0.8)
+    UI.Divider = divider
 
     -- Navigation Bar (Tabs on Left, Filter Pills on Right - Zero Overlap)
     local tabs = {
@@ -314,6 +425,7 @@ function UI:CreateMainWindow()
     -- Detail Modal Frame
     UI:CreateDetailModal()
 
+    UI:ApplyTheme()
     mainFrame:Hide()
 end
 
@@ -349,23 +461,29 @@ function UI:Refresh()
         end
     end
 
+    local theme = UI:GetTheme()
+
     -- Update Tab Button Highlights
     for tid, btn in pairs(tabButtons) do
+        if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
         if tid == activeTab then
             btn.isActive = true
-            btn:SetBackdropColor(0.12, 0.16, 0.24, 1.0)
-            btn:SetBackdropBorderColor(0.0, 0.9, 1.0, 1.0)
-            btn.Label:SetText("|cff00ffff" .. btn.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
+            btn:SetBackdropColor(unpack(theme.btnActiveBg))
+            btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder))
+            local activeColor = (theme.id == "classic") and "|cffffd100" or "|cff00ffff"
+            btn.Label:SetText(activeColor .. btn.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
         else
             btn.isActive = false
-            btn:SetBackdropColor(0.08, 0.09, 0.12, 0.85)
-            btn:SetBackdropBorderColor(0.18, 0.20, 0.26, 0.7)
-            btn.Label:SetText("|cff94a3b8" .. btn.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
+            btn:SetBackdropColor(unpack(theme.btnBg))
+            btn:SetBackdropBorderColor(unpack(theme.btnBorder))
+            local normalColor = (theme.id == "classic") and "|cffd0c0a0" or "|cff94a3b8"
+            btn.Label:SetText(normalColor .. btn.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
         end
     end
 
     -- Update Filter Pill Active Glow
     for fid, pill in pairs(filterButtons) do
+        if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
         local c = pill.BaseColor or {0, 0.8, 1}
         if fid == currentMode then
             pill.isActive = true
@@ -374,9 +492,10 @@ function UI:Refresh()
             pill.Label:SetText(string.format("|cff%02x%02x%02x%s|r", math.floor(c[1]*255), math.floor(c[2]*255), math.floor(c[3]*255), pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")))
         else
             pill.isActive = false
-            pill:SetBackdropColor(0.08, 0.10, 0.13, 0.85)
-            pill:SetBackdropBorderColor(0.18, 0.20, 0.25, 0.6)
-            pill.Label:SetText("|cff64748b" .. pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
+            pill:SetBackdropColor(unpack(theme.btnBg))
+            pill:SetBackdropBorderColor(unpack(theme.btnBorder))
+            local pillNormal = (theme.id == "classic") and "|cffa09080" or "|cff64748b"
+            pill.Label:SetText(pillNormal .. pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
         end
     end
 
@@ -428,19 +547,12 @@ function UI:RenderLiveFeed()
         local row = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
         row:SetSize(820, 36)
         row:SetPoint("TOPLEFT", 0, yOffset)
-        row:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1,
-        })
-
-        -- Zebra striping
+        local theme = UI:GetTheme()
         local isEven = (idx % 2 == 0)
-        local baseBgR = isEven and 0.08 or 0.10
-        local baseBgG = isEven and 0.09 or 0.11
-        local baseBgB = isEven and 0.13 or 0.15
-        row:SetBackdropColor(baseBgR, baseBgG, baseBgB, 0.95)
-        row:SetBackdropBorderColor(0.16, 0.20, 0.26, 0.6)
+        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+        row:SetBackdrop(theme.rowBackdrop)
+        row:SetBackdropColor(unpack(baseBg))
+        row:SetBackdropBorderColor(unpack(theme.rowBorder))
 
         -- Left Accent Bar (Colored by engagement category)
         local accent = row:CreateTexture(nil, "ARTWORK")
@@ -512,12 +624,18 @@ function UI:RenderLiveFeed()
 
         -- Interactive Hover
         row:SetScript("OnEnter", function(self)
-            self:SetBackdropColor(0.18, 0.22, 0.32, 1.0)
-            self:SetBackdropBorderColor(0.0, 0.8, 1.0, 0.8)
+            local t = UI:GetTheme()
+            if t and t.btnHoverBg then
+                self:SetBackdropColor(unpack(t.btnHoverBg))
+                self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
+            end
         end)
         row:SetScript("OnLeave", function(self)
-            self:SetBackdropColor(baseBgR, baseBgG, baseBgB, 0.95)
-            self:SetBackdropBorderColor(0.16, 0.20, 0.26, 0.6)
+            local t = UI:GetTheme()
+            self:SetBackdropColor(unpack(baseBg))
+            if t and t.rowBorder then
+                self:SetBackdropBorderColor(unpack(t.rowBorder))
+            end
         end)
 
         -- Click handler to open killmail detail
@@ -545,13 +663,12 @@ function UI:RenderLeaderboard()
         local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
         row:SetSize(820, 30)
         row:SetPoint("TOPLEFT", 0, yOffset)
-        row:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1,
-        })
-        row:SetBackdropColor(0.09, 0.11, 0.15, 0.9)
-        row:SetBackdropBorderColor(0.18, 0.22, 0.28, 0.6)
+        local theme = UI:GetTheme()
+        local isEven = (rank % 2 == 0)
+        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+        row:SetBackdrop(theme.rowBackdrop)
+        row:SetBackdropColor(unpack(baseBg))
+        row:SetBackdropBorderColor(unpack(theme.rowBorder))
 
         -- Rank Medal Color
         local rankColor = (rank == 1 and "ffd700") or (rank == 2 and "c0c0c0") or (rank == 3 and "cd7f32") or "8899aa"
@@ -604,13 +721,10 @@ function UI:RenderBounties()
             local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
             row:SetSize(820, 32)
             row:SetPoint("TOPLEFT", 0, yOffset)
-            row:SetBackdrop({
-                bgFile = "Interface\\Buttons\\WHITE8X8",
-                edgeFile = "Interface\\Buttons\\WHITE8X8",
-                edgeSize = 1,
-            })
-            row:SetBackdropColor(0.14, 0.10, 0.10, 0.9)
-            row:SetBackdropBorderColor(0.35, 0.18, 0.18, 0.8)
+            local theme = UI:GetTheme()
+            row:SetBackdrop(theme.rowBackdrop)
+            row:SetBackdropColor(0.18, 0.08, 0.08, 0.9)
+            row:SetBackdropBorderColor(0.50, 0.18, 0.18, 0.8)
 
             local icon = UI:CreateClassIcon(row, b.targetClass, 20)
             icon:SetPoint("LEFT", 12, 0)
@@ -647,11 +761,8 @@ function UI:RenderBounties()
             local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
             row:SetSize(820, 36)
             row:SetPoint("TOPLEFT", 0, yOffset)
-            row:SetBackdrop({
-                bgFile = "Interface\\Buttons\\WHITE8X8",
-                edgeFile = "Interface\\Buttons\\WHITE8X8",
-                edgeSize = 1,
-            })
+            local theme = UI:GetTheme()
+            row:SetBackdrop(theme.rowBackdrop)
             row:SetBackdropColor(0.24, 0.06, 0.06, 0.92)
             row:SetBackdropBorderColor(0.60, 0.15, 0.15, 0.9)
 
@@ -698,13 +809,12 @@ function UI:RenderBGMetrics()
         local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
         row:SetSize(820, 30)
         row:SetPoint("TOPLEFT", 0, yOffset)
-        row:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1,
-        })
-        row:SetBackdropColor(0.09, 0.12, 0.16, 0.9)
-        row:SetBackdropBorderColor(0.18, 0.22, 0.28, 0.6)
+        local theme = UI:GetTheme()
+        local isEven = (rank % 2 == 0)
+        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+        row:SetBackdrop(theme.rowBackdrop)
+        row:SetBackdropColor(unpack(baseBg))
+        row:SetBackdropBorderColor(unpack(theme.rowBorder))
 
         local rankColor = (rank == 1 and "ffd700") or (rank == 2 and "c0c0c0") or (rank == 3 and "cd7f32") or "8899aa"
         local rankText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -745,13 +855,12 @@ function UI:RenderZones()
         local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
         row:SetSize(820, 30)
         row:SetPoint("TOPLEFT", 0, yOffset)
-        row:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1,
-        })
-        row:SetBackdropColor(0.10, 0.11, 0.15, 0.9)
-        row:SetBackdropBorderColor(0.18, 0.22, 0.28, 0.6)
+        local theme = UI:GetTheme()
+        local isEven = (rank % 2 == 0)
+        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+        row:SetBackdrop(theme.rowBackdrop)
+        row:SetBackdropColor(unpack(baseBg))
+        row:SetBackdropBorderColor(unpack(theme.rowBorder))
 
         local rankColor = (rank == 1 and "ffd700") or (rank == 2 and "c0c0c0") or (rank == 3 and "cd7f32") or "8899aa"
         local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -778,15 +887,17 @@ end
 -- Detail Modal Frame: Classified Killmail Dossier (Anonymous, 100% template-free)
 function UI:CreateDetailModal()
     local modal = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+    UI.DetailModal = modal
     modal:SetSize(480, 320)
     modal:SetPoint("CENTER")
-    modal:SetBackdrop({
+    local theme = UI:GetTheme()
+    modal:SetBackdrop(theme.modalBackdrop or {
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
     })
-    modal:SetBackdropColor(0.05, 0.06, 0.08, 0.98)
-    modal:SetBackdropBorderColor(0.0, 0.8, 1.0, 0.9)
+    modal:SetBackdropColor(unpack(theme.modalBg or {0.05, 0.06, 0.08, 0.98}))
+    modal:SetBackdropBorderColor(unpack(theme.modalBorder or {0.0, 0.8, 1.0, 0.9}))
     modal:Hide()
 
     local title = modal:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")

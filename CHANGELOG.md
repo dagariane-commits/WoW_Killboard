@@ -41,6 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Published comprehensive compliance audit in `docs/LEGAL_AND_COMPLIANCE.md`.
   - Formally certified 100% compliance with Blizzard Entertainment's UI Customization Policy (zero in-game ads, free distribution, open source, no RMT).
   - Enforced zero-PII privacy standards (no collection of Real IDs, IPs, emails, or credentials) and zero-Warden-risk filesystem architecture.
+- **Dual Theme Architecture (Classic WoW UI & ElvUI Minimalist)**:
+  - **Classic WoW Theme**: Replicates the iconic Blizzard stone dialog frames, gold/brass trim (`Interface\DialogFrame\UI-DialogBox-Border`), warm parchment cards, and golden typography while maintaining 100% template-free Lua taint isolation.
+  - **ElvUI Minimalist Theme**: Ultra-clean 1px razor borders (`Interface\Buttons\WHITE8X8`), pitch dark obsidian backdrop (`0.06, 0.07, 0.10`), and high-contrast cyan/white typography.
+  - **Instant In-UI Theme Switcher**: Dedicated `[Theme: Classic]` / `[Theme: ElvUI]` header button allows seamless 1-click theme toggling in real time without reloading the game.
+  - **Slash Command Support**: Added `/killboard theme [classic|elvui]` for instant CLI theme switching.
+  - **Persistent Settings**: Theme selection automatically saved to `WoWKillboardSettings.theme`.
 
 ### Changed
 - **In-Game Navigation & Filter Bar Overlap Elimination**:
