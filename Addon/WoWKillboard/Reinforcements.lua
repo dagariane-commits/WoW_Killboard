@@ -111,8 +111,18 @@ function RF:TriggerCallForBackup()
 
     -- Gather real-time spatial GPS coordinates
     local mapId, zone, subzone, coordX, coordY = 0, "Unknown Zone", "", 0, 0
-    if KB.Utils and KB.Utils.GetGPSCoordinates then
+    if KB.Utils and KB.Utils.GetPlayerLocation then
+        local loc = KB.Utils.GetPlayerLocation()
+        mapId = loc.mapId or 0
+        zone = (loc.zone and loc.zone ~= "") and loc.zone or (GetZoneText() or "Wilderness")
+        subzone = (loc.subZone and loc.subZone ~= "") and loc.subZone or (GetSubZoneText() or "")
+        coordX = loc.x or 0
+        coordY = loc.y or 0
+    elseif KB.Utils and KB.Utils.GetGPSCoordinates then
         mapId, zone, subzone, coordX, coordY = KB.Utils.GetGPSCoordinates()
+    else
+        zone = GetZoneText() or "Wilderness"
+        subzone = GetSubZoneText() or ""
     end
     local coordsFormatted = string.format("%.1f, %.1f", coordX, coordY)
 

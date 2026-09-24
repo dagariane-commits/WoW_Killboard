@@ -124,6 +124,12 @@ function U.GetPlayerLocation()
     }
 end
 
+-- Convenient unpack helper for GPS coordinates
+function U.GetGPSCoordinates()
+    local loc = U.GetPlayerLocation()
+    return loc.mapId, loc.zone, loc.subZone, loc.x, loc.y
+end
+
 -- Serialize a table to a Lua string (for export/sync)
 function U.Serialize(t)
     if type(t) ~= "table" then
