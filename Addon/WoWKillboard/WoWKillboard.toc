@@ -1,0 +1,20 @@
+## Interface: 16001, 160000, 120100, 110007, 110100, 11505, 11506, 11507
+## Title: |cff00ccffWoW Killboard|r |cffffd100[zKillboard]|r
+## Notes: World PvP & Battleground Intelligence, Live Killmail Feed, Bounty Escrow, Debt Ledger, and Running Leaderboards.
+## Author: Forged By Valor / Scott Quick
+## Version: 1.0.0
+## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties
+## AddonCompartmentFunc: WoWKillboard_OnAddonCompartmentClick
+## IconTexture: Interface\Icons\Achievement_PVP_P_01
+## X-Category: PvP, Combat, Leaderboard
+
+Config.lua
+Utils.lua
+UnitScanner.lua
+CombatTracker.lua
+Killmail.lua
+BountyEngine.lua
+Sync.lua
+Leaderboard.lua
+UI.lua
+Core.lua

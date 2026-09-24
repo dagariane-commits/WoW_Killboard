@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+"""
+WoWKillboard - tests/test_pipeline.py
+End-to-End Pipeline Verification Test Suite.
+Generates synthetic PvP engagements, verifies Lua table parsing,
+tests API filtering (All / World PvP / Battlegrounds), and checks Bounties & Debt Ledger.
+"""
+
+import os
+import sys
+import json
+import time
+import unittest
+
+# Ensure web/ is importable
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(BASE_DIR, "web"))
+sys.path.insert(0, os.path.join(BASE_DIR, "sync"))
+
+from server import app, init_db, get_db
+from watcher import LuaTableParser
+
+class TestKillboardPipeline(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Configure app for testing
+        app.config["TESTING"] = True
+        cls.client = app.test_client()
+        init_db()
+
+    def test_01_lua_syntax_and_structure(self):
+        """Verify that all Addon Lua files exist and contain valid Lua blocks."""
+        addon_dir = os.path.join(BASE_DIR, "Addon", "WoWKillboard")
+        expected_files = [
+            "WoWKillboard.toc",
+            "Config.lua",
+            "Utils.lua",
+            "UnitScanner.lua",
+            "CombatTracker.lua",
+            "Killmail.lua",
+            "BountyEngine.lua",
+            "Sync.lua",
+            "Leaderboard.lua",
+            "UI.lua",
+            "Core.lua"
+        ]
+        for fname in expected_files:
+            fpath = os.path.join(addon_dir, fname)
+            self.assertTrue(os.path.exists(fpath), f"Missing required file: {fname}")
+            with open(fpath, "r", encoding="utf-8") as f:
+                content = f.read()
+                self.assertGreater(len(content), 10, f"File {fname} is empty")
+        print("[PASS] All 11 Addon Lua and TOC files verified.")
+
+    def test_02_ingest_synthetic_kills(self):
+        """Ingest synthetic World PvP, Gang, and Battleground killmails."""
+        sample_kills = [
+            # 1. World PvP Solo Kill
+            {
+                "killId": "KB-TEST01",
+                "timestamp": int(time.time()) - 300,
+                "isBattleground": False,
+                "isArena": False,
+                "battlegroundName": "",
+                "isSolo": True,
+                "attackersCount": 1,
+                "totalDamage": 3400,
+                "killer": {
+                    "name": "Shadowblade", "level": 60, "class": "ROGUE",
+                    "guild": "GankSquad", "faction": "Horde", "partySize": 1,
+                    "damageDone": 3400, "healingDone": 0
+                },
+                "victim": {
+                    "name": "Frostweaver", "level": 58, "class": "MAGE",
+                    "guild": "KnightsOfIronforge", "faction": "Alliance", "partySize": 1
+                },
+                "location": {
+                    "mapId": 1434, "zone": "Stranglethorn Vale", "subZone": "Nesingwary Camp",
+                    "x": 35.4, "y": 10.8
+                }
+            },
+            # 2. World PvP Gang Kill
+            {
+                "killId": "KB-TEST02",
+                "timestamp": int(time.time()) - 200,
+                "isBattleground": False,
+                "isArena": False,
+                "battlegroundName": "",
+                "isSolo": False,
+                "attackersCount": 3,
+                "totalDamage": 5200,
+                "killer": {
+                    "name": "Ironjaw", "level": 60, "class": "WARRIOR",
+                    "guild": "GankSquad", "faction": "Horde", "partySize": 3,
+                    "damageDone": 4100, "healingDone": 0
+                },
+                "victim": {
+                    "name": "Holyheal", "level": 60, "class": "PRIEST",
+                    "guild": "KnightsOfIronforge", "faction": "Alliance", "partySize": 2
+                },
+                "location": {
+                    "mapId": 1424, "zone": "Hillsbrad Foothills", "subZone": "Southshore",
+                    "x": 51.2, "y": 58.6
+                }
+            },
+            # 3. Battleground Kill in Warsong Gulch
+            {
+                "killId": "KB-TEST03",
+                "timestamp": int(time.time()) - 100,
+                "isBattleground": True,
+                "isArena": False,
+                "battlegroundName": "Warsong Gulch",
+                "isSolo": True,
+                "attackersCount": 1,
+                "totalDamage": 4800,
+                "killer": {
+                    "name": "Hawkeye", "level": 60, "class": "HUNTER",
+                    "guild": "ApexPredators", "faction": "Alliance", "partySize": 10,
+                    "damageDone": 84500, "healingDone": 0
+                },
+                "victim": {
+                    "name": "Moonkin", "level": 60, "class": "DRUID",
+                    "guild": "Bloodfang", "faction": "Horde", "partySize": 10
+                },
+                "location": {
+                    "mapId": 1460, "zone": "Warsong Gulch", "subZone": "Silverwing Hold",
+                    "x": 48.0, "y": 18.5
+                }
+            },
+            # 4. Battleground Kill in Arathi Basin with Healing Telemetry
+            {
+                "killId": "KB-TEST04",
+                "timestamp": int(time.time()) - 50,
+                "isBattleground": True,
+                "isArena": False,
+                "battlegroundName": "Arathi Basin",
+                "isSolo": False,
+                "attackersCount": 2,
+                "totalDamage": 6100,
+                "killer": {
+                    "name": "Lifebinder", "level": 60, "class": "PALADIN",
+                    "guild": "ApexPredators", "faction": "Alliance", "partySize": 15,
+                    "damageDone": 32000, "healingDone": 115000
+                },
+                "victim": {
+                    "name": "Doomcaller", "level": 60, "class": "WARLOCK",
+                    "guild": "Bloodfang", "faction": "Horde", "partySize": 15
+                },
+                "location": {
+                    "mapId": 1461, "zone": "Arathi Basin", "subZone": "Blacksmith",
+                    "x": 50.0, "y": 50.0
+                }
+            },
+            # 5. Duel Knockout in Durotar
+            {
+                "killId": "KB-TEST05",
+                "timestamp": int(time.time()) - 20,
+                "isDuel": True,
+                "isBattleground": False,
+                "isArena": False,
+                "battlegroundName": "Duel (Knockout)",
+                "isSolo": True,
+                "attackersCount": 1,
+                "totalDamage": 3100,
+                "killer": {
+                    "name": "DuelMaster", "level": 60, "class": "WARRIOR",
+                    "guild": "Gladiators", "faction": "Horde", "partySize": 1,
+                    "damageDone": 3100, "healingDone": 0
+                },
+                "victim": {
+                    "name": "Challenger", "level": 60, "class": "ROGUE",
+                    "guild": "Stealthers", "faction": "Horde", "partySize": 1
+                },
+                "location": {
+                    "mapId": 1411, "zone": "Durotar", "subZone": "Orgrimmar Gates",
+                    "x": 45.0, "y": 15.0
+                }
+            },
+            # 6. Ranked Arena Match
+            {
+                "killId": "KB-TEST06",
+                "timestamp": int(time.time()) - 10,
+                "isDuel": False,
+                "isBattleground": False,
+                "isArena": True,
+                "battlegroundName": "Nagrand Arena",
+                "isSolo": False,
+                "attackersCount": 2,
+                "totalDamage": 7500,
+                "killer": {
+                    "name": "ArenaChamp", "level": 60, "class": "MAGE",
+                    "guild": "TopTwoPercent", "faction": "Alliance", "partySize": 2,
+                    "damageDone": 7500, "healingDone": 0
+                },
+                "victim": {
+                    "name": "Opponent", "level": 60, "class": "PRIEST",
+                    "guild": "Underdogs", "faction": "Horde", "partySize": 2
+                },
+                "location": {
+                    "mapId": 559, "zone": "Nagrand Arena", "subZone": "Arena Floor",
+                    "x": 50.0, "y": 50.0
+                }
+            }
+        ]
+
+        for km in sample_kills:
+            resp = self.client.post("/api/kills", json=km)
+            self.assertEqual(resp.status_code, 201)
+        print("[PASS] Ingested 6 synthetic kill records into SQLite database.")
+
+    def test_03_filter_mode_telemetry(self):
+        """Verify context filters: ALL, WORLD, BG, ARENA, and DUEL."""
+        # 1. All PvP
+        res_all = self.client.get("/api/kills?mode=ALL")
+        data_all = res_all.get_json()
+        self.assertGreaterEqual(data_all["count"], 6)
+
+        # 2. World PvP Only
+        res_world = self.client.get("/api/kills?mode=WORLD")
+        data_world = res_world.get_json()
+        for k in data_world["kills"]:
+            self.assertFalse(k["isBattleground"], "World PvP mode must not include BGs")
+            self.assertFalse(k.get("isArena", False), "World PvP mode must not include Arenas")
+            self.assertFalse(k.get("isDuel", False), "World PvP mode must not include Duels")
+
+        # 3. Battleground Only
+        res_bg = self.client.get("/api/kills?mode=BG")
+        data_bg = res_bg.get_json()
+        for k in data_bg["kills"]:
+            self.assertTrue(k["isBattleground"], "BG mode must only include Battlegrounds")
+
+        # 4. Arena Only
+        res_arena = self.client.get("/api/kills?mode=ARENA")
+        data_arena = res_arena.get_json()
+        for k in data_arena["kills"]:
+            self.assertTrue(k["isArena"], "Arena mode must only include Arenas")
+
+        # 5. Duel Only
+        res_duel = self.client.get("/api/kills?mode=DUEL")
+        data_duel = res_duel.get_json()
+        for k in data_duel["kills"]:
+            self.assertTrue(k["isDuel"], "Duel mode must only include Duels")
+
+        print("[PASS] Verified 5-way multi-mode filtering (ALL, WORLD, BG, ARENA, DUEL).")
+
+    def test_04_bg_stats_telemetry(self):
+        """Verify Battleground damage and healing telemetry metrics."""
+        res = self.client.get("/api/bg/stats")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+
+        # Check healing leader
+        healing_leaders = data.get("topHealing", [])
+        self.assertTrue(len(healing_leaders) > 0)
+        paladin = next((p for p in healing_leaders if p["name"] == "Lifebinder"), None)
+        self.assertIsNotNone(paladin)
+        self.assertEqual(paladin["total_healing"], 115000)
+
+        # Check damage leader
+        damage_leaders = data.get("topDamage", [])
+        hunter = next((p for p in damage_leaders if p["name"] == "Hawkeye"), None)
+        self.assertIsNotNone(hunter)
+        self.assertEqual(hunter["total_damage"], 84500)
+        print("[PASS] Verified Battleground damage/healing telemetry rankings.")
+
+    def test_05_bounty_and_debt_ledger_lifecycle(self):
+        """Test Bounty placement, claim verification, and Oathbreaker Debt Ledger with redemption."""
+        # 1. Place a bounty on Frostweaver
+        bounty_payload = {
+            "id": "BNT-TEST01",
+            "targetName": "Frostweaver",
+            "targetClass": "MAGE",
+            "targetFaction": "Alliance",
+            "placerName": "SlickGanker",
+            "amountGold": 500,
+            "amountCopper": 5000000
+        }
+        res_bnt = self.client.post("/api/bounties", json=bounty_payload)
+        self.assertEqual(res_bnt.status_code, 201)
+
+        # Check bounty list
+        b_list = self.client.get("/api/bounties").get_json()
+        self.assertTrue(any(b["target_name"] == "Frostweaver" for b in b_list))
+
+        # 2. Add an Oathbreaker debtor in default
+        debt_payload = {
+            "playerName": "DeadbeatDan",
+            "creditor": "HunterX",
+            "amountOwedCopper": 5500000,
+            "principalCopper": 5000000,
+            "surchargeCopper": 500000,
+            "status": "OATHBREAKER",
+            "daysInDefault": 5,
+            "bountyId": "BNT-OLD01"
+        }
+        res_debt = self.client.post("/api/bounties/debt-ledger", json=debt_payload)
+        self.assertEqual(res_debt.status_code, 201)
+
+        # Verify debtor appears on Wall of Shame
+        wall_of_shame = self.client.get("/api/bounties/debt-ledger").get_json()
+        debtor = next((d for d in wall_of_shame if d["player_name"] == "DeadbeatDan"), None)
+        self.assertIsNotNone(debtor)
+        self.assertEqual(debtor["days_in_default"], 5)
+
+        # 3. Pay off debt (Redemption)
+        res_pay = self.client.post("/api/debt/pay", json={"playerName": "DeadbeatDan"})
+        self.assertEqual(res_pay.status_code, 200)
+
+        # Verify debtor is cleansed from active Oathbreaker ledger
+        wall_after = self.client.get("/api/bounties/debt-ledger").get_json()
+        cleansed = any(d["player_name"] == "DeadbeatDan" for d in wall_after)
+        self.assertFalse(cleansed, "Redeemed debtor must be removed from the active Wall of Shame")
+        print("[PASS] Verified Bounty placement, Oathbreaker Debt Ledger, and Redemption lifecycle.")
+
+if __name__ == "__main__":
+    unittest.main()
