@@ -22,6 +22,7 @@
       <button id="nav-feed" class="nav-btn active" onclick="switchTab('FEED')">Live Feed</button>
       <button id="nav-leaderboards" class="nav-btn" onclick="switchTab('LEADERBOARDS')">Leaderboards</button>
       <button id="nav-guilds" class="nav-btn" onclick="switchTab('GUILDS')">Guilds</button>
+      <button id="nav-defense" class="nav-btn" onclick="switchTab('DEFENSE')">🛡️ Guild Defense &amp; Events</button>
       <button id="nav-bg_metrics" class="nav-btn" onclick="switchTab('BG_METRICS')">BG Gladiators</button>
       <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Bounties & Debt Ledger</button>
       <button id="nav-info" class="nav-btn" onclick="switchTab('INFO')">ℹ️ Docs &amp; Intel</button>
@@ -69,6 +70,9 @@
           <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 1.1rem; padding-top: 4px;">All PvP</span>
         </div>
       </div>
+
+      <!-- Global Emergency SOS Distress Banner -->
+      <div id="global-sos-banner" class="global-sos-banner" style="display: none;"></div>
 
       <!-- FBI Most Wanted Top 10 Showcase (Static) -->
       <section id="most-wanted-section" class="most-wanted-section">
@@ -258,6 +262,46 @@
       </div>
       <div id="guild-modal-body" style="display: flex; flex-direction: column; gap: 16px; max-height: 80vh; overflow-y: auto; padding-right: 4px;">
         <!-- Filled by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Guild Event Modal -->
+  <div class="modal-overlay" id="event-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <strong style="color: var(--accent-cyan); font-size: 1.1rem;">⚔️ Schedule Guild Event / Rally</strong>
+        <button class="modal-close" onclick="closeEventModal()">&times;</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+        <div>
+          <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Event Title:</label>
+          <input type="text" id="event-input-title" class="search-input" style="width:100%;" placeholder="e.g. STV Zone Defense &amp; Bounty Hunt">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Rally Location / Zone:</label>
+          <input type="text" id="event-input-zone" class="search-input" style="width:100%;" placeholder="e.g. Stranglethorn Vale (Rebel Camp)">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Event Time / Date:</label>
+          <input type="text" id="event-input-time" class="search-input" style="width:100%;" placeholder="e.g. Today @ 8:00 PM EST or NOW">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Organizer Character Name:</label>
+          <input type="text" id="event-input-creator" class="search-input" style="width:100%;" placeholder="Your in-game character name">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Guild Name:</label>
+          <input type="text" id="event-input-guild" class="search-input" style="width:100%;" placeholder="e.g. Forged By Valor">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Mission Description / Objectives:</label>
+          <textarea id="event-input-desc" class="search-input" style="width:100%; height:70px; resize:vertical;" placeholder="Detail objectives, target hostiles, or voice comms channels..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+          <button class="nav-btn" onclick="closeEventModal()">Cancel</button>
+          <button class="nav-btn active" style="background:var(--accent-cyan); color:#000; font-weight:700;" onclick="submitGuildEvent()">📢 Announce &amp; Broadcast</button>
+        </div>
       </div>
     </div>
   </div>

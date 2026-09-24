@@ -1199,6 +1199,7 @@ function switchTab(tab) {
   }
   else if (tab === "LEADERBOARDS") loadLeaderboards();
   else if (tab === "GUILDS") loadGuildsView();
+  else if (tab === "DEFENSE") loadDefenseView();
   else if (tab === "BG_METRICS") loadBgGladiators();
   else if (tab === "BOUNTIES") loadBounties();
   else if (tab === "INFO") loadInfoView();
@@ -1455,6 +1456,351 @@ function copyStreamBoxUrl() {
   });
 }
 
+// ----------------- Guild Defense, SOS Beacons & Discord -----------------
+
+async function loadDefenseView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Scanning tactical defense frequencies and guild operations...</div>`;
+
+  try {
+    const [distressRes, eventsRes, cfgRes] = await Promise.all([
+      fetch("/api/backup/distress"),
+      fetch("/api/events"),
+      fetch("/api/discord/config")
+    ]);
+    const beacons = await distressRes.json();
+    const events = await eventsRes.json();
+    const discordCfg = await cfgRes.json();
+
+    // 1. Distress Beacons HTML
+    let beaconsHtml = "";
+    if (!beacons || beacons.length === 0) {
+      beaconsHtml = `
+        <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:24px; text-align:center; color:#64748b;">
+          <div style="font-size:1.5rem; margin-bottom:8px;">🛡️</div>
+          <div style="color:#10b981; font-weight:700; font-size:1rem;">All Defense Sectors Secure</div>
+          <p style="font-size:0.8rem; margin-top:4px;">No active distress beacons. Guildmates under attack can trigger Call for Backup in-game via <code>/kb backup</code>, <code>/kbsos</code>, or the header button.</p>
+        </div>
+      `;
+    } else {
+      beaconsHtml = `
+        <div class="distress-grid">
+          ${beacons.map(b => {
+            const classColor = CLASS_COLORS[(b.character_class || "").toUpperCase()] || CLASS_COLORS.UNKNOWN;
+            return `
+              <div class="distress-beacon-card">
+                <div class="distress-header">
+                  <div class="distress-badge">
+                    <span class="distress-dot"></span> CALL FOR BACKUP
+                  </div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">${timeAgo(b.timestamp)}</span>
+                </div>
+                <div class="distress-body">
+                  <div style="font-size:1.1rem; font-weight:800;">
+                    <span style="color:${classColor};" class="clickable-player" onclick="openCharacterProfile('${b.character_name}')">${b.character_name}</span>
+                    <span style="font-size:0.8rem; color:#94a3b8; font-weight:normal;">(Lvl ${b.character_level} ${b.character_class})</span>
+                  </div>
+                  <div>
+                    Guild: <strong style="color:var(--accent-gold);">${b.guild_name && b.guild_name !== 'None' ? '&lt;' + b.guild_name + '&gt;' : 'Unaligned'}</strong>
+                    &bull; Faction: <span style="color:${b.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700;">${b.faction}</span>
+                  </div>
+                  <div>
+                    📍 Location: <strong style="color:#fff;">${b.zone}</strong> ${b.subzone ? '(' + b.subzone + ')' : ''}
+                    <code style="color:var(--accent-cyan); font-size:0.75rem; margin-left:4px;">(${b.coord_x.toFixed(1)}, ${b.coord_y.toFixed(1)})</code>
+                  </div>
+                  <div class="distress-threat">
+                    <span style="color:#f87171; font-weight:700;">⚠️ Threat Level: ${b.hostile_count} Hostile(s)</span><br>
+                    <span style="color:#e2e8f0; font-size:0.75rem;">${b.hostile_names}</span>
+                  </div>
+                </div>
+                <div class="distress-actions">
+                  <button class="nav-btn active" style="flex:1; font-size:0.75rem; padding:6px 10px; background:var(--accent-cyan); color:#000; font-weight:700;" onclick="copyWhisperCommand('${b.character_name}')">
+                    📋 Whisper Auto-Invite
+                  </button>
+                  <button class="nav-btn" style="font-size:0.75rem; padding:6px 10px;" onclick="resolveDistressBeacon('${b.id}')">
+                    ✅ Clear
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // 2. Guild Events HTML
+    let eventsHtml = "";
+    if (!events || events.length === 0) {
+      eventsHtml = `
+        <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:20px; text-align:center; color:#64748b;">
+          <p>No upcoming guild rallies or defense operations scheduled.</p>
+        </div>
+      `;
+    } else {
+      eventsHtml = `
+        <div class="events-grid">
+          ${events.map(e => `
+            <div class="event-card">
+              <div class="event-card-header">
+                <div>
+                  <h3 style="color:var(--accent-cyan); font-size:1rem; margin-bottom:2px;">${e.title}</h3>
+                  <div style="font-size:0.75rem; color:#94a3b8;">
+                    Guild: <strong style="color:var(--accent-gold);">&lt;${e.guild_name}&gt;</strong> &bull; Lead: <strong>${e.creator_name}</strong>
+                  </div>
+                </div>
+                <span style="font-size:0.7rem; background:rgba(0,229,255,0.15); color:var(--accent-cyan); border:1px solid var(--accent-cyan); padding:2px 6px; border-radius:4px; font-weight:700;">
+                  ${e.time_str}
+                </span>
+              </div>
+              <p style="font-size:0.8rem; color:#cbd5e1; margin:8px 0;">${e.description}</p>
+              <div style="font-size:0.75rem; color:#94a3b8; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1e293b; padding-top:8px; margin-top:8px;">
+                <span>📍 Rally Zone: <strong style="color:#fff;">${e.zone}</strong></span>
+                <button class="nav-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="copyWhisperCommand('${e.creator_name}', 'invite')">
+                  Join / Whisper
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // 3. Discord Gateway HTML
+    const isConfigured = discordCfg && discordCfg.configured;
+    const discordHtml = `
+      <div class="discord-config-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="discord-badge">DISCORD INTEGRATION</span>
+            <span style="font-size:1rem; font-weight:700; color:#fff;">Guild Announcement &amp; Distress Gateway</span>
+          </div>
+          <span style="font-size:0.75rem; color:${isConfigured ? '#10b981' : '#f59e0b'}; font-weight:700;">
+            ${isConfigured ? '● GATEWAY ACTIVE (' + discordCfg.masked_url + ')' : '○ NOT CONFIGURED'}
+          </span>
+        </div>
+        <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:12px;">
+          Automatically forward in-game <strong>Call for Backup (SOS)</strong> beacons and <strong>Guild Rally Announcements</strong> to your guild's Discord channel via Webhook.
+        </p>
+
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Discord Channel Webhook URL:</label>
+            <input type="text" id="discord-webhook-url" class="search-input" style="width:100%;" placeholder="https://discord.com/api/webhooks/..." value="">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Target Guild Tag / Scope:</label>
+            <input type="text" id="discord-guild-name" class="search-input" style="width:100%;" placeholder="e.g. Forged By Valor or default" value="${discordCfg && discordCfg.guild_name ? discordCfg.guild_name : 'default'}">
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; gap:16px; font-size:0.8rem; color:#cbd5e1;">
+            <label><input type="checkbox" id="discord-chk-alerts" checked> Broadcast Distress Beacons (SOS)</label>
+            <label><input type="checkbox" id="discord-chk-events" checked> Broadcast Guild Rallies &amp; Events</label>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="nav-btn" onclick="testDiscordWebhook()">🔔 Test Ping</button>
+            <button class="nav-btn active" style="background:#5865f2; color:#fff; border-color:#5865f2;" onclick="saveDiscordConfig()">💾 Save Webhook</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Top Section: Active SOS Calls -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div>
+              <h2 style="font-size: 1.2rem; color: #f87171; display:flex; align-items:center; gap:8px;">
+                <span>🚨</span> Real-Time Distress Beacons (Call for Backup)
+              </h2>
+              <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Live SOS signals dispatched from in-game combat. Whisper players for auto-invite.</div>
+            </div>
+            <button class="nav-btn" style="border-color:#ef4444; color:#f87171;" onclick="loadDefenseView()">🔄 Refresh Beacons</button>
+          </div>
+          ${beaconsHtml}
+        </div>
+
+        <!-- Middle Section: Guild Rallies and Events -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div>
+              <h2 style="font-size: 1.2rem; color: var(--accent-cyan); display:flex; align-items:center; gap:8px;">
+                <span>⚔️</span> Guild Defense Operations &amp; Rallies
+              </h2>
+              <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Coordinated guild strikes, zone defense, and bounty manhunts.</div>
+            </div>
+            <button class="supporter-btn" onclick="openEventModal()">➕ Schedule Guild Event</button>
+          </div>
+          ${eventsHtml}
+        </div>
+
+        <!-- Bottom Section: Discord Integration -->
+        ${discordHtml}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load defense platform: ${err.message}</div>`;
+  }
+}
+
+function copyWhisperCommand(playerName, keyword = "backup") {
+  const cmd = `/w ${playerName} ${keyword}`;
+  navigator.clipboard.writeText(cmd).then(() => {
+    alert(`Copied in-game command: "${cmd}"\nPaste into World of Warcraft to trigger auto-invite!`);
+  });
+}
+
+async function resolveDistressBeacon(beaconId) {
+  try {
+    const res = await fetch(`/api/backup/resolve/${encodeURIComponent(beaconId)}`, { method: "POST" });
+    if (res.ok) {
+      alert("Distress beacon marked as RESOLVED.");
+      loadDefenseView();
+      checkGlobalSosBeacons();
+    }
+  } catch (e) {
+    console.error("Failed to resolve beacon:", e);
+  }
+}
+
+function openEventModal() {
+  const modal = document.getElementById("event-modal");
+  if (modal) modal.style.display = "flex";
+}
+
+function closeEventModal() {
+  const modal = document.getElementById("event-modal");
+  if (modal) modal.style.display = "none";
+}
+
+async function submitGuildEvent() {
+  const title = document.getElementById("event-input-title")?.value.trim();
+  const zone = document.getElementById("event-input-zone")?.value.trim();
+  const timeStr = document.getElementById("event-input-time")?.value.trim() || "NOW";
+  const creator = document.getElementById("event-input-creator")?.value.trim() || "Officer";
+  const guild = document.getElementById("event-input-guild")?.value.trim() || "Forged By Valor";
+  const desc = document.getElementById("event-input-desc")?.value.trim() || "Guild PvP Operation";
+
+  if (!title || !zone) {
+    alert("Please provide an Event Title and Rally Zone.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title, zone, time_str: timeStr, creator_name: creator, guild_name: guild, description: desc
+      })
+    });
+    if (res.ok) {
+      alert("Guild Event announced and broadcasted to Discord!");
+      closeEventModal();
+      loadDefenseView();
+    } else {
+      alert("Failed to submit event.");
+    }
+  } catch (e) {
+    console.error("Failed to publish event:", e);
+  }
+}
+
+async function saveDiscordConfig() {
+  const url = document.getElementById("discord-webhook-url")?.value.trim();
+  const guild = document.getElementById("discord-guild-name")?.value.trim() || "default";
+  const alerts = document.getElementById("discord-chk-alerts")?.checked;
+  const events = document.getElementById("discord-chk-events")?.checked;
+
+  if (!url) {
+    alert("Please enter a valid Discord Webhook URL.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/discord/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        webhook_url: url,
+        guild_name: guild,
+        alerts_enabled: alerts,
+        events_enabled: events
+      })
+    });
+    if (res.ok) {
+      alert("Discord Webhook configuration saved!");
+      loadDefenseView();
+    } else {
+      alert("Failed to save Discord config.");
+    }
+  } catch (e) {
+    console.error("Failed to save discord config:", e);
+  }
+}
+
+async function testDiscordWebhook() {
+  const url = document.getElementById("discord-webhook-url")?.value.trim();
+  const guild = document.getElementById("discord-guild-name")?.value.trim() || "default";
+  try {
+    const res = await fetch("/api/discord/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ webhook_url: url, guild_name: guild })
+    });
+    const d = await res.json();
+    if (res.ok) {
+      alert("Test ping successfully sent to your Discord channel!");
+    } else {
+      alert(d.error || "Failed to send test ping.");
+    }
+  } catch (e) {
+    alert("Error sending test webhook: " + e.message);
+  }
+}
+
+async function checkGlobalSosBeacons() {
+  const banner = document.getElementById("global-sos-banner");
+  if (!banner) return;
+  try {
+    const res = await fetch("/api/backup/distress");
+    if (!res.ok) return;
+    const beacons = await res.json();
+    if (beacons && beacons.length > 0) {
+      const topB = beacons[0];
+      banner.style.display = "flex";
+      banner.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.4rem;">🚨</span>
+          <div>
+            <div style="font-size:0.95rem; font-weight:800; color:#fff;">
+              CALL FOR BACKUP: <span style="color:#f87171;">${topB.character_name}</span> is Taking Fire in ${topB.zone}!
+            </div>
+            <div style="font-size:0.75rem; color:#cbd5e1;">
+              Engaged by ${topB.hostile_count} hostile(s) &bull; Coordinates: (${topB.coord_x.toFixed(1)}, ${topB.coord_y.toFixed(1)}) &bull; Auto-Invite is LIVE
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="nav-btn active" style="background:var(--accent-cyan); color:#000; font-weight:700; font-size:0.75rem; padding:4px 10px;" onclick="copyWhisperCommand('${topB.character_name}')">
+            📋 Whisper '/w ${topB.character_name} backup'
+          </button>
+          <button class="nav-btn" style="font-size:0.75rem; padding:4px 10px;" onclick="switchTab('DEFENSE')">
+            View Defense Hub
+          </button>
+        </div>
+      `;
+    } else {
+      banner.style.display = "none";
+    }
+  } catch (e) {
+    banner.style.display = "none";
+  }
+}
+
 function setFilterMode(mode) {
   currentMode = mode;
   document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
@@ -1537,6 +1883,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadKills();
   loadMostWanted();
   loadSidebar();
+  checkGlobalSosBeacons();
 
   // Polling update every 6 seconds
   setInterval(() => {
@@ -1545,5 +1892,6 @@ document.addEventListener("DOMContentLoaded", () => {
       loadMostWanted();
     }
     loadSidebar();
+    checkGlobalSosBeacons();
   }, 6000);
 });

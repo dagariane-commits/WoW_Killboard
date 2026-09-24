@@ -45,6 +45,7 @@ class TestKillboardPipeline(unittest.TestCase):
             "Killmail.lua",
             "BountyEngine.lua",
             "Sync.lua",
+            "Reinforcements.lua",
             "Leaderboard.lua",
             "UI.lua",
             "Core.lua"
@@ -55,7 +56,7 @@ class TestKillboardPipeline(unittest.TestCase):
             with open(fpath, "r", encoding="utf-8") as f:
                 content = f.read()
                 self.assertGreater(len(content), 10, f"File {fname} is empty")
-        print("[PASS] All 11 Addon Lua and TOC files verified.")
+        print("[PASS] All 12 Addon Lua and TOC files verified.")
 
     def test_02_ingest_synthetic_kills(self):
         """Ingest synthetic World PvP, Gang, and Battleground killmails."""
@@ -500,6 +501,92 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertEqual(res_sb.status_code, 200)
         self.assertIn("StreamBox", res_sb.get_data(as_text=True))
         print("[PASS] Verified Supporter Gating, Most Wanted, Contract Acceptance, Cold Cases, 7-Day Activity, and StreamBox.")
+
+    def test_08_call_for_backup_and_discord_defense(self):
+        """Verify Call for Backup (SOS distress beacons), Guild Events, and Discord Gateway."""
+        # 1. Post a distress beacon
+        sos_payload = {
+            "id": "SOS-TEST-Hawkeye",
+            "character_name": "Hawkeye",
+            "character_class": "HUNTER",
+            "character_level": 60,
+            "guild_name": "Forged By Valor",
+            "faction": "Alliance",
+            "zone": "Stranglethorn Vale",
+            "subzone": "Gurubashi Arena",
+            "coord_x": 42.5,
+            "coord_y": 68.2,
+            "hostile_count": 2,
+            "hostile_names": "Gankzor (Rogue), Bloodfang (Warrior)",
+            "timestamp": int(time.time()),
+            "status": "ACTIVE"
+        }
+        res_sos = self.client.post("/api/backup/distress", json=sos_payload)
+        self.assertEqual(res_sos.status_code, 201)
+        sos_resp = res_sos.get_json()
+        self.assertEqual(sos_resp["status"], "ok")
+        self.assertEqual(sos_resp["beacon_id"], "SOS-TEST-Hawkeye")
+
+        # 2. Query active distress beacons
+        res_get_sos = self.client.get("/api/backup/distress")
+        self.assertEqual(res_get_sos.status_code, 200)
+        beacons = res_get_sos.get_json()
+        self.assertIsInstance(beacons, list)
+        found_beacon = next((b for b in beacons if b["id"] == "SOS-TEST-Hawkeye"), None)
+        self.assertIsNotNone(found_beacon, "Distress beacon should appear in active beacons list")
+        self.assertEqual(found_beacon["character_name"], "Hawkeye")
+        self.assertEqual(found_beacon["hostile_count"], 2)
+
+        # 3. Configure Discord Webhook
+        discord_cfg_payload = {
+            "guild_name": "Forged By Valor",
+            "webhook_url": "https://discord.com/api/webhooks/1234567890/testtoken",
+            "alerts_enabled": True,
+            "events_enabled": True
+        }
+        res_cfg = self.client.post("/api/discord/config", json=discord_cfg_payload)
+        self.assertEqual(res_cfg.status_code, 200)
+
+        # 4. Verify Discord config is returned with masked token
+        res_get_cfg = self.client.get("/api/discord/config?guild=Forged By Valor")
+        self.assertEqual(res_get_cfg.status_code, 200)
+        cfg_data = res_get_cfg.get_json()
+        self.assertTrue(cfg_data["configured"])
+        self.assertIn("****", cfg_data["masked_url"])
+
+        # 5. Create a Guild Event / Rally
+        event_payload = {
+            "id": "EVT-TEST-001",
+            "title": "STV Zone Defense & Outlaw Manhunt",
+            "description": "Repel Horde gank squad operating outside Booty Bay. Form up at Rebel Camp!",
+            "guild_name": "Forged By Valor",
+            "creator_name": "Hawkeye",
+            "zone": "Stranglethorn Vale",
+            "time_str": "8:00 PM EST"
+        }
+        res_evt = self.client.post("/api/events", json=event_payload)
+        self.assertEqual(res_evt.status_code, 201)
+        evt_resp = res_evt.get_json()
+        self.assertEqual(evt_resp["status"], "ok")
+
+        # 6. Query Guild Events
+        res_get_evt = self.client.get("/api/events")
+        self.assertEqual(res_get_evt.status_code, 200)
+        events = res_get_evt.get_json()
+        found_evt = next((e for e in events if e["id"] == "EVT-TEST-001"), None)
+        self.assertIsNotNone(found_evt, "Guild event should be listed in events endpoint")
+        self.assertEqual(found_evt["title"], "STV Zone Defense & Outlaw Manhunt")
+
+        # 7. Resolve distress beacon
+        res_resolve = self.client.post("/api/backup/resolve/SOS-TEST-Hawkeye")
+        self.assertEqual(res_resolve.status_code, 200)
+
+        # Verify beacon is no longer active
+        res_beacons_after = self.client.get("/api/backup/distress")
+        active_after = [b for b in res_beacons_after.get_json() if b["id"] == "SOS-TEST-Hawkeye"]
+        self.assertEqual(len(active_after), 0, "Resolved beacon should not be active")
+
+        print("[PASS] Verified Call for Backup SOS beacons, Guild Events, and Discord Defense Gateway.")
 
 if __name__ == "__main__":
     unittest.main()

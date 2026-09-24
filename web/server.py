@@ -11,6 +11,8 @@ import sys
 import json
 import time
 import sqlite3
+import urllib.request
+import urllib.error
 from flask import Flask, request, jsonify, send_from_directory, render_template_string
 from flask_cors import CORS
 
@@ -126,6 +128,45 @@ def init_db():
                 first_seen INTEGER,
                 last_seen INTEGER,
                 UNIQUE(character_name, guild_name)
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS distress_beacons (
+                id TEXT PRIMARY KEY,
+                character_name TEXT,
+                character_class TEXT,
+                character_level INTEGER,
+                guild_name TEXT,
+                faction TEXT,
+                zone TEXT,
+                subzone TEXT,
+                coord_x REAL,
+                coord_y REAL,
+                hostile_count INTEGER,
+                hostile_names TEXT,
+                timestamp INTEGER,
+                status TEXT DEFAULT 'ACTIVE'
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS guild_events (
+                id TEXT PRIMARY KEY,
+                title TEXT,
+                description TEXT,
+                guild_name TEXT,
+                creator_name TEXT,
+                zone TEXT,
+                time_str TEXT,
+                created_at INTEGER,
+                status TEXT DEFAULT 'SCHEDULED'
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS guild_discord_configs (
+                guild_name TEXT PRIMARY KEY,
+                webhook_url TEXT,
+                alerts_enabled INTEGER DEFAULT 1,
+                events_enabled INTEGER DEFAULT 1
             )
         """)
         # Backfill character_guild_history from existing kills if any
@@ -1217,6 +1258,290 @@ def pay_debt():
         conn.commit()
 
     return jsonify({"success": True, "message": f"Debt cleared for {player_name}"})
+
+# ----------------- Discord Webhook & Guild Operations Engine -----------------
+
+def send_discord_webhook(webhook_url: str, payload: dict) -> bool:
+    """Dispatches rich embed notifications to a configured Discord channel webhook."""
+    if not webhook_url or not webhook_url.startswith("http"):
+        return False
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            webhook_url,
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "WoWKillboard/1.0 (Discord Webhook Engine; Forged By Valor)"
+            },
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            return response.status in (200, 204)
+    except Exception as e:
+        print(f"[Discord Webhook Error]: {e}")
+        return False
+
+def get_discord_config_for_guild(guild_name: str = None) -> dict:
+    """Fetches discord webhook settings for a guild, falling back to 'default'."""
+    with get_db() as conn:
+        if guild_name and guild_name != "None" and guild_name != "":
+            row = conn.execute("SELECT * FROM guild_discord_configs WHERE guild_name = ?", (guild_name,)).fetchone()
+            if row:
+                return dict(row)
+        # Fallback to default
+        row_def = conn.execute("SELECT * FROM guild_discord_configs WHERE guild_name = 'default'").fetchone()
+        if row_def:
+            return dict(row_def)
+    return {}
+
+@app.route("/api/backup/distress", methods=["POST"])
+def post_distress_beacon():
+    """Receives in-game Call for Backup (SOS) distress beacons and broadcasts to Discord."""
+    data = request.json or {}
+    beacon_id = data.get("id") or f"SOS-{int(time.time())}-{data.get('character_name', 'Unknown')}"
+    char_name = data.get("character_name")
+    if not char_name:
+        return jsonify({"error": "Missing character_name"}), 400
+
+    char_class = data.get("character_class", "WARRIOR")
+    char_level = data.get("character_level", 60)
+    guild_name = data.get("guild_name", "None")
+    faction = data.get("faction", "Unknown")
+    zone = data.get("zone", "Wilderness")
+    subzone = data.get("subzone", "")
+    coord_x = float(data.get("coord_x", 0.0))
+    coord_y = float(data.get("coord_y", 0.0))
+    hostile_count = int(data.get("hostile_count", 1))
+    hostile_names = data.get("hostile_names", "Hostiles")
+    ts = int(data.get("timestamp") or time.time())
+    status = data.get("status", "ACTIVE")
+
+    with get_db() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO distress_beacons (
+                id, character_name, character_class, character_level,
+                guild_name, faction, zone, subzone, coord_x, coord_y,
+                hostile_count, hostile_names, timestamp, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            beacon_id, char_name, char_class, char_level,
+            guild_name, faction, zone, subzone, coord_x, coord_y,
+            hostile_count, hostile_names, ts, status
+        ))
+        conn.commit()
+
+    # Discord Webhook Notification
+    discord_notified = False
+    cfg = get_discord_config_for_guild(guild_name)
+    if cfg and cfg.get("webhook_url") and cfg.get("alerts_enabled", 1):
+        discord_payload = {
+            "content": f"🚨 **CALL FOR BACKUP — GUILD DISTRESS BEACON ACTIVATED!**",
+            "embeds": [{
+                "title": f"🚨 SOS: {char_name} is Taking Fire in {zone}!",
+                "description": f"**{char_name}** has triggered an emergency distress beacon. Immediate reinforcements requested!",
+                "color": 0xDD2E44,  # Red
+                "fields": [
+                    {"name": "Combatant", "value": f"**{char_name}** (Lvl {char_level} {char_class})", "inline": True},
+                    {"name": "Guild", "value": f"<{guild_name}>" if guild_name and guild_name != "None" else "Unaligned", "inline": True},
+                    {"name": "Faction", "value": f"{faction}", "inline": True},
+                    {"name": "Spatial GPS Location", "value": f"**{zone}** {f'({subzone})' if subzone else ''}\n`({coord_x:.1f}, {coord_y:.1f})`", "inline": True},
+                    {"name": "Hostiles Engaging", "value": f"**{hostile_count} Hostile(s)**: {hostile_names}", "inline": True},
+                    {"name": "In-Game Reinforcements", "value": f"Whisper `/w {char_name} backup` in-game for **instant auto-invite** to the squad!", "inline": False}
+                ],
+                "footer": {"text": "WoW Killboard Tactical Defense Network | Forged By Valor 501(c)(3)"},
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
+            }]
+        }
+        discord_notified = send_discord_webhook(cfg["webhook_url"], discord_payload)
+
+    return jsonify({"status": "ok", "beacon_id": beacon_id, "discord_notified": discord_notified}), 201
+
+@app.route("/api/backup/distress", methods=["GET"])
+def get_distress_beacons():
+    """Returns active distress beacons from the last 30 minutes."""
+    cutoff = int(time.time()) - 1800  # 30 minutes
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT * FROM distress_beacons
+            WHERE timestamp >= ? AND status = 'ACTIVE'
+            ORDER BY timestamp DESC
+        """, (cutoff,)).fetchall()
+        beacons = [dict(r) for r in rows]
+    return jsonify(beacons)
+
+@app.route("/api/backup/resolve/<beacon_id>", methods=["POST"])
+def resolve_distress_beacon(beacon_id):
+    """Marks a distress beacon as resolved."""
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM distress_beacons WHERE id = ?", (beacon_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "Beacon not found"}), 404
+        conn.execute("UPDATE distress_beacons SET status = 'RESOLVED' WHERE id = ?", (beacon_id,))
+        conn.commit()
+
+    beacon = dict(row)
+    cfg = get_discord_config_for_guild(beacon.get("guild_name"))
+    if cfg and cfg.get("webhook_url") and cfg.get("alerts_enabled", 1):
+        discord_payload = {
+            "content": f"✅ **DISTRESS RESOLVED**: Reinforcements arrived for **{beacon.get('character_name')}** in **{beacon.get('zone')}**. Area secure!",
+        }
+        send_discord_webhook(cfg["webhook_url"], discord_payload)
+
+    return jsonify({"status": "ok", "message": f"Beacon {beacon_id} marked as RESOLVED"})
+
+@app.route("/api/events", methods=["POST"])
+def create_guild_event():
+    """Creates a guild event/rally and announces it to Discord."""
+    data = request.json or {}
+    title = data.get("title")
+    if not title:
+        return jsonify({"error": "Missing title"}), 400
+
+    evt_id = data.get("id") or f"EVT-{int(time.time())}-{data.get('creator_name', 'Player')}"
+    desc = data.get("description", "Guild PvP Rally and Operations")
+    guild_name = data.get("guild_name", "Forged By Valor")
+    creator = data.get("creator_name", "Officer")
+    zone = data.get("zone", "World PvP Zone")
+    time_str = data.get("time_str", "NOW")
+    created_at = int(time.time())
+
+    with get_db() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO guild_events (
+                id, title, description, guild_name, creator_name, zone, time_str, created_at, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'SCHEDULED')
+        """, (evt_id, title, desc, guild_name, creator, zone, time_str, created_at))
+        conn.commit()
+
+    discord_notified = False
+    cfg = get_discord_config_for_guild(guild_name)
+    if cfg and cfg.get("webhook_url") and cfg.get("events_enabled", 1):
+        discord_payload = {
+            "content": f"⚔️ **NEW GUILD EVENT ANNOUNCED: {title}**",
+            "embeds": [{
+                "title": f"⚔️ {guild_name} Event: {title}",
+                "description": desc,
+                "color": 0x00CCFF,  # Cyan
+                "fields": [
+                    {"name": "Guild", "value": f"<{guild_name}>", "inline": True},
+                    {"name": "Organizer", "value": f"{creator}", "inline": True},
+                    {"name": "Rally Location", "value": f"**{zone}**", "inline": True},
+                    {"name": "Event Time", "value": f"**{time_str}**", "inline": True},
+                    {"name": "How to Join In-Game", "value": f"Whisper `/w {creator} invite` in-game to join the raid/party!", "inline": False}
+                ],
+                "footer": {"text": "WoW Killboard Guild Operations | Forged By Valor 501(c)(3)"},
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(created_at))
+            }]
+        }
+        discord_notified = send_discord_webhook(cfg["webhook_url"], discord_payload)
+
+    return jsonify({"status": "ok", "event_id": evt_id, "discord_notified": discord_notified}), 201
+
+@app.route("/api/events", methods=["GET"])
+def get_guild_events():
+    """Returns scheduled and active guild events."""
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT * FROM guild_events
+            WHERE status != 'CANCELLED'
+            ORDER BY created_at DESC
+            LIMIT 50
+        """).fetchall()
+        events = [dict(r) for r in rows]
+    return jsonify(events)
+
+@app.route("/api/events/<event_id>/cancel", methods=["POST"])
+def cancel_guild_event(event_id):
+    """Cancels a guild event."""
+    with get_db() as conn:
+        conn.execute("UPDATE guild_events SET status = 'CANCELLED' WHERE id = ?", (event_id,))
+        conn.commit()
+    return jsonify({"status": "ok", "message": f"Event {event_id} cancelled"})
+
+@app.route("/api/discord/config", methods=["POST"])
+def set_discord_config():
+    """Configures Discord webhook URL for a guild or global default."""
+    data = request.json or {}
+    guild_name = data.get("guild_name") or "default"
+    webhook_url = data.get("webhook_url", "").strip()
+    alerts_enabled = 1 if data.get("alerts_enabled", True) else 0
+    events_enabled = 1 if data.get("events_enabled", True) else 0
+
+    if not webhook_url:
+        return jsonify({"error": "Missing webhook_url"}), 400
+
+    with get_db() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO guild_discord_configs (
+                guild_name, webhook_url, alerts_enabled, events_enabled
+            ) VALUES (?, ?, ?, ?)
+        """, (guild_name, webhook_url, alerts_enabled, events_enabled))
+        conn.commit()
+
+    return jsonify({"status": "ok", "message": f"Discord configuration saved for {guild_name}"})
+
+@app.route("/api/discord/config", methods=["GET"])
+def get_discord_config():
+    """Fetches Discord webhook config with masked URL token."""
+    guild_name = request.args.get("guild", "default")
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM guild_discord_configs WHERE guild_name = ?", (guild_name,)).fetchone()
+        if not row and guild_name != "default":
+            row = conn.execute("SELECT * FROM guild_discord_configs WHERE guild_name = 'default'").fetchone()
+
+    if not row:
+        return jsonify({"configured": False})
+
+    d = dict(row)
+    url = d.get("webhook_url", "")
+    # Mask URL token for security
+    if len(url) > 20:
+        masked_url = url[:len(url)-8] + "****" + url[-4:]
+    else:
+        masked_url = "****"
+
+    return jsonify({
+        "configured": True,
+        "guild_name": d["guild_name"],
+        "masked_url": masked_url,
+        "alerts_enabled": bool(d["alerts_enabled"]),
+        "events_enabled": bool(d["events_enabled"])
+    })
+
+@app.route("/api/discord/test", methods=["POST"])
+def test_discord_webhook():
+    """Sends an immediate test ping embed to the Discord webhook."""
+    data = request.json or {}
+    webhook_url = data.get("webhook_url")
+    if not webhook_url:
+        guild_name = data.get("guild_name", "default")
+        cfg = get_discord_config_for_guild(guild_name)
+        webhook_url = cfg.get("webhook_url")
+
+    if not webhook_url:
+        return jsonify({"error": "No webhook URL provided or configured"}), 400
+
+    payload = {
+        "content": "🔔 **WoW Killboard Tactical Defense — Discord Webhook Test Connection**",
+        "embeds": [{
+            "title": "🛡️ Connection Verified: Discord Defense Gateway Active",
+            "description": "Your Discord channel is now connected to the WoW Killboard intelligence network. You will receive live **Call for Backup (SOS)** alerts and **Guild Rally Announcements** here.",
+            "color": 0x00FF66,  # Green
+            "fields": [
+                {"name": "Status", "value": "ONLINE & READY", "inline": True},
+                {"name": "Platform", "value": "WoW Killboard v1.0.0", "inline": True},
+                {"name": "Sponsor", "value": "Forged By Valor 501(c)(3)", "inline": True}
+            ],
+            "footer": {"text": "WoW Killboard | Veteran Mental Health & Community Defense"},
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        }]
+    }
+    success = send_discord_webhook(webhook_url, payload)
+    if success:
+        return jsonify({"status": "ok", "message": "Test announcement sent to Discord!"})
+    else:
+        return jsonify({"error": "Failed to send test announcement. Please check the webhook URL."}), 500
 
 if __name__ == "__main__":
     init_db()

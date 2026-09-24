@@ -82,6 +82,11 @@ flowchart TD
 - **Guild War Tracking & In-Game Leaderboards**:
   - In-game guild affiliation indexing via `GetGuildInfo(unit)`.
   - In-game Top War Guilds ranking table inside the `/kb` dashboard.
+- **Call for Backup (SOS) & Auto-Invite Group Engine**:
+  - Emergency SOS beacon via `/killboard backup`, `/kbsos`, or header button `[ 🚨 CALL BACKUP ]`.
+  - Transmits exact GPS coordinates, zone, subzone, and hostile attacker telemetry to Guild Chat, Party/Raid, Yell, and P2P addon channels.
+  - Automatically enables a 10-minute Auto-Invite listener (`EnsureRaidConversion`): whispering `"backup"` or `"invite"` automatically invites the player to the squad!
+  - Pops up an on-screen Reinforcement Alert dialog for guildmates with 1-click `"⚔️ Join Squad & Assist"` response.
 - **Bounty Escrow, Delayed Last-Seen Intel & Debt Ledger**:
   - Place gold bounties (`/kb bounty <Target> <Gold>`).
   - **Delayed Last-Seen Vicinity**: Bounty rows display the last confirmed combat zone and elapsed time (`Last Sighted: Stranglethorn Vale ~14m ago`).
@@ -103,7 +108,7 @@ flowchart TD
 - **Guild War Leaderboards & Guild Dossiers**: Dedicated Guilds tab ranking top guilds by kills, deaths, K/D, and active combatant count, with roster inspection.
 - **Combat Dossiers**: Click any killmail to open detailed combatant cards, damage meters, and location telemetry.
 - **Wall of Shame**: Pinned public registry of Oathbreakers in default with days-in-default counters.
-- **Battleground Gladiators**: Ranked leaderboards for Top Damage Dealers and Combat Medics.
+- **Guild Defense Operations & Discord Gateway**: Dedicated **"🛡️ Guild Defense & Events"** platform featuring real-time SOS distress beacon tracking, interactive guild rally event scheduling, and Discord Webhook forwarding.
 - **StreamBox Native OBS Overlay**: Direct `/streambox/<CharacterName>` overlay for OBS Studio and Twitch/YouTube streamers with transparent background and auto-updating kill/death ticker.
 - **zKillboard Docs & Intelligence Hub**: 7-section informational hub and global footer covering Features, FAQ, About, Delayed Intel, Supporter/Payments, StreamBox Generator, and Legal/Fair Play policies.
 - **100% Ad-Free Experience**: Zero commercial banners, tracking scripts, or ad networks. Supported entirely through voluntary contributions to **Forged By Valor (501(c)(3))** empowering veteran mental health through gaming.
@@ -124,6 +129,7 @@ WoW_Killboard/
 │       ├── Killmail.lua             # Standardized killmail model & persistence
 │       ├── BountyEngine.lua         # Bounties, anti-win-trade, debtor sirens
 │       ├── Sync.lua                 # P2P Addon networking (C_ChatInfo)
+│       ├── Reinforcements.lua       # SOS distress beacons, auto-invite party engine
 │       ├── Leaderboard.lua          # Multi-mode rankings (All / World / BG / Duel)
 │       ├── UI.lua                   # 100% taint-free dark dashboard (/kb)
 │       └── Core.lua                 # Lifecycle, slash commands, minimap button
