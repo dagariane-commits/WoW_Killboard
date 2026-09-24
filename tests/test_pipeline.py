@@ -387,5 +387,27 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertIn("GankSquad", history_guilds)
         print("[PASS] Verified Guild Leaderboards, Guild Profiles, Character Profiles, and Guild Transfer History.")
 
+    def test_07_bounty_delayed_last_seen_and_intel_radar(self):
+        """Verify delayed lastSeen vicinity telemetry and zone heatmap intel endpoint."""
+        # 1. Check /api/bounties contains lastSeen telemetry
+        res_bnt = self.client.get("/api/bounties")
+        self.assertEqual(res_bnt.status_code, 200)
+        bounties = res_bnt.get_json()
+        target_b = next((b for b in bounties if b["target_name"] == "Frostweaver"), None)
+        self.assertIsNotNone(target_b, "Frostweaver bounty should exist")
+        self.assertIn("lastSeen", target_b)
+        self.assertTrue(target_b["lastSeen"]["hasTelemetry"])
+        self.assertEqual(target_b["lastSeen"]["zone"], "Stranglethorn Vale")
+
+        # 2. Check /api/bounty/intel/<target> endpoint
+        res_intel = self.client.get("/api/bounty/intel/Frostweaver")
+        self.assertEqual(res_intel.status_code, 200)
+        intel = res_intel.get_json()
+        self.assertTrue(intel["hasTelemetry"])
+        self.assertEqual(intel["zone"], "Stranglethorn Vale")
+        self.assertGreater(len(intel["zoneHeat"]), 0, "Expected combat heat kills in Stranglethorn Vale")
+        self.assertEqual(intel["tacticalDelayMinutes"], 10)
+        print("[PASS] Verified Bounty Delayed Last-Seen Telemetry and Heatmap Intel Radar.")
+
 if __name__ == "__main__":
     unittest.main()

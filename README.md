@@ -82,8 +82,9 @@ flowchart TD
 - **Guild War Tracking & In-Game Leaderboards**:
   - In-game guild affiliation indexing via `GetGuildInfo(unit)`.
   - In-game Top War Guilds ranking table inside the `/kb` dashboard.
-- **Bounty Escrow & "Wall of Shame" Debt Ledger**:
+- **Bounty Escrow, Delayed Last-Seen Intel & Debt Ledger**:
   - Place gold bounties (`/kb bounty <Target> <Gold>`).
+  - **Delayed Last-Seen Vicinity**: Bounty rows display the last confirmed combat zone and elapsed time (`Last Sighted: Stranglethorn Vale ~14m ago`).
   - Anti-win-trade heuristics (level deltas, guild collusion protection, duplicate kill cooldowns).
   - Oathbreaker state machine: Debtor sirens (`PlaySound(8959)`) and screen alarms when an Oathbreaker is near.
   - 1-click mail redemption portal with a 10% administrative fee.
@@ -95,6 +96,7 @@ flowchart TD
 
 ### 3. zKillboard-Style Web Intelligence Platform (`web/`)
 - **Live Kill Ticker**: Tactical dark-slate UI modeled directly on **zkillboard.com**.
+- **Tactical Intel Radar & Combat Heatmap**: Interactive HTML5 Canvas radar screen (`/api/bounty/intel/<target>`) displaying zone combat heat blooms, sweeping radar lines, fuzzed sector coordinates (±500m), and an enforced 10-minute anti-stream-sniping tactical buffer.
 - **Interactive Character Combat Dossiers**: Click any character name to view lifetime kills, deaths, K/D, solo kills, damage/healing meters, and historical guild affiliation timeline.
 - **External Armory Links**: 1-click links to Official Blizzard Armory, Classic Vanilla Armory (`Ironforge.pro`), and Warcraft Logs.
 - **Guild War Leaderboards & Guild Dossiers**: Dedicated Guilds tab ranking top guilds by kills, deaths, K/D, and active combatant count, with roster inspection.

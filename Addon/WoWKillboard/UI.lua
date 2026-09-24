@@ -771,10 +771,29 @@ function UI:RenderBounties()
             local icon = UI:CreateClassIcon(row, b.targetClass, 20)
             icon:SetPoint("LEFT", 12, 0)
 
+            -- Lookup last known sighting in SavedVariables
+            local lastSeenStr = ""
+            if WoWKillboardDB and WoWKillboardDB.kills then
+                local latestTime = 0
+                local latestZone = nil
+                for _, km in pairs(WoWKillboardDB.kills) do
+                    if km.killer and km.victim and (km.killer.name == b.targetName or km.victim.name == b.targetName) then
+                        if (km.timestamp or 0) > latestTime then
+                            latestTime = km.timestamp
+                            latestZone = km.location and km.location.zone
+                        end
+                    end
+                end
+                if latestZone and latestTime > 0 then
+                    local diffMin = math.max(1, math.floor((time() - latestTime) / 60))
+                    lastSeenStr = string.format("  |  |cff38bdf8Last Sighted: %s (~%dm ago)|r", latestZone, diffMin)
+                end
+            end
+
             local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-            txt:SetText(string.format("WANTED: |cffff3333%s|r (%s)  |  Reward: |cffffd700%s|r  |  Placed by: |cffcbd5e1%s|r",
-                b.targetName, b.targetClass, KB.Utils.FormatMoney(b.amountCopper), b.placerName))
+            txt:SetText(string.format("WANTED: |cffff3333%s|r (%s)  |  Reward: |cffffd700%s|r  |  By: |cffcbd5e1%s|r%s",
+                b.targetName, b.targetClass, KB.Utils.FormatMoney(b.amountCopper), b.placerName, lastSeenStr))
 
             yOffset = yOffset - 36
         end
