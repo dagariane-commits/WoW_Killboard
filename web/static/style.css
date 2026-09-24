@@ -172,19 +172,6 @@ header {
   cursor: pointer;
 }
 
-/* Ad Banners */
-.ad-slot-top {
-  background-color: #0c0f17;
-  border-bottom: 1px solid var(--border-color);
-  padding: 8px;
-  text-align: center;
-  font-size: 0.7rem;
-  color: #64748b;
-  min-height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* Main Layout */
 .container {

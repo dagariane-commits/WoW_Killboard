@@ -48,6 +48,20 @@ function timeAgo(epoch) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function formatDuration(sec) {
+  sec = Math.max(0, Number(sec) || 0);
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (sec < 3600) return `${m}m ${s}s`;
+  const h = Math.floor(sec / 3600);
+  const remM = Math.floor((sec % 3600) / 60);
+  if (h < 24) return `${h}h ${remM}m`;
+  const d = Math.floor(h / 24);
+  const remH = h % 24;
+  return `${d}d ${remH}h`;
+}
+
 function colorizeClass(name, cls) {
   const color = CLASS_COLORS[(cls || "").toUpperCase()] || CLASS_COLORS.UNKNOWN;
   return `<span style="color: ${color}; font-weight: 700;">${name || "Unknown"}</span>`;
@@ -99,6 +113,10 @@ async function loadBgGladiators() {
 }
 
 async function loadBounties() {
+  const container = document.getElementById("main-content-area");
+  if (container) {
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering active bounty contracts and debt ledger...</div>`;
+  }
   try {
     const isSupporter = isSupporterActive();
     const [bntRes, debtRes, lbRes] = await Promise.all([
@@ -112,6 +130,9 @@ async function loadBounties() {
     renderBountiesView(bounties, debts, leaderboards);
   } catch (err) {
     console.error("Failed to load bounties:", err);
+    if (container) {
+      container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load bounties: ${err.message}</div>`;
+    }
   }
 }
 
