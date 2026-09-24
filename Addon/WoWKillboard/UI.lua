@@ -103,6 +103,12 @@ function UI:ApplyTheme()
             UI.CloseButton:ClearAllPoints()
             UI.CloseButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -4, -4)
             UI.CloseButton:SetBackdrop(nil)
+            local nt = UI.CloseButton:GetNormalTexture()
+            if nt then nt:Show() end
+            local pt = UI.CloseButton:GetPushedTexture()
+            if pt then pt:Show() end
+            local ht = UI.CloseButton:GetHighlightTexture()
+            if ht then ht:Show() end
             UI.CloseButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
             UI.CloseButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
             UI.CloseButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
@@ -111,9 +117,12 @@ function UI:ApplyTheme()
             UI.CloseButton:SetSize(18, 18)
             UI.CloseButton:ClearAllPoints()
             UI.CloseButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -8, -8)
-            UI.CloseButton:SetNormalTexture(nil)
-            UI.CloseButton:SetPushedTexture(nil)
-            UI.CloseButton:SetHighlightTexture(nil)
+            local nt = UI.CloseButton:GetNormalTexture()
+            if nt then nt:SetTexture(nil) nt:Hide() end
+            local pt = UI.CloseButton:GetPushedTexture()
+            if pt then pt:SetTexture(nil) pt:Hide() end
+            local ht = UI.CloseButton:GetHighlightTexture()
+            if ht then ht:SetTexture(nil) ht:Hide() end
             UI.CloseButton:SetBackdrop({
                 bgFile = "Interface\\Buttons\\WHITE8X8",
                 edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -155,6 +164,12 @@ function UI:ApplyTheme()
                 UI.DetailModal.CloseBtn:ClearAllPoints()
                 UI.DetailModal.CloseBtn:SetPoint("TOPRIGHT", UI.DetailModal, "TOPRIGHT", -4, -4)
                 UI.DetailModal.CloseBtn:SetBackdrop(nil)
+                local nt = UI.DetailModal.CloseBtn:GetNormalTexture()
+                if nt then nt:Show() end
+                local pt = UI.DetailModal.CloseBtn:GetPushedTexture()
+                if pt then pt:Show() end
+                local ht = UI.DetailModal.CloseBtn:GetHighlightTexture()
+                if ht then ht:Show() end
                 UI.DetailModal.CloseBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
                 UI.DetailModal.CloseBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
                 UI.DetailModal.CloseBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
@@ -163,9 +178,12 @@ function UI:ApplyTheme()
                 UI.DetailModal.CloseBtn:SetSize(18, 18)
                 UI.DetailModal.CloseBtn:ClearAllPoints()
                 UI.DetailModal.CloseBtn:SetPoint("TOPRIGHT", UI.DetailModal, "TOPRIGHT", -8, -8)
-                UI.DetailModal.CloseBtn:SetNormalTexture(nil)
-                UI.DetailModal.CloseBtn:SetPushedTexture(nil)
-                UI.DetailModal.CloseBtn:SetHighlightTexture(nil)
+                local nt = UI.DetailModal.CloseBtn:GetNormalTexture()
+                if nt then nt:SetTexture(nil) nt:Hide() end
+                local pt = UI.DetailModal.CloseBtn:GetPushedTexture()
+                if pt then pt:SetTexture(nil) pt:Hide() end
+                local ht = UI.DetailModal.CloseBtn:GetHighlightTexture()
+                if ht then ht:SetTexture(nil) ht:Hide() end
                 UI.DetailModal.CloseBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
                 UI.DetailModal.CloseBtn:SetBackdropColor(0.12, 0.12, 0.12, 1.0)
                 UI.DetailModal.CloseBtn:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
