@@ -238,6 +238,27 @@ function LB:GetDeadliestZones(limit)
     return LB:GetTopZones("ALL", limit)
 end
 
+-- Get Top War Guilds sorted by total kills
+function LB:GetTopGuilds(mode, limit)
+    mode = mode or "ALL"
+    limit = limit or 10
+    local bucket = LB.Aggregates[mode]
+    if not bucket then return {} end
+
+    local list = {}
+    for guildName, count in pairs(bucket.guilds) do
+        table.insert(list, { guild = guildName, kills = count })
+    end
+
+    table.sort(list, function(a, b) return a.kills > b.kills end)
+
+    local res = {}
+    for i = 1, math.min(#list, limit) do
+        table.insert(res, list[i])
+    end
+    return res
+end
+
 -- Get Recent Killmails sorted chronologically
 function LB:GetRecentKills(mode, limit)
     mode = mode or "ALL"

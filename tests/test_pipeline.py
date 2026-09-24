@@ -27,6 +27,11 @@ class TestKillboardPipeline(unittest.TestCase):
         app.config["TESTING"] = True
         cls.client = app.test_client()
         init_db()
+        with get_db() as conn:
+            conn.execute("DELETE FROM kills WHERE kill_id LIKE 'KB-%'")
+            conn.execute("DELETE FROM character_guild_history")
+            conn.execute("DELETE FROM bounties WHERE id LIKE 'BNT-%'")
+            conn.execute("DELETE FROM debt_ledger WHERE player_name = 'DeadbeatDan'")
 
     def test_01_lua_syntax_and_structure(self):
         """Verify that all Addon Lua files exist and contain valid Lua blocks."""
@@ -311,6 +316,76 @@ class TestKillboardPipeline(unittest.TestCase):
         cleansed = any(d["player_name"] == "DeadbeatDan" for d in wall_after)
         self.assertFalse(cleansed, "Redeemed debtor must be removed from the active Wall of Shame")
         print("[PASS] Verified Bounty placement, Oathbreaker Debt Ledger, and Redemption lifecycle.")
+
+    def test_06_guild_and_character_profiles(self):
+        """Verify guild leaderboards, guild profiles, character profiles, and guild history tracking."""
+        # 1. Guild Leaderboards
+        res_guilds = self.client.get("/api/guilds")
+        self.assertEqual(res_guilds.status_code, 200)
+        guilds_data = res_guilds.get_json().get("guilds", [])
+        self.assertGreater(len(guilds_data), 0, "Expected at least one guild in leaderboards")
+
+        gank_squad = next((g for g in guilds_data if g["guild"] == "GankSquad"), None)
+        self.assertIsNotNone(gank_squad, "GankSquad should appear in guild leaderboards")
+        self.assertGreater(gank_squad["kills"], 0)
+        self.assertIsNotNone(gank_squad["topMember"])
+
+        # 2. Guild Profile Endpoint
+        res_guild_prof = self.client.get("/api/guild/GankSquad")
+        self.assertEqual(res_guild_prof.status_code, 200)
+        prof_data = res_guild_prof.get_json()
+        self.assertEqual(prof_data["guild"], "GankSquad")
+        self.assertGreater(len(prof_data["members"]), 0)
+        self.assertGreater(len(prof_data["recentKills"]), 0)
+
+        # 3. Character Profile Endpoint
+        res_char = self.client.get("/api/character/Shadowblade")
+        self.assertEqual(res_char.status_code, 200)
+        char_data = res_char.get_json()
+        self.assertEqual(char_data["name"], "Shadowblade")
+        self.assertEqual(char_data["class"], "ROGUE")
+        self.assertEqual(char_data["currentGuild"], "GankSquad")
+        self.assertIn("official", char_data["armoryUrls"])
+        self.assertIn("ironforge", char_data["armoryUrls"])
+        self.assertIn("warcraftlogs", char_data["armoryUrls"])
+        self.assertGreater(len(char_data["guildHistory"]), 0)
+        self.assertEqual(char_data["guildHistory"][0]["guild_name"], "GankSquad")
+
+        # 4. Guild Transfer: Shadowblade transfers to "EliteGankers"
+        new_kill = {
+            "killId": "KB-GUILD-TRANSFER-01",
+            "timestamp": int(time.time()),
+            "isBattleground": False,
+            "isArena": False,
+            "battlegroundName": "",
+            "isSolo": True,
+            "attackersCount": 1,
+            "totalDamage": 4000,
+            "killer": {
+                "name": "Shadowblade", "level": 60, "class": "ROGUE",
+                "guild": "EliteGankers", "faction": "Horde", "partySize": 1,
+                "damageDone": 4000, "healingDone": 0
+            },
+            "victim": {
+                "name": "Frostweaver", "level": 60, "class": "MAGE",
+                "guild": "KnightsOfIronforge", "faction": "Alliance", "partySize": 1
+            },
+            "location": {
+                "mapId": 1434, "zone": "Stranglethorn Vale", "subZone": "Booty Bay",
+                "x": 26.2, "y": 74.0
+            }
+        }
+        res_post = self.client.post("/api/kills", json=new_kill)
+        self.assertEqual(res_post.status_code, 201)
+
+        # Re-fetch Shadowblade character profile
+        res_char_after = self.client.get("/api/character/Shadowblade")
+        char_after = res_char_after.get_json()
+        self.assertEqual(char_after["currentGuild"], "EliteGankers")
+        history_guilds = [gh["guild_name"] for gh in char_after["guildHistory"]]
+        self.assertIn("EliteGankers", history_guilds)
+        self.assertIn("GankSquad", history_guilds)
+        print("[PASS] Verified Guild Leaderboards, Guild Profiles, Character Profiles, and Guild Transfer History.")
 
 if __name__ == "__main__":
     unittest.main()

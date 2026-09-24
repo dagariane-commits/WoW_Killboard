@@ -433,3 +433,95 @@ header {
   font-size: 1.5rem;
   cursor: pointer;
 }
+
+.modal-card-lg {
+  width: 780px;
+  max-width: 95%;
+  max-height: 90vh;
+}
+
+/* Clickable Entities */
+.clickable-player {
+  cursor: pointer;
+  display: inline-block;
+  transition: opacity 0.15s ease, text-shadow 0.15s ease;
+}
+
+.clickable-player:hover {
+  text-decoration: underline;
+  filter: brightness(1.25);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+.clickable-guild {
+  cursor: pointer;
+  color: var(--accent-gold);
+  transition: all 0.15s ease;
+}
+
+.clickable-guild:hover {
+  color: #fef08a;
+  text-decoration: underline;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+/* External Armory Buttons */
+.armory-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.armory-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.armory-btn:hover {
+  background-color: #334155;
+  border-color: var(--accent-cyan);
+  color: #fff;
+}
+
+/* Timeline & Stats Card Grid */
+.dossier-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.dossier-stat {
+  background: #0a0d14;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 10px;
+  text-align: center;
+}
+
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timeline-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0d111a;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+}
+

@@ -103,6 +103,35 @@ def init_db():
                 bounty_id TEXT
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS character_guild_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                character_name TEXT,
+                guild_name TEXT,
+                faction TEXT,
+                first_seen INTEGER,
+                last_seen INTEGER,
+                UNIQUE(character_name, guild_name)
+            )
+        """)
+        # Backfill character_guild_history from existing kills if any
+        try:
+            conn.execute("""
+                INSERT OR IGNORE INTO character_guild_history (character_name, guild_name, faction, first_seen, last_seen)
+                SELECT killer_name, killer_guild, killer_faction, MIN(timestamp), MAX(timestamp)
+                FROM kills
+                WHERE killer_name IS NOT NULL AND killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''
+                GROUP BY killer_name, killer_guild
+            """)
+            conn.execute("""
+                INSERT OR IGNORE INTO character_guild_history (character_name, guild_name, faction, first_seen, last_seen)
+                SELECT victim_name, victim_guild, victim_faction, MIN(timestamp), MAX(timestamp)
+                FROM kills
+                WHERE victim_name IS NOT NULL AND victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''
+                GROUP BY victim_name, victim_guild
+            """)
+        except Exception:
+            pass
         conn.commit()
 
 @app.route("/")
@@ -234,6 +263,34 @@ def post_kill():
             v.get("partySize", 1), loc.get("mapId", 0), loc.get("zone", "Unknown"), loc.get("subZone", ""),
             loc.get("x", 0.0), loc.get("y", 0.0), json.dumps(data)
         ))
+
+        # Track character guild history
+        killer_name = k.get("name", "Unknown")
+        killer_guild = k.get("guild", "None")
+        killer_faction = k.get("faction", "Unknown")
+        if killer_name != "Unknown" and killer_guild and killer_guild != "None" and killer_guild != "":
+            try:
+                conn.execute("""
+                    INSERT INTO character_guild_history (character_name, guild_name, faction, first_seen, last_seen)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(character_name, guild_name) DO UPDATE SET last_seen = MAX(last_seen, excluded.last_seen)
+                """, (killer_name, killer_guild, killer_faction, timestamp, timestamp))
+            except Exception:
+                pass
+
+        victim_name = v.get("name", "Unknown")
+        victim_guild = v.get("guild", "None")
+        victim_faction = v.get("faction", "Unknown")
+        if victim_name != "Unknown" and victim_guild and victim_guild != "None" and victim_guild != "":
+            try:
+                conn.execute("""
+                    INSERT INTO character_guild_history (character_name, guild_name, faction, first_seen, last_seen)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(character_name, guild_name) DO UPDATE SET last_seen = MAX(last_seen, excluded.last_seen)
+                """, (victim_name, victim_guild, victim_faction, timestamp, timestamp))
+            except Exception:
+                pass
+
         conn.commit()
 
     return jsonify({"success": True, "killId": kill_id}), 201
@@ -377,6 +434,202 @@ def get_bg_stats():
         "topHealing": top_healing,
         "topKd": top_kd,
     })
+
+# ----------------- Character & Guild Profiles API -----------------
+
+@app.route("/api/character/<name>", methods=["GET"])
+def get_character_profile(name):
+    with get_db() as conn:
+        char_row = conn.execute("""
+            SELECT killer_name AS name, killer_class AS class, killer_level AS level, killer_guild AS guild, killer_faction AS faction
+            FROM kills WHERE killer_name = ?
+            UNION
+            SELECT victim_name AS name, victim_class AS class, victim_level AS level, victim_guild AS guild, victim_faction AS faction
+            FROM kills WHERE victim_name = ?
+            LIMIT 1
+        """, (name, name)).fetchone()
+
+        if not char_row:
+            return jsonify({"error": "Character not found"}), 404
+
+        char_data = dict(char_row)
+
+        # Total Kills & breakdown
+        kills_stat = conn.execute("""
+            SELECT COUNT(*) AS total_kills,
+                   COALESCE(SUM(is_solo), 0) AS solo_kills,
+                   COALESCE(SUM(is_duel), 0) AS duel_kills,
+                   COALESCE(SUM(is_battleground), 0) AS bg_kills,
+                   COALESCE(SUM(killer_damage_done), 0) AS total_damage,
+                   COALESCE(SUM(killer_healing_done), 0) AS total_healing
+            FROM kills WHERE killer_name = ?
+        """, (name,)).fetchone()
+
+        # Total Deaths
+        deaths_stat = conn.execute("""
+            SELECT COUNT(*) AS total_deaths
+            FROM kills WHERE victim_name = ?
+        """, (name,)).fetchone()
+
+        total_kills = kills_stat["total_kills"] or 0
+        total_deaths = deaths_stat["total_deaths"] or 0
+        kd = round(total_kills / total_deaths, 2) if total_deaths > 0 else float(total_kills)
+
+        # Guild History
+        guild_history_rows = conn.execute("""
+            SELECT guild_name, faction, first_seen, last_seen
+            FROM character_guild_history
+            WHERE character_name = ?
+            ORDER BY last_seen DESC
+        """, (name,)).fetchall()
+        guild_history = [dict(r) for r in guild_history_rows]
+
+        # Recent Kills (last 10)
+        recent_kills_rows = conn.execute("""
+            SELECT kill_id, timestamp, is_duel, is_battleground, is_solo, zone, subzone,
+                   victim_name, victim_level, victim_class, victim_guild, total_damage
+            FROM kills WHERE killer_name = ?
+            ORDER BY timestamp DESC
+            LIMIT 10
+        """, (name,)).fetchall()
+        recent_kills = [dict(r) for r in recent_kills_rows]
+
+        # Recent Deaths (last 10)
+        recent_deaths_rows = conn.execute("""
+            SELECT kill_id, timestamp, is_duel, is_battleground, is_solo, zone, subzone,
+                   killer_name, killer_level, killer_class, killer_guild, total_damage
+            FROM kills WHERE victim_name = ?
+            ORDER BY timestamp DESC
+            LIMIT 10
+        """, (name,)).fetchall()
+        recent_deaths = [dict(r) for r in recent_deaths_rows]
+
+        current_guild = guild_history[0]["guild_name"] if guild_history else (char_data.get("guild") or "None")
+
+        realm = "classic"
+        armory_urls = {
+            "official": f"https://worldofwarcraft.blizzard.com/en-us/character/us/{realm}/{name.lower()}",
+            "ironforge": f"https://ironforge.pro/pvp/player/{realm}/{name.lower()}/",
+            "warcraftlogs": f"https://classic.warcraftlogs.com/character/us/{realm}/{name.lower()}"
+        }
+
+        return jsonify({
+            "name": name,
+            "class": char_data.get("class", "UNKNOWN"),
+            "level": char_data.get("level", 60),
+            "faction": char_data.get("faction", "Unknown"),
+            "currentGuild": current_guild,
+            "stats": {
+                "kills": total_kills,
+                "deaths": total_deaths,
+                "kd": kd,
+                "soloKills": kills_stat["solo_kills"] or 0,
+                "duelKills": kills_stat["duel_kills"] or 0,
+                "bgKills": kills_stat["bg_kills"] or 0,
+                "totalDamage": kills_stat["total_damage"] or 0,
+                "totalHealing": kills_stat["total_healing"] or 0,
+            },
+            "guildHistory": guild_history,
+            "recentKills": recent_kills,
+            "recentDeaths": recent_deaths,
+            "armoryUrls": armory_urls
+        })
+
+@app.route("/api/guilds", methods=["GET"])
+def get_guilds_leaderboard():
+    with get_db() as conn:
+        guilds_query = """
+            SELECT 
+                k.killer_guild AS guild,
+                k.killer_faction AS faction,
+                COUNT(k.kill_id) AS kills,
+                COALESCE(SUM(k.is_solo), 0) AS solo_kills,
+                COUNT(DISTINCT k.killer_name) AS members_count
+            FROM kills k
+            WHERE k.killer_guild IS NOT NULL AND k.killer_guild != 'None' AND k.killer_guild != ''
+            GROUP BY k.killer_guild
+            ORDER BY kills DESC
+            LIMIT 50
+        """
+        guilds = [dict(r) for r in conn.execute(guilds_query).fetchall()]
+
+        for g in guilds:
+            g_name = g["guild"]
+            death_count = conn.execute("""
+                SELECT COUNT(*) FROM kills WHERE victim_guild = ?
+            """, (g_name,)).fetchone()[0]
+            g["deaths"] = death_count
+            g["kd"] = round(g["kills"] / death_count, 2) if death_count > 0 else float(g["kills"])
+
+            top_member = conn.execute("""
+                SELECT killer_name AS name, killer_class AS class, COUNT(*) as kills
+                FROM kills WHERE killer_guild = ?
+                GROUP BY killer_name
+                ORDER BY kills DESC LIMIT 1
+            """, (g_name,)).fetchone()
+            g["topMember"] = dict(top_member) if top_member else None
+
+        return jsonify({"guilds": guilds})
+
+@app.route("/api/guild/<guild_name>", methods=["GET"])
+def get_guild_profile(guild_name):
+    with get_db() as conn:
+        kills_stat = conn.execute("""
+            SELECT COUNT(*) AS total_kills, killer_faction AS faction,
+                   COALESCE(SUM(is_solo), 0) AS solo_kills,
+                   COUNT(DISTINCT killer_name) AS member_count
+            FROM kills
+            WHERE killer_guild = ?
+        """, (guild_name,)).fetchone()
+
+        if not kills_stat or kills_stat["total_kills"] == 0:
+            victim_stat = conn.execute("""
+                SELECT COUNT(*) AS total_deaths, victim_faction AS faction
+                FROM kills WHERE victim_guild = ?
+            """, (guild_name,)).fetchone()
+            if not victim_stat or victim_stat["total_deaths"] == 0:
+                return jsonify({"error": "Guild not found"}), 404
+            total_kills = 0
+            total_deaths = victim_stat["total_deaths"]
+            faction = victim_stat["faction"] or "Unknown"
+            solo_kills = 0
+            member_count = 0
+        else:
+            total_kills = kills_stat["total_kills"]
+            faction = kills_stat["faction"] or "Unknown"
+            solo_kills = kills_stat["solo_kills"]
+            member_count = kills_stat["member_count"]
+            total_deaths = conn.execute("SELECT COUNT(*) FROM kills WHERE victim_guild = ?", (guild_name,)).fetchone()[0]
+
+        kd = round(total_kills / total_deaths, 2) if total_deaths > 0 else float(total_kills)
+
+        members = [dict(r) for r in conn.execute("""
+            SELECT killer_name AS name, killer_class AS class, killer_level AS level,
+                   COUNT(*) AS kills, SUM(is_solo) AS solo_kills, MAX(timestamp) AS last_seen
+            FROM kills WHERE killer_guild = ?
+            GROUP BY killer_name
+            ORDER BY kills DESC
+        """, (guild_name,)).fetchall()]
+
+        recent_kills = [dict(r) for r in conn.execute("""
+            SELECT kill_id, timestamp, is_duel, is_battleground, is_solo, zone, subzone,
+                   killer_name, killer_class, victim_name, victim_class, victim_guild, total_damage
+            FROM kills WHERE killer_guild = ?
+            ORDER BY timestamp DESC
+            LIMIT 15
+        """, (guild_name,)).fetchall()]
+
+        return jsonify({
+            "guild": guild_name,
+            "faction": faction,
+            "kills": total_kills,
+            "deaths": total_deaths,
+            "kd": kd,
+            "soloKills": solo_kills,
+            "memberCount": member_count,
+            "members": members,
+            "recentKills": recent_kills
+        })
 
 # ----------------- Bounties & Debt Ledger API -----------------
 

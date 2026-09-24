@@ -21,6 +21,7 @@
     <nav class="nav-links">
       <button id="nav-feed" class="nav-btn active" onclick="switchTab('FEED')">Live Feed</button>
       <button id="nav-leaderboards" class="nav-btn" onclick="switchTab('LEADERBOARDS')">Leaderboards</button>
+      <button id="nav-guilds" class="nav-btn" onclick="switchTab('GUILDS')">Guilds</button>
       <button id="nav-bg_metrics" class="nav-btn" onclick="switchTab('BG_METRICS')">BG Gladiators</button>
       <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Bounties & Debt Ledger</button>
     </nav>
@@ -120,6 +121,32 @@
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div id="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- Filled by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Character Profile Modal -->
+  <div class="modal-overlay" id="character-modal">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <strong style="color: var(--accent-cyan); font-size: 1.1rem;" id="character-modal-title">Character Combat Dossier</strong>
+        <button class="modal-close" onclick="closeCharacterModal()">&times;</button>
+      </div>
+      <div id="character-modal-body" style="display: flex; flex-direction: column; gap: 16px; max-height: 80vh; overflow-y: auto; padding-right: 4px;">
+        <!-- Filled by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Guild Profile Modal -->
+  <div class="modal-overlay" id="guild-modal">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <strong style="color: var(--accent-gold); font-size: 1.1rem;" id="guild-modal-title">Guild War Intelligence</strong>
+        <button class="modal-close" onclick="closeGuildModal()">&times;</button>
+      </div>
+      <div id="guild-modal-body" style="display: flex; flex-direction: column; gap: 16px; max-height: 80vh; overflow-y: auto; padding-right: 4px;">
         <!-- Filled by app.js -->
       </div>
     </div>

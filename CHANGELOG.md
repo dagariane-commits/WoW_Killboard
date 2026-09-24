@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
+- **Guild War Tracking & Historical Guild Ledger**:
+  - In-game guild affiliation tracking via `GetGuildInfo(unit)` indexed into leaderboards with `Leaderboard:GetTopGuilds(mode, limit)` and rendered in the in-game dashboard.
+  - Dedicated `character_guild_history` database ledger tracking character guild transfers, memberships, and tenure timestamps (`first_seen`, `last_seen`).
+  - Web Guild War Leaderboards (`/api/guilds`) ranking guilds by total kills, deaths, K/D ratio, active combatant count, and top killer.
+  - Guild Intelligence Dossier modal (`GET /api/guild/<guild_name>`) displaying active guild roster, aggregate stats, and recent guild kills.
+- **Interactive Character Combat Profile & Armory Integration**:
+  - Full player dossier modal (`GET /api/character/<character_name>`) featuring lifetime kills, deaths, K/D, solo kills, duel records, damage/healing telemetry, and guild history timeline.
+  - Direct 1-click external Armory link integration:
+    - ⚔️ Official Blizzard Armory (`worldofwarcraft.blizzard.com`)
+    - 🛡️ Classic Vanilla Armory (`ironforge.pro`)
+    - 📜 Warcraft Logs (`classic.warcraftlogs.com`)
+  - Everywhere-clickable player and guild entities across live kill feed, sidebar rankings, leaderboard tables, and killmail modals.
+- **Automated Multi-Client Deployment Engine (`scripts/deploy.py`)**:
+  - Automated deployment script synchronizing the addon to all 4 target client flavors (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`) and rebuilding the distribution zip package (`WoWKillboard-v1.0.0.zip`).
 - **1v1 Duel Match Engine**:
   - Full detection for duel challenges, forfeits ("fled"), and knockouts via `CHAT_MSG_SYSTEM` hooks.
   - Dedicated Duel Record tracking (`wins`, `losses`, `win %`) stored in `WoWKillboardDB.stats.duels`.
