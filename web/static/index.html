@@ -212,23 +212,25 @@
   <div class="container">
     <!-- Main Center Column -->
     <main class="main-column">
-      <!-- High-Level Stats Bar -->
+      <!-- High-Level Realm Stats Bar -->
       <div class="stats-grid">
         <div class="stat-card">
-          <span class="stat-label">Total Kills Logged</span>
+          <span class="stat-label">Realm Total Carnage</span>
           <span class="stat-val" id="stat-total-kills">0</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Solo Kill Ratio</span>
+          <span class="stat-label">1v1 Solo Kill Ratio</span>
           <span class="stat-val" id="stat-solo-percent" style="color: #10b981;">0%</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Win / Loss Telemetry</span>
-          <span class="stat-val" id="stat-wl-record" style="color: #f59e0b; font-size: 0.95rem; padding-top: 4px;">--</span>
+          <span class="stat-label">Faction War Split</span>
+          <span class="stat-val" id="stat-faction-split" style="font-size: 0.95rem; padding-top: 4px;">
+            <span style="color: var(--alliance-blue); font-weight:800;">A: --%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: --%</span>
+          </span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Current View Filter</span>
-          <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 1.1rem; padding-top: 4px;">All PvP</span>
+          <span class="stat-label">Active Combat Filter</span>
+          <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 0.95rem; padding-top: 4px;">All PvP</span>
         </div>
       </div>
 

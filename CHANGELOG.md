@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] - 2026-09-25
+
+### Added
+- **10-Slot Most Wanted Execution Grid (5 Per Row &times; 2 Rows)**:
+  - Engineered compact bounty cards with real class icon emblems, character names in class colors, guild/faction labels, gold rewards, and quick-accept tracking buttons.
+  - Implemented 10-slot layout guaranteeing 2 rows of 5 cards across desktop and tablet viewports.
+  - Added styled placeholder cards (`.wanted-card.blank`) for unfilled bounty slots with interactive click-to-bounty routing (`+ Issue Bounty`).
+- **Mathematical Symmetrical Centering for PvP Killmail Feed Rows**:
+  - Bound `.km-left-meta` and `.km-right-meta` to identical fixed widths (`175px`), positioning the midpoint of `.km-combatants-center` at the 50.0% centerline of each card row.
+  - Configured symmetrical combatant clashing: Killer (Name, Level, Class Icon) aligned right towards `⚔️`, and Victim (Class Icon, Name, Level) aligned left away from `⚔️`.
+  - Positioned guild affiliations centered directly underneath player names.
+- **Realm War Recon KPI Telemetry Clarification**:
+  - Replaced misleading server-wide duel win/loss text (`0W-0L`) with authentic **Faction War Carnage Split** (e.g., `A: 54% | H: 46%`) color-coded in Alliance Blue and Horde Red.
+  - Clarified KPI card headers as server-wide combat reconnaissance (`Realm Total Carnage`, `1v1 Solo Kill Ratio`, `Faction War Split`, `Active Combat Filter`).
+- **Compact Layout & Sleek Scrollbar Refinements**:
+  - Tightened card padding across stats grid, Most Wanted container, and sidebar widgets to eliminate vertical bloat and prevent excessive page scroll.
+  - Refined custom scrollbar track and thumb to modern 6px transparent/amber styling.
+
 ## [1.3.0] - 2026-09-25
 
 ### Added
