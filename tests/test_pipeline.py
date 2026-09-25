@@ -310,7 +310,7 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertIsNotNone(debtor)
         self.assertEqual(debtor["days_in_default"], 5)
 
-        # Scott Quick Guardrail: Verify Blood Debtor is automatically branded on KOS Blacklist
+        # Platform Guardrail: Verify Blood Debtor is automatically branded on KOS Blacklist
         kos_res_before = self.client.get("/api/kos/blacklist").get_json()
         self.assertTrue(any(g["entity_name"] == "DeadbeatDan" and g["status"] == "KOS" for g in kos_res_before["guilds"]), "Debtor must be auto-branded KOS")
 

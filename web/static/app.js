@@ -342,6 +342,7 @@ function updateFlavorUi() {
     statusText.innerText = `${cfg.shortName} (${cfg.maxLevel} MAX)`;
     statusText.style.color = cfg.iconColor || "#94a3b8";
   }
+  updateTheaterNavLabel();
 
   // 3b. Update mobile header flavor indicator badge
   const mBadgeText = document.getElementById("mobile-flavor-badge-text");
@@ -712,7 +713,16 @@ async function loadLeaderboards() {
   try {
     const res = await fetch(`/api/leaderboard?mode=${currentMode}`);
     const data = await res.json();
-    renderLeaderboardView(data);
+    let bgData = null;
+    if (currentMode === "BG") {
+      try {
+        const bgRes = await fetch(`/api/bg/stats`);
+        bgData = await bgRes.json();
+      } catch (e) {
+        console.warn("Could not fetch BG stats:", e);
+      }
+    }
+    renderLeaderboardView(data, bgData);
   } catch (err) {
     console.error("Failed to load leaderboards:", err);
   }
@@ -1107,11 +1117,32 @@ function renderFeed(kills) {
   container.innerHTML = html;
 }
 
-function renderLeaderboardView(data) {
+function renderLeaderboardView(data, bgData) {
   const container = document.getElementById("main-content-area");
+  if (!container) return;
+
   let html = `
     <div style="display: flex; flex-direction: column; gap: 20px;">
-      <h2 style="font-size: 1.2rem; color: var(--accent-cyan);">Top PvP Assassins [${currentMode}]</h2>
+      <!-- Hall of Legends Header Row with Mode Filter Pills -->
+      <div class="legends-header-row">
+        <div>
+          <h2 style="font-size: 1.35rem; color: var(--accent-gold); font-family: var(--font-tactical); letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
+            <span>🏆</span> Hall of Legends
+          </h2>
+          <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">
+            Most lethal combatants and certified executions across Azeroth [${currentMode}]
+          </div>
+        </div>
+
+        <div class="filter-pills" id="legends-mode-pills">
+          <button class="pill-btn ${currentMode === 'ALL' ? 'active' : ''}" onclick="setFilterMode('ALL')">All PvP</button>
+          <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
+          <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
+          <button class="pill-btn ${currentMode === 'ARENA' ? 'active' : ''}" onclick="setFilterMode('ARENA')">Arenas</button>
+          <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
+        </div>
+      </div>
+
       <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
@@ -1147,8 +1178,38 @@ function renderLeaderboardView(data) {
           </tbody>
         </table>
       </div>
-    </div>
   `;
+
+  if (currentMode === "BG" && bgData) {
+    html += `
+      <div style="margin-top:10px;">
+        <h3 style="font-size:1.1rem; color:var(--accent-cyan); margin-bottom:12px;">🚩 Battleground Gladiators (Damage &amp; Healing Telemetry)</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+            <h4 style="color: #f97316; font-size: 0.95rem; margin-bottom: 12px;">Top Damage Dealers</h4>
+            ${(bgData.topDamage || []).map((p, i) => `
+              <div class="leader-item">
+                <span>#${i+1} ${colorizeClass(p.name, p.class)}</span>
+                <span style="color:#f97316; font-weight:700;">${formatNumber(p.total_damage)} Dmg</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+            <h4 style="color: #10b981; font-size: 0.95rem; margin-bottom: 12px;">Combat Medics (Top Healing)</h4>
+            ${(bgData.topHealing || []).map((p, i) => `
+              <div class="leader-item">
+                <span>#${i+1} ${colorizeClass(p.name, p.class)}</span>
+                <span style="color:#10b981; font-weight:700;">${formatNumber(p.total_healing)} Heal</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
   container.innerHTML = html;
 }
 
@@ -1184,18 +1245,117 @@ function renderBgGladiatorsView(data) {
   container.innerHTML = html;
 }
 
+function renderSingleBountyCard(b, isSupporter) {
+  const lastSeen = b.lastSeen || {};
+  let lastSeenHtml = "";
+  if (lastSeen.hasTelemetry) {
+    if (isSupporter && lastSeen.subzone) {
+      lastSeenHtml = `
+        <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
+          <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.zone} <span style="color:#fbbf24;">(${lastSeen.subzone})</span>
+          <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">
+            ~${lastSeen.minutesAgo}m ago &bull; <span style="color:#fbbf24; font-weight:700;">⭐ Subzone Intel</span>
+          </div>
+        </div>
+      `;
+    } else {
+      lastSeenHtml = `
+        <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.zone}
+            <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">~${lastSeen.minutesAgo}m ago</div>
+          </div>
+          <span style="color:#64748b; font-size:0.7rem; cursor:pointer;" onclick="toggleSupporterMode()" title="Toggle Supporter Mode to unlock Subzone Recon">[🔒 Subzone]</span>
+        </div>
+      `;
+    }
+  } else {
+    lastSeenHtml = `
+      <div style="font-size:0.72rem; color:#64748b; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
+        📍 Last Sighted: <em>No recent combat logged</em>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.4);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="clickable-player" onclick="openCharacterProfile('${b.target_name}')" style="color:var(--accent-red); font-weight:800; font-size:1.15rem;">${b.target_name}</span>
+        <span style="color:var(--accent-gold); font-weight:800; font-size:1.1rem;">${b.amount_gold || Math.floor(b.amount_copper/10000)}g</span>
+      </div>
+      <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">
+        Target: <span style="color:#cbd5e1;">Level ${b.target_class || 'UNKNOWN'}</span> &bull; Placer: <strong style="color:#e2e8f0;">${b.placer_name}</strong>
+      </div>
+      <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">
+        Status: <span style="color:#10b981; font-weight:700;">${b.status}</span> ${b.hunter_name ? `(Claimed by ${b.hunter_name})` : ''}
+      </div>
+      ${lastSeenHtml}
+    </div>
+  `;
+}
+
 function renderBountiesView(bounties, debts, leaderboards) {
   const container = document.getElementById("main-content-area");
   leaderboards = leaderboards || {};
   const isSupporter = isSupporterActive();
 
+  const myUser = (localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "").toLowerCase();
+  const allBounties = bounties || [];
+  const myBounties = myUser ? allBounties.filter(b => (b.placer_name || "").toLowerCase() === myUser || (b.target_name || "").toLowerCase() === myUser) : [];
+
   let html = `
     <div style="display: flex; flex-direction: column; gap: 24px;">
-      <!-- Active Bounties Section -->
+  `;
+
+  // 1. Personal Bounties Section (At the Top)
+  if (myUser) {
+    html += `
+      <div style="background: linear-gradient(180deg, rgba(212, 163, 41, 0.08) 0%, rgba(13, 17, 23, 0.95) 100%); border: 1px solid rgba(212, 163, 41, 0.35); border-radius: 8px; padding: 18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h2 style="font-size: 1.25rem; color: var(--wow-gold); font-family: var(--font-tactical); letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
+              <span>🎯</span> Your Active Contracts &amp; Targets (${myBounties.length})
+            </h2>
+            <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
+              Bounties placed by you or placed upon your head
+            </div>
+          </div>
+          <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Issue Bounty</button>
+        </div>
+    `;
+
+    if (myBounties.length === 0) {
+      html += `
+        <div style="color: #64748b; font-size:0.8rem; padding: 12px; background: rgba(0,0,0,0.3); border-radius:6px; border: 1px dashed rgba(255,255,255,0.08);">
+          You have no active bounties issued or placed against you. When ganked in the world, declare a bounty to dispatch the realm's hunters!
+        </div>
+      `;
+    } else {
+      html += `
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+          ${myBounties.map(b => renderSingleBountyCard(b, isSupporter)).join('')}
+        </div>
+      `;
+    }
+
+    html += `</div>`;
+  } else {
+    html += `
+      <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="font-size:0.82rem; color:#94a3b8;">
+          💡 <strong>Personal Contracts:</strong> Sign in to pin bounties you placed or bounties placed upon your head to the top.
+        </div>
+        <button class="header-signin-btn" onclick="switchTab('THEATER')">Sign In &rarr;</button>
+      </div>
+    `;
+  }
+
+  // 2. All Realm Bounty Contracts
+  html += `
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div>
-            <h2 style="font-size: 1.2rem; color: var(--accent-gold);">Active Bounty Contracts</h2>
+            <h2 style="font-size: 1.2rem; color: var(--accent-gold);">Realm High Command Bounty Board</h2>
             <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Track and execute targets to claim escrowed gold.</div>
           </div>
           <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Place Bounty</button>
@@ -1203,61 +1363,15 @@ function renderBountiesView(bounties, debts, leaderboards) {
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
   `;
 
-  if (!bounties || bounties.length === 0) {
+  if (!allBounties || allBounties.length === 0) {
     html += `<div style="color: #64748b; padding:16px;">No active bounties right now. Place one to ignite a manhunt!</div>`;
   } else {
-    bounties.forEach(b => {
-      const lastSeen = b.lastSeen || {};
-      let lastSeenHtml = "";
-      if (lastSeen.hasTelemetry) {
-        if (isSupporter && lastSeen.subzone) {
-          lastSeenHtml = `
-            <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
-              <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.zone} <span style="color:#fbbf24;">(${lastSeen.subzone})</span>
-              <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">
-                ~${lastSeen.minutesAgo}m ago &bull; <span style="color:#fbbf24; font-weight:700;">⭐ Subzone Intel</span>
-              </div>
-            </div>
-          `;
-        } else {
-          lastSeenHtml = `
-            <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.zone}
-                <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">~${lastSeen.minutesAgo}m ago</div>
-              </div>
-              <span style="color:#64748b; font-size:0.7rem; cursor:pointer;" onclick="toggleSupporterMode()" title="Toggle Supporter Mode to unlock Subzone Recon">[🔒 Subzone]</span>
-            </div>
-          `;
-        }
-      } else {
-        lastSeenHtml = `
-          <div style="font-size:0.72rem; color:#64748b; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
-            📍 Last Sighted: <em>No recent combat logged</em>
-          </div>
-        `;
-      }
-
-      html += `
-        <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.4);">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="clickable-player" onclick="openCharacterProfile('${b.target_name}')" style="color:var(--accent-red); font-weight:800; font-size:1.15rem;">${b.target_name}</span>
-            <span style="color:var(--accent-gold); font-weight:800; font-size:1.1rem;">${b.amount_gold || Math.floor(b.amount_copper/10000)}g</span>
-          </div>
-          <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">
-            Target: <span style="color:#cbd5e1;">Level ${b.target_class || 'UNKNOWN'}</span> &bull; Placer: <strong style="color:#e2e8f0;">${b.placer_name}</strong>
-          </div>
-          <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">
-            Status: <span style="color:#10b981; font-weight:700;">${b.status}</span> ${b.hunter_name ? `(Claimed by ${b.hunter_name})` : ''}
-          </div>
-          ${lastSeenHtml}
-        </div>
-      `;
-    });
+    html += allBounties.map(b => renderSingleBountyCard(b, isSupporter)).join('');
   }
 
   html += `
         </div>
+      </div>
       </div>
 
       <!-- Bounty Leaderboards: Hall of Fame -->
@@ -1615,6 +1729,175 @@ function closeModal() {
   document.getElementById("kill-modal").style.display = "none";
 }
 
+function buildCharacterDossierHtml(data) {
+  const stats = data.stats || {};
+  const guildText = (data.currentGuild && data.currentGuild !== 'None') 
+    ? `<span class="clickable-guild" onclick="openGuildProfile('${data.currentGuild}')">&lt;${data.currentGuild}&gt;</span>` 
+    : '<span style="color:#64748b;">No Guild</span>';
+
+  const factionColor = data.faction === 'Alliance' ? '#3b82f6' : (data.faction === 'Horde' ? '#ef4444' : '#94a3b8');
+
+  let historyHtml = "";
+  if (data.guildHistory && data.guildHistory.length > 0) {
+    historyHtml = `
+      <div style="margin-top:12px;">
+        <h4 style="color:var(--accent-gold); font-size:0.9rem; margin-bottom:8px;">Guild Affiliation History</h4>
+        <div class="timeline-list">
+          ${data.guildHistory.map(g => {
+            const firstSeenStr = g.first_seen ? new Date(g.first_seen * 1000).toLocaleDateString() : "Unknown";
+            const lastSeenStr = g.last_seen ? new Date(g.last_seen * 1000).toLocaleDateString() : "Active";
+            return `
+              <div class="timeline-row">
+                <div>
+                  <span class="clickable-guild" onclick="openGuildProfile('${g.guild_name}')">&lt;${g.guild_name}&gt;</span>
+                  <span style="font-size:0.7rem; color:${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; margin-left:6px;">(${g.faction || 'Neutral'})</span>
+                </div>
+                <span style="color:#94a3b8; font-size:0.75rem;">${firstSeenStr} — ${lastSeenStr}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  let killsHtml = "";
+  if (data.recentKills && data.recentKills.length > 0) {
+    killsHtml = `
+      <div style="margin-top:12px;">
+        <h4 style="color:#10b981; font-size:0.9rem; margin-bottom:8px;">Recent Slain Enemies (${data.recentKills.length})</h4>
+        <div style="display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto;">
+          ${data.recentKills.map(k => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
+              <div>
+                <span class="clickable-player" onclick="openCharacterProfile('${k.victim_name}')">${colorizeClass(k.victim_name, k.victim_class)}</span>
+                <small style="color:#64748b;">(Lvl ${k.victim_level})</small>
+                ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile('${k.victim_guild}')">&lt;${k.victim_guild}&gt;</span>` : ''}
+              </div>
+              <div style="text-align:right; color:#94a3b8;">
+                <span>${k.zone}</span> &bull; <span>${timeAgo(k.timestamp)}</span>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  let deathsHtml = "";
+  if (data.recentDeaths && data.recentDeaths.length > 0) {
+    deathsHtml = `
+      <div style="margin-top:12px;">
+        <h4 style="color:#ef4444; font-size:0.9rem; margin-bottom:8px;">Recent Deaths In Combat (${data.recentDeaths.length})</h4>
+        <div style="display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto;">
+          ${data.recentDeaths.map(d => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
+              <div>
+                Killed by: <span class="clickable-player" onclick="openCharacterProfile('${d.killer_name}')">${colorizeClass(d.killer_name, d.killer_class)}</span>
+                <small style="color:#64748b;">(Lvl ${d.killer_level})</small>
+                ${d.killer_guild && d.killer_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile('${d.killer_guild}')">&lt;${d.killer_guild}&gt;</span>` : ''}
+              </div>
+              <div style="text-align:right; color:#94a3b8;">
+                <span>${d.zone}</span> &bull; <span>${timeAgo(d.timestamp)}</span>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:16px; border-radius:8px; border:1px solid #1e293b; flex-wrap:wrap; gap:12px;">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div style="font-size:1.4rem; font-weight:800;">${colorizeClass(data.name, data.class)}</div>
+          ${data.rankTitle ? `<span class="armory-rank-pill">🎖️ ${data.rankTitle}</span>` : ''}
+          ${data.percentile ? `
+            <span class="armory-percentile-pill" title="${data.percentile.cohortLabel} (${data.percentile.totalInCohort} combatants in cohort)">
+              ⭐ Top ${data.percentile.topPct}% (${data.percentile.percentile}th Percentile)
+            </span>
+          ` : ''}
+        </div>
+        <div style="font-size:0.85rem; color:#94a3b8; margin-top:4px;">
+          Level ${data.level} ${data.spec ? data.spec + ' ' : ''}${data.class} &bull; <span style="color:${factionColor}; font-weight:700;">${data.faction}</span> &bull; ${guildText}
+        </div>
+        ${data.percentile ? `
+          <div style="font-size:0.75rem; color:#cbd5e1; margin-top:4px;">
+            Cohort Standing: <strong style="color:var(--wow-gold);">${data.percentile.cohortLabel}</strong> &bull; Ranked <strong style="color:#10b981;">#${data.percentile.rank}</strong> of ${data.percentile.totalInCohort} active combatants
+          </div>
+        ` : ''}
+        ${data.bloodDebtor ? `
+          <div class="armory-blood-debtor-banner">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.3rem;">💀</span>
+              <div>
+                <div style="font-weight:800; color:#ef4444; letter-spacing:0.5px;">REPUTATION: BLOOD DEBTOR (KILL ON SIGHT)</div>
+                <div style="font-size:0.75rem; color:#fca5a5;">Defaulted on ${formatCopper(data.bloodDebtor.amountOwedCopper)} bounty debt owed to ${data.bloodDebtor.creditor} (${data.bloodDebtor.daysInDefault} days in default). Marked KOS server-wide across all name & guild changes.</div>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <div style="margin-top:6px;">
+            <span class="reputation-badge-honorable">🛡️ ${data.reputation || 'HONORABLE COMBATANT'} &bull; DEBT-FREE</span>
+          </div>
+        `}
+        ${(data.isKos || data.deserter || data.activeBountyGold > 0) ? `
+          <div class="armory-tags-row">
+            ${(data.isKos && !data.bloodDebtor) ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}
+            ${data.deserter ? `<span class="armory-badge-deserter">⚡ DESERTER (${data.deserter.days_remaining}d)</span>` : ''}
+            ${data.activeBountyGold > 0 ? `<span class="armory-badge-bounty">💰 ACTIVE BOUNTY: ${data.activeBountyGold}g</span>` : ''}
+          </div>
+        ` : ''}
+      </div>
+      <div class="armory-group">
+        <a class="armory-btn" href="${data.armoryUrls.official}" target="_blank" rel="noopener">⚔️ Blizzard Armory</a>
+        <a class="armory-btn" href="${data.armoryUrls.ironforge}" target="_blank" rel="noopener">🛡️ Classic Armory</a>
+        <a class="armory-btn" href="${data.armoryUrls.warcraftlogs}" target="_blank" rel="noopener">📜 Warcraft Logs</a>
+      </div>
+    </div>
+
+    <div class="dossier-grid">
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">KILLS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${stats.kills || 0}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">DEATHS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${stats.deaths || 0}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">K/D RATIO</div>
+        <div style="font-size:1.2rem; font-weight:800; color:var(--accent-gold);">${stats.kd || 0}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">SOLO KILLS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#00e5ff;">${stats.soloKills || 0}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">DUEL WINS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ffd700;">${stats.duelKills || 0}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">BG KILLS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#3b82f6;">${stats.bgKills || 0}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">TOTAL DAMAGE</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#f97316;">${formatNumber(stats.totalDamage || 0)}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">TOTAL HEALING</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${formatNumber(stats.totalHealing || 0)}</div>
+      </div>
+    </div>
+
+    ${historyHtml}
+    ${killsHtml}
+    ${deathsHtml}
+  `;
+}
+
 // Character Profile Modal Handlers
 async function openCharacterProfile(charName) {
   const modal = document.getElementById("character-modal");
@@ -1633,172 +1916,7 @@ async function openCharacterProfile(charName) {
       return;
     }
     const data = await res.json();
-    const stats = data.stats || {};
-    const guildText = (data.currentGuild && data.currentGuild !== 'None') 
-      ? `<span class="clickable-guild" onclick="openGuildProfile('${data.currentGuild}')">&lt;${data.currentGuild}&gt;</span>` 
-      : '<span style="color:#64748b;">No Guild</span>';
-
-    const factionColor = data.faction === 'Alliance' ? '#3b82f6' : (data.faction === 'Horde' ? '#ef4444' : '#94a3b8');
-
-    let historyHtml = "";
-    if (data.guildHistory && data.guildHistory.length > 0) {
-      historyHtml = `
-        <div style="margin-top:12px;">
-          <h4 style="color:var(--accent-gold); font-size:0.9rem; margin-bottom:8px;">Guild Affiliation History</h4>
-          <div class="timeline-list">
-            ${data.guildHistory.map(g => {
-              const firstSeenStr = g.first_seen ? new Date(g.first_seen * 1000).toLocaleDateString() : "Unknown";
-              const lastSeenStr = g.last_seen ? new Date(g.last_seen * 1000).toLocaleDateString() : "Active";
-              return `
-                <div class="timeline-row">
-                  <div>
-                    <span class="clickable-guild" onclick="openGuildProfile('${g.guild_name}')">&lt;${g.guild_name}&gt;</span>
-                    <span style="font-size:0.7rem; color:${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; margin-left:6px;">(${g.faction || 'Neutral'})</span>
-                  </div>
-                  <span style="color:#94a3b8; font-size:0.75rem;">${firstSeenStr} — ${lastSeenStr}</span>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        </div>
-      `;
-    }
-
-    let killsHtml = "";
-    if (data.recentKills && data.recentKills.length > 0) {
-      killsHtml = `
-        <div style="margin-top:12px;">
-          <h4 style="color:#10b981; font-size:0.9rem; margin-bottom:8px;">Recent Slain Enemies (${data.recentKills.length})</h4>
-          <div style="display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto;">
-            ${data.recentKills.map(k => `
-              <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
-                <div>
-                  <span class="clickable-player" onclick="openCharacterProfile('${k.victim_name}')">${colorizeClass(k.victim_name, k.victim_class)}</span>
-                  <small style="color:#64748b;">(Lvl ${k.victim_level})</small>
-                  ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile('${k.victim_guild}')">&lt;${k.victim_guild}&gt;</span>` : ''}
-                </div>
-                <div style="text-align:right; color:#94a3b8;">
-                  <span>${k.zone}</span> &bull; <span>${timeAgo(k.timestamp)}</span>
-                </div>
-              </div>
-            `).join("")}
-          </div>
-        </div>
-      `;
-    }
-
-    let deathsHtml = "";
-    if (data.recentDeaths && data.recentDeaths.length > 0) {
-      deathsHtml = `
-        <div style="margin-top:12px;">
-          <h4 style="color:#ef4444; font-size:0.9rem; margin-bottom:8px;">Recent Deaths In Combat (${data.recentDeaths.length})</h4>
-          <div style="display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto;">
-            ${data.recentDeaths.map(d => `
-              <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
-                <div>
-                  Killed by: <span class="clickable-player" onclick="openCharacterProfile('${d.killer_name}')">${colorizeClass(d.killer_name, d.killer_class)}</span>
-                  <small style="color:#64748b;">(Lvl ${d.killer_level})</small>
-                  ${d.killer_guild && d.killer_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile('${d.killer_guild}')">&lt;${d.killer_guild}&gt;</span>` : ''}
-                </div>
-                <div style="text-align:right; color:#94a3b8;">
-                  <span>${d.zone}</span> &bull; <span>${timeAgo(d.timestamp)}</span>
-                </div>
-              </div>
-            `).join("")}
-          </div>
-        </div>
-      `;
-    }
-
-    body.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:16px; border-radius:8px; border:1px solid #1e293b; flex-wrap:wrap; gap:12px;">
-        <div>
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <div style="font-size:1.4rem; font-weight:800;">${colorizeClass(data.name, data.class)}</div>
-            ${data.rankTitle ? `<span class="armory-rank-pill">🎖️ ${data.rankTitle}</span>` : ''}
-            ${data.percentile ? `
-              <span class="armory-percentile-pill" title="${data.percentile.cohortLabel} (${data.percentile.totalInCohort} combatants in cohort)">
-                ⭐ Top ${data.percentile.topPct}% (${data.percentile.percentile}th Percentile)
-              </span>
-            ` : ''}
-          </div>
-          <div style="font-size:0.85rem; color:#94a3b8; margin-top:4px;">
-            Level ${data.level} ${data.spec ? data.spec + ' ' : ''}${data.class} &bull; <span style="color:${factionColor}; font-weight:700;">${data.faction}</span> &bull; ${guildText}
-          </div>
-          ${data.percentile ? `
-            <div style="font-size:0.75rem; color:#cbd5e1; margin-top:4px;">
-              Cohort Standing: <strong style="color:var(--wow-gold);">${data.percentile.cohortLabel}</strong> &bull; Ranked <strong style="color:#10b981;">#${data.percentile.rank}</strong> of ${data.percentile.totalInCohort} active combatants
-            </div>
-          ` : ''}
-          ${data.bloodDebtor ? `
-            <div class="armory-blood-debtor-banner">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:1.3rem;">💀</span>
-                <div>
-                  <div style="font-weight:800; color:#ef4444; letter-spacing:0.5px;">REPUTATION: BLOOD DEBTOR (KILL ON SIGHT)</div>
-                  <div style="font-size:0.75rem; color:#fca5a5;">Defaulted on ${formatCopper(data.bloodDebtor.amountOwedCopper)} bounty debt owed to ${data.bloodDebtor.creditor} (${data.bloodDebtor.daysInDefault} days in default). Marked KOS server-wide across all name & guild changes.</div>
-                </div>
-              </div>
-            </div>
-          ` : `
-            <div style="margin-top:6px;">
-              <span class="reputation-badge-honorable">🛡️ ${data.reputation || 'HONORABLE COMBATANT'} &bull; DEBT-FREE</span>
-            </div>
-          `}
-          ${(data.isKos || data.deserter || data.activeBountyGold > 0) ? `
-            <div class="armory-tags-row">
-              ${(data.isKos && !data.bloodDebtor) ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}
-              ${data.deserter ? `<span class="armory-badge-deserter">⚡ DESERTER (${data.deserter.days_remaining}d)</span>` : ''}
-              ${data.activeBountyGold > 0 ? `<span class="armory-badge-bounty">💰 ACTIVE BOUNTY: ${data.activeBountyGold}g</span>` : ''}
-            </div>
-          ` : ''}
-        </div>
-        <div class="armory-group">
-          <a class="armory-btn" href="${data.armoryUrls.official}" target="_blank" rel="noopener">⚔️ Blizzard Armory</a>
-          <a class="armory-btn" href="${data.armoryUrls.ironforge}" target="_blank" rel="noopener">🛡️ Classic Armory</a>
-          <a class="armory-btn" href="${data.armoryUrls.warcraftlogs}" target="_blank" rel="noopener">📜 Warcraft Logs</a>
-        </div>
-      </div>
-
-      <div class="dossier-grid">
-        <div class="dossier-stat">
-          <div style="font-size:0.7rem; color:#94a3b8;">KILLS</div>
-          <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${stats.kills || 0}</div>
-        </div>
-        <div class="dossier-stat">
-          <div style="font-size:0.7rem; color:#94a3b8;">DEATHS</div>
-          <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${stats.deaths || 0}</div>
-        </div>
-        <div class="dossier-stat">
-          <div style="font-size:0.7rem; color:#94a3b8;">K/D RATIO</div>
-          <div style="font-size:1.2rem; font-weight:800; color:var(--accent-gold);">${stats.kd || 0}</div>
-        </div>
-        <div class="dossier-stat">
-          <div style="font-size:0.7rem; color:#94a3b8;">SOLO KILLS</div>
-          <div style="font-size:1.2rem; font-weight:800; color:#00e5ff;">${stats.soloKills || 0}</div>
-        </div>
-        <div class="dossier-stat">
-          <div style="font-size:0.7rem; color:#94a3b8;">DUEL WINS</div>
-          <div style="font-size:1.2rem; font-weight:800; color:#ffd700;">${stats.duelKills || 0}</div>
-        </div>
-        <div class="dossier-stat">
-          <div style="font-size:0.7rem; color:#94a3b8;">BG KILLS</div>
-          <div style="font-size:1.2rem; font-weight:800; color:#3b82f6;">${stats.bgKills || 0}</div>
-        </div>
-        <div class="dossier-stat">
-          <div style="font-size:0.7rem; color:#94a3b8;">TOTAL DAMAGE</div>
-          <div style="font-size:1.2rem; font-weight:800; color:#f97316;">${formatNumber(stats.totalDamage || 0)}</div>
-        </div>
-        <div class="dossier-stat">
-          <div style="font-size:0.7rem; color:#94a3b8;">TOTAL HEALING</div>
-          <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${formatNumber(stats.totalHealing || 0)}</div>
-        </div>
-      </div>
-
-      ${historyHtml}
-      ${killsHtml}
-      ${deathsHtml}
-    `;
+    body.innerHTML = buildCharacterDossierHtml(data);
   } catch (err) {
     body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Error retrieving character profile: ${err.message}</div>`;
   }
@@ -1806,6 +1924,72 @@ async function openCharacterProfile(charName) {
 
 function closeCharacterModal() {
   document.getElementById("character-modal").style.display = "none";
+}
+
+// Personal Armory View (When Signed-In Operative clicks Armory)
+async function loadPersonalArmoryView(charName) {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading personal combat armory for ${escapeHtml(charName)}...</div>`;
+
+  try {
+    const res = await fetch(`/api/character/${encodeURIComponent(charName)}`);
+    if (!res.ok) {
+      container.innerHTML = `
+        <div class="personal-armory-container" style="display:flex; flex-direction:column; gap:20px;">
+          <div style="background:#0c0f17; border:1px solid #1e293b; border-radius:8px; padding:24px; text-align:center;">
+            <div style="font-size:2rem; margin-bottom:8px;">🛡️</div>
+            <h2 style="color:var(--wow-gold); font-size:1.25rem;">Welcome, Operative ${escapeHtml(charName)}</h2>
+            <p style="color:#94a3b8; font-size:0.85rem; margin-top:6px; max-width:550px; margin-left:auto; margin-right:auto;">
+              Your personal combat dossier has not yet recorded open-world engagements. Equip the free in-game addon and engage in combat to log honorable kills, deaths, and rank telemetry!
+            </p>
+            <div style="margin-top:16px; display:flex; justify-content:center; gap:10px;">
+              <button class="nav-btn" style="background:var(--accent-cyan); color:#000; font-weight:700;" onclick="loadArmoryView()">🔍 Browse Realm Directory</button>
+              <button class="nav-btn" style="border:1px solid var(--wow-gold); color:var(--wow-gold);" onclick="openAddonDossierModal()">Download Addon</button>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const data = await res.json();
+    const dossierHtml = buildCharacterDossierHtml(data);
+
+    container.innerHTML = `
+      <div class="personal-armory-container" style="display:flex; flex-direction:column; gap:20px;">
+        <div class="personal-armory-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:16px 20px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:1.6rem;">🛡️</span>
+            <div>
+              <div style="font-weight:800; font-size:1.15rem; color:#fff;">Your Personal Combat Armory</div>
+              <div style="font-size:0.75rem; color:#94a3b8;">Career telemetry &amp; PvP standing for <strong style="color:var(--wow-gold);">${escapeHtml(data.name)}</strong></div>
+            </div>
+          </div>
+          <button class="nav-btn" style="border:1px solid var(--border-color); background:rgba(255,255,255,0.05);" onclick="loadArmoryView()">
+            <span>🔍 Search Realm Directory</span> &rarr;
+          </button>
+        </div>
+        ${dossierHtml}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load armory profile: ${err.message}</div>`;
+  }
+}
+
+function handleArmoryNavClick() {
+  const currentAuth = sessionStorage.getItem("wowkb_auth_type");
+  const storedAccount = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "";
+
+  if (storedAccount && (currentAuth === "account" || currentAuth === "officer")) {
+    switchTab("ARMORY");
+    loadPersonalArmoryView(storedAccount);
+  } else {
+    switchTab("ARMORY");
+    loadArmoryView();
+  }
 }
 
 // Guild Profile Modal Handlers
@@ -2983,6 +3167,13 @@ function formatScribeMarkdown(text) {
 
 // Tab Switching
 function switchTab(tab) {
+  // Normalize alias tabs
+  if (tab === "PORTAL") tab = "THEATER";
+  if (tab === "FEED") tab = "INTEL";
+  if (tab === "LEADERBOARDS") tab = "LEGENDS";
+  if (tab === "DEADLY_NPCS") tab = "HAZARDS";
+  if (tab === "GUILDS" || tab === "FEUDS" || tab === "DEFENSE" || tab === "BG_METRICS") tab = "WARROOM";
+
   currentTab = tab;
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   const activeBtn = document.getElementById(`nav-${tab.toLowerCase()}`);
@@ -2992,259 +3183,346 @@ function switchTab(tab) {
   const activeMobileBtn = document.getElementById(`m-nav-${tab.toLowerCase()}`);
   if (activeMobileBtn) activeMobileBtn.classList.add("active");
 
-  const isPortal = (tab === "PORTAL");
-  document.body.classList.toggle("portal-active", isPortal);
+  const isTheater = (tab === "THEATER");
+  document.body.classList.toggle("portal-active", isTheater);
   const mainContainer = document.querySelector(".container");
   if (mainContainer) {
-    mainContainer.classList.toggle("portal-mode", isPortal);
+    mainContainer.classList.toggle("portal-mode", isTheater);
   }
 
   const mwSection = document.getElementById("most-wanted-section");
-  if (mwSection) mwSection.style.display = (tab === "FEED") ? "block" : "none";
+  if (mwSection) mwSection.style.display = (tab === "INTEL") ? "block" : "none";
 
-  if (tab === "PORTAL") {
+  const statsHub = document.getElementById("homepage-stats-hub");
+  if (statsHub) statsHub.style.display = (tab === "INTEL") ? "block" : "none";
+
+  if (tab === "THEATER") {
     loadPortalView();
   }
-  else if (tab === "FEED") {
+  else if (tab === "INTEL") {
     loadKills();
     loadMostWanted();
   }
-  else if (tab === "LEADERBOARDS") loadLeaderboards();
-  else if (tab === "DEADLY_NPCS") loadDeadlyNpcsView();
-  else if (tab === "ARMORY") loadArmoryView();
-  else if (tab === "GUILDS") loadGuildsView();
-  else if (tab === "FEUDS") loadFeudsView();
-  else if (tab === "DEFENSE") loadDefenseView();
-  else if (tab === "BG_METRICS") loadBgGladiators();
-  else if (tab === "BOUNTIES") loadBounties();
-  else if (tab === "INFO") loadInfoView();
+  else if (tab === "LEGENDS") {
+    loadLeaderboards();
+  }
+  else if (tab === "HAZARDS") {
+    loadDeadlyNpcsView();
+  }
+  else if (tab === "ARMORY") {
+    handleArmoryNavClick();
+  }
+  else if (tab === "BOUNTIES") {
+    loadBounties();
+  }
+  else if (tab === "WARROOM") {
+    loadWarroomView();
+  }
 }
 
-function openInfoPage(subpage) {
-  switchTab("INFO");
-  loadInfoView(subpage);
-}
+// ----------------- Header Auth & Theater State -----------------
 
-function loadInfoView(subpage = "about") {
-  const container = document.getElementById("main-content-area");
-  if (!container) return;
+function renderHeaderAuthBadge() {
+  const badge = document.getElementById("header-auth-badge");
+  if (!badge) return;
 
-  const tabs = [
-    { id: "about", label: "📜 Field Manual & Codex" },
-    { id: "features", label: "⚔️ Rules of Engagement" },
-    { id: "faq", label: "❓ Soldier's Handbook (FAQ)" },
-    { id: "delayed", label: "⏱️ Fog of War & OpSec" },
-    { id: "payments", label: "⭐ War Room Patronage" },
-    { id: "streambox", label: "🔭 Chronicler's Looking Glass" },
-    { id: "legal", label: "⚖️ The Accord of Azeroth" }
-  ];
+  const authType = sessionStorage.getItem("wowkb_auth_type");
+  const username = localStorage.getItem("wowkb_account_username") || sessionStorage.getItem("wowkb_character_name");
 
-  let tabsHtml = `<div class="info-nav-bar">`;
-  tabs.forEach(t => {
-    const activeCls = (t.id === subpage) ? "active" : "";
-    tabsHtml += `<button class="info-subtab-btn ${activeCls}" onclick="loadInfoView('${t.id}')">${t.label}</button>`;
-  });
-  tabsHtml += `</div>`;
-
-  let contentHtml = "";
-  if (subpage === "about") {
-    contentHtml = `
-      <div class="info-card">
-        <h1>📜 Field Manual &amp; Martial Codex</h1>
-        <p>The Third War shattered the old kingdoms, leaving Azeroth a scarred, volatile frontier. From the plagued ruins of Lordaeron to the arid crucibles of Kalimdor, the fragile armistice between the Alliance and Horde has collapsed. Blood is spilled daily along the contested borders of Ashenvale, Hillsbrad, and the killing grounds of Stranglethorn Vale.</p>
-        <p><strong>WoW Killboard</strong> was not wrought as a parlor novelty or a boastful plaything. It is a battle-hardened field ledger—an unyielding chronicle of martial survival, certified executions, and open-world retribution across the frontier of WoW Forever.</p>
-
-        <div class="info-callout" style="border-left-color: var(--wow-gold);">
-          <strong style="color: var(--wow-gold);">The War Scribe's Vow:</strong><br>
-          Forged under the direction of <strong>Scott Quick</strong>, this archive exists to preserve the indelible truth of the frontline. No skirmish is exaggerated; no cowardice is concealed. Every fallen champion, every ruthless ambush, and every claimed blood bounty is inscribed upon the ledger without bias. It remains forever free to all soldiers of Azeroth, untainted by commercial wares.
-        </div>
-
-        <h2>⚔️ The Four Pillars of the Field Ledger</h2>
-        <div class="doctrine-grid">
-          <div class="doctrine-card">
-            <h4>I. Silent Fieldcraft (Zero Interface Hesitation)</h4>
-            <p>A soldier cannot afford a jammed scabbard in the press of melee. The in-game ledger operates in absolute silence behind your field kit. It touches no protected faculties, invokes no fragile parlor frames, and causes zero hesitation or interface spasms during the fury of battle.</p>
-          </div>
-          <div class="doctrine-card">
-            <h4>II. The Camp Courier (Automated Dispatch)</h4>
-            <p>When the blades are sheathed and camp is pitched, a warrior should not spend hours transcribing dispatches by hand. The standalone courier (<code>WoWKillboardSync.exe</code>) patrols your quarters automatically, gathering your combat dispatches and galloping directly to the High Command war room in seconds.</p>
-          </div>
-          <div class="doctrine-card">
-            <h4>III. The Seal of Indelible Truth (Duplicate Resolution)</h4>
-            <p>When an entire vanguard slays an enemy warlord, forty breathless scouts return with forty bloody accounts. The War Scribe cross-references timestamp, battleground coordinates, and combatant sigils to forge a single, immutable kill record, giving honor to all who drew blood without inflating the tally.</p>
-          </div>
-          <div class="doctrine-card">
-            <h4>IV. Blood Retribution &amp; Iron Escrow</h4>
-            <p>When you are cut down in cold blood on the frontier, grief is useless—retribution is law. Place an iron-backed gold bounty upon your slayer's head directly from the brink of death. Any blade that brings them low claims the purse; any debtor who defaults is hoisted onto the realm Gibbet as a marked deadbeat.</p>
-          </div>
-        </div>
+  if (authType && username) {
+    const displayName = escapeHtml(username);
+    badge.innerHTML = `
+      <div class="header-user-pill">
+        <span>👤 <strong>${displayName}</strong></span>
+        <button class="header-signout-btn" onclick="handleHeaderSignOut()" title="Sign out">Sign Out</button>
       </div>
     `;
-  } else if (subpage === "features") {
-    contentHtml = `
-      <div class="info-card">
-        <h1>⚔️ Rules of Engagement &amp; Tactical Arsenal</h1>
-        <p>Survival in the contested wilderness requires keen senses, a sharp blade, and unbending adherence to the laws of war. Herein are the capabilities granted to operatives who carry the field kit into battle.</p>
-
-        <h2>🩸 Certified Single Combat vs. Pack Butchery</h2>
-        <p>The frontier does not tolerate false boasting. A victory is sanctified as an honorable <strong>1v1 Solo Triumph</strong> only when no outside ally or hostile blade has struck, debuffed, or hindered the victim within the final fifteen seconds of their life. If a pack falls upon a lone traveler, the war ledger brands it indelibly as a <strong>Gang Skirmish</strong>.</p>
-
-        <h2>📜 Blood Bounties &amp; The Traitor's Gibbet</h2>
-        <ul>
-          <li><strong>Deathbed Retaliation:</strong> Falling in open-world combat triggers an immediate field prompt to place an iron-backed gold bounty upon your slayer's head.</li>
-          <li><strong>The Immortal Brand:</strong> Outlaws cannot escape justice by trading names at the barbershop or merchant stalls. All contracts are branded into their character's indelible soul sigil (GUID).</li>
-          <li><strong>The Slayer's Purse:</strong> Only an operative who accepts the contract and lands the certified killing blow in open combat may claim the escrowed gold.</li>
-          <li><strong>The Realm Gibbet:</strong> Slayers who pledge bounties but refuse to pay their debts are hoisted upon the Traitor's Gibbet—flagged as dishonorable deadbeats across all war room scrolls.</li>
-          <li><strong>Sanctuary Exclusion:</strong> Blood debts cannot be settled inside guarded sanctuaries or instanced dungeons. Blood must be repaid under the open sky of Azeroth.</li>
-        </ul>
-
-        <h2>📯 The War Horn (Field SOS &amp; Vanguard Defense)</h2>
-        <ul>
-          <li><strong>Sound the Alarm (<code>/warhorn</code>):</strong> When ambushed in the contested wilderness, blow the war horn to broadcast an emergency distress beacon across your guild and nearby allies.</li>
-          <li><strong>Instant War Party Muster:</strong> Allies who hear your distress and whisper <code>rally</code> or <code>invite</code> are instantly drafted into your combat party, rallying to your coordinates before your corpse cools.</li>
-          <li><strong>Battlefield Gating:</strong> The War Horn carries authority only upon the open killing grounds—it cannot be sounded within civilized taverns or sealed raid chambers.</li>
-        </ul>
-
-        <h2>📜 The Living Armory &amp; Classic Military Rank</h2>
-        <p>Every recorded clash builds your standing in the Grand Marshal and High Warlord military progressions. Inspect your personal combat dossier to review your lifetime kill-to-death ratio, your sworn nemesis, and historical duels.</p>
-      </div>
-    `;
-  } else if (subpage === "faq") {
-    contentHtml = `
-      <div class="info-card">
-        <h1>❓ Field Inquiries &amp; Frontline Handbook</h1>
-        <p>Common inquiries from scouts, raiders, and bounty hunters operating along the warfront.</p>
-
-        <h2>Field Kit Installation &amp; Courier Setup</h2>
-        <h3>How do I equip the addon to my game client?</h3>
-        <p>Extract the contents of <code>WoWKillboard-v1.0.0.zip</code> into your World of Warcraft <code>Interface/AddOns/</code> directory. Ensure the folder is named <code>WoWKillboard</code>. Enable out-of-date addons if prompted upon the character selection screen.</p>
-
-        <h3>Does the courier require esoteric arcane tools or command terminals?</h3>
-        <p>No. <code>WoWKillboardSync.exe</code> is a self-contained Windows runner. It requires no Python runtimes, script terminals, or manual configuration. Run it once in the background, and it will search your drives (<code>C:</code>, <code>D:</code>, <code>E:</code>) to find your Warcraft folder automatically.</p>
-
-        <h3>When are my battle records dispatched to the war room?</h3>
-        <p>Warcraft writes your SavedVariables to disk whenever you reload your user interface (<code>/reload</code>) or safely exit the game. The courier immediately spots the updated scroll and syncs your kills and deaths to the web ledger in seconds.</p>
-
-        <h2>Combat, Bounties, &amp; Retribution</h2>
-        <h3>Why was my kill recorded as a Gang Skirmish instead of a Solo Kill?</h3>
-        <p>If any other combatant—whether a party member or a passerby—inflicted damage or applied a debuff to your target within fifteen seconds of their demise, the kill is classified as a group effort. Single combat is strictly reserved for pure 1v1 duels.</p>
-
-        <h3>Can bounties be collected inside battlegrounds or dungeons?</h3>
-        <p>Never. Blood bounties are the sacred law of the contested open world. Sealed instances, arenas, and instanced battlegrounds have their own objectives; they are excluded from the bounty board to prevent collusion and exploitation.</p>
-
-        <h3>What becomes of bounties that go uncollected?</h3>
-        <p>A bounty contract remains active upon the Most Wanted board for thirty days. If the target manages to survive or hide in cowardice for longer than a month, the contract transitions into the Cold Case Archives.</p>
-      </div>
-    `;
-  } else if (subpage === "delayed") {
-    contentHtml = `
-      <div class="info-card">
-        <h1>⏱️ Tactical Fog of War &amp; Scout OpSec</h1>
-        <p>In the merciless frontier of Azeroth, knowledge is life and death. An indiscreet tongue or a premature scout report can lead a war party into an ambush or turn a flight master into a graveyard. To prevent dishonorable exploitation, stream sniping, and flight-path camping, the War Room enforces a disciplined Fog of War.</p>
-
-        <h2>🔒 Battlefield Telemetry Delays</h2>
-        <ul>
-          <li><strong>Zone-Level Intelligence:</strong> Public dispatches reveal the general territorial zone of combat (e.g., <em>"Last sighted in Stranglethorn Vale ~15m ago"</em>), masking exact subzone landmarks from public view until the trail has cooled.</li>
-          <li><strong>Anti-Camping Concealment:</strong> The in-game addon never broadcasts exact spatial coordinates over public chat channels, preventing coordinated gank squads from descending upon lone travelers before they can recover.</li>
-          <li><strong>Scout Reconnaissance (Supporter Perk):</strong> Dedicated community patrons and seasoned scouts gain access to detailed subzone intel (e.g., <em>"Booty Bay Docks"</em>) to hunt down notorious Most Wanted bounties whose crimes have stained the land.</li>
-        </ul>
-
-        <div class="info-callout">
-          <strong>Cold Case Archives:</strong><br>
-          Contracts that linger without a confirmed execution for thirty days are retired from active frontline boards and filed into the Cold Case Vault for historical study.
-        </div>
-      </div>
-    `;
-  } else if (subpage === "payments") {
-    contentHtml = `
-      <div class="info-card">
-        <h1>⭐ War Room Patronage &amp; Scribe's Guild</h1>
-        <p>The Azeroth War Room operates under an unbreakable vow: <strong>100% Free of Charge &bull; 100% Ad-Free</strong>. We display no commercial banner ads, sell no popups, and will never trade in soldier surveillance.</p>
-
-        <div class="info-callout" style="border-left-color: var(--wow-gold);">
-          <strong style="color: var(--wow-gold);">Patronage to Keep the Lamps Burning:</strong><br>
-          Maintaining high-speed servers, database storage for millions of combat records, and reliable web synchronization requires steady provisions. Community supporters provide optional donations to cover server hosting and infrastructure expenses. In return, patrons receive cosmetic honors and early access to experimental tools in development.
-        </div>
-
-        <h2>🌟 Upcoming Patron Perks (In Development)</h2>
-        <ul>
-          <li><strong>Beta Tester Access:</strong> Early access to experimental addon versions, web features, and tactical tools.</li>
-          <li><strong>Priority Feature Voting:</strong> Cast weighted ballots on what the scribes forge next on the development roadmap.</li>
-          <li><strong>Subzone Recon Intel:</strong> Unlocks detailed subzone landmark coordinates on active Most Wanted bounties.</li>
-          <li><strong>Golden Benefactor Crest:</strong> A gilded insignia rendered proudly beside your name in the Armory and leaderboards.</li>
-          <li><strong>StreamBox Broadcaster HUD:</strong> Transparent OBS stream overlay for war correspondents broadcasting their battles.</li>
-        </ul>
-      </div>
-    `;
-  } else if (subpage === "streambox") {
-    contentHtml = `
-      <div class="info-card">
-        <h1>🔭 The Chronicler's Looking Glass (War HUD for OBS)</h1>
-        <p>For scouts and champions who broadcast their martial exploits to tavern audiences across the realms, the <strong>War Correspondent HUD</strong> provides a live, transparent battlefield overlay built specifically for OBS Studio and Streamlabs.</p>
-
-        <div class="streambox-generator">
-          <h3 style="color:var(--accent-cyan); margin-bottom:6px;">⚡ Forge Your Stream HUD Link</h3>
-          <p style="font-size:0.8rem; color:#94a3b8;">Inscribe your character name to forge an instant OBS Browser Source address:</p>
-          <div class="streambox-input-group">
-            <input type="text" id="sb-input-char" class="search-input" placeholder="Character Name (e.g. Grom)" style="max-width:240px;">
-            <button class="nav-btn active" onclick="generateStreamBoxUrl()">Generate HUD URL</button>
-          </div>
-          <div id="sb-url-result" style="margin-top:10px; font-size:0.8rem; display:none;">
-            <span style="color:#10b981; font-weight:700;">OBS Browser Source Address:</span><br>
-            <code id="sb-url-text" style="background:#000; padding:4px 8px; border-radius:4px; border:1px solid #334155; display:inline-block; margin-top:4px; color:var(--accent-cyan);"></code>
-            <button class="nav-btn" style="padding:4px 8px; font-size:0.75rem; margin-left:8px;" onclick="copyStreamBoxUrl()">📋 Copy</button>
-          </div>
-        </div>
-
-        <h2>⚙️ Mounting the Glass in OBS Studio</h2>
-        <ol>
-          <li>In OBS Studio, click <strong>+ (Add Source)</strong> in your Sources dock.</li>
-          <li>Select <strong>Browser</strong>.</li>
-          <li>Paste your HUD URL into the URL field.</li>
-          <li>Set Width: <strong>800</strong>, Height: <strong>140</strong> (or Width: <strong>320</strong>, Height: <strong>480</strong> for vertical layout).</li>
-          <li>Check <strong>"Shutdown source when not visible"</strong> and click OK.</li>
-        </ol>
-
-        <h2>💡 Chronicler HUD Capabilities</h2>
-        <ul>
-          <li><strong>Transparent Field Display:</strong> Floats cleanly over your game stream with rugged, battle-tested styling.</li>
-          <li><strong>Autonomous Live Inscription:</strong> Automatically reflects your confirmed kills, deaths, and K/D ratio every five seconds without alt-tabbing.</li>
-          <li><strong>Solo vs. Gang Badges:</strong> Proudly highlights genuine 1v1 victories while candidly marking chaotic skirmishes.</li>
-        </ul>
-      </div>
-    `;
-  } else if (subpage === "legal") {
-    contentHtml = `
-      <div class="info-card">
-        <h1>⚖️ The Accord of Azeroth &amp; Realm Policies</h1>
-
-        <h2>Blizzard Entertainment Trademark &amp; Property Notice</h2>
-        <p>World of Warcraft®, Warcraft®, and Blizzard Entertainment® are trademarks or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other nations.</p>
-        <p><strong>WoW Killboard</strong> is an independent open-source combat chronicle created by <strong>Scott Quick</strong>. It is not affiliated with, endorsed, sponsored, or specifically approved by Blizzard Entertainment, Inc. Blizzard Entertainment bears no responsibility for the contents or operation of this field kit.</p>
-
-        <h2>Strict Adherence to Blizzard's UI Add-On Policy</h2>
-        <ul>
-          <li><strong>100% Free of Charge:</strong> The field kit addon and companion war room are completely free for all soldiers of the realm. We charge no subscription fees, gate no downloads behind paywalls, and sell no in-game advantages.</li>
-          <li><strong>Zero In-Game Commercial Advertisement:</strong> The addon displays no merchant wares, corporate sponsorships, or promotional popups within the game client.</li>
-          <li><strong>Open, Legible Lua Scripting:</strong> All addon scripts and companion code are completely non-obfuscated, human-readable, and licensed openly under the <strong>AGPLv3</strong> open-source license.</li>
-          <li><strong>Zero Dark Sorcery (Zero Gameplay Automation):</strong> The addon never automates combat actions, executes protected spells, or alters game mechanics. It strictly serves as a passive field scribe reading publicly broadcast combat events.</li>
-        </ul>
-
-        <h2>Soldier Privacy &amp; Data Protection</h2>
-        <ul>
-          <li><strong>Zero Personally Identifiable Records:</strong> We never collect, store, or transmit real names, emails, physical locations, or Battle.net account credentials.</li>
-          <li><strong>Public Battlefield Telemetry Only:</strong> The software exclusively records public combat log strings (character names, damage numbers, and zone coordinates) generated during the normal course of gameplay.</li>
-        </ul>
-      </div>
+  } else {
+    badge.innerHTML = `
+      <button class="header-signin-btn" onclick="openLoginModal()">Sign In</button>
     `;
   }
+}
 
-  container.innerHTML = `
-    <div class="info-hub">
-      ${tabsHtml}
-      ${contentHtml}
+function handleHeaderSignOut() {
+  sessionStorage.removeItem("wowkb_auth_type");
+  sessionStorage.removeItem("wowkb_character_name");
+  localStorage.removeItem("wowkb_account_username");
+  renderHeaderAuthBadge();
+  if (currentTab === "ARMORY") {
+    handleArmoryNavClick();
+  } else if (currentTab === "WARROOM") {
+    loadWarroomView();
+  } else if (currentTab === "BOUNTIES") {
+    loadBounties();
+  }
+}
+
+function openLoginModal() {
+  switchTab("THEATER");
+  if (typeof portalSetAuthTab === "function") {
+    portalSetAuthTab("signin");
+  }
+}
+
+function updateTheaterNavLabel() {
+  const versionEl = document.getElementById("theater-nav-version");
+  const mNavEl = document.getElementById("m-nav-theater");
+  const cfg = (typeof FLAVOR_CONFIGS !== "undefined" && FLAVOR_CONFIGS[currentFlavor]) ? FLAVOR_CONFIGS[currentFlavor] : null;
+  const currentFlav = cfg ? cfg.name : (sessionStorage.getItem("wowkb_flavor") || localStorage.getItem("wowkb_flavor") || "WoW Forever");
+  if (versionEl) {
+    versionEl.innerText = currentFlav;
+  }
+  if (mNavEl) {
+    const textSpan = mNavEl.querySelector("span");
+    if (textSpan) textSpan.innerText = `🌐 Theater: ${currentFlav}`;
+  }
+}
+
+
+// ----------------- Warroom & Feuds -----------------
+
+function renderSingleFeudCard(f) {
+  const isCompleted = f.status === 'COMPLETED';
+  const cScore = f.challenger_score || 0;
+  const tScore = f.target_score_current || 0;
+  const maxScore = f.target_score || 100;
+  const cPct = Math.min(100, Math.round((cScore / maxScore) * 100));
+  const tPct = Math.min(100, Math.round((tScore / maxScore) * 100));
+
+  const cEntity = f.feud_type === 'GUILD' ? (f.challenger_guild || f.challenger_name) : f.challenger_name;
+  const tEntity = f.feud_type === 'GUILD' ? (f.target_guild || f.target_name) : f.target_name;
+
+  return `
+    <div class="feud-card" style="${isCompleted ? 'border-color:#475569; opacity:0.85;' : 'border-color:#dc2626;'}">
+      <div class="feud-card-header">
+        <span style="font-size:0.75rem; font-weight:800; color:${isCompleted ? '#94a3b8' : '#ef4444'};">
+          ${escapeHtml(f.feud_type || '')} CONTEST &bull; ${escapeHtml(f.status || '')}
+        </span>
+        <span style="font-size:0.72rem; color:#94a3b8;">Goal: First to ${maxScore} Kills</span>
+      </div>
+
+      <div class="feud-vs-row">
+        <div style="text-align:left;">
+          <div style="font-size:0.7rem; color:#3b82f6; font-weight:700;">CHALLENGER</div>
+          <div style="font-size:1.05rem; font-weight:800; color:#fff;">${escapeHtml(cEntity || '')}</div>
+          <div style="font-size:0.85rem; color:#3b82f6; font-weight:800; margin-top:2px;">${cScore} / ${maxScore}</div>
+        </div>
+
+        <div style="font-size:1.2rem; font-weight:900; color:#ef4444;">VS</div>
+
+        <div style="text-align:right;">
+          <div style="font-size:0.7rem; color:#ef4444; font-weight:700;">DEFENDER</div>
+          <div style="font-size:1.05rem; font-weight:800; color:#fff;">${escapeHtml(tEntity || '')}</div>
+          <div style="font-size:0.85rem; color:#ef4444; font-weight:800; margin-top:2px;">${tScore} / ${maxScore}</div>
+        </div>
+      </div>
+
+      <!-- Double Progress Bar -->
+      <div class="feud-progress-bar">
+        <div class="feud-progress-fill-challenger" style="width:${cPct}%;"></div>
+        <div style="flex:1; background:transparent;"></div>
+        <div class="feud-progress-fill-target" style="width:${tPct}%;"></div>
+      </div>
+
+      <!-- Rules of Engagement Badges -->
+      <div class="roe-pill-group">
+        <span class="roe-pill">🛡️ Min Level ${f.roe_min_level || 55}+</span>
+        ${f.roe_underdog_bonus ? '<span class="roe-pill" style="border-color:#10b981; color:#10b981;">⚡ 2x Underdog Bonus</span>' : ''}
+        <span class="roe-pill" style="border-color:#f59e0b; color:#f59e0b;">🚫 Zerg Filter (0 Pts)</span>
+        ${f.roe_zone ? `<span class="roe-pill">📍 Zone: ${escapeHtml(f.roe_zone)}</span>` : ''}
+      </div>
+
+      ${isCompleted ? `
+        <div style="background:#110d14; border:1px solid #10b981; border-radius:4px; padding:8px 10px; margin-top:10px; font-size:0.75rem; text-align:center;">
+          🏆 <strong>Victor:</strong> <span style="color:#10b981; font-weight:800;">${escapeHtml(f.winner_name || "Unknown")}</span> &bull; Loser Consigned to KOS Blacklist!
+        </div>
+      ` : ''}
     </div>
   `;
+}
+
+async function loadWarroomView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading Warroom tactical operations, blood feuds, and realm KOS records...</div>`;
+
+  try {
+    const [feudsRes, kosRes] = await Promise.all([
+      fetch("/api/feuds"),
+      fetch("/api/kos/blacklist")
+    ]);
+    const feuds = await feudsRes.json();
+    const kosData = await kosRes.json();
+    const guilds = kosData.guilds || [];
+    const deserters = kosData.deserters || [];
+
+    // Check signed-in user's character for personal wars pinning
+    const myName = (localStorage.getItem("wowkb_account_username") || sessionStorage.getItem("wowkb_character_name") || "").toLowerCase().trim();
+    let personalFeuds = [];
+    let otherFeuds = [];
+
+    if (Array.isArray(feuds)) {
+      feuds.forEach(f => {
+        const cName = (f.challenger_name || "").toLowerCase();
+        const cGuild = (f.challenger_guild || "").toLowerCase();
+        const tName = (f.target_name || "").toLowerCase();
+        const tGuild = (f.target_guild || "").toLowerCase();
+
+        if (myName && (cName === myName || cGuild === myName || tName === myName || tGuild === myName)) {
+          personalFeuds.push(f);
+        } else {
+          otherFeuds.push(f);
+        }
+      });
+    }
+
+    let personalSectionHtml = "";
+    if (personalFeuds.length > 0) {
+      personalSectionHtml = `
+        <div style="background:rgba(217, 119, 6, 0.08); border:1px solid var(--accent-gold); border-radius:8px; padding:18px 20px; margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.2rem;">⭐</span>
+              <h3 style="font-size:1.05rem; color:var(--wow-gold); font-weight:800; margin:0;">
+                Personal Engagements (${personalFeuds.length})
+              </h3>
+            </div>
+            <span style="font-size:0.75rem; color:var(--accent-gold); font-weight:700;">Pinned to Top</span>
+          </div>
+          <div class="feuds-grid">
+            ${personalFeuds.map(f => renderSingleFeudCard(f)).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    let feudsGridHtml = "";
+    if (otherFeuds.length === 0 && personalFeuds.length === 0) {
+      feudsGridHtml = `
+        <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:24px; text-align:center; color:#64748b;">
+          <div style="font-size:1.5rem; margin-bottom:6px;">⚔️</div>
+          <div style="color:#e2e8f0; font-weight:700;">No Blood Feuds Active</div>
+          <p style="font-size:0.8rem; margin-top:4px;">Challenge an enemy guild or player to a grudge match with custom Rules of Engagement!</p>
+        </div>
+      `;
+    } else {
+      feudsGridHtml = `
+        <div class="feuds-grid">
+          ${otherFeuds.map(f => renderSingleFeudCard(f)).join("")}
+        </div>
+      `;
+    }
+
+    let html = `
+      <div style="display:flex; flex-direction:column; gap:24px;">
+        <!-- Header & Action -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 style="font-size:1.3rem; color:var(--accent-red); letter-spacing:-0.5px; display:flex; align-items:center; gap:8px; margin:0;">
+              <span>⚔️</span> Warroom: Blood Feuds &amp; Rules of Engagement
+            </h2>
+            <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">
+              Guild Wars &amp; 1v1 Grudge Matches &bull; First to target score wins &bull; Defeated guilds condemned to the Realm KOS Blacklist!
+            </div>
+          </div>
+          <button class="supporter-btn" style="background:linear-gradient(135deg, #b91c1c, #991b1b); border:1px solid #ef4444; color:#fff;" onclick="openDeclareFeudModal()">
+            ⚔️ Declare Blood Feud
+          </button>
+        </div>
+
+        <!-- Pinned Personal Wars -->
+        ${personalSectionHtml}
+
+        <!-- All Active Contests Grid -->
+        <div>
+          <h3 style="font-size:1rem; color:#e2e8f0; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <span>🌐</span> Active Realm Feuds (${otherFeuds.length})
+          </h3>
+          ${feudsGridHtml}
+        </div>
+
+        <!-- Realm KOS Blacklist Section -->
+        <div class="kos-section">
+          <div style="border-top:1px solid #1e293b; padding-top:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h2 style="font-size:1.25rem; color:var(--accent-red); display:flex; align-items:center; gap:8px; margin:0;">
+                <span>🚨</span> Realm KOS Blacklist &amp; Deserter Ledger
+              </h2>
+              <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
+                Zero-Gold Retribution &bull; Defeated Guilds &amp; Outlaws Branded for Immediate Eradication &bull; In-Game Proximity Sirens Active
+              </div>
+            </div>
+            <button class="nav-btn" style="border:1px solid #dc2626; color:#f87171; font-size:0.75rem;" onclick="openBrandKosModal()">
+              + Brand KOS Target
+            </button>
+          </div>
+
+          <!-- Blacklisted Guilds Table -->
+          <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:16px; margin-top:14px;">
+            <h3 style="font-size:0.95rem; color:#f87171; margin-bottom:10px;">💀 Blacklisted Enemy Guilds</h3>
+            ${guilds.length === 0 ? '<div style="color:#64748b; font-size:0.8rem;">No enemy guilds currently blacklisted.</div>' : `
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                ${guilds.map(g => `
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:#0f121a; padding:10px 14px; border-radius:6px; border-left:4px solid #dc2626;">
+                    <div>
+                      <strong style="color:#fff; font-size:0.95rem;" class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.entity_name)}')">&lt;${escapeHtml(g.entity_name)}&gt;</strong>
+                      <span style="font-size:0.75rem; color:#94a3b8; margin-left:8px;">${escapeHtml(g.reason)}</span>
+                    </div>
+                    <span style="font-size:0.72rem; color:#f87171; background:rgba(220,38,38,0.2); padding:3px 8px; border-radius:4px; font-weight:800;">
+                      🚨 KILL ON SIGHT
+                    </span>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+
+          <!-- 30-Day Anti-Guild-Hop Deserters Grid -->
+          <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:16px; margin-top:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
+              <div>
+                <h3 style="font-size:0.95rem; color:#fbbf24; margin:0;">⚡ 30-Day Anti-Guild-Hop Deserter Stain</h3>
+                <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">
+                  Leaving (/gquit) a blacklisted guild does not erase your shame. Tracked by permanent character Player-GUID.
+                </div>
+              </div>
+              <span style="font-size:0.75rem; color:#f59e0b; font-weight:700;">${deserters.length} Marked Deserters</span>
+            </div>
+
+            <div class="deserter-grid">
+              ${deserters.length === 0 ? '<div style="color:#64748b; font-size:0.8rem; grid-column:1/-1;">No deserters currently serving penance.</div>' : deserters.map(d => `
+                <div class="deserter-card">
+                  <div class="deserter-header">
+                    <span class="deserter-badge">DESERTER STAIN</span>
+                    <span class="days-pill">⏳ ${d.days_remaining} Days Remaining</span>
+                  </div>
+                  <div style="font-size:1rem; font-weight:800; color:#fff; margin:4px 0;">
+                    <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(d.player_name)}')">${escapeHtml(d.player_name)}</span>
+                  </div>
+                  <div style="font-size:0.75rem; color:#cbd5e1;">
+                    Former Guild: <strong style="color:#f87171;">&lt;${escapeHtml(d.former_guild)}&gt;</strong>
+                  </div>
+                  <div style="font-size:0.68rem; color:#64748b; margin-top:6px; font-family:monospace;">
+                    GUID: ${escapeHtml(d.player_guid)}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Warroom: ${err.message}</div>`;
+  }
+}
+
+// Backward compatibility alias
+function loadFeudsView() {
+  loadWarroomView();
 }
 
 function generateStreamBoxUrl() {
@@ -3626,8 +3904,8 @@ function setFilterMode(mode) {
 
   loadKills();
   loadSidebar();
-  if (currentTab === "FEED") loadMostWanted();
-  if (currentTab === "LEADERBOARDS") loadLeaderboards();
+  if (currentTab === "FEED" || currentTab === "INTEL") loadMostWanted();
+  if (currentTab === "LEADERBOARDS" || currentTab === "LEGENDS") loadLeaderboards();
 }
 
 function openPlaceBountyModal() {
@@ -3696,194 +3974,7 @@ function handleSupporterClick() {
   }
 }
 
-// ----------------- Blood Feuds & KOS Blacklist -----------------
-
-async function loadFeudsView() {
-  const container = document.getElementById("main-content-area");
-  if (!container) return;
-  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading Blood Feud contracts and Realm KOS Blacklist...</div>`;
-
-  try {
-    const [feudsRes, kosRes] = await Promise.all([
-      fetch("/api/feuds"),
-      fetch("/api/kos/blacklist")
-    ]);
-    const feuds = await feudsRes.json();
-    const kosData = await kosRes.json();
-    const guilds = kosData.guilds || [];
-    const deserters = kosData.deserters || [];
-
-    let html = `
-      <div style="display:flex; flex-direction:column; gap:24px;">
-        <!-- Header & Action -->
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <h2 style="font-size:1.3rem; color:var(--accent-red); letter-spacing:-0.5px; display:flex; align-items:center; gap:8px;">
-              <span>⚔️</span> Head-to-Head Blood Feuds &amp; Rules of Engagement
-            </h2>
-            <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">
-              Guild Wars &amp; 1v1 Grudge Matches &bull; First to target score wins &bull; Defeated guilds condemned to the Realm KOS Blacklist!
-            </div>
-          </div>
-          <button class="supporter-btn" style="background:linear-gradient(135deg, #b91c1c, #991b1b); border:1px solid #ef4444; color:#fff;" onclick="openDeclareFeudModal()">
-            ⚔️ Declare Blood Feud
-          </button>
-        </div>
-
-        <!-- Active Contests Grid -->
-        <div class="feuds-grid">
-    `;
-
-    if (!feuds || feuds.length === 0) {
-      html += `
-        <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:24px; text-align:center; color:#64748b; grid-column:1/-1;">
-          <div style="font-size:1.5rem; margin-bottom:6px;">⚔️</div>
-          <div style="color:#e2e8f0; font-weight:700;">No Blood Feuds Active</div>
-          <p style="font-size:0.8rem; margin-top:4px;">Challenge an enemy guild or player to a grudge match with custom Rules of Engagement!</p>
-        </div>
-      `;
-    } else {
-      feuds.forEach(f => {
-        const isCompleted = f.status === 'COMPLETED';
-        const cScore = f.challenger_score || 0;
-        const tScore = f.target_score_current || 0;
-        const maxScore = f.target_score || 100;
-        const cPct = Math.min(100, Math.round((cScore / maxScore) * 100));
-        const tPct = Math.min(100, Math.round((tScore / maxScore) * 100));
-
-        const cEntity = f.feud_type === 'GUILD' ? (f.challenger_guild || f.challenger_name) : f.challenger_name;
-        const tEntity = f.feud_type === 'GUILD' ? (f.target_guild || f.target_name) : f.target_name;
-
-        html += `
-          <div class="feud-card" style="${isCompleted ? 'border-color:#475569; opacity:0.85;' : 'border-color:#dc2626;'}">
-            <div class="feud-card-header">
-              <span style="font-size:0.75rem; font-weight:800; color:${isCompleted ? '#94a3b8' : '#ef4444'};">
-                ${f.feud_type} CONTEST &bull; ${f.status}
-              </span>
-              <span style="font-size:0.72rem; color:#94a3b8;">Goal: First to ${maxScore} Kills</span>
-            </div>
-
-            <div class="feud-vs-row">
-              <div style="text-align:left;">
-                <div style="font-size:0.7rem; color:#3b82f6; font-weight:700;">CHALLENGER</div>
-                <div style="font-size:1.05rem; font-weight:800; color:#fff;">${cEntity}</div>
-                <div style="font-size:0.85rem; color:#3b82f6; font-weight:800; margin-top:2px;">${cScore} / ${maxScore}</div>
-              </div>
-
-              <div style="font-size:1.2rem; font-weight:900; color:#ef4444;">VS</div>
-
-              <div style="text-align:right;">
-                <div style="font-size:0.7rem; color:#ef4444; font-weight:700;">DEFENDER</div>
-                <div style="font-size:1.05rem; font-weight:800; color:#fff;">${tEntity}</div>
-                <div style="font-size:0.85rem; color:#ef4444; font-weight:800; margin-top:2px;">${tScore} / ${maxScore}</div>
-              </div>
-            </div>
-
-            <!-- Double Progress Bar -->
-            <div class="feud-progress-bar">
-              <div class="feud-progress-fill-challenger" style="width:${cPct}%;"></div>
-              <div style="flex:1; background:transparent;"></div>
-              <div class="feud-progress-fill-target" style="width:${tPct}%;"></div>
-            </div>
-
-            <!-- Rules of Engagement Badges -->
-            <div class="roe-pill-group">
-              <span class="roe-pill">🛡️ Min Level ${f.roe_min_level || 55}+</span>
-              ${f.roe_underdog_bonus ? '<span class="roe-pill" style="border-color:#10b981; color:#10b981;">⚡ 2x Underdog Bonus</span>' : ''}
-              <span class="roe-pill" style="border-color:#f59e0b; color:#f59e0b;">🚫 Zerg Filter (0 Pts)</span>
-              ${f.roe_zone ? `<span class="roe-pill">📍 Zone: ${f.roe_zone}</span>` : ''}
-            </div>
-
-            ${isCompleted ? `
-              <div style="background:#110d14; border:1px solid #10b981; border-radius:4px; padding:8px 10px; margin-top:10px; font-size:0.75rem; text-align:center;">
-                🏆 <strong>Victor:</strong> <span style="color:#10b981; font-weight:800;">${f.winner_name}</span> &bull; Loser Consigned to KOS Blacklist!
-              </div>
-            ` : ''}
-          </div>
-        `;
-      });
-    }
-
-    html += `
-        </div>
-
-        <!-- Realm KOS Blacklist Section -->
-        <div class="kos-section">
-          <div style="border-top:1px solid #1e293b; padding-top:20px; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <h2 style="font-size:1.25rem; color:var(--accent-red); display:flex; align-items:center; gap:8px;">
-                <span>🚨</span> Realm KOS Blacklist &amp; Deserter Ledger
-              </h2>
-              <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
-                Zero-Gold Retribution &bull; Defeated Guilds &amp; Outlaws Branded for Immediate Eradication &bull; In-Game Proximity Sirens Active
-              </div>
-            </div>
-            <button class="nav-btn" style="border:1px solid #dc2626; color:#f87171; font-size:0.75rem;" onclick="openBrandKosModal()">
-              + Brand KOS Target
-            </button>
-          </div>
-
-          <!-- Blacklisted Guilds Table -->
-          <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:16px;">
-            <h3 style="font-size:0.95rem; color:#f87171; margin-bottom:10px;">💀 Blacklisted Enemy Guilds</h3>
-            ${guilds.length === 0 ? '<div style="color:#64748b; font-size:0.8rem;">No enemy guilds currently blacklisted.</div>' : `
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                ${guilds.map(g => `
-                  <div style="display:flex; justify-content:space-between; align-items:center; background:#0f121a; padding:10px 14px; border-radius:6px; border-left:4px solid #dc2626;">
-                    <div>
-                      <strong style="color:#fff; font-size:0.95rem;" class="clickable-guild" onclick="openGuildProfile('${g.entity_name}')">&lt;${g.entity_name}&gt;</strong>
-                      <span style="font-size:0.75rem; color:#94a3b8; margin-left:8px;">${g.reason}</span>
-                    </div>
-                    <span style="font-size:0.72rem; color:#f87171; background:rgba(220,38,38,0.2); padding:3px 8px; border-radius:4px; font-weight:800;">
-                      🚨 KILL ON SIGHT
-                    </span>
-                  </div>
-                `).join('')}
-              </div>
-            `}
-          </div>
-
-          <!-- 30-Day Anti-Guild-Hop Deserters Grid -->
-          <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <div>
-                <h3 style="font-size:0.95rem; color:#fbbf24;">⚡ 30-Day Anti-Guild-Hop Deserter Stain</h3>
-                <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">
-                  Leaving (/gquit) a blacklisted guild does not erase your shame. Tracked by permanent character Player-GUID.
-                </div>
-              </div>
-              <span style="font-size:0.75rem; color:#f59e0b; font-weight:700;">${deserters.length} Marked Deserters</span>
-            </div>
-
-            <div class="deserter-grid">
-              ${deserters.length === 0 ? '<div style="color:#64748b; font-size:0.8rem; grid-column:1/-1;">No deserters currently serving penance.</div>' : deserters.map(d => `
-                <div class="deserter-card">
-                  <div class="deserter-header">
-                    <span class="deserter-badge">DESERTER STAIN</span>
-                    <span class="days-pill">⏳ ${d.days_remaining} Days Remaining</span>
-                  </div>
-                  <div style="font-size:1rem; font-weight:800; color:#fff; margin:4px 0;">
-                    <span class="clickable-player" onclick="openCharacterProfile('${d.player_name}')">${d.player_name}</span>
-                  </div>
-                  <div style="font-size:0.75rem; color:#cbd5e1;">
-                    Former Guild: <strong style="color:#f87171;">&lt;${d.former_guild}&gt;</strong>
-                  </div>
-                  <div style="font-size:0.68rem; color:#64748b; margin-top:6px; font-family:monospace;">
-                    GUID: ${d.player_guid}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    container.innerHTML = html;
-  } catch (err) {
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Blood Feuds: ${err.message}</div>`;
-  }
-}
+// ----------------- Feuds & KOS Modals -----------------
 
 function openDeclareFeudModal() {
   const cGuild = prompt("Enter Challenger Guild (or Character Name):");
@@ -3981,6 +4072,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateSupporterButton();
   initClientFlavor();
+  renderHeaderAuthBadge();
+  updateTheaterNavLabel();
   loadSidebar();
   checkGlobalSosBeacons();
   checkIntelSightings();
@@ -3995,7 +4088,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Polling update every 6 seconds
   setInterval(() => {
-    if (currentTab === "FEED") {
+    if (currentTab === "FEED" || currentTab === "INTEL") {
       loadKills();
       loadMostWanted();
     }

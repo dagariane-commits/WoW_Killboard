@@ -12,100 +12,49 @@
 </head>
 <body>
 
-  <!-- Top Header Navigation & War Room Bar -->
+  <!-- Top Header Navigation -->
   <header class="site-header">
-    <!-- Wowhead-Style Global Flavor Top Header Strip -->
-    <div class="wowhead-top-bar" id="wowhead-top-bar">
-      <div class="wh-bar-left">
-        <button class="wh-home-btn" onclick="switchTab('PORTAL')" title="War Room Portal Gateway">
-          <span class="wh-home-icon">🏠</span>
-        </button>
-        <span class="wh-brand-label">WOW</span>
-        <div class="wh-flavor-tabs" id="wh-flavor-tabs">
-          <button class="wh-tab-btn active" data-flavor="FOREVER" onclick="handleFlavorChange('FOREVER')" title="WoW Forever Beta (1.15)">
-            <span class="wh-w-badge forever">W</span>
-            <span class="wh-tab-text">WOW FOREVER</span>
-            <span class="wh-tab-active-dot">● LIVE FRONTIER</span>
-          </button>
-        </div>
-      </div>
-      <div class="wh-bar-right">
-        <div class="wh-status-indicator">
-          <span class="wh-status-dot"></span>
-          <span class="wh-status-label">ACTIVE ENGINE:</span>
-          <span class="wh-status-text" id="wh-active-flavor-name">WOW FOREVER (60 MAX)</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="header-top-row">
-      <div class="logo-group" onclick="switchTab('PORTAL')">
+    <div class="header-main-row">
+      <!-- 1. Logo -->
+      <div class="logo-group" onclick="switchTab('INTEL')">
         <img src="/static/icons/factions/alliance.jpg" class="header-faction-crest alliance" alt="Alliance" title="For the Alliance!">
         <div class="logo-crest">⚔️</div>
         <img src="/static/icons/factions/horde.jpg" class="header-faction-crest horde" alt="Horde" title="For the Horde!">
         <div>
           <div class="logo-title">WoW Killboard</div>
-          <div class="logo-subtitle">AZEROTH COMBAT WAR ROOM &bull; ALLIANCE &amp; HORDE</div>
+          <div class="logo-subtitle">AZEROTH COMBAT WAR ROOM</div>
         </div>
-        <span class="live-status-pill"><span class="live-dot"></span> LIVE RECON</span>
       </div>
 
+      <!-- 2. Primary Navigation Rail -->
+      <nav class="nav-links-rail" id="nav-rail">
+        <button id="nav-theater" class="nav-btn theater-btn" onclick="switchTab('THEATER')" title="Active Theater of War / Select Version">
+          <span class="theater-icon">🌐</span> <span class="theater-label">Theater:</span> <strong id="theater-nav-version">WoW Forever</strong> ▾
+        </button>
+        <button id="nav-intel" class="nav-btn active" onclick="switchTab('INTEL')">📡 Intel</button>
+        <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">🏆 Hall of Legends</button>
+        <button id="nav-hazards" class="nav-btn" onclick="switchTab('HAZARDS')">☠️ World Hazards</button>
+        <button id="nav-armory" class="nav-btn" onclick="handleArmoryNavClick()">🛡️ Armory</button>
+        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">🩸 Bounties</button>
+        <button id="nav-warroom" class="nav-btn" onclick="switchTab('WARROOM')">⚔️ Warroom</button>
+      </nav>
+
+      <!-- 3. Tools Group -->
       <div class="header-tools-group">
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
           <input type="text" id="search-box" class="search-input" placeholder="Search Player, Guild, Zone...">
         </div>
 
-        <button class="header-action-pill fieldkit-btn" onclick="openAddonDossierModal()" title="How the Addon Works & Download Guide">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Addon Guide
-        </button>
-
-        <button class="header-action-pill oracle-btn" onclick="toggleOracleChatModal()" title="Consult The War Archivist (AI Intelligence)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          War Archivist
-        </button>
-
-        <button class="supporter-btn" onclick="toggleSupporterMode()">
-          ★ Supporter Perks
-        </button>
-
-        <button id="mobile-flavor-badge" class="mobile-flavor-badge" onclick="toggleMobileDrawer()" title="Active Engine / Switch Expansion">
-          <span class="wh-w-badge classic" id="mobile-flavor-w-badge">W</span>
-          <span id="mobile-flavor-badge-text">ERA 60</span>
-        </button>
+        <div id="header-auth-badge" class="header-auth-badge">
+          <!-- Populated by app.js -->
+        </div>
 
         <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleMobileDrawer()" aria-label="Toggle Navigation Drawer">
           <span class="menu-bar"></span>
           <span class="menu-bar"></span>
           <span class="menu-bar"></span>
         </button>
-      </div>
-    </div>
-
-    <!-- Navigation Tab Rail & Filter Strip -->
-    <div class="header-sub-row">
-      <nav class="nav-links-rail" id="nav-rail">
-        <button id="nav-portal" class="nav-btn" onclick="switchTab('PORTAL')">🏰 War Room Portal</button>
-        <button id="nav-feed" class="nav-btn active" onclick="switchTab('FEED')">⚔️ Frontline Feed</button>
-        <button id="nav-leaderboards" class="nav-btn" onclick="switchTab('LEADERBOARDS')">🏆 Hall of Heroes</button>
-        <button id="nav-deadly_npcs" class="nav-btn" onclick="switchTab('DEADLY_NPCS')">☠️ Deadly NPCs</button>
-        <button id="nav-armory" class="nav-btn" onclick="switchTab('ARMORY')">🏰 Player Armory</button>
-        <button id="nav-guilds" class="nav-btn" onclick="switchTab('GUILDS')">🛡️ War Guilds</button>
-        <button id="nav-feuds" class="nav-btn" onclick="switchTab('FEUDS')">⚔️ Blood Feuds &amp; Blacklist</button>
-        <button id="nav-defense" class="nav-btn" onclick="switchTab('DEFENSE')">📯 War Council &amp; Rallies</button>
-        <button id="nav-bg_metrics" class="nav-btn" onclick="switchTab('BG_METRICS')">🚩 Battleground Gladiators</button>
-        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">🩸 Blood Bounties &amp; Gibbet</button>
-        <button id="nav-info" class="nav-btn" onclick="switchTab('INFO')">📜 Field Manual &amp; Codex</button>
-      </nav>
-
-      <!-- 5-State Filter Mode Segmented Control -->
-      <div class="filter-pills" id="mode-filter-pills">
-        <button id="pill-all" class="pill-btn active" onclick="setFilterMode('ALL')">All PvP</button>
-        <button id="pill-world" class="pill-btn" onclick="setFilterMode('WORLD')">World</button>
-        <button id="pill-bg" class="pill-btn" onclick="setFilterMode('BG')">BGs</button>
-        <button id="pill-arena" class="pill-btn" onclick="setFilterMode('ARENA')">Arenas</button>
-        <button id="pill-duel" class="pill-btn" onclick="setFilterMode('DUEL')">Duels</button>
       </div>
     </div>
   </header>
@@ -127,85 +76,48 @@
         <input type="text" id="mobile-search-box-input" class="search-input" style="width:100%;" placeholder="Search Player, Guild, Zone..." oninput="handleMobileSearch(event)">
       </div>
 
-      <!-- Mobile Client Flavor Selector -->
-      <div class="mobile-drawer-label">ACTIVE WAR FRONT</div>
-      <div class="mobile-flavor-pills-wrap">
-        <button class="m-flavor-btn active" data-flavor="FOREVER" onclick="handleFlavorChange('FOREVER'); toggleMobileDrawer(false);">
-          <span class="wh-w-badge forever">W</span> WoW Forever (Live Frontier)
-        </button>
-      </div>
-
-      <!-- Mobile Mode Filters -->
-      <div class="mobile-drawer-label" style="margin-top: 14px;">FILTER COMBAT MODE</div>
-      <div class="filter-pills mobile-filter-pills">
-        <button id="m-pill-all" class="pill-btn active" onclick="setFilterMode('ALL'); toggleMobileDrawer(false);">All</button>
-        <button id="m-pill-world" class="pill-btn" onclick="setFilterMode('WORLD'); toggleMobileDrawer(false);">World</button>
-        <button id="m-pill-bg" class="pill-btn" onclick="setFilterMode('BG'); toggleMobileDrawer(false);">BGs</button>
-        <button id="m-pill-arena" class="pill-btn" onclick="setFilterMode('ARENA'); toggleMobileDrawer(false);">Arenas</button>
-        <button id="m-pill-duel" class="pill-btn" onclick="setFilterMode('DUEL'); toggleMobileDrawer(false);">Duels</button>
-      </div>
-
       <!-- Mobile Navigation Links -->
-      <div class="mobile-drawer-label" style="margin-top: 14px;">WAR ROOM DIRECTORY</div>
+      <div class="mobile-drawer-label" style="margin-top: 14px;">NAVIGATION</div>
       <div class="mobile-nav-list">
-        <button class="mobile-nav-item" id="m-nav-portal" onclick="switchTab('PORTAL'); toggleMobileDrawer(false);">
-          <span>🏰 War Room Portal</span>
+        <button class="mobile-nav-item" id="m-nav-theater" onclick="switchTab('THEATER'); toggleMobileDrawer(false);">
+          <span>🌐 Theater: WoW Forever</span>
           <span>&rarr;</span>
         </button>
-        <button class="mobile-nav-item active" id="m-nav-feed" onclick="switchTab('FEED'); toggleMobileDrawer(false);">
-          <span>⚔️ Frontline Feed</span>
+        <button class="mobile-nav-item active" id="m-nav-intel" onclick="switchTab('INTEL'); toggleMobileDrawer(false);">
+          <span>📡 Intel</span>
           <span>&rarr;</span>
         </button>
-        <button class="mobile-nav-item" id="m-nav-leaderboards" onclick="switchTab('LEADERBOARDS'); toggleMobileDrawer(false);">
-          <span>🏆 Hall of Heroes</span>
+        <button class="mobile-nav-item" id="m-nav-legends" onclick="switchTab('LEGENDS'); toggleMobileDrawer(false);">
+          <span>🏆 Hall of Legends</span>
           <span>&rarr;</span>
         </button>
-        <button class="mobile-nav-item" id="m-nav-deadly_npcs" onclick="switchTab('DEADLY_NPCS'); toggleMobileDrawer(false);">
-          <span>☠️ Deadly NPCs</span>
+        <button class="mobile-nav-item" id="m-nav-hazards" onclick="switchTab('HAZARDS'); toggleMobileDrawer(false);">
+          <span>☠️ World Hazards</span>
           <span>&rarr;</span>
         </button>
-        <button class="mobile-nav-item" id="m-nav-armory" onclick="switchTab('ARMORY'); toggleMobileDrawer(false);">
-          <span>🏰 Player Armory</span>
-          <span>&rarr;</span>
-        </button>
-        <button class="mobile-nav-item" id="m-nav-guilds" onclick="switchTab('GUILDS'); toggleMobileDrawer(false);">
-          <span>🛡️ War Guilds</span>
-          <span>&rarr;</span>
-        </button>
-        <button class="mobile-nav-item" id="m-nav-feuds" onclick="switchTab('FEUDS'); toggleMobileDrawer(false);">
-          <span>⚔️ Blood Feuds &amp; Blacklist</span>
-          <span>&rarr;</span>
-        </button>
-        <button class="mobile-nav-item" id="m-nav-defense" onclick="switchTab('DEFENSE'); toggleMobileDrawer(false);">
-          <span>📯 War Council &amp; Rallies</span>
-          <span>&rarr;</span>
-        </button>
-        <button class="mobile-nav-item" id="m-nav-bg_metrics" onclick="switchTab('BG_METRICS'); toggleMobileDrawer(false);">
-          <span>🚩 Battleground Gladiators</span>
+        <button class="mobile-nav-item" id="m-nav-armory" onclick="handleArmoryNavClick(); toggleMobileDrawer(false);">
+          <span>🛡️ Armory</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
-          <span>🩸 Blood Bounties &amp; Gibbet</span>
+          <span>🩸 Bounties</span>
           <span>&rarr;</span>
         </button>
-        <button class="mobile-nav-item" id="m-nav-info" onclick="switchTab('INFO'); toggleMobileDrawer(false);">
-          <span>📜 Field Manual &amp; Codex</span>
+        <button class="mobile-nav-item" id="m-nav-warroom" onclick="switchTab('WARROOM'); toggleMobileDrawer(false);">
+          <span>⚔️ Warroom</span>
           <span>&rarr;</span>
         </button>
+      </div>
+
+      <!-- Mobile User Action -->
+      <div id="mobile-auth-section" style="margin-top:16px;"></div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
         <button class="mobile-nav-item" onclick="openAddonDossierModal(); toggleMobileDrawer(false);">
           <span>How the Addon Works &amp; Download</span>
           <span>&rarr;</span>
         </button>
-        <button class="mobile-nav-item" onclick="toggleOracleChatModal(); toggleMobileDrawer(false);">
-          <span>The War Archivist (AI Intelligence)</span>
-          <span>&rarr;</span>
-        </button>
       </div>
-
-      <!-- Mobile Supporter Perks Button -->
-      <button class="supporter-btn" style="width: 100%; margin-top: 18px; padding: 12px; font-size:0.85rem;" onclick="toggleSupporterMode(); toggleMobileDrawer(false);">
-        ★ Vanguard Supporter Perks
-      </button>
     </div>
   </aside>
 
@@ -493,13 +405,9 @@
         <span style="font-size:0.75rem; color:#64748b;">An independent combat telemetry network. Not affiliated with Blizzard Entertainment, Inc.</span>
       </div>
       <div class="footer-links">
-        <a href="javascript:void(0)" onclick="openInfoPage('about')">Field Manual &amp; Codex</a> &bull;
-        <a href="javascript:void(0)" onclick="openInfoPage('features')">Rules of Engagement</a> &bull;
-        <a href="javascript:void(0)" onclick="openInfoPage('faq')">Soldier's Handbook (FAQ)</a> &bull;
-        <a href="javascript:void(0)" onclick="openInfoPage('delayed')">Fog of War &amp; OpSec</a> &bull;
-        <a href="javascript:void(0)" onclick="openInfoPage('payments')">War Room Patronage</a> &bull;
-        <a href="javascript:void(0)" onclick="openInfoPage('streambox')">Chronicler's Looking Glass (OBS)</a> &bull;
-        <a href="javascript:void(0)" onclick="openInfoPage('legal')">The Accord of Azeroth</a>
+        <a href="javascript:void(0)" onclick="openAddonDossierModal()">How the Addon Works</a> &bull;
+        <a href="/WoWKillboard-v1.0.0.zip" download>Download Addon (.zip)</a> &bull;
+        <a href="javascript:void(0)" onclick="switchTab('THEATER')">Theater of War</a>
       </div>
     </div>
   </footer>
@@ -748,9 +656,9 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
               <span>Desktop Sync App (.exe)</span>
             </button>
-            <button class="dossier-btn outline" onclick="closeAddonDossierModal(); switchTab('INFO');">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              <span>Field Manual &amp; Codex</span>
+            <button class="dossier-btn outline" onclick="closeAddonDossierModal(); switchTab('INTEL');">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Explore Intel Feed</span>
             </button>
           </div>
         </div>

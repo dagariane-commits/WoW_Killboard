@@ -2057,7 +2057,7 @@ def post_debt_ledger():
             player_guid
         ))
 
-        # Scott Quick Guardrail: Any Blood Debtor in default is placed onto the Realm KOS Blacklist
+        # Platform Guardrail: Any Blood Debtor in default is placed onto the Realm KOS Blacklist
         if status in ("BLOOD_DEBTOR", "OATHBREAKER"):
             conn.execute("""
                 INSERT OR REPLACE INTO kos_blacklist (entity_name, entity_type, reason, branded_at, status)

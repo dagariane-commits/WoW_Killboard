@@ -516,8 +516,8 @@ function UI:CreateMainWindow()
 
     -- Navigation Bar (Tabs on Left, Filter Pills on Right - Zero Overlap)
     local tabs = {
-        { id = "FEED",        text = "Frontline Feed",  w = 100 },
-        { id = "LEADERBOARD", text = "Hall of Heroes",  w = 100 },
+        { id = "FEED",        text = "Intel",           w = 70 },
+        { id = "LEADERBOARD", text = "Hall of Legends", w = 112 },
         { id = "BOUNTIES",    text = "Blood Bounties",  w = 100 },
         { id = "BG_METRICS",  text = "Warfronts",       w = 88 },
         { id = "ZONES",       text = "Zone Intel",      w = 84 },

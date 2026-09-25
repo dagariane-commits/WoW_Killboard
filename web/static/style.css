@@ -134,14 +134,15 @@ body {
   flex-direction: column;
 }
 
-/* Top Row: Brand & Global Tools */
+/* Unified Header Main Row */
+.header-main-row,
 .header-top-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 24px;
   gap: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  min-height: 56px;
 }
 
 .logo-group {
@@ -365,6 +366,99 @@ body {
   border-color: rgba(212, 163, 41, 0.45);
   box-shadow: 0 0 12px rgba(212, 163, 41, 0.2);
   font-weight: 700;
+}
+
+.theater-btn {
+  background: rgba(212, 163, 41, 0.12) !important;
+  border: 1px solid rgba(212, 163, 41, 0.45) !important;
+  color: var(--wow-gold) !important;
+  font-family: var(--font-tactical);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.theater-btn:hover {
+  background: rgba(212, 163, 41, 0.22) !important;
+  border-color: var(--wow-gold) !important;
+  box-shadow: 0 0 12px rgba(212, 163, 41, 0.3);
+}
+
+.theater-icon {
+  font-size: 0.95rem;
+}
+
+.theater-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+/* Header Auth Badge */
+.header-auth-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-signin-btn {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: var(--accent-cyan);
+  font-family: var(--font-tactical);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.header-signin-btn:hover {
+  background: rgba(0, 229, 255, 0.22);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+}
+
+.header-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(212, 163, 41, 0.1);
+  border: 1px solid rgba(212, 163, 41, 0.3);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.header-user-pill:hover {
+  border-color: var(--wow-gold);
+  background: rgba(212, 163, 41, 0.18);
+}
+
+.header-signout-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.header-signout-btn:hover {
+  color: #ef4444;
+}
+
+.legends-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 /* 5-State Filter Pills */
@@ -2818,19 +2912,21 @@ body {
 /* Tablet Portrait & Small Laptops (769px to 1024px) */
 @media (max-width: 1024px) {
   .mobile-menu-btn {
-    display: flex;
+    display: flex !important;
+  }
+
+  .nav-links-rail {
+    display: none !important;
   }
 
   .site-header {
     position: sticky;
   }
 
+  .header-main-row,
   .header-top-row {
-    padding: 10px 16px;
-  }
-
-  .header-sub-row {
-    padding: 6px 16px;
+    padding: 8px 16px;
+    min-height: 48px;
   }
 
   .container {
@@ -3513,13 +3609,7 @@ body {
 
 /* ----------------- Azeroth War Room Entry Portal ----------------- */
 
-/* Hide the entire 3-row header stack when portal is active */
-body.portal-active .site-header,
-body.portal-active #wowhead-top-bar,
-body.portal-active .header-top-row,
-body.portal-active .header-sub-row {
-  display: none !important;
-}
+/* Portal Mode Container Adjustments (Header remains permanently visible) */
 
 body.portal-active .container {
   display: block;
