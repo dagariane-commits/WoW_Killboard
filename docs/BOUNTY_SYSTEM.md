@@ -169,12 +169,12 @@ Bounties remaining active and unclaimed for more than 30 days are automatically 
 
 ---
 
-## 12. High Command Execution List & Frontline Web Layout
+## 12. High Command Execution List & Intel Web Layout
 
 The web platform features an authentic High Command Execution List showcase:
 - **Top 10 Outlaw Gallery**: Top 10 active bounties displayed as high-contrast wanted posters with class portraits, faction crests, blood rewards, and last-seen zone telemetry.
-- **Permanent Showcase**: Always accessible on the primary frontline feed with certified contract tracking.
-- **Frontline Carnage Feed**: Real-time killmail stream positioned directly beneath the Execution List cards.
+- **Permanent Showcase**: Always accessible on the primary Intel feed with certified contract tracking.
+- **Intel Stream**: Real-time killmail stream positioned directly beneath the Execution List cards.
 - **War Council Sidebar Intelligence**: 7-day rolling activity metrics, top vanguard champions, top war guilds, top classes, and conflict zones alongside official Armory links.
 
 ---

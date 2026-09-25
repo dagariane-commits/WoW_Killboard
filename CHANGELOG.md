@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.9] - 2026-09-25
+
+### Changed
+- **Unified 7-Item Primary Navigation & Clean Header Architecture**:
+  - Replaced multi-tier header structure and nested submenus with a streamlined, single-row primary navigation layout:
+    1. **Logo**: Re-anchored to the primary Intel command center.
+    2. **Theater of War**: Displays active WoW version (e.g. `Theater: WoW Forever ▾`) and routes to the version selection gateway.
+    3. **Intel**: Renamed from "Frontline Feed" across the web interface, companion documentation, and in-game addon tabs.
+    4. **Hall of Legends**: Renamed from "Hall of Heroes" / "Leaderboards" with dedicated styling.
+    5. **World Hazards**: Direct telemetry access to deadly open-world NPC casualties and wilderness hazards.
+    6. **Armory**: Context-aware routing—authenticated users immediately access their personalized combat dossier; guest users access the full realm combatant directory and search index.
+    7. **Bounties**: High Command execution list and contract ledger with personal bounties pinned in a dedicated gold card at the top.
+    8. **Warroom**: Consolidated head-to-head guild wars, blood feuds, and realm KOS blacklist with personal wars pinned at the top.
+  - Added `#header-auth-badge` displaying real-time user authentication status (`👤 Username [Sign Out]` or `[Sign In]`).
+  - Purged legacy `INFO` tab and its 7-subpage clutter from public views.
+- **Relocated Combat Mode Filter**:
+  - Removed top-level mode filter buttons (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`) from the global header and embedded them directly into the **Hall of Legends** view header.
+- **Zero Creator PII in Web Application**:
+  - Completely purged all author real names from web interface scripts, templates, and comments.
+- **In-Game Addon Navigation Alignment (`Addon/WoWKillboard/UI.lua`)**:
+  - Aligned in-game addon navigation bar tabs with the web platform (`Intel` and `Hall of Legends`).
+
 ## [1.4.8] - 2026-09-25
 
 ### Added
