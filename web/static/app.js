@@ -177,9 +177,39 @@ let cachedKills = [];
 let currentFlavor = localStorage.getItem("wowkb_client_flavor") || "CLASSIC_ERA";
 
 const FLAVOR_CONFIGS = {
+  RETAIL: {
+    name: "Modern Retail (Dragonflight / War Within)",
+    shortName: "RETAIL",
+    tag: "RETAIL",
+    maxLevel: 80,
+    iconColor: "#f59e0b",
+    availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "MONK", "DRUID", "DEMONHUNTER", "EVOKER"],
+    disabledClasses: {},
+    disabledModes: {}
+  },
+  FOREVER: {
+    name: "WoW Forever Beta (1.15)",
+    shortName: "FOREVER",
+    tag: "BETA",
+    maxLevel: 60,
+    iconColor: "#00e5ff",
+    availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
+    disabledClasses: {
+      DEATHKNIGHT: "WotLK 3.0+",
+      MONK: "MoP 5.0+",
+      DEMONHUNTER: "Legion 7.0+",
+      EVOKER: "DF 10.0+"
+    },
+    disabledModes: {
+      ARENA: "Introduced in TBC (Patch 2.0)"
+    }
+  },
   CLASSIC_ERA: {
     name: "Classic Era / Anniversary (1.15)",
+    shortName: "CLASSIC",
+    tag: "ERA",
     maxLevel: 60,
+    iconColor: "#eab308",
     availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
     disabledClasses: {
       DEATHKNIGHT: "WotLK 3.0+",
@@ -193,7 +223,10 @@ const FLAVOR_CONFIGS = {
   },
   TBC: {
     name: "The Burning Crusade (2.4.3)",
+    shortName: "TBC",
+    tag: "TBC",
     maxLevel: 70,
+    iconColor: "#22c55e",
     availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
     disabledClasses: {
       DEATHKNIGHT: "WotLK 3.0+",
@@ -205,20 +238,16 @@ const FLAVOR_CONFIGS = {
   },
   WOTLK: {
     name: "Wrath of the Lich King (3.3.5)",
+    shortName: "WOTLK",
+    tag: "WOTLK",
     maxLevel: 80,
+    iconColor: "#38bdf8",
     availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
     disabledClasses: {
       MONK: "MoP 5.0+",
       DEMONHUNTER: "Legion 7.0+",
       EVOKER: "DF 10.0+"
     },
-    disabledModes: {}
-  },
-  RETAIL: {
-    name: "Modern Retail (Dragonflight / War Within)",
-    maxLevel: 80,
-    availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "MONK", "DRUID", "DEMONHUNTER", "EVOKER"],
-    disabledClasses: {},
     disabledModes: {}
   }
 };
@@ -254,12 +283,44 @@ async function handleFlavorChange(newFlavor) {
 }
 
 function updateFlavorUi() {
-  const select = document.getElementById("flavor-select");
-  if (select) select.value = currentFlavor;
-
   const cfg = FLAVOR_CONFIGS[currentFlavor] || FLAVOR_CONFIGS.CLASSIC_ERA;
 
-  // Update mode pills (e.g. Arenas disabled in Classic Era)
+  // 1. Update active tab in Wowhead-style top bar
+  document.querySelectorAll(".wh-tab-btn").forEach(btn => {
+    const flv = btn.getAttribute("data-flavor");
+    if (flv === currentFlavor) {
+      btn.classList.add("active");
+      btn.style.setProperty("--active-tab-color", cfg.iconColor || "#f59e0b");
+      btn.style.color = "#ffffff";
+    } else {
+      btn.classList.remove("active");
+      btn.style.removeProperty("--active-tab-color");
+      btn.style.color = "";
+    }
+  });
+
+  // 2. Update active pill in Mobile drawer
+  document.querySelectorAll(".m-flavor-btn").forEach(btn => {
+    const flv = btn.getAttribute("data-flavor");
+    if (flv === currentFlavor) {
+      btn.classList.add("active");
+      btn.style.borderColor = cfg.iconColor || "#f59e0b";
+      btn.style.color = "#ffffff";
+    } else {
+      btn.classList.remove("active");
+      btn.style.borderColor = "";
+      btn.style.color = "";
+    }
+  });
+
+  // 3. Update status indicator text on top right
+  const statusText = document.getElementById("wh-active-flavor-name");
+  if (statusText) {
+    statusText.innerText = `${cfg.shortName} (${cfg.maxLevel} MAX)`;
+    statusText.style.color = cfg.iconColor || "#94a3b8";
+  }
+
+  // 4. Update mode pills (e.g. Arenas disabled in Classic Era / Forever Beta)
   const arenaPill = document.getElementById("pill-arena");
   const mArenaPill = document.getElementById("m-pill-arena");
   if (cfg.disabledModes && cfg.disabledModes.ARENA) {
