@@ -2724,36 +2724,34 @@ function loadPortalView() {
       <div class="dramatic-gate-grid">
         <!-- Card 1: Guest Recon -->
         <div class="dramatic-gate-card guest">
-          <div class="gate-card-badge guest">GUEST PASS</div>
-          <div class="gate-card-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+          <div>
+            <div class="gate-card-badge guest">GUEST PASS</div>
+            <div class="gate-card-icon">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+            </div>
+            <h2 class="gate-card-title">Continue as Guest</h2>
+            <p class="gate-card-desc">
+              Access the war room immediately without signing in. Inspect certified combat casualties, examine bounty contracts, explore the KOS gibbet, and browse cumulative realm telemetry.
+            </p>
           </div>
-          <h2 class="gate-card-title">Continue as Guest</h2>
-          <p class="gate-card-desc">
-            Access the war room immediately without signing in. Inspect certified combat casualties, examine bounty contracts, explore the KOS gibbet, and browse cumulative realm statistics.
-          </p>
-          <ul class="gate-checklist">
-            <li>Instant live combat feed across WoW Forever</li>
-            <li>Certified 1v1 solo kills &amp; 15-second gang gank clustering</li>
-            <li>Server-wide blood bounties and KOS gibbet rolls</li>
-            <li>Cumulative realm statistics &amp; wilderness casualties</li>
-          </ul>
           <button class="dramatic-gate-btn guest" onclick="portalEnterAsGuest()">
-            <span>Enter WoW Forever as Guest</span>
+            <span>Continue as Guest</span>
             <span>&rarr;</span>
           </button>
         </div>
 
         <!-- Card 2: Account Access (Normal Sign-In / Register / Google) -->
         <div class="dramatic-gate-card officer">
-          <div class="gate-card-badge officer">ACCOUNT ACCESS</div>
-          <div class="gate-card-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div>
+            <div class="gate-card-badge officer">ACCOUNT ACCESS</div>
+            <div class="gate-card-icon">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h2 class="gate-card-title">Sign In or Create Account</h2>
+            <p class="gate-card-desc">
+              Sign in to display your personalized combat kills, deaths, K/D ratio, and military rank atop your war room feed, issue blood bounties in gold, and claim slain marks.
+            </p>
           </div>
-          <h2 class="gate-card-title">Sign In or Create Account</h2>
-          <p class="gate-card-desc">
-            Sign in to display your personalized combat kills, deaths, K/D ratio, and military rank atop your war room feed, issue blood bounties in gold, and claim slain marks.
-          </p>
           ${authBoxHtml}
         </div>
       </div>

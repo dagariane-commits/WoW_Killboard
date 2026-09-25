@@ -3680,14 +3680,16 @@ body.portal-active .container {
 .dramatic-gate-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 18px;
+  max-width: 920px;
+  margin: 0 auto;
 }
 
 .dramatic-gate-card {
   background: linear-gradient(180deg, #0e121b 0%, #07090e 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 26px 24px;
+  padding: 20px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -3723,9 +3725,9 @@ body.portal-active .container {
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 1px;
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: 3px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .gate-card-badge.guest {
@@ -3741,55 +3743,38 @@ body.portal-active .container {
 }
 
 .gate-card-icon {
-  font-size: 2rem;
-  margin-bottom: 8px;
+  font-size: 1.6rem;
+  margin-bottom: 6px;
 }
 
 .gate-card-title {
   font-family: var(--font-tactical);
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 900;
   color: #fff;
   letter-spacing: 0.5px;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
 }
 
 .gate-card-desc {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: #94a3b8;
-  line-height: 1.5;
-  margin-bottom: 18px;
-}
-
-.gate-checklist {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 24px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.80rem;
-  color: #cbd5e1;
-}
-
-.gate-checklist li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  line-height: 1.45;
+  margin-bottom: 14px;
 }
 
 .dramatic-gate-btn {
   width: 100%;
-  padding: 14px 20px;
+  padding: 12px 18px;
   font-family: var(--font-tactical);
   font-weight: 900;
-  font-size: 1rem;
-  letter-spacing: 1px;
+  font-size: 0.94rem;
+  letter-spacing: 0.8px;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border: none;
@@ -4787,9 +4772,6 @@ body.portal-active .container {
     grid-template-columns: 1fr;
   }
 
-  .gate-checklist li {
-    font-size: 0.76rem;
-  }
 
   .normal-auth-input {
     height: 40px;
