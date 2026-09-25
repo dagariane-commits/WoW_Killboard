@@ -125,10 +125,12 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
         name = KB.Utils.SafeString(sourceName, "Unknown"),
         guid = sourceGUID,
         spellName = spellName or "Swing",
+        isPlayer = isSourcePlayer,
     }
     vData.totalDamage = vData.totalDamage + amount
     vData.lastTime = time()
     vData.spellName = spellName or vData.spellName
+    vData.isPlayer = isSourcePlayer
     CT.RecentDamage[destGUID][sourceGUID] = vData
 end
 
@@ -168,8 +170,25 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     local totalDamage = 0
     local finalBlowKillerGUID = killerGUID
     local finalBlowKillerName = killerName
+    local hasPlayerAttacker = false
+    local topNpcAttacker = nil
+    local maxNpcDamage = -1
 
     for attGUID, attData in pairs(attackers) do
+        local isAttPlayer = attData.isPlayer
+        if isAttPlayer == nil then
+            isAttPlayer = (attGUID:match("^Player%-") ~= nil)
+        end
+
+        if isAttPlayer then
+            hasPlayerAttacker = true
+        else
+            if (attData.totalDamage or 0) > maxNpcDamage then
+                maxNpcDamage = attData.totalDamage or 0
+                topNpcAttacker = attData
+            end
+        end
+
         local unitInfo = KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(attGUID)
         local attClass = "UNKNOWN"
         local attLevel = 0
@@ -199,6 +218,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             level = attLevel,
             guild = attGuild,
             faction = attFaction,
+            isPlayer = isAttPlayer,
         })
         totalDamage = totalDamage + (attData.totalDamage or 0)
         if not finalBlowKillerGUID then
@@ -209,6 +229,9 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
 
     -- If no recorded attackers but we have killerGUID from party kill
     if #attackersList == 0 and finalBlowKillerGUID then
+        local isFinalPlayer = (finalBlowKillerGUID:match("^Player%-") ~= nil)
+        if isFinalPlayer then hasPlayerAttacker = true end
+
         local unitInfo = KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(finalBlowKillerGUID)
         local attClass = "UNKNOWN"
         local attLevel = 0
@@ -237,11 +260,84 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             level = attLevel,
             guild = attGuild,
             faction = attFaction,
+            isPlayer = isFinalPlayer,
         })
     end
 
     -- Only proceed if there was at least one attacker
     if #attackersList == 0 then return end
+
+    -- Check if this was a pure PvE execution (player died with ZERO player attackers)
+    if not hasPlayerAttacker then
+        local npc = topNpcAttacker or (finalBlowKillerGUID and {
+            guid = finalBlowKillerGUID,
+            name = finalBlowKillerName or "Unknown Monster",
+            totalDamage = totalDamage,
+            spellName = "Execution",
+        })
+
+        if npc then
+            local npcId = 0
+            if npc.guid then
+                local parsed = npc.guid:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or npc.guid:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
+                if parsed then npcId = tonumber(parsed) or 0 end
+            end
+
+            local victimInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(victimGUID) or {
+                guid = victimGUID,
+                name = victimName or "Unknown",
+                level = 0,
+                class = "UNKNOWN",
+                guild = "None",
+                faction = "Unknown",
+            }
+            if playerGUID and victimGUID == playerGUID then
+                victimInfo.name = UnitName("player")
+                victimInfo.level = UnitLevel("player") or 0
+                local _, pClass = UnitClass("player")
+                victimInfo.class = pClass or "UNKNOWN"
+                victimInfo.faction = UnitFactionGroup("player") or "Unknown"
+                victimInfo.guild = GetGuildInfo("player") or "None"
+            end
+
+            local location = KB.Utils.GetPlayerLocation()
+
+            KB.Killmail:RecordPveDeath({
+                timestamp = now,
+                npc = {
+                    name = npc.name or "Unknown Monster",
+                    id = npcId,
+                    guid = npc.guid or "UNKNOWN",
+                    spell = npc.spellName or "Combat Strike",
+                    damage = npc.totalDamage or totalDamage or 0,
+                },
+                victim = {
+                    guid = victimInfo.guid or victimGUID,
+                    name = victimInfo.name,
+                    level = victimInfo.level or 0,
+                    class = victimInfo.class or "UNKNOWN",
+                    guild = victimInfo.guild or "None",
+                    faction = victimInfo.faction or "Unknown",
+                },
+                location = location,
+            })
+        end
+
+        CT.RecentDamage[victimGUID] = nil
+        return
+    end
+
+    -- If final blow was an NPC during a PvP gank, attribute kill to the highest-damage player attacker
+    if finalBlowKillerGUID and not finalBlowKillerGUID:match("^Player%-") then
+        local maxPlayerDmg = -1
+        for _, att in ipairs(attackersList) do
+            if att.isPlayer and att.damage > maxPlayerDmg then
+                maxPlayerDmg = att.damage
+                finalBlowKillerGUID = att.guid
+                finalBlowKillerName = att.name
+            end
+        end
+    end
 
     local isSolo = (#attackersList == 1)
     local friendlyPartySize = CT:GetFriendlyPartySize()
@@ -551,6 +647,11 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "PLAYER_DEAD" then
         CT.SessionStats.deaths = CT.SessionStats.deaths + 1
+        local playerGUID = UnitGUID("player")
+        if playerGUID and CT.RecentDamage[playerGUID] then
+            CT:ProcessDeath(playerGUID, UnitName("player"), COMBATLOG_OBJECT_TYPE_PLAYER, nil, nil)
+        end
+
         local inInst, instType = false, "none"
         if IsInInstance then inInst, instType = IsInInstance() end
         local isInstanceCombat = inInst or (instType and instType ~= "none")

@@ -866,6 +866,118 @@ class TestKillboardPipeline(unittest.TestCase):
 
         print(f"[PASS] Verified Player Armory directory ({data['total']} combatants indexed) and Military Rank Titles.")
 
+    def test_12_most_deadly_npc_leaderboard_and_pve_isolation(self):
+        """Verify PvE death ingestion, isolation from PvP feeds, and Deadly NPCs Leaderboard."""
+        pve_death = {
+            "deathId": "PVE-TEST-HOGGER-99",
+            "timestamp": int(time.time()),
+            "npc": {
+                "name": "Hogger",
+                "id": 448,
+                "guid": "Creature-0-1-0-0-448-999",
+                "spell": "Vicious Bite",
+                "damage": 820
+            },
+            "victim": {
+                "name": "GnomeTestDummy",
+                "guid": "Player-0-GnomeTest",
+                "level": 11,
+                "class": "MAGE",
+                "guild": "TestGuild",
+                "faction": "Alliance"
+            },
+            "location": {
+                "mapId": 1429,
+                "zone": "Elwynn Forest",
+                "subZone": "Forest's Edge",
+                "x": 26.4,
+                "y": 76.8
+            }
+        }
+
+        # 1. Ingest PvE death via POST /api/pve/deaths
+        res = self.client.post("/api/pve/deaths", json=pve_death)
+        self.assertEqual(res.status_code, 201)
+        res_data = res.get_json()
+        self.assertTrue(res_data.get("success"))
+        self.assertEqual(res_data.get("deathId"), "PVE-TEST-HOGGER-99")
+
+        # 2. Strict PvE Isolation Guardrail: Verify this death does NOT appear in /api/kills
+        pvp_res = self.client.get("/api/kills")
+        self.assertEqual(pvp_res.status_code, 200)
+        pvp_kills = pvp_res.get_json().get("kills", [])
+        self.assertFalse(any(k.get("killId") == "PVE-TEST-HOGGER-99" for k in pvp_kills),
+                         "CRITICAL VIOLATION: PvE death leaked into PvP kills feed!")
+
+        # 3. Test GET /api/pve/leaderboard
+        lb_res = self.client.get("/api/pve/leaderboard")
+        self.assertEqual(lb_res.status_code, 200)
+        lb_data = lb_res.get_json()
+        self.assertIn("summary", lb_data)
+        self.assertIn("topDeadlyNpcs", lb_data)
+        self.assertIn("topFallenPlayers", lb_data)
+        self.assertGreater(lb_data["summary"]["totalDeaths"], 0)
+
+        hogger_entry = next((n for n in lb_data["topDeadlyNpcs"] if n["npc_name"] == "Hogger"), None)
+        self.assertIsNotNone(hogger_entry, "Hogger should be present in Deadly NPCs leaderboard")
+        self.assertGreaterEqual(hogger_entry["kills"], 1)
+
+        # 4. Test GET /api/pve/deaths
+        stream_res = self.client.get("/api/pve/deaths?npc=Hogger")
+        self.assertEqual(stream_res.status_code, 200)
+        stream_data = stream_res.get_json()
+        self.assertGreater(stream_data["count"], 0)
+        self.assertTrue(any(d["death_id"] == "PVE-TEST-HOGGER-99" for d in stream_data["deaths"]))
+
+        print("[PASS] Verified Deadly NPC Leaderboard, PvE stream, and complete PvP isolation.")
+
+    def test_13_client_flavor_and_gating_api(self):
+        """Verify client flavor selection endpoint and LuaTableParser pveDeaths support."""
+        # 1. GET default flavor
+        res = self.client.get("/api/system/flavor")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("flavor", data)
+        self.assertIn("supportedFlavors", data)
+
+        # 2. POST valid flavor update
+        res_post = self.client.post("/api/system/flavor", json={"flavor": "WOTLK"})
+        self.assertEqual(res_post.status_code, 200)
+        self.assertEqual(res_post.get_json()["flavor"], "WOTLK")
+
+        # 3. POST invalid flavor
+        res_bad = self.client.post("/api/system/flavor", json={"flavor": "INVALID_EXPANSION_999"})
+        self.assertEqual(res_bad.status_code, 400)
+
+        # 4. Reset back to CLASSIC_ERA
+        self.client.post("/api/system/flavor", json={"flavor": "CLASSIC_ERA"})
+        res_reset = self.client.get("/api/system/flavor")
+        self.assertEqual(res_reset.get_json()["flavor"], "CLASSIC_ERA")
+
+        # 5. Verify LuaTableParser parses pveDeaths from SavedVariables string
+        lua_saved_vars = """
+        WoWKillboardDB = {
+            ["kills"] = {
+                ["KB-LUA-TEST"] = {
+                    ["killer"] = { ["name"] = "WarriorX" },
+                    ["victim"] = { ["name"] = "MageY" }
+                }
+            },
+            ["pveDeaths"] = {
+                ["PVE-LUA-TEST"] = {
+                    ["npc"] = { ["name"] = "Stitches", ["id"] = 412 },
+                    ["victim"] = { ["name"] = "UnluckyPlayer" }
+                }
+            }
+        }
+        """
+        parsed = LuaTableParser.parse_string(lua_saved_vars)
+        self.assertIn("pveDeaths", parsed, "LuaTableParser should extract pveDeaths table")
+        self.assertIn("PVE-LUA-TEST", parsed["pveDeaths"])
+        self.assertEqual(parsed["pveDeaths"]["PVE-LUA-TEST"]["npc"]["name"], "Stitches")
+
+        print("[PASS] Verified Client Flavor API and LuaTableParser pveDeaths extraction.")
+
 if __name__ == "__main__":
     unittest.main()
 

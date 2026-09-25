@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-09-25
+
+### Added
+- **Most Deadly NPC Leaderboard & PvE Casualty Isolation**:
+  - Addon Engine PvE Death Tracking: Initialized dedicated `WoWKillboardDB.pveDeaths` storage, completely separated from `WoWKillboardDB.kills` to guarantee zero PvP stat skew.
+  - Slew-by-NPC Combat Logic: In [`CombatTracker.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/CombatTracker.lua), mapped incoming damage to track `isSourcePlayer` boolean. If a player dies with zero player attackers, the event is routed exclusively to `KM:RecordPveDeath` with `UNIT_DIED` and `PLAYER_DEAD` fallback protection.
+  - Telemetry Capture: Parses NPC creature ID from GUID (`Creature-0-...-(id)-...`), monster name, signature ability, total damage, victim identity, and map GPS coordinates.
+  - Dedicated Web UI Tab **"☠️ Deadly NPCs"**:
+    - Hero Metrics Header: Displays total fallen mortals, unique monster slayers, and deadliest realm conflict zone.
+    - Top Executioner Monsters & Elites Leaderboard: Ranked by confirmed player kills (featuring iconic executioners such as Hogger, Son of Arugal, Stitches, Mor'Ladim, and Devilsaur).
+    - Top Fallen Mortals Graveyard: Displays players with the highest casualty counts against realm creatures.
+    - Live Fallen Mortals Stream: Real-time feed of player PvE executions.
+  - Strict PvP Isolation Guarantee: PvE casualties never enter `kills` database, never affect player K/D ratios, never award PvP honor ranks, and never trigger death bounty prompts.
+- **Client Flavor Identification & Dynamic Feature Gating**:
+  - Multi-Expansion Client Flavor System: Engineered runtime flavor detection in [`Utils.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/Utils.lua) (`GetClientFlavor`) and backend endpoints (`GET /api/system/flavor`, `POST /api/system/flavor`) supporting:
+    1. `CLASSIC_ERA` (Vanilla 1.15 / Anniversary / Forever Beta)
+    2. `TBC` (The Burning Crusade 2.4.3)
+    3. `WOTLK` (Wrath of the Lich King 3.3.5)
+    4. `RETAIL` (Dragonflight / War Within 11.x)
+  - Interactive Command Bar Switcher: Embedded styled dropdown in header tools group allowing instant flavor switching with persistent local storage.
+  - Dynamic Player Armory Class Gating: Classes not present in the active flavor (e.g. Death Knight in Classic/TBC, Monk/Demon Hunter/Evoker in Classic/TBC/WotLK) remain visible in the dropdown but are disabled, styled grey, and tagged with expansion lock markers (e.g. `[🔒 Death Knight (WotLK 3.0+)]`).
+  - Dynamic Combat Mode Gating: Unavailable modes (e.g. Arenas in Classic Era) are greyed out with tooltip guidance.
+  - Desktop Ingestion Watcher (`sync/watcher.py`): Updated to parse `pveDeaths` and recompiled to standalone `WoWKillboardSync.exe`.
+
 ## [1.1.0] - 2026-09-25
 
 ### Added

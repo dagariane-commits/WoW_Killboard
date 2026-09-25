@@ -2392,3 +2392,277 @@ body {
     font-size: 1.15rem;
   }
 }
+
+/* ----------------- Client Flavor & Gating Styles ----------------- */
+
+.flavor-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(14, 18, 28, 0.85);
+  border: 1px solid var(--wow-brass-border, #4a3b27);
+  border-radius: 6px;
+  padding: 2px 8px;
+  gap: 6px;
+}
+
+.flavor-icon {
+  font-size: 0.85rem;
+}
+
+.flavor-select {
+  background: transparent;
+  border: none;
+  color: var(--accent-gold, #f59e0b);
+  font-family: var(--font-tactical);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  outline: none;
+  cursor: pointer;
+}
+
+.flavor-select option {
+  background: #0d111a;
+  color: #e2e8f0;
+}
+
+.armory-select option:disabled {
+  color: #526075 !important;
+  background-color: #080a0f !important;
+}
+
+.pill-btn.disabled, .pill-btn:disabled {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+  color: #64748b !important;
+  background: transparent !important;
+  border: 1px dashed rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+}
+
+/* ----------------- Deadly NPCs Leaderboard & PvE View ----------------- */
+
+.deadly-npcs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.deadly-npcs-hero {
+  background: linear-gradient(135deg, rgba(20, 10, 10, 0.85) 0%, rgba(10, 12, 18, 0.95) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.deadly-hero-title {
+  font-family: var(--font-cinzel, "Cinzel", serif);
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #ef4444;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.deadly-hero-subtitle {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.deadly-summary-metrics {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.deadly-metric-card {
+  background: rgba(7, 9, 14, 0.8);
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px 14px;
+  text-align: center;
+}
+
+.deadly-metric-label {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.deadly-metric-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #f59e0b;
+  font-family: var(--font-tactical);
+}
+
+.deadly-grid-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .deadly-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.deadly-table-card {
+  background: rgba(10, 13, 20, 0.9);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.deadly-table-header {
+  background: #080a10;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.deadly-table-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.5px;
+}
+
+.npc-executioner-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.15s ease;
+}
+
+.npc-executioner-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.npc-rank-badge {
+  font-family: var(--font-tactical);
+  font-size: 0.85rem;
+  font-weight: 900;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1e293b;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.npc-rank-badge.rank-1 {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+.npc-rank-badge.rank-2 {
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+  color: #000;
+}
+.npc-rank-badge.rank-3 {
+  background: linear-gradient(135deg, #b45309, #78350f);
+  color: #fff;
+}
+
+.npc-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.npc-skull-icon {
+  font-size: 1.3rem;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+}
+
+.npc-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #f87171;
+  letter-spacing: 0.3px;
+}
+
+.npc-subtext {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.npc-spell-badge {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.npc-kills-col {
+  text-align: right;
+}
+
+.npc-kill-count {
+  font-family: var(--font-tactical);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ef4444;
+}
+
+.npc-unique-victims {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.fallen-mortals-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.pve-death-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #07090e;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+}
+
+.pve-death-row:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+

@@ -32,6 +32,16 @@
           <input type="text" id="search-box" class="search-input" placeholder="Search Player, Guild, Zone...">
         </div>
 
+        <div class="flavor-select-wrap" title="Select World of Warcraft Flavor / Expansion">
+          <span class="flavor-icon">⚔️</span>
+          <select id="flavor-select" class="flavor-select" onchange="handleFlavorChange(this.value)">
+            <option value="CLASSIC_ERA">Vanilla / Era (1.15)</option>
+            <option value="TBC">TBC (2.4.3)</option>
+            <option value="WOTLK">WotLK (3.3.5)</option>
+            <option value="RETAIL">Modern Retail</option>
+          </select>
+        </div>
+
         <button class="supporter-btn" onclick="toggleSupporterMode()">
           ★ Supporter Perks
         </button>
@@ -49,6 +59,7 @@
       <nav class="nav-links-rail" id="nav-rail">
         <button id="nav-feed" class="nav-btn active" onclick="switchTab('FEED')">⚔️ Frontline Feed</button>
         <button id="nav-leaderboards" class="nav-btn" onclick="switchTab('LEADERBOARDS')">🏆 Hall of Heroes</button>
+        <button id="nav-deadly_npcs" class="nav-btn" onclick="switchTab('DEADLY_NPCS')">☠️ Deadly NPCs</button>
         <button id="nav-armory" class="nav-btn" onclick="switchTab('ARMORY')">🏰 Player Armory</button>
         <button id="nav-guilds" class="nav-btn" onclick="switchTab('GUILDS')">🛡️ War Guilds</button>
         <button id="nav-feuds" class="nav-btn" onclick="switchTab('FEUDS')">⚔️ Blood Feuds &amp; Blacklist</button>
@@ -105,6 +116,10 @@
         </button>
         <button class="mobile-nav-item" id="m-nav-leaderboards" onclick="switchTab('LEADERBOARDS'); toggleMobileDrawer(false);">
           <span>🏆 Hall of Heroes</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-deadly_npcs" onclick="switchTab('DEADLY_NPCS'); toggleMobileDrawer(false);">
+          <span>☠️ Deadly NPCs</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-armory" onclick="switchTab('ARMORY'); toggleMobileDrawer(false);">
