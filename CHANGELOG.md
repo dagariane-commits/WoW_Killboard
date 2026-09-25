@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-09-25
+
+### Added
+- **Wowhead-Style Global Expansion Top Header Navigation Bar**:
+  - Full-Width Global Strip: Positioned `.wowhead-top-bar` as the top-most header element above the War Room title row, creating an authentic Warcraft database feel mirroring Wowhead.
+  - Expansion Circular Badges (`.wh-w-badge`):
+    - `RETAIL`: Dragon Gold (`#f59e0b`)
+    - `FOREVER`: WoW Forever Beta Cyan (`#00e5ff`)
+    - `CLASSIC`: Classic Era & 20th Anniversary Bronze/Yellow (`#eab308`)
+    - `TBC`: The Burning Crusade Fel Green (`#22c55e`)
+    - `WOTLK`: Wrath of the Lich King Frost Blue (`#38bdf8`)
+  - Dynamic Tab Active States & Glow Effects: Active button highlights with lower glowing border accent (`--active-tab-color`), home icon shortcut (`🏠`), and `WOW` brand label.
+  - Live Active Engine Status: Real-time telemetry badge (`ACTIVE ENGINE: CLASSIC (60 MAX)`) with pulsing green heartbeat indicator.
+  - Full Mobile & Touch Parity: Horizontal scroll navigation rail on mobile screens (`overflow-x: auto`) and synchronized dual-column flavor pills in the slide-in mobile drawer (`#mobile-drawer`).
+  - Strict Rule Enforcement: Zero Blizzard UI taint, zero documentation drift, and complete cross-client parity across all 4 WoW client flavors.
+
 ## [1.2.0] - 2026-09-25
 
 ### Added

@@ -14,6 +14,45 @@
 
   <!-- Top Header Navigation & War Room Bar -->
   <header class="site-header">
+    <!-- Wowhead-Style Global Flavor Top Header Strip -->
+    <div class="wowhead-top-bar" id="wowhead-top-bar">
+      <div class="wh-bar-left">
+        <button class="wh-home-btn" onclick="switchTab('FEED')" title="War Room Home">
+          <span class="wh-home-icon">🏠</span>
+        </button>
+        <span class="wh-brand-label">WOW</span>
+        <div class="wh-flavor-tabs" id="wh-flavor-tabs">
+          <button class="wh-tab-btn" data-flavor="RETAIL" onclick="handleFlavorChange('RETAIL')" title="Modern Retail (11.x)">
+            <span class="wh-w-badge retail">W</span>
+            <span class="wh-tab-text">RETAIL</span>
+          </button>
+          <button class="wh-tab-btn" data-flavor="FOREVER" onclick="handleFlavorChange('FOREVER')" title="WoW Forever Beta (1.15)">
+            <span class="wh-w-badge forever">W</span>
+            <span class="wh-tab-text">FOREVER</span>
+          </button>
+          <button class="wh-tab-btn active" data-flavor="CLASSIC_ERA" onclick="handleFlavorChange('CLASSIC_ERA')" title="Classic Era &amp; 20th Anniversary (1.15)">
+            <span class="wh-w-badge classic">W</span>
+            <span class="wh-tab-text">CLASSIC</span>
+          </button>
+          <button class="wh-tab-btn" data-flavor="TBC" onclick="handleFlavorChange('TBC')" title="The Burning Crusade (2.4.3)">
+            <span class="wh-w-badge tbc">W</span>
+            <span class="wh-tab-text">TBC</span>
+          </button>
+          <button class="wh-tab-btn" data-flavor="WOTLK" onclick="handleFlavorChange('WOTLK')" title="Wrath of the Lich King (3.3.5)">
+            <span class="wh-w-badge wotlk">W</span>
+            <span class="wh-tab-text">WOTLK</span>
+          </button>
+        </div>
+      </div>
+      <div class="wh-bar-right">
+        <div class="wh-status-indicator">
+          <span class="wh-status-dot"></span>
+          <span class="wh-status-label">ACTIVE ENGINE:</span>
+          <span class="wh-status-text" id="wh-active-flavor-name">CLASSIC (60 MAX)</span>
+        </div>
+      </div>
+    </div>
+
     <div class="header-top-row">
       <div class="logo-group" onclick="switchTab('FEED')">
         <img src="/static/icons/factions/alliance.jpg" class="header-faction-crest alliance" alt="Alliance" title="For the Alliance!">
@@ -30,16 +69,6 @@
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
           <input type="text" id="search-box" class="search-input" placeholder="Search Player, Guild, Zone...">
-        </div>
-
-        <div class="flavor-select-wrap" title="Select World of Warcraft Flavor / Expansion">
-          <span class="flavor-icon">⚔️</span>
-          <select id="flavor-select" class="flavor-select" onchange="handleFlavorChange(this.value)">
-            <option value="CLASSIC_ERA">Vanilla / Era (1.15)</option>
-            <option value="TBC">TBC (2.4.3)</option>
-            <option value="WOTLK">WotLK (3.3.5)</option>
-            <option value="RETAIL">Modern Retail</option>
-          </select>
         </div>
 
         <button class="supporter-btn" onclick="toggleSupporterMode()">
@@ -97,8 +126,28 @@
         <input type="text" id="mobile-search-box-input" class="search-input" style="width:100%;" placeholder="Search Player, Guild, Zone..." oninput="handleMobileSearch(event)">
       </div>
 
+      <!-- Mobile Client Flavor Selector -->
+      <div class="mobile-drawer-label">CLIENT FLAVOR / EXPANSION</div>
+      <div class="mobile-flavor-pills-wrap">
+        <button class="m-flavor-btn" data-flavor="RETAIL" onclick="handleFlavorChange('RETAIL'); toggleMobileDrawer(false);">
+          <span class="wh-w-badge retail">W</span> Retail
+        </button>
+        <button class="m-flavor-btn" data-flavor="FOREVER" onclick="handleFlavorChange('FOREVER'); toggleMobileDrawer(false);">
+          <span class="wh-w-badge forever">W</span> Forever
+        </button>
+        <button class="m-flavor-btn active" data-flavor="CLASSIC_ERA" onclick="handleFlavorChange('CLASSIC_ERA'); toggleMobileDrawer(false);">
+          <span class="wh-w-badge classic">W</span> Classic
+        </button>
+        <button class="m-flavor-btn" data-flavor="TBC" onclick="handleFlavorChange('TBC'); toggleMobileDrawer(false);">
+          <span class="wh-w-badge tbc">W</span> TBC
+        </button>
+        <button class="m-flavor-btn" data-flavor="WOTLK" onclick="handleFlavorChange('WOTLK'); toggleMobileDrawer(false);">
+          <span class="wh-w-badge wotlk">W</span> WotLK
+        </button>
+      </div>
+
       <!-- Mobile Mode Filters -->
-      <div class="mobile-drawer-label">FILTER COMBAT MODE</div>
+      <div class="mobile-drawer-label" style="margin-top: 14px;">FILTER COMBAT MODE</div>
       <div class="filter-pills mobile-filter-pills">
         <button id="m-pill-all" class="pill-btn active" onclick="setFilterMode('ALL'); toggleMobileDrawer(false);">All</button>
         <button id="m-pill-world" class="pill-btn" onclick="setFilterMode('WORLD'); toggleMobileDrawer(false);">World</button>

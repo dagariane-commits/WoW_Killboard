@@ -2219,6 +2219,19 @@ body {
 
 /* Mobile Phones (up to 768px) */
 @media (max-width: 768px) {
+  .wh-bar-right {
+    display: none;
+  }
+
+  .wowhead-top-bar {
+    padding: 0 10px;
+  }
+
+  .wh-tab-btn {
+    padding: 0 7px;
+    font-size: 0.64rem;
+  }
+
   .header-top-row {
     padding: 8px 12px;
   }
@@ -2393,38 +2406,216 @@ body {
   }
 }
 
-/* ----------------- Client Flavor & Gating Styles ----------------- */
+/* ----------------- Wowhead-Style Global Flavor Top Header Strip ----------------- */
 
-.flavor-select-wrap {
-  position: relative;
+.wowhead-top-bar {
   display: flex;
   align-items: center;
-  background: rgba(14, 18, 28, 0.85);
-  border: 1px solid var(--wow-brass-border, #4a3b27);
-  border-radius: 6px;
-  padding: 2px 8px;
-  gap: 6px;
+  justify-content: space-between;
+  height: 32px;
+  min-height: 32px;
+  background: #090c13;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 16px;
+  font-family: var(--font-body);
+  user-select: none;
 }
 
-.flavor-icon {
-  font-size: 0.85rem;
+.wh-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.wh-bar-left::-webkit-scrollbar {
+  display: none;
 }
 
-.flavor-select {
+.wh-home-btn {
   background: transparent;
   border: none;
-  color: var(--accent-gold, #f59e0b);
-  font-family: var(--font-tactical);
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
-  outline: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 8px 0 0;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
-.flavor-select option {
-  background: #0d111a;
+.wh-home-btn:hover {
+  color: #ffffff;
+}
+
+.wh-brand-label {
+  font-family: var(--font-tactical);
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 1.2px;
+  color: #cbd5e1;
+  padding: 0 6px 0 2px;
+}
+
+.wh-flavor-tabs {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 2px;
+}
+
+.wh-tab-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #8a9ba8;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.wh-tab-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.wh-tab-btn.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 800;
+  border-bottom-color: var(--active-tab-color, var(--wow-gold, #f59e0b));
+  box-shadow: inset 0 -3px 8px -3px var(--active-tab-color, rgba(245, 158, 11, 0.4));
+}
+
+.wh-w-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: 900;
+  line-height: 1;
+  font-family: var(--font-tactical);
+  text-transform: uppercase;
+}
+
+.wh-w-badge.retail {
+  border: 1.5px solid #f59e0b;
+  color: #f59e0b;
+}
+
+.wh-w-badge.forever {
+  border: 1.5px solid #00e5ff;
+  color: #00e5ff;
+}
+
+.wh-w-badge.classic {
+  border: 1.5px solid #eab308;
+  color: #eab308;
+}
+
+.wh-w-badge.tbc {
+  border: 1.5px solid #22c55e;
+  color: #22c55e;
+}
+
+.wh-w-badge.wotlk {
+  border: 1.5px solid #38bdf8;
+  color: #38bdf8;
+}
+
+.wh-bar-right {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.wh-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-tactical);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.wh-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  animation: pulse-green 2s infinite ease-in-out;
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+}
+
+.wh-status-label {
+  color: #64748b;
+}
+
+.wh-status-text {
   color: #e2e8f0;
+  font-weight: 800;
+  transition: color 0.2s ease;
+}
+
+/* Mobile Drawer Flavor Selector */
+.mobile-flavor-pills-wrap {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.m-flavor-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.m-flavor-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.m-flavor-btn.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--wow-gold);
+  color: #fff;
+  font-weight: 800;
 }
 
 .armory-select option:disabled {
