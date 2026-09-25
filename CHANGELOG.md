@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.6] - 2026-09-25
+
+### Changed
+- **Plain-Language User Experience & Persona Alignment**:
+  - Purged all internal engineering jargon and developer guardrail technobabble ("Zero Blizzard UI Taint", "32-Bit FNV-1a Determinism", "Pure Lua Discipline", "Automated Courier") from the user-facing Addon Guide modal (`#addon-dossier-modal`).
+  - Replaced technical specs with straightforward, player-friendly descriptions: *Lightweight Combat Tracker*, *Automated Windows Sync App*, *Accurate Battle Merging*, and *Bounties on Gankers & Gibbet Board*.
+- **Explicit `[ In Development ]` Badging for Roadmap Perks**:
+  - Styled a prominent amber pill badge (`.in-dev-pill`) and tagged all upcoming roadmap features: *Beta Tester Access*, *Priority Feature Voting*, *StreamBox Broadcaster HUD*, *Live Subzone GPS*, *Discord SOS Defense*, *Gilded Benefactor Insignia*, *Extended Cold Case Vault*, and *Cross-Client Support* (expanding beyond Forever Beta to Classic Era, Anniversary, and Modern Retail).
+- **Blizzard Add-on Policy & Community Supporter (Optional Donations)**:
+  - Completely eliminated the word "Paid" across all user interface cards and modal tiers, replacing it with **Community Supporter (Optional Donations // Funds Server Hosting)**.
+  - Clarified that in-game gold bounties are a 100% free in-game feature for all players with the addon, not a locked web perk.
+  - Added formal Fair Play & Blizzard Add-on Policy notice emphasizing that the addon and all in-game mechanics are free with zero gameplay advantages, and donations strictly support web hosting and companion tools.
+- **Typography & Flexbox Layout Refinement**:
+  - Refined `.tier-text`, `.tier-bullet`, and `.in-dev-pill` CSS properties (`font-size: 0.74rem`, `line-height: 1.45`, `text-align: left`) to guarantee natural inline flow and eliminate awkward word breaks or column splits.
+  - Wired interactive handler `handleSupporterClick()` providing polite, direct confirmation and local testing preview.
+
 ## [1.4.5] - 2026-09-25
 
 ### Added

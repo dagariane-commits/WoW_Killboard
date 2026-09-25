@@ -528,8 +528,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           </div>
           <div>
-            <strong style="color: var(--wow-gold); font-family: var(--font-tactical); font-size: 1.15rem; letter-spacing: 0.6px;">HOW THE ADDON WORKS &amp; ARCHITECTURE GUIDE</strong>
-            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">ZERO BLIZZARD UI TAINT &bull; PURE LUA &bull; BACKGROUND SYNC COURIER &bull; 32-BIT FNV-1a DETERMINISM</div>
+            <strong style="color: var(--wow-gold); font-family: var(--font-tactical); font-size: 1.15rem; letter-spacing: 0.6px;">HOW WOW KILLBOARD WORKS</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">AUTOMATED PVP TRACKING &bull; ZERO GAME LAG &bull; WINDOWS SYNC APP &bull; IN-GAME BOUNTIES</div>
           </div>
         </div>
         <button class="modal-close" onclick="closeAddonDossierModal()">&times;</button>
@@ -538,61 +538,61 @@
       <div class="dossier-body">
         <!-- Direct, clear operational overview -->
         <p class="dossier-lore-lead">
-          WoW Killboard is an automated PvP combat tracking and bounty ecosystem. The lightweight in-game addon records your combat engagements with zero Blizzard interface taint, while the standalone desktop courier effortlessly syncs your battle dispatches to the server war room.
+          WoW Killboard automatically tracks your PvP battles in the background and uploads your stats to the web. The lightweight in-game addon records your kills and deaths without slowing down your game, while our automated Windows sync app keeps your online profile and server leaderboards updated.
         </p>
 
-        <!-- 4 Core Capabilities (No Pillars Reference) -->
+        <!-- 4 Core Capabilities -->
         <div class="dossier-features-grid">
           <div class="dossier-feature-card">
-            <div class="feature-tag">ZERO UI TAINT</div>
-            <h4 class="feature-head">Silent Combat Log (Pure Lua Engine)</h4>
+            <div class="feature-tag">IN-GAME ADDON</div>
+            <h4 class="feature-head">Lightweight Combat Tracker</h4>
             <p class="feature-text">
-              Engineered strictly with anonymous Lua widgets and <code>BackdropTemplate</code>. It never inherits Blizzard XML button templates, touches no protected frames, and leaves <code>UISpecialFrames</code> untouched. Even during intense combat lockdown, it tracks kills and deaths without triggering "Action Blocked" popups.
+              Runs silently in the background while you play. It automatically records your honorable kills, open-world deaths, and combat locations without causing interface lag, UI glitches, or "Action Blocked" popups.
             </p>
           </div>
 
           <div class="dossier-feature-card">
-            <div class="feature-tag">AUTOMATED SYNC</div>
-            <h4 class="feature-head">Background Courier (<code>WoWKillboardSync.exe</code>)</h4>
+            <div class="feature-tag">DESKTOP SYNC APP</div>
+            <h4 class="feature-head">Automated Windows Sync App</h4>
             <p class="feature-text">
-              A standalone Windows executable with zero Python or terminal prerequisites. Running quietly in the background, it auto-discovers your WoW directories across <code>C:</code>, <code>D:</code>, and <code>E:</code> drives, instantly syncing your SavedVariables to the live web war room.
+              A simple Windows application (<code>WoWKillboardSync.exe</code>) that finds your World of Warcraft installation automatically. When you reload your UI or exit the game, your combat data syncs to the website in seconds—no manual file copying required.
             </p>
           </div>
 
           <div class="dossier-feature-card">
-            <div class="feature-tag">DETERMINISTIC KILLMAILS</div>
-            <h4 class="feature-head">Cryptographic Dedup (32-Bit FNV-1a)</h4>
+            <div class="feature-tag">SMART DEDUPLICATION</div>
+            <h4 class="feature-head">Accurate Battle Merging</h4>
             <p class="feature-text">
-              When a 40-player raid slays an enemy warlord, 40 separate combat logs are recorded. Our system stamps each battle with a deterministic 32-bit FNV-1a cryptographic hash based on timestamp, participant GUIDs, and map coordinates (<code>C_Map</code>), consolidating duplicates into one certified killmail.
+              When multiple group members or a 40-player raid defeat an enemy target, everyone's addon logs the encounter. Our system automatically combines duplicate reports into a single, clean kill record crediting all participants.
             </p>
           </div>
 
           <div class="dossier-feature-card">
-            <div class="feature-tag">GANK RETALIATION</div>
-            <h4 class="feature-head">Blood Bounties &amp; The Server Gibbet</h4>
+            <div class="feature-tag">BOUNTY SYSTEM</div>
+            <h4 class="feature-head">Bounties on Gankers &amp; Gibbet List</h4>
             <p class="feature-text">
-              Whenever an enemy player ganks or slays you in the open world, you can instantly place a gold bounty on your killer's head directly from your death screen or the war room. Any ally or rival who executes your killer claims the escrow gold upon submitting a certified killmail. Oathbreakers who dishonor debts are branded on the realm Kill on Sight (KOS) gibbet.
+              When an enemy player kills or ganks you in the open world, you can place an in-game gold bounty on their head right from your death alert or the website. Any player who takes down your killer can claim the reward, and repeat gankers are posted on the realm Kill on Sight (KOS) board.
             </p>
           </div>
         </div>
 
-        <!-- Free, Personal & Paid Member Access Tiers (100% Blizzard ToS Compliant) -->
+        <!-- Free, Personal & Supporter Member Access Tiers (100% Blizzard ToS Compliant) -->
         <div class="dossier-tier-section">
           <div class="dossier-tier-title-row">
             <span class="dossier-tier-icon">⚖️</span>
             <div>
-              <h3 class="dossier-tier-heading">WAR ROOM ACCESS TIERS: GUEST, FREE MEMBER, &amp; PAID SUPPORTER</h3>
-              <div class="dossier-tier-subhead">100% Blizzard Addon Policy Compliant &bull; No In-Game Paywalls &bull; No Pay-to-Win Mechanics</div>
+              <h3 class="dossier-tier-heading">COMMUNITY ACCESS TIERS: GUEST, FREE MEMBER, &amp; COMMUNITY SUPPORTER</h3>
+              <div class="dossier-tier-subhead">100% Free Addon &bull; Zero In-Game Paywalls &bull; Optional Web Hosting Donations</div>
             </div>
           </div>
 
           <div class="dossier-tier-grid">
-            <!-- Tier 1: Guest Recon -->
+            <!-- Tier 1: Guest Pass -->
             <div class="dossier-tier-card guest-tier">
               <div class="tier-card-header">
                 <span class="tier-badge guest">TIER 1 // GUEST PASS</span>
-                <div class="tier-name">Guest Recon</div>
-                <div class="tier-sub">No Registration Required</div>
+                <div class="tier-name">Guest Pass</div>
+                <div class="tier-sub">Browse Public Feeds &amp; Server Stats</div>
               </div>
               <ul class="tier-features-list">
                 <li class="tier-item">
@@ -601,71 +601,67 @@
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Cumulative Telemetry:</strong> Server-wide carnage metrics and faction war balance.</span>
+                  <span class="tier-text"><strong>Cumulative Stats:</strong> Server-wide kill totals, faction balance, and PvP trends.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Most Wanted Bounties:</strong> Public bounty board and realm KOS gibbet.</span>
+                  <span class="tier-text"><strong>Public Bounty Board:</strong> View active bounties placed by players in-game.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Deadly NPC Rankings:</strong> Wilderness and dungeon lethal mob casualties.</span>
+                  <span class="tier-text"><strong>Deadly NPC Rankings:</strong> Wilderness casualties and most lethal world mobs.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Field Manual &amp; Codex:</strong> Complete rules of engagement and documentation.</span>
+                  <span class="tier-text"><strong>Field Manual &amp; Addon Guide:</strong> Complete guide and combat documentation.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet cross">✕</span>
-                  <span class="tier-text muted">No personal kill/death tracking or armory profile.</span>
-                </li>
-                <li class="tier-item">
-                  <span class="tier-bullet cross">✕</span>
-                  <span class="tier-text muted">Cannot place or claim in-game gold bounties.</span>
+                  <span class="tier-text muted">Web viewing only (register free to track personal character stats).</span>
                 </li>
               </ul>
               <div class="tier-card-action">
                 <button class="tier-cta-btn guest" onclick="closeAddonDossierModal(); portalEnterAsGuest();">
-                  <span>Enter as Guest &rarr;</span>
+                  <span>Continue as Guest &rarr;</span>
                 </button>
               </div>
             </div>
 
-            <!-- Tier 2: Free Registered Operative (Personal Account) -->
+            <!-- Tier 2: Free Member (Personal Account) -->
             <div class="dossier-tier-card free-tier">
               <div class="tier-card-header">
                 <span class="tier-badge free">TIER 2 // FREE MEMBER</span>
-                <div class="tier-name">Registered Operative</div>
-                <div class="tier-sub">Free Personal Combat Tracking Account</div>
+                <div class="tier-name">Free Member</div>
+                <div class="tier-sub">Personal Character &amp; Combat Tracking</div>
               </div>
               <ul class="tier-features-list">
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>100% Free Addon &amp; Sync:</strong> Zero-taint logging and automated courier.</span>
+                  <span class="tier-text"><strong>100% Free Addon &amp; Windows Sync:</strong> Full combat logging with zero game lag.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Personalized Combat Banner:</strong> Your Kills, Deaths, K/D, and Solo statistics.</span>
+                  <span class="tier-text"><strong>Personalized Combat Banner:</strong> Your personal Kills, Deaths, K/D, and Solo stats.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Personal Player Armory:</strong> Complete battle dossier &amp; Classic Military Honor Rank.</span>
+                  <span class="tier-text"><strong>Player Armory Profile:</strong> Complete combat history and Classic PvP Honor Ranks.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Gank Retaliation Bounties:</strong> Place gold bounties immediately upon death.</span>
+                  <span class="tier-text"><strong>In-Game Gold Bounties:</strong> Place and claim bounties when ganked in the open world.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Bounty Hunter Rewards:</strong> Slay Most Wanted targets to claim escrow gold.</span>
+                  <span class="tier-text"><strong>Guild Feuds &amp; Blacklist:</strong> Declare rivalries and brand oathbreakers on your radar.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Guild Feuds &amp; Blacklist:</strong> Declare rivalries and brand oathbreakers KOS.</span>
+                  <span class="tier-text"><strong>Multi-Character Support:</strong> Track all your characters under one personal account.</span>
                 </li>
                 <li class="tier-item">
-                  <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Cross-Client Support:</strong> Compatible across all 4 WoW installations.</span>
+                  <span class="tier-bullet star">★</span>
+                  <span class="tier-text"><strong>Cross-Client Support</strong> <span class="in-dev-pill">In Development</span>: Expanding beyond Forever to Era, Anniversary, and Retail.</span>
                 </li>
               </ul>
               <div class="tier-card-action">
@@ -675,46 +671,46 @@
               </div>
             </div>
 
-            <!-- Tier 3: High Command Supporter (Paid Member - 100% ToS Compliant) -->
+            <!-- Tier 3: Community Supporter (Optional Donations) -->
             <div class="dossier-tier-card supporter-tier">
               <div class="tier-card-header">
-                <span class="tier-badge supporter">TIER 3 // PAID SUPPORTER</span>
-                <div class="tier-name">High Command Supporter</div>
-                <div class="tier-sub">Web Perks &bull; Funds Server Infrastructure</div>
+                <span class="tier-badge supporter">COMMUNITY SUPPORTER // OPTIONAL</span>
+                <div class="tier-name">Community Supporter</div>
+                <div class="tier-sub">Optional Donations &bull; Funds Server Infrastructure</div>
               </div>
               <ul class="tier-features-list">
                 <li class="tier-item">
                   <span class="tier-bullet star">★</span>
-                  <span class="tier-text"><strong>Beta Tester Access:</strong> Early access to experimental addon &amp; web builds.</span>
+                  <span class="tier-text"><strong>Beta Tester Access</strong> <span class="in-dev-pill">In Development</span>: Early access to experimental addon &amp; web companion builds.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet star">★</span>
-                  <span class="tier-text"><strong>Priority Feature Voting:</strong> Cast weighted votes on upcoming platform features.</span>
+                  <span class="tier-text"><strong>Priority Feature Voting</strong> <span class="in-dev-pill">In Development</span>: Cast weighted votes on upcoming platform features.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet star">★</span>
-                  <span class="tier-text"><strong>Live Subzone GPS:</strong> Pinpoint exact subzones for Most Wanted targets on web.</span>
+                  <span class="tier-text"><strong>Live Subzone GPS</strong> <span class="in-dev-pill">In Development</span>: Pinpoint exact subzones for Most Wanted targets on the web map.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet star">★</span>
-                  <span class="tier-text"><strong>Discord SOS Defense:</strong> Automated webhook alerts with party auto-invites.</span>
+                  <span class="tier-text"><strong>Discord SOS Defense</strong> <span class="in-dev-pill">In Development</span>: Automated webhook alerts when guildmates or allies are attacked.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet star">★</span>
-                  <span class="tier-text"><strong>StreamBox Broadcaster HUD:</strong> Transparent OBS overlay for Twitch streamers.</span>
+                  <span class="tier-text"><strong>StreamBox Broadcaster HUD</strong> <span class="in-dev-pill">In Development</span>: Transparent OBS overlay for Twitch and YouTube streamers.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet star">★</span>
-                  <span class="tier-text"><strong>Gilded Benefactor Insignia:</strong> Golden crest on Armory profiles &amp; leaderboards.</span>
+                  <span class="tier-text"><strong>Gilded Benefactor Insignia</strong> <span class="in-dev-pill">In Development</span>: Golden supporter crest on web Armory profiles &amp; leaderboards.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet star">★</span>
-                  <span class="tier-text"><strong>Extended Cold Case Vault:</strong> 30-day deep combat trends &amp; bounty history.</span>
+                  <span class="tier-text"><strong>Extended Cold Case Vault</strong> <span class="in-dev-pill">In Development</span>: 30-day deep combat trends &amp; historical bounty archive.</span>
                 </li>
               </ul>
               <div class="tier-card-action">
-                <button class="tier-cta-btn supporter" onclick="toggleSupporterMode()">
-                  <span>★ Preview Supporter Mode</span>
+                <button class="tier-cta-btn supporter" onclick="handleSupporterClick()">
+                  <span>★ Support Server Hosting (Optional Tip)</span>
                 </button>
               </div>
             </div>
@@ -724,8 +720,8 @@
           <div class="dossier-tos-callout">
             <div class="tos-callout-icon">🛡️</div>
             <div class="tos-callout-text">
-              <strong>Blizzard Addon Policy &amp; Terms of Service Guarantee:</strong>
-              In strict accordance with Blizzard's UI &amp; Add-on Policy, the WoW Killboard addon and all in-game tracking mechanisms are 100% free and open for all players with zero gameplay advantages. Supporter subscriptions exclusively fund server hosting, bandwidth, and web companion features (StreamBox OBS overlays, beta testing, and cosmetic badges).
+              <strong>Blizzard Add-on Policy &amp; Terms of Service Guarantee:</strong>
+              In strict accordance with Blizzard's UI &amp; Add-on Policy, the WoW Killboard addon, in-game bounty system, and all combat tracking features are 100% free and open for all players with zero gameplay advantages. Supporter donations are entirely optional and exclusively fund server hosting, bandwidth, and web companion features (StreamBox OBS overlays, beta testing, and cosmetic web badges).
             </div>
           </div>
         </div>
@@ -737,9 +733,9 @@
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
             <div>
-              <div style="font-weight:800; font-size:1.05rem; color:#fff;">Claim the Official Addon &amp; Sync Courier</div>
+              <div style="font-weight:800; font-size:1.05rem; color:#fff;">Download the Free Addon &amp; Windows Sync App</div>
               <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
-                Verified across WoW Forever Beta, Classic Era, 20th Anniversary, and Modern Retail.
+                Active for WoW Forever Beta (Classic Era, Anniversary, and Retail in development).
               </div>
             </div>
           </div>
@@ -750,7 +746,7 @@
             </a>
             <button class="dossier-btn secondary" onclick="alert('WoWKillboardSync.exe is included in your repository root and sync distribution! Run it to auto-discover your WoW directories.')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              <span>Desktop Sync Courier (.exe)</span>
+              <span>Desktop Sync App (.exe)</span>
             </button>
             <button class="dossier-btn outline" onclick="closeAddonDossierModal(); switchTab('INFO');">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>

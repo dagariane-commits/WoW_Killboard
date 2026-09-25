@@ -3661,6 +3661,16 @@ function updateSupporterButton() {
   }
 }
 
+function handleSupporterClick() {
+  toggleSupporterMode();
+  const active = isSupporterActive();
+  if (active) {
+    alert("Thank you for supporting WoW Killboard!\n\nOptional community donations will open soon to help cover server hosting costs. In the meantime, Supporter Mode preview is ENABLED for your browser session.");
+  } else {
+    alert("Supporter Mode preview disabled.");
+  }
+}
+
 // ----------------- Blood Feuds & KOS Blacklist -----------------
 
 async function loadFeudsView() {
