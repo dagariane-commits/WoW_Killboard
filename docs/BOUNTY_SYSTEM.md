@@ -54,17 +54,21 @@ To prevent players from laundering gold or colluding with friends to collect fak
 
 ---
 
-## 4. The Traitor's Gibbet State Machine (Oathbreakers & Defaulted Debts)
+## 4. The Blood Debtor State Machine (Defaulted Debts & Realm KOS Enforcement)
 
-When a player promises a bounty payout or participates in an escrow contract that goes unfulfilled, their record transitions to default:
+In a single-realm world, reputation is everything. A player may be the realm's fiercest outlaw, but failing to honor financial obligations marks them as a **Blood Debtor** (colloquially known as a **Debt Welcher**).
 
-### State Transitions
-1. **Active Default**: The contract enters default status. The poster is designated an **Oathbreaker**.
-2. **P2P & Web Propagation**:
+### State Transitions & Automated KOS Consignment
+1. **Active Default**: When a promised bounty payout goes unpaid, the contract enters default status. The player is branded a **Blood Debtor**.
+2. **Automated KOS Blacklist Consignment**:
+   - The debtor is immediately and automatically inserted into the **Realm KOS Blacklist** (`kos_blacklist`).
+   - Any player on the realm—regardless of faction or guild—is authorized to execute the debtor on sight without honor penalties.
+3. **Immutable GUID Tracking (Anti-Evasion)**:
+   - Debt records are permanently anchored to the combatant's immutable character GUID (`Player-XXXX-XXXXXXXX`).
+   - If a debtor changes their character name or transfers between guilds (`/gquit` -> new guild), the ingestion engine detects their GUID on any combat log event or recon sighting, automatically updating their active name and keeping their KOS status active.
+4. **P2P & Web Propagation**:
    - Addon broadcasts the debt status across party, raid, and guild channels using `Sync.lua`.
-   - The desktop watcher pushes the debt record to the web platform's **Traitor's Gibbet** ledger.
-3. **Public Stigmatization**:
-   - The debtor's name, defaulted gold amount, and timestamp are displayed on the public web ledger and in-game Traitor's Gibbet tab.
+   - The desktop watcher synchronizes the debt record to the web platform's **Wall of Shame — Realm Blood Debtors** ledger.
 
 ---
 
@@ -74,7 +78,7 @@ The addon maintains an active proximity radar hooked into nameplate creation and
 
 ```mermaid
 flowchart LR
-    NAMEPLATE["Nameplate / Mouseover Detected\n(UnitScanner.lua)"] --> CHECK{"Is Unit in\nWoWKillboardDebtLedger?"}
+    NAMEPLATE["Nameplate / Mouseover Detected\n(UnitScanner.lua)"] --> CHECK{"Is Unit in\nBlood Debtor / KOS Ledger?"}
     CHECK -- Yes --> ALARM["Trigger Wanted Radar!\n- Play Sound Siren (SoundKit 8959)\n- Flash Red Banner on Screen\n- Announce to Party/Raid"]
     CHECK -- No --> PASS["Ignore Unit"]
 ```
@@ -82,7 +86,7 @@ flowchart LR
 ### In-Game Alarm Execution
 - **Visual Alert**: Flashes a high-visibility warning banner:
   ```text
-  [!] WANTED OATHBREAKER DETECTED: <PlayerName> [Debt: 500g] [!]
+  [!] WANTED BLOOD DEBTOR DETECTED: <PlayerName> [Debt: 500g | KOS] [!]
   ```
 - **Auditory Alert**: Triggers a distinctive raid siren sound kit (`PlaySound(8959)`).
 
@@ -90,15 +94,16 @@ flowchart LR
 
 ## 6. Redemption & Debt Clearance Workflow
 
-Debtors can clear their name and restore their reputation via the in-game Redemption Portal:
+Debtors can clear their name and restore their reputation via debt repayment (`POST /api/debt/pay`):
 
 1. **Administrative Surcharge**: Repaying a defaulted debt requires paying the principal plus a **10% administrative fee** (e.g., a 500g default costs 550g to redeem).
 2. **Automated Postal Payment**:
    - When the debtor targets a mailbox, the addon auto-fills a C.O.D. or gold-attached payment letter addressed to the creditor.
-3. **Receipt Generation**:
-   - Once mailed, the local debt record is updated to `PAID`.
-   - P2P sync broadcasts the clearance across the network.
-   - The web platform moves the record from The Traitor's Gibbet to the Historical Redemption Archive.
+3. **Receipt Generation & KOS Cleansing**:
+   - Once settled, the debt record is marked as `REDEEMED`.
+   - The debtor is **automatically cleansed and removed from the Realm KOS Blacklist**.
+   - Their character profile reputation is restored to `HONORABLE COMBATANT` (Debt-Free).
+   - The web platform moves the record from the active Wall of Shame to the Historical Redemption Archive.
 
 ---
 

@@ -119,6 +119,11 @@ def init_db():
                 bounty_id TEXT
             )
         """)
+        try:
+            conn.execute("ALTER TABLE debt_ledger ADD COLUMN player_guid TEXT")
+        except sqlite3.OperationalError:
+            pass
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS character_guild_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -486,6 +491,14 @@ def get_kills():
         rows = cursor.fetchall()
         kills = []
         for r in rows:
+            raw_meta = {}
+            if "raw_json" in r.keys() and r["raw_json"]:
+                try:
+                    raw_meta = json.loads(r["raw_json"])
+                except Exception:
+                    raw_meta = {}
+            attackers = raw_meta.get("attackers", [])
+
             kills.append({
                 "killId": r["kill_id"],
                 "timestamp": r["timestamp"],
@@ -495,6 +508,7 @@ def get_kills():
                 "battlegroundName": r["bg_name"],
                 "isSolo": bool(r["is_solo"]),
                 "attackersCount": r["attackers_count"],
+                "attackers": attackers,
                 "totalDamage": r["total_damage"],
                 "killer": {
                     "name": r["killer_name"],
@@ -603,6 +617,18 @@ def post_kill():
         # Auto-claim active bounty on victim if killed by another player
         # Anti-Name-Change Evasion: Check if victim renamed using permanent Character GUID
         victim_guid = v.get("guid") or "UNKNOWN"
+        killer_guid = k.get("guid") or "UNKNOWN"
+
+        # Anti-Name-Change Evasion for Debt Ledger & KOS Blacklist (Immutable GUID Tracking)
+        for char_n, char_g in [(victim_name, victim_guid), (killer_name, killer_guid)]:
+            if char_n != "Unknown" and char_g != "UNKNOWN":
+                debt_row = conn.execute("SELECT player_name, status, amount_owed_copper FROM debt_ledger WHERE player_guid = ?", (char_g,)).fetchone()
+                if debt_row:
+                    old_n = debt_row["player_name"]
+                    if old_n != char_n:
+                        conn.execute("UPDATE debt_ledger SET player_name = ? WHERE player_guid = ?", (char_n, char_g))
+                        conn.execute("UPDATE kos_blacklist SET entity_name = ? WHERE entity_name = ?", (char_n, old_n))
+
         if victim_name != "Unknown" and killer_name != "Unknown" and killer_name != victim_name:
             if victim_guid != "UNKNOWN":
                 conn.execute("""
@@ -1057,9 +1083,20 @@ def get_character_profile(name):
         """, (name, name)).fetchone()
 
         if not char_row:
-            return jsonify({"error": "Character not found"}), 404
-
-        char_data = dict(char_row)
+            # Check if character exists in debt_ledger, bounties, or kos_blacklist
+            debt_fallback = conn.execute("SELECT * FROM debt_ledger WHERE player_name = ?", (name,)).fetchone()
+            bnt_fallback = conn.execute("SELECT * FROM bounties WHERE target_name = ?", (name,)).fetchone()
+            kos_fallback = conn.execute("SELECT * FROM kos_blacklist WHERE entity_name = ?", (name,)).fetchone()
+            if debt_fallback:
+                char_data = {"name": name, "class": "WARRIOR", "level": 60, "guild": "None", "faction": "Unknown"}
+            elif bnt_fallback:
+                char_data = {"name": name, "class": bnt_fallback["target_class"] or "UNKNOWN", "level": 60, "guild": "None", "faction": bnt_fallback["target_faction"] or "Unknown"}
+            elif kos_fallback:
+                char_data = {"name": name, "class": "UNKNOWN", "level": 60, "guild": "None", "faction": "Unknown"}
+            else:
+                return jsonify({"error": "Character not found"}), 404
+        else:
+            char_data = dict(char_row)
 
         # Total Kills & breakdown
         kills_stat = conn.execute("""
@@ -1132,6 +1169,44 @@ def get_character_profile(name):
                 "days_remaining": max(1, (deserter_row[1] - now_ts) // 86400)
             }
 
+        # Blood Debtor Check (Immutable GUID & Name Tracking)
+        char_guid = None
+        g_row = conn.execute("SELECT raw_json FROM kills WHERE killer_name = ? OR victim_name = ? LIMIT 1", (name, name)).fetchone()
+        if g_row and g_row[0]:
+            try:
+                rj = json.loads(g_row[0])
+                if rj.get("killer", {}).get("name") == name:
+                    char_guid = rj.get("killer", {}).get("guid")
+                elif rj.get("victim", {}).get("name") == name:
+                    char_guid = rj.get("victim", {}).get("guid")
+            except Exception:
+                pass
+
+        debt_query = "SELECT * FROM debt_ledger WHERE (player_name = ?"
+        params = [name]
+        if char_guid:
+            debt_query += " OR player_guid = ?"
+            params.append(char_guid)
+        debt_query += ") AND status IN ('BLOOD_DEBTOR', 'OATHBREAKER') LIMIT 1"
+
+        debt_row = conn.execute(debt_query, params).fetchone()
+        blood_debt_data = None
+        if debt_row:
+            is_kos = True
+            blood_debt_data = {
+                "creditor": debt_row["creditor"],
+                "amountOwedCopper": debt_row["amount_owed_copper"],
+                "amountOwedGold": debt_row["amount_owed_copper"] // 10000,
+                "daysInDefault": debt_row["days_in_default"],
+                "status": "BLOOD_DEBTOR"
+            }
+
+        reputation = "HONORABLE COMBATANT"
+        if blood_debt_data:
+            reputation = "BLOOD DEBTOR — KILL ON SIGHT"
+        elif is_kos:
+            reputation = "KOS BLACKLISTED"
+
         realm = "classic"
         armory_urls = {
             "official": f"https://worldofwarcraft.blizzard.com/en-us/character/us/{realm}/{name.lower()}",
@@ -1141,6 +1216,7 @@ def get_character_profile(name):
 
         return jsonify({
             "name": name,
+            "guid": char_guid,
             "class": char_data.get("class", "UNKNOWN"),
             "level": char_data.get("level", 60),
             "faction": faction,
@@ -1148,6 +1224,8 @@ def get_character_profile(name):
             "rankTitle": rank_title,
             "activeBountyGold": active_bounty_gold,
             "isKos": is_kos,
+            "bloodDebtor": blood_debt_data,
+            "reputation": reputation,
             "deserter": deserter_data,
             "stats": {
                 "kills": total_kills,
@@ -1574,7 +1652,7 @@ def get_activity_7d():
 @app.route("/api/bounties/debt-ledger", methods=["GET"])
 def get_debt_ledger():
     with get_db() as conn:
-        rows = conn.execute("SELECT * FROM debt_ledger WHERE status = 'OATHBREAKER' ORDER BY days_in_default DESC").fetchall()
+        rows = conn.execute("SELECT * FROM debt_ledger WHERE status IN ('BLOOD_DEBTOR', 'OATHBREAKER') ORDER BY days_in_default DESC").fetchall()
         debts = [dict(r) for r in rows]
     return jsonify(debts)
 
@@ -1585,17 +1663,31 @@ def post_debt_ledger():
     if not player_name:
         return jsonify({"error": "Missing playerName"}), 400
 
+    player_guid = data.get("playerGuid") or data.get("player_guid")
+    status = data.get("status", "BLOOD_DEBTOR")
+    amount_owed = int(data.get("amountOwedCopper", 0))
+    amount_gold = amount_owed // 10000
+
     with get_db() as conn:
         conn.execute("""
             INSERT OR REPLACE INTO debt_ledger (
                 player_name, creditor, amount_owed_copper, principal_copper,
-                surcharge_copper, status, default_date, days_in_default, bounty_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                surcharge_copper, status, default_date, days_in_default, bounty_id, player_guid
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            player_name, data.get("creditor", "BountyPool"), data.get("amountOwedCopper", 0),
-            data.get("principalCopper", 0), data.get("surchargeCopper", 0), data.get("status", "OATHBREAKER"),
-            int(time.time()), data.get("daysInDefault", 1), data.get("bountyId", "")
+            player_name, data.get("creditor", "BountyPool"), amount_owed,
+            data.get("principalCopper", 0), data.get("surchargeCopper", 0), status,
+            int(time.time()), data.get("daysInDefault", 1), data.get("bountyId", ""),
+            player_guid
         ))
+
+        # Scott Quick Guardrail: Any Blood Debtor in default is placed onto the Realm KOS Blacklist
+        if status in ("BLOOD_DEBTOR", "OATHBREAKER"):
+            conn.execute("""
+                INSERT OR REPLACE INTO kos_blacklist (entity_name, entity_type, reason, branded_at, status)
+                VALUES (?, 'PLAYER', ?, ?, 'KOS')
+            """, (player_name, f"Blood Debtor: Unpaid bounty debt ({amount_gold}g)", int(time.time())))
+
         conn.commit()
 
     return jsonify({"success": True}), 201
@@ -1604,14 +1696,22 @@ def post_debt_ledger():
 def pay_debt():
     data = request.json
     player_name = data.get("playerName")
-    if not player_name:
-        return jsonify({"error": "Missing playerName"}), 400
+    player_guid = data.get("playerGuid") or data.get("player_guid")
+    if not player_name and not player_guid:
+        return jsonify({"error": "Missing playerName or playerGuid"}), 400
 
     with get_db() as conn:
-        conn.execute("UPDATE debt_ledger SET status = 'REDEEMED' WHERE player_name = ?", (player_name,))
+        if player_name:
+            conn.execute("UPDATE debt_ledger SET status = 'REDEEMED' WHERE player_name = ?", (player_name,))
+            conn.execute("DELETE FROM kos_blacklist WHERE entity_name = ? AND reason LIKE 'Blood Debtor%'", (player_name,))
+        if player_guid:
+            conn.execute("UPDATE debt_ledger SET status = 'REDEEMED' WHERE player_guid = ?", (player_guid,))
+            row = conn.execute("SELECT player_name FROM debt_ledger WHERE player_guid = ?", (player_guid,)).fetchone()
+            if row:
+                conn.execute("DELETE FROM kos_blacklist WHERE entity_name = ? AND reason LIKE 'Blood Debtor%'", (row[0],))
         conn.commit()
 
-    return jsonify({"success": True, "message": f"Debt cleared for {player_name}"})
+    return jsonify({"success": True, "message": f"Debt cleared for {player_name or player_guid}"})
 
 # ----------------- Discord Webhook & Guild Operations Engine -----------------
 

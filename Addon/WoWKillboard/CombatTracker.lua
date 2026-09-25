@@ -170,13 +170,37 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     local finalBlowKillerName = killerName
 
     for attGUID, attData in pairs(attackers) do
+        local unitInfo = KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(attGUID)
+        local attClass = "UNKNOWN"
+        local attLevel = 0
+        local attGuild = "None"
+        local attFaction = "Unknown"
+
+        if playerGUID and attGUID == playerGUID then
+            local _, pClass = UnitClass("player")
+            attClass = pClass or "UNKNOWN"
+            attLevel = UnitLevel("player") or 0
+            local pGuild = GetGuildInfo("player")
+            attGuild = pGuild or "None"
+            attFaction = UnitFactionGroup("player") or "Unknown"
+        elseif unitInfo then
+            attClass = unitInfo.class or "UNKNOWN"
+            attLevel = unitInfo.level or 0
+            attGuild = unitInfo.guild or "None"
+            attFaction = unitInfo.faction or "Unknown"
+        end
+
         table.insert(attackersList, {
             guid = attGUID,
             name = attData.name or "Unknown",
-            damage = attData.totalDamage,
-            spell = attData.spellName,
+            damage = attData.totalDamage or 0,
+            spell = attData.spellName or "Combat",
+            class = attClass,
+            level = attLevel,
+            guild = attGuild,
+            faction = attFaction,
         })
-        totalDamage = totalDamage + attData.totalDamage
+        totalDamage = totalDamage + (attData.totalDamage or 0)
         if not finalBlowKillerGUID then
             finalBlowKillerGUID = attGUID
             finalBlowKillerName = attData.name
@@ -185,11 +209,34 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
 
     -- If no recorded attackers but we have killerGUID from party kill
     if #attackersList == 0 and finalBlowKillerGUID then
+        local unitInfo = KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(finalBlowKillerGUID)
+        local attClass = "UNKNOWN"
+        local attLevel = 0
+        local attGuild = "None"
+        local attFaction = "Unknown"
+        if playerGUID and finalBlowKillerGUID == playerGUID then
+            local _, pClass = UnitClass("player")
+            attClass = pClass or "UNKNOWN"
+            attLevel = UnitLevel("player") or 0
+            local pGuild = GetGuildInfo("player")
+            attGuild = pGuild or "None"
+            attFaction = UnitFactionGroup("player") or "Unknown"
+        elseif unitInfo then
+            attClass = unitInfo.class or "UNKNOWN"
+            attLevel = unitInfo.level or 0
+            attGuild = unitInfo.guild or "None"
+            attFaction = unitInfo.faction or "Unknown"
+        end
+
         table.insert(attackersList, {
             guid = finalBlowKillerGUID,
             name = finalBlowKillerName or "Unknown",
             damage = 0,
             spell = "Final Blow",
+            class = attClass,
+            level = attLevel,
+            guild = attGuild,
+            faction = attFaction,
         })
     end
 
