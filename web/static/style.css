@@ -3609,21 +3609,30 @@ body {
 
 /* ----------------- Azeroth War Room Entry Portal ----------------- */
 
-/* Portal Mode Container Adjustments (Header remains permanently visible) */
+/* Mainpage Entrance Mode: Distraction-free landing with ZERO header top menu, just the body */
+body.portal-active .site-header,
+body.portal-active #wowhead-top-bar,
+body.portal-active .header-main-row,
+body.portal-active .header-top-row,
+body.portal-active .header-sub-row,
+body.portal-active .site-footer,
+body.portal-active .floating-action-trigger {
+  display: none !important;
+}
 
 body.portal-active .container {
   display: block;
   max-width: 1100px;
   margin: 0 auto;
-  padding-top: 26px;
-  padding-bottom: 50px;
+  padding-top: 40px;
+  padding-bottom: 60px;
 }
 
 .container.portal-mode {
   display: block;
   max-width: 1100px;
   margin: 0 auto;
-  padding-top: 26px;
+  padding-top: 40px;
 }
 
 .container.portal-mode .stats-grid,
@@ -3783,6 +3792,31 @@ body.portal-active .container {
 
 .gate-sub-link:hover {
   color: var(--wow-gold);
+}
+
+.portal-return-pill {
+  background: rgba(212, 163, 41, 0.18);
+  border: 1px solid var(--wow-gold);
+  color: var(--wow-gold-bright);
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-family: var(--font-tactical);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 0 14px rgba(212, 163, 41, 0.3);
+}
+
+.portal-return-pill:hover {
+  background: rgba(212, 163, 41, 0.32);
+  border-color: #fff;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(212, 163, 41, 0.5);
+  transform: translateY(-1px);
 }
 
 .portal-fieldkit-pill,
