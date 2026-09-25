@@ -2409,6 +2409,246 @@ def pardon_kos_entity():
 
     return jsonify({"status": "ok", "message": f"{entity_name} pardoned from KOS Blacklist."})
 
+# ----------------- War Room Scribe & Combat Oracle API -----------------
+
+SCRIBE_SYSTEM_PROMPT = """You are the Grand Inquisitor and War Scribe of Azeroth, chronicler of the bloodstained ledger for the WoW Killboard.
+Your voice reflects the dark, grounded, unforgiving aesthetic of original Vanilla World of Warcraft (2004–2006). Azeroth is a scarred, volatile frontier recovering from the Third War—not a polished theme park.
+
+Core Voice Principles:
+1. Grounded & Rugged: Treat game mechanics like dangerous field craft, martial discipline, or forbidden arcane study. The tone is utilitarian, ominous, and battle-hardened.
+2. No Modern SaaS/Tech Jargon: Never use startup or corporate phrasing (e.g., "streamline your workflow," "optimize performance," "user-friendly dashboard," "seamless integration"). Replace them with terms like forged, martial efficiency, field kit, armory, reconnaissance, dispatches, pacts, ledger.
+3. Diegetic & Immersive: Speak as an Ironforge armorer, an Undercity apothecary, or a veteran scout at a bloodstained Southshore tavern table.
+4. Austere, Not Overly Flowery: Avoid excessive high-fantasy purple prose or quips. Speak plainly, bluntly, and with weight.
+5. Factual Grounding: Answer the soldier's query directly using the battlefield telemetry and ledger dispatches provided. Keep answers concise (2 to 4 paragraphs max)."""
+
+@app.route("/api/oracle/chat", methods=["POST"])
+def oracle_chat():
+    """AI Combat Oracle & Scribe endpoint querying live telemetry and generating in-character intelligence."""
+    data = request.json or {}
+    query = (data.get("query") or "").strip()
+    character = (data.get("character") or "Unmarked Scout").strip()
+    flavor = (data.get("flavor") or "CLASSIC_ERA").strip()
+    user_api_key = (data.get("api_key") or "").strip() or os.environ.get("GEMINI_API_KEY", "").strip()
+
+    if not query:
+        return jsonify({"error": "Empty query"}), 400
+
+    now_ts = int(time.time())
+
+    # 1. Gather live database facts
+    telemetry_facts = {}
+    sources = []
+    with get_db() as conn:
+        # Total kills & split
+        tot = conn.execute("SELECT count(*) as c, sum(is_solo) as s FROM kills").fetchone()
+        a_kills = conn.execute("SELECT count(*) as c FROM kills WHERE killer_faction = 'Alliance'").fetchone()["c"]
+        h_kills = conn.execute("SELECT count(*) as c FROM kills WHERE killer_faction = 'Horde'").fetchone()["c"]
+        telemetry_facts["total_kills"] = tot["c"] if tot else 0
+        telemetry_facts["solo_kills"] = tot["s"] if tot and tot["s"] else 0
+        telemetry_facts["alliance_kills"] = a_kills
+        telemetry_facts["horde_kills"] = h_kills
+
+        # Top killers
+        top_k = conn.execute("""
+            SELECT killer_name, killer_guild, killer_class, count(*) as kills
+            FROM kills GROUP BY killer_name ORDER BY kills DESC LIMIT 5
+        """).fetchall()
+        telemetry_facts["top_killers"] = [dict(r) for r in top_k]
+
+        # Top open bounties
+        top_b = conn.execute("""
+            SELECT target_name, target_class, amount_gold, placer_name, status
+            FROM bounties WHERE status = 'OPEN' ORDER BY amount_gold DESC LIMIT 5
+        """).fetchall()
+        telemetry_facts["top_bounties"] = [dict(r) for r in top_b]
+
+        # Top deadly NPCs
+        top_n = conn.execute("""
+            SELECT npc_name, zone, count(*) as deaths
+            FROM pve_deaths GROUP BY npc_name ORDER BY deaths DESC LIMIT 5
+        """).fetchall()
+        telemetry_facts["deadly_npcs"] = [dict(r) for r in top_n]
+
+        # Top slaughter zones
+        top_z = conn.execute("""
+            SELECT zone, count(*) as kills
+            FROM kills WHERE zone IS NOT NULL AND zone != ''
+            GROUP BY zone ORDER BY kills DESC LIMIT 5
+        """).fetchall()
+        telemetry_facts["top_zones"] = [dict(r) for r in top_z]
+
+        # Check for specific character or player lookup
+        target_player = None
+        for word in query.replace("?", "").replace("!", "").split():
+            clean_word = word.strip()
+            if len(clean_word) >= 3 and clean_word.lower() not in ["who", "what", "where", "when", "how", "the", "and", "bounty", "kill", "player", "guild", "zone", "addon", "sync"]:
+                p_match = conn.execute("""
+                    SELECT killer_name, count(*) as kills FROM kills WHERE killer_name LIKE ? GROUP BY killer_name LIMIT 1
+                """, (f"%{clean_word}%",)).fetchone()
+                if p_match:
+                    p_name = p_match["killer_name"]
+                    p_deaths = conn.execute("SELECT count(*) as deaths FROM kills WHERE victim_name = ?", (p_name,)).fetchone()["deaths"]
+                    p_victims = conn.execute("SELECT victim_name, victim_class, zone FROM kills WHERE killer_name = ? ORDER BY timestamp DESC LIMIT 3", (p_name,)).fetchall()
+                    target_player = {
+                        "name": p_name,
+                        "kills": p_match["kills"],
+                        "deaths": p_deaths,
+                        "recent_victims": [dict(v) for v in p_victims]
+                    }
+                    sources.append(f"Player Ledger: {p_name}")
+                    break
+
+    # 2. Try Gemini API generation if key is supplied
+    if user_api_key:
+        try:
+            from google import genai
+            client = genai.Client(api_key=user_api_key)
+            prompt_context = f"""Soldier Call-Sign: {character}
+Active War Front: {flavor}
+Field Telemetry Context:
+- Total Slaughter Recorded: {telemetry_facts['total_kills']} kills ({telemetry_facts['solo_kills']} certified solo 1v1)
+- Faction Split: Alliance {telemetry_facts['alliance_kills']} vs Horde {telemetry_facts['horde_kills']}
+- Top Five Killers on Ledger: {json.dumps(telemetry_facts['top_killers'])}
+- Top Open Blood Bounties: {json.dumps(telemetry_facts['top_bounties'])}
+- Deadliest Wilderness Threats (NPCs): {json.dumps(telemetry_facts['deadly_npcs'])}
+- Bloodiest Zones: {json.dumps(telemetry_facts['top_zones'])}
+{f"- Subject Dossier: {json.dumps(target_player)}" if target_player else ""}
+
+Soldier Inquiry: "{query}"
+
+Answer strictly in your role as the Classic Azeroth Scribe. Grounded, utilitarian, rugged."""
+
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[prompt_context],
+                    config={"system_instruction": SCRIBE_SYSTEM_PROMPT}
+                )
+                if response and response.text:
+                    sources.append("Gemini Arcane Oracle (gemini-2.5-flash)")
+                    return jsonify({
+                        "reply": response.text,
+                        "sources": sources,
+                        "status": "ok"
+                    })
+            except Exception as e:
+                # Fallback to direct heuristic if API call fails
+                print(f"[Oracle Gemini Error]: {e}")
+        except Exception as e:
+            print(f"[Oracle GenAI Import Error]: {e}")
+
+    # 3. Built-in Diegetic Scribe Intelligence Engine (Offline / Local Fallback)
+    q_lower = query.lower()
+    reply = ""
+
+    if target_player:
+        p = target_player
+        reply = (
+            f"**Dispatches on {p['name']}:**\n\n"
+            f"The ledger bears witness to **{p['kills']}** confirmed kills and **{p['deaths']}** documented falls upon the field of combat. "
+        )
+        if p["recent_victims"]:
+            v_list = ", ".join([f"{v['victim_name']} ({v.get('victim_class', 'Unknown')}) in {v.get('zone', 'the frontier')}" for v in p["recent_victims"]])
+            reply += f"Recent fallen foes claimed by their steel: {v_list}.\n\n"
+        reply += "Keep your guard high; reputations in Azeroth are earned in blood and paid in steel."
+        sources.append("Frontline Kill Ledger")
+
+    elif any(k in q_lower for k in ["bounty", "bounties", "contract", "gibbet", "most wanted", "wanted", "gold"]):
+        b_list = telemetry_facts["top_bounties"]
+        if b_list:
+            b_text = "\n".join([f"- **{b['target_name']}** ({b.get('target_class', 'Target')}): **{b['amount_gold']} Gold** pledged by {b.get('placer_name', 'High Command')}" for b in b_list])
+            reply = (
+                f"**The Blood Bounty Ledger & Gibbet:**\n\n"
+                f"Coin is pledged; retribution is sworn. High Command has approved the following execution contracts:\n\n"
+                f"{b_text}\n\n"
+                f"Fell the marked target in certified combat and your dispatches will automatically deliver the gold. Default on a pledged bounty debt, and your name shall be branded upon the server KOS rolls."
+            )
+        else:
+            reply = (
+                "**The Bounty Board is Quiet:**\n\n"
+                "No open blood contracts currently stain the ledger for this front. Any veteran with coin may issue a contract through the Blood Bounties hub. Once pledged, the hunter who logs the killmail collects the prize."
+            )
+        sources.append("Bounty Board & Debt Ledger")
+
+    elif any(k in q_lower for k in ["npc", "boss", "pve", "creature", "stitches", "arugal", "beast", "threat"]):
+        n_list = telemetry_facts["deadly_npcs"]
+        if n_list:
+            n_text = "\n".join([f"- **{n['npc_name']}** in *{n.get('zone', 'Wilderness')}*: **{n['deaths']}** fallen scouts" for n in n_list])
+            reply = (
+                f"**Wilderness Casualties & Lethal Denizens:**\n\n"
+                f"The wilds of Azeroth show no mercy to reckless patrols. Field scouts report the heaviest casualties claimed by:\n\n"
+                f"{n_text}\n\n"
+                f"Travel under armed escort. Even the most seasoned warrior is but meat to the horrors stalking outside garrison walls."
+            )
+        else:
+            reply = (
+                "**Wilderness Intelligence:**\n\n"
+                "Our scouts have logged no major denizen massacres in the immediate vicinity. Keep your weapons drawn and your senses sharp; the frontier gives no second warnings."
+            )
+        sources.append("PvE Casualty Records")
+
+    elif any(k in q_lower for k in ["zone", "where", "battleground", "hillsbrad", "barrens", "stranglethorn", "blackrock", "territory", "front"]):
+        z_list = telemetry_facts["top_zones"]
+        if z_list:
+            z_text = "\n".join([f"- **{z['zone']}**: {z['kills']} skirmishes recorded" for z in z_list])
+            reply = (
+                f"**Frontline Theater Intelligence:**\n\n"
+                f"The highest concentration of violence and reported skirmishes lies in:\n\n"
+                f"{z_text}\n\n"
+                f"Reinforcements in these sectors are scarce. If you venture into these killing grounds, travel in tight formation or prepare to inscribe your own death dispatch."
+            )
+        else:
+            reply = (
+                "**Field Reconnaissance:**\n\n"
+                "Skirmishes are dispersed along the frontier. The contested roads of Hillsbrad Foothills, Stranglethorn Vale, and the Searing Gorge remain volatile flashpoints."
+            )
+        sources.append("Territorial Telemetry")
+
+    elif any(k in q_lower for k in ["addon", "how", "work", "sync", "download", "taint", "lua", "deduplication", "fnv", "cluster"]):
+        reply = (
+            "**Scribe's Field Kit & Addon Blueprints:**\n\n"
+            "Our combat logging apparatus is forged under strict martial discipline:\n\n"
+            "1. **Zero Blizzard UI Taint**: Compiled purely in Lua with `BackdropTemplate` and anonymous widgets. It never inherits Blizzard XML button templates or touches `UISpecialFrames`. Runs silently with zero 'Action Blocked' errors during combat lockdown.\n"
+            "2. **Cryptographic 32-Bit FNV-1a Blood Stamp**: Every clash generates a deterministic hash from timestamp, combatant GUIDs, and map coordinates (`C_Map`). When a 40-man raid logs the same fight, our ledger merges all dispatches into a single verified killmail.\n"
+            "3. **Sliding 15-Second Temporal Clustering**: Separates honorable 1v1 duels from multi-attacker gank squads based on localized damage windows.\n"
+            "4. **Automated Courier (`WoWKillboardSync.exe`)**: A solitary Windows executable that scans `C:`, `D:`, and `E:` drives automatically with zero Python runes or manual terminal commands."
+        )
+        sources.append("Addon Architecture & Field Manual")
+
+    elif any(k in q_lower for k in ["who", "killer", "top", "leader", "hero", "warlord"]):
+        k_list = telemetry_facts["top_killers"]
+        if k_list:
+            k_text = "\n".join([f"- **{k['killer_name']}** ({k.get('killer_class', 'Fighter')}) of <{k.get('killer_guild', 'No Guild')}>: **{k['kills']}** confirmed kills" for k in k_list])
+            reply = (
+                f"**Hall of Heroes & Grim Slayers:**\n\n"
+                f"The following combatants hold the highest tally of fallen enemies upon the ledger:\n\n"
+                f"{k_text}\n\n"
+                f"Their steel is tested; their names are feared across the faction divide."
+            )
+        else:
+            reply = "The muster rolls are being tallied. New champions are forged in every clash."
+        sources.append("Hall of Heroes Roster")
+
+    else:
+        tot = telemetry_facts["total_kills"]
+        solo = telemetry_facts["solo_kills"]
+        a = telemetry_facts["alliance_kills"]
+        h = telemetry_facts["horde_kills"]
+        reply = (
+            f"**State of the War Front:**\n\n"
+            f"The ledger currently records **{tot}** fallen combatants across all tracked fronts, with **{solo}** certified 1v1 honorable solo kills.\n\n"
+            f"- **Alliance Casualties Claimed**: {a} kills\n"
+            f"- **Horde Casualties Claimed**: {h} kills\n\n"
+            f"Inquire regarding a specific soldier's call-sign, an active blood bounty, the deadliest wilderness creatures, or the inner workings of our addon field kit. The Scribe answers all who carry steel."
+        )
+        sources.append("Master Ledger Telemetry")
+
+    return jsonify({
+        "reply": reply,
+        "sources": sources,
+        "status": "ok"
+    })
+
 if __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", 8080))

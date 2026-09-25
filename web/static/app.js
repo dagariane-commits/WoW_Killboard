@@ -2249,11 +2249,61 @@ function renderDeadlyNpcsView(lbData, deaths) {
 
 // ----------------- War Room Entry Portal -----------------
 
+let portalScreen = "GATE"; // "GATE" (Muster Roll / Clearance) or "VERSIONS" (Theater of Conflict)
 let portalAccessMode = "guest";
 
-function setPortalAccessMode(mode) {
-  portalAccessMode = mode;
+function portalSetScreen(screen) {
+  portalScreen = screen;
   loadPortalView();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function portalAdvanceToVersions(mode) {
+  portalAccessMode = mode;
+  sessionStorage.setItem("wowkb_auth_type", mode);
+  portalSetScreen("VERSIONS");
+}
+
+function portalSubmitOfficerAndAdvance() {
+  const charEl = document.getElementById("gate-input-char");
+  const realmEl = document.getElementById("gate-input-realm");
+  const factionEl = document.querySelector('input[name="gate-faction"]:checked');
+  const name = charEl ? charEl.value.trim() : "";
+  const realm = realmEl ? realmEl.value.trim() : "Crusader Strike";
+  const faction = factionEl ? factionEl.value : "Alliance";
+
+  if (!name) {
+    alert("Inscribe your character call-sign to record your name upon the muster roll, or march as an Unmarked Scout.");
+    if (charEl) charEl.focus();
+    return;
+  }
+
+  localStorage.setItem("wow_killboard_hunter_name", name);
+  localStorage.setItem("wowkb_user_character", name);
+  localStorage.setItem("wowkb_user_realm", realm);
+  localStorage.setItem("wowkb_user_faction", faction);
+  localStorage.setItem("wowkb_supporter_active", "1");
+  sessionStorage.setItem("wowkb_auth_type", "officer");
+  portalAccessMode = "officer";
+
+  updateSupporterButton();
+  portalSetScreen("VERSIONS");
+}
+
+function portalLaunchFront(flavorKey) {
+  handleFlavorChange(flavorKey);
+  sessionStorage.setItem("wowkb_has_entered_feed", "1");
+  switchTab("FEED");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function portalSignOut() {
+  localStorage.removeItem("wowkb_user_character");
+  localStorage.removeItem("wowkb_user_realm");
+  localStorage.removeItem("wowkb_user_faction");
+  sessionStorage.removeItem("wowkb_auth_type");
+  portalAccessMode = "guest";
+  portalSetScreen("GATE");
 }
 
 function loadPortalView() {
@@ -2266,89 +2316,140 @@ function loadPortalView() {
   const storedFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
   const hasEnteredFeed = sessionStorage.getItem("wowkb_has_entered_feed");
 
-  // If user is already an authenticated officer and mode hasn't been explicitly toggled to guest
+  // Determine active clearance mode
   if (storedHunter && currentAuth === "officer" && portalAccessMode !== "guest") {
     portalAccessMode = "officer";
   }
 
   const cfg = FLAVOR_CONFIGS[currentFlavor] || FLAVOR_CONFIGS.CLASSIC_ERA;
 
-  // 1. Build Step 1 (Access Level Mode Selection)
-  const isGuest = (portalAccessMode === "guest");
-  const isOfficer = (portalAccessMode === "officer");
-
-  let modeDetailHtml = "";
-  if (isGuest) {
-    modeDetailHtml = `
-      <div class="portal-mode-detail-box guest">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="font-size:1.6rem;">👁️</span>
-          <div>
-            <div style="font-weight:800; font-size:0.92rem; color:#fff;">Guest Public Reconnaissance Mode Selected</div>
-            <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
-              Immediate read-only clearance. Full frontline feed telemetry, certified 1v1 solo kills, Most Wanted execution contracts, and Armory records unlocked.
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    // Officer mode
+  // SCREEN 1: THE MUSTER GATE (Simple, Dramatic Guest vs Officer Choice)
+  if (portalScreen === "GATE") {
+    let officerBoxHtml = "";
     if (storedHunter && currentAuth === "officer") {
       const factionColor = storedFaction === "Alliance" ? "var(--alliance-blue)" : "var(--horde-red)";
-      modeDetailHtml = `
-        <div class="portal-signed-in-box">
-          <div class="signed-in-header">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <span style="font-size:1.8rem;">👑</span>
-              <div>
-                <div style="font-weight:800; font-size:1.05rem; color:#fff;">
-                  Active Vanguard Operative: <span style="color:${factionColor}; font-weight:900;">${storedHunter}</span>
-                </div>
-                <div style="font-size:0.80rem; color:#94a3b8; margin-top:2px;">
-                  Realm: <strong style="color:#fff;">${storedRealm}</strong> &bull; Allegiance: <strong style="color:${factionColor};">${storedFaction}</strong> &bull; Vanguard Supporter Active
-                </div>
+      officerBoxHtml = `
+        <div class="gate-officer-profile">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:1.8rem;">👑</span>
+            <div>
+              <div style="font-weight:900; font-size:1.05rem; color:#fff;">
+                Inscribed Operative: <span style="color:${factionColor};">${storedHunter}</span>
+              </div>
+              <div style="font-size:0.80rem; color:#94a3b8; margin-top:2px;">
+                Garrison: <strong style="color:#fff;">${storedRealm}</strong> &bull; Allegiance: <strong style="color:${factionColor};">${storedFaction}</strong>
               </div>
             </div>
-            <button class="portal-signout-btn" onclick="portalSignOut()">Sign Out / Switch</button>
+          </div>
+          <button class="dramatic-gate-btn officer" onclick="portalAdvanceToVersions('officer')">
+            <span>👑 Advance as ${storedHunter}</span>
+            <span>&rarr;</span>
+          </button>
+          <div style="text-align:center; margin-top:8px;">
+            <button class="gate-signout-link" onclick="portalSignOut()">↺ Strike Name from Ledger / Enlist Anew</button>
           </div>
         </div>
       `;
     } else {
-      modeDetailHtml = `
-        <div class="portal-mode-detail-box officer">
-          <div style="margin-bottom:10px; font-weight:800; font-size:0.84rem; color:var(--wow-gold);">
-            ENTER CHARACTER CALL-SIGN FOR VANGUARD PRIVILEGES:
+      officerBoxHtml = `
+        <div class="gate-officer-form">
+          <div class="portal-form-group">
+            <label class="portal-label">Character / Call-sign</label>
+            <input type="text" id="gate-input-char" class="portal-input" placeholder="e.g. Sylvanas, Lothar" value="${storedHunter}">
           </div>
-          <div class="portal-login-form-compact">
-            <div class="portal-form-group">
-              <label class="portal-label">Character / Call-sign</label>
-              <input type="text" id="portal-input-char" class="portal-input" placeholder="e.g. Sylvanas, Lothar" value="${storedHunter}">
-            </div>
-            <div class="portal-form-group">
-              <label class="portal-label">Realm / Server</label>
-              <input type="text" id="portal-input-realm" class="portal-input" placeholder="e.g. Crusader Strike" value="${storedRealm}">
-            </div>
-            <div class="portal-form-group">
-              <label class="portal-label">Allegiance Faction</label>
-              <div class="portal-faction-toggle">
-                <label class="faction-radio alliance">
-                  <input type="radio" name="portal-faction" value="Alliance" ${storedFaction === 'Alliance' ? 'checked' : ''}>
-                  <span>🦁 Alliance</span>
-                </label>
-                <label class="faction-radio horde">
-                  <input type="radio" name="portal-faction" value="Horde" ${storedFaction === 'Horde' ? 'checked' : ''}>
-                  <span>🐺 Horde</span>
-                </label>
-              </div>
+          <div class="portal-form-group">
+            <label class="portal-label">Garrison / Realm</label>
+            <input type="text" id="gate-input-realm" class="portal-input" placeholder="e.g. Crusader Strike" value="${storedRealm}">
+          </div>
+          <div class="portal-form-group">
+            <label class="portal-label">Faction Allegiance</label>
+            <div class="portal-faction-toggle">
+              <label class="faction-radio alliance">
+                <input type="radio" name="gate-faction" value="Alliance" ${storedFaction === 'Alliance' ? 'checked' : ''}>
+                <span>🦁 Alliance Standard</span>
+              </label>
+              <label class="faction-radio horde">
+                <input type="radio" name="gate-faction" value="Horde" ${storedFaction === 'Horde' ? 'checked' : ''}>
+                <span>🐺 Horde Standard</span>
+              </label>
             </div>
           </div>
+          <button class="dramatic-gate-btn officer" onclick="portalSubmitOfficerAndAdvance()">
+            <span>📜 Seal Ledger &amp; Choose War Front</span>
+            <span>&rarr;</span>
+          </button>
         </div>
       `;
     }
+
+    container.innerHTML = `
+      <div class="portal-container dramatic-flow">
+        <!-- Dramatic Hero Masthead -->
+        <div class="portal-hero dramatic-hero">
+          <div class="portal-crest-row">
+            <img src="/static/icons/factions/alliance.jpg" class="portal-crest alliance" alt="Alliance" title="For the Alliance!">
+            <div class="portal-emblem">⚔️</div>
+            <img src="/static/icons/factions/horde.jpg" class="portal-crest horde" alt="Horde" title="For the Horde!">
+          </div>
+          <h1 class="portal-title">AZEROTH COMBAT WAR ROOM</h1>
+          <div class="portal-tagline">CHRONICLES OF MARTIAL CONFLICT &bull; BLOOD BOUNTIES &bull; BATTLEGROUND RECONNAISSANCE</div>
+          <p class="portal-lead">
+            The Third War broke the world; the frontier remains soaked in blood. Before you enter the theater of war, declare how your presence is inscribed upon the ledger.
+          </p>
+          <div class="portal-hero-actions">
+            <button class="portal-fieldkit-pill" onclick="openAddonDossierModal()">
+              <span>📜 How the Addon Works (Field Kit &amp; Blueprints)</span>
+            </button>
+            <button class="portal-oracle-pill" onclick="toggleOracleChatModal()">
+              <span>🔮 Inquire with the War Scribe (AI)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dramatic 2-Card Selection Gate -->
+        <div class="dramatic-gate-grid">
+          <!-- Card 1: Unmarked Scout (Guest) -->
+          <div class="dramatic-gate-card guest">
+            <div class="gate-card-badge guest">UNMARKED RECONNAISSANCE</div>
+            <div class="gate-card-icon">👁️</div>
+            <h2 class="gate-card-title">Enter as Unmarked Scout</h2>
+            <p class="gate-card-desc">
+              March past the gates without name or crest. Observe live frontline skirmishes, inspect the death rolls, examine bounty contracts, and study the armory records in secret.
+            </p>
+            <ul class="gate-checklist">
+              <li>✓ Immediate read-only access to frontline slaughter</li>
+              <li>✓ Inspect certified 1v1 solo kills &amp; gang clustering</li>
+              <li>✓ Review the most wanted bounty contracts &amp; KOS gibbet</li>
+              <li>✓ Full access to player armory &amp; deadly NPC casualty tolls</li>
+            </ul>
+            <button class="dramatic-gate-btn guest" onclick="portalAdvanceToVersions('guest')">
+              <span>⚔️ Enter as Unmarked Scout</span>
+              <span>&rarr;</span>
+            </button>
+          </div>
+
+          <!-- Card 2: Inscribe Muster Roll (Officer Sign-In) -->
+          <div class="dramatic-gate-card officer">
+            <div class="gate-card-badge officer">MUSTER ROLL</div>
+            <div class="gate-card-icon">👑</div>
+            <h2 class="gate-card-title">Inscribe Call-Sign &amp; Allegiance</h2>
+            <p class="gate-card-desc">
+              Pledge your steel to High Command. Record your name to issue blood bounties in gold, rally defense beacons, and stamp your personal combat dispatches.
+            </p>
+            ${officerBoxHtml}
+          </div>
+        </div>
+      </div>
+    `;
+    return;
   }
 
-  // 2. Build Step 2 (Flavor Grid)
+  // SCREEN 2: CHOOSE YOUR THEATER OF CONFLICT (Version Selection)
+  const isGuest = (portalAccessMode === "guest");
+  const clearanceLabel = isGuest 
+    ? `👁️ Clearance: Unmarked Scout (Guest Recon)`
+    : `👑 Clearance: Operative ${storedHunter || "Enlisted"} (${storedFaction} &bull; ${storedRealm})`;
+
   const flavorKeys = ["CLASSIC_ERA", "ANNIVERSARY", "FOREVER", "TBC", "WOTLK", "RETAIL"];
   const flavorCardsHtml = flavorKeys.map(key => {
     const f = FLAVOR_CONFIGS[key];
@@ -2361,7 +2462,7 @@ function loadPortalView() {
       : "classic";
 
     return `
-      <div class="portal-flavor-card ${isSelected ? 'selected' : ''}" onclick="portalSelectFlavor('${key}')" style="--flavor-color: ${f.iconColor};">
+      <div class="portal-flavor-card dramatic-flavor-card ${isSelected ? 'selected' : ''}" onclick="portalLaunchFront('${key}')" style="--flavor-color: ${f.iconColor};">
         <div class="portal-flavor-card-top">
           <span class="wh-w-badge ${badgeCls}" style="border-color:${f.iconColor}; color:${f.iconColor}; font-size:0.75rem; width:22px; height:22px;">W</span>
           <span class="portal-flavor-lvl-badge" style="color:${f.iconColor}; border-color:${f.iconColor};">LVL ${f.maxLevel} MAX</span>
@@ -2369,254 +2470,246 @@ function loadPortalView() {
         <div class="portal-flavor-name">${f.name}</div>
         <div class="portal-flavor-sub">${f.portalDescription || f.tag}</div>
         <div class="portal-flavor-status">
-          ${isSelected 
-            ? `<span class="portal-selected-indicator" style="background:${f.iconColor};"><span class="portal-check">✓</span> ACTIVE ENGINE</span>`
-            : `<span class="portal-select-prompt">Click to Select</span>`}
+          <div class="dramatic-launch-prompt" style="color: ${f.iconColor};">
+            <span>⚔️ Deploy to ${f.shortName} Front</span>
+            <span>&rarr;</span>
+          </div>
         </div>
       </div>
     `;
   }).join("");
 
-  // 3. Build Step 3 (Dynamic Launch Bar)
-  let launchSummaryText = "";
-  let launchBtnText = "";
-  let launchBtnClass = isGuest ? "guest" : "officer";
-
-  if (isGuest) {
-    launchSummaryText = `Entering as <strong style="color:var(--accent-cyan);">Guest Field Operative</strong> into <strong style="color:${cfg.iconColor};">${cfg.name} (LVL ${cfg.maxLevel} MAX)</strong>`;
-    launchBtnText = `⚔️ Launch War Room — ${cfg.shortName} (Guest Recon)`;
-  } else {
-    const charName = storedHunter || "Operative";
-    launchSummaryText = `Entering as Vanguard Operative <strong style="color:var(--wow-gold);">${charName}</strong> into <strong style="color:${cfg.iconColor};">${cfg.name} (LVL ${cfg.maxLevel} MAX)</strong>`;
-    launchBtnText = `👑 Sign In & Launch War Room — ${cfg.shortName}`;
-  }
-
-  // 4. Render Entire Portal View
   container.innerHTML = `
-    <div class="portal-container">
-      <!-- Portal Hero -->
-      <div class="portal-hero">
-        <div class="portal-crest-row">
-          <img src="/static/icons/factions/alliance.jpg" class="portal-crest alliance" alt="Alliance" title="For the Alliance!">
-          <div class="portal-emblem">⚔️</div>
-          <img src="/static/icons/factions/horde.jpg" class="portal-crest horde" alt="Horde" title="For the Horde!">
+    <div class="portal-container dramatic-flow">
+      <!-- Screen 2 Navigation Bar -->
+      <div class="theater-nav-bar">
+        <button class="portal-back-btn" onclick="portalSetScreen('GATE')">
+          <span>&larr; Retreat to Muster Gate</span>
+        </button>
+        <div class="theater-clearance-wrap">
+          <span class="theater-clearance-pill ${isGuest ? 'guest' : 'officer'}">${clearanceLabel}</span>
         </div>
-        <h1 class="portal-title">AZEROTH COMBAT WAR ROOM PORTAL</h1>
-        <div class="portal-tagline">DECENTRALIZED COMBAT TELEMETRY &bull; ZERO-TAINT LOGGING &bull; BLOOD BOUNTY REGISTRY</div>
-        <p class="portal-lead">
-          Connect your World of Warcraft client to the premier cross-client PvP intelligence network. Configure your clearance level and target expansion to enter the theater.
-        </p>
-        ${hasEnteredFeed ? `
-          <button class="portal-quick-return-btn" onclick="portalEnterFeed()">
-            <span>⚔️ Return to Active Frontline Feed (${cfg.shortName})</span>
-            <span>&rarr;</span>
+        <div style="display:flex; gap:8px;">
+          <button class="portal-fieldkit-pill small" onclick="openAddonDossierModal()">
+            <span>📜 Field Kit Blueprints</span>
           </button>
-        ` : ''}
+          <button class="portal-oracle-pill small" onclick="toggleOracleChatModal()">
+            <span>🔮 Ask War Scribe</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Step 1: Clearance Level (Guest vs Officer) -->
-      <section class="portal-step-section">
-        <div class="portal-step-header">
-          <span class="portal-step-num">STEP 1</span>
-          <div>
-            <h2 class="portal-section-title">Select Your War Room Clearance Level</h2>
-            <div class="portal-section-sub">Choose whether to browse frontline feeds immediately as a guest or sign in as an officer.</div>
-          </div>
-        </div>
+      <!-- Theater Header -->
+      <div class="theater-header-card">
+        <h2 class="theater-main-title">CHOOSE YOUR THEATER OF CONFLICT</h2>
+        <p class="theater-subtitle">
+          Select the campaign where your steel is pledged. Selecting a theater immediately deploys your console to the frontline feed.
+        </p>
+      </div>
 
-        <div class="portal-mode-toggle-group">
-          <!-- Option A: Guest -->
-          <div class="portal-mode-card ${isGuest ? 'active guest' : ''}" onclick="setPortalAccessMode('guest')">
-            <div class="portal-mode-radio">${isGuest ? '●' : '○'}</div>
-            <div class="portal-mode-content">
-              <div class="portal-mode-header">
-                <span class="portal-mode-badge guest">OPTION A</span>
-                <span class="portal-mode-title">👁️ Continue as Guest</span>
-              </div>
-              <p class="portal-mode-desc">Public reconnaissance. Instant read-only access to live feeds, certified 1v1 solo kills, wanted contracts, and armory stats. No login required.</p>
-            </div>
-          </div>
-
-          <!-- Option B: Officer -->
-          <div class="portal-mode-card ${isOfficer ? 'active officer' : ''}" onclick="setPortalAccessMode('officer')">
-            <div class="portal-mode-radio">${isOfficer ? '●' : '○'}</div>
-            <div class="portal-mode-content">
-              <div class="portal-mode-header">
-                <span class="portal-mode-badge officer">OPTION B</span>
-                <span class="portal-mode-title">👑 Officer / Vanguard Sign-In</span>
-              </div>
-              <p class="portal-mode-desc">Link your character call-sign to post gold bounties on enemies, broadcast guild defense beacons, sync client combat logs, and claim supporter perks.</p>
-            </div>
-          </div>
-        </div>
-
-        ${modeDetailHtml}
-      </section>
-
-      <!-- Step 2: WoW Version Selection -->
-      <section class="portal-step-section">
-        <div class="portal-step-header">
-          <span class="portal-step-num">STEP 2</span>
-          <div>
-            <h2 class="portal-section-title">Select Your World of Warcraft Version</h2>
-            <div class="portal-section-sub">Choose your target client flavor to calibrate combat telemetry, max level caps, and combat rules.</div>
-          </div>
-        </div>
-        <div class="portal-flavor-grid" id="portal-flavor-grid">
-          ${flavorCardsHtml}
-        </div>
-      </section>
-
-      <!-- Step 3: Tactical Launch Bar -->
-      <section class="portal-launch-bar">
-        <div class="portal-launch-summary">
-          <span class="launch-summary-label">DEPLOYMENT CLEARANCE</span>
-          <div class="launch-summary-details">${launchSummaryText}</div>
-        </div>
-        <button class="portal-cta-launch-btn ${launchBtnClass}" onclick="portalLaunchWarRoom()">
-          <span>${launchBtnText}</span>
-          <span class="launch-arrow">&rarr;</span>
-        </button>
-      </section>
-
-      <!-- Step 4: Addon Architecture & Explanation -->
-      <section class="portal-step-section">
-        <div class="portal-step-header">
-          <span class="portal-step-num">INTEL</span>
-          <div>
-            <h2 class="portal-section-title">How the WoW Killboard Addon Works</h2>
-            <div class="portal-section-sub">Engineered to strict esports telemetry standards with zero Blizzard UI taint and zero Python barriers.</div>
-          </div>
-        </div>
-
-        <div class="portal-pillars-grid">
-          <div class="pillar-card">
-            <div class="pillar-icon">📡</div>
-            <h3 class="pillar-title">1. Passive Combat Log Capture</h3>
-            <p class="pillar-desc">
-              Pure Lua addon built exclusively with <code>BackdropTemplate</code> and anonymous widgets. Passively tracks combat events, player GUIDs, and spatial coordinates (<code>C_Map</code>) without modifying protected code or causing "Action Blocked" popups.
-            </p>
-          </div>
-
-          <div class="pillar-card">
-            <div class="pillar-icon">⚡</div>
-            <h3 class="pillar-title">2. Zero-Python Auto-Sync</h3>
-            <p class="pillar-desc">
-              Standalone executable (<code>WoWKillboardSync.exe</code>) automatically discovers your WoW installation across <code>C:</code>, <code>D:</code>, and <code>E:</code> drives. Runs in the background with zero terminal commands or configuration required.
-            </p>
-          </div>
-
-          <div class="pillar-card">
-            <div class="pillar-icon">🔐</div>
-            <h3 class="pillar-title">3. 32-Bit FNV-1a Deduplication</h3>
-            <p class="pillar-desc">
-              Every combat event generates a deterministic cryptographic hash based on timestamp, participant GUIDs, and zone coordinates. Even when 40 raid members log the same battle, our engine merges it into a single clean killmail.
-            </p>
-          </div>
-
-          <div class="pillar-card">
-            <div class="pillar-icon">🩸</div>
-            <h3 class="pillar-title">4. Blood Bounties &amp; KOS Tracking</h3>
-            <p class="pillar-desc">
-              Post bounties in gold on enemy players. Defaulted bounty debts consign players to the server-wide <strong>Kill on Sight (KOS)</strong> blacklist, permanently tracked by GUID across character renames and guild hops.
-            </p>
-          </div>
-        </div>
-
-        <!-- Addon Quick Download & Setup Card -->
-        <div class="portal-download-box">
-          <div class="download-info">
-            <span style="font-size:2rem;">📦</span>
-            <div>
-              <div style="font-weight:800; font-size:1.15rem; color:#fff;">Get the Official Addon &amp; Sync Agent</div>
-              <div style="font-size:0.82rem; color:#94a3b8; margin-top:2px;">
-                Version 1.0.0 &bull; Verified across Forever Beta, Classic Era, 20th Anniversary, and Retail.
-              </div>
-            </div>
-          </div>
-          <div class="download-btn-group">
-            <a href="/WoWKillboard-v1.0.0.zip" class="portal-dl-btn primary" download>
-              <span>📥 Download Addon (.zip)</span>
-            </a>
-            <button class="portal-dl-btn secondary" onclick="alert('WoWKillboardSync.exe is included in your WoW_Killboard repository root and sync package!')">
-              <span>⚡ Desktop Sync Agent (.exe)</span>
-            </button>
-            <button class="portal-dl-btn tertiary" onclick="switchTab('INFO')">
-              <span>📖 Field Manual &amp; Codex</span>
-            </button>
-          </div>
-        </div>
-      </section>
+      <!-- 6 War Fronts Grid -->
+      <div class="portal-flavor-grid dramatic-theater-grid">
+        ${flavorCardsHtml}
+      </div>
     </div>
   `;
 }
 
-function portalSelectFlavor(flavorKey) {
-  handleFlavorChange(flavorKey);
-  loadPortalView();
+// ----------------- Addon Field Kit Dossier Modal Handlers -----------------
+
+function openAddonDossierModal() {
+  const modal = document.getElementById("addon-dossier-modal");
+  if (modal) {
+    modal.style.display = "flex";
+  }
 }
 
-function portalLaunchWarRoom() {
-  if (portalAccessMode === "guest") {
-    portalContinueAsGuest();
+function closeAddonDossierModal() {
+  const modal = document.getElementById("addon-dossier-modal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
+// ----------------- War Scribe & Combat Oracle AI Chat -----------------
+
+function toggleOracleChatModal(forceOpen) {
+  const modal = document.getElementById("oracle-chat-modal");
+  if (!modal) return;
+  if (forceOpen === true) {
+    modal.style.display = "flex";
+  } else if (forceOpen === false) {
+    modal.style.display = "none";
   } else {
-    const storedHunter = localStorage.getItem("wowkb_user_character") || localStorage.getItem("wow_killboard_hunter_name");
-    const currentAuth = sessionStorage.getItem("wowkb_auth_type");
-    if (storedHunter && currentAuth === "officer") {
-      portalEnterFeed();
-    } else {
-      portalSubmitLogin();
+    modal.style.display = (modal.style.display === "none" || !modal.style.display) ? "flex" : "none";
+  }
+
+  if (modal.style.display === "flex") {
+    const input = document.getElementById("oracle-chat-input");
+    if (input) input.focus();
+    const msgContainer = document.getElementById("oracle-chat-messages");
+    if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+  }
+}
+
+function toggleOracleKeyDrawer() {
+  const drawer = document.getElementById("oracle-key-drawer");
+  if (!drawer) return;
+  drawer.style.display = (drawer.style.display === "none" || !drawer.style.display) ? "block" : "none";
+  if (drawer.style.display === "block") {
+    const input = document.getElementById("oracle-key-input");
+    if (input) {
+      input.value = localStorage.getItem("wowkb_gemini_api_key") || "";
+      input.focus();
     }
   }
 }
 
-function portalContinueAsGuest() {
-  sessionStorage.setItem("wowkb_auth_type", "guest");
-  sessionStorage.setItem("wowkb_has_entered_feed", "1");
-  switchTab("FEED");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function portalSubmitLogin() {
-  const charEl = document.getElementById("portal-input-char");
-  const realmEl = document.getElementById("portal-input-realm");
-  const factionEl = document.querySelector('input[name="portal-faction"]:checked');
-  const name = charEl ? charEl.value.trim() : "";
-  const realm = realmEl ? realmEl.value.trim() : "Crusader Strike";
-  const faction = factionEl ? factionEl.value : "Alliance";
-
-  if (!name) {
-    alert("Please enter your character name or call-sign to sign in, or choose 'Continue as Guest'.");
-    if (charEl) charEl.focus();
-    return;
+function saveOracleKey() {
+  const input = document.getElementById("oracle-key-input");
+  if (input) {
+    const key = input.value.trim();
+    if (key) {
+      localStorage.setItem("wowkb_gemini_api_key", key);
+      alert("Arcane Key saved into local cache. The War Scribe will now use deep generative synthesis.");
+    } else {
+      localStorage.removeItem("wowkb_gemini_api_key");
+      alert("Arcane Key cleared. Reverting to local Scribe intelligence.");
+    }
+    const drawer = document.getElementById("oracle-key-drawer");
+    if (drawer) drawer.style.display = "none";
   }
-
-  localStorage.setItem("wow_killboard_hunter_name", name);
-  localStorage.setItem("wowkb_user_character", name);
-  localStorage.setItem("wowkb_user_realm", realm);
-  localStorage.setItem("wowkb_user_faction", faction);
-  localStorage.setItem("wowkb_supporter_active", "1");
-  sessionStorage.setItem("wowkb_auth_type", "officer");
-  sessionStorage.setItem("wowkb_has_entered_feed", "1");
-
-  updateSupporterButton();
-  switchTab("FEED");
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function portalEnterFeed() {
-  sessionStorage.setItem("wowkb_has_entered_feed", "1");
-  switchTab("FEED");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+function clearOracleChat() {
+  const container = document.getElementById("oracle-chat-messages");
+  if (container) {
+    container.innerHTML = `
+      <div class="oracle-msg scribe">
+        <div class="msg-meta">⚔️ The War Scribe</div>
+        <div class="msg-body">
+          Speak, soldier. The ledger holds every death, every bounty, and every fallen champion across the realms. What intelligence do you seek from the front?
+        </div>
+      </div>
+    `;
+  }
 }
 
-function portalSignOut() {
-  localStorage.removeItem("wowkb_user_character");
-  localStorage.removeItem("wowkb_user_realm");
-  localStorage.removeItem("wowkb_user_faction");
-  sessionStorage.removeItem("wowkb_auth_type");
-  portalAccessMode = "guest";
-  loadPortalView();
+function sendOracleQuickQuery(promptText) {
+  const input = document.getElementById("oracle-chat-input");
+  if (input) {
+    input.value = promptText;
+    sendOracleMessage();
+  }
+}
+
+function handleOracleKeydown(event) {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    sendOracleMessage();
+  }
+}
+
+async function sendOracleMessage() {
+  const input = document.getElementById("oracle-chat-input");
+  const msgContainer = document.getElementById("oracle-chat-messages");
+  if (!input || !msgContainer) return;
+
+  const query = input.value.trim();
+  if (!query) return;
+
+  input.value = "";
+
+  // Append user message
+  const userMsgEl = document.createElement("div");
+  userMsgEl.className = "oracle-msg user";
+  userMsgEl.innerHTML = `
+    <div class="msg-meta">🛡️ You</div>
+    <div class="msg-body">${escapeHtml(query)}</div>
+  `;
+  msgContainer.appendChild(userMsgEl);
+
+  // Append temporary loading message
+  const loaderId = `oracle-loading-${Date.now()}`;
+  const loadingEl = document.createElement("div");
+  loadingEl.id = loaderId;
+  loadingEl.className = "oracle-msg scribe loading";
+  loadingEl.innerHTML = `
+    <div class="msg-meta">⚔️ The War Scribe</div>
+    <div class="msg-body"><span class="oracle-pulsing-rune">🔮 Inspecting the rolls and consulting field dispatches...</span></div>
+  `;
+  msgContainer.appendChild(loadingEl);
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+
+  const character = localStorage.getItem("wowkb_user_character") || "Unmarked Scout";
+  const apiKey = localStorage.getItem("wowkb_gemini_api_key") || "";
+
+  try {
+    const res = await fetch("/api/oracle/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: query,
+        character: character,
+        flavor: currentFlavor,
+        api_key: apiKey
+      })
+    });
+
+    const data = await res.json();
+    const loader = document.getElementById(loaderId);
+    if (loader) loader.remove();
+
+    const scribeMsgEl = document.createElement("div");
+    scribeMsgEl.className = "oracle-msg scribe";
+
+    let sourcesHtml = "";
+    if (data.sources && data.sources.length) {
+      sourcesHtml = `
+        <div class="oracle-sources-tag">
+          ${data.sources.map(s => `<span class="source-pill">📜 ${escapeHtml(s)}</span>`).join("")}
+        </div>
+      `;
+    }
+
+    // Convert simple markdown **bold** and \n to formatted HTML
+    let formattedReply = formatScribeMarkdown(data.reply || "The dispatch is unreadable; our scouts report no findings.");
+
+    scribeMsgEl.innerHTML = `
+      <div class="msg-meta">⚔️ The War Scribe</div>
+      <div class="msg-body">${formattedReply}</div>
+      ${sourcesHtml}
+    `;
+    msgContainer.appendChild(scribeMsgEl);
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+  } catch (err) {
+    const loader = document.getElementById(loaderId);
+    if (loader) loader.remove();
+
+    const errorEl = document.createElement("div");
+    errorEl.className = "oracle-msg scribe error";
+    errorEl.innerHTML = `
+      <div class="msg-meta">⚔️ Dispatch Error</div>
+      <div class="msg-body">The raven was intercepted or the archives could not be reached. Ensure the garrison server is active.</div>
+    `;
+    msgContainer.appendChild(errorEl);
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+  }
+}
+
+function formatScribeMarkdown(text) {
+  if (!text) return "";
+  let out = escapeHtml(text);
+  // Bold **text**
+  out = out.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Italic *text*
+  out = out.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  // Inline code `code`
+  out = out.replace(/`(.*?)`/g, '<code>$1</code>');
+  // Linebreaks
+  out = out.replace(/\n\n/g, '<br><br>');
+  out = out.replace(/\n/g, '<br>');
+  return out;
 }
 
 // Tab Switching

@@ -75,6 +75,14 @@
           <input type="text" id="search-box" class="search-input" placeholder="Search Player, Guild, Zone...">
         </div>
 
+        <button class="header-action-pill fieldkit-btn" onclick="openAddonDossierModal()" title="View Addon Field Kit & Blueprints">
+          📜 Field Kit
+        </button>
+
+        <button class="header-action-pill oracle-btn" onclick="toggleOracleChatModal()" title="Consult the War Scribe (AI)">
+          🔮 War Scribe
+        </button>
+
         <button class="supporter-btn" onclick="toggleSupporterMode()">
           ★ Supporter Perks
         </button>
@@ -214,6 +222,14 @@
         </button>
         <button class="mobile-nav-item" id="m-nav-info" onclick="switchTab('INFO'); toggleMobileDrawer(false);">
           <span>📜 Field Manual &amp; Codex</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" onclick="openAddonDossierModal(); toggleMobileDrawer(false);">
+          <span>⚙️ Addon Field Kit &amp; Blueprints</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" onclick="toggleOracleChatModal(); toggleMobileDrawer(false);">
+          <span>🔮 Ask the War Scribe (AI)</span>
           <span>&rarr;</span>
         </button>
       </div>
@@ -516,7 +532,149 @@
         <a href="javascript:void(0)" onclick="openInfoPage('legal')">Warcraft Accord &amp; Policies</a>
       </div>
     </div>
-  </footer>
+  <!-- Persistent Floating Tactical Action Triggers -->
+  <button id="floating-fieldkit-btn" class="floating-action-trigger fieldkit-float" onclick="openAddonDossierModal()" title="Addon Architecture &amp; Field Kit">
+    <span class="float-icon">📜</span>
+    <span class="float-text">Field Kit</span>
+  </button>
+
+  <button id="oracle-chat-trigger" class="floating-action-trigger oracle-float" onclick="toggleOracleChatModal()" title="Consult the War Scribe (AI)">
+    <span class="float-icon">🔮</span>
+    <span class="float-text">Ask War Scribe</span>
+  </button>
+
+  <!-- Addon Field Kit & Blueprints Pop-Out Dossier Modal -->
+  <div class="modal-overlay" id="addon-dossier-modal" style="display: none;" onclick="if(event.target===this) closeAddonDossierModal()">
+    <div class="modal-card modal-card-lg dossier-card">
+      <div class="modal-header dossier-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 1.6rem;">📜</span>
+          <div>
+            <strong style="color: var(--wow-gold); font-family: var(--font-tactical); font-size: 1.18rem; letter-spacing: 0.6px;">SCRIBE'S FIELD KIT &amp; ADDON BLUEPRINTS</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">VANILLA PURE LUA &bull; ZERO BLIZZARD UI TAINT &bull; 32-BIT FNV-1a BATTLE CERTIFICATION</div>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeAddonDossierModal()">&times;</button>
+      </div>
+
+      <div class="dossier-body">
+        <p class="dossier-lore-lead">
+          Compiled under the dark, utilitarian doctrine of the Third War. Azeroth is a scarred, volatile frontier recovering from devastation—not a polished parlor. These tools were forged for survival, martial discipline, and indelible truth upon the killing grounds.
+        </p>
+
+        <div class="dossier-pillars-grid">
+          <div class="dossier-pillar">
+            <div class="pillar-num">PILLAR I</div>
+            <h4 class="pillar-head">The Silent Combat Log (Pure Lua Discipline)</h4>
+            <p class="pillar-text">
+              Forged strictly with anonymous Lua widgets and <code>BackdropTemplate</code>. It never inherits Blizzard XML button templates, touches no protected frames, and leaves <code>UISpecialFrames</code> undefiled. Even in the heat of combat lockdown, it extracts combat logs without triggering a single "Action Blocked" error.
+            </p>
+          </div>
+
+          <div class="dossier-pillar">
+            <div class="pillar-num">PILLAR II</div>
+            <h4 class="pillar-head">The Automated Courier (<code>WoWKillboardSync.exe</code>)</h4>
+            <p class="pillar-text">
+              A solitary Windows executable. Requires no Python runes, no external dependencies, and no terminal invocations. Operating in background recon, it scans <code>C:</code>, <code>D:</code>, and <code>E:</code> drives across all four game clients to transmit your SavedVariables to the war room.
+            </p>
+          </div>
+
+          <div class="dossier-pillar">
+            <div class="pillar-num">PILLAR III</div>
+            <h4 class="pillar-head">The Indelible Blood Stamp (32-Bit FNV-1a)</h4>
+            <p class="pillar-text">
+              When a 40-man vanguard fells an enemy warlord in Southshore, 40 reports arrive simultaneously. Our ledger stamps each clash with a deterministic 32-bit FNV-1a cryptographic hash based on timestamp, participant GUIDs, and map coordinates (<code>C_Map</code>), merging duplicate logs into one certified killmail.
+            </p>
+          </div>
+
+          <div class="dossier-pillar">
+            <div class="pillar-num">PILLAR IV</div>
+            <h4 class="pillar-head">Blood Bounties &amp; The Server Gibbet</h4>
+            <p class="pillar-text">
+              Pledge your gold on enemy officers. Slayers claim the bounty upon logging the kill. Those who fail to pay or dishonor debts are branded upon the server-wide Kill on Sight (KOS) gibbet, pursued across character renames and guild desertions.
+            </p>
+          </div>
+        </div>
+
+        <div class="dossier-download-box">
+          <div class="dossier-dl-info">
+            <span style="font-size: 2rem;">📦</span>
+            <div>
+              <div style="font-weight:800; font-size:1.05rem; color:#fff;">Claim the Official Addon &amp; Sync Courier</div>
+              <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
+                Verified across Forever Beta, Classic Era, 20th Anniversary, and Modern Retail.
+              </div>
+            </div>
+          </div>
+          <div class="dossier-dl-actions">
+            <a href="/WoWKillboard-v1.0.0.zip" class="portal-dl-btn primary" download>
+              <span>📥 Download Addon (.zip)</span>
+            </a>
+            <button class="portal-dl-btn secondary" onclick="alert('WoWKillboardSync.exe is included in your repository root and sync distribution!')">
+              <span>⚡ Desktop Sync Courier (.exe)</span>
+            </button>
+            <button class="portal-dl-btn tertiary" onclick="closeAddonDossierModal(); switchTab('INFO');">
+              <span>📜 Field Manual &amp; Codex</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grand Inquisitor & War Scribe AI Chat Window -->
+  <div id="oracle-chat-modal" class="oracle-chat-window" style="display: none;">
+    <div class="oracle-chat-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="oracle-avatar">🔮</span>
+        <div>
+          <div class="oracle-title">GRAND INQUISITOR &amp; WAR SCRIBE</div>
+          <div class="oracle-sub">Live Azeroth Combat Telemetry &amp; Field Codex</div>
+        </div>
+      </div>
+      <div class="oracle-header-actions">
+        <button class="oracle-tool-btn" onclick="clearOracleChat()" title="Clear dispatches">↺</button>
+        <button class="oracle-tool-btn" onclick="toggleOracleKeyDrawer()" title="Arcane Key Settings (Gemini API Key)">⚙️</button>
+        <button class="oracle-tool-btn" onclick="toggleOracleChatModal(false)">&times;</button>
+      </div>
+    </div>
+
+    <!-- Optional Arcane Key Drawer -->
+    <div id="oracle-key-drawer" class="oracle-key-drawer" style="display: none;">
+      <div class="oracle-key-label">Arcane Key (Gemini API Key — Optional for Generative Synthesis):</div>
+      <div style="display: flex; gap: 6px; margin-top:4px;">
+        <input type="password" id="oracle-key-input" class="oracle-key-input" placeholder="AIzaSy..." onchange="saveOracleKey()">
+        <button class="oracle-key-save-btn" onclick="saveOracleKey()">Save</button>
+      </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="oracle-chat-messages" id="oracle-chat-messages">
+      <div class="oracle-msg scribe">
+        <div class="msg-meta">⚔️ The War Scribe</div>
+        <div class="msg-body">
+          Speak, soldier. The ledger holds every death, every bounty, and every fallen champion across the realms. What intelligence do you seek from the front?
+        </div>
+      </div>
+    </div>
+
+    <!-- Suggested Quick Chips -->
+    <div class="oracle-quick-chips" id="oracle-quick-chips">
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('Who holds the highest bounty on the gibbet?')">🩸 Highest Bounty</button>
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('Which zone has seen the most slaughter?')">⚔️ Bloodiest Zone</button>
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('What are the deadliest wilderness creatures?')">☠️ Deadliest NPCs</button>
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('How does the addon record combat with zero UI taint?')">📜 Zero-Taint Addon</button>
+    </div>
+
+    <!-- Chat Input Area -->
+    <div class="oracle-chat-input-bar">
+      <textarea id="oracle-chat-input" class="oracle-textarea" placeholder="Inquire regarding combatants, bounties, zones, or field kit..." rows="1" onkeydown="handleOracleKeydown(event)"></textarea>
+      <button class="oracle-send-btn" onclick="sendOracleMessage()">
+        <span>Dispatch</span>
+        <span>⚔️</span>
+      </button>
+    </div>
+  </div>
 
   <script src="/static/app.js"></script>
 </body>
