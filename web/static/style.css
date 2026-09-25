@@ -592,6 +592,218 @@ body {
   color: var(--text-main);
 }
 
+/* ----------------- Dynamic Homepage Stats Hub ----------------- */
+
+.homepage-stats-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.stats-hub-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Operative Hero Strip (Signed-In) */
+.operative-hero-strip {
+  background: linear-gradient(135deg, rgba(26, 32, 46, 0.95) 0%, rgba(13, 17, 26, 0.95) 100%);
+  border: 1px solid var(--wow-brass-border, #4a3b27);
+  border-left: 4px solid var(--wow-gold);
+  border-radius: 6px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.operative-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.operative-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.operative-name {
+  font-family: var(--font-tactical);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.operative-rank-tag {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid var(--wow-brass-border-light, #735934);
+  color: var(--wow-gold);
+  font-family: var(--font-tactical);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+
+.operative-flavor-tag {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: var(--accent-cyan);
+  font-family: var(--font-tactical);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.operative-sub-row {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+.operative-action-btn {
+  background: linear-gradient(135deg, #2b2416 0%, #17140e 100%);
+  color: var(--wow-gold-bright, #ffe680);
+  border: 1px solid var(--wow-brass-border-light, #735934);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-family: var(--font-tactical);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.operative-action-btn:hover {
+  background: linear-gradient(135deg, #3d321d 0%, #241e12 100%);
+  border-color: var(--wow-gold);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(212, 163, 41, 0.35);
+}
+
+.operative-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.operative-card {
+  background: linear-gradient(180deg, #131824 0%, #0a0d15 100%);
+  border: 1px solid rgba(212, 163, 41, 0.25);
+}
+
+.highlight-gold {
+  color: var(--wow-gold-bright, #ffe680);
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+.highlight-red {
+  color: #f87171;
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+}
+
+.highlight-green {
+  color: #34d399;
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+}
+
+.highlight-cyan {
+  color: var(--accent-cyan, #00e5ff);
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+}
+
+.stats-section-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 6px 0 2px 0;
+  font-family: var(--font-tactical);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #856a36;
+  letter-spacing: 0.8px;
+}
+
+.stats-section-divider::before,
+.stats-section-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--wow-brass-border, #4a3b27);
+}
+
+.stats-section-divider::before {
+  margin-right: 12px;
+}
+
+.stats-section-divider::after {
+  margin-left: 12px;
+}
+
+/* Guest Telemetry Header & Notice */
+.guest-stats-header {
+  padding-bottom: 2px;
+}
+
+.guest-recon-badge {
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--accent-cyan);
+  font-family: var(--font-tactical);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.guest-auth-prompt-strip {
+  background: rgba(14, 18, 28, 0.85);
+  border: 1px dashed var(--wow-brass-border-light, #735934);
+  border-radius: 6px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.guest-signin-link-btn {
+  background: var(--wow-gold);
+  color: #000;
+  font-family: var(--font-tactical);
+  font-size: 0.76rem;
+  font-weight: 900;
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.guest-signin-link-btn:hover {
+  background: var(--wow-gold-bright, #ffe680);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
 /* ----------------- Emergency Distress & Recon Wire ----------------- */
 
 .global-sos-banner {

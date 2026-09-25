@@ -121,11 +121,12 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - Dynamic Classic PvP Military Honor Rank Title calculation: Scout through High Warlord (Horde) and Private through Grand Marshal (Alliance) based on weighted kill volume and K/D efficiency.
    - Retribution status indicators: Realm KOS Blacklist flags, 30-Day Anti-Guild-Hop Deserter countdowns, and active blood bounty escrow gold badges.
    - Dual-access paradigm: Web directory view (`#nav-armory`), sidebar quick-search jump tool, and in-game slash commands (`/armory [Name]`, `/killboard armory [Name]`).
-9. **Azeroth War Room Entry Portal & Standard Account Authentication (`loadPortalView`)**:
-   - Two-screen gateway separating entry authorization (`GATE`) from campaign selection (`VERSIONS`).
+9. **Azeroth War Room Entry Portal & Dual-State Homepage Stats (`loadPortalView`, `renderStats`)**:
+   - Streamlined single-gate entry focused exclusively on **WoW Forever** (`FOREVER`), eliminating the Screen 2 version picker for immediate, zero-distraction deployment.
    - Standard account authentication: Tabbed Sign-In and Create Account forms (Username, Email, Password, Remember Me, and Forgot Password recovery) alongside clean Google SSO integration.
-   - Unauthenticated guest reconnaissance route (`portalAdvanceToVersions('guest')`) enabling instant read-only exploration of all four game versions without registration.
-   - Suppressed navigation stack on first visit (`body.portal-active`) providing a focused, distraction-free landing page.
+   - Unauthenticated guest reconnaissance route (`portalEnterAsGuest()`) enabling instant read-only exploration without registration.
+   - **Signed In Operative Banner**: Displays personalized combat stats at the top of the homepage (Character Name, Military Rank, Faction, Confirmed Kills, Casualties, K/D Ratio, Solo Kills) with 1-click link to their Armory Profile, followed by cumulative realm telemetry.
+   - **Guest Recon Mode**: Displays cumulative realm telemetry (Total Carnage, 1v1 Solo %, Faction Split, Active Mode Filter) with an unmarked recon badge and a sign-in prompt strip.
 10. **The War Archivist & Architecture Guide Popout Modals (`#addon-dossier-modal`, `#oracle-chat-modal`)**:
    - Direct Addon Architecture Guide modal with four martial pillars and 1-click packages.
    - Diegetic AI combat intelligence console powered by the Grand War Archivist, querying live SQLite telemetry dispatches (`/api/oracle/chat`) with Google Gemini generative synthesis.

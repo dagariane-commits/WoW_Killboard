@@ -22,29 +22,10 @@
         </button>
         <span class="wh-brand-label">WOW</span>
         <div class="wh-flavor-tabs" id="wh-flavor-tabs">
-          <button class="wh-tab-btn" data-flavor="RETAIL" onclick="handleFlavorChange('RETAIL')" title="Modern Retail (11.x)">
-            <span class="wh-w-badge retail">W</span>
-            <span class="wh-tab-text">RETAIL</span>
-          </button>
-          <button class="wh-tab-btn" data-flavor="FOREVER" onclick="handleFlavorChange('FOREVER')" title="WoW Forever Beta (1.15)">
+          <button class="wh-tab-btn active" data-flavor="FOREVER" onclick="handleFlavorChange('FOREVER')" title="WoW Forever Beta (1.15)">
             <span class="wh-w-badge forever">W</span>
-            <span class="wh-tab-text">FOREVER</span>
-          </button>
-          <button class="wh-tab-btn active" data-flavor="CLASSIC_ERA" onclick="handleFlavorChange('CLASSIC_ERA')" title="Classic Era (1.15)">
-            <span class="wh-w-badge classic">W</span>
-            <span class="wh-tab-text">CLASSIC</span>
-          </button>
-          <button class="wh-tab-btn" data-flavor="ANNIVERSARY" onclick="handleFlavorChange('ANNIVERSARY')" title="20th Anniversary Edition (1.15)">
-            <span class="wh-w-badge anniversary">W</span>
-            <span class="wh-tab-text">ANNIV</span>
-          </button>
-          <button class="wh-tab-btn" data-flavor="TBC" onclick="handleFlavorChange('TBC')" title="The Burning Crusade (2.4.3)">
-            <span class="wh-w-badge tbc">W</span>
-            <span class="wh-tab-text">TBC</span>
-          </button>
-          <button class="wh-tab-btn" data-flavor="WOTLK" onclick="handleFlavorChange('WOTLK')" title="Wrath of the Lich King (3.3.5)">
-            <span class="wh-w-badge wotlk">W</span>
-            <span class="wh-tab-text">WOTLK</span>
+            <span class="wh-tab-text">WOW FOREVER</span>
+            <span class="wh-tab-active-dot">● LIVE FRONTIER</span>
           </button>
         </div>
       </div>
@@ -52,7 +33,7 @@
         <div class="wh-status-indicator">
           <span class="wh-status-dot"></span>
           <span class="wh-status-label">ACTIVE ENGINE:</span>
-          <span class="wh-status-text" id="wh-active-flavor-name">CLASSIC (60 MAX)</span>
+          <span class="wh-status-text" id="wh-active-flavor-name">WOW FOREVER (60 MAX)</span>
         </div>
       </div>
     </div>
@@ -147,25 +128,10 @@
       </div>
 
       <!-- Mobile Client Flavor Selector -->
-      <div class="mobile-drawer-label">CLIENT FLAVOR / EXPANSION</div>
+      <div class="mobile-drawer-label">ACTIVE WAR FRONT</div>
       <div class="mobile-flavor-pills-wrap">
-        <button class="m-flavor-btn" data-flavor="RETAIL" onclick="handleFlavorChange('RETAIL'); toggleMobileDrawer(false);">
-          <span class="wh-w-badge retail">W</span> Retail
-        </button>
-        <button class="m-flavor-btn" data-flavor="FOREVER" onclick="handleFlavorChange('FOREVER'); toggleMobileDrawer(false);">
-          <span class="wh-w-badge forever">W</span> Forever
-        </button>
-        <button class="m-flavor-btn active" data-flavor="CLASSIC_ERA" onclick="handleFlavorChange('CLASSIC_ERA'); toggleMobileDrawer(false);">
-          <span class="wh-w-badge classic">W</span> Classic
-        </button>
-        <button class="m-flavor-btn" data-flavor="ANNIVERSARY" onclick="handleFlavorChange('ANNIVERSARY'); toggleMobileDrawer(false);">
-          <span class="wh-w-badge anniversary">W</span> Anniv 20
-        </button>
-        <button class="m-flavor-btn" data-flavor="TBC" onclick="handleFlavorChange('TBC'); toggleMobileDrawer(false);">
-          <span class="wh-w-badge tbc">W</span> TBC
-        </button>
-        <button class="m-flavor-btn" data-flavor="WOTLK" onclick="handleFlavorChange('WOTLK'); toggleMobileDrawer(false);">
-          <span class="wh-w-badge wotlk">W</span> WotLK
+        <button class="m-flavor-btn active" data-flavor="FOREVER" onclick="handleFlavorChange('FOREVER'); toggleMobileDrawer(false);">
+          <span class="wh-w-badge forever">W</span> WoW Forever (Live Frontier)
         </button>
       </div>
 
@@ -247,25 +213,27 @@
   <div class="container">
     <!-- Main Center Column -->
     <main class="main-column">
-      <!-- High-Level Realm Stats Bar -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-label">Realm Total Carnage</span>
-          <span class="stat-val" id="stat-total-kills">0</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">1v1 Solo Kill Ratio</span>
-          <span class="stat-val" id="stat-solo-percent" style="color: #10b981;">0%</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Faction War Split</span>
-          <span class="stat-val" id="stat-faction-split" style="font-size: 0.95rem; padding-top: 4px;">
-            <span style="color: var(--alliance-blue); font-weight:800;">A: --%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: --%</span>
-          </span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Active Combat Filter</span>
-          <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 0.95rem; padding-top: 4px;">All PvP</span>
+      <!-- High-Level Homepage Stats Hub (Personalized Operative Telemetry + Frontier Cumulative) -->
+      <div id="homepage-stats-hub" class="homepage-stats-hub">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Realm Total Carnage</span>
+            <span class="stat-val" id="stat-total-kills">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">1v1 Solo Kill Ratio</span>
+            <span class="stat-val" id="stat-solo-percent" style="color: #10b981;">0%</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Faction War Split</span>
+            <span class="stat-val" id="stat-faction-split" style="font-size: 0.95rem; padding-top: 4px;">
+              <span style="color: var(--alliance-blue); font-weight:800;">A: --%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: --%</span>
+            </span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Active Combat Filter</span>
+            <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 0.95rem; padding-top: 4px;">All PvP</span>
+          </div>
         </div>
       </div>
 
