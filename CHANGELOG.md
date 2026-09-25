@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.7] - 2026-09-25
+
+### Changed
+- **Full Field Manual & Codex Persona Alignment (Classic Azeroth Scribe)**:
+  - Completely overhauled the public `INFO` tab (`loadInfoView`) to embody the **Classic Azeroth Scribe** voice—dark, rugged, utilitarian, and grounded in the post-Third War Vanilla WoW (2004–2006) aesthetic.
+  - Purged internal developer guardrails (*"The 5 Non-Negotiable Engineering Guardrails"* and *"Technology Stack"*) from the public web interface.
+  - Inscribed **The Four Pillars of the Field Ledger**:
+    1. *Silent Fieldcraft (Zero Interface Hesitation)*: Passive combat observation with zero gameplay obstruction.
+    2. *The Camp Courier (Automated Dispatch)*: Hands-off dispatch runner (`WoWKillboardSync.exe`) carrying combat logs to High Command.
+    3. *The Seal of Indelible Truth (Duplicate Resolution)*: Cross-referencing conflicting battlefield accounts into one certified record.
+    4. *Blood Retribution & Iron Escrow*: Grim retaliation against open-world ambushers and the Traitor's Gibbet.
+- **Synchronized Subpage Architecture & Navigation**:
+  - Re-anchored the initial tab directly as **📜 Field Manual & Codex** (eliminating the disconnected *"Codex & Chronicles"* label).
+  - Aligned all seven subpages with authentic Azerothian naming: *Field Manual & Codex*, *Rules of Engagement*, *Soldier's Handbook (FAQ)*, *Fog of War & OpSec*, *War Room Patronage*, *The Chronicler's Looking Glass (OBS)*, and *The Accord of Azeroth*.
+  - Synchronized the site footer navigation links in `index.html` to mirror the revised subpages 1-to-1.
+- **Doctrine Card Layout (`style.css`)**:
+  - Added `.doctrine-grid` and `.doctrine-card` tactical styling with gold leaf borders (`border-left: 3px solid var(--wow-gold)`) and dark parchment backgrounds (`rgba(10, 14, 22, 0.7)`).
+
 ## [1.4.6] - 2026-09-25
 
 ### Changed

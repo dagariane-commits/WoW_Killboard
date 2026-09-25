@@ -3005,13 +3005,13 @@ function loadInfoView(subpage = "about") {
   if (!container) return;
 
   const tabs = [
-    { id: "about", label: "📖 Codex & Chronicles" },
-    { id: "features", label: "⚡ Tactical Features" },
-    { id: "faq", label: "❓ Frontline FAQ" },
-    { id: "delayed", label: "⏱️ Tactical Fog of War" },
-    { id: "payments", label: "⭐ Vanguard Benefactor" },
-    { id: "streambox", label: "🔭 War HUD (OBS)" },
-    { id: "legal", label: "⚖️ Warcraft Accord" }
+    { id: "about", label: "📜 Field Manual & Codex" },
+    { id: "features", label: "⚔️ Rules of Engagement" },
+    { id: "faq", label: "❓ Soldier's Handbook (FAQ)" },
+    { id: "delayed", label: "⏱️ Fog of War & OpSec" },
+    { id: "payments", label: "⭐ War Room Patronage" },
+    { id: "streambox", label: "🔭 Chronicler's Looking Glass" },
+    { id: "legal", label: "⚖️ The Accord of Azeroth" }
   ];
 
   let tabsHtml = `<div class="info-nav-bar">`;
@@ -3025,190 +3025,190 @@ function loadInfoView(subpage = "about") {
   if (subpage === "about") {
     contentHtml = `
       <div class="info-card">
-        <h1>📖 Chronicles of the Frontline War Room</h1>
-        <p><strong>WoW Killboard</strong> is the premier combat intelligence, ranking, and execution contract platform for World of Warcraft open-world PvP, engineered to bring back the raw darkness, grit, and faction pride of the Alliance and Horde war.</p>
+        <h1>📜 Field Manual &amp; Martial Codex</h1>
+        <p>The Third War shattered the old kingdoms, leaving Azeroth a scarred, volatile frontier. From the plagued ruins of Lordaeron to the arid crucibles of Kalimdor, the fragile armistice between the Alliance and Horde has collapsed. Blood is spilled daily along the contested borders of Ashenvale, Hillsbrad, and the killing grounds of Stranglethorn Vale.</p>
+        <p><strong>WoW Killboard</strong> was not wrought as a parlor novelty or a boastful plaything. It is a battle-hardened field ledger—an unyielding chronicle of martial survival, certified executions, and open-world retribution across the frontier of WoW Forever.</p>
 
-        <div class="info-callout">
-          <strong>Mission &amp; Vision:</strong><br>
-          Architected and developed by <strong>Scott Quick</strong>, WoW Killboard is dedicated to pure, high-performance combat telemetry, competitive camaraderie, and frontline guild coordination across the Alliance and Horde. 100% free of charge and 100% ad-free.
+        <div class="info-callout" style="border-left-color: var(--wow-gold);">
+          <strong style="color: var(--wow-gold);">The War Scribe's Vow:</strong><br>
+          Forged under the direction of <strong>Scott Quick</strong>, this archive exists to preserve the indelible truth of the frontline. No skirmish is exaggerated; no cowardice is concealed. Every fallen champion, every ruthless ambush, and every claimed blood bounty is inscribed upon the ledger without bias. It remains forever free to all soldiers of Azeroth, untainted by commercial wares.
         </div>
 
-        <h2>🛡️ The 5 Non-Negotiable Engineering Guardrails</h2>
-        <ol>
-          <li><strong>Zero Blizzard UI Taint:</strong> Anonymous pure Lua frames using <code>BackdropTemplate</code>, custom ESC key propagation, and strict <code>InCombatLockdown()</code> gating. Never triggers protected Blizzard UI action blocked popups.</li>
-          <li><strong>Cross-Client Parity:</strong> Single unified codebase operating cleanly across <strong>WoW Forever Beta</strong> (<code>_classic_beta_</code>), <strong>Classic Era</strong> (<code>_classic_era_</code>), <strong>Anniversary</strong> (<code>_anniversary_</code>), and <strong>Modern Retail</strong> (<code>_retail_</code>).</li>
-          <li><strong>Zero Documentation Drift:</strong> Code and documentation are twin artifacts. Every commit updates semantic changelogs and architectural specifications.</li>
-          <li><strong>Telemetry-First &amp; Cryptographic Determinism:</strong> Every combat engagement generates a deterministic 32-bit FNV-1a hash Kill ID based on timestamp, participant GUIDs, and map coordinates for zero-duplicate distributed ingestion.</li>
-          <li><strong>Zero-Barrier Player UX:</strong> Desktop ingestion runs via a single self-contained binary (<code>WoWKillboardSync.exe</code>) with automated multi-drive auto-discovery across <code>C:</code>, <code>D:</code>, and <code>E:</code> drives. No Python or terminal required.</li>
-        </ol>
-
-        <h2>🏛️ Technology Stack</h2>
-        <ul>
-          <li><strong>In-Game Client:</strong> Pure Lua 5.1 / World of Warcraft Addon Engine with Classic &amp; ElvUI theme parity.</li>
-          <li><strong>Sync Pipeline:</strong> Standalone Python 3.12 / PyInstaller multi-threaded SavedVariables directory watcher.</li>
-          <li><strong>Backend Engine:</strong> Python Flask REST API with SQLite WAL journal mode and FNV-1a hash indexing.</li>
-          <li><strong>Web Platform:</strong> High-performance, zero-framework CSS Grid / Vanilla JavaScript client.</li>
-        </ul>
+        <h2>⚔️ The Four Pillars of the Field Ledger</h2>
+        <div class="doctrine-grid">
+          <div class="doctrine-card">
+            <h4>I. Silent Fieldcraft (Zero Interface Hesitation)</h4>
+            <p>A soldier cannot afford a jammed scabbard in the press of melee. The in-game ledger operates in absolute silence behind your field kit. It touches no protected faculties, invokes no fragile parlor frames, and causes zero hesitation or interface spasms during the fury of battle.</p>
+          </div>
+          <div class="doctrine-card">
+            <h4>II. The Camp Courier (Automated Dispatch)</h4>
+            <p>When the blades are sheathed and camp is pitched, a warrior should not spend hours transcribing dispatches by hand. The standalone courier (<code>WoWKillboardSync.exe</code>) patrols your quarters automatically, gathering your combat dispatches and galloping directly to the High Command war room in seconds.</p>
+          </div>
+          <div class="doctrine-card">
+            <h4>III. The Seal of Indelible Truth (Duplicate Resolution)</h4>
+            <p>When an entire vanguard slays an enemy warlord, forty breathless scouts return with forty bloody accounts. The War Scribe cross-references timestamp, battleground coordinates, and combatant sigils to forge a single, immutable kill record, giving honor to all who drew blood without inflating the tally.</p>
+          </div>
+          <div class="doctrine-card">
+            <h4>IV. Blood Retribution &amp; Iron Escrow</h4>
+            <p>When you are cut down in cold blood on the frontier, grief is useless—retribution is law. Place an iron-backed gold bounty upon your slayer's head directly from the brink of death. Any blade that brings them low claims the purse; any debtor who defaults is hoisted onto the realm Gibbet as a marked deadbeat.</p>
+          </div>
+        </div>
       </div>
     `;
   } else if (subpage === "features") {
     contentHtml = `
       <div class="info-card">
-        <h1>⚡ Tactical Arsenal &amp; War Room Capabilities</h1>
-        <p>Explore the full suite of combat analytics, tournament-grade dueling, battleground metrics, and outlaw execution contracts built into WoW Killboard.</p>
+        <h1>⚔️ Rules of Engagement &amp; Tactical Arsenal</h1>
+        <p>Survival in the contested wilderness requires keen senses, a sharp blade, and unbending adherence to the laws of war. Herein are the capabilities granted to operatives who carry the field kit into battle.</p>
 
-        <h2>⚔️ Core Combat Intelligence</h2>
+        <h2>🩸 Certified Single Combat vs. Pack Butchery</h2>
+        <p>The frontier does not tolerate false boasting. A victory is sanctified as an honorable <strong>1v1 Solo Triumph</strong> only when no outside ally or hostile blade has struck, debuffed, or hindered the victim within the final fifteen seconds of their life. If a pack falls upon a lone traveler, the war ledger brands it indelibly as a <strong>Gang Skirmish</strong>.</p>
+
+        <h2>📜 Blood Bounties &amp; The Traitor's Gibbet</h2>
         <ul>
-          <li><strong>Deterministic Killmail Generation:</strong> Microsecond combat log parsing via <code>COMBAT_LOG_EVENT_UNFILTERED</code> with full damage, healing, and overkill calculations.</li>
-          <li><strong>Solo vs. Gang Temporal Clustering:</strong> 15-second sliding temporal window strictly distinguishes certified 1v1 solo triumphs from group gang ganks.</li>
-          <li><strong>Clickable Character Combat Dossiers:</strong> Interactive modals displaying lifetime kills, deaths, K/D, solo kills, and recent combat histories.</li>
-          <li><strong>Everywhere-Clickable Armory Links:</strong> 1-click external intelligence links to the Official Blizzard Armory, Ironforge.pro (Classic), and Warcraft Logs.</li>
+          <li><strong>Deathbed Retaliation:</strong> Falling in open-world combat triggers an immediate field prompt to place an iron-backed gold bounty upon your slayer's head.</li>
+          <li><strong>The Immortal Brand:</strong> Outlaws cannot escape justice by trading names at the barbershop or merchant stalls. All contracts are branded into their character's indelible soul sigil (GUID).</li>
+          <li><strong>The Slayer's Purse:</strong> Only an operative who accepts the contract and lands the certified killing blow in open combat may claim the escrowed gold.</li>
+          <li><strong>The Realm Gibbet:</strong> Slayers who pledge bounties but refuse to pay their debts are hoisted upon the Traitor's Gibbet—flagged as dishonorable deadbeats across all war room scrolls.</li>
+          <li><strong>Sanctuary Exclusion:</strong> Blood debts cannot be settled inside guarded sanctuaries or instanced dungeons. Blood must be repaid under the open sky of Azeroth.</li>
         </ul>
 
-        <h2>📯 War Horn: Call to Arms &amp; Guild Defense</h2>
+        <h2>📯 The War Horn (Field SOS &amp; Vanguard Defense)</h2>
         <ul>
-          <li><strong>Vanguard Signal Flare:</strong> Sound the War Horn in the open world via <code>/warhorn</code> or the header button to alert guild, group, and local allies.</li>
-          <li><strong>Automated War Party Muster:</strong> Whispering <code>'rally'</code> or <code>'invite'</code> automatically drafts allies into your squad with raid auto-conversion.</li>
-          <li><strong>Open World Exclusivity:</strong> The War Horn and distress beacons can strictly only be sounded on the open battlefields of Azeroth (never inside instances).</li>
+          <li><strong>Sound the Alarm (<code>/warhorn</code>):</strong> When ambushed in the contested wilderness, blow the war horn to broadcast an emergency distress beacon across your guild and nearby allies.</li>
+          <li><strong>Instant War Party Muster:</strong> Allies who hear your distress and whisper <code>rally</code> or <code>invite</code> are instantly drafted into your combat party, rallying to your coordinates before your corpse cools.</li>
+          <li><strong>Battlefield Gating:</strong> The War Horn carries authority only upon the open killing grounds—it cannot be sounded within civilized taverns or sealed raid chambers.</li>
         </ul>
 
-        <h2>🩸 Blood Bounties &amp; The Traitor's Gibbet</h2>
-        <ul>
-          <li><strong>Post-Death Retribution Prompt:</strong> Prompt triggered upon falling in open combat to immediately declare a blood bounty on your slayer.</li>
-          <li><strong>Anti-Name Change Evasion:</strong> Contracts permanently bound to immutable character <code>Player-GUID</code>. Renaming character in Blizzard shop preserves active contracts.</li>
-          <li><strong>Certified Final Blow Exclusivity:</strong> Only hunters who accepted the execution contract and landed the certified final blow claim the escrowed gold.</li>
-          <li><strong>The Traitor's Gibbet:</strong> Contractors who default on blood debts are condemned to the realm Gibbet as marked deadbeats with public proximity alerts.</li>
-          <li><strong>Open World Exclusivity:</strong> Bounties can only be declared and claimed in open world combat (instances prohibited).</li>
-        </ul>
+        <h2>📜 The Living Armory &amp; Classic Military Rank</h2>
+        <p>Every recorded clash builds your standing in the Grand Marshal and High Warlord military progressions. Inspect your personal combat dossier to review your lifetime kill-to-death ratio, your sworn nemesis, and historical duels.</p>
       </div>
     `;
   } else if (subpage === "faq") {
     contentHtml = `
       <div class="info-card">
-        <h1>❓ Frontline War Room FAQ</h1>
+        <h1>❓ Field Inquiries &amp; Frontline Handbook</h1>
+        <p>Common inquiries from scouts, raiders, and bounty hunters operating along the warfront.</p>
 
-        <h2>General &amp; Installation</h2>
-        <h3>How do I install the addon?</h3>
-        <p>Extract <code>WoWKillboard-v1.0.0.zip</code> into your World of Warcraft <code>Interface/AddOns/</code> directory. Run <code>WoWKillboardSync.exe</code> in the background to automatically synchronize your combat logs to the web killboard.</p>
+        <h2>Field Kit Installation &amp; Courier Setup</h2>
+        <h3>How do I equip the addon to my game client?</h3>
+        <p>Extract the contents of <code>WoWKillboard-v1.0.0.zip</code> into your World of Warcraft <code>Interface/AddOns/</code> directory. Ensure the folder is named <code>WoWKillboard</code>. Enable out-of-date addons if prompted upon the character selection screen.</p>
 
-        <h3>Do I need to install Python or use the command line?</h3>
-        <p>No. <code>WoWKillboardSync.exe</code> is a self-contained zero-Python Windows binary with automated drive scanning across C:, D:, and E: drives.</p>
+        <h3>Does the courier require esoteric arcane tools or command terminals?</h3>
+        <p>No. <code>WoWKillboardSync.exe</code> is a self-contained Windows runner. It requires no Python runtimes, script terminals, or manual configuration. Run it once in the background, and it will search your drives (<code>C:</code>, <code>D:</code>, <code>E:</code>) to find your Warcraft folder automatically.</p>
 
-        <h2>Combat &amp; Scoring</h2>
-        <h3>Why didn't my kill register as a Solo Kill?</h3>
-        <p>If another player damaged or debuffed the victim within 15 seconds prior to death, our temporal clustering algorithm classifies the kill as a <strong>Gang</strong> kill to protect competitive integrity.</p>
+        <h3>When are my battle records dispatched to the war room?</h3>
+        <p>Warcraft writes your SavedVariables to disk whenever you reload your user interface (<code>/reload</code>) or safely exit the game. The courier immediately spots the updated scroll and syncs your kills and deaths to the web ledger in seconds.</p>
 
-        <h3>Can bounties or backup calls happen inside dungeons or battlegrounds?</h3>
-        <p>No! Blood bounties and War Horn calls can strictly only occur in the open world. Instances, raids, arenas, and battlegrounds are strictly gated to preserve the purity of open world warfare.</p>
+        <h2>Combat, Bounties, &amp; Retribution</h2>
+        <h3>Why was my kill recorded as a Gang Skirmish instead of a Solo Kill?</h3>
+        <p>If any other combatant—whether a party member or a passerby—inflicted damage or applied a debuff to your target within fifteen seconds of their demise, the kill is classified as a group effort. Single combat is strictly reserved for pure 1v1 duels.</p>
 
-        <h2>Bounties &amp; Contracts</h2>
-        <h3>Can players without the addon claim bounties?</h3>
-        <p>No. Bounties require active contract acceptance. Only an addon hunter who accepted the contract and landed the certified killing blow can collect the bounty gold.</p>
+        <h3>Can bounties be collected inside battlegrounds or dungeons?</h3>
+        <p>Never. Blood bounties are the sacred law of the contested open world. Sealed instances, arenas, and instanced battlegrounds have their own objectives; they are excluded from the bounty board to prevent collusion and exploitation.</p>
 
-        <h3>Can a bounty target avoid their bounty by changing character names?</h3>
-        <p>No. All contracts and debts are permanently bound to the character's internal <code>Player-XXXX-XXXXXXXX</code> GUID. When a player renames, their existing bounty contracts immediately update to their new name.</p>
-
-        <h3>What happens if a bounty goes unclaimed for a long time?</h3>
-        <p>Bounties active for over 30 days are automatically archived into the <strong>Archive of Unclaimed Bounties</strong>.</p>
+        <h3>What becomes of bounties that go uncollected?</h3>
+        <p>A bounty contract remains active upon the Most Wanted board for thirty days. If the target manages to survive or hide in cowardice for longer than a month, the contract transitions into the Cold Case Archives.</p>
       </div>
     `;
   } else if (subpage === "delayed") {
     contentHtml = `
       <div class="info-card">
-        <h1>⏱️ Tactical Fog of War &amp; OpSec</h1>
-        <p>In competitive open-world PvP, real-time spatial coordinates can inadvertently enable stream-sniping, flight-path camping, and unfair griefing. WoW Killboard implements strict vicinity telemetry delays to safeguard operational security (OpSec).</p>
+        <h1>⏱️ Tactical Fog of War &amp; Scout OpSec</h1>
+        <p>In the merciless frontier of Azeroth, knowledge is life and death. An indiscreet tongue or a premature scout report can lead a war party into an ambush or turn a flight master into a graveyard. To prevent dishonorable exploitation, stream sniping, and flight-path camping, the War Room enforces a disciplined Fog of War.</p>
 
-        <h2>🔒 The Telemetry Gating Framework</h2>
+        <h2>🔒 Battlefield Telemetry Delays</h2>
         <ul>
-          <li><strong>Public / Free Tier:</strong> Displays confirmed combat <strong>Zone</strong> only with temporal delay (e.g. <code>Last Sighted: Stranglethorn Vale ~14m ago</code>). Exact subzone landmarks and micro-coordinates are masked.</li>
-          <li><strong>Vanguard Benefactor Perk (Subzone Recon Intel):</strong> Quality-of-life benefit unlocking exact subzone telemetry (e.g. <code>Booty Bay</code>) for community supporters and realm infrastructure patrons.</li>
-          <li><strong>Anti-Camping Offset:</strong> In-game killmail broadcasting does not leak real-time player GPS coordinates to public chat channels.</li>
+          <li><strong>Zone-Level Intelligence:</strong> Public dispatches reveal the general territorial zone of combat (e.g., <em>"Last sighted in Stranglethorn Vale ~15m ago"</em>), masking exact subzone landmarks from public view until the trail has cooled.</li>
+          <li><strong>Anti-Camping Concealment:</strong> The in-game addon never broadcasts exact spatial coordinates over public chat channels, preventing coordinated gank squads from descending upon lone travelers before they can recover.</li>
+          <li><strong>Scout Reconnaissance (Supporter Perk):</strong> Dedicated community patrons and seasoned scouts gain access to detailed subzone intel (e.g., <em>"Booty Bay Docks"</em>) to hunt down notorious Most Wanted bounties whose crimes have stained the land.</li>
         </ul>
 
         <div class="info-callout">
-          <strong>Archived Unclaimed Contracts:</strong><br>
-          To maintain active board responsiveness, bounty contracts remaining uncollected for more than 30 days transition from <code>ACTIVE</code> to <code>COLD_CASE</code> status.
+          <strong>Cold Case Archives:</strong><br>
+          Contracts that linger without a confirmed execution for thirty days are retired from active frontline boards and filed into the Cold Case Vault for historical study.
         </div>
       </div>
     `;
   } else if (subpage === "payments") {
     contentHtml = `
       <div class="info-card">
-        <h1>⭐ Vanguard Benefactor &amp; 100% Ad-Free War Room</h1>
-        <p>WoW Killboard operates under a strict <strong>100% Ad-Free Guarantee</strong>. We display zero commercial advertisements, popups, or user-tracking scripts.</p>
+        <h1>⭐ War Room Patronage &amp; Scribe's Guild</h1>
+        <p>The Azeroth War Room operates under an unbreakable vow: <strong>100% Free of Charge &bull; 100% Ad-Free</strong>. We display no commercial banner ads, sell no popups, and will never trade in soldier surveillance.</p>
 
-        <div class="info-callout" style="border-left-color: var(--accent-gold);">
-          <strong>⭐ Vanguard Benefactor Community Support:</strong><br>
-          WoW Killboard is built and maintained as an independent community technology project. All financial contributions directly fund high-performance realm server infrastructure and cloud hosting.
+        <div class="info-callout" style="border-left-color: var(--wow-gold);">
+          <strong style="color: var(--wow-gold);">Patronage to Keep the Lamps Burning:</strong><br>
+          Maintaining high-speed servers, database storage for millions of combat records, and reliable web synchronization requires steady provisions. Community supporters provide optional donations to cover server hosting and infrastructure expenses. In return, patrons receive cosmetic honors and early access to experimental tools in development.
         </div>
 
-        <h2>🌟 Benefactor Recognition &amp; Perks</h2>
+        <h2>🌟 Upcoming Patron Perks (In Development)</h2>
         <ul>
-          <li><strong>⭐ Subzone Recon Intel:</strong> Unlocks exact landmark subzone coordinates across active bounty contracts.</li>
-          <li><strong>👑 Golden Vanguard Crest:</strong> Supporter badges and shiny cosmetic glows rendered on character dossiers.</li>
-          <li><strong>🎯 Killmail Sponsorship:</strong> Sponsor epic open-world battles to pin them to the top of realm highlights.</li>
-          <li><strong>⚡ High-Priority Sync Queue:</strong> Expedited real-time telemetry processing for patron guilds and combatants.</li>
+          <li><strong>Beta Tester Access:</strong> Early access to experimental addon versions, web features, and tactical tools.</li>
+          <li><strong>Priority Feature Voting:</strong> Cast weighted ballots on what the scribes forge next on the development roadmap.</li>
+          <li><strong>Subzone Recon Intel:</strong> Unlocks detailed subzone landmark coordinates on active Most Wanted bounties.</li>
+          <li><strong>Golden Benefactor Crest:</strong> A gilded insignia rendered proudly beside your name in the Armory and leaderboards.</li>
+          <li><strong>StreamBox Broadcaster HUD:</strong> Transparent OBS stream overlay for war correspondents broadcasting their battles.</li>
         </ul>
       </div>
     `;
   } else if (subpage === "streambox") {
     contentHtml = `
       <div class="info-card">
-        <h1>🔭 Scout's Spyglass — War Correspondent HUD (OBS)</h1>
-        <p>The <strong>War Correspondent HUD</strong> is a lightweight, zero-configuration battlefield overlay built specifically for Twitch and YouTube World of Warcraft PvP streamers.</p>
+        <h1>🔭 The Chronicler's Looking Glass (War HUD for OBS)</h1>
+        <p>For scouts and champions who broadcast their martial exploits to tavern audiences across the realms, the <strong>War Correspondent HUD</strong> provides a live, transparent battlefield overlay built specifically for OBS Studio and Streamlabs.</p>
 
         <div class="streambox-generator">
-          <h3 style="color:var(--accent-cyan); margin-bottom:6px;">🚀 Quick War HUD URL Builder</h3>
-          <p style="font-size:0.8rem; color:#94a3b8;">Enter your character name to generate an instant OBS Studio Browser Source URL:</p>
+          <h3 style="color:var(--accent-cyan); margin-bottom:6px;">⚡ Forge Your Stream HUD Link</h3>
+          <p style="font-size:0.8rem; color:#94a3b8;">Inscribe your character name to forge an instant OBS Browser Source address:</p>
           <div class="streambox-input-group">
-            <input type="text" id="sb-input-char" class="search-input" placeholder="Character Name (e.g. Hawkeye)" style="max-width:240px;">
+            <input type="text" id="sb-input-char" class="search-input" placeholder="Character Name (e.g. Grom)" style="max-width:240px;">
             <button class="nav-btn active" onclick="generateStreamBoxUrl()">Generate HUD URL</button>
           </div>
           <div id="sb-url-result" style="margin-top:10px; font-size:0.8rem; display:none;">
-            <span style="color:#10b981; font-weight:700;">OBS Browser Source URL:</span><br>
+            <span style="color:#10b981; font-weight:700;">OBS Browser Source Address:</span><br>
             <code id="sb-url-text" style="background:#000; padding:4px 8px; border-radius:4px; border:1px solid #334155; display:inline-block; margin-top:4px; color:var(--accent-cyan);"></code>
             <button class="nav-btn" style="padding:4px 8px; font-size:0.75rem; margin-left:8px;" onclick="copyStreamBoxUrl()">📋 Copy</button>
           </div>
         </div>
 
-        <h2>⚙️ How to Add to OBS Studio or Streamlabs</h2>
+        <h2>⚙️ Mounting the Glass in OBS Studio</h2>
         <ol>
           <li>In OBS Studio, click <strong>+ (Add Source)</strong> in your Sources dock.</li>
           <li>Select <strong>Browser</strong>.</li>
-          <li>Paste your War HUD URL (e.g. <code>http://localhost:8080/war-hud/YourCharacterName</code>).</li>
-          <li>Set Width: <strong>800</strong>, Height: <strong>140</strong> (or Width: <strong>320</strong>, Height: <strong>480</strong> for vertical with <code>?vertical=1</code>).</li>
+          <li>Paste your HUD URL into the URL field.</li>
+          <li>Set Width: <strong>800</strong>, Height: <strong>140</strong> (or Width: <strong>320</strong>, Height: <strong>480</strong> for vertical layout).</li>
           <li>Check <strong>"Shutdown source when not visible"</strong> and click OK.</li>
         </ol>
 
-        <h2>💡 War HUD Features</h2>
+        <h2>💡 Chronicler HUD Capabilities</h2>
         <ul>
-          <li><strong>Transparent Battlefield HUD:</strong> Blends cleanly into any game stream layout with sleek glassmorphism cards.</li>
-          <li><strong>Automatic Live Updates:</strong> Polls every 5 seconds to display your latest kills, deaths, and K/D ratio without requiring any interaction.</li>
-          <li><strong>Solo &amp; Gang Badges:</strong> Distinguishes certified 1v1 solo kills from group skirmishes.</li>
+          <li><strong>Transparent Field Display:</strong> Floats cleanly over your game stream with rugged, battle-tested styling.</li>
+          <li><strong>Autonomous Live Inscription:</strong> Automatically reflects your confirmed kills, deaths, and K/D ratio every five seconds without alt-tabbing.</li>
+          <li><strong>Solo vs. Gang Badges:</strong> Proudly highlights genuine 1v1 victories while candidly marking chaotic skirmishes.</li>
         </ul>
       </div>
     `;
   } else if (subpage === "legal") {
     contentHtml = `
       <div class="info-card">
-        <h1>⚖️ Warcraft Accord &amp; Policy Compliance</h1>
+        <h1>⚖️ The Accord of Azeroth &amp; Realm Policies</h1>
 
-        <h2>Blizzard Entertainment Trademark &amp; IP Notice</h2>
-        <p>World of Warcraft®, Warcraft®, and Blizzard Entertainment® are trademarks or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other countries.</p>
-        <p>WoW Killboard is an independent open-source combat analysis tool created and developed by <strong>Scott Quick</strong>. It is not affiliated with, endorsed, sponsored, or specifically approved by Blizzard Entertainment, Inc. Blizzard Entertainment is not responsible for the content or operation of this software.</p>
+        <h2>Blizzard Entertainment Trademark &amp; Property Notice</h2>
+        <p>World of Warcraft®, Warcraft®, and Blizzard Entertainment® are trademarks or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other nations.</p>
+        <p><strong>WoW Killboard</strong> is an independent open-source combat chronicle created by <strong>Scott Quick</strong>. It is not affiliated with, endorsed, sponsored, or specifically approved by Blizzard Entertainment, Inc. Blizzard Entertainment bears no responsibility for the contents or operation of this field kit.</p>
 
-        <h2>Strict Compliance with Blizzard's UI Add-On Development Policy</h2>
+        <h2>Strict Adherence to Blizzard's UI Add-On Policy</h2>
         <ul>
-          <li><strong>100% Free of Charge:</strong> The addon and web platform are free for all players. We charge zero subscription fees, paywalls, or fees to download or use the software.</li>
-          <li><strong>Zero In-Game Commercial Advertising:</strong> The addon displays zero third-party commercial advertisements, popups, or marketing inside the World of Warcraft client.</li>
-          <li><strong>Non-Obfuscated Open Source Code:</strong> All addon Lua code and web backend code are 100% human-readable and licensed under the <strong>AGPLv3</strong> open-source license.</li>
-          <li><strong>Zero Game Automation (No Taint):</strong> The addon never automates gameplay, triggers protected spells, or circumvents game mechanics. It strictly observes public combat log events.</li>
+          <li><strong>100% Free of Charge:</strong> The field kit addon and companion war room are completely free for all soldiers of the realm. We charge no subscription fees, gate no downloads behind paywalls, and sell no in-game advantages.</li>
+          <li><strong>Zero In-Game Commercial Advertisement:</strong> The addon displays no merchant wares, corporate sponsorships, or promotional popups within the game client.</li>
+          <li><strong>Open, Legible Lua Scripting:</strong> All addon scripts and companion code are completely non-obfuscated, human-readable, and licensed openly under the <strong>AGPLv3</strong> open-source license.</li>
+          <li><strong>Zero Dark Sorcery (Zero Gameplay Automation):</strong> The addon never automates combat actions, executes protected spells, or alters game mechanics. It strictly serves as a passive field scribe reading publicly broadcast combat events.</li>
         </ul>
 
-        <h2>Privacy &amp; Data Protection</h2>
+        <h2>Soldier Privacy &amp; Data Protection</h2>
         <ul>
-          <li><strong>Zero Personally Identifiable Information (PII):</strong> We never collect, store, or transmit real names, email addresses, IP addresses, or Blizzard Battle.net account credentials.</li>
-          <li><strong>Public Telemetry Only:</strong> The software exclusively records publicly broadcast combat log event strings (character names, combat damage, zone names) generated during gameplay.</li>
+          <li><strong>Zero Personally Identifiable Records:</strong> We never collect, store, or transmit real names, emails, physical locations, or Battle.net account credentials.</li>
+          <li><strong>Public Battlefield Telemetry Only:</strong> The software exclusively records public combat log strings (character names, damage numbers, and zone coordinates) generated during the normal course of gameplay.</li>
         </ul>
       </div>
     `;
