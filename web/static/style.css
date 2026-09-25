@@ -3237,11 +3237,27 @@ body {
 
 /* ----------------- Azeroth War Room Entry Portal ----------------- */
 
+/* Hide the entire 3-row header stack when portal is active */
+body.portal-active .site-header,
+body.portal-active #wowhead-top-bar,
+body.portal-active .header-top-row,
+body.portal-active .header-sub-row {
+  display: none !important;
+}
+
+body.portal-active .container {
+  display: block;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-top: 26px;
+  padding-bottom: 50px;
+}
+
 .container.portal-mode {
   display: block;
   max-width: 1100px;
   margin: 0 auto;
-  padding-top: 14px;
+  padding-top: 26px;
 }
 
 .container.portal-mode .stats-grid,
@@ -3269,13 +3285,23 @@ body {
 /* 1. Portal Hero */
 .portal-hero {
   text-align: center;
-  background: radial-gradient(circle at 50% 15%, rgba(245, 158, 11, 0.14) 0%, rgba(10, 13, 20, 0.98) 75%);
+  background: radial-gradient(circle at 50% 15%, rgba(245, 158, 11, 0.16) 0%, rgba(10, 13, 20, 0.98) 75%);
   border: 1px solid var(--wow-brass-border, #4a3b27);
   border-radius: 8px;
-  padding: 30px 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0, 0, 0, 0.8);
+  padding: 32px 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), inset 0 0 40px rgba(0, 0, 0, 0.85);
   position: relative;
   overflow: hidden;
+}
+
+.portal-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--wow-gold), transparent);
 }
 
 .portal-crest-row {
@@ -3287,8 +3313,8 @@ body {
 }
 
 .portal-crest {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 1.5px solid rgba(255, 255, 255, 0.2);
   object-fit: cover;
@@ -3297,34 +3323,34 @@ body {
 
 .portal-crest.alliance {
   border-color: var(--alliance-blue);
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
 }
 
 .portal-crest.horde {
   border-color: var(--horde-red);
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.45);
 }
 
 .portal-emblem {
-  font-size: 1.6rem;
-  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+  font-size: 1.75rem;
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.7));
 }
 
 .portal-title {
   font-family: var(--font-tactical);
-  font-size: 1.65rem;
+  font-size: 1.75rem;
   font-weight: 900;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.8px;
   color: #fff;
   margin: 0 0 6px 0;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
 }
 
 .portal-tagline {
   font-family: var(--font-tactical);
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 1.2px;
+  letter-spacing: 1.4px;
   color: var(--wow-gold);
   margin-bottom: 12px;
 }
@@ -3337,13 +3363,36 @@ body {
   line-height: 1.6;
 }
 
+.portal-quick-return-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: var(--font-tactical);
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.portal-quick-return-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--wow-gold);
+  color: #fff;
+}
+
 /* 2. Step Section */
 .portal-step-section {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 20px 22px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 22px 24px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
 }
 
 .portal-step-header {
@@ -3365,11 +3414,12 @@ body {
   padding: 4px 10px;
   border-radius: 4px;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 .portal-section-title {
   font-family: var(--font-tactical);
-  font-size: 1.12rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #f1f5f9;
   letter-spacing: 0.5px;
@@ -3382,7 +3432,226 @@ body {
   margin-top: 2px;
 }
 
-/* 3. Flavor Grid */
+/* 3. Step 1: Access Level Mode Toggle Cards */
+.portal-mode-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.portal-mode-card {
+  background: #090c13;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  user-select: none;
+  position: relative;
+}
+
+.portal-mode-card:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateY(-1px);
+}
+
+.portal-mode-card.active.guest {
+  border-color: var(--accent-cyan);
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.12) 0%, rgba(13, 17, 26, 0.98) 100%);
+  box-shadow: 0 0 16px -2px rgba(0, 229, 255, 0.3), inset 0 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.portal-mode-card.active.officer {
+  border-color: var(--wow-gold);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.14) 0%, rgba(13, 17, 26, 0.98) 100%);
+  box-shadow: 0 0 16px -2px rgba(245, 158, 11, 0.35), inset 0 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.portal-mode-radio {
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.portal-mode-card.active.guest .portal-mode-radio {
+  color: var(--accent-cyan);
+  text-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.portal-mode-card.active.officer .portal-mode-radio {
+  color: var(--wow-gold);
+  text-shadow: 0 0 8px var(--wow-gold);
+}
+
+.portal-mode-content {
+  flex: 1;
+}
+
+.portal-mode-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.portal-mode-badge {
+  font-family: var(--font-tactical);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+
+.portal-mode-badge.guest {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--accent-cyan);
+}
+
+.portal-mode-badge.officer {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--wow-gold);
+}
+
+.portal-mode-title {
+  font-family: var(--font-tactical);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.portal-mode-desc {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+/* Detail Box below Step 1 Toggle */
+.portal-mode-detail-box {
+  background: #070a10;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 16px 18px;
+  margin-top: 10px;
+}
+
+.portal-mode-detail-box.guest {
+  border-left: 3px solid var(--accent-cyan);
+}
+
+.portal-mode-detail-box.officer {
+  border-left: 3px solid var(--wow-gold);
+}
+
+.portal-login-form-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.portal-login-form-compact .portal-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.portal-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.portal-label {
+  font-size: 0.70rem;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.portal-input {
+  background: #04060a;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+}
+
+.portal-input:focus {
+  outline: none;
+  border-color: var(--wow-gold);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+}
+
+.portal-faction-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.faction-radio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #0f131a;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  padding: 7px 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.faction-radio.alliance { color: var(--alliance-blue); }
+.faction-radio.horde { color: var(--horde-red); }
+
+.portal-signed-in-box {
+  background: #07090e;
+  border: 1px solid #1e293b;
+  border-left: 4px solid var(--wow-gold);
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+
+.signed-in-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.portal-signout-btn {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-signout-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* 4. Step 2: Flavor Grid */
 .portal-flavor-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -3482,233 +3751,86 @@ body {
   color: #cbd5e1;
 }
 
-/* 4. Access Section (Guest vs Login) */
-.portal-access-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.portal-access-card {
-  background: #07090e;
-  border: 1px solid #1e293b;
+/* 5. Step 3: Dynamic Tactical Launch Bar */
+.portal-launch-bar {
+  background: radial-gradient(circle at 50% 50%, rgba(22, 28, 42, 0.98) 0%, rgba(10, 13, 20, 0.98) 100%);
+  border: 1.5px solid var(--wow-brass-border-light, #735934);
   border-radius: 8px;
-  padding: 20px;
+  padding: 18px 24px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: space-between;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.4);
+  gap: 16px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(212, 163, 41, 0.15);
+  margin-top: 10px;
 }
 
-.portal-access-card.guest {
-  border-left: 4px solid var(--accent-cyan);
-}
-
-.portal-access-card.login {
-  border-left: 4px solid var(--wow-gold);
-}
-
-.access-card-badge {
-  display: inline-block;
-  align-self: flex-start;
-  font-family: var(--font-tactical);
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  color: var(--accent-cyan);
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-
-.access-card-badge.gold {
-  color: var(--wow-gold);
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.3);
-}
-
-.access-card-icon {
-  font-size: 1.5rem;
-  margin-bottom: 4px;
-}
-
-.access-card-title {
-  font-family: var(--font-tactical);
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 0.5px;
-  margin: 0 0 6px 0;
-}
-
-.access-card-desc {
-  font-size: 0.80rem;
-  color: #94a3b8;
-  line-height: 1.45;
-  margin-bottom: 12px;
-}
-
-.access-checklist {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 18px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.78rem;
-  color: #cbd5e1;
-}
-
-.access-checklist li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.portal-cta-btn {
-  width: 100%;
-  padding: 12px 16px;
-  font-family: var(--font-tactical);
-  font-weight: 800;
-  font-size: 0.88rem;
-  letter-spacing: 0.8px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border: none;
-  text-decoration: none;
-}
-
-.portal-cta-btn.guest {
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-  color: #fff;
-  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
-}
-
-.portal-cta-btn.guest:hover {
-  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
-  transform: translateY(-1px);
-}
-
-.portal-cta-btn.login {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  color: #fff;
-  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.35);
-}
-
-.portal-cta-btn.login:hover {
-  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
-  transform: translateY(-1px);
-}
-
-.portal-cta-btn.enter-direct {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #fff;
-  max-width: 420px;
-}
-
-.portal-login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.portal-form-group {
+.portal-launch-summary {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.portal-label {
-  font-size: 0.70rem;
-  color: #94a3b8;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
+.launch-summary-label {
+  font-family: var(--font-tactical);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--wow-gold);
 }
 
-.portal-input {
-  background: #04060a;
-  border: 1px solid #334155;
-  color: #e2e8f0;
-  border-radius: 4px;
-  padding: 8px 10px;
-  font-size: 0.82rem;
-  font-family: var(--font-body);
+.launch-summary-details {
+  font-size: 0.88rem;
+  color: #cbd5e1;
 }
 
-.portal-input:focus {
-  outline: none;
-  border-color: var(--wow-gold);
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
-}
-
-.portal-faction-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.faction-radio {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: #0f131a;
-  border: 1px solid #1e293b;
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 0.78rem;
-  font-weight: 700;
+.portal-cta-launch-btn {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 230, 128, 0.4);
+  padding: 14px 28px;
+  font-family: var(--font-tactical);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  border-radius: 6px;
   cursor: pointer;
-  user-select: none;
-}
-
-.faction-radio.alliance { color: var(--alliance-blue); }
-.faction-radio.horde { color: var(--horde-red); }
-
-.portal-signed-in-box {
-  background: #07090e;
-  border: 1px solid #1e293b;
-  border-left: 4px solid var(--wow-gold);
-  border-radius: 8px;
-  padding: 18px 20px;
-}
-
-.signed-in-header {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 10px;
+  box-shadow: 0 4px 18px rgba(217, 119, 6, 0.45);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.portal-signout-btn {
-  background: transparent;
-  border: 1px solid #334155;
-  color: #94a3b8;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.portal-cta-launch-btn:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(245, 158, 11, 0.6);
 }
 
-.portal-signout-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
-  color: #ef4444;
+.portal-cta-launch-btn.guest {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 4px 18px rgba(2, 132, 199, 0.45);
 }
 
-/* 5. Addon Explanation Pillars */
+.portal-cta-launch-btn.guest:hover {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 6px 22px rgba(14, 165, 233, 0.6);
+}
+
+.launch-arrow {
+  font-size: 1.2rem;
+  transition: transform 0.2s ease;
+}
+
+.portal-cta-launch-btn:hover .launch-arrow {
+  transform: translateX(4px);
+}
+
+/* 6. Step 4: Addon Explanation Pillars */
 .portal-pillars-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -3754,7 +3876,7 @@ body {
   font-size: 0.70rem;
 }
 
-/* 6. Download Box */
+/* 7. Download Box */
 .portal-download-box {
   background: linear-gradient(135deg, rgba(20, 24, 35, 0.98) 0%, rgba(13, 16, 24, 0.98) 100%);
   border: 1px solid var(--wow-brass-border, #4a3b27);
@@ -3830,20 +3952,36 @@ body {
 
 /* Mobile Portal Adaptations */
 @media (max-width: 768px) {
+  body.portal-active .container {
+    padding-top: 16px;
+    padding-bottom: 30px;
+  }
+
   .portal-hero {
-    padding: 20px 14px;
+    padding: 22px 16px;
   }
 
   .portal-title {
-    font-size: 1.25rem;
+    font-size: 1.30rem;
+    letter-spacing: 1px;
   }
 
   .portal-tagline {
-    font-size: 0.68rem;
+    font-size: 0.70rem;
   }
 
   .portal-lead {
     font-size: 0.82rem;
+  }
+
+  .portal-mode-toggle-group {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .portal-login-form-compact {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .portal-flavor-grid {
@@ -3865,9 +4003,18 @@ body {
     margin-bottom: 6px;
   }
 
-  .portal-access-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+  .portal-launch-bar {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    padding: 16px;
+  }
+
+  .portal-cta-launch-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 18px;
+    font-size: 0.95rem;
   }
 
   .portal-pillars-grid {

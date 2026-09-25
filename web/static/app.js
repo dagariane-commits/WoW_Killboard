@@ -2249,6 +2249,13 @@ function renderDeadlyNpcsView(lbData, deaths) {
 
 // ----------------- War Room Entry Portal -----------------
 
+let portalAccessMode = "guest";
+
+function setPortalAccessMode(mode) {
+  portalAccessMode = mode;
+  loadPortalView();
+}
+
 function loadPortalView() {
   const container = document.getElementById("main-content-area");
   if (!container) return;
@@ -2257,10 +2264,91 @@ function loadPortalView() {
   const storedHunter = localStorage.getItem("wowkb_user_character") || localStorage.getItem("wow_killboard_hunter_name") || "";
   const storedRealm = localStorage.getItem("wowkb_user_realm") || "Crusader Strike";
   const storedFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
+  const hasEnteredFeed = sessionStorage.getItem("wowkb_has_entered_feed");
+
+  // If user is already an authenticated officer and mode hasn't been explicitly toggled to guest
+  if (storedHunter && currentAuth === "officer" && portalAccessMode !== "guest") {
+    portalAccessMode = "officer";
+  }
 
   const cfg = FLAVOR_CONFIGS[currentFlavor] || FLAVOR_CONFIGS.CLASSIC_ERA;
 
-  // 1. Build Interactive Flavor Cards
+  // 1. Build Step 1 (Access Level Mode Selection)
+  const isGuest = (portalAccessMode === "guest");
+  const isOfficer = (portalAccessMode === "officer");
+
+  let modeDetailHtml = "";
+  if (isGuest) {
+    modeDetailHtml = `
+      <div class="portal-mode-detail-box guest">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:1.6rem;">👁️</span>
+          <div>
+            <div style="font-weight:800; font-size:0.92rem; color:#fff;">Guest Public Reconnaissance Mode Selected</div>
+            <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
+              Immediate read-only clearance. Full frontline feed telemetry, certified 1v1 solo kills, Most Wanted execution contracts, and Armory records unlocked.
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    // Officer mode
+    if (storedHunter && currentAuth === "officer") {
+      const factionColor = storedFaction === "Alliance" ? "var(--alliance-blue)" : "var(--horde-red)";
+      modeDetailHtml = `
+        <div class="portal-signed-in-box">
+          <div class="signed-in-header">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:1.8rem;">👑</span>
+              <div>
+                <div style="font-weight:800; font-size:1.05rem; color:#fff;">
+                  Active Vanguard Operative: <span style="color:${factionColor}; font-weight:900;">${storedHunter}</span>
+                </div>
+                <div style="font-size:0.80rem; color:#94a3b8; margin-top:2px;">
+                  Realm: <strong style="color:#fff;">${storedRealm}</strong> &bull; Allegiance: <strong style="color:${factionColor};">${storedFaction}</strong> &bull; Vanguard Supporter Active
+                </div>
+              </div>
+            </div>
+            <button class="portal-signout-btn" onclick="portalSignOut()">Sign Out / Switch</button>
+          </div>
+        </div>
+      `;
+    } else {
+      modeDetailHtml = `
+        <div class="portal-mode-detail-box officer">
+          <div style="margin-bottom:10px; font-weight:800; font-size:0.84rem; color:var(--wow-gold);">
+            ENTER CHARACTER CALL-SIGN FOR VANGUARD PRIVILEGES:
+          </div>
+          <div class="portal-login-form-compact">
+            <div class="portal-form-group">
+              <label class="portal-label">Character / Call-sign</label>
+              <input type="text" id="portal-input-char" class="portal-input" placeholder="e.g. Sylvanas, Lothar" value="${storedHunter}">
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-label">Realm / Server</label>
+              <input type="text" id="portal-input-realm" class="portal-input" placeholder="e.g. Crusader Strike" value="${storedRealm}">
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-label">Allegiance Faction</label>
+              <div class="portal-faction-toggle">
+                <label class="faction-radio alliance">
+                  <input type="radio" name="portal-faction" value="Alliance" ${storedFaction === 'Alliance' ? 'checked' : ''}>
+                  <span>🦁 Alliance</span>
+                </label>
+                <label class="faction-radio horde">
+                  <input type="radio" name="portal-faction" value="Horde" ${storedFaction === 'Horde' ? 'checked' : ''}>
+                  <span>🐺 Horde</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // 2. Build Step 2 (Flavor Grid)
   const flavorKeys = ["CLASSIC_ERA", "ANNIVERSARY", "FOREVER", "TBC", "WOTLK", "RETAIL"];
   const flavorCardsHtml = flavorKeys.map(key => {
     const f = FLAVOR_CONFIGS[key];
@@ -2289,93 +2377,21 @@ function loadPortalView() {
     `;
   }).join("");
 
-  // 2. Auth Options HTML
-  let authSectionHtml = "";
-  if (storedHunter && currentAuth === "officer") {
-    const factionColor = storedFaction === "Alliance" ? "var(--alliance-blue)" : "var(--horde-red)";
-    authSectionHtml = `
-      <div class="portal-signed-in-box">
-        <div class="signed-in-header">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <span style="font-size:1.8rem;">👑</span>
-            <div>
-              <div style="font-weight:800; font-size:1.15rem; color:#fff;">Welcome Back, Vanguard Operative <span style="color:${factionColor}; font-weight:900;">${storedHunter}</span></div>
-              <div style="font-size:0.82rem; color:#94a3b8; margin-top:3px;">
-                Realm: <strong style="color:#fff;">${storedRealm}</strong> &bull; Allegiance: <strong style="color:${factionColor};">${storedFaction}</strong> &bull; Vanguard Supporter Active
-              </div>
-            </div>
-          </div>
-          <button class="portal-signout-btn" onclick="portalSignOut()">Sign Out / Switch</button>
-        </div>
-        <div style="margin-top:16px;">
-          <button class="portal-cta-btn enter-direct" onclick="portalEnterFeed()">
-            <span>Enter Combat War Room (${cfg.shortName} &bull; Level ${cfg.maxLevel})</span>
-            <span>&rarr;</span>
-          </button>
-        </div>
-      </div>
-    `;
-  } else {
-    authSectionHtml = `
-      <div class="portal-access-grid">
-        <!-- Option 1: Guest -->
-        <div class="portal-access-card guest">
-          <div class="access-card-badge">PUBLIC RECON</div>
-          <div class="access-card-icon">👁️</div>
-          <h3 class="access-card-title">Continue as Guest</h3>
-          <p class="access-card-desc">Immediate public reconnaissance across the frontline combat feed, certified solo kills, Most Wanted execution contracts, and deadly NPC casualty reports.</p>
-          <ul class="access-checklist">
-            <li>✓ Live Frontline Combat Feed for ${cfg.shortName}</li>
-            <li>✓ Certified 1v1 Solo Kills &amp; Gang Clustering</li>
-            <li>✓ Realm Most Wanted Execution Contracts</li>
-            <li>✓ Deadly NPC Casualty Leaderboard &amp; Armory</li>
-          </ul>
-          <button class="portal-cta-btn guest" onclick="portalContinueAsGuest()">
-            <span>Enter War Room as Guest</span>
-            <span>&rarr;</span>
-          </button>
-        </div>
+  // 3. Build Step 3 (Dynamic Launch Bar)
+  let launchSummaryText = "";
+  let launchBtnText = "";
+  let launchBtnClass = isGuest ? "guest" : "officer";
 
-        <!-- Option 2: Officer Sign-In -->
-        <div class="portal-access-card login">
-          <div class="access-card-badge gold">VANGUARD OPERATIVE</div>
-          <div class="access-card-icon">👑</div>
-          <h3 class="access-card-title">Officer / Vanguard Sign-In</h3>
-          <p class="access-card-desc">Sign in with your character call-sign to link personal combat records, place in-game gold blood bounties, broadcast guild defense beacons, and access supporter perks.</p>
-          
-          <div class="portal-login-form">
-            <div class="portal-form-group">
-              <label class="portal-label">Character / Call-sign</label>
-              <input type="text" id="portal-input-char" class="portal-input" placeholder="e.g. Sylvanas, Lothar" value="${storedHunter}">
-            </div>
-            <div class="portal-form-group">
-              <label class="portal-label">Realm / Server</label>
-              <input type="text" id="portal-input-realm" class="portal-input" placeholder="e.g. Crusader Strike" value="${storedRealm}">
-            </div>
-            <div class="portal-form-group">
-              <label class="portal-label">Allegiance Faction</label>
-              <div class="portal-faction-toggle">
-                <label class="faction-radio alliance">
-                  <input type="radio" name="portal-faction" value="Alliance" ${storedFaction === 'Alliance' ? 'checked' : ''}>
-                  <span>🦁 Alliance</span>
-                </label>
-                <label class="faction-radio horde">
-                  <input type="radio" name="portal-faction" value="Horde" ${storedFaction === 'Horde' ? 'checked' : ''}>
-                  <span>🐺 Horde</span>
-                </label>
-              </div>
-            </div>
-            <button class="portal-cta-btn login" onclick="portalSubmitLogin()">
-              <span>Sign In &amp; Enter War Room</span>
-              <span>★</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
+  if (isGuest) {
+    launchSummaryText = `Entering as <strong style="color:var(--accent-cyan);">Guest Field Operative</strong> into <strong style="color:${cfg.iconColor};">${cfg.name} (LVL ${cfg.maxLevel} MAX)</strong>`;
+    launchBtnText = `⚔️ Launch War Room — ${cfg.shortName} (Guest Recon)`;
+  } else {
+    const charName = storedHunter || "Operative";
+    launchSummaryText = `Entering as Vanguard Operative <strong style="color:var(--wow-gold);">${charName}</strong> into <strong style="color:${cfg.iconColor};">${cfg.name} (LVL ${cfg.maxLevel} MAX)</strong>`;
+    launchBtnText = `👑 Sign In & Launch War Room — ${cfg.shortName}`;
   }
 
-  // 3. Render Complete Portal View
+  // 4. Render Entire Portal View
   container.innerHTML = `
     <div class="portal-container">
       <!-- Portal Hero -->
@@ -2388,17 +2404,62 @@ function loadPortalView() {
         <h1 class="portal-title">AZEROTH COMBAT WAR ROOM PORTAL</h1>
         <div class="portal-tagline">DECENTRALIZED COMBAT TELEMETRY &bull; ZERO-TAINT LOGGING &bull; BLOOD BOUNTY REGISTRY</div>
         <p class="portal-lead">
-          Connect your World of Warcraft client to the premier cross-client PvP intelligence network. Track certified 1v1 solo kills, enforce realm execution bounties, and analyze guild warfare in real time.
+          Connect your World of Warcraft client to the premier cross-client PvP intelligence network. Configure your clearance level and target expansion to enter the theater.
         </p>
+        ${hasEnteredFeed ? `
+          <button class="portal-quick-return-btn" onclick="portalEnterFeed()">
+            <span>⚔️ Return to Active Frontline Feed (${cfg.shortName})</span>
+            <span>&rarr;</span>
+          </button>
+        ` : ''}
       </div>
 
-      <!-- Step 1: Version Selector -->
+      <!-- Step 1: Clearance Level (Guest vs Officer) -->
       <section class="portal-step-section">
         <div class="portal-step-header">
           <span class="portal-step-num">STEP 1</span>
           <div>
+            <h2 class="portal-section-title">Select Your War Room Clearance Level</h2>
+            <div class="portal-section-sub">Choose whether to browse frontline feeds immediately as a guest or sign in as an officer.</div>
+          </div>
+        </div>
+
+        <div class="portal-mode-toggle-group">
+          <!-- Option A: Guest -->
+          <div class="portal-mode-card ${isGuest ? 'active guest' : ''}" onclick="setPortalAccessMode('guest')">
+            <div class="portal-mode-radio">${isGuest ? '●' : '○'}</div>
+            <div class="portal-mode-content">
+              <div class="portal-mode-header">
+                <span class="portal-mode-badge guest">OPTION A</span>
+                <span class="portal-mode-title">👁️ Continue as Guest</span>
+              </div>
+              <p class="portal-mode-desc">Public reconnaissance. Instant read-only access to live feeds, certified 1v1 solo kills, wanted contracts, and armory stats. No login required.</p>
+            </div>
+          </div>
+
+          <!-- Option B: Officer -->
+          <div class="portal-mode-card ${isOfficer ? 'active officer' : ''}" onclick="setPortalAccessMode('officer')">
+            <div class="portal-mode-radio">${isOfficer ? '●' : '○'}</div>
+            <div class="portal-mode-content">
+              <div class="portal-mode-header">
+                <span class="portal-mode-badge officer">OPTION B</span>
+                <span class="portal-mode-title">👑 Officer / Vanguard Sign-In</span>
+              </div>
+              <p class="portal-mode-desc">Link your character call-sign to post gold bounties on enemies, broadcast guild defense beacons, sync client combat logs, and claim supporter perks.</p>
+            </div>
+          </div>
+        </div>
+
+        ${modeDetailHtml}
+      </section>
+
+      <!-- Step 2: WoW Version Selection -->
+      <section class="portal-step-section">
+        <div class="portal-step-header">
+          <span class="portal-step-num">STEP 2</span>
+          <div>
             <h2 class="portal-section-title">Select Your World of Warcraft Version</h2>
-            <div class="portal-section-sub">Choose your active client flavor to calibrate telemetry, maximum level caps, and combat rules.</div>
+            <div class="portal-section-sub">Choose your target client flavor to calibrate combat telemetry, max level caps, and combat rules.</div>
           </div>
         </div>
         <div class="portal-flavor-grid" id="portal-flavor-grid">
@@ -2406,19 +2467,19 @@ function loadPortalView() {
         </div>
       </section>
 
-      <!-- Step 2: Access Gateway (Guest vs Login) -->
-      <section class="portal-step-section">
-        <div class="portal-step-header">
-          <span class="portal-step-num">STEP 2</span>
-          <div>
-            <h2 class="portal-section-title">War Room Access Level</h2>
-            <div class="portal-section-sub">Enter immediately as a guest field operative or sign in to link your character and bounties.</div>
-          </div>
+      <!-- Step 3: Tactical Launch Bar -->
+      <section class="portal-launch-bar">
+        <div class="portal-launch-summary">
+          <span class="launch-summary-label">DEPLOYMENT CLEARANCE</span>
+          <div class="launch-summary-details">${launchSummaryText}</div>
         </div>
-        ${authSectionHtml}
+        <button class="portal-cta-launch-btn ${launchBtnClass}" onclick="portalLaunchWarRoom()">
+          <span>${launchBtnText}</span>
+          <span class="launch-arrow">&rarr;</span>
+        </button>
       </section>
 
-      <!-- Step 3: Addon Architecture & Explanation -->
+      <!-- Step 4: Addon Architecture & Explanation -->
       <section class="portal-step-section">
         <div class="portal-step-header">
           <span class="portal-step-num">INTEL</span>
@@ -2495,6 +2556,20 @@ function portalSelectFlavor(flavorKey) {
   loadPortalView();
 }
 
+function portalLaunchWarRoom() {
+  if (portalAccessMode === "guest") {
+    portalContinueAsGuest();
+  } else {
+    const storedHunter = localStorage.getItem("wowkb_user_character") || localStorage.getItem("wow_killboard_hunter_name");
+    const currentAuth = sessionStorage.getItem("wowkb_auth_type");
+    if (storedHunter && currentAuth === "officer") {
+      portalEnterFeed();
+    } else {
+      portalSubmitLogin();
+    }
+  }
+}
+
 function portalContinueAsGuest() {
   sessionStorage.setItem("wowkb_auth_type", "guest");
   sessionStorage.setItem("wowkb_has_entered_feed", "1");
@@ -2511,7 +2586,7 @@ function portalSubmitLogin() {
   const faction = factionEl ? factionEl.value : "Alliance";
 
   if (!name) {
-    alert("Please enter your character name or call-sign to sign in.");
+    alert("Please enter your character name or call-sign to sign in, or choose 'Continue as Guest'.");
     if (charEl) charEl.focus();
     return;
   }
@@ -2540,6 +2615,7 @@ function portalSignOut() {
   localStorage.removeItem("wowkb_user_realm");
   localStorage.removeItem("wowkb_user_faction");
   sessionStorage.removeItem("wowkb_auth_type");
+  portalAccessMode = "guest";
   loadPortalView();
 }
 
@@ -2555,6 +2631,7 @@ function switchTab(tab) {
   if (activeMobileBtn) activeMobileBtn.classList.add("active");
 
   const isPortal = (tab === "PORTAL");
+  document.body.classList.toggle("portal-active", isPortal);
   const mainContainer = document.querySelector(".container");
   if (mainContainer) {
     mainContainer.classList.toggle("portal-mode", isPortal);

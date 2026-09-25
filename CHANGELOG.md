@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.1] - 2026-09-25
+
+### Changed
+- **Portal First-Page Header Stack Suppression**:
+  - Hides the entire 3-row desktop and mobile header stack (`.site-header`, `#wowhead-top-bar`, `.header-top-row`, `.header-sub-row`, `#mobile-menu-btn`, `#mobile-flavor-badge`) whenever `body.portal-active` is set (`display: none !important;`).
+  - Converts the main landing page into a clean, cinematic, distraction-free Warcraft portal gateway where visitors are not overwhelmed by navigation tabs, filters, or expansion bars before selecting how to enter.
+  - The complete 3-row header stack seamlessly re-engages the moment the user launches into the War Room, calibrated to their selected client version and authorization level.
+  - Added a prominent **"🏰 War Room Portal"** tab to the navigation rail, mobile drawer, and header logo for 1-click return to the gateway anytime.
+
+### Added
+- **Streamlined 4-Step Portal Gateway Flow**:
+  - **Step 1 — War Room Clearance Level**: Interactive toggle cards allowing visitors to choose between **Option A (Continue as Guest / Public Recon)** and **Option B (Officer / Vanguard Sign-In)**.
+    - Guest Mode displays instantaneous read-only clearance confirmation.
+    - Officer Mode displays character call-sign, realm server, and allegiance faction inputs (or active authenticated operative profile with 1-click sign out/switch).
+  - **Step 2 — World of Warcraft Version Selection**: Interactive 6-card grid with live selection state for **Classic Era (60)**, **20th Anniversary Edition (60)**, **WoW Forever Beta (60)**, **The Burning Crusade (70)**, **Wrath of the Lich King (80)**, and **Modern Retail (80)**.
+  - **Step 3 — Dynamic Tactical Launch Bar**: High-prominence, glowing CTA bar that continuously mirrors the user's Step 1 and Step 2 selections (e.g. `[ ⚔️ Launch War Room — Classic Era (Guest Recon) → ]` or `[ 👑 Sign In & Launch War Room — 20th Anniversary Edition → ]`), validating credentials and launching into the War Room with smooth scroll-to-top.
+  - **Step 4 — Addon Architecture & Downloads**: The 4 architectural pillars (Passive Combat Logging, Zero-Python Sync, 32-Bit FNV-1a Deduplication, Blood Bounties & KOS Tracking) and direct package downloads.
+  - **Hero Return Gateway**: Added `[ ⚔️ Return to Active Frontline Feed → ]` quick button in the hero masthead for returning users who already have an active session.
+
 ## [1.4.0] - 2026-09-25
 
 ### Added
