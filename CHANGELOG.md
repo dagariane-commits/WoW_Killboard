@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.2] - 2026-09-25
+
+### Added
+- **Dramatic 2-Screen Portal Gateway Flow**:
+  - **Screen 1 — The Muster Gate (`GATE`)**: Simplified into two solemn, weathered iron choices: **Unmarked Reconnaissance (Continue as Guest)** and **Inscribe the Muster Roll (Officer Sign-In)**. Selecting either path commits the soldier's clearance and transitions immediately to Screen 2.
+  - **Screen 2 — The Theaters of Conflict (`VERSIONS`)**: Presents the 6 war fronts (Classic Era, 20th Anniversary, Forever Beta, TBC, WotLK, Modern Retail). Clicking any war front immediately deploys the soldier's console directly into the live frontline combat feed for that campaign. Includes a `[ ← Retreat to Muster Gate ]` navigation button to alter clearance at will.
+- **Universal Pop-Out Addon Field Kit Dossier Modal (`#addon-dossier-modal`)**:
+  - Added an omnipresent **"📜 Field Kit"** trigger button accessible across all pages (desktop header tools, mobile navigation drawer, portal masthead, and persistent floating bottom-left badge).
+  - Opens a dark scorched-iron and brass modal laying out the 4 martial pillars (Pure Lua zero-taint logging, background sync courier, 32-bit FNV-1a cryptographic certification, and blood bounties) with direct package downloads.
+- **AI War Scribe & Combat Oracle Module (`/api/oracle/chat` & `#oracle-chat-modal`)**:
+  - Deployed an in-character AI combat intelligence console accessible via a floating bottom-right trigger (`[ 🔮 Ask the War Scribe ]`), desktop header tools, and mobile drawer.
+  - Connects to SQLite database (`combat.db`) to provide real-time intelligence on active bounties, dangerous zones, player dossiers, deadly NPC casualties, and addon mechanics.
+  - Supports Google Gemini API generative synthesis (`gemini-2.5-flash`) when provided with an API key, while maintaining a robust diegetic heuristic engine for 100% offline accuracy.
+  - Adheres strictly to the **Classic Azeroth Scribe** voice: grounded, utilitarian, diegetic, and austere with zero modern SaaS or tech jargon.
+
 ## [1.4.1] - 2026-09-25
 
 ### Changed

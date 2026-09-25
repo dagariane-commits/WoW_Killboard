@@ -3237,6 +3237,8 @@ body {
 
 /* ----------------- Azeroth War Room Entry Portal ----------------- */
 
+/* ----------------- Azeroth War Room Entry Portal ----------------- */
+
 /* Hide the entire 3-row header stack when portal is active */
 body.portal-active .site-header,
 body.portal-active #wowhead-top-bar,
@@ -3273,28 +3275,28 @@ body.portal-active .container {
   max-width: 100%;
 }
 
-.portal-container {
+.portal-container.dramatic-flow {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
   max-width: 1060px;
   margin: 0 auto;
-  padding-bottom: 30px;
+  padding-bottom: 40px;
 }
 
-/* 1. Portal Hero */
-.portal-hero {
+/* 1. Dramatic Hero Masthead */
+.portal-hero.dramatic-hero {
   text-align: center;
-  background: radial-gradient(circle at 50% 15%, rgba(245, 158, 11, 0.16) 0%, rgba(10, 13, 20, 0.98) 75%);
+  background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.16) 0%, rgba(10, 13, 20, 0.98) 75%);
   border: 1px solid var(--wow-brass-border, #4a3b27);
   border-radius: 8px;
-  padding: 32px 24px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), inset 0 0 40px rgba(0, 0, 0, 0.85);
+  padding: 34px 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7), inset 0 0 45px rgba(0, 0, 0, 0.85);
   position: relative;
   overflow: hidden;
 }
 
-.portal-hero::before {
+.portal-hero.dramatic-hero::before {
   content: "";
   position: absolute;
   top: 0;
@@ -3304,580 +3306,511 @@ body.portal-active .container {
   background: linear-gradient(90deg, transparent, var(--wow-gold), transparent);
 }
 
-.portal-crest-row {
+.portal-hero-actions {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
 }
 
-.portal-crest {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  object-fit: cover;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.portal-crest.alliance {
-  border-color: var(--alliance-blue);
-  box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
-}
-
-.portal-crest.horde {
-  border-color: var(--horde-red);
-  box-shadow: 0 0 14px rgba(239, 68, 68, 0.45);
-}
-
-.portal-emblem {
-  font-size: 1.75rem;
-  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.7));
-}
-
-.portal-title {
-  font-family: var(--font-tactical);
-  font-size: 1.75rem;
-  font-weight: 900;
-  letter-spacing: 1.8px;
-  color: #fff;
-  margin: 0 0 6px 0;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
-}
-
-.portal-tagline {
-  font-family: var(--font-tactical);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-  color: var(--wow-gold);
-  margin-bottom: 12px;
-}
-
-.portal-lead {
-  font-size: 0.90rem;
-  color: #cbd5e1;
-  max-width: 760px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-
-.portal-quick-return-btn {
+.portal-fieldkit-pill,
+.portal-oracle-pill {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #cbd5e1;
-  padding: 6px 14px;
+  padding: 7px 16px;
   border-radius: 4px;
   font-family: var(--font-tactical);
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.15s ease;
-  margin-top: 14px;
+  transition: all 0.18s ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.portal-quick-return-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+.portal-fieldkit-pill:hover {
+  background: rgba(212, 163, 41, 0.12);
   border-color: var(--wow-gold);
+  color: var(--wow-gold-bright);
+}
+
+.portal-oracle-pill {
+  border-color: rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+}
+
+.portal-oracle-pill:hover {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: #c084fc;
   color: #fff;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.35);
 }
 
-/* 2. Step Section */
-.portal-step-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 22px 24px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+.portal-fieldkit-pill.small,
+.portal-oracle-pill.small {
+  padding: 5px 12px;
+  font-size: 0.72rem;
 }
 
-.portal-step-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 12px;
-}
-
-.portal-step-num {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid var(--wow-gold);
-  color: var(--wow-gold);
-  font-family: var(--font-tactical);
-  font-weight: 900;
-  font-size: 0.70rem;
-  padding: 4px 10px;
-  border-radius: 4px;
-  letter-spacing: 1px;
-  white-space: nowrap;
-}
-
-.portal-section-title {
-  font-family: var(--font-tactical);
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #f1f5f9;
-  letter-spacing: 0.5px;
-  margin: 0;
-}
-
-.portal-section-sub {
-  font-size: 0.78rem;
-  color: #94a3b8;
-  margin-top: 2px;
-}
-
-/* 3. Step 1: Access Level Mode Toggle Cards */
-.portal-mode-toggle-group {
+/* 2. Dramatic 2-Card Selection Gate (Screen 1) */
+.dramatic-gate-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 20px;
 }
 
-.portal-mode-card {
-  background: #090c13;
+.dramatic-gate-card {
+  background: linear-gradient(180deg, #0e121b 0%, #07090e 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 16px 18px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 26px 24px;
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  user-select: none;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.6);
   position: relative;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.portal-mode-card:hover {
-  border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.03);
-  transform: translateY(-1px);
+.dramatic-gate-card.guest {
+  border-top: 3px solid var(--accent-cyan);
 }
 
-.portal-mode-card.active.guest {
+.dramatic-gate-card.guest:hover {
   border-color: var(--accent-cyan);
-  background: linear-gradient(135deg, rgba(2, 132, 199, 0.12) 0%, rgba(13, 17, 26, 0.98) 100%);
-  box-shadow: 0 0 16px -2px rgba(0, 229, 255, 0.3), inset 0 0 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px -4px rgba(0, 229, 255, 0.3);
+  transform: translateY(-2px);
 }
 
-.portal-mode-card.active.officer {
+.dramatic-gate-card.officer {
+  border-top: 3px solid var(--wow-gold);
+}
+
+.dramatic-gate-card.officer:hover {
   border-color: var(--wow-gold);
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.14) 0%, rgba(13, 17, 26, 0.98) 100%);
-  box-shadow: 0 0 16px -2px rgba(245, 158, 11, 0.35), inset 0 0 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px -4px rgba(245, 158, 11, 0.35);
+  transform: translateY(-2px);
 }
 
-.portal-mode-radio {
-  font-size: 1.25rem;
-  line-height: 1;
-  color: #64748b;
-  margin-top: 2px;
-}
-
-.portal-mode-card.active.guest .portal-mode-radio {
-  color: var(--accent-cyan);
-  text-shadow: 0 0 8px var(--accent-cyan);
-}
-
-.portal-mode-card.active.officer .portal-mode-radio {
-  color: var(--wow-gold);
-  text-shadow: 0 0 8px var(--wow-gold);
-}
-
-.portal-mode-content {
-  flex: 1;
-}
-
-.portal-mode-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.portal-mode-badge {
+.gate-card-badge {
+  display: inline-block;
+  align-self: flex-start;
   font-family: var(--font-tactical);
-  font-size: 0.62rem;
+  font-size: 0.64rem;
   font-weight: 800;
-  letter-spacing: 0.8px;
-  padding: 2px 7px;
+  letter-spacing: 1px;
+  padding: 3px 8px;
   border-radius: 3px;
+  margin-bottom: 12px;
 }
 
-.portal-mode-badge.guest {
+.gate-card-badge.guest {
   background: rgba(0, 229, 255, 0.12);
   border: 1px solid rgba(0, 229, 255, 0.3);
   color: var(--accent-cyan);
 }
 
-.portal-mode-badge.officer {
+.gate-card-badge.officer {
   background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(245, 158, 11, 0.35);
   color: var(--wow-gold);
 }
 
-.portal-mode-title {
+.gate-card-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.gate-card-title {
   font-family: var(--font-tactical);
-  font-size: 1.05rem;
-  font-weight: 800;
+  font-size: 1.35rem;
+  font-weight: 900;
   color: #fff;
   letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
 }
 
-.portal-mode-desc {
-  font-size: 0.78rem;
+.gate-card-desc {
+  font-size: 0.84rem;
   color: #94a3b8;
-  line-height: 1.45;
+  line-height: 1.5;
+  margin-bottom: 18px;
 }
 
-/* Detail Box below Step 1 Toggle */
-.portal-mode-detail-box {
-  background: #070a10;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  padding: 16px 18px;
-  margin-top: 10px;
-}
-
-.portal-mode-detail-box.guest {
-  border-left: 3px solid var(--accent-cyan);
-}
-
-.portal-mode-detail-box.officer {
-  border-left: 3px solid var(--wow-gold);
-}
-
-.portal-login-form-compact {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  align-items: flex-end;
-}
-
-.portal-login-form-compact .portal-form-group.full-width {
-  grid-column: 1 / -1;
-}
-
-.portal-form-group {
+.gate-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 8px;
+  font-size: 0.80rem;
+  color: #cbd5e1;
 }
 
-.portal-label {
-  font-size: 0.70rem;
-  color: #94a3b8;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
+.gate-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.portal-input {
-  background: #04060a;
-  border: 1px solid #334155;
-  color: #e2e8f0;
-  border-radius: 4px;
-  padding: 8px 10px;
-  font-size: 0.82rem;
-  font-family: var(--font-body);
-}
-
-.portal-input:focus {
-  outline: none;
-  border-color: var(--wow-gold);
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
-}
-
-.portal-faction-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.faction-radio {
+.dramatic-gate-btn {
+  width: 100%;
+  padding: 14px 20px;
+  font-family: var(--font-tactical);
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  background: #0f131a;
-  border: 1px solid #1e293b;
-  border-radius: 4px;
-  padding: 7px 8px;
-  font-size: 0.78rem;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.dramatic-gate-btn.guest {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #fff;
+  border: 1px solid rgba(0, 229, 255, 0.35);
+}
+
+.dramatic-gate-btn.guest:hover {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5);
+  transform: translateY(-2px);
+}
+
+.dramatic-gate-btn.officer {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 230, 128, 0.35);
+}
+
+.dramatic-gate-btn.officer:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.55);
+  transform: translateY(-2px);
+}
+
+.gate-officer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.gate-officer-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 6px;
+}
+
+.gate-signout-link {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.74rem;
   font-weight: 700;
   cursor: pointer;
-  user-select: none;
+  text-decoration: underline;
+  transition: color 0.15s ease;
 }
 
-.faction-radio.alliance { color: var(--alliance-blue); }
-.faction-radio.horde { color: var(--horde-red); }
-
-.portal-signed-in-box {
-  background: #07090e;
-  border: 1px solid #1e293b;
-  border-left: 4px solid var(--wow-gold);
-  border-radius: 8px;
-  padding: 16px 18px;
+.gate-signout-link:hover {
+  color: #ef4444;
 }
 
-.signed-in-header {
+/* 3. Screen 2: Theater of Conflict */
+.theater-nav-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 14px;
   flex-wrap: wrap;
-  gap: 10px;
+  padding: 12px 18px;
+  background: #090c13;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
 }
 
-.portal-signout-btn {
-  background: transparent;
+.portal-back-btn {
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid #334155;
-  color: #94a3b8;
-  padding: 5px 12px;
+  color: #cbd5e1;
+  padding: 6px 14px;
   border-radius: 4px;
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-family: var(--font-tactical);
+  font-size: 0.78rem;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.portal-signout-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
-  color: #ef4444;
+.portal-back-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #94a3b8;
+  color: #fff;
 }
 
-/* 4. Step 2: Flavor Grid */
-.portal-flavor-grid {
+.theater-clearance-pill {
+  font-family: var(--font-tactical);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+
+.theater-clearance-pill.guest {
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--accent-cyan);
+}
+
+.theater-clearance-pill.officer {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--wow-gold);
+}
+
+.theater-header-card {
+  text-align: center;
+  padding: 16px 20px;
+  background: #080b11;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+}
+
+.theater-main-title {
+  font-family: var(--font-tactical);
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #fff;
+  margin: 0 0 4px 0;
+}
+
+.theater-subtitle {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.dramatic-theater-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
-.portal-flavor-card {
-  background: #090c13;
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  padding: 14px;
+.dramatic-flavor-card {
+  min-height: 155px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 140px;
-  user-select: none;
 }
 
-.portal-flavor-card:hover {
-  border-color: var(--flavor-color, var(--wow-gold));
-  background: rgba(255, 255, 255, 0.03);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-}
-
-.portal-flavor-card.selected {
-  border-color: var(--flavor-color, var(--wow-gold));
-  background: linear-gradient(135deg, rgba(20, 24, 35, 0.98) 0%, rgba(13, 17, 26, 0.98) 100%);
-  box-shadow: 0 0 16px -2px var(--flavor-color, rgba(245, 158, 11, 0.4)), inset 0 0 12px rgba(0, 0, 0, 0.6);
-}
-
-.portal-flavor-card-top {
+.dramatic-launch-prompt {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.portal-flavor-lvl-badge {
   font-family: var(--font-tactical);
-  font-size: 0.64rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  border: 1px solid;
-  padding: 1px 6px;
-  border-radius: 3px;
   letter-spacing: 0.5px;
-}
-
-.portal-flavor-name {
-  font-family: var(--font-tactical);
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-.portal-flavor-sub {
-  font-size: 0.74rem;
-  color: #94a3b8;
-  line-height: 1.35;
-  margin-bottom: 10px;
-}
-
-.portal-flavor-status {
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.portal-selected-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--font-tactical);
-  font-size: 0.66rem;
-  font-weight: 900;
-  color: #000;
-  padding: 2px 7px;
-  border-radius: 3px;
-  letter-spacing: 0.5px;
-}
-
-.portal-check {
-  font-weight: 900;
-}
-
-.portal-select-prompt {
-  font-size: 0.70rem;
-  color: #64748b;
-  font-style: italic;
-  transition: color 0.15s ease;
-}
-
-.portal-flavor-card:hover .portal-select-prompt {
-  color: #cbd5e1;
-}
-
-/* 5. Step 3: Dynamic Tactical Launch Bar */
-.portal-launch-bar {
-  background: radial-gradient(circle at 50% 50%, rgba(22, 28, 42, 0.98) 0%, rgba(10, 13, 20, 0.98) 100%);
-  border: 1.5px solid var(--wow-brass-border-light, #735934);
-  border-radius: 8px;
-  padding: 18px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(212, 163, 41, 0.15);
-  margin-top: 10px;
-}
-
-.portal-launch-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.launch-summary-label {
-  font-family: var(--font-tactical);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  color: var(--wow-gold);
-}
-
-.launch-summary-details {
-  font-size: 0.88rem;
-  color: #cbd5e1;
-}
-
-.portal-cta-launch-btn {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  color: #fff;
-  border: 1px solid rgba(255, 230, 128, 0.4);
-  padding: 14px 28px;
-  font-family: var(--font-tactical);
-  font-size: 1.05rem;
-  font-weight: 900;
-  letter-spacing: 1px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 4px 18px rgba(217, 119, 6, 0.45);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.portal-cta-launch-btn:hover {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(245, 158, 11, 0.6);
-}
-
-.portal-cta-launch-btn.guest {
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-  border-color: rgba(0, 229, 255, 0.4);
-  box-shadow: 0 4px 18px rgba(2, 132, 199, 0.45);
-}
-
-.portal-cta-launch-btn.guest:hover {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  box-shadow: 0 6px 22px rgba(14, 165, 233, 0.6);
-}
-
-.launch-arrow {
-  font-size: 1.2rem;
+  padding-top: 6px;
   transition: transform 0.2s ease;
 }
 
-.portal-cta-launch-btn:hover .launch-arrow {
+.dramatic-flavor-card:hover .dramatic-launch-prompt {
   transform: translateX(4px);
 }
 
-/* 6. Step 4: Addon Explanation Pillars */
-.portal-pillars-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 18px;
+/* 4. Header Action Buttons */
+.header-action-pill {
+  padding: 6px 12px;
+  font-family: var(--font-tactical);
+  font-weight: 800;
+  font-size: 0.78rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
 }
 
-.pillar-card {
-  background: #07090e;
+.header-action-pill.fieldkit-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 163, 41, 0.35);
+  color: var(--wow-gold);
+}
+
+.header-action-pill.fieldkit-btn:hover {
+  background: rgba(212, 163, 41, 0.15);
+  border-color: var(--wow-gold);
+  color: #fff;
+}
+
+.header-action-pill.oracle-btn {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+}
+
+.header-action-pill.oracle-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: #d8b4fe;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+/* 5. Persistent Floating Action Triggers */
+.floating-action-trigger {
+  position: fixed;
+  z-index: 1500;
+  bottom: 22px;
+  background: rgba(14, 18, 28, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-family: var(--font-tactical);
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.65);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #fff;
+}
+
+.floating-action-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.8);
+}
+
+.floating-action-trigger.fieldkit-float {
+  left: 24px;
+  border-color: rgba(212, 163, 41, 0.4);
+  color: var(--wow-gold);
+}
+
+.floating-action-trigger.fieldkit-float:hover {
+  border-color: var(--wow-gold);
+  background: rgba(20, 26, 40, 0.95);
+  color: #fff;
+}
+
+.floating-action-trigger.oracle-float {
+  right: 24px;
+  border-color: rgba(168, 85, 247, 0.45);
+  color: #c084fc;
+}
+
+.floating-action-trigger.oracle-float:hover {
+  border-color: #c084fc;
+  background: rgba(24, 20, 36, 0.95);
+  color: #fff;
+  box-shadow: 0 6px 24px rgba(168, 85, 247, 0.35);
+}
+
+/* 6. Addon Field Kit Dossier Modal */
+.dossier-card {
+  max-width: 880px;
+  background: #090c13;
+  border: 1.5px solid var(--wow-brass-border-light, #735934);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(212, 163, 41, 0.15);
+}
+
+.dossier-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px 20px;
+}
+
+.dossier-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.dossier-lore-lead {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.55;
+  font-style: italic;
+  border-left: 3px solid var(--wow-gold);
+  padding-left: 12px;
+}
+
+.dossier-pillars-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.dossier-pillar {
+  background: #06080d;
   border: 1px solid #1e293b;
   border-radius: 6px;
-  padding: 16px 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.pillar-icon {
-  font-size: 1.5rem;
+.pillar-num {
+  font-family: var(--font-tactical);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--wow-gold);
 }
 
-.pillar-title {
+.pillar-head {
   font-family: var(--font-tactical);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: 800;
-  color: #f1f5f9;
+  color: #fff;
   letter-spacing: 0.4px;
   margin: 0;
 }
 
-.pillar-desc {
-  font-size: 0.74rem;
+.pillar-text {
+  font-size: 0.78rem;
   color: #94a3b8;
   line-height: 1.45;
   margin: 0;
 }
 
-.pillar-desc code {
+.pillar-text code {
   color: var(--accent-cyan);
   background: rgba(0, 229, 255, 0.1);
   padding: 1px 4px;
   border-radius: 3px;
-  font-size: 0.70rem;
+  font-size: 0.72rem;
 }
 
-/* 7. Download Box */
-.portal-download-box {
+.dossier-download-box {
   background: linear-gradient(135deg, rgba(20, 24, 35, 0.98) 0%, rgba(13, 16, 24, 0.98) 100%);
   border: 1px solid var(--wow-brass-border, #4a3b27);
   border-radius: 8px;
@@ -3887,160 +3820,388 @@ body.portal-active .container {
   align-items: center;
   flex-wrap: wrap;
   gap: 14px;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.6);
 }
 
-.download-info {
+.dossier-dl-info {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.download-btn-group {
+.dossier-dl-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.portal-dl-btn {
-  padding: 9px 15px;
+/* 7. War Scribe & Combat Oracle AI Chat Window */
+.oracle-chat-window {
+  position: fixed;
+  z-index: 2000;
+  bottom: 24px;
+  right: 24px;
+  width: 440px;
+  height: 600px;
+  max-height: 85vh;
+  background: #090c14;
+  border: 1.5px solid rgba(168, 85, 247, 0.45);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 24px rgba(168, 85, 247, 0.2);
+  overflow: hidden;
+  animation: oraclePopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes oraclePopIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.oracle-chat-header {
+  background: linear-gradient(90deg, #130f1e 0%, #0d101a 100%);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.oracle-avatar {
+  font-size: 1.5rem;
+}
+
+.oracle-title {
   font-family: var(--font-tactical);
+  font-size: 0.95rem;
   font-weight: 800;
-  font-size: 0.80rem;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-decoration: none;
-  display: inline-flex;
+  color: #fff;
+  letter-spacing: 0.6px;
+}
+
+.oracle-sub {
+  font-size: 0.68rem;
+  color: #a855f7;
+  font-weight: 600;
+}
+
+.oracle-header-actions {
+  display: flex;
   align-items: center;
   gap: 6px;
-  border: none;
 }
 
-.portal-dl-btn.primary {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-}
-
-.portal-dl-btn.primary:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-}
-
-.portal-dl-btn.secondary {
-  background: #1e293b;
-  color: #e2e8f0;
-  border: 1px solid #334155;
-}
-
-.portal-dl-btn.secondary:hover {
-  background: #334155;
-  color: #fff;
-}
-
-.portal-dl-btn.tertiary {
+.oracle-tool-btn {
   background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+}
+
+.oracle-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: #a855f7;
+}
+
+.oracle-key-drawer {
+  background: #06070c;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 14px;
+}
+
+.oracle-key-label {
+  font-size: 0.70rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.oracle-key-input {
+  flex: 1;
+  background: #020305;
+  border: 1px solid #334155;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-family: monospace;
+}
+
+.oracle-key-input:focus {
+  outline: none;
+  border-color: #a855f7;
+}
+
+.oracle-key-save-btn {
+  background: #a855f7;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.oracle-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #07090e;
+}
+
+.oracle-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 90%;
+  animation: msgFadeIn 0.15s ease;
+}
+
+@keyframes msgFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.oracle-msg .msg-meta {
+  font-family: var(--font-tactical);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.oracle-msg.user {
+  align-self: flex-end;
+}
+
+.oracle-msg.user .msg-meta {
+  color: var(--accent-cyan);
+  text-align: right;
+}
+
+.oracle-msg.user .msg-body {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px 8px 2px 8px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.oracle-msg.scribe {
+  align-self: flex-start;
+}
+
+.oracle-msg.scribe .msg-meta {
   color: var(--wow-gold);
-  border: 1px solid rgba(245, 158, 11, 0.35);
 }
 
-.portal-dl-btn.tertiary:hover {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: var(--wow-gold);
+.oracle-msg.scribe .msg-body {
+  background: #0f131c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 3px solid var(--wow-gold);
+  color: #e2e8f0;
+  padding: 12px 14px;
+  border-radius: 2px 8px 8px 8px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* Mobile Portal Adaptations */
+.oracle-msg.scribe.loading .msg-body {
+  border-left-color: #a855f7;
+  color: #c084fc;
+}
+
+.oracle-pulsing-rune {
+  animation: runePulse 1.4s infinite ease-in-out;
+  display: inline-block;
+}
+
+@keyframes runePulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.oracle-sources-tag {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.source-pill {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.oracle-quick-chips {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #090c14;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.oracle-quick-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.oracle-chip {
+  background: #111624;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.oracle-chip:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: #a855f7;
+  color: #fff;
+}
+
+.oracle-chat-input-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #080a10;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.oracle-textarea {
+  flex: 1;
+  background: #040508;
+  border: 1px solid #334155;
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 0.80rem;
+  font-family: var(--font-body);
+  resize: none;
+  max-height: 80px;
+}
+
+.oracle-textarea:focus {
+  outline: none;
+  border-color: #a855f7;
+}
+
+.oracle-send-btn {
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-family: var(--font-tactical);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.oracle-send-btn:hover {
+  background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+}
+
+/* 8. Mobile Adaptations */
 @media (max-width: 768px) {
   body.portal-active .container {
     padding-top: 16px;
     padding-bottom: 30px;
   }
 
-  .portal-hero {
-    padding: 22px 16px;
-  }
-
-  .portal-title {
-    font-size: 1.30rem;
-    letter-spacing: 1px;
-  }
-
-  .portal-tagline {
-    font-size: 0.70rem;
-  }
-
-  .portal-lead {
-    font-size: 0.82rem;
-  }
-
-  .portal-mode-toggle-group {
+  .dramatic-gate-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 16px;
   }
 
-  .portal-login-form-compact {
-    grid-template-columns: 1fr;
-    gap: 10px;
+  .portal-hero.dramatic-hero {
+    padding: 24px 16px;
   }
 
-  .portal-flavor-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .dramatic-theater-grid {
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
 
-  .portal-flavor-card {
-    padding: 10px 8px;
-    min-height: 125px;
+  .dossier-pillars-grid {
+    grid-template-columns: 1fr;
   }
 
-  .portal-flavor-name {
-    font-size: 0.84rem;
+  .dossier-download-box {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .portal-flavor-sub {
-    font-size: 0.68rem;
-    margin-bottom: 6px;
+  .dossier-dl-actions {
+    flex-direction: column;
   }
 
-  .portal-launch-bar {
+  .dossier-dl-actions .portal-dl-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .floating-action-trigger {
+    padding: 6px 12px;
+    font-size: 0.74rem;
+    bottom: 16px;
+  }
+
+  .floating-action-trigger.fieldkit-float {
+    left: 12px;
+  }
+
+  .floating-action-trigger.oracle-float {
+    right: 12px;
+  }
+
+  .oracle-chat-window {
+    right: 8px;
+    left: 8px;
+    bottom: 8px;
+    width: auto;
+    height: 80vh;
+  }
+
+  .theater-nav-bar {
     flex-direction: column;
     align-items: stretch;
     text-align: center;
-    padding: 16px;
-  }
-
-  .portal-cta-launch-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 12px 18px;
-    font-size: 0.95rem;
-  }
-
-  .portal-pillars-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .portal-download-box {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .download-btn-group {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .portal-dl-btn {
-    width: 100%;
-    justify-content: center;
   }
 }
 
 @media (max-width: 480px) {
-  .portal-flavor-grid {
+  .dramatic-theater-grid {
     grid-template-columns: 1fr;
   }
 }
