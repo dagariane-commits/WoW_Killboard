@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
+- **Streamlined Minimal Combat Feed & Authentic Warcraft UI Styling**:
+  - Implemented a clean "less is more" recent kills feed: hid noisy text badges (`[SOLO]`, `[GANG]`, `[WORLD]`, `[DUEL]`) from the default row, eliminating visual clutter.
+  - Added sleek 3.5px left-edge indicator bars color-coded by combat mode (Emerald for Solo, Amber for Gang, Gold for Duel, Cyan for BG, Purple for Arena).
+  - Integrated authentic World of Warcraft class icon badges (20x20px bordered tiles with crisp class emblem vectors) for all 13 classes beside killer and victim names.
+  - Added Blizzard metallic gold typography (`.wow-gold-header`) with subtle text gradients and chiselled shadows for branding, titles, and combat log headers.
+  - Upgraded cards with Blizzard antique brass borders (`--wow-brass-border: #423522`), dark iron plate backgrounds, and deep inner bevel shadows.
+  - Replaced generic emoji with authentic circular metallic World of Warcraft coins (Gold, Silver, Copper) for blood bounties and debt ledgers.
 - **Dark Warcraft Tactical War Room & Mobile/Tablet Responsive Overhaul**:
   - Implemented high-fidelity Dark Warcraft Tactical War Room aesthetic inspired by zKillboard and dark military fantasy, featuring atmospheric radial illumination (Alliance Blue & Horde Crimson), ambient tactical grid, and glassmorphic card elements (`backdrop-filter: blur(16px)`).
   - Integrated Google Fonts: `'Cinzel'` for regal war room titles, `'Rajdhani'` for combat meters and tactical telemetry, and `'Inter'` for high-legibility feed logs.

@@ -37,6 +37,51 @@ const CLASS_SYMBOLS = {
   UNKNOWN: "👤"
 };
 
+function getClassIconSvg(cls) {
+  cls = (cls || "").toUpperCase();
+  switch (cls) {
+    case "WARRIOR":
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M9.5 17.5L21 6V3h-3L6.5 14.5M11 19l-6-6M8 16l-4 4"/></svg>`;
+    case "PALADIN":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 2h2v4h-2zM4 6h16v4H4zm2 4h12v2H6zm3 2h6v2H9zm1 2h4v8h-4z"/></svg>`;
+    case "HUNTER":
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>`;
+    case "ROGUE":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2l3 3-5 9 3 3 9-5 3 3 2-2-15-11zm12 10l-2 2 3 3 2-2-3-3z"/></svg>`;
+    case "PRIEST":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 11h2v11h-2z"/><path d="M7 14h10v2H7z"/></svg>`;
+    case "DEATHKNIGHT":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a8 8 0 00-8 8c0 3.2 1.9 6 4.7 7.3L8 22h8l-.7-4.7c2.8-1.3 4.7-4.1 4.7-7.3a8 8 0 00-8-8zm-3 8a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm6 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>`;
+    case "SHAMAN":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7v8l9-12h-7z"/></svg>`;
+    case "MAGE":
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 8 22 9 17 14 18 21 12 17 6 21 7 14 2 9 9 8 12 2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>`;
+    case "WARLOCK":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8 6 6 9 6 13a6 6 0 0012 0c0-4-2-7-6-11zm0 15a3 3 0 01-3-3c0-1.5 1-2.5 3-4.5 2 2 3 3 3 4.5a3 3 0 01-3 3z"/></svg>`;
+    case "MONK":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 010 18c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5-2 4.5-4.5S14.5 3 12 3z"/><circle cx="12" cy="7.5" r="1.5"/><circle cx="12" cy="16.5" r="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+    case "DRUID":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><ellipse cx="6" cy="7" rx="1.5" ry="3"/><ellipse cx="10" cy="5" rx="1.5" ry="3"/><ellipse cx="14" cy="5" rx="1.5" ry="3"/><ellipse cx="18" cy="7" rx="1.5" ry="3"/><path d="M6 14c0 4 3 7 6 7s6-3 6-7c0-2-2-4-6-4s-6 2-6 4z"/></svg>`;
+    case "DEMONHUNTER":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 16c4-1 8-5 10-14 2 9 6 13 10 14-4 2-8 3-10 1-2 2-6 1-10-1z"/></svg>`;
+    case "EVOKER":
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 7v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V7l-8-5zm0 4a4 4 0 014 4c0 3-4 6-4 6s-4-3-4-6a4 4 0 014-4z"/></svg>`;
+    default:
+      return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg>`;
+  }
+}
+
+function renderClassBadge(cls, size = 20) {
+  cls = (cls || "").toUpperCase();
+  const color = CLASS_COLORS[cls] || "#94a3b8";
+  const svg = getClassIconSvg(cls);
+  return `<span class="wow-class-icon" style="width:${size}px; height:${size}px; border-color:${color}; color:${color};" title="${cls}">${svg}</span>`;
+}
+
+function renderWowCoin(type) {
+  return `<span class="wow-coin ${type}" title="${type.charAt(0).toUpperCase() + type.slice(1)}"></span>`;
+}
+
 let currentTab = "FEED";
 let currentMode = "ALL";
 let searchQuery = "";
@@ -148,7 +193,7 @@ function renderMostWanted(outlaws) {
           ${colorizeClass(b.target_name, cls)}
         </div>
         <div class="wanted-guild">&lt;${b.target_faction || 'Neutral'}&gt;</div>
-        <div class="wanted-reward">💰 ${formatNumber(b.amount_gold)} Gold</div>
+        <div class="wanted-reward">${formatNumber(b.amount_gold)} ${renderWowCoin('gold')} <span style="font-size:0.75rem; color:#d4a329; font-weight:700;">BOUNTY</span></div>
         <div class="wanted-lastseen" title="${lastSeenText}">${lastSeenText}</div>
         ${btnHtml}
       </div>
@@ -169,8 +214,12 @@ function formatCopper(copper) {
   copper = Number(copper) || 0;
   const g = Math.floor(copper / 10000);
   const s = Math.floor((copper % 10000) / 100);
-  if (g > 0) return `${g}g ${s}s`;
-  return `${s}s`;
+  const c = copper % 100;
+  let out = "";
+  if (g > 0) out += `${g} ${renderWowCoin('gold')} `;
+  if (s > 0 || g > 0) out += `${s} ${renderWowCoin('silver')} `;
+  out += `${c} ${renderWowCoin('copper')}`;
+  return out.trim();
 }
 
 function timeAgo(epoch) {
@@ -433,49 +482,69 @@ function renderFeed(kills) {
   }
 
   let html = `
-    <div style="display: flex; flex-direction: column; gap: 8px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid #1e293b;">
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27);">
         <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:1.1rem;">⚔️</span>
-          <span style="font-size:1.05rem; font-weight:800; color:var(--accent-cyan); letter-spacing:-0.3px;">Most Recent Kills</span>
+          <span style="font-size:1.15rem;">⚔️</span>
+          <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
         </div>
-        <span style="font-size:0.75rem; color:#94a3b8;">${kills.length} recent combat events</span>
+        <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Log &bull; ${kills.length} events</span>
       </div>
   `;
   kills.forEach(km => {
-    const badge = km.isSolo 
-      ? `<span class="km-badge-solo">SOLO</span>` 
-      : `<span class="km-badge-gang">GANG ${km.attackersCount}</span>`;
-
-    let ctxBadge = "";
+    let modeClass = "km-world";
+    let modeLabel = "Open World";
     if (km.isDuel) {
-      ctxBadge = `<span style="font-size:0.65rem; color:#ffd700; border:1px solid #ffd700; padding:2px 4px; border-radius:4px; font-weight:700;">DUEL</span>`;
+      modeClass = "km-duel";
+      modeLabel = "1v1 Duel";
     } else if (km.isArena) {
-      ctxBadge = `<span style="font-size:0.65rem; color:#a335ee; border:1px solid #a335ee; padding:2px 4px; border-radius:4px; font-weight:700;">ARENA</span>`;
+      modeClass = "km-arena";
+      modeLabel = "Arena Match";
     } else if (km.isBattleground) {
-      ctxBadge = `<span class="km-badge-bg">BG: ${km.battlegroundName || "PVP"}</span>`;
+      modeClass = "km-bg";
+      modeLabel = `Battleground (${km.battlegroundName || "BG"})`;
+    } else if (km.isSolo) {
+      modeClass = "km-solo";
+      modeLabel = "1v1 Solo Kill";
     } else {
-      ctxBadge = `<span style="font-size:0.65rem; color:#94a3b8; border:1px solid #334155; padding:2px 4px; border-radius:4px;">WORLD</span>`;
+      modeClass = "km-gang";
+      modeLabel = `Gang Kill (${km.attackersCount} Attackers)`;
     }
 
+    const killerBadge = renderClassBadge(km.killer.class, 20);
+    const victimBadge = renderClassBadge(km.victim.class, 20);
     const killerSpan = colorizeClass(km.killer.name, km.killer.class);
     const victimSpan = colorizeClass(km.victim.name, km.victim.class);
-    const actionVerb = km.isDuel ? "defeated" : "destroyed";
+
+    const killerGuild = (km.killer.guild && km.killer.guild !== 'None')
+      ? `<span class="km-guild">&lt;${km.killer.guild}&gt;</span>`
+      : '';
+    const victimGuild = (km.victim.guild && km.victim.guild !== 'None')
+      ? `<span class="km-guild">&lt;${km.victim.guild}&gt;</span>`
+      : '';
 
     html += `
-      <div class="killmail-row" onclick="openKillModal('${km.killId}')">
+      <div class="killmail-row ${modeClass}" onclick="openKillModal('${km.killId}')" title="${modeLabel} • ${km.location.zone} • Click to inspect combat dossier">
         <div class="km-left">
-          ${badge}
-          ${ctxBadge}
           <div class="km-combatants">
-            <span class="km-killer"><span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.killer.name}')">${killerSpan}</span> <small style="color:#94a3b8">(${km.killer.level})</small></span>
-            <span class="km-versus">${actionVerb}</span>
-            <span class="km-victim"><span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.victim.name}')">${victimSpan}</span> <small style="color:#94a3b8">(${km.victim.level})</small></span>
+            <div class="km-combatant killer">
+              ${killerBadge}
+              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.killer.name}')">${killerSpan}</span>
+              <span class="km-lvl">(${km.killer.level})</span>
+              ${killerGuild}
+            </div>
+            <span class="km-vs" title="${km.isDuel ? 'Defeated in Duel' : 'Slew in Combat'}">⚔️</span>
+            <div class="km-combatant victim">
+              ${victimBadge}
+              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.victim.name}')">${victimSpan}</span>
+              <span class="km-lvl">(${km.victim.level})</span>
+              ${victimGuild}
+            </div>
           </div>
         </div>
         <div class="km-right">
           <span class="km-zone">${km.location.zone}</span>
-          <span style="font-size:0.75rem;">${timeAgo(km.timestamp)}</span>
+          <span class="km-time">${timeAgo(km.timestamp)}</span>
         </div>
       </div>
     `;
@@ -511,7 +580,7 @@ function renderLeaderboardView(data) {
     html += `
       <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
         <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
-        <td><span class="clickable-player" onclick="openCharacterProfile('${p.name}')">${colorizeClass(p.name, p.class)}</span></td>
+        <td><span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${p.name}')">${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)}</span></td>
         <td>${guildHtml}</td>
         <td style="color: ${p.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${p.faction}</td>
         <td style="color: #10b981; font-weight: 700;">${p.kills}</td>
@@ -1297,8 +1366,8 @@ async function fetchArmoryDataAndRender() {
         <div class="armory-card" style="border-top: 3px solid ${clsColor};">
           <div>
             <div class="armory-card-header">
-              <div class="armory-avatar" style="border: 2px solid ${clsColor}; box-shadow: 0 0 10px ${clsColor}33;">
-                <span>${symbol}</span>
+              <div class="armory-avatar" style="border: 2px solid ${clsColor}; box-shadow: 0 0 10px ${clsColor}33; display:flex; align-items:center; justify-content:center;">
+                ${renderClassBadge(c.class, 28)}
               </div>
               <div class="armory-card-info">
                 <div class="armory-card-name" onclick="openCharacterProfile('${c.name}')">
@@ -1316,7 +1385,7 @@ async function fetchArmoryDataAndRender() {
             <div class="armory-tags-row">
               ${c.isKos ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}
               ${c.deserter ? `<span class="armory-badge-deserter">⚡ DESERTER (${c.deserter.days_remaining}d)</span>` : ''}
-              ${c.activeBountyGold > 0 ? `<span class="armory-badge-bounty">💰 ${c.activeBountyGold}g BOUNTY</span>` : ''}
+              ${c.activeBountyGold > 0 ? `<span class="armory-badge-bounty">${c.activeBountyGold} ${renderWowCoin('gold')} BOUNTY</span>` : ''}
             </div>
 
             <div class="armory-stats-matrix">
