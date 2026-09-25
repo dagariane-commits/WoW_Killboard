@@ -108,12 +108,13 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - Dynamic real-time event polling every 5s with class-colored combatants and killer/victim telemetry.
    - Dual layout options: Horizontal bottom-ticker or vertical side-panel (`?vertical=1`).
    - Backwards-compatible alias preserved at `/streambox/<name>`.
-6. **Streamlined 7-Item Navigation & Clean Header Architecture**:
-   - Replaced complex multi-tier menus with a unified, responsive single-row header navigation rail:
-     - **Logo**: Re-anchored to route directly to Intel command center.
-     - **Theater of War**: Displays active WoW flavor (`Theater: WoW Forever ▾`) and routes to the version selection gateway.
-     - **Intel**: Live combat killmail feed, Top 10 High Command Execution List outlaw gallery, and real-time recon wire.
-     - **Hall of Legends**: Competitive leaderboard embedding the 5-state combat mode filter pills (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`).
+6. **Streamlined 7-Item Text-Only Navigation & Authentic WoW Version Accents**:
+   - Replaced clunky button-box navigation with a clean, minimalist text navigation rail:
+     - All navigation links use muted slate typography (`#94a3b8`) on transparent backgrounds with zero box backdrops or borders.
+     - The active tab is elegantly highlighted with a bottom underline (`border-bottom: 2px solid var(--active-flavor-color)`) matching the active WoW version's authentic color accent.
+     - **Theater of War**: Displays the active WoW flavor (`Theater: WoW Forever ▾`) with the version name dynamically rendered in that client's signature hue: Cyan (`#00e5ff`) for WoW Forever Beta, Gold (`#eab308`) for Classic Era, Amber (`#d97706`) for Anniversary, and Purple (`#a855f7`) for Retail.
+     - **Intel**: Live combat killmail feed, Top 10 High Command Execution List outlaw gallery, and real-time recon wire (strictly gated to Intel tab).
+     - **Hall of Legends**: Competitive leaderboard embedding the 5-state combat mode filter pills (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`) and cohort percentile standings.
      - **World Hazards**: Wilderness environmental deaths and deadly PvE NPC casualty telemetry.
      - **Armory**: Context-aware routing—authenticated users immediately access their personalized combat dossier; guest users access the full realm combatant directory.
      - **Bounties**: High Command execution list and contract ledger with personal bounties pinned in a dedicated gold card at the top.
