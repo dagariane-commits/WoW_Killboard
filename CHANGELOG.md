@@ -10,25 +10,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.9] - 2026-09-25
 
 ### Changed
-- **Unified 7-Item Primary Navigation & Clean Header Architecture**:
-  - Replaced multi-tier header structure and nested submenus with a streamlined, single-row primary navigation layout:
-    1. **Logo**: Re-anchored to the primary Intel command center.
-    2. **Theater of War**: Displays active WoW version (e.g. `Theater: WoW Forever ▾`) and routes to the version selection gateway.
-    3. **Intel**: Renamed from "Frontline Feed" across the web interface, companion documentation, and in-game addon tabs.
-    4. **Hall of Legends**: Renamed from "Hall of Heroes" / "Leaderboards" with dedicated styling.
-    5. **World Hazards**: Direct telemetry access to deadly open-world NPC casualties and wilderness hazards.
-    6. **Armory**: Context-aware routing—authenticated users immediately access their personalized combat dossier; guest users access the full realm combatant directory and search index.
-    7. **Bounties**: High Command execution list and contract ledger with personal bounties pinned in a dedicated gold card at the top.
-    8. **Warroom**: Consolidated head-to-head guild wars, blood feuds, and realm KOS blacklist with personal wars pinned at the top.
-  - Added `#header-auth-badge` displaying real-time user authentication status (`👤 Username [Sign Out]` or `[Sign In]`).
-  - Purged legacy `INFO` tab and its 7-subpage clutter from public views.
-  - **Distraction-Free Landing Page (Pure Body Entrance)**: Enforced strict suppression of the header top menu, site footer, and floating action triggers on the main entrance / portal page (`body.portal-active`) so visitors encounter an uncluttered, immersive landing body with zero top menu distractions.
-- **Relocated Combat Mode Filter**:
-  - Removed top-level mode filter buttons (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`) from the global header and embedded them directly into the **Hall of Legends** view header.
+- **Distraction-Free Landing Page (Pure Sign-In / Entry Portal)**:
+  - Ensured initial site load (`DOMContentLoaded`) unconditionally defaults to the War Room Sign-In & Entry Portal (`PORTAL`).
+  - Enforced strict suppression of the header top menu, search bar, footer, and floating controls via `body.portal-active` so visitors encounter a focused, dramatic entry portal with zero header distractions.
+  - Visitors choose between "Continue as Guest" or "Sign In / Create Account", with direct routing to active combat intelligence (`INTEL`).
+- **Dedicated Theater of War Campaign Selector (`THEATER`)**:
+  - Decoupled `PORTAL` (landing sign-in gateway) and `THEATER` (in-app version selection page) into distinct architectural routes.
+  - Clicking `Theater: WoW Forever ▾` in the top navigation keeps the header intact and renders the 4-card campaign selector grid:
+    1. **WoW Forever**: Active & selectable (`[ ACTIVE THEATER ]`, Level 60 Cap) with immediate entrance button.
+    2. **Classic Era**: Offline (`[ TBD • IN DEVELOPMENT ]`, Level 60 Cap).
+    3. **Anniversary Edition**: Offline (`[ TBD • IN DEVELOPMENT ]`, Level 60 Cap).
+    4. **Modern Retail**: Offline (`[ TBD • IN DEVELOPMENT ]`, Level 80 Cap).
+  - Selecting WoW Forever automatically updates the primary navigation button to `Theater: WoW Forever ▾` and transitions to the live combat feed.
+- **Complete Cheesy Emoji & Icon Purge**:
+  - Systematically stripped all emoji icons (`🌐`, `📡`, `🏆`, `☠️`, `🛡️`, `🩸`, `⚔️`, `🚨`, `🏰`, `⚡`, `👤`, `🎯`, `💰`, `⏳`, `📈`, `🚩`) across the navigation rail, mobile drawer, section headers, badges, alerts, and tables in `index.html` and `app.js`.
+  - Replaced decorative emblems with precision SVG vector assets (crossed swords, search glass, and tactical shields) and clean military typography.
+- **Percentile Standing Column in Hall of Legends**:
+  - Integrated `Percentile Standing` cohort ranking column into the **Hall of Legends** table.
+  - Enriched `get_leaderboard()` in `web/server.py` to query class, spec, and level for all top killers and compute cohort percentiles (`compute_character_percentile`).
+  - Rendered `Top X% (Yth Pct)` badges on all ranked combatants with full tooltip telemetry (`Level 60 Marksmanship Hunter (X in cohort)`).
+- **Warroom Loading Resolution & Zero-Taint Hardening**:
+  - Eliminated `ReferenceError: escapeHtml is not defined` causing "Failed to load Warroom" by defining a global `escapeHtml()` utility in `app.js`.
+  - Validated `/api/feuds` and `/api/kos/blacklist` endpoints with robust defensive JSON parsing.
+- **Top Header Search Removal**:
+  - Completely purged the redundant `<div class="search-wrap">` from the top header navigation, centering search on the specialized Player Armory directory and mobile search drawer.
 - **Zero Creator PII in Web Application**:
   - Completely purged all author real names from web interface scripts, templates, and comments.
-- **In-Game Addon Navigation Alignment (`Addon/WoWKillboard/UI.lua`)**:
-  - Aligned in-game addon navigation bar tabs with the web platform (`Intel` and `Hall of Legends`).
 
 ## [1.4.8] - 2026-09-25
 

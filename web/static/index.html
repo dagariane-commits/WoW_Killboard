@@ -18,7 +18,7 @@
       <!-- 1. Logo -->
       <div class="logo-group" onclick="switchTab('INTEL')">
         <img src="/static/icons/factions/alliance.jpg" class="header-faction-crest alliance" alt="Alliance" title="For the Alliance!">
-        <div class="logo-crest">⚔️</div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2" class="logo-swords-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M9.5 17.5 21 6V3h-3L6.5 14.5"/><path d="m11 19-6-6"/><path d="M8 16l-4 4"/><path d="M5 21l-2-2"/></svg>
         <img src="/static/icons/factions/horde.jpg" class="header-faction-crest horde" alt="Horde" title="For the Horde!">
         <div>
           <div class="logo-title">WoW Killboard</div>
@@ -29,23 +29,18 @@
       <!-- 2. Primary Navigation Rail -->
       <nav class="nav-links-rail" id="nav-rail">
         <button id="nav-theater" class="nav-btn theater-btn" onclick="switchTab('THEATER')" title="Active Theater of War / Select Version">
-          <span class="theater-icon">🌐</span> <span class="theater-label">Theater:</span> <strong id="theater-nav-version">WoW Forever</strong> ▾
+          <span class="theater-label">Theater:</span> <strong id="theater-nav-version">WoW Forever</strong> ▾
         </button>
-        <button id="nav-intel" class="nav-btn active" onclick="switchTab('INTEL')">📡 Intel</button>
-        <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">🏆 Hall of Legends</button>
-        <button id="nav-hazards" class="nav-btn" onclick="switchTab('HAZARDS')">☠️ World Hazards</button>
-        <button id="nav-armory" class="nav-btn" onclick="handleArmoryNavClick()">🛡️ Armory</button>
-        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">🩸 Bounties</button>
-        <button id="nav-warroom" class="nav-btn" onclick="switchTab('WARROOM')">⚔️ Warroom</button>
+        <button id="nav-intel" class="nav-btn active" onclick="switchTab('INTEL')">Intel</button>
+        <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">Hall of Legends</button>
+        <button id="nav-hazards" class="nav-btn" onclick="switchTab('HAZARDS')">World Hazards</button>
+        <button id="nav-armory" class="nav-btn" onclick="handleArmoryNavClick()">Armory</button>
+        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Bounties</button>
+        <button id="nav-warroom" class="nav-btn" onclick="switchTab('WARROOM')">Warroom</button>
       </nav>
 
       <!-- 3. Tools Group -->
       <div class="header-tools-group">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="search-box" class="search-input" placeholder="Search Player, Guild, Zone...">
-        </div>
-
         <div id="header-auth-badge" class="header-auth-badge">
           <!-- Populated by app.js -->
         </div>
@@ -64,7 +59,7 @@
   <aside id="mobile-drawer" class="mobile-drawer">
     <div class="mobile-drawer-header">
       <div class="logo-group">
-        <span style="font-size: 1.4rem;">⚔️</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2" class="logo-swords-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M9.5 17.5 21 6V3h-3L6.5 14.5"/><path d="m11 19-6-6"/><path d="M8 16l-4 4"/><path d="M5 21l-2-2"/></svg>
         <div class="logo-title" style="font-size: 1.15rem;">WoW Killboard</div>
       </div>
       <button class="drawer-close-btn" onclick="toggleMobileDrawer(false)">&times;</button>
@@ -80,31 +75,31 @@
       <div class="mobile-drawer-label" style="margin-top: 14px;">NAVIGATION</div>
       <div class="mobile-nav-list">
         <button class="mobile-nav-item" id="m-nav-theater" onclick="switchTab('THEATER'); toggleMobileDrawer(false);">
-          <span>🌐 Theater: WoW Forever</span>
+          <span>Theater: WoW Forever</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item active" id="m-nav-intel" onclick="switchTab('INTEL'); toggleMobileDrawer(false);">
-          <span>📡 Intel</span>
+          <span>Intel</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-legends" onclick="switchTab('LEGENDS'); toggleMobileDrawer(false);">
-          <span>🏆 Hall of Legends</span>
+          <span>Hall of Legends</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-hazards" onclick="switchTab('HAZARDS'); toggleMobileDrawer(false);">
-          <span>☠️ World Hazards</span>
+          <span>World Hazards</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-armory" onclick="handleArmoryNavClick(); toggleMobileDrawer(false);">
-          <span>🛡️ Armory</span>
+          <span>Armory</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
-          <span>🩸 Bounties</span>
+          <span>Bounties</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-warroom" onclick="switchTab('WARROOM'); toggleMobileDrawer(false);">
-          <span>⚔️ Warroom</span>
+          <span>Warroom</span>
           <span>&rarr;</span>
         </button>
       </div>
@@ -159,12 +154,9 @@
       <!-- High Command Execution List Showcase -->
       <section id="most-wanted-section" class="most-wanted-section">
         <div class="most-wanted-header">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size: 1.3rem;">🎯</span>
-            <div>
-              <div class="most-wanted-title">HIGH COMMAND EXECUTION LIST — REALM'S MOST NOTORIOUS</div>
-              <div class="most-wanted-subtitle">Certified blood bounties across Azeroth &bull; Deliver the final blow in open combat to claim the gold</div>
-            </div>
+          <div>
+            <div class="most-wanted-title">HIGH COMMAND EXECUTION LIST — REALM'S MOST NOTORIOUS</div>
+            <div class="most-wanted-subtitle">Certified blood bounties across Azeroth &bull; Deliver the final blow in open combat to claim the gold</div>
           </div>
           <div class="most-wanted-status-badge">
             <span class="live-dot"></span> LIVE CONTRACTS
@@ -187,15 +179,15 @@
       <!-- Native Realm Player Armory Quick Search & Directory -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">
-            <span>🏰</span> Player Armory
-          </div>
+          <div class="section-title">Player Armory</div>
           <span style="font-size:0.7rem; color:var(--accent-cyan); font-weight:700;">REALM INTEL</span>
         </div>
         <div class="sidebar-armory-wrap">
           <div class="sidebar-armory-search-row">
             <input type="text" id="sidebar-armory-input" class="sidebar-search-input" placeholder="Inspect Character Dossier..." onkeydown="handleSidebarArmoryKey(event)">
-            <button class="sidebar-armory-search-btn" onclick="handleSidebarArmorySearch()" title="Inspect Character">⚔️</button>
+            <button class="sidebar-armory-search-btn" onclick="handleSidebarArmorySearch()" title="Inspect Character">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
           </div>
           <button class="sidebar-armory-browse-btn" onclick="switchTab('ARMORY')">
             <span>Open Realm Directory</span>
@@ -206,15 +198,15 @@
         <div class="armory-mirrors-label">External Intelligence Mirrors:</div>
         <div class="armory-links-stack">
           <a class="armory-link-row" href="https://worldofwarcraft.blizzard.com/en-us/character" target="_blank" rel="noopener">
-            <span>⚔️ Official Blizzard Armory</span>
+            <span>Official Blizzard Armory</span>
             <span class="ext-icon">&nearr;</span>
           </a>
           <a class="armory-link-row" href="https://ironforge.pro/" target="_blank" rel="noopener">
-            <span>📊 Ironforge.pro (PvP Intel)</span>
+            <span>Ironforge.pro (PvP Intel)</span>
             <span class="ext-icon">&nearr;</span>
           </a>
           <a class="armory-link-row" href="https://www.warcraftlogs.com/" target="_blank" rel="noopener">
-            <span>📜 Warcraft Logs PvP</span>
+            <span>Warcraft Logs PvP</span>
             <span class="ext-icon">&nearr;</span>
           </a>
         </div>
@@ -223,9 +215,7 @@
       <!-- Current Activity (Active PVP - Last 7 Days) -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">
-            <span>📊</span> Current Activity (7 Days)
-          </div>
+          <div class="section-title">Current Activity (7 Days)</div>
         </div>
         <table class="activity-table">
           <tbody>
@@ -260,9 +250,7 @@
       <!-- Top Characters (Last 7 Days) -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">
-            <span>🏆</span> Top Characters (7 Days)
-          </div>
+          <div class="section-title">Top Characters (7 Days)</div>
         </div>
         <div id="sidebar-7d-characters" class="sidebar-rank-list">
           <div style="color:#64748b; font-size:0.8rem;">Gathering telemetry...</div>
@@ -272,9 +260,7 @@
       <!-- Top Guilds (Last 7 Days) -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">
-            <span>🛡️</span> Top Guilds (7 Days)
-          </div>
+          <div class="section-title">Top Guilds (7 Days)</div>
         </div>
         <div id="sidebar-7d-guilds" class="sidebar-rank-list">
           <div style="color:#64748b; font-size:0.8rem;">Gathering telemetry...</div>
@@ -284,9 +270,7 @@
       <!-- Top Classes & Hotspot Zones -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">
-            <span>⚡</span> Top Classes &amp; Zones
-          </div>
+          <div class="section-title">Top Classes &amp; Zones</div>
         </div>
         <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:8px; font-weight:700;">TOP CLASSES (7D)</div>
         <div id="sidebar-7d-classes" style="display:flex; flex-direction:column; gap:4px; margin-bottom:14px;">
@@ -361,7 +345,7 @@
   <div class="modal-overlay" id="event-modal" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
-        <strong style="color: var(--accent-cyan); font-size: 1.1rem;">⚔️ Schedule Guild Event / Rally</strong>
+        <strong style="color: var(--accent-cyan); font-size: 1.1rem;">Schedule Guild Event / Rally</strong>
         <button class="modal-close" onclick="closeEventModal()">&times;</button>
       </div>
       <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
@@ -391,7 +375,7 @@
         </div>
         <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
           <button class="nav-btn" onclick="closeEventModal()">Cancel</button>
-          <button class="nav-btn active" style="background:var(--accent-cyan); color:#000; font-weight:700;" onclick="submitGuildEvent()">📢 Announce &amp; Broadcast</button>
+          <button class="nav-btn active" style="background:var(--accent-cyan); color:#000; font-weight:700;" onclick="submitGuildEvent()">Announce &amp; Broadcast</button>
         </div>
       </div>
     </div>
@@ -487,7 +471,6 @@
         <!-- Free, Personal & Supporter Member Access Tiers (100% Blizzard ToS Compliant) -->
         <div class="dossier-tier-section">
           <div class="dossier-tier-title-row">
-            <span class="dossier-tier-icon">⚖️</span>
             <div>
               <h3 class="dossier-tier-heading">COMMUNITY ACCESS TIERS: GUEST, FREE MEMBER, &amp; COMMUNITY SUPPORTER</h3>
               <div class="dossier-tier-subhead">100% Free Addon &bull; Zero In-Game Paywalls &bull; Optional Web Hosting Donations</div>
@@ -626,7 +609,9 @@
 
           <!-- Blizzard ToS & Addon Policy Guarantee Callout -->
           <div class="dossier-tos-callout">
-            <div class="tos-callout-icon">🛡️</div>
+            <div class="tos-callout-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
             <div class="tos-callout-text">
               <strong>Blizzard Add-on Policy &amp; Terms of Service Guarantee:</strong>
               In strict accordance with Blizzard's UI &amp; Add-on Policy, the WoW Killboard addon, in-game bounty system, and all combat tracking features are 100% free and open for all players with zero gameplay advantages. Supporter donations are entirely optional and exclusively fund server hosting, bandwidth, and web companion features (StreamBox OBS overlays, beta testing, and cosmetic web badges).
@@ -680,7 +665,9 @@
       </div>
       <div class="oracle-header-actions">
         <button class="oracle-tool-btn" onclick="clearOracleChat()" title="Clear dispatches">↺</button>
-        <button class="oracle-tool-btn" onclick="toggleOracleKeyDrawer()" title="Arcane Key Settings (Gemini API Key)">⚙️</button>
+        <button class="oracle-tool-btn" onclick="toggleOracleKeyDrawer()" title="Arcane Key Settings (Gemini API Key)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
         <button class="oracle-tool-btn" onclick="toggleOracleChatModal(false)">&times;</button>
       </div>
     </div>

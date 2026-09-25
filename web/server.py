@@ -996,6 +996,15 @@ def get_leaderboard():
             LIMIT 15
         """
         top_killers = [dict(r) for r in conn.execute(top_killers_query).fetchall()]
+        for p in top_killers:
+            k_stat = p.get("kills") or 0
+            d_stat = conn.execute("SELECT COUNT(*) FROM kills WHERE victim_name = ?", (p["name"],)).fetchone()
+            victim_count = d_stat[0] if d_stat else 0
+            kd = round(k_stat / victim_count, 2) if victim_count > 0 else float(k_stat)
+            spec_row = conn.execute("SELECT killer_spec, killer_level FROM kills WHERE killer_name = ? AND killer_spec IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (p["name"],)).fetchone()
+            p_spec = spec_row[0] if spec_row else None
+            p_lvl = spec_row[1] if spec_row and spec_row[1] else 60
+            p["percentile"] = compute_character_percentile(conn, p["name"], p["class"], p_spec, p_lvl, k_stat, kd)
 
         # Top Solo Hunters
         top_solo_query = f"""
