@@ -830,12 +830,26 @@ def stats_endpoint():
             bg_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_battleground = 1").fetchone()[0]
             arena_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_arena = 1").fetchone()[0]
             duel_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_duel = 1").fetchone()[0]
+            solo_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_solo = 1").fetchone()[0]
+            alliance_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance'").fetchone()[0]
+            horde_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde'").fetchone()[0]
+            active_bounties = conn.execute("SELECT COUNT(*) FROM bounties WHERE status = 'ACTIVE'").fetchone()[0]
+            bounty_gold = conn.execute("SELECT COALESCE(SUM(amount_gold), 0) FROM bounties WHERE status = 'ACTIVE'").fetchone()[0]
+            top_zone_row = conn.execute("SELECT zone, COUNT(*) as cnt FROM kills WHERE zone IS NOT NULL GROUP BY zone ORDER BY cnt DESC LIMIT 1").fetchone()
+            top_zone = top_zone_row["zone"] if top_zone_row else "Hillsbrad Foothills"
+
             stats["counts"] = {
                 "total": total_kills,
                 "world": world_kills,
                 "bg": bg_kills,
                 "arena": arena_kills,
-                "duel": duel_kills
+                "duel": duel_kills,
+                "solo": solo_kills,
+                "alliance": alliance_kills,
+                "horde": horde_kills,
+                "active_bounties": active_bounties,
+                "bounty_gold": bounty_gold,
+                "top_zone": top_zone
             }
         return jsonify(stats)
 
@@ -1294,7 +1308,7 @@ def get_character_profile(name):
             elif kos_fallback:
                 char_data = {"name": name, "class": "UNKNOWN", "level": 60, "guild": "None", "faction": "Unknown"}
             else:
-                return jsonify({"error": "Character not found"}), 404
+                char_data = {"name": name, "class": "WARRIOR", "level": 60, "guild": "Vanguard Frontier", "faction": "Alliance"}
         else:
             char_data = dict(char_row)
 

@@ -174,7 +174,7 @@ let currentMode = "ALL";
 let searchQuery = "";
 let cachedKills = [];
 
-let currentFlavor = localStorage.getItem("wowkb_client_flavor") || "CLASSIC_ERA";
+let currentFlavor = "FOREVER";
 
 const FLAVOR_CONFIGS = {
   RETAIL: {
@@ -754,14 +754,51 @@ async function loadBounties() {
 
 // Rendering Functions
 async function renderStats(kills) {
-  const totalKills = kills.length;
-  const soloKills = kills.filter(k => k.isSolo).length;
-  const soloPercent = totalKills > 0 ? Math.round((soloKills / totalKills) * 100) : 0;
+  const hubContainer = document.getElementById("homepage-stats-hub");
 
-  const totalEl = document.getElementById("stat-total-kills");
-  if (totalEl) totalEl.innerText = totalKills;
-  const soloEl = document.getElementById("stat-solo-percent");
-  if (soloEl) soloEl.innerText = `${soloPercent}%`;
+  // 1. Fetch cumulative server telemetry
+  let cumulative = {
+    total: kills.length,
+    solo: kills.filter(k => k.isSolo).length,
+    alliance: 0,
+    horde: 0,
+    active_bounties: 0,
+    top_zone: "Hillsbrad Foothills"
+  };
+
+  try {
+    const statsRes = await fetch("/api/stats");
+    if (statsRes.ok) {
+      const statsData = await statsRes.json();
+      if (statsData.counts) {
+        cumulative.total = statsData.counts.total ?? kills.length;
+        cumulative.solo = statsData.counts.solo ?? kills.filter(k => k.isSolo).length;
+        cumulative.alliance = statsData.counts.alliance ?? 0;
+        cumulative.horde = statsData.counts.horde ?? 0;
+        cumulative.active_bounties = statsData.counts.active_bounties ?? 0;
+        cumulative.bounty_gold = statsData.counts.bounty_gold ?? 0;
+        cumulative.top_zone = statsData.counts.top_zone ?? "Hillsbrad Foothills";
+      }
+    }
+  } catch (e) {
+    // Fallback to local kills array
+  }
+
+  // Calculate percentages
+  const totalCarnage = cumulative.total;
+  const soloPct = totalCarnage > 0 ? Math.round((cumulative.solo / totalCarnage) * 100) : 0;
+
+  let aKills = cumulative.alliance;
+  let hKills = cumulative.horde;
+  if (aKills === 0 && hKills === 0) {
+    kills.forEach(k => {
+      if (k.killer && k.killer.faction === "Alliance") aKills++;
+      else if (k.killer && k.killer.faction === "Horde") hKills++;
+    });
+  }
+  const facTotal = aKills + hKills;
+  const aPct = facTotal > 0 ? Math.round((aKills / facTotal) * 100) : 50;
+  const hPct = facTotal > 0 ? 100 - aPct : 50;
 
   const modeNames = {
     ALL: "All PvP",
@@ -770,47 +807,178 @@ async function renderStats(kills) {
     ARENA: "Arenas",
     DUEL: "Duels"
   };
-  const modeEl = document.getElementById("stat-active-mode");
-  if (modeEl) modeEl.innerText = modeNames[currentMode] || currentMode;
+  const activeModeName = modeNames[currentMode] || currentMode;
 
-  // Calculate Alliance vs Horde Faction Carnage Split
-  let aKills = 0;
-  let hKills = 0;
-  kills.forEach(k => {
-    if (k.killer && k.killer.faction === "Alliance") aKills++;
-    else if (k.killer && k.killer.faction === "Horde") hKills++;
-  });
-  const facTotal = aKills + hKills;
-  const aPct = facTotal > 0 ? Math.round((aKills / facTotal) * 100) : 50;
-  const hPct = facTotal > 0 ? 100 - aPct : 50;
-  const factionEl = document.getElementById("stat-faction-split");
-  if (factionEl) {
-    factionEl.innerHTML = `<span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>`;
+  // 2. Check operative account auth state
+  const currentAuth = sessionStorage.getItem("wowkb_auth_type") || localStorage.getItem("wowkb_auth_type");
+  const accountUser = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "";
+  const isSignedIn = Boolean(accountUser && (currentAuth === "account" || currentAuth === "officer"));
+
+  if (!hubContainer) {
+    const totalEl = document.getElementById("stat-total-kills");
+    if (totalEl) totalEl.innerText = totalCarnage;
+    const soloEl = document.getElementById("stat-solo-percent");
+    if (soloEl) soloEl.innerText = `${soloPct}%`;
+    const factionEl = document.getElementById("stat-faction-split");
+    if (factionEl) {
+      factionEl.innerHTML = `<span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>`;
+    }
+    const modeEl = document.getElementById("stat-active-mode");
+    if (modeEl) modeEl.innerText = activeModeName;
+    return;
   }
 
-  try {
-    const statsRes = await fetch("/api/stats");
-    if (statsRes.ok) {
-      const statsData = await statsRes.json();
-      const duels = statsData.duels || { wins: 0, losses: 0 };
-      const bgs = statsData.bgs || { wins: 0, losses: 0 };
-      const arenas = statsData.arenas || { wins: 0, losses: 0 };
-      const wlEl = document.getElementById("stat-wl-record");
-      if (wlEl) {
-        if (currentMode === "DUEL") {
-          wlEl.innerText = `Duels: ${duels.wins}W - ${duels.losses}L`;
-        } else if (currentMode === "BG") {
-          wlEl.innerText = `BGs: ${bgs.wins}W - ${bgs.losses}L`;
-        } else if (currentMode === "ARENA") {
-          wlEl.innerText = `Arenas: ${arenas.wins}W - ${arenas.losses}L`;
-        } else {
-          wlEl.innerText = `D: ${duels.wins}W-${duels.losses}L | BG: ${bgs.wins}W-${bgs.losses}L`;
+  // 3. Render Personalized Operative Stats if Signed In
+  if (isSignedIn) {
+    let charData = {
+      name: accountUser,
+      class: "WARRIOR",
+      faction: localStorage.getItem("wowkb_user_faction") || "Alliance",
+      rankTitle: "Private",
+      stats: { kills: 0, deaths: 0, kd: 0.0, soloKills: 0 }
+    };
+
+    try {
+      const charRes = await fetch(`/api/character/${encodeURIComponent(accountUser)}`);
+      if (charRes.ok) {
+        const fetched = await charRes.json();
+        if (fetched && fetched.name) {
+          charData = fetched;
         }
       }
+    } catch (err) {
+      // Use defaults
     }
-  } catch (e) {
-    // Ignore stats network errors
+
+    const uKills = charData.stats?.kills ?? 0;
+    const uDeaths = charData.stats?.deaths ?? 0;
+    const uKd = charData.stats?.kd ?? (uDeaths > 0 ? (uKills / uDeaths).toFixed(1) : uKills.toFixed(1));
+    const uSolo = charData.stats?.soloKills ?? 0;
+    const uFaction = charData.faction || "Alliance";
+    const factionColor = (uFaction === "Horde") ? "var(--horde-red)" : "var(--alliance-blue)";
+    const uRank = charData.rankTitle || "Operative";
+
+    hubContainer.innerHTML = `
+      <div class="stats-hub-wrapper signed-in">
+        <!-- Personalized Operative Hero Banner -->
+        <div class="operative-hero-strip">
+          <div class="operative-hero-left">
+            <div class="officer-sigil-badge" style="width:42px; height:42px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <div class="operative-title-row">
+                <span class="operative-name" style="cursor:pointer;" onclick="openCharacterProfile('${escapeHtml(accountUser)}')">${escapeHtml(accountUser)}</span>
+                <span class="operative-rank-tag">🎖️ ${escapeHtml(uRank)}</span>
+                <span class="operative-flavor-tag">WoW Forever</span>
+              </div>
+              <div class="operative-sub-row">
+                Allegiance: <strong style="color:${factionColor};">${escapeHtml(uFaction)}</strong> &bull; Class: <strong>${escapeHtml(charData.class || 'Champion')}</strong> &bull; Status: <strong style="color:var(--wow-gold-bright, #ffe680);">Active Combatant</strong>
+              </div>
+            </div>
+          </div>
+          <div class="operative-hero-actions">
+            <button class="operative-action-btn" onclick="openCharacterProfile('${escapeHtml(accountUser)}')">
+              <span>View Full Armory Profile</span>
+              <span>&rarr;</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Personalized Operative Metrics -->
+        <div class="operative-metrics-grid">
+          <div class="stat-card operative-card">
+            <span class="stat-label">Your Confirmed Kills</span>
+            <span class="stat-val highlight-gold">${formatNumber(uKills)}</span>
+          </div>
+          <div class="stat-card operative-card">
+            <span class="stat-label">Your Casualties (Deaths)</span>
+            <span class="stat-val highlight-red">${formatNumber(uDeaths)}</span>
+          </div>
+          <div class="stat-card operative-card">
+            <span class="stat-label">Your K/D Ratio</span>
+            <span class="stat-val highlight-green">${uKd}</span>
+          </div>
+          <div class="stat-card operative-card">
+            <span class="stat-label">Your Solo Kills (1v1)</span>
+            <span class="stat-val highlight-cyan">${formatNumber(uSolo)}</span>
+          </div>
+        </div>
+
+        <!-- Divider to Cumulative Frontier Stats -->
+        <div class="stats-section-divider">
+          <span>⚔️ WOW FOREVER FRONTIER — CUMULATIVE REALM TELEMETRY (ALL STATS)</span>
+        </div>
+
+        <!-- 4 Cumulative Frontier Metrics -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Realm Total Carnage</span>
+            <span class="stat-val" id="stat-total-kills">${formatNumber(totalCarnage)}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">1v1 Solo Kill Ratio</span>
+            <span class="stat-val" id="stat-solo-percent" style="color: #10b981;">${soloPct}%</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Faction War Split</span>
+            <span class="stat-val" id="stat-faction-split" style="font-size: 0.95rem; padding-top: 4px;">
+              <span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>
+            </span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Active Combat Filter</span>
+            <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 0.95rem; padding-top: 4px;">${activeModeName}</span>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
   }
+
+  // 4. Render Cumulative Stats for Guest
+  hubContainer.innerHTML = `
+    <div class="stats-hub-wrapper guest">
+      <div class="guest-stats-header">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.15rem;">📊</span>
+            <span class="wow-gold-header" style="font-size:0.95rem; font-weight:800; letter-spacing:0.5px;">WOW FOREVER FRONTIER — REALM TELEMETRY (ALL STATS)</span>
+          </div>
+          <span class="guest-recon-badge">UNMARKED RECON (GUEST)</span>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Realm Total Carnage</span>
+          <span class="stat-val" id="stat-total-kills">${formatNumber(totalCarnage)}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">1v1 Solo Kill Ratio</span>
+          <span class="stat-val" id="stat-solo-percent" style="color: #10b981;">${soloPct}%</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Faction War Split</span>
+          <span class="stat-val" id="stat-faction-split" style="font-size: 0.95rem; padding-top: 4px;">
+            <span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>
+          </span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Active Combat Filter</span>
+          <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 0.95rem; padding-top: 4px;">${activeModeName}</span>
+        </div>
+      </div>
+
+      <div class="guest-auth-prompt-strip">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:1rem;">⚔️</span>
+          <span>Browsing as Guest Recon. Sign in to display your personalized combat kills, deaths, K/D, and blood bounties.</span>
+        </div>
+        <button class="guest-signin-link-btn" onclick="switchTab('PORTAL')">Sign In &rarr;</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderFeed(kills) {
@@ -2249,20 +2417,24 @@ function renderDeadlyNpcsView(lbData, deaths) {
 
 // ----------------- War Room Entry Portal -----------------
 
-let portalScreen = "GATE"; // "GATE" (Muster Gate / Sign In) or "VERSIONS" (Theater of Conflict)
 let portalAccessMode = "guest";
 let portalAuthTab = "signin"; // "signin" or "register"
 
 function portalSetScreen(screen) {
-  portalScreen = screen;
   loadPortalView();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function portalEnterAsGuest() {
+  portalAccessMode = "guest";
+  sessionStorage.setItem("wowkb_auth_type", "guest");
+  portalLaunchFront("FOREVER");
+}
+
 function portalAdvanceToVersions(mode) {
-  portalAccessMode = mode;
-  sessionStorage.setItem("wowkb_auth_type", mode);
-  portalSetScreen("VERSIONS");
+  portalAccessMode = mode || "guest";
+  sessionStorage.setItem("wowkb_auth_type", portalAccessMode);
+  portalLaunchFront("FOREVER");
 }
 
 function portalSetAuthTab(tab) {
@@ -2313,7 +2485,7 @@ function handleNormalSignIn(event) {
   portalAccessMode = "account";
 
   updateSupporterButton();
-  portalLaunchFront(currentFlavor);
+  portalLaunchFront("FOREVER");
 }
 
 function handleNormalRegister(event) {
@@ -2351,7 +2523,7 @@ function handleNormalRegister(event) {
 
   updateSupporterButton();
   alert(`Account created successfully for ${username}! Welcome to the War Room.`);
-  portalLaunchFront(currentFlavor);
+  portalLaunchFront("FOREVER");
 }
 
 function handleGoogleSignIn() {
@@ -2368,7 +2540,7 @@ function handleGoogleSignIn() {
   portalAccessMode = "account";
 
   updateSupporterButton();
-  portalLaunchFront(currentFlavor);
+  portalLaunchFront("FOREVER");
 }
 
 function portalDirectSignIn() {
@@ -2380,11 +2552,12 @@ function portalDirectSignIn() {
   sessionStorage.setItem("wowkb_auth_type", "account");
   portalAccessMode = "account";
   updateSupporterButton();
-  portalLaunchFront(currentFlavor);
+  portalLaunchFront("FOREVER");
 }
 
 function portalLaunchFront(flavorKey) {
-  handleFlavorChange(flavorKey);
+  const chosen = flavorKey || "FOREVER";
+  handleFlavorChange(chosen);
   sessionStorage.setItem("wowkb_has_entered_feed", "1");
   switchTab("FEED");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2398,8 +2571,9 @@ function portalSignOut() {
   localStorage.removeItem("wowkb_user_realm");
   localStorage.removeItem("wowkb_user_faction");
   sessionStorage.removeItem("wowkb_auth_type");
+  sessionStorage.removeItem("wowkb_has_entered_feed");
   portalAccessMode = "guest";
-  portalSetScreen("GATE");
+  switchTab("PORTAL");
 }
 
 function loadPortalView() {
@@ -2413,255 +2587,175 @@ function loadPortalView() {
     portalAccessMode = "account";
   }
 
-  // SCREEN 1: THE MUSTER GATE (Guest Recon vs Normal Sign-In / Create Account)
-  if (portalScreen === "GATE") {
-    let authBoxHtml = "";
-    if (storedAccount && (currentAuth === "account" || currentAuth === "officer")) {
-      authBoxHtml = `
-        <div class="signedin-account-card">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="officer-sigil-badge">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+  // MUSTER GATE (Guest Recon vs Normal Sign-In / Create Account)
+  let authBoxHtml = "";
+  if (storedAccount && (currentAuth === "account" || currentAuth === "officer")) {
+    authBoxHtml = `
+      <div class="signedin-account-card">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="officer-sigil-badge">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:800; font-size:1.0rem; color:#fff;">
+              Signed in as <span style="color:var(--wow-gold);">${escapeHtml(storedAccount)}</span>
             </div>
-            <div>
-              <div style="font-weight:800; font-size:1.0rem; color:#fff;">
-                Signed in as <span style="color:var(--wow-gold);">${storedAccount}</span>
-              </div>
-              <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
-                Account Active &bull; High Command Clearance
-              </div>
+            <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
+              Account Active &bull; High Command Clearance
             </div>
           </div>
-          <button class="dramatic-gate-btn officer" onclick="portalDirectSignIn()">
-            <span>Enter War Room Homepage</span>
+        </div>
+        <button class="dramatic-gate-btn officer" onclick="portalDirectSignIn()">
+          <span>Enter WoW Forever War Room</span>
+          <span>&rarr;</span>
+        </button>
+        <div style="text-align:center; margin-top:8px;">
+          <button class="gate-signout-link" onclick="portalSignOut()">Sign Out / Switch Account</button>
+        </div>
+      </div>
+    `;
+  } else {
+    authBoxHtml = `
+      <div class="normal-auth-wrapper">
+        <div class="auth-mode-tabs">
+          <button type="button" id="auth-tab-btn-signin" class="auth-tab-btn ${portalAuthTab === 'signin' ? 'active' : ''}" onclick="portalSetAuthTab('signin')">Sign In</button>
+          <button type="button" id="auth-tab-btn-register" class="auth-tab-btn ${portalAuthTab === 'register' ? 'active' : ''}" onclick="portalSetAuthTab('register')">Create Account</button>
+        </div>
+
+        <!-- Sign In Tab Form -->
+        <form id="auth-form-signin" class="normal-auth-form" style="display:${portalAuthTab === 'signin' ? 'flex' : 'none'};" onsubmit="handleNormalSignIn(event)">
+          <div class="auth-input-group">
+            <label class="auth-label" for="auth-input-username">Username or Email</label>
+            <input type="text" id="auth-input-username" class="normal-auth-input" placeholder="e.g. AzerothKnight" autocomplete="username">
+          </div>
+          <div class="auth-input-group">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label class="auth-label" for="auth-input-password">Password</label>
+              <a href="javascript:void(0)" class="auth-forgot-link" onclick="alert('Password reset instructions will be sent to your email.')">Forgot?</a>
+            </div>
+            <input type="password" id="auth-input-password" class="normal-auth-input" placeholder="Enter your password" autocomplete="current-password">
+          </div>
+          <div class="auth-options-row">
+            <label class="auth-checkbox-label">
+              <input type="checkbox" id="auth-remember" checked>
+              <span>Remember me</span>
+            </label>
+          </div>
+          <button type="submit" class="normal-auth-submit-btn">
+            <span>Sign In &amp; Enter War Room</span>
             <span>&rarr;</span>
           </button>
-          <div style="text-align:center; margin-top:8px;">
-            <button class="gate-signout-link" onclick="portalSignOut()">Sign Out / Switch Account</button>
-          </div>
-        </div>
-      `;
-    } else {
-      authBoxHtml = `
-        <div class="normal-auth-wrapper">
-          <div class="auth-mode-tabs">
-            <button type="button" id="auth-tab-btn-signin" class="auth-tab-btn ${portalAuthTab === 'signin' ? 'active' : ''}" onclick="portalSetAuthTab('signin')">Sign In</button>
-            <button type="button" id="auth-tab-btn-register" class="auth-tab-btn ${portalAuthTab === 'register' ? 'active' : ''}" onclick="portalSetAuthTab('register')">Create Account</button>
+
+          <div class="auth-or-divider">
+            <span>or continue with</span>
           </div>
 
-          <!-- Sign In Tab Form -->
-          <form id="auth-form-signin" class="normal-auth-form" style="display:${portalAuthTab === 'signin' ? 'flex' : 'none'};" onsubmit="handleNormalSignIn(event)">
-            <div class="auth-input-group">
-              <label class="auth-label" for="auth-input-username">Username or Email</label>
-              <input type="text" id="auth-input-username" class="normal-auth-input" placeholder="e.g. AzerothKnight" autocomplete="username">
-            </div>
-            <div class="auth-input-group">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <label class="auth-label" for="auth-input-password">Password</label>
-                <a href="javascript:void(0)" class="auth-forgot-link" onclick="alert('Password reset instructions will be sent to your email.')">Forgot?</a>
-              </div>
-              <input type="password" id="auth-input-password" class="normal-auth-input" placeholder="Enter your password" autocomplete="current-password">
-            </div>
-            <div class="auth-options-row">
-              <label class="auth-checkbox-label">
-                <input type="checkbox" id="auth-remember" checked>
-                <span>Remember me</span>
-              </label>
-            </div>
-            <button type="submit" class="normal-auth-submit-btn">
-              <span>Sign In &amp; Enter War Room</span>
-              <span>&rarr;</span>
-            </button>
+          <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
+            <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
+            </svg>
+            <span>Sign in with Google</span>
+          </button>
+        </form>
 
-            <div class="auth-or-divider">
-              <span>or continue with</span>
-            </div>
-
-            <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
-              <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
-              </svg>
-              <span>Sign in with Google</span>
-            </button>
-          </form>
-
-          <!-- Create Account Tab Form -->
-          <form id="auth-form-register" class="normal-auth-form" style="display:${portalAuthTab === 'register' ? 'flex' : 'none'};" onsubmit="handleNormalRegister(event)">
-            <div class="auth-input-group">
-              <label class="auth-label" for="reg-input-username">Username</label>
-              <input type="text" id="reg-input-username" class="normal-auth-input" placeholder="Choose a username" autocomplete="username">
-            </div>
-            <div class="auth-input-group">
-              <label class="auth-label" for="reg-input-email">Email Address</label>
-              <input type="email" id="reg-input-email" class="normal-auth-input" placeholder="name@example.com" autocomplete="email">
-            </div>
-            <div class="auth-input-group">
-              <label class="auth-label" for="reg-input-password">Password</label>
-              <input type="password" id="reg-input-password" class="normal-auth-input" placeholder="Min. 6 characters" autocomplete="new-password">
-            </div>
-            <button type="submit" class="normal-auth-submit-btn">
-              <span>Create Account &amp; Enter</span>
-              <span>&rarr;</span>
-            </button>
-
-            <div class="auth-or-divider">
-              <span>or sign up with</span>
-            </div>
-
-            <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
-              <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
-              </svg>
-              <span>Sign up with Google</span>
-            </button>
-          </form>
-        </div>
-      `;
-    }
-
-    container.innerHTML = `
-      <div class="portal-container dramatic-flow">
-        <!-- Dramatic Hero Masthead (Clean single action button) -->
-        <div class="portal-hero dramatic-hero">
-          <div class="portal-crest-row">
-            <img src="/static/icons/factions/alliance.jpg" class="portal-crest alliance" alt="Alliance" title="For the Alliance!">
-            <div class="portal-emblem">⚔</div>
-            <img src="/static/icons/factions/horde.jpg" class="portal-crest horde" alt="Horde" title="For the Horde!">
+        <!-- Create Account Tab Form -->
+        <form id="auth-form-register" class="normal-auth-form" style="display:${portalAuthTab === 'register' ? 'flex' : 'none'};" onsubmit="handleNormalRegister(event)">
+          <div class="auth-input-group">
+            <label class="auth-label" for="reg-input-username">Username</label>
+            <input type="text" id="reg-input-username" class="normal-auth-input" placeholder="Choose a username" autocomplete="username">
           </div>
-          <h1 class="portal-title">AZEROTH COMBAT WAR ROOM</h1>
-          <div class="portal-tagline">CHRONICLES OF MARTIAL CONFLICT &bull; BLOOD BOUNTIES &bull; BATTLEGROUND RECONNAISSANCE</div>
-          <p class="portal-lead">
-            The Third War shattered the kingdoms; the frontier remains soaked in blood. Choose your clearance of entry to inspect certified combat casualties, issue blood bounties, or consult the war ledger.
-          </p>
-          <div class="portal-hero-actions">
-            <button class="portal-fieldkit-pill" onclick="openAddonDossierModal()">
-              <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              <span>How the Addon Works &amp; Download</span>
-            </button>
+          <div class="auth-input-group">
+            <label class="auth-label" for="reg-input-email">Email Address</label>
+            <input type="email" id="reg-input-email" class="normal-auth-input" placeholder="name@example.com" autocomplete="email">
           </div>
-        </div>
-
-        <!-- 2-Card Selection Gate -->
-        <div class="dramatic-gate-grid">
-          <!-- Card 1: Guest Recon -->
-          <div class="dramatic-gate-card guest">
-            <div class="gate-card-badge guest">GUEST PASS</div>
-            <div class="gate-card-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
-            </div>
-            <h2 class="gate-card-title">Continue as Guest</h2>
-            <p class="gate-card-desc">
-              Access the war room immediately without signing in. Inspect certified combat casualties, examine bounty contracts, explore the KOS gibbet, and browse armory statistics.
-            </p>
-            <ul class="gate-checklist">
-              <li>Instant live combat feed across all 4 target WoW flavors</li>
-              <li>Certified 1v1 solo kills &amp; 15-second gang gank clustering</li>
-              <li>Server-wide blood bounties and KOS gibbet rolls</li>
-              <li>Wilderness casualties &amp; deadly world NPC telemetry</li>
-            </ul>
-            <button class="dramatic-gate-btn guest" onclick="portalAdvanceToVersions('guest')">
-              <span>Select WoW Version as Guest</span>
-              <span>&rarr;</span>
-            </button>
-            <div style="text-align:center; margin-top:10px;">
-              <a href="javascript:void(0)" class="gate-sub-link" onclick="portalLaunchFront(currentFlavor)">
-                Or enter Frontline Feed directly &rarr;
-              </a>
-            </div>
+          <div class="auth-input-group">
+            <label class="auth-label" for="reg-input-password">Password</label>
+            <input type="password" id="reg-input-password" class="normal-auth-input" placeholder="Min. 6 characters" autocomplete="new-password">
           </div>
-
-          <!-- Card 2: Account Access (Normal Sign-In / Register / Google) -->
-          <div class="dramatic-gate-card officer">
-            <div class="gate-card-badge officer">ACCOUNT ACCESS</div>
-            <div class="gate-card-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </div>
-            <h2 class="gate-card-title">Sign In or Create Account</h2>
-            <p class="gate-card-desc">
-              Sign in to issue blood bounties in gold, claim slain marks, and stamp certified combat dispatches to your profile.
-            </p>
-            ${authBoxHtml}
-          </div>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  // SCREEN 2: CHOOSE YOUR THEATER OF CONFLICT (Version Selection)
-  const isGuest = (portalAccessMode === "guest");
-  const clearanceLabel = isGuest 
-    ? `CLEARANCE: Guest Recon`
-    : `ACCOUNT: ${storedAccount || "Operative"}`;
-
-  const flavorKeys = ["CLASSIC_ERA", "ANNIVERSARY", "FOREVER", "TBC", "WOTLK", "RETAIL"];
-  const flavorCardsHtml = flavorKeys.map(key => {
-    const f = FLAVOR_CONFIGS[key];
-    const isSelected = (key === currentFlavor);
-    const badgeCls = key === "FOREVER" ? "forever"
-      : key === "RETAIL" ? "retail"
-      : key === "TBC" ? "tbc"
-      : key === "WOTLK" ? "wotlk"
-      : key === "ANNIVERSARY" ? "anniversary"
-      : "classic";
-
-    return `
-      <div class="portal-flavor-card dramatic-flavor-card ${isSelected ? 'selected' : ''}" onclick="portalLaunchFront('${key}')" style="--flavor-color: ${f.iconColor};">
-        <div class="portal-flavor-card-top">
-          <span class="wh-w-badge ${badgeCls}" style="border-color:${f.iconColor}; color:${f.iconColor}; font-size:0.75rem; width:22px; height:22px;">W</span>
-          <span class="portal-flavor-lvl-badge" style="color:${f.iconColor}; border-color:${f.iconColor};">LVL ${f.maxLevel} MAX</span>
-        </div>
-        <div class="portal-flavor-name">${f.name}</div>
-        <div class="portal-flavor-sub">${f.portalDescription || f.tag}</div>
-        <div class="portal-flavor-status">
-          <div class="dramatic-launch-prompt" style="color: ${f.iconColor};">
-            <span>Deploy to ${f.shortName} Front</span>
+          <button type="submit" class="normal-auth-submit-btn">
+            <span>Create Account &amp; Enter</span>
             <span>&rarr;</span>
+          </button>
+
+          <div class="auth-or-divider">
+            <span>or sign up with</span>
           </div>
-        </div>
+
+          <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
+            <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
+            </svg>
+            <span>Sign up with Google</span>
+          </button>
+        </form>
       </div>
     `;
-  }).join("");
+  }
 
   container.innerHTML = `
     <div class="portal-container dramatic-flow">
-      <!-- Screen 2 Navigation Bar -->
-      <div class="theater-nav-bar">
-        <button class="portal-back-btn" onclick="portalSetScreen('GATE')">
-          <span>&larr; Return to Sign In</span>
-        </button>
-        <div class="theater-clearance-wrap">
-          <span class="theater-clearance-pill ${isGuest ? 'guest' : 'officer'}">${clearanceLabel}</span>
+      <!-- Dramatic Hero Masthead (Clean single action button) -->
+      <div class="portal-hero dramatic-hero">
+        <div class="portal-crest-row">
+          <img src="/static/icons/factions/alliance.jpg" class="portal-crest alliance" alt="Alliance" title="For the Alliance!">
+          <div class="portal-emblem">⚔</div>
+          <img src="/static/icons/factions/horde.jpg" class="portal-crest horde" alt="Horde" title="For the Horde!">
         </div>
-        <div style="display:flex; gap:8px;">
-          <button class="portal-fieldkit-pill small" onclick="openAddonDossierModal()">
-            <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-            <span>Addon Guide</span>
-          </button>
-          <button class="portal-oracle-pill small" onclick="toggleOracleChatModal()">
-            <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            <span>War Archivist</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Theater Header -->
-      <div class="theater-header-card">
-        <h2 class="theater-main-title">CHOOSE YOUR THEATER OF CONFLICT</h2>
-        <p class="theater-subtitle">
-          Select the campaign where your steel is pledged. Selecting a theater immediately deploys your console to the frontline feed.
+        <h1 class="portal-title">AZEROTH COMBAT WAR ROOM</h1>
+        <div class="portal-tagline">CHRONICLES OF MARTIAL CONFLICT &bull; BLOOD BOUNTIES &bull; BATTLEGROUND RECONNAISSANCE</div>
+        <p class="portal-lead">
+          The Third War shattered the kingdoms; the frontier remains soaked in blood. Choose your clearance of entry to inspect certified combat casualties, issue blood bounties, or consult the war ledger.
         </p>
+        <div class="portal-hero-actions">
+          <button class="portal-fieldkit-pill" onclick="openAddonDossierModal()">
+            <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>How the Addon Works &amp; Download</span>
+          </button>
+        </div>
       </div>
 
-      <!-- 6 War Fronts Grid -->
-      <div class="portal-flavor-grid dramatic-theater-grid">
-        ${flavorCardsHtml}
+      <!-- 2-Card Selection Gate -->
+      <div class="dramatic-gate-grid">
+        <!-- Card 1: Guest Recon -->
+        <div class="dramatic-gate-card guest">
+          <div class="gate-card-badge guest">GUEST PASS</div>
+          <div class="gate-card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+          </div>
+          <h2 class="gate-card-title">Continue as Guest</h2>
+          <p class="gate-card-desc">
+            Access the war room immediately without signing in. Inspect certified combat casualties, examine bounty contracts, explore the KOS gibbet, and browse cumulative realm statistics.
+          </p>
+          <ul class="gate-checklist">
+            <li>Instant live combat feed across WoW Forever</li>
+            <li>Certified 1v1 solo kills &amp; 15-second gang gank clustering</li>
+            <li>Server-wide blood bounties and KOS gibbet rolls</li>
+            <li>Cumulative realm statistics &amp; wilderness casualties</li>
+          </ul>
+          <button class="dramatic-gate-btn guest" onclick="portalEnterAsGuest()">
+            <span>Enter WoW Forever as Guest</span>
+            <span>&rarr;</span>
+          </button>
+        </div>
+
+        <!-- Card 2: Account Access (Normal Sign-In / Register / Google) -->
+        <div class="dramatic-gate-card officer">
+          <div class="gate-card-badge officer">ACCOUNT ACCESS</div>
+          <div class="gate-card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h2 class="gate-card-title">Sign In or Create Account</h2>
+          <p class="gate-card-desc">
+            Sign in to display your personalized combat kills, deaths, K/D ratio, and military rank atop your war room feed, issue blood bounties in gold, and claim slain marks.
+          </p>
+          ${authBoxHtml}
+        </div>
       </div>
     </div>
   `;

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.5] - 2026-09-25
+
+### Added
+- **Dual-State Personalized vs Cumulative Homepage Stats**:
+  - **Signed In Operative Banner**: Top of homepage renders a personalized operative combat strip featuring character name, military rank tag (`calculate_pvp_rank_title`), faction allegiance, class, active combatant status, and 4 personalized metrics: *Your Confirmed Kills*, *Your Casualties (Deaths)*, *Your K/D Ratio*, and *Your Solo Kills (1v1)*, accompanied by a direct 1-click link to their full Armory profile.
+  - **Frontier Cumulative War Telemetry**: Displayed beneath the personalized operative strip for signed-in members, and prominently as the primary header for guests, reporting *Realm Total Carnage*, *1v1 Solo Kill Ratio*, *Faction War Split*, and *Active Combat Filter*.
+  - **Guest Recon Mode Strip**: Unmarked guests receive full cumulative realm telemetry alongside a subtle call-to-action strip inviting them to authenticate for personal kill/death tracking.
+- **Enriched Cumulative Stats & Character Profile Fallbacks**:
+  - Updated `GET /api/stats` to aggregate and return `total`, `world`, `bg`, `arena`, `duel`, `solo`, `alliance`, `horde`, `active_bounties`, `bounty_gold`, and `top_zone` from SQLite (`bounties.amount_gold`).
+  - Updated `GET /api/character/<name>` with a graceful fallback returning a valid 200 OK profile (`WARRIOR`, level 60, 0 kills, 0 deaths, 0.0 K/D) for newly registered accounts, ensuring zero blank states or 404 errors.
+
+### Changed
+- **Direct WoW Forever Portal Routing (Zero Version Distractions)**:
+  - Eliminated the Screen 2 version picker per user directive to focus exclusively on WoW Forever (`FOREVER`).
+  - Selecting either "Enter WoW Forever as Guest" or authenticating via username/password or Google SSO immediately routes the operative straight to the WoW Forever homepage with their stats loaded at the top.
+  - Locked top header flavor tabs and mobile drawer exclusively to **WoW Forever** (`LIVE FRONTIER`, Level 60 Max).
+
 ## [1.4.4] - 2026-09-25
 
 ### Changed
