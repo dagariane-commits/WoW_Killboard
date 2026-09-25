@@ -47,6 +47,7 @@
   --alliance-glow: rgba(59, 130, 246, 0.4);
   --horde-red: #dc2626;
   --horde-glow: rgba(220, 38, 38, 0.4);
+  --active-flavor-color: #00e5ff; /* Dynamically updated per WoW version: Forever=#00e5ff, Era=#eab308, Anniv=#d97706, Retail=#a855f7 */
 
   /* Class Colors */
   --cls-warrior: #c79c6e;
@@ -321,77 +322,114 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 24px;
+  padding: 0 24px;
   gap: 16px;
-  background: rgba(6, 8, 13, 0.6);
+  background: rgba(6, 8, 13, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .nav-links-rail {
   display: flex;
+  align-items: center;
   gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  padding: 2px 0;
+  padding: 0;
 }
 
 .nav-links-rail::-webkit-scrollbar {
   display: none;
 }
 
+/* Text-Only Navigation Buttons (No Box Backdrop) */
 .nav-btn {
-  background: transparent;
-  color: var(--text-muted);
-  border: 1px solid transparent;
-  padding: 7px 12px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  background: transparent !important;
+  color: #94a3b8 !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 10px 14px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: color 0.18s ease, border-color 0.18s ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  text-decoration: none;
 }
 
 .nav-btn:hover {
-  color: #fff;
-  background-color: rgba(255, 255, 255, 0.05);
+  color: #f1f5f9 !important;
+  background: transparent !important;
+  border-bottom-color: rgba(255, 255, 255, 0.25) !important;
 }
 
+/* Active Page: Underlined in Current Version Color (Zero Box Backdrop) */
 .nav-btn.active {
-  color: #fff;
-  background: rgba(212, 163, 41, 0.16);
-  border-color: rgba(212, 163, 41, 0.45);
-  box-shadow: 0 0 12px rgba(212, 163, 41, 0.2);
-  font-weight: 700;
+  color: var(--active-flavor-color, #00e5ff) !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid var(--active-flavor-color, #00e5ff) !important;
+  box-shadow: none !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
 }
 
+/* Theater Version Selector Button (No Box Backdrop) */
 .theater-btn {
-  background: rgba(212, 163, 41, 0.12) !important;
-  border: 1px solid rgba(212, 163, 41, 0.45) !important;
-  color: var(--wow-gold) !important;
-  font-family: var(--font-tactical);
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 10px 14px !important;
+  color: #94a3b8 !important;
+  font-family: inherit !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .theater-btn:hover {
-  background: rgba(212, 163, 41, 0.22) !important;
-  border-color: var(--wow-gold) !important;
-  box-shadow: 0 0 12px rgba(212, 163, 41, 0.3);
+  background: transparent !important;
+  border-bottom-color: rgba(255, 255, 255, 0.25) !important;
+  color: #f1f5f9 !important;
+  box-shadow: none !important;
 }
 
-.theater-icon {
-  font-size: 0.95rem;
+.theater-btn.active {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid var(--active-flavor-color, #00e5ff) !important;
+  box-shadow: none !important;
 }
 
 .theater-label {
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: #94a3b8;
-  font-weight: 600;
+  font-weight: 500;
   margin-right: 2px;
+}
+
+.theater-version-name,
+#theater-nav-version {
+  color: var(--active-flavor-color, #00e5ff);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.3px;
+  transition: color 0.2s ease;
+}
+
+.theater-caret {
+  color: var(--active-flavor-color, #00e5ff);
+  font-size: 0.72rem;
+  margin-left: 2px;
+  opacity: 0.85;
 }
 
 /* Header Auth Badge */

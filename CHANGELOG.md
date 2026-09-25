@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.9] - 2026-09-25
 
 ### Changed
+- **Clean Text-Only Navigation & Authentic WoW Version Accent System**:
+  - Completely stripped all box backdrops, borders, and box shadows from `.nav-btn` and `.theater-btn` across the primary navigation rail.
+  - Replaced box styling with clean, readable muted slate typography (`#94a3b8`), hover highlights, and an authentic bottom underline (`border-bottom: 2px solid var(--active-flavor-color)`) for the active tab.
+  - Dynamically styled the active theater version label (`#theater-nav-version` and `.theater-caret`) with the authentic client color: Cyan (`#00e5ff`) for WoW Forever Beta, Gold (`#eab308`) for Classic Era, Amber (`#d97706`) for Anniversary, and Purple (`#a855f7`) for Retail.
+- **Theater Campaign Card Button Overflow Fix**:
+  - Resolved text spillover on the WoW Forever version card by removing inherited `white-space: nowrap` from `.nav-btn` and applying responsive flex wrapping with clean inline button constraints.
+- **Intel Live Feed Routing & Stale Portal DOM Resolution**:
+  - Fixed issue where clicking Intel displayed the War Room sign-in portal instead of live combat feeds by updating `loadKills()` to evaluate `currentTab === "FEED" || currentTab === "INTEL"`.
+  - Added immediate feed rendering and loading state initialization upon entering `INTEL` tab, completely purging stale portal cards.
+- **Live Recon Wire Tab Gating & Empty State Handling**:
+  - Strictly gated `#intel-sighting-wire` to display only on the `INTEL` tab when live sightings are active.
+  - Automatically hides the recon wire when no live sighting data is reported or when switching to non-Intel tabs (`THEATER`, `LEGENDS`, `ARMORY`, `BOUNTIES`, `WARROOM`).
 - **Distraction-Free Landing Page (Pure Sign-In / Entry Portal)**:
   - Ensured initial site load (`DOMContentLoaded`) unconditionally defaults to the War Room Sign-In & Entry Portal (`PORTAL`).
   - Enforced strict suppression of the header top menu, search bar, footer, and floating controls via `body.portal-active` so visitors encounter a focused, dramatic entry portal with zero header distractions.

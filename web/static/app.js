@@ -596,7 +596,7 @@ async function loadKills() {
     const data = await res.json();
     cachedKills = data.kills || [];
     renderStats(cachedKills);
-    if (currentTab === "FEED") {
+    if (currentTab === "FEED" || currentTab === "INTEL") {
       renderFeed(cachedKills);
     }
   } catch (err) {
@@ -3027,8 +3027,8 @@ function loadTheaterSelectorView() {
               Classic Beta (1.15.x) &bull; Contested World PvP, Stranglethorn killing grounds, and 40-man battleground clashes.
             </p>
           </div>
-          <button class="nav-btn active" style="width:100%; padding:10px; font-weight:800; font-size:0.82rem; background:linear-gradient(135deg, #d97706, #b45309); border:1px solid var(--wow-gold); color:#fff; cursor:pointer;" onclick="handleSelectTheaterVersion('FOREVER')">
-            Enter WoW Forever Theater &rarr;
+          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-weight:800; font-size:0.82rem; background:linear-gradient(135deg, #d97706, #b45309); border:1px solid var(--wow-gold); color:#fff; cursor:pointer; border-radius:6px; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none;" onclick="handleSelectTheaterVersion('FOREVER')">
+            <span>Enter WoW Forever</span> <span>&rarr;</span>
           </button>
         </div>
 
@@ -3046,7 +3046,7 @@ function loadTheaterSelectorView() {
               Patch 1.15.x &bull; Vanilla Whitemane and Firemaw legacy realm clusters.
             </p>
           </div>
-          <button class="nav-btn disabled" style="width:100%; padding:10px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed;" disabled>
+          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed; border-radius:6px; display:flex; align-items:center; justify-content:center;" disabled>
             Theater Offline
           </button>
         </div>
@@ -3065,7 +3065,7 @@ function loadTheaterSelectorView() {
               Fresh Progression Realms &bull; Hardcore &amp; PvP seasonal server clusters.
             </p>
           </div>
-          <button class="nav-btn disabled" style="width:100%; padding:10px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed;" disabled>
+          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed; border-radius:6px; display:flex; align-items:center; justify-content:center;" disabled>
             Theater Offline
           </button>
         </div>
@@ -3084,7 +3084,7 @@ function loadTheaterSelectorView() {
               The War Within (11.x) &bull; Rated Arenas, Solo Shuffle, and Battleground Blitz.
             </p>
           </div>
-          <button class="nav-btn disabled" style="width:100%; padding:10px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed;" disabled>
+          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed; border-radius:6px; display:flex; align-items:center; justify-content:center;" disabled>
             Theater Offline
           </button>
         </div>
@@ -3326,6 +3326,12 @@ function switchTab(tab) {
     sidebarEl.style.display = (tab === "PORTAL" || tab === "THEATER") ? "none" : "";
   }
 
+  // Hide recon wire on non-intel tabs
+  const reconWire = document.getElementById("intel-sighting-wire");
+  if (reconWire && tab !== "INTEL") {
+    reconWire.style.display = "none";
+  }
+
   const mwSection = document.getElementById("most-wanted-section");
   if (mwSection) mwSection.style.display = (tab === "INTEL") ? "block" : "none";
 
@@ -3339,8 +3345,15 @@ function switchTab(tab) {
     loadTheaterSelectorView();
   }
   else if (tab === "INTEL") {
+    const container = document.getElementById("main-content-area");
+    if (cachedKills && cachedKills.length > 0) {
+      renderFeed(cachedKills);
+    } else if (container) {
+      container.innerHTML = `<div style="text-align: center; padding: 40px; color: #64748b;">Loading combat intelligence feed...</div>`;
+    }
     loadKills();
     loadMostWanted();
+    checkIntelSightings();
   }
   else if (tab === "LEGENDS") {
     loadLeaderboards();
@@ -3415,13 +3428,26 @@ function updateTheaterNavLabel() {
   const versionEl = document.getElementById("theater-nav-version");
   const mNavEl = document.getElementById("m-nav-theater");
   const currentFlav = (typeof currentFlavor !== "undefined" && currentFlavor) ? currentFlavor : "FOREVER";
+  const cfg = (typeof FLAVOR_CONFIGS !== "undefined" && FLAVOR_CONFIGS[currentFlav]) ? FLAVOR_CONFIGS[currentFlav] : null;
+  const flavorColor = cfg ? (cfg.iconColor || "#00e5ff") : "#00e5ff";
   const displayVersion = THEATER_NAMES[currentFlav] || "WoW Forever";
+
+  // Update dynamic CSS variable for active menu underline and version color
+  document.documentElement.style.setProperty("--active-flavor-color", flavorColor);
+
   if (versionEl) {
     versionEl.innerText = displayVersion;
+    versionEl.style.color = flavorColor;
+  }
+  const caretEl = document.querySelector(".theater-caret");
+  if (caretEl) {
+    caretEl.style.color = flavorColor;
   }
   if (mNavEl) {
     const textSpan = mNavEl.querySelector("span");
-    if (textSpan) textSpan.innerText = `Theater: ${displayVersion}`;
+    if (textSpan) {
+      textSpan.innerHTML = `<span class="theater-label">Theater:</span> <strong style="color:${flavorColor};">${displayVersion}</strong>`;
+    }
   }
 }
 
@@ -4174,11 +4200,18 @@ function openBrandKosModal() {
 async function checkIntelSightings() {
   const wire = document.getElementById("intel-sighting-wire");
   if (!wire) return;
+  if (currentTab !== "INTEL" && currentTab !== "FEED") {
+    wire.style.display = "none";
+    return;
+  }
   try {
     const res = await fetch("/api/intel/sightings");
-    if (!res.ok) return;
+    if (!res.ok) {
+      wire.style.display = "none";
+      return;
+    }
     const sightings = await res.json();
-    if (sightings && sightings.length > 0) {
+    if (sightings && sightings.length > 0 && (currentTab === "INTEL" || currentTab === "FEED")) {
       const topS = sightings[0];
       const classColor = CLASS_COLORS[(topS.target_class || "").toUpperCase()] || CLASS_COLORS.UNKNOWN;
       wire.style.display = "flex";
