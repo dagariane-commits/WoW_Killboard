@@ -4461,6 +4461,9 @@ body.portal-active .container {
 .tier-text {
   flex: 1;
   color: #cbd5e1;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  text-align: left;
 }
 
 .tier-text strong {
@@ -4470,6 +4473,23 @@ body.portal-active .container {
 
 .tier-text.muted {
   color: #64748b;
+}
+
+.in-dev-pill {
+  display: inline-block;
+  font-family: var(--font-tactical);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  margin-left: 4px;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 .tier-card-action {
