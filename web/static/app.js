@@ -430,45 +430,63 @@ function renderMostWanted(outlaws) {
   const container = document.getElementById("most-wanted-cards-container");
   if (!container) return;
 
-  if (!outlaws || outlaws.length === 0) {
-    container.innerHTML = `
-      <div style="grid-column: 1/-1; text-align:center; padding:20px; color:#64748b; font-size:0.85rem;">
-        No active wanted contracts currently registered. Slay enemy outlaws to issue bounties!
-      </div>
-    `;
-    return;
-  }
-
+  const totalSlots = 10;
+  const safeOutlaws = Array.isArray(outlaws) ? outlaws : [];
   let html = "";
-  outlaws.slice(0, 10).forEach((b, idx) => {
-    const cls = (b.target_class || "WARRIOR").toUpperCase();
-    const clsColor = CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN;
-    const symbol = CLASS_SYMBOLS[cls] || "👤";
-    const accepted = isBountyAcceptedLocally(b.id);
-    const lastSeenText = b.lastSeen && b.lastSeen.hasTelemetry 
-      ? `📍 ${b.lastSeen.displayText}` 
-      : "📍 Last Seen: Unknown";
 
-    const btnHtml = accepted 
-      ? `<button class="wanted-btn accepted" disabled>✓ Tracking Contract</button>`
-      : `<button class="wanted-btn" onclick="acceptBountyContract('${b.id}', '${b.target_name}')">🎯 Accept Contract</button>`;
+  for (let idx = 0; idx < totalSlots; idx++) {
+    const b = safeOutlaws[idx];
+    if (b) {
+      const cls = (b.target_class || "WARRIOR").toUpperCase();
+      const clsColor = CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN;
+      const accepted = isBountyAcceptedLocally(b.id);
+      const lastSeenText = b.lastSeen && b.lastSeen.hasTelemetry 
+        ? b.lastSeen.displayText 
+        : "Unknown Location";
 
-    html += `
-      <div class="wanted-card">
-        <span class="wanted-stamp">#${idx + 1} WANTED</span>
-        <div class="wanted-avatar-wrap" style="border: 2px solid ${clsColor}; box-shadow: 0 0 10px ${clsColor}33;">
-          <span class="wanted-avatar-symbol">${symbol}</span>
+      const btnHtml = accepted 
+        ? `<button class="wanted-btn compact accepted" disabled title="Contract Accepted">✓ Tracking</button>`
+        : `<button class="wanted-btn compact" onclick="acceptBountyContract('${b.id}', '${b.target_name}')" title="Accept Bounty Contract">🎯 Accept</button>`;
+
+      html += `
+        <div class="wanted-card compact">
+          <div class="wanted-card-top">
+            <span class="wanted-stamp">#${idx + 1} WANTED</span>
+            <span class="wanted-reward-pill">${formatNumber(b.amount_gold)} ${renderWowCoin('gold')}</span>
+          </div>
+          <div class="wanted-avatar-wrap compact" style="border-color: ${clsColor};">
+            <img src="/static/icons/classes/${cls.toLowerCase()}.jpg" class="wanted-avatar-img" alt="${cls}" onerror="this.src='/static/icons/classes/warrior.jpg'">
+          </div>
+          <div class="wanted-name" onclick="openCharacterProfile('${b.target_name}')" title="${b.target_name}">
+            ${colorizeClass(b.target_name, cls)}
+          </div>
+          <div class="wanted-guild" title="${b.target_faction || 'Neutral'}">&lt;${b.target_faction || 'Neutral'}&gt;</div>
+          <div class="wanted-lastseen" title="Last Seen: ${lastSeenText}">📍 ${lastSeenText}</div>
+          <div class="wanted-action-wrap">
+            ${btnHtml}
+          </div>
         </div>
-        <div class="wanted-name" onclick="openCharacterProfile('${b.target_name}')">
-          ${colorizeClass(b.target_name, cls)}
+      `;
+    } else {
+      html += `
+        <div class="wanted-card compact blank" onclick="switchTab('BOUNTIES')" title="Click to place a Blood Bounty and fill this execution slot">
+          <div class="wanted-card-top">
+            <span class="wanted-stamp muted">#${idx + 1} WANTED</span>
+            <span class="wanted-reward-pill muted">OPEN</span>
+          </div>
+          <div class="wanted-avatar-wrap compact blank">
+            <span class="wanted-blank-icon">🎯</span>
+          </div>
+          <div class="wanted-name muted">Pending Target</div>
+          <div class="wanted-guild muted">&lt;Unclaimed&gt;</div>
+          <div class="wanted-lastseen muted">No Active Contract</div>
+          <div class="wanted-action-wrap">
+            <button class="wanted-btn compact blank-issue-btn" onclick="event.stopPropagation(); switchTab('BOUNTIES')">+ Issue Bounty</button>
+          </div>
         </div>
-        <div class="wanted-guild">&lt;${b.target_faction || 'Neutral'}&gt;</div>
-        <div class="wanted-reward">${formatNumber(b.amount_gold)} ${renderWowCoin('gold')} <span style="font-size:0.75rem; color:#d4a329; font-weight:700;">BOUNTY</span></div>
-        <div class="wanted-lastseen" title="${lastSeenText}">${lastSeenText}</div>
-        ${btnHtml}
-      </div>
-    `;
-  });
+      `;
+    }
+  }
 
   container.innerHTML = html;
 }
@@ -714,6 +732,21 @@ async function renderStats(kills) {
   const modeEl = document.getElementById("stat-active-mode");
   if (modeEl) modeEl.innerText = modeNames[currentMode] || currentMode;
 
+  // Calculate Alliance vs Horde Faction Carnage Split
+  let aKills = 0;
+  let hKills = 0;
+  kills.forEach(k => {
+    if (k.killer && k.killer.faction === "Alliance") aKills++;
+    else if (k.killer && k.killer.faction === "Horde") hKills++;
+  });
+  const facTotal = aKills + hKills;
+  const aPct = facTotal > 0 ? Math.round((aKills / facTotal) * 100) : 50;
+  const hPct = facTotal > 0 ? 100 - aPct : 50;
+  const factionEl = document.getElementById("stat-faction-split");
+  if (factionEl) {
+    factionEl.innerHTML = `<span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>`;
+  }
+
   try {
     const statsRes = await fetch("/api/stats");
     if (statsRes.ok) {
@@ -817,9 +850,9 @@ function renderFeed(kills) {
         <div class="km-combatants-center">
           <div class="km-combatant-col killer">
             <div class="km-player-row">
-              ${killerBadge}
               <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.killer.name}')">${killerSpan}</span>
               <span class="km-lvl">(${km.killer.level})</span>
+              ${killerBadge}
             </div>
             <div class="km-guild-sub">
               ${killerGuildHtml}
