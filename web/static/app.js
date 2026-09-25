@@ -320,6 +320,23 @@ function updateFlavorUi() {
     statusText.style.color = cfg.iconColor || "#94a3b8";
   }
 
+  // 3b. Update mobile header flavor indicator badge
+  const mBadgeText = document.getElementById("mobile-flavor-badge-text");
+  const mWBadge = document.getElementById("mobile-flavor-w-badge");
+  if (mBadgeText) {
+    mBadgeText.innerText = `${cfg.shortName} ${cfg.maxLevel}`;
+  }
+  if (mWBadge) {
+    const badgeCls = currentFlavor === "FOREVER" ? "forever"
+      : currentFlavor === "RETAIL" ? "retail"
+      : currentFlavor === "TBC" ? "tbc"
+      : currentFlavor === "WOTLK" ? "wotlk"
+      : "classic";
+    mWBadge.className = `wh-w-badge ${badgeCls}`;
+    mWBadge.style.borderColor = cfg.iconColor || "#f59e0b";
+    mWBadge.style.color = cfg.iconColor || "#f59e0b";
+  }
+
   // 4. Update mode pills (e.g. Arenas disabled in Classic Era / Forever Beta)
   const arenaPill = document.getElementById("pill-arena");
   const mArenaPill = document.getElementById("m-pill-arena");
