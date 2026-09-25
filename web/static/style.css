@@ -77,7 +77,7 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 17px;
   scrollbar-gutter: stable;
   scroll-behavior: smooth;
   color-scheme: dark;
@@ -550,10 +550,10 @@ body {
   border: 1px solid var(--wow-brass-border);
   box-shadow: var(--wow-plate-shadow);
   border-radius: 6px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   position: relative;
   overflow: hidden;
   transition: all 0.2s ease;
@@ -577,7 +577,7 @@ body {
 
 .stat-label {
   font-family: var(--font-tactical);
-  font-size: 0.70rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -586,7 +586,7 @@ body {
 
 .stat-val {
   font-family: var(--font-tactical);
-  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
   font-weight: 800;
   line-height: 1.1;
   color: var(--text-main);
@@ -694,8 +694,8 @@ body {
   background: linear-gradient(180deg, #10141e 0%, #080a10 100%);
   border: 1px solid var(--wow-brass-border);
   box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.4);
-  border-radius: 4px;
-  padding: 8px 6px;
+  border-radius: 5px;
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -703,7 +703,7 @@ body {
   position: relative;
   overflow: hidden;
   transition: all 0.15s ease;
-  min-height: 142px;
+  min-height: 162px;
   justify-content: space-between;
 }
 
@@ -718,12 +718,12 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .wanted-stamp {
   font-family: var(--font-tactical);
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   font-weight: 800;
   color: var(--accent-gold);
   letter-spacing: 0.5px;
@@ -731,21 +731,21 @@ body {
 
 .wanted-reward-pill {
   font-family: var(--font-tactical);
-  font-size: 0.68rem;
+  font-size: 0.76rem;
   font-weight: 800;
   color: var(--accent-gold);
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.3);
-  padding: 1px 4px;
+  padding: 2px 5px;
   border-radius: 3px;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
 }
 
 .wanted-avatar-wrap.compact {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: 1.5px solid var(--border-color);
   display: flex;
@@ -753,7 +753,7 @@ body {
   justify-content: center;
   overflow: hidden;
   background: #040609;
-  margin: 2px 0;
+  margin: 3px 0;
   flex-shrink: 0;
 }
 
@@ -764,7 +764,7 @@ body {
 }
 
 .wanted-card .wanted-name {
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
@@ -775,7 +775,7 @@ body {
 }
 
 .wanted-card .wanted-guild {
-  font-size: 0.65rem;
+  font-size: 0.76rem;
   color: #856a36;
   white-space: nowrap;
   overflow: hidden;
@@ -786,7 +786,7 @@ body {
 }
 
 .wanted-card .wanted-lastseen {
-  font-size: 0.62rem;
+  font-size: 0.70rem;
   color: #64748b;
   white-space: nowrap;
   overflow: hidden;
@@ -797,7 +797,7 @@ body {
 
 .wanted-action-wrap {
   width: 100%;
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 .wanted-btn.compact {
@@ -806,12 +806,12 @@ body {
   color: #fff;
   border: 1px solid #ef4444;
   border-radius: 3px;
-  font-size: 0.68rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  padding: 3px 6px;
+  padding: 4px 8px;
   cursor: pointer;
   transition: all 0.15s ease;
-  min-height: 22px;
+  min-height: 26px;
   line-height: 1;
 }
 
@@ -857,23 +857,24 @@ body {
 }
 
 .wanted-blank-icon {
-  font-size: 0.85rem;
-  opacity: 0.45;
+  font-size: 1.05rem;
+  opacity: 0.5;
 }
 
 .wanted-name.muted {
   color: #64748b;
   font-weight: 600;
-  font-size: 0.76rem;
+  font-size: 0.85rem;
 }
 
 .wanted-guild.muted {
   color: #475569;
-  font-size: 0.62rem;
+  font-size: 0.72rem;
 }
 
 .wanted-lastseen.muted {
   color: #334155;
+  font-size: 0.68rem;
 }
 
 .blank-issue-btn {
@@ -895,7 +896,7 @@ body {
   border: 1px solid var(--wow-brass-border);
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.5);
   border-radius: 5px;
-  padding: 8px 14px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -930,10 +931,10 @@ body {
 }
 
 .km-left-meta {
-  width: 175px;
-  min-width: 175px;
-  max-width: 175px;
-  flex: 0 0 175px;
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  flex: 0 0 200px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -944,7 +945,7 @@ body {
 .km-zone-name {
   color: #e2e8f0;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -953,7 +954,7 @@ body {
 
 .km-subzone-text {
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -965,14 +966,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
   width: 100%;
 }
 
 .km-combatant-col {
   flex: 1;
-  max-width: 220px;
+  max-width: 250px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -991,8 +992,8 @@ body {
 .km-player-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.88rem;
+  gap: 7px;
+  font-size: 1.0rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1007,14 +1008,14 @@ body {
 
 .km-lvl {
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.80rem;
   font-weight: 600;
 }
 
 .km-guild-sub {
   display: flex;
-  font-size: 0.70rem;
-  margin-top: 1px;
+  font-size: 0.78rem;
+  margin-top: 2px;
   line-height: 1.1;
 }
 
@@ -1034,7 +1035,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  max-width: 220px;
 }
 
 .km-guild-sub-text:hover {
@@ -1048,7 +1049,7 @@ body {
 }
 
 .km-vs-wrapper {
-  flex: 0 0 32px;
+  flex: 0 0 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1057,7 +1058,7 @@ body {
 }
 
 .km-vs {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   color: #94a3b8;
   filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.4));
   transition: transform 0.15s ease;
@@ -1068,14 +1069,14 @@ body {
 }
 
 .km-right-meta {
-  width: 175px;
-  min-width: 175px;
-  max-width: 175px;
-  flex: 0 0 175px;
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  flex: 0 0 200px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 3px;
   flex-shrink: 0;
   text-align: right;
 }
@@ -2548,8 +2549,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 32px;
-  min-height: 32px;
+  height: 36px;
+  min-height: 36px;
   background: #090c13;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0 16px;
@@ -2581,7 +2582,7 @@ body {
   justify-content: center;
   cursor: pointer;
   color: #94a3b8;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   transition: color 0.15s ease, background 0.15s ease;
 }
 
@@ -2592,17 +2593,17 @@ body {
 .wh-brand-label {
   font-family: var(--font-tactical);
   font-weight: 800;
-  font-size: 0.75rem;
+  font-size: 0.80rem;
   letter-spacing: 1.2px;
   color: #cbd5e1;
-  padding: 0 6px 0 2px;
+  padding: 0 8px 0 4px;
 }
 
 .wh-flavor-tabs {
   display: flex;
   align-items: center;
   height: 100%;
-  gap: 2px;
+  gap: 4px;
 }
 
 .wh-tab-btn {
@@ -2611,14 +2612,14 @@ body {
   align-items: center;
   gap: 6px;
   height: 100%;
-  padding: 0 10px;
+  padding: 0 12px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: #8a9ba8;
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   cursor: pointer;
@@ -2643,10 +2644,10 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
-  font-size: 0.55rem;
+  font-size: 0.62rem;
   font-weight: 900;
   line-height: 1;
   font-family: var(--font-tactical);
