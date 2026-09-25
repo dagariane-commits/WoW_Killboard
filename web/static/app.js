@@ -2264,12 +2264,23 @@ function portalAdvanceToVersions(mode) {
   portalSetScreen("VERSIONS");
 }
 
-function portalSubmitOfficerAndAdvance() {
+function portalDirectSignIn() {
+  let storedHunter = localStorage.getItem("wowkb_user_character") || localStorage.getItem("wow_killboard_hunter_name") || "Vanguard Champion";
+  let storedFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
+  localStorage.setItem("wow_killboard_hunter_name", storedHunter);
+  localStorage.setItem("wowkb_user_character", storedHunter);
+  localStorage.setItem("wowkb_user_faction", storedFaction);
+  localStorage.setItem("wowkb_supporter_active", "1");
+  sessionStorage.setItem("wowkb_auth_type", "officer");
+  portalAccessMode = "officer";
+  updateSupporterButton();
+  portalLaunchFront(currentFlavor);
+}
+
+function portalSubmitOfficerAndEnterHomepage() {
   const charEl = document.getElementById("gate-input-char");
-  const realmEl = document.getElementById("gate-input-realm");
   const factionEl = document.querySelector('input[name="gate-faction"]:checked');
   const name = charEl ? charEl.value.trim() : "";
-  const realm = realmEl ? realmEl.value.trim() : "Crusader Strike";
   const faction = factionEl ? factionEl.value : "Alliance";
 
   if (!name) {
@@ -2280,14 +2291,13 @@ function portalSubmitOfficerAndAdvance() {
 
   localStorage.setItem("wow_killboard_hunter_name", name);
   localStorage.setItem("wowkb_user_character", name);
-  localStorage.setItem("wowkb_user_realm", realm);
   localStorage.setItem("wowkb_user_faction", faction);
   localStorage.setItem("wowkb_supporter_active", "1");
   sessionStorage.setItem("wowkb_auth_type", "officer");
   portalAccessMode = "officer";
 
   updateSupporterButton();
-  portalSetScreen("VERSIONS");
+  portalLaunchFront(currentFlavor);
 }
 
 function portalLaunchFront(flavorKey) {
@@ -2312,9 +2322,7 @@ function loadPortalView() {
 
   const currentAuth = sessionStorage.getItem("wowkb_auth_type");
   const storedHunter = localStorage.getItem("wowkb_user_character") || localStorage.getItem("wow_killboard_hunter_name") || "";
-  const storedRealm = localStorage.getItem("wowkb_user_realm") || "Crusader Strike";
   const storedFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
-  const hasEnteredFeed = sessionStorage.getItem("wowkb_has_entered_feed");
 
   // Determine active clearance mode
   if (storedHunter && currentAuth === "officer" && portalAccessMode !== "guest") {
@@ -2323,7 +2331,7 @@ function loadPortalView() {
 
   const cfg = FLAVOR_CONFIGS[currentFlavor] || FLAVOR_CONFIGS.CLASSIC_ERA;
 
-  // SCREEN 1: THE MUSTER GATE (Simple, Dramatic Guest vs Officer Choice)
+  // SCREEN 1: THE MUSTER GATE (Dramatic Guest vs Officer Choice)
   if (portalScreen === "GATE") {
     let officerBoxHtml = "";
     if (storedHunter && currentAuth === "officer") {
@@ -2331,22 +2339,24 @@ function loadPortalView() {
       officerBoxHtml = `
         <div class="gate-officer-profile">
           <div style="display:flex; align-items:center; gap:12px;">
-            <span style="font-size:1.8rem;">👑</span>
+            <div class="officer-sigil-badge">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
             <div>
               <div style="font-weight:900; font-size:1.05rem; color:#fff;">
-                Inscribed Operative: <span style="color:${factionColor};">${storedHunter}</span>
+                Inscribed: <span style="color:${factionColor};">${storedHunter}</span>
               </div>
               <div style="font-size:0.80rem; color:#94a3b8; margin-top:2px;">
-                Garrison: <strong style="color:#fff;">${storedRealm}</strong> &bull; Allegiance: <strong style="color:${factionColor};">${storedFaction}</strong>
+                Allegiance: <strong style="color:${factionColor};">${storedFaction}</strong> &bull; Clearance: <strong style="color:var(--wow-gold);">High Command</strong>
               </div>
             </div>
           </div>
-          <button class="dramatic-gate-btn officer" onclick="portalAdvanceToVersions('officer')">
-            <span>👑 Advance as ${storedHunter}</span>
+          <button class="dramatic-gate-btn officer" onclick="portalDirectSignIn()">
+            <span>Sign In to War Room Homepage</span>
             <span>&rarr;</span>
           </button>
           <div style="text-align:center; margin-top:8px;">
-            <button class="gate-signout-link" onclick="portalSignOut()">↺ Strike Name from Ledger / Enlist Anew</button>
+            <button class="gate-signout-link" onclick="portalSignOut()">Strike Name from Ledger / Enlist Anew</button>
           </div>
         </div>
       `;
@@ -2354,30 +2364,31 @@ function loadPortalView() {
       officerBoxHtml = `
         <div class="gate-officer-form">
           <div class="portal-form-group">
-            <label class="portal-label">Character / Call-sign</label>
+            <label class="portal-label">Character Call-Sign</label>
             <input type="text" id="gate-input-char" class="portal-input" placeholder="e.g. Sylvanas, Lothar" value="${storedHunter}">
-          </div>
-          <div class="portal-form-group">
-            <label class="portal-label">Garrison / Realm</label>
-            <input type="text" id="gate-input-realm" class="portal-input" placeholder="e.g. Crusader Strike" value="${storedRealm}">
           </div>
           <div class="portal-form-group">
             <label class="portal-label">Faction Allegiance</label>
             <div class="portal-faction-toggle">
               <label class="faction-radio alliance">
                 <input type="radio" name="gate-faction" value="Alliance" ${storedFaction === 'Alliance' ? 'checked' : ''}>
-                <span>🦁 Alliance Standard</span>
+                <span>Alliance Vanguard</span>
               </label>
               <label class="faction-radio horde">
                 <input type="radio" name="gate-faction" value="Horde" ${storedFaction === 'Horde' ? 'checked' : ''}>
-                <span>🐺 Horde Standard</span>
+                <span>Horde Warband</span>
               </label>
             </div>
           </div>
-          <button class="dramatic-gate-btn officer" onclick="portalSubmitOfficerAndAdvance()">
-            <span>📜 Seal Ledger &amp; Choose War Front</span>
+          <button class="dramatic-gate-btn officer" onclick="portalSubmitOfficerAndEnterHomepage()">
+            <span>Sign In &amp; Enter War Room</span>
             <span>&rarr;</span>
           </button>
+          <div style="text-align:center; margin-top:10px;">
+            <a href="javascript:void(0)" class="gate-sub-link" onclick="portalDirectSignIn()">
+              Direct Sign In to Homepage &rarr;
+            </a>
+          </div>
         </div>
       `;
     }
@@ -2388,20 +2399,22 @@ function loadPortalView() {
         <div class="portal-hero dramatic-hero">
           <div class="portal-crest-row">
             <img src="/static/icons/factions/alliance.jpg" class="portal-crest alliance" alt="Alliance" title="For the Alliance!">
-            <div class="portal-emblem">⚔️</div>
+            <div class="portal-emblem">⚔</div>
             <img src="/static/icons/factions/horde.jpg" class="portal-crest horde" alt="Horde" title="For the Horde!">
           </div>
           <h1 class="portal-title">AZEROTH COMBAT WAR ROOM</h1>
           <div class="portal-tagline">CHRONICLES OF MARTIAL CONFLICT &bull; BLOOD BOUNTIES &bull; BATTLEGROUND RECONNAISSANCE</div>
           <p class="portal-lead">
-            The Third War broke the world; the frontier remains soaked in blood. Before you enter the theater of war, declare how your presence is inscribed upon the ledger.
+            The Third War shattered the kingdoms; the frontier remains soaked in blood. Choose your clearance of entry to inspect certified combat casualties, issue blood bounties, or consult the war ledger.
           </p>
           <div class="portal-hero-actions">
             <button class="portal-fieldkit-pill" onclick="openAddonDossierModal()">
-              <span>📜 How the Addon Works (Field Kit &amp; Blueprints)</span>
+              <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <span>Field Kit &amp; Addon Blueprints</span>
             </button>
             <button class="portal-oracle-pill" onclick="toggleOracleChatModal()">
-              <span>🔮 Inquire with the War Scribe (AI)</span>
+              <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="16" y2="7"/><line x1="9" y1="11" x2="14" y2="11"/></svg>
+              <span>Inquire with War Scribe (AI)</span>
             </button>
           </div>
         </div>
@@ -2410,31 +2423,40 @@ function loadPortalView() {
         <div class="dramatic-gate-grid">
           <!-- Card 1: Unmarked Scout (Guest) -->
           <div class="dramatic-gate-card guest">
-            <div class="gate-card-badge guest">UNMARKED RECONNAISSANCE</div>
-            <div class="gate-card-icon">👁️</div>
-            <h2 class="gate-card-title">Enter as Unmarked Scout</h2>
+            <div class="gate-card-badge guest">UNMARKED RECON</div>
+            <div class="gate-card-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+            </div>
+            <h2 class="gate-card-title">Continue as Guest</h2>
             <p class="gate-card-desc">
-              March past the gates without name or crest. Observe live frontline skirmishes, inspect the death rolls, examine bounty contracts, and study the armory records in secret.
+              March past the gates without name or banner. Observe frontline skirmishes, inspect the death rolls, examine bounty contracts, and study armory records in secret.
             </p>
             <ul class="gate-checklist">
-              <li>✓ Immediate read-only access to frontline slaughter</li>
-              <li>✓ Inspect certified 1v1 solo kills &amp; gang clustering</li>
-              <li>✓ Review the most wanted bounty contracts &amp; KOS gibbet</li>
-              <li>✓ Full access to player armory &amp; deadly NPC casualty tolls</li>
+              <li>Read-only reconnaissance of open-world slaughter</li>
+              <li>Certified 1v1 solo kills &amp; temporal gang clustering</li>
+              <li>High Command execution contracts &amp; KOS gibbet</li>
+              <li>Wilderness casualty rolls from deadly beasts and commanders</li>
             </ul>
             <button class="dramatic-gate-btn guest" onclick="portalAdvanceToVersions('guest')">
-              <span>⚔️ Enter as Unmarked Scout</span>
+              <span>Select War Front as Guest</span>
               <span>&rarr;</span>
             </button>
+            <div style="text-align:center; margin-top:10px;">
+              <a href="javascript:void(0)" class="gate-sub-link" onclick="portalLaunchFront(currentFlavor)">
+                Or enter Frontline Feed directly &rarr;
+              </a>
+            </div>
           </div>
 
           <!-- Card 2: Inscribe Muster Roll (Officer Sign-In) -->
           <div class="dramatic-gate-card officer">
             <div class="gate-card-badge officer">MUSTER ROLL</div>
-            <div class="gate-card-icon">👑</div>
-            <h2 class="gate-card-title">Inscribe Call-Sign &amp; Allegiance</h2>
+            <div class="gate-card-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h2 class="gate-card-title">Sign In &amp; Enlist</h2>
             <p class="gate-card-desc">
-              Pledge your steel to High Command. Record your name to issue blood bounties in gold, rally defense beacons, and stamp your personal combat dispatches.
+              Pledge your steel to High Command. Record your character call-sign to issue blood bounties in gold, rally defense beacons, and stamp personal combat dispatches.
             </p>
             ${officerBoxHtml}
           </div>
@@ -2447,8 +2469,8 @@ function loadPortalView() {
   // SCREEN 2: CHOOSE YOUR THEATER OF CONFLICT (Version Selection)
   const isGuest = (portalAccessMode === "guest");
   const clearanceLabel = isGuest 
-    ? `👁️ Clearance: Unmarked Scout (Guest Recon)`
-    : `👑 Clearance: Operative ${storedHunter || "Enlisted"} (${storedFaction} &bull; ${storedRealm})`;
+    ? `CLEARANCE: Unmarked Scout (Guest Recon)`
+    : `CLEARANCE: Operative ${storedHunter || "Enlisted"} (${storedFaction})`;
 
   const flavorKeys = ["CLASSIC_ERA", "ANNIVERSARY", "FOREVER", "TBC", "WOTLK", "RETAIL"];
   const flavorCardsHtml = flavorKeys.map(key => {
@@ -2471,7 +2493,7 @@ function loadPortalView() {
         <div class="portal-flavor-sub">${f.portalDescription || f.tag}</div>
         <div class="portal-flavor-status">
           <div class="dramatic-launch-prompt" style="color: ${f.iconColor};">
-            <span>⚔️ Deploy to ${f.shortName} Front</span>
+            <span>Deploy to ${f.shortName} Front</span>
             <span>&rarr;</span>
           </div>
         </div>
@@ -2484,17 +2506,19 @@ function loadPortalView() {
       <!-- Screen 2 Navigation Bar -->
       <div class="theater-nav-bar">
         <button class="portal-back-btn" onclick="portalSetScreen('GATE')">
-          <span>&larr; Retreat to Muster Gate</span>
+          <span>&larr; Return to Muster Gate</span>
         </button>
         <div class="theater-clearance-wrap">
           <span class="theater-clearance-pill ${isGuest ? 'guest' : 'officer'}">${clearanceLabel}</span>
         </div>
         <div style="display:flex; gap:8px;">
           <button class="portal-fieldkit-pill small" onclick="openAddonDossierModal()">
-            <span>📜 Field Kit Blueprints</span>
+            <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+            <span>Field Kit Blueprints</span>
           </button>
           <button class="portal-oracle-pill small" onclick="toggleOracleChatModal()">
-            <span>🔮 Ask War Scribe</span>
+            <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>Ask War Scribe</span>
           </button>
         </div>
       </div>
@@ -2624,7 +2648,7 @@ async function sendOracleMessage() {
   const userMsgEl = document.createElement("div");
   userMsgEl.className = "oracle-msg user";
   userMsgEl.innerHTML = `
-    <div class="msg-meta">🛡️ You</div>
+    <div class="msg-meta">Recon Operative</div>
     <div class="msg-body">${escapeHtml(query)}</div>
   `;
   msgContainer.appendChild(userMsgEl);
@@ -2635,8 +2659,8 @@ async function sendOracleMessage() {
   loadingEl.id = loaderId;
   loadingEl.className = "oracle-msg scribe loading";
   loadingEl.innerHTML = `
-    <div class="msg-meta">⚔️ The War Scribe</div>
-    <div class="msg-body"><span class="oracle-pulsing-rune">🔮 Inspecting the rolls and consulting field dispatches...</span></div>
+    <div class="msg-meta">The War Scribe</div>
+    <div class="msg-body"><span class="oracle-pulsing-rune">Searching the war ledger archives...</span></div>
   `;
   msgContainer.appendChild(loadingEl);
   msgContainer.scrollTop = msgContainer.scrollHeight;
@@ -2667,7 +2691,7 @@ async function sendOracleMessage() {
     if (data.sources && data.sources.length) {
       sourcesHtml = `
         <div class="oracle-sources-tag">
-          ${data.sources.map(s => `<span class="source-pill">📜 ${escapeHtml(s)}</span>`).join("")}
+          ${data.sources.map(s => `<span class="source-pill">${escapeHtml(s)}</span>`).join("")}
         </div>
       `;
     }
@@ -2676,7 +2700,7 @@ async function sendOracleMessage() {
     let formattedReply = formatScribeMarkdown(data.reply || "The dispatch is unreadable; our scouts report no findings.");
 
     scribeMsgEl.innerHTML = `
-      <div class="msg-meta">⚔️ The War Scribe</div>
+      <div class="msg-meta">The War Scribe</div>
       <div class="msg-body">${formattedReply}</div>
       ${sourcesHtml}
     `;

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.3] - 2026-09-25
+
+### Changed
+- **Direct Sign-In Flow to War Room Homepage**:
+  - Eliminated the mandatory "Garrison / Realm" input field across the portal gate and authentication state, natively accommodating WoW Forever Beta and modern clients that operate without traditional realm sharding.
+  - Linked the Sign-In button and quick sign-in actions directly to the War Room homepage (`portalLaunchFront(currentFlavor)` / `FEED`), immediately authenticating and routing inscribed operatives to the live combat feed.
+  - Provided direct 1-click fallback links on both Guest and Officer cards for instantaneous homepage deployment.
+- **Horizontal Faction Crest Hero Alignment**:
+  - Enforced strict CSS `flex-direction: row !important;` and `display: flex !important;` on `.portal-crest-row` across mobile, tablet, and desktop viewports, ensuring the Alliance shield, crossed war swords, and Horde shield render in an unbroken horizontal row.
+- **Elimination of Purple Buttons & Cartoon Emojis**:
+  - Purged all purple buttons, glow effects, and accents (`#a855f7`, `#c084fc`, `#7e22ce`) across the portal triggers, header pills, and War Scribe / Oracle AI chat modals, re-skinning all controls in dark iron (`#090c14`), burnished gold (`#d4a329`), and weathered brass (`#735934`).
+  - Replaced cartoon emojis (`📜`, `🔮`, `👑`, `👁️`, `🦁`, `🐺`, `📦`) with clean, diegetic SVG vector symbols and austere military typography badges, strictly aligning with the **Classic Azeroth Scribe** aesthetic.
+
 ## [1.4.2] - 2026-09-25
 
 ### Added

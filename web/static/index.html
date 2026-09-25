@@ -76,11 +76,13 @@
         </div>
 
         <button class="header-action-pill fieldkit-btn" onclick="openAddonDossierModal()" title="View Addon Field Kit & Blueprints">
-          📜 Field Kit
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Field Kit
         </button>
 
         <button class="header-action-pill oracle-btn" onclick="toggleOracleChatModal()" title="Consult the War Scribe (AI)">
-          🔮 War Scribe
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          War Scribe
         </button>
 
         <button class="supporter-btn" onclick="toggleSupporterMode()">
@@ -225,11 +227,11 @@
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" onclick="openAddonDossierModal(); toggleMobileDrawer(false);">
-          <span>⚙️ Addon Field Kit &amp; Blueprints</span>
+          <span>Addon Field Kit &amp; Blueprints</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" onclick="toggleOracleChatModal(); toggleMobileDrawer(false);">
-          <span>🔮 Ask the War Scribe (AI)</span>
+          <span>Consult the War Scribe (AI)</span>
           <span>&rarr;</span>
         </button>
       </div>
@@ -533,13 +535,18 @@
       </div>
     </div>
   <!-- Persistent Floating Tactical Action Triggers -->
+  <!-- Persistent Floating Tactical Action Triggers -->
   <button id="floating-fieldkit-btn" class="floating-action-trigger fieldkit-float" onclick="openAddonDossierModal()" title="Addon Architecture &amp; Field Kit">
-    <span class="float-icon">📜</span>
+    <span class="float-icon">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    </span>
     <span class="float-text">Field Kit</span>
   </button>
 
   <button id="oracle-chat-trigger" class="floating-action-trigger oracle-float" onclick="toggleOracleChatModal()" title="Consult the War Scribe (AI)">
-    <span class="float-icon">🔮</span>
+    <span class="float-icon">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </span>
     <span class="float-text">Ask War Scribe</span>
   </button>
 
@@ -548,7 +555,9 @@
     <div class="modal-card modal-card-lg dossier-card">
       <div class="modal-header dossier-header">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 1.6rem;">📜</span>
+          <div class="officer-sigil-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
           <div>
             <strong style="color: var(--wow-gold); font-family: var(--font-tactical); font-size: 1.18rem; letter-spacing: 0.6px;">SCRIBE'S FIELD KIT &amp; ADDON BLUEPRINTS</strong>
             <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">VANILLA PURE LUA &bull; ZERO BLIZZARD UI TAINT &bull; 32-BIT FNV-1a BATTLE CERTIFICATION</div>
@@ -598,7 +607,9 @@
 
         <div class="dossier-download-box">
           <div class="dossier-dl-info">
-            <span style="font-size: 2rem;">📦</span>
+            <div class="officer-sigil-badge" style="width:44px; height:44px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
             <div>
               <div style="font-weight:800; font-size:1.05rem; color:#fff;">Claim the Official Addon &amp; Sync Courier</div>
               <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
@@ -608,13 +619,13 @@
           </div>
           <div class="dossier-dl-actions">
             <a href="/WoWKillboard-v1.0.0.zip" class="portal-dl-btn primary" download>
-              <span>📥 Download Addon (.zip)</span>
+              <span>Download Addon (.zip)</span>
             </a>
             <button class="portal-dl-btn secondary" onclick="alert('WoWKillboardSync.exe is included in your repository root and sync distribution!')">
-              <span>⚡ Desktop Sync Courier (.exe)</span>
+              <span>Desktop Sync Courier (.exe)</span>
             </button>
             <button class="portal-dl-btn tertiary" onclick="closeAddonDossierModal(); switchTab('INFO');">
-              <span>📜 Field Manual &amp; Codex</span>
+              <span>Field Manual &amp; Codex</span>
             </button>
           </div>
         </div>
@@ -626,7 +637,9 @@
   <div id="oracle-chat-modal" class="oracle-chat-window" style="display: none;">
     <div class="oracle-chat-header">
       <div style="display:flex; align-items:center; gap:10px;">
-        <span class="oracle-avatar">🔮</span>
+        <span class="oracle-avatar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </span>
         <div>
           <div class="oracle-title">GRAND INQUISITOR &amp; WAR SCRIBE</div>
           <div class="oracle-sub">Live Azeroth Combat Telemetry &amp; Field Codex</div>
@@ -651,7 +664,7 @@
     <!-- Messages Container -->
     <div class="oracle-chat-messages" id="oracle-chat-messages">
       <div class="oracle-msg scribe">
-        <div class="msg-meta">⚔️ The War Scribe</div>
+        <div class="msg-meta">The War Scribe</div>
         <div class="msg-body">
           Speak, soldier. The ledger holds every death, every bounty, and every fallen champion across the realms. What intelligence do you seek from the front?
         </div>
@@ -660,10 +673,10 @@
 
     <!-- Suggested Quick Chips -->
     <div class="oracle-quick-chips" id="oracle-quick-chips">
-      <button class="oracle-chip" onclick="sendOracleQuickQuery('Who holds the highest bounty on the gibbet?')">🩸 Highest Bounty</button>
-      <button class="oracle-chip" onclick="sendOracleQuickQuery('Which zone has seen the most slaughter?')">⚔️ Bloodiest Zone</button>
-      <button class="oracle-chip" onclick="sendOracleQuickQuery('What are the deadliest wilderness creatures?')">☠️ Deadliest NPCs</button>
-      <button class="oracle-chip" onclick="sendOracleQuickQuery('How does the addon record combat with zero UI taint?')">📜 Zero-Taint Addon</button>
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('Who holds the highest bounty on the gibbet?')">Highest Bounty</button>
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('Which zone has seen the most slaughter?')">Bloodiest Zone</button>
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('What are the deadliest wilderness creatures?')">Deadliest NPCs</button>
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('How does the addon record combat with zero UI taint?')">Zero-Taint Addon</button>
     </div>
 
     <!-- Chat Input Area -->
@@ -671,7 +684,7 @@
       <textarea id="oracle-chat-input" class="oracle-textarea" placeholder="Inquire regarding combatants, bounties, zones, or field kit..." rows="1" onkeydown="handleOracleKeydown(event)"></textarea>
       <button class="oracle-send-btn" onclick="sendOracleMessage()">
         <span>Dispatch</span>
-        <span>⚔️</span>
+        <span>&rarr;</span>
       </button>
     </div>
   </div>
