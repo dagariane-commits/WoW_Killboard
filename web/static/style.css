@@ -834,70 +834,179 @@ body {
   transform: translateY(-1px);
 }
 
-.km-left {
+.km-left-meta {
+  min-width: 160px;
+  max-width: 190px;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
-.km-combatants {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 0.88rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.km-combatant {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.km-zone-name {
+  color: #e2e8f0;
+  font-weight: 700;
+  font-size: 0.85rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.km-subzone-text {
+  color: #64748b;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.km-combatants-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
   min-width: 0;
+}
+
+.km-combatant-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 140px;
+}
+
+.km-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .km-lvl {
   color: #64748b;
   font-size: 0.72rem;
   font-weight: 600;
-  margin-left: 2px;
 }
 
-.km-guild {
-  color: #856a36;
+.km-guild-sub {
+  display: flex;
+  justify-content: center;
   font-size: 0.72rem;
+  margin-top: 2px;
+  line-height: 1.1;
+}
+
+.km-guild-sub-text {
+  color: #856a36;
   font-style: italic;
-  max-width: 140px;
+  transition: color 0.15s ease;
+  cursor: pointer;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 180px;
+}
+
+.km-guild-sub-text:hover {
+  color: var(--wow-gold);
+  text-decoration: underline;
+}
+
+.km-guild-none {
+  color: #475569;
+  font-style: italic;
+}
+
+.km-vs-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  flex-shrink: 0;
 }
 
 .km-vs {
-  font-size: 0.82rem;
-  color: #64748b;
-  flex-shrink: 0;
-  user-select: none;
-  opacity: 0.8;
+  font-size: 1.15rem;
+  color: #94a3b8;
+  filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.4));
+  transition: transform 0.15s ease;
 }
 
-.km-right {
+.killmail-row:hover .km-vs {
+  transform: scale(1.15);
+}
+
+.km-right-meta {
+  min-width: 130px;
   display: flex;
-  align-items: center;
-  gap: 14px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
   flex-shrink: 0;
+  text-align: right;
 }
 
-.km-zone {
-  color: #cbd5e1;
-  font-weight: 500;
+.km-mode-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.km-mode-tag.km-solo {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.km-mode-tag.km-duel {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.km-mode-tag.km-arena {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.km-mode-tag.km-bg {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.km-mode-tag.km-gang {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+}
+
+.km-mode-tag.km-world {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.feed-count-pill {
+  font-size: 0.72rem;
+  background: rgba(212, 175, 55, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 12px;
+  padding: 1px 8px;
+  font-weight: 800;
 }
 
 .km-time {
@@ -905,42 +1014,166 @@ body {
   font-size: 0.72rem;
 }
 
-/* ----------------- Recent Kills Feed Toggle & Guild War Views ----------------- */
+/* ----------------- Battle Report Dossier Modal Styles ----------------- */
 
-.feed-toggle-group {
-  display: inline-flex;
-  background: #080a0f;
-  border: 1px solid var(--wow-brass-border);
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8);
-  border-radius: 4px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.feed-toggle-btn {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-family: var(--font-tactical);
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.feed-toggle-btn:hover {
-  color: #fff;
-}
-
-.feed-toggle-btn.active {
-  background: linear-gradient(180deg, #ffe680 0%, #d4a329 100%);
-  color: #120e06;
+.battle-report-solo-banner {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.22), rgba(16, 185, 129, 0.05));
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  border-radius: 6px;
+  padding: 8px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #10b981;
   font-weight: 800;
-  box-shadow: 0 0 8px rgba(212, 163, 41, 0.35);
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
 }
+
+.battle-report-duel-banner {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0.05));
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 6px;
+  padding: 8px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #f59e0b;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
+}
+
+.battle-report-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.battle-report-pill.solo { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
+.battle-report-pill.duel { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); }
+.battle-report-pill.arena { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+.battle-report-pill.bg { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+.battle-report-pill.gang { background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); }
+.battle-report-pill.world { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+.battle-report-attacker-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px 12px;
+  transition: all 0.15s ease;
+}
+
+.battle-report-attacker-row:hover {
+  background: rgba(22, 33, 58, 0.7);
+  border-color: #334155;
+}
+
+.attacker-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attacker-spec-tag {
+  font-size: 0.72rem;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.final-blow-badge {
+  font-size: 0.65rem;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.attacker-spell-col {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+}
+
+.attacker-spell-label {
+  color: #64748b;
+  font-size: 0.68rem;
+}
+
+.attacker-spell-val {
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.attacker-dmg-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.dmg-bar-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dmg-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* ----------------- Blood Debtor & Reputation Badges ----------------- */
+
+.debt-welcher-tag {
+  font-size: 0.65rem;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.armory-blood-debtor-banner {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.25), rgba(127, 29, 29, 0.15));
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+}
+
+.reputation-badge-honorable {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
+  padding: 3px 8px;
+  letter-spacing: 0.5px;
+}
+
+/* ----------------- Guild War Titles & Faction Badges ----------------- */
 
 .km-guild-title {
   font-weight: 800;
@@ -2038,31 +2271,51 @@ body {
   /* Responsive Killmail Card on Mobile */
   .killmail-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 8px;
-    padding: 12px;
+    padding: 10px 12px;
   }
 
-  .km-left {
+  .km-left-meta {
+    max-width: 100%;
+    min-width: unset;
     width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 4px;
+  }
+
+  .km-combatants-center {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 2px 0;
+  }
+
+  .km-combatant-col {
+    min-width: unset;
+    max-width: 45%;
+  }
+
+  .km-player-row {
+    font-size: 0.85rem;
+  }
+
+  .km-right-meta {
+    width: 100%;
+    min-width: unset;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .battle-report-attacker-row {
+    grid-template-columns: 1fr;
     gap: 6px;
-  }
-
-  .km-combatants {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.82rem;
-  }
-
-  .km-right {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
   }
 
   .sidebar-column {

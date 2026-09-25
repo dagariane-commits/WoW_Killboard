@@ -240,6 +240,7 @@ class KillboardWatcher:
             "battlegroundName": data.get("battlegroundName", ""),
             "isSolo": bool(data.get("isSolo", True)),
             "attackersCount": data.get("attackersCount", 1),
+            "attackers": data.get("attackers", []),
             "totalDamage": data.get("totalDamage", 0),
             "killer": {
                 "name": killer_data.get("name") or data.get("killer_name") or data.get("name") or "Unknown",

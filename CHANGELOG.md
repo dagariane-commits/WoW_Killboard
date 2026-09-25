@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-09-25
+
+### Added
+- **Recent Kills Centered Player vs. Player Layout**:
+  - Reverted feed display mode toggle to prioritize pure player-vs-player combat engagements across all realms.
+  - Centered combatant pairing horizontally on the feed line: Killer column on the left, central `⚔️` clash divider, and Victim column on the right.
+  - Positioned guild affiliations (`<Guild Name>`) centered directly beneath each player's character name in subtle gold/brass font with direct links to guild war dossiers.
+  - Positioned encounter theater telemetry (`Zone` and `Subzone / GPS Coordinates`) on the left meta column, and relative combat timestamp and mode tags (`1v1 SOLO`, `1v1 DUEL`, `GANG xN`, `BG`, `ARENA`) on the right meta column.
+  - Fully responsive on mobile devices with automated stacked cards and zero horizontal scroll overflow.
+- **Battle Report Dossier with Specialization Icons & Assault Force Telemetry**:
+  - Downloaded and locally hosted official Blizzard specialization icon assets for all 36 specs (`web/static/icons/specs/*.jpg`).
+  - Engineered combat log specialization inference engine (`inferSpec`) mapping signature spells (e.g. Mortal Strike, Pyroblast, Bloodthirst, Penance) to deterministic specs across Classic Era, Anniversary, Forever Beta, and Retail.
+  - Upgraded Battle Report modal (`openKillModal`) to display complete Assault Force telemetry:
+    - Killer & Victim encounter showcase with large class emblems and specialization badges.
+    - Certified 1v1 Solo Triumph banner (`⭐ CERTIFIED 1v1 SOLO TRIUMPH`) for unassisted victories.
+    - Participating party members / attackers list with class icon, spec badge, signature abilities, damage done, percentage contribution bar, and killing blow tag (`★ FINAL BLOW`).
+- **Blood Debtor (Debt Welcher) Automated KOS Blacklist System**:
+  - Rebranded Oathbreaker debt ledger to **"Blood Debtor Ledger"** (with **"Debt Welcher"** stigma).
+  - Engineered automatic consignment to the **Realm KOS Blacklist** (`kos_blacklist`) for any player in default on a bounty debt (`POST /api/bounties/debt-ledger`).
+  - Added automatic KOS cleansing upon debt redemption (`POST /api/debt/pay`), restoring reputation to `HONORABLE COMBATANT`.
+  - Implemented permanent anti-evasion tracking across character name changes and guild hopping using immutable `Player-GUID`.
+  - Displayed prominent reputation badges in Character Profiles (`BLOOD DEBTOR — KILL ON SIGHT` vs `HONORABLE COMBATANT — DEBTS SETTLED`).
+
 ## [1.0.0] - 2026-09-24
 
 ### Added

@@ -310,6 +310,10 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertIsNotNone(debtor)
         self.assertEqual(debtor["days_in_default"], 5)
 
+        # Scott Quick Guardrail: Verify Blood Debtor is automatically branded on KOS Blacklist
+        kos_res_before = self.client.get("/api/kos/blacklist").get_json()
+        self.assertTrue(any(g["entity_name"] == "DeadbeatDan" and g["status"] == "KOS" for g in kos_res_before["guilds"]), "Debtor must be auto-branded KOS")
+
         # 3. Pay off debt (Redemption)
         res_pay = self.client.post("/api/debt/pay", json={"playerName": "DeadbeatDan"})
         self.assertEqual(res_pay.status_code, 200)
@@ -318,7 +322,11 @@ class TestKillboardPipeline(unittest.TestCase):
         wall_after = self.client.get("/api/bounties/debt-ledger").get_json()
         cleansed = any(d["player_name"] == "DeadbeatDan" for d in wall_after)
         self.assertFalse(cleansed, "Redeemed debtor must be removed from the active Wall of Shame")
-        print("[PASS] Verified Bounty placement, Oathbreaker Debt Ledger, and Redemption lifecycle.")
+
+        # Verify debtor is cleansed from KOS Blacklist upon settlement
+        kos_res_after = self.client.get("/api/kos/blacklist").get_json()
+        self.assertFalse(any(g["entity_name"] == "DeadbeatDan" for g in kos_res_after["guilds"]), "Settled debtor must be removed from KOS Blacklist")
+        print("[PASS] Verified Bounty placement, Blood Debtor KOS Blacklist enforcement, and Redemption lifecycle.")
 
     def test_06_guild_and_character_profiles(self):
         """Verify guild leaderboards, guild profiles, character profiles, and guild history tracking."""

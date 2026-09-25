@@ -86,19 +86,93 @@ function renderWowCoin(type) {
   return `<span class="wow-coin ${type}" title="${type.charAt(0).toUpperCase() + type.slice(1)}"></span>`;
 }
 
+function inferSpec(cls, spellName) {
+  cls = (cls || "").toUpperCase();
+  const spell = (spellName || "").toLowerCase();
+  if (cls === "WARRIOR") {
+    if (spell.includes("mortal") || spell.includes("overpower") || spell.includes("colossus") || spell.includes("slam") || spell.includes("rend")) return { name: "Arms", id: "warrior_arms" };
+    if (spell.includes("bloodthirst") || spell.includes("raging") || spell.includes("rampage") || spell.includes("whirlwind") || spell.includes("fury")) return { name: "Fury", id: "warrior_fury" };
+    if (spell.includes("shield") || spell.includes("devastate") || spell.includes("revenge") || spell.includes("taunt")) return { name: "Protection", id: "warrior_protection" };
+    return { name: "Arms", id: "warrior_arms" };
+  }
+  if (cls === "MAGE") {
+    if (spell.includes("fire") || spell.includes("pyro") || spell.includes("scorch") || spell.includes("combust") || spell.includes("blast wave")) return { name: "Fire", id: "mage_fire" };
+    if (spell.includes("frost") || spell.includes("ice") || spell.includes("blizzard") || spell.includes("flurry") || spell.includes("cone of cold")) return { name: "Frost", id: "mage_frost" };
+    if (spell.includes("arcane")) return { name: "Arcane", id: "mage_arcane" };
+    return { name: "Frost", id: "mage_frost" };
+  }
+  if (cls === "ROGUE") {
+    if (spell.includes("mutilate") || spell.includes("envenom") || spell.includes("garrote") || spell.includes("rupture") || spell.includes("poison")) return { name: "Assassination", id: "rogue_assassination" };
+    if (spell.includes("shadow") || spell.includes("backstab") || spell.includes("eviscerate") || spell.includes("ambush") || spell.includes("cheapshot")) return { name: "Subtlety", id: "rogue_subtlety" };
+    if (spell.includes("sinister") || spell.includes("pistol") || spell.includes("blade") || spell.includes("adrenaline")) return { name: "Outlaw", id: "rogue_outlaw" };
+    return { name: "Subtlety", id: "rogue_subtlety" };
+  }
+  if (cls === "PRIEST") {
+    if (spell.includes("shadow") || spell.includes("mind") || spell.includes("plague") || spell.includes("void") || spell.includes("pain")) return { name: "Shadow", id: "priest_shadow" };
+    if (spell.includes("penance") || spell.includes("shield") || spell.includes("radiance") || spell.includes("smite")) return { name: "Discipline", id: "priest_discipline" };
+    if (spell.includes("heal") || spell.includes("serenity") || spell.includes("prayer") || spell.includes("holy") || spell.includes("renew")) return { name: "Holy", id: "priest_holy" };
+    return { name: "Shadow", id: "priest_shadow" };
+  }
+  if (cls === "PALADIN") {
+    if (spell.includes("verdict") || spell.includes("crusader") || spell.includes("blade") || spell.includes("judgment") || spell.includes("retribution") || spell.includes("hammer of wrath")) return { name: "Retribution", id: "paladin_retribution" };
+    if (spell.includes("avenger") || spell.includes("righteous") || spell.includes("consecrat")) return { name: "Protection", id: "paladin_protection" };
+    if (spell.includes("shock") || spell.includes("flash") || spell.includes("beacon") || spell.includes("holy light")) return { name: "Holy", id: "paladin_holy" };
+    return { name: "Retribution", id: "paladin_retribution" };
+  }
+  if (cls === "HUNTER") {
+    if (spell.includes("kill command") || spell.includes("beast") || spell.includes("barbed") || spell.includes("claw") || spell.includes("bite") || spell.includes("wrath")) return { name: "Beast Mastery", id: "hunter_beastmastery" };
+    if (spell.includes("aimed") || spell.includes("rapid") || spell.includes("arcane shot") || spell.includes("chimaera") || spell.includes("steady") || spell.includes("multishot")) return { name: "Marksmanship", id: "hunter_marksmanship" };
+    if (spell.includes("mongoose") || spell.includes("raptor") || spell.includes("bomb") || spell.includes("harpoon") || spell.includes("flanking")) return { name: "Survival", id: "hunter_survival" };
+    return { name: "Marksmanship", id: "hunter_marksmanship" };
+  }
+  if (cls === "WARLOCK") {
+    if (spell.includes("agony") || spell.includes("corruption") || spell.includes("affliction") || spell.includes("drain") || spell.includes("siphon") || spell.includes("unstable")) return { name: "Affliction", id: "warlock_affliction" };
+    if (spell.includes("chaos") || spell.includes("incinerate") || spell.includes("conflagrate") || spell.includes("immolate") || spell.includes("rain of fire")) return { name: "Destruction", id: "warlock_destruction" };
+    if (spell.includes("demon") || spell.includes("gul'dan") || spell.includes("felguard") || spell.includes("dreadstalker") || spell.includes("shadowbolt")) return { name: "Demonology", id: "warlock_demonology" };
+    return { name: "Affliction", id: "warlock_affliction" };
+  }
+  if (cls === "DRUID") {
+    if (spell.includes("star") || spell.includes("moonfire") || spell.includes("sunfire") || spell.includes("wrath") || spell.includes("eclipse")) return { name: "Balance", id: "druid_balance" };
+    if (spell.includes("shred") || spell.includes("bite") || spell.includes("rip") || spell.includes("rake") || spell.includes("cat") || spell.includes("swipe")) return { name: "Feral", id: "druid_feral" };
+    if (spell.includes("mangle") || spell.includes("bear") || spell.includes("ironfur") || spell.includes("frenzied") || spell.includes("growl")) return { name: "Guardian", id: "druid_guardian" };
+    if (spell.includes("rejuvenation") || spell.includes("growth") || spell.includes("lifebloom") || spell.includes("swiftmend") || spell.includes("nourish")) return { name: "Restoration", id: "druid_restoration" };
+    return { name: "Feral", id: "druid_feral" };
+  }
+  if (cls === "SHAMAN") {
+    if (spell.includes("stormstrike") || spell.includes("lava lash") || spell.includes("windfury") || spell.includes("crash") || spell.includes("sunder")) return { name: "Enhancement", id: "shaman_enhancement" };
+    if (spell.includes("lava burst") || spell.includes("earth shock") || spell.includes("chain lightning") || spell.includes("lightning bolt") || spell.includes("elemental")) return { name: "Elemental", id: "shaman_elemental" };
+    if (spell.includes("riptide") || spell.includes("healing") || spell.includes("rain") || spell.includes("water") || spell.includes("chain heal")) return { name: "Restoration", id: "shaman_restoration" };
+    return { name: "Enhancement", id: "shaman_enhancement" };
+  }
+  if (cls === "DEATHKNIGHT") {
+    if (spell.includes("frost") || spell.includes("obliterate") || spell.includes("howling") || spell.includes("glacial")) return { name: "Frost", id: "deathknight_frost" };
+    if (spell.includes("blood") || spell.includes("marrow") || spell.includes("heart strike") || spell.includes("death strike")) return { name: "Blood", id: "deathknight_blood" };
+    if (spell.includes("unholy") || spell.includes("scourge") || spell.includes("festering") || spell.includes("apocalypse") || spell.includes("death coil") || spell.includes("epidemic")) return { name: "Unholy", id: "deathknight_unholy" };
+    return { name: "Frost", id: "deathknight_frost" };
+  }
+  if (cls === "MONK") {
+    if (spell.includes("rising sun") || spell.includes("fists of fury") || spell.includes("tiger palm") || spell.includes("blackout") || spell.includes("spinning crane")) return { name: "Windwalker", id: "monk_windwalker" };
+    if (spell.includes("keg") || spell.includes("brew") || spell.includes("breath of fire") || spell.includes("purifying")) return { name: "Brewmaster", id: "monk_brewmaster" };
+    if (spell.includes("mist") || spell.includes("vivify") || spell.includes("enveloping") || spell.includes("renewing")) return { name: "Mistweaver", id: "monk_mistweaver" };
+    return { name: "Windwalker", id: "monk_windwalker" };
+  }
+  if (cls === "DEMONHUNTER") {
+    if (spell.includes("chaos") || spell.includes("eye beam") || spell.includes("blade dance") || spell.includes("fel rush") || spell.includes("annihilation")) return { name: "Havoc", id: "demonhunter_havoc" };
+    return { name: "Vengeance", id: "demonhunter_vengeance" };
+  }
+  return { name: "Combatant", id: (cls || "warrior").toLowerCase() + "_arms" };
+}
+
+function renderSpecBadge(specId, specName, size = 18) {
+  return `<span class="wow-spec-badge" style="width:${size}px; height:${size}px;" title="Specialization: ${specName}">
+    <img src="/static/icons/specs/${specId}.jpg" alt="${specName}" style="width:100%; height:100%; object-fit:cover; border-radius:2px; display:block;" onerror="this.style.display='none';">
+  </span>`;
+}
+
 let currentTab = "FEED";
 let currentMode = "ALL";
 let searchQuery = "";
 let cachedKills = [];
-let feedDisplayMode = localStorage.getItem("wow_killboard_feed_display_mode") || "PLAYERS"; // "PLAYERS" or "GUILDS"
-
-function setFeedDisplayMode(mode) {
-  feedDisplayMode = mode;
-  localStorage.setItem("wow_killboard_feed_display_mode", mode);
-  if (currentTab === "FEED" && cachedKills) {
-    renderFeed(cachedKills);
-  }
-}
 
 // Bounty Acceptance & Opt-In Helpers
 function isBountyAcceptedLocally(bountyId) {
@@ -497,108 +571,96 @@ function renderFeed(kills) {
   let html = `
     <div style="display: flex; flex-direction: column; gap: 6px;">
       <div class="feed-header-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); gap:10px; flex-wrap:wrap;">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:1.15rem;">⚔️</span>
-            <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
-          </div>
-          <div class="feed-toggle-group">
-            <button class="feed-toggle-btn ${feedDisplayMode === 'PLAYERS' ? 'active' : ''}" onclick="setFeedDisplayMode('PLAYERS')">👤 Players</button>
-            <button class="feed-toggle-btn ${feedDisplayMode === 'GUILDS' ? 'active' : ''}" onclick="setFeedDisplayMode('GUILDS')">🛡️ Guilds</button>
-          </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:1.15rem;">⚔️</span>
+          <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
+          <span class="feed-count-pill">${kills.length}</span>
         </div>
-        <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Feed &bull; ${kills.length} events</span>
+        <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Feed &bull; Live Telemetry</span>
       </div>
   `;
   kills.forEach(km => {
     let modeClass = "km-world";
     let modeLabel = "Open World";
+    let modeTagText = "WORLD";
     if (km.isDuel) {
       modeClass = "km-duel";
       modeLabel = "1v1 Duel";
+      modeTagText = "1v1 DUEL";
     } else if (km.isArena) {
       modeClass = "km-arena";
       modeLabel = "Arena Match";
+      modeTagText = "ARENA";
     } else if (km.isBattleground) {
       modeClass = "km-bg";
       modeLabel = `Battleground (${km.battlegroundName || "BG"})`;
+      modeTagText = "BG";
     } else if (km.isSolo) {
       modeClass = "km-solo";
       modeLabel = "1v1 Solo Kill";
+      modeTagText = "1v1 SOLO";
     } else {
       modeClass = "km-gang";
       modeLabel = `Gang Kill (${km.attackersCount} Attackers)`;
+      modeTagText = `GANG x${km.attackersCount}`;
     }
 
-    const killerBadge = renderClassBadge(km.killer.class, 20);
-    const victimBadge = renderClassBadge(km.victim.class, 20);
+    const killerBadge = renderClassBadge(km.killer.class, 22);
+    const victimBadge = renderClassBadge(km.victim.class, 22);
     const killerSpan = colorizeClass(km.killer.name, km.killer.class);
     const victimSpan = colorizeClass(km.victim.name, km.victim.class);
 
-    const killerGuild = (km.killer.guild && km.killer.guild !== 'None')
-      ? `<span class="km-guild">&lt;${km.killer.guild}&gt;</span>`
-      : '';
-    const victimGuild = (km.victim.guild && km.victim.guild !== 'None')
-      ? `<span class="km-guild">&lt;${km.victim.guild}&gt;</span>`
-      : '';
+    const killerGuildName = (km.killer.guild && km.killer.guild !== 'None') ? km.killer.guild : '';
+    const victimGuildName = (km.victim.guild && km.victim.guild !== 'None') ? km.victim.guild : '';
 
-    let combatantsHtml = "";
-    if (feedDisplayMode === "GUILDS") {
-      const killerGuildName = (km.killer.guild && km.killer.guild !== 'None') ? km.killer.guild : 'Unguilded';
-      const victimGuildName = (km.victim.guild && km.victim.guild !== 'None') ? km.victim.guild : 'Unguilded';
-      const killerFaction = (km.killer.faction || 'Neutral').toLowerCase();
-      const victimFaction = (km.victim.faction || 'Neutral').toLowerCase();
+    const killerGuildHtml = killerGuildName
+      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile('${killerGuildName}')">&lt;${killerGuildName}&gt;</span>`
+      : `<span class="km-guild-none">&lt;Unguilded&gt;</span>`;
 
-      const killerGuildHtml = killerGuildName !== 'Unguilded'
-        ? `<span class="clickable-guild km-guild-title ${killerFaction}" onclick="event.stopPropagation(); openGuildProfile('${killerGuildName}')">&lt;${killerGuildName}&gt;</span>`
-        : `<span class="km-guild-unguilded">&lt;Unguilded&gt;</span>`;
+    const victimGuildHtml = victimGuildName
+      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile('${victimGuildName}')">&lt;${victimGuildName}&gt;</span>`
+      : `<span class="km-guild-none">&lt;Unguilded&gt;</span>`;
 
-      const victimGuildHtml = victimGuildName !== 'Unguilded'
-        ? `<span class="clickable-guild km-guild-title ${victimFaction}" onclick="event.stopPropagation(); openGuildProfile('${victimGuildName}')">&lt;${victimGuildName}&gt;</span>`
-        : `<span class="km-guild-unguilded">&lt;Unguilded&gt;</span>`;
-
-      combatantsHtml = `
-        <div class="km-combatant killer">
-          <span class="km-guild-crest ${killerFaction}" title="${km.killer.faction || 'Faction'}">🛡️</span>
-          ${killerGuildHtml}
-        </div>
-        <span class="km-vs" title="Guild War Clash">⚔️</span>
-        <div class="km-combatant victim">
-          <span class="km-guild-crest ${victimFaction}" title="${km.victim.faction || 'Faction'}">🛡️</span>
-          ${victimGuildHtml}
-        </div>
-      `;
-    } else {
-      combatantsHtml = `
-        <div class="km-combatant killer">
-          ${killerBadge}
-          <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.killer.name}')">${killerSpan}</span>
-          <span class="km-lvl">(${km.killer.level})</span>
-          ${killerGuild}
-        </div>
-        <span class="km-vs" title="${km.isDuel ? 'Defeated in Duel' : 'Slew in Combat'}">⚔️</span>
-        <div class="km-combatant victim">
-          ${victimBadge}
-          <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.victim.name}')">${victimSpan}</span>
-          <span class="km-lvl">(${km.victim.level})</span>
-          ${victimGuild}
-        </div>
-      `;
-    }
-
-    const rowTooltip = feedDisplayMode === "GUILDS"
-      ? `${km.killer.name} defeated ${km.victim.name} • ${modeLabel} • ${km.location.zone} • Click to inspect combat dossier`
-      : `${modeLabel} • ${km.location.zone} • Click to inspect combat dossier`;
+    const subzoneOrCoords = km.location.subZone ? km.location.subZone : `${(km.location.x || 0).toFixed(1)}, ${(km.location.y || 0).toFixed(1)}`;
+    const rowTooltip = `${km.killer.name} defeated ${km.victim.name} • ${modeLabel} • ${km.location.zone} • Click for Battle Report`;
 
     html += `
       <div class="killmail-row ${modeClass}" onclick="openKillModal('${km.killId}')" title="${rowTooltip}">
-        <div class="km-left">
-          <div class="km-combatants">
-            ${combatantsHtml}
+        <div class="km-left-meta">
+          <span class="km-zone-name">${km.location.zone}</span>
+          <span class="km-subzone-text">${subzoneOrCoords}</span>
+        </div>
+
+        <div class="km-combatants-center">
+          <div class="km-combatant-col killer">
+            <div class="km-player-row">
+              ${killerBadge}
+              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.killer.name}')">${killerSpan}</span>
+              <span class="km-lvl">(${km.killer.level})</span>
+            </div>
+            <div class="km-guild-sub">
+              ${killerGuildHtml}
+            </div>
+          </div>
+
+          <div class="km-vs-wrapper">
+            <span class="km-vs" title="${km.isDuel ? 'Defeated in 1v1 Duel' : (km.isSolo ? 'Slew in 1v1 Combat' : 'Slew in Combat')}">⚔️</span>
+          </div>
+
+          <div class="km-combatant-col victim">
+            <div class="km-player-row">
+              ${victimBadge}
+              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.victim.name}')">${victimSpan}</span>
+              <span class="km-lvl">(${km.victim.level})</span>
+            </div>
+            <div class="km-guild-sub">
+              ${victimGuildHtml}
+            </div>
           </div>
         </div>
-        <div class="km-right">
-          <span class="km-zone">${km.location.zone}</span>
+
+        <div class="km-right-meta">
+          <span class="km-mode-tag ${modeClass}">${modeTagText}</span>
           <span class="km-time">${timeAgo(km.timestamp)}</span>
         </div>
       </div>
@@ -857,33 +919,36 @@ function renderBountiesView(bounties, debts, leaderboards) {
         </div>
       </div>
 
-      <!-- Wall of Shame: Oathbreaker Debt Ledger -->
+      <!-- Wall of Shame: Blood Debtor Ledger -->
       <div>
-        <h2 style="font-size: 1.2rem; color: var(--accent-red); margin-bottom: 12px;">
-          ⚠️ Wall of Shame — Oathbreakers in Default
+        <h2 style="font-size: 1.2rem; color: var(--accent-red); margin-bottom: 4px;">
+          ⚠️ Wall of Shame — Realm Blood Debtors (Kill On Sight)
         </h2>
+        <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:12px;">
+          Defaulters who failed to settle their bounty debts are marked Kill on Sight server-wide. Tracked permanently across character name changes and guild transfers.
+        </div>
         <div style="display: flex; flex-direction: column; gap: 8px;">
   `;
 
   if (!debts || debts.length === 0) {
-    html += `<div style="color: #10b981; padding:12px;">No active defaulters. The realm's honor is preserved!</div>`;
+    html += `<div style="color: #10b981; padding:12px; background:#07090e; border:1px solid #1e293b; border-radius:6px;">No active defaulters. The realm's honor is preserved!</div>`;
   } else {
     debts.forEach(d => {
       html += `
         <div class="debt-card">
           <div class="debt-header">
-            <div>
-              <span class="debt-badge">OATHBREAKER</span>
-              <strong style="color:#fff; font-size:1rem; margin-left:8px;" class="clickable-player" onclick="openCharacterProfile('${d.player_name}')">${d.player_name}</strong>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="debt-badge">BLOOD DEBTOR</span>
+              <strong style="color:#fff; font-size:1.05rem;" class="clickable-player" onclick="openCharacterProfile('${d.player_name}')">${d.player_name}</strong>
+              <span class="debt-welcher-tag">DEBT WELCHER</span>
             </div>
             <span style="color:var(--accent-red); font-weight:800; font-size:1.1rem;">${formatCopper(d.amount_owed_copper)} Owed</span>
           </div>
-          <div style="font-size:0.8rem; color:#cbd5e1;">
-            Defaulted on bounty owed to <strong style="color:var(--accent-cyan);">${d.creditor}</strong>.
-            In default for <strong style="color:#f87171;">${d.days_in_default} days</strong>.
+          <div style="font-size:0.8rem; color:#cbd5e1; margin-top:4px;">
+            Defaulted on bounty owed to <strong style="color:var(--accent-cyan);">${d.creditor}</strong> &bull; In default for <strong style="color:#f87171;">${d.days_in_default} days</strong>.
           </div>
-          <div style="font-size:0.7rem; color:#94a3b8; margin-top:6px;">
-            Target is marked server-wide. Hunters earn double points for slaying this oathbreaker.
+          <div style="font-size:0.72rem; color:#f87171; margin-top:6px; display:flex; align-items:center; gap:6px;">
+            <span>🚨</span> <span>Marked KILL ON SIGHT realm-wide. Any citizen or bounty hunter may execute this target without penalty until bounty debt is paid.</span>
           </div>
         </div>
       `;
@@ -906,49 +971,202 @@ function openKillModal(killId) {
   const modal = document.getElementById("kill-modal");
   const body = document.getElementById("modal-body");
 
-  const killerGuild = (km.killer.guild && km.killer.guild !== 'None') 
-    ? `<span class="clickable-guild" onclick="openGuildProfile('${km.killer.guild}')">&lt;${km.killer.guild}&gt;</span>` 
-    : '';
-  const victimGuild = (km.victim.guild && km.victim.guild !== 'None') 
-    ? `<span class="clickable-guild" onclick="openGuildProfile('${km.victim.guild}')">&lt;${km.victim.guild}&gt;</span>` 
-    : '';
+  const killerGuildName = (km.killer.guild && km.killer.guild !== 'None') ? km.killer.guild : '';
+  const victimGuildName = (km.victim.guild && km.victim.guild !== 'None') ? km.victim.guild : '';
+  const killerGuild = killerGuildName 
+    ? `<span class="clickable-guild" onclick="openGuildProfile('${killerGuildName}')">&lt;${killerGuildName}&gt;</span>` 
+    : '<span style="color:#64748b;">&lt;Unguilded&gt;</span>';
+  const victimGuild = victimGuildName 
+    ? `<span class="clickable-guild" onclick="openGuildProfile('${victimGuildName}')">&lt;${victimGuildName}&gt;</span>` 
+    : '<span style="color:#64748b;">&lt;Unguilded&gt;</span>';
+
+  // Infer Killer Spec from attack spells or class default
+  let killerSpell = "Combat";
+  let attackersList = (km.attackers && km.attackers.length > 0) ? km.attackers : [];
+  if (attackersList.length > 0) {
+    const kAtt = attackersList.find(a => a.name === km.killer.name) || attackersList[0];
+    if (kAtt && kAtt.spell) killerSpell = kAtt.spell;
+  }
+  const killerSpec = inferSpec(km.killer.class, killerSpell);
+  const killerSpecBadge = renderSpecBadge(killerSpec.id, killerSpec.name, 22);
+
+  // If no attackers list recorded in older kills, synthesize sole attacker
+  if (attackersList.length === 0) {
+    attackersList = [{
+      name: km.killer.name,
+      class: km.killer.class,
+      guild: km.killer.guild,
+      damage: km.totalDamage || km.killer.damageDone || 1,
+      spell: killerSpell || "Final Blow",
+      isFinalBlow: true
+    }];
+  }
+
+  // Tally total attacker damage for percentage calculation
+  const totalAttackerDmg = attackersList.reduce((acc, a) => acc + (Number(a.damage) || 0), 0) || km.totalDamage || 1;
+
+  let modeBadge = '<span class="battle-report-pill world">Open World PvP</span>';
+  if (km.isDuel) modeBadge = '<span class="battle-report-pill duel">1v1 Duel</span>';
+  else if (km.isArena) modeBadge = '<span class="battle-report-pill arena">Arena Match</span>';
+  else if (km.isBattleground) modeBadge = `<span class="battle-report-pill bg">Battleground [${km.battlegroundName || 'BG'}]</span>`;
+  else if (km.isSolo) modeBadge = '<span class="battle-report-pill solo">Certified 1v1 Solo</span>';
+  else modeBadge = `<span class="battle-report-pill gang">Gang Action (${km.attackersCount} Attackers)</span>`;
+
+  let soloBanner = "";
+  if (km.isSolo) {
+    soloBanner = `
+      <div class="battle-report-solo-banner">
+        <span>⭐ CERTIFIED 1v1 SOLO TRIUMPH</span>
+        <span style="font-size:0.75rem; color:#6ee7b7; font-weight:600;">Zero External Combat Interference</span>
+      </div>
+    `;
+  } else if (km.isDuel) {
+    soloBanner = `
+      <div class="battle-report-duel-banner">
+        <span>⚔️ CERTIFIED 1v1 FORMAL DUEL</span>
+        <span style="font-size:0.75rem; color:#fde68a; font-weight:600;">Sanctioned Honor Duel Won</span>
+      </div>
+    `;
+  }
 
   body.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-size:0.8rem; color:#94a3b8;">${km.killId}</span>
-      <span style="font-size:0.8rem; color:#94a3b8;">${new Date(km.timestamp * 1000).toLocaleString()}</span>
-    </div>
-
-    <div style="display:flex; justify-content:space-around; align-items:center; background:#07090e; padding:16px; border-radius:8px; border:1px solid #1e293b;">
-      <div style="text-align:center;">
-        <div style="font-size:0.75rem; color:#10b981; font-weight:700;">KILLER</div>
-        <div style="font-size:1.2rem; font-weight:800;"><span class="clickable-player" onclick="openCharacterProfile('${km.killer.name}')">${colorizeClass(km.killer.name, km.killer.class)}</span></div>
-        <div style="font-size:0.8rem; color:#94a3b8;">Level ${km.killer.level} ${km.killer.class}</div>
-        <div style="font-size:0.75rem; color:#64748b;">${killerGuild}</div>
-        <div style="font-size:0.75rem; color:#00e5ff; margin-top:4px;">Party: ${km.killer.partySize} member(s)</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e293b; padding-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-weight:800; color:var(--accent-gold); font-size:1.05rem;">BATTLE REPORT</span>
+        <span style="font-size:0.75rem; color:#94a3b8;">${km.killId}</span>
       </div>
-
-      <div style="font-size:1.5rem; font-weight:800; color:#ef4444;">VS</div>
-
-      <div style="text-align:center;">
-        <div style="font-size:0.75rem; color:#ef4444; font-weight:700;">VICTIM</div>
-        <div style="font-size:1.2rem; font-weight:800;"><span class="clickable-player" onclick="openCharacterProfile('${km.victim.name}')">${colorizeClass(km.victim.name, km.victim.class)}</span></div>
-        <div style="font-size:0.8rem; color:#94a3b8;">Level ${km.victim.level} ${km.victim.class}</div>
-        <div style="font-size:0.75rem; color:#64748b;">${victimGuild}</div>
-        <div style="font-size:0.75rem; color:#f97316; margin-top:4px;">Hostile Gang: ${km.victim.partySize} member(s)</div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        ${modeBadge}
+        <span style="font-size:0.75rem; color:#94a3b8;">${new Date(km.timestamp * 1000).toLocaleString()}</span>
       </div>
     </div>
 
+    ${soloBanner}
+
+    <!-- Primary Encounter Cards -->
+    <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px; background:#07090e; padding:18px; border-radius:8px; border:1px solid #1e293b;">
+      <!-- Killer Column -->
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="position:relative;">
+          ${renderClassBadge(km.killer.class, 44)}
+          <span style="position:absolute; bottom:-4px; right:-4px;">${killerSpecBadge}</span>
+        </div>
+        <div>
+          <div style="font-size:0.7rem; color:#10b981; font-weight:800; letter-spacing:0.5px;">VICTORIOUS COMBATANT</div>
+          <div style="font-size:1.25rem; font-weight:800;">
+            <span class="clickable-player" onclick="openCharacterProfile('${km.killer.name}')">${colorizeClass(km.killer.name, km.killer.class)}</span>
+          </div>
+          <div style="font-size:0.8rem; color:#94a3b8;">
+            Level ${km.killer.level} ${killerSpec.name} ${km.killer.class}
+          </div>
+          <div style="font-size:0.75rem; color:#64748b;">${killerGuild}</div>
+          <div style="font-size:0.72rem; color:${km.killer.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700; margin-top:2px;">
+            ${km.killer.faction || 'Neutral'} &bull; Party Size: ${km.killer.partySize}
+          </div>
+        </div>
+      </div>
+
+      <!-- Center VS Divider -->
+      <div style="text-align:center;">
+        <div style="font-size:1.8rem; font-weight:900; color:#ef4444; text-shadow:0 0 10px rgba(239,68,68,0.4);">VS</div>
+        <span style="font-size:0.7rem; color:#94a3b8;">FATAL ENGAGEMENT</span>
+      </div>
+
+      <!-- Victim Column -->
+      <div style="display:flex; align-items:center; gap:12px; justify-content:flex-end; text-align:right;">
+        <div>
+          <div style="font-size:0.7rem; color:#ef4444; font-weight:800; letter-spacing:0.5px;">SLAIN COMBATANT</div>
+          <div style="font-size:1.25rem; font-weight:800;">
+            <span class="clickable-player" onclick="openCharacterProfile('${km.victim.name}')">${colorizeClass(km.victim.name, km.victim.class)}</span>
+          </div>
+          <div style="font-size:0.8rem; color:#94a3b8;">
+            Level ${km.victim.level} ${km.victim.class}
+          </div>
+          <div style="font-size:0.75rem; color:#64748b;">${victimGuild}</div>
+          <div style="font-size:0.72rem; color:${km.victim.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700; margin-top:2px;">
+            ${km.victim.faction || 'Neutral'} &bull; Hostile Gang: ${km.victim.partySize}
+          </div>
+        </div>
+        <div>
+          ${renderClassBadge(km.victim.class, 44)}
+        </div>
+      </div>
+    </div>
+
+    <!-- Attacking Party Telemetry & Breakdown -->
+    <div style="background:#0a0d14; border:1px solid #1e293b; border-radius:8px; padding:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:1rem;">⚔️</span>
+          <span style="color:var(--accent-gold); font-size:0.85rem; font-weight:800; letter-spacing:0.5px;">
+            ASSAULT FORCE &amp; SPEC TELEMETRY (${attackersList.length} Attacker${attackersList.length > 1 ? 's' : ''})
+          </span>
+        </div>
+        <span style="font-size:0.72rem; color:#94a3b8;">
+          Total Encounter Damage: <strong style="color:#f59e0b;">${formatNumber(totalAttackerDmg)}</strong>
+        </span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${attackersList.map(att => {
+          const dmg = Number(att.damage) || 0;
+          const pct = Math.min(100, Math.round((dmg / totalAttackerDmg) * 100));
+          const attCls = att.class || "WARRIOR";
+          const attSpell = att.spell || "Combat Strike";
+          const attSpec = inferSpec(attCls, attSpell);
+          const specBadge = renderSpecBadge(attSpec.id, attSpec.name, 20);
+          const clsBadge = renderClassBadge(attCls, 20);
+          const isKiller = (att.name === km.killer.name) || att.isFinalBlow;
+          const attGuild = (att.guild && att.guild !== 'None') ? `&lt;${att.guild}&gt;` : '';
+
+          return `
+            <div class="battle-report-attacker-row">
+              <div class="attacker-identity">
+                <div style="display:flex; align-items:center; gap:4px;">
+                  ${clsBadge}
+                  ${specBadge}
+                </div>
+                <div style="display:flex; flex-direction:column; line-height:1.2;">
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="clickable-player" onclick="openCharacterProfile('${att.name}')">${colorizeClass(att.name, attCls)}</span>
+                    <span class="attacker-spec-tag">[${attSpec.name}]</span>
+                    ${isKiller ? '<span class="final-blow-badge">★ FINAL BLOW</span>' : ''}
+                  </div>
+                  <span style="font-size:0.68rem; color:#64748b;">${attGuild}</span>
+                </div>
+              </div>
+
+              <div class="attacker-spell-col">
+                <span class="attacker-spell-label">Signature Ability:</span>
+                <span class="attacker-spell-val">${attSpell}</span>
+              </div>
+
+              <div class="attacker-dmg-col">
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:3px;">
+                  <strong style="color:#e2e8f0;">${formatNumber(dmg)} dmg</strong>
+                  <span style="color:var(--accent-gold); font-weight:700;">${pct}%</span>
+                </div>
+                <div class="dmg-bar-track">
+                  <div class="dmg-bar-fill" style="width:${pct}%;"></div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Location & Metadata Grid -->
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.85rem;">
-      <div style="background:#0e121a; padding:10px; border-radius:6px; border:1px solid #242b3d;">
-        <strong style="color:var(--accent-gold);">Engagement Context</strong>
-        <div style="color:#cbd5e1; margin-top:4px;">${km.isDuel ? '1v1 Duel' : (km.isArena ? 'Ranked Arena Match' : (km.isBattleground ? `Battleground [${km.battlegroundName || 'BG'}]` : 'Open World PvP'))}</div>
-        <div style="color:#94a3b8;">Type: ${km.isDuel ? '<span style="color:#ffd700; font-weight:700;">1v1 Duel</span>' : (km.isSolo ? '<span style="color:#10b981; font-weight:700;">Solo Kill</span>' : '<span style="color:#f59e0b; font-weight:700;">Gang Kill</span>')}</div>
+      <div style="background:#0e121a; padding:12px; border-radius:6px; border:1px solid #242b3d;">
+        <strong style="color:var(--accent-gold);">Engagement Telemetry</strong>
+        <div style="color:#cbd5e1; margin-top:4px;">${km.isDuel ? 'Sanctioned 1v1 Duel' : (km.isArena ? 'Ranked Arena Match' : (km.isBattleground ? `Battleground [${km.battlegroundName || 'BG'}]` : 'Open World PvP Encounter'))}</div>
+        <div style="color:#94a3b8; font-size:0.75rem; margin-top:2px;">Attacking Unit Count: <span style="color:#fff;">${km.attackersCount}</span> &bull; Hostile Unit Count: <span style="color:#fff;">${km.victim.partySize || 1}</span></div>
       </div>
-      <div style="background:#0e121a; padding:10px; border-radius:6px; border:1px solid #242b3d;">
-        <strong style="color:var(--accent-gold);">Location Coordinates</strong>
+      <div style="background:#0e121a; padding:12px; border-radius:6px; border:1px solid #242b3d;">
+        <strong style="color:var(--accent-gold);">Spatial Coordinates</strong>
         <div style="color:#cbd5e1; margin-top:4px;">${km.location.zone} ${km.location.subZone ? `(${km.location.subZone})` : ''}</div>
-        <div style="color:#94a3b8;">GPS: ${km.location.x.toFixed(1)}, ${km.location.y.toFixed(1)}</div>
+        <div style="color:#94a3b8; font-size:0.75rem; margin-top:2px;">GPS Map ID: <span style="color:#38bdf8;">${km.location.mapId}</span> &bull; Coords: <span style="color:#38bdf8;">${(km.location.x || 0).toFixed(1)}, ${(km.location.y || 0).toFixed(1)}</span></div>
       </div>
     </div>
   `;
@@ -1065,9 +1283,24 @@ async function openCharacterProfile(charName) {
           <div style="font-size:0.85rem; color:#94a3b8; margin-top:4px;">
             Level ${data.level} ${data.class} &bull; <span style="color:${factionColor}; font-weight:700;">${data.faction}</span> &bull; ${guildText}
           </div>
+          ${data.bloodDebtor ? `
+            <div class="armory-blood-debtor-banner">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:1.3rem;">💀</span>
+                <div>
+                  <div style="font-weight:800; color:#ef4444; letter-spacing:0.5px;">REPUTATION: BLOOD DEBTOR (KILL ON SIGHT)</div>
+                  <div style="font-size:0.75rem; color:#fca5a5;">Defaulted on ${formatCopper(data.bloodDebtor.amountOwedCopper)} bounty debt owed to ${data.bloodDebtor.creditor} (${data.bloodDebtor.daysInDefault} days in default). Marked KOS server-wide across all name & guild changes.</div>
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div style="margin-top:6px;">
+              <span class="reputation-badge-honorable">🛡️ ${data.reputation || 'HONORABLE COMBATANT'} &bull; DEBT-FREE</span>
+            </div>
+          `}
           ${(data.isKos || data.deserter || data.activeBountyGold > 0) ? `
             <div class="armory-tags-row">
-              ${data.isKos ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}
+              ${(data.isKos && !data.bloodDebtor) ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}
               ${data.deserter ? `<span class="armory-badge-deserter">⚡ DESERTER (${data.deserter.days_remaining}d)</span>` : ''}
               ${data.activeBountyGold > 0 ? `<span class="armory-badge-bounty">💰 ACTIVE BOUNTY: ${data.activeBountyGold}g</span>` : ''}
             </div>
