@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-09-24
 
-### Fixed
+### Added
+- **Dark Warcraft Tactical War Room & Mobile/Tablet Responsive Overhaul**:
+  - Implemented high-fidelity Dark Warcraft Tactical War Room aesthetic inspired by zKillboard and dark military fantasy, featuring atmospheric radial illumination (Alliance Blue & Horde Crimson), ambient tactical grid, and glassmorphic card elements (`backdrop-filter: blur(16px)`).
+  - Integrated Google Fonts: `'Cinzel'` for regal war room titles, `'Rajdhani'` for combat meters and tactical telemetry, and `'Inter'` for high-legibility feed logs.
+  - Re-engineered header into a clean dual-row command bridge: top row with 3D crest glow, live recon radar indicator, search, and supporter button; sub-row with smooth-swiping horizontal navigation rail (`#nav-rail`) and 5-state filter pills (`#mode-filter-pills`).
+  - Added slide-out Mobile Navigation Drawer (`#mobile-drawer`) with backdrop blur, accessible hamburger trigger (`#mobile-menu-btn`), mobile search input, full view switcher, and $\ge 44\text{px}$ touch targets.
+  - Implemented comprehensive media queries supporting Desktop Ultra-Wide (>1400px), Standard Desktop (1024px-1280px), Tablet Portrait/Landscape (768px-1024px), and Mobile Phones (320px-768px) with zero horizontal overflow, fluid clamp typography, and stacked combatant layouts.
+
 - **Eradicated Taint Log Warning Popup**: Removed developer diagnostic `SetCVar("taintLog", "2")` from `Core.lua` and added automatic cleanup resetting `taintLog` back to `"0"`, eliminating Blizzard's *"You have the Taint Log enabled. This causes significant increase in loading times"* warning prompt on login and UI reload.
 
 ### Added

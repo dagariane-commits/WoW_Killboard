@@ -5,50 +5,142 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
 </head>
 <body>
 
-  <!-- Top Header Navigation -->
-  <header>
-    <div class="logo-group">
-      <span style="font-size: 1.5rem;">⚔️</span>
-      <div class="logo-title">WoW Killboard</div>
-      <span class="logo-badge" style="background: rgba(185, 28, 28, 0.25); border: 1px solid rgba(239, 68, 68, 0.5); color: #f87171;">Frontline War Room</span>
+  <!-- Top Header Navigation & War Room Bar -->
+  <header class="site-header">
+    <div class="header-top-row">
+      <div class="logo-group" onclick="switchTab('FEED')">
+        <div class="logo-crest">⚔️</div>
+        <div>
+          <div class="logo-title">WoW Killboard</div>
+          <div class="logo-subtitle">FRONTLINE WAR ROOM &bull; AZEROTH TELEMETRY</div>
+        </div>
+        <span class="live-status-pill"><span class="live-dot"></span> LIVE RECON</span>
+      </div>
+
+      <div class="header-tools-group">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-box" class="search-input" placeholder="Search Player, Guild, Zone...">
+        </div>
+
+        <button class="supporter-btn" onclick="toggleSupporterMode()">
+          ★ Supporter Perks
+        </button>
+
+        <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleMobileDrawer()" aria-label="Toggle Navigation Drawer">
+          <span class="menu-bar"></span>
+          <span class="menu-bar"></span>
+          <span class="menu-bar"></span>
+        </button>
+      </div>
     </div>
 
-    <!-- Main Navigation Tabs -->
-    <nav class="nav-links">
-      <button id="nav-feed" class="nav-btn active" onclick="switchTab('FEED')">⚔️ Frontline Feed</button>
-      <button id="nav-leaderboards" class="nav-btn" onclick="switchTab('LEADERBOARDS')">🏆 Hall of Heroes</button>
-      <button id="nav-armory" class="nav-btn" onclick="switchTab('ARMORY')">🏰 Player Armory</button>
-      <button id="nav-guilds" class="nav-btn" onclick="switchTab('GUILDS')">🛡️ War Guilds</button>
-      <button id="nav-feuds" class="nav-btn" onclick="switchTab('FEUDS')">⚔️ Blood Feuds &amp; Blacklist</button>
-      <button id="nav-defense" class="nav-btn" onclick="switchTab('DEFENSE')">📯 War Council &amp; Rallies</button>
-      <button id="nav-bg_metrics" class="nav-btn" onclick="switchTab('BG_METRICS')">🚩 Battleground Gladiators</button>
-      <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">🩸 Blood Bounties &amp; Gibbet</button>
-      <button id="nav-info" class="nav-btn" onclick="switchTab('INFO')">📜 Field Manual &amp; Codex</button>
-    </nav>
+    <!-- Navigation Tab Rail & Filter Strip -->
+    <div class="header-sub-row">
+      <nav class="nav-links-rail" id="nav-rail">
+        <button id="nav-feed" class="nav-btn active" onclick="switchTab('FEED')">⚔️ Frontline Feed</button>
+        <button id="nav-leaderboards" class="nav-btn" onclick="switchTab('LEADERBOARDS')">🏆 Hall of Heroes</button>
+        <button id="nav-armory" class="nav-btn" onclick="switchTab('ARMORY')">🏰 Player Armory</button>
+        <button id="nav-guilds" class="nav-btn" onclick="switchTab('GUILDS')">🛡️ War Guilds</button>
+        <button id="nav-feuds" class="nav-btn" onclick="switchTab('FEUDS')">⚔️ Blood Feuds &amp; Blacklist</button>
+        <button id="nav-defense" class="nav-btn" onclick="switchTab('DEFENSE')">📯 War Council &amp; Rallies</button>
+        <button id="nav-bg_metrics" class="nav-btn" onclick="switchTab('BG_METRICS')">🚩 Battleground Gladiators</button>
+        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">🩸 Blood Bounties &amp; Gibbet</button>
+        <button id="nav-info" class="nav-btn" onclick="switchTab('INFO')">📜 Field Manual &amp; Codex</button>
+      </nav>
 
-
-    <!-- Context Switcher & Tools -->
-    <div class="header-right">
-      <!-- 5-State Filter Mode -->
-      <div class="filter-pills">
+      <!-- 5-State Filter Mode Segmented Control -->
+      <div class="filter-pills" id="mode-filter-pills">
         <button id="pill-all" class="pill-btn active" onclick="setFilterMode('ALL')">All PvP</button>
         <button id="pill-world" class="pill-btn" onclick="setFilterMode('WORLD')">World</button>
         <button id="pill-bg" class="pill-btn" onclick="setFilterMode('BG')">BGs</button>
         <button id="pill-arena" class="pill-btn" onclick="setFilterMode('ARENA')">Arenas</button>
         <button id="pill-duel" class="pill-btn" onclick="setFilterMode('DUEL')">Duels</button>
       </div>
-
-      <input type="text" id="search-box" class="search-input" placeholder="Search Player, Guild, Zone...">
-
-      <button class="supporter-btn" onclick="toggleSupporterMode()">
-        ★ Supporter Perks
-      </button>
     </div>
   </header>
+
+  <!-- Mobile Slide-In Navigation Drawer -->
+  <div id="mobile-drawer-backdrop" class="mobile-drawer-backdrop" onclick="toggleMobileDrawer(false)"></div>
+  <aside id="mobile-drawer" class="mobile-drawer">
+    <div class="mobile-drawer-header">
+      <div class="logo-group">
+        <span style="font-size: 1.4rem;">⚔️</span>
+        <div class="logo-title" style="font-size: 1.15rem;">WoW Killboard</div>
+      </div>
+      <button class="drawer-close-btn" onclick="toggleMobileDrawer(false)">&times;</button>
+    </div>
+
+    <div class="mobile-drawer-body">
+      <!-- Mobile Search -->
+      <div class="mobile-search-box">
+        <input type="text" id="mobile-search-box-input" class="search-input" style="width:100%;" placeholder="Search Player, Guild, Zone..." oninput="handleMobileSearch(event)">
+      </div>
+
+      <!-- Mobile Mode Filters -->
+      <div class="mobile-drawer-label">FILTER COMBAT MODE</div>
+      <div class="filter-pills mobile-filter-pills">
+        <button id="m-pill-all" class="pill-btn active" onclick="setFilterMode('ALL'); toggleMobileDrawer(false);">All</button>
+        <button id="m-pill-world" class="pill-btn" onclick="setFilterMode('WORLD'); toggleMobileDrawer(false);">World</button>
+        <button id="m-pill-bg" class="pill-btn" onclick="setFilterMode('BG'); toggleMobileDrawer(false);">BGs</button>
+        <button id="m-pill-arena" class="pill-btn" onclick="setFilterMode('ARENA'); toggleMobileDrawer(false);">Arenas</button>
+        <button id="m-pill-duel" class="pill-btn" onclick="setFilterMode('DUEL'); toggleMobileDrawer(false);">Duels</button>
+      </div>
+
+      <!-- Mobile Navigation Links -->
+      <div class="mobile-drawer-label" style="margin-top: 14px;">WAR ROOM DIRECTORY</div>
+      <div class="mobile-nav-list">
+        <button class="mobile-nav-item active" id="m-nav-feed" onclick="switchTab('FEED'); toggleMobileDrawer(false);">
+          <span>⚔️ Frontline Feed</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-leaderboards" onclick="switchTab('LEADERBOARDS'); toggleMobileDrawer(false);">
+          <span>🏆 Hall of Heroes</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-armory" onclick="switchTab('ARMORY'); toggleMobileDrawer(false);">
+          <span>🏰 Player Armory</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-guilds" onclick="switchTab('GUILDS'); toggleMobileDrawer(false);">
+          <span>🛡️ War Guilds</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-feuds" onclick="switchTab('FEUDS'); toggleMobileDrawer(false);">
+          <span>⚔️ Blood Feuds &amp; Blacklist</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-defense" onclick="switchTab('DEFENSE'); toggleMobileDrawer(false);">
+          <span>📯 War Council &amp; Rallies</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-bg_metrics" onclick="switchTab('BG_METRICS'); toggleMobileDrawer(false);">
+          <span>🚩 Battleground Gladiators</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
+          <span>🩸 Blood Bounties &amp; Gibbet</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-info" onclick="switchTab('INFO'); toggleMobileDrawer(false);">
+          <span>📜 Field Manual &amp; Codex</span>
+          <span>&rarr;</span>
+        </button>
+      </div>
+
+      <!-- Mobile Supporter Perks Button -->
+      <button class="supporter-btn" style="width: 100%; margin-top: 18px; padding: 12px; font-size:0.85rem;" onclick="toggleSupporterMode(); toggleMobileDrawer(false);">
+        ★ Vanguard Supporter Perks
+      </button>
+    </div>
+  </aside>
 
   <!-- Container -->
   <div class="container">
