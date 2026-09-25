@@ -111,3 +111,49 @@ if mapID then
 end
 ```
 These coordinates allow the web platform and in-game Zone Intel engine to calculate conflict heatmaps and pinpoint high-lethality choke points across Azeroth.
+
+---
+
+## 6. PvE Casualty Isolation & Deadly NPC Execution Tracking
+
+To provide full combat situational awareness without polluting competitive PvP rankings, the engine cleanly segregates PvE deaths from PvP combat engagements.
+
+### PvE vs. PvP Classification
+1. **Source Flag Inspection**: In `CombatTracker:RecordDamage`, each damaging combatant's `sourceFlags` is evaluated against `COMBATLOG_OBJECT_TYPE_PLAYER`.
+2. **Attacker Cluster Evaluation**: In `ProcessDeath`, the victim's recent damage history is evaluated for any player attacker (`hasPlayerAttacker`).
+3. **Execution Routing**:
+   - If `hasPlayerAttacker == true`: Routed to `KM:RecordKill` as a certified PvP engagement (or gang gank).
+   - If `hasPlayerAttacker == false`: Routed to `KM:RecordPveDeath` and stored exclusively in `WoWKillboardDB.pveDeaths`.
+4. **Data Isolation Guarantee**:
+   - PvE deaths never enter `WoWKillboardDB.kills` or the backend `kills` table.
+   - Zero inflation of player K/D ratios, solo triumph ratings, or military honor rank points.
+   - Zero trigger of Death Bounty contracts or blood debt surcharges.
+
+### Creature ID Extraction
+NPC GUIDs follow Blizzard's formatted string standard:
+`Creature-0-serverID-instanceID-zoneUID-creatureID-spawnUID`
+The engine extracts numeric creature ID (`creatureID`) to aggregate executions across identical monster spawns (e.g. Hogger = `448`, Son of Arugal = `4275`, Stitches = `412`, Mor'Ladim = `522`).
+
+---
+
+## 7. Cross-Client Flavor Detection & Dynamic Feature Gating
+
+The client flavor architecture enables a single unified codebase across 4 distinct World of Warcraft flavors:
+1. `CLASSIC_ERA`: Vanilla 1.15 / Classic Era / Anniversary / Forever Beta.
+2. `TBC`: The Burning Crusade 2.4.3.
+3. `WOTLK`: Wrath of the Lich King 3.3.5.
+4. `RETAIL`: Modern Retail (Dragonflight / War Within 11.x).
+
+Runtime detection is performed via `Utils:GetClientFlavor()`:
+```lua
+function U.GetClientFlavor()
+    local _, _, _, tocVersion = GetBuildInfo()
+    tocVersion = tonumber(tocVersion) or 11500
+    if tocVersion < 20000 then return "CLASSIC_ERA"
+    elseif tocVersion < 30000 then return "TBC"
+    elseif tocVersion < 40000 then return "WOTLK"
+    else return "RETAIL" end
+end
+```
+On the web platform, classes and combat modes not available in the active flavor are dynamically greyed out with lock indicators (e.g., Death Knight disabled in Classic Era / TBC, Arenas disabled in Classic Era).
+

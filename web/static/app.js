@@ -174,6 +174,128 @@ let currentMode = "ALL";
 let searchQuery = "";
 let cachedKills = [];
 
+let currentFlavor = localStorage.getItem("wowkb_client_flavor") || "CLASSIC_ERA";
+
+const FLAVOR_CONFIGS = {
+  CLASSIC_ERA: {
+    name: "Classic Era / Anniversary (1.15)",
+    maxLevel: 60,
+    availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
+    disabledClasses: {
+      DEATHKNIGHT: "WotLK 3.0+",
+      MONK: "MoP 5.0+",
+      DEMONHUNTER: "Legion 7.0+",
+      EVOKER: "DF 10.0+"
+    },
+    disabledModes: {
+      ARENA: "Introduced in TBC (Patch 2.0)"
+    }
+  },
+  TBC: {
+    name: "The Burning Crusade (2.4.3)",
+    maxLevel: 70,
+    availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
+    disabledClasses: {
+      DEATHKNIGHT: "WotLK 3.0+",
+      MONK: "MoP 5.0+",
+      DEMONHUNTER: "Legion 7.0+",
+      EVOKER: "DF 10.0+"
+    },
+    disabledModes: {}
+  },
+  WOTLK: {
+    name: "Wrath of the Lich King (3.3.5)",
+    maxLevel: 80,
+    availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
+    disabledClasses: {
+      MONK: "MoP 5.0+",
+      DEMONHUNTER: "Legion 7.0+",
+      EVOKER: "DF 10.0+"
+    },
+    disabledModes: {}
+  },
+  RETAIL: {
+    name: "Modern Retail (Dragonflight / War Within)",
+    maxLevel: 80,
+    availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "MONK", "DRUID", "DEMONHUNTER", "EVOKER"],
+    disabledClasses: {},
+    disabledModes: {}
+  }
+};
+
+async function initClientFlavor() {
+  try {
+    const res = await fetch("/api/system/flavor");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.flavor) {
+        currentFlavor = data.flavor;
+        localStorage.setItem("wowkb_client_flavor", currentFlavor);
+      }
+    }
+  } catch (e) {}
+  updateFlavorUi();
+}
+
+async function handleFlavorChange(newFlavor) {
+  currentFlavor = newFlavor;
+  localStorage.setItem("wowkb_client_flavor", currentFlavor);
+  try {
+    await fetch("/api/system/flavor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flavor: newFlavor })
+    });
+  } catch (e) {}
+  updateFlavorUi();
+  if (currentTab === "ARMORY") {
+    loadArmoryView();
+  }
+}
+
+function updateFlavorUi() {
+  const select = document.getElementById("flavor-select");
+  if (select) select.value = currentFlavor;
+
+  const cfg = FLAVOR_CONFIGS[currentFlavor] || FLAVOR_CONFIGS.CLASSIC_ERA;
+
+  // Update mode pills (e.g. Arenas disabled in Classic Era)
+  const arenaPill = document.getElementById("pill-arena");
+  const mArenaPill = document.getElementById("m-pill-arena");
+  if (cfg.disabledModes && cfg.disabledModes.ARENA) {
+    if (arenaPill) {
+      arenaPill.classList.add("disabled");
+      arenaPill.title = `🔒 Arenas Unavailable in ${cfg.name} (${cfg.disabledModes.ARENA})`;
+      arenaPill.onclick = (e) => {
+        e.preventDefault();
+        alert(`🔒 Arenas are unavailable in ${cfg.name} (${cfg.disabledModes.ARENA}). Switch the flavor in the top bar to TBC, WotLK, or Retail to enable Arena ladders.`);
+      };
+    }
+    if (mArenaPill) {
+      mArenaPill.classList.add("disabled");
+      mArenaPill.title = `🔒 Arenas Unavailable in ${cfg.name} (${cfg.disabledModes.ARENA})`;
+      mArenaPill.onclick = (e) => {
+        e.preventDefault();
+        alert(`🔒 Arenas are unavailable in ${cfg.name} (${cfg.disabledModes.ARENA}). Switch the flavor in the top bar to TBC, WotLK, or Retail to enable Arena ladders.`);
+      };
+    }
+    if (currentMode === "ARENA") {
+      setFilterMode("ALL");
+    }
+  } else {
+    if (arenaPill) {
+      arenaPill.classList.remove("disabled");
+      arenaPill.title = "View Arena Matches";
+      arenaPill.onclick = () => setFilterMode("ARENA");
+    }
+    if (mArenaPill) {
+      mArenaPill.classList.remove("disabled");
+      mArenaPill.title = "View Arena Matches";
+      mArenaPill.onclick = () => { setFilterMode("ARENA"); toggleMobileDrawer(false); };
+    }
+  }
+}
+
 // Bounty Acceptance & Opt-In Helpers
 function isBountyAcceptedLocally(bountyId) {
   try {
@@ -1720,11 +1842,17 @@ async function loadArmoryView() {
   const container = document.getElementById("main-content-area");
   if (!container) return;
 
-  const classes = [
-    "ALL", "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST",
+  const allPossibleClasses = [
+    "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST",
     "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "MONK", "DRUID",
     "DEMONHUNTER", "EVOKER"
   ];
+  const cfg = FLAVOR_CONFIGS[currentFlavor] || FLAVOR_CONFIGS.CLASSIC_ERA;
+
+  // Reset selected class if it is disabled in current flavor
+  if (armoryState.class && !cfg.availableClasses.includes(armoryState.class)) {
+    armoryState.class = '';
+  }
 
   const html = `
     <div class="armory-view-container">
@@ -1753,9 +1881,16 @@ async function loadArmoryView() {
         <!-- Class Filter Dropdown -->
         <select class="armory-select" onchange="setArmoryClass(this.value)">
           <option value="" ${armoryState.class === '' ? 'selected' : ''}>⚔️ All Classes</option>
-          ${classes.filter(c => c !== "ALL").map(c => `
-            <option value="${c}" ${armoryState.class === c ? 'selected' : ''}>${c.charAt(0) + c.slice(1).toLowerCase()}</option>
-          `).join('')}
+          ${allPossibleClasses.map(c => {
+            const isAvail = cfg.availableClasses.includes(c);
+            const label = c.charAt(0) + c.slice(1).toLowerCase();
+            if (isAvail) {
+              return `<option value="${c}" ${armoryState.class === c ? 'selected' : ''}>${label}</option>`;
+            } else {
+              const reason = cfg.disabledClasses[c] || "Later Exp.";
+              return `<option value="${c}" disabled style="color:#526075;">🔒 ${label} (${reason})</option>`;
+            }
+          }).join('')}
         </select>
 
         <!-- Sort Filter Dropdown -->
@@ -1803,6 +1938,180 @@ function handleMobileSearch(e) {
   loadKills();
 }
 
+// ----------------- Deadly NPCs Leaderboard View -----------------
+
+async function loadDeadlyNpcsView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering deadly creature executions and fallen mortals telemetry...</div>`;
+
+  try {
+    const [lbRes, deathsRes] = await Promise.all([
+      fetch("/api/pve/leaderboard"),
+      fetch("/api/pve/deaths?limit=40")
+    ]);
+    const lbData = await lbRes.json();
+    const deathsData = await deathsRes.json();
+    renderDeadlyNpcsView(lbData, deathsData.deaths || []);
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Deadly NPCs: ${err.message}</div>`;
+  }
+}
+
+function renderDeadlyNpcsView(lbData, deaths) {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  const summary = lbData.summary || { totalDeaths: 0, uniqueDeadlyNpcs: 0, mostDangerousZone: { zone: "None", deaths: 0 } };
+  const npcs = lbData.topDeadlyNpcs || [];
+  const topVictims = lbData.topFallenPlayers || [];
+  const deadZone = summary.mostDangerousZone || { zone: "None", deaths: 0 };
+  const deadZoneStr = deadZone.zone !== "None" ? `${deadZone.zone} (${deadZone.deaths} Slain)` : "None";
+
+  let html = `
+    <div class="deadly-npcs-container">
+      <!-- Hero Header Banner -->
+      <div class="deadly-npcs-hero">
+        <div>
+          <div class="deadly-hero-title">
+            <span>☠️</span> MOST DEADLY NPCS &amp; FALLEN MORTALS LEADERBOARD
+          </div>
+          <div class="deadly-hero-subtitle">
+            Pure PvE Execution Telemetry &bull; Isolated from PvP feeds &bull; Tracking every player executed by beasts, elites, and raid bosses across Azeroth
+          </div>
+        </div>
+        <div class="deadly-summary-metrics">
+          <div class="deadly-metric-card">
+            <div class="deadly-metric-label">Total Fallen Mortals</div>
+            <div class="deadly-metric-val" style="color:#ef4444;">${formatNumber(summary.totalDeaths)}</div>
+          </div>
+          <div class="deadly-metric-card">
+            <div class="deadly-metric-label">Deadly Monster Slayers</div>
+            <div class="deadly-metric-val" style="color:var(--accent-gold);">${formatNumber(summary.uniqueDeadlyNpcs)}</div>
+          </div>
+          <div class="deadly-metric-card">
+            <div class="deadly-metric-label">Deadliest Conflict Zone</div>
+            <div class="deadly-metric-val" style="font-size:0.95rem; color:#38bdf8; padding-top:4px;">${deadZoneStr}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Layout: 2 Columns (Top Deadly NPCs & Top Fallen Mortals + Stream) -->
+      <div class="deadly-grid-layout">
+        <!-- Left Column: Top Executioner NPCs Leaderboard -->
+        <div class="deadly-table-card">
+          <div class="deadly-table-header">
+            <div class="deadly-table-title">
+              <span>💀</span> TOP EXECUTIONER MONSTERS &amp; ELITES
+            </div>
+            <span style="font-size:0.75rem; color:#94a3b8;">Ranked by Confirmed Mortal Executions</span>
+          </div>
+
+          <div style="display:flex; flex-direction:column;">
+            ${npcs.length === 0 ? '<div style="padding:30px; text-align:center; color:#64748b;">No NPC executions logged yet.</div>' : npcs.map((npc, idx) => {
+              const rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
+              return `
+                <div class="npc-executioner-card">
+                  <div class="npc-identity">
+                    <div class="npc-rank-badge ${rankClass}">#${idx + 1}</div>
+                    <span class="npc-skull-icon">💀</span>
+                    <div>
+                      <div class="npc-name">${npc.npc_name}</div>
+                      <div class="npc-subtext">
+                        <span>📍 ${npc.zone || 'Azeroth'}</span>
+                        &bull;
+                        <span class="npc-spell-badge">${npc.npc_spell || 'Combat'}</span>
+                        ${npc.last_kill ? `&bull; <span>Last slain: ${timeAgo(npc.last_kill)}</span>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="npc-kills-col">
+                    <div class="npc-kill-count">${npc.kills} <span style="font-size:0.75rem; font-weight:normal; color:#f87171;">kills</span></div>
+                    <div class="npc-unique-victims">${npc.unique_victims || 1} unique victim${npc.unique_victims > 1 ? 's' : ''}</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Right Column: Top Fallen Mortals & Recent Deaths Stream -->
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          <!-- Top Fallen Players Card -->
+          <div class="deadly-table-card">
+            <div class="deadly-table-header">
+              <div class="deadly-table-title">
+                <span>🪦</span> TOP FALLEN MORTALS
+              </div>
+              <span style="font-size:0.75rem; color:#94a3b8;">Most PvE Deaths</span>
+            </div>
+            <div style="display:flex; flex-direction:column; padding:6px 0;">
+              ${topVictims.length === 0 ? '<div style="padding:20px; text-align:center; color:#64748b; font-size:0.8rem;">No casualties logged.</div>' : topVictims.map((v, i) => {
+                const badge = renderClassBadge(v.victim_class, 18);
+                const nameSpan = colorizeClass(v.victim_name, v.victim_class);
+                const guildPart = (v.victim_guild && v.victim_guild !== 'None') ? `<span class="clickable-guild" onclick="openGuildProfile('${v.victim_guild}')">&lt;${v.victim_guild}&gt;</span>` : '';
+                return `
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:0.8rem;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="color:#64748b; font-size:0.75rem; font-weight:700; width:18px;">#${i + 1}</span>
+                      ${badge}
+                      <div>
+                        <span class="clickable-player" onclick="openCharacterProfile('${v.victim_name}')">${nameSpan}</span>
+                        <div style="font-size:0.68rem; color:#64748b;">${guildPart}</div>
+                      </div>
+                    </div>
+                    <div style="text-align:right;">
+                      <span style="color:#ef4444; font-weight:800;">${v.deaths} deaths</span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Live Fallen Mortals Stream -->
+          <div class="deadly-table-card">
+            <div class="deadly-table-header">
+              <div class="deadly-table-title">
+                <span>🩸</span> RECENT FALLEN MORTALS STREAM
+              </div>
+              <span style="font-size:0.72rem; color:#94a3b8;">Live Feed</span>
+            </div>
+            <div class="fallen-mortals-stream">
+              ${deaths.length === 0 ? '<div style="text-align:center; padding:20px; color:#64748b; font-size:0.8rem;">No recent monster kills logged.</div>' : deaths.map(d => {
+                const badge = renderClassBadge(d.victim_class, 16);
+                const vSpan = colorizeClass(d.victim_name, d.victim_class);
+                const locStr = d.subzone ? `${d.zone} (${d.subzone})` : d.zone;
+                return `
+                  <div class="pve-death-row">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      ${badge}
+                      <div>
+                        <div>
+                          <span class="clickable-player" onclick="openCharacterProfile('${d.victim_name}')">${vSpan}</span>
+                          <span style="color:#64748b; font-size:0.72rem;">(Lvl ${d.victim_level})</span>
+                          <span style="color:#94a3b8; font-size:0.75rem;">slain by</span>
+                          <strong style="color:#f87171;">${d.npc_name}</strong>
+                        </div>
+                        <div style="font-size:0.68rem; color:#64748b; margin-top:1px;">
+                          <span>📍 ${locStr}</span> &bull; <span>${d.npc_spell || 'Combat'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <span style="font-size:0.7rem; color:#64748b; white-space:nowrap; margin-left:8px;">${timeAgo(d.timestamp)}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
 // Tab Switching
 function switchTab(tab) {
   currentTab = tab;
@@ -1822,6 +2131,7 @@ function switchTab(tab) {
     loadMostWanted();
   }
   else if (tab === "LEADERBOARDS") loadLeaderboards();
+  else if (tab === "DEADLY_NPCS") loadDeadlyNpcsView();
   else if (tab === "ARMORY") loadArmoryView();
   else if (tab === "GUILDS") loadGuildsView();
   else if (tab === "FEUDS") loadFeudsView();
@@ -2779,6 +3089,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   updateSupporterButton();
+  initClientFlavor();
   loadKills();
   loadMostWanted();
   loadSidebar();

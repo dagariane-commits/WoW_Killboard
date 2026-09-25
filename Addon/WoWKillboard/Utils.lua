@@ -148,3 +148,35 @@ function U.Serialize(t)
     end
     return s .. "}"
 end
+
+-- Retrieve active WoW client flavor and build
+function U.GetClientFlavor()
+    local version, build, date, tocversion
+    if GetBuildInfo then
+        version, build, date, tocversion = GetBuildInfo()
+    end
+    tocversion = tonumber(tocversion) or 11500
+    if tocversion < 20000 then
+        return "CLASSIC_ERA", version, tocversion
+    elseif tocversion < 30000 then
+        return "TBC", version, tocversion
+    elseif tocversion < 40000 then
+        return "WOTLK", version, tocversion
+    elseif tocversion < 50000 then
+        return "CATA", version, tocversion
+    elseif tocversion < 60000 then
+        return "MOP", version, tocversion
+    elseif tocversion < 70000 then
+        return "WOD", version, tocversion
+    elseif tocversion < 80000 then
+        return "LEGION", version, tocversion
+    elseif tocversion < 90000 then
+        return "BFA", version, tocversion
+    elseif tocversion < 100000 then
+        return "SHADOWLANDS", version, tocversion
+    elseif tocversion < 110000 then
+        return "DRAGONFLIGHT", version, tocversion
+    else
+        return "RETAIL", version, tocversion
+    end
+end

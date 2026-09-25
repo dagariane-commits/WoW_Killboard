@@ -17,8 +17,9 @@ function KM:RecordKill(data)
     local killId = KB.Utils.GenerateKillId(data.timestamp, data.killer.guid, data.victim.guid, data.location.mapId)
 
     -- Initialize Database if needed
-    WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {} }
+    WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {}, pveDeaths = {} }
     WoWKillboardDB.kills = WoWKillboardDB.kills or {}
+    WoWKillboardDB.pveDeaths = WoWKillboardDB.pveDeaths or {}
     WoWKillboardDB.stats = WoWKillboardDB.stats or {}
     WoWKillboardDB.stats.duels = WoWKillboardDB.stats.duels or { wins = 0, losses = 0 }
     WoWKillboardDB.stats.bgs = WoWKillboardDB.stats.bgs or { wins = 0, losses = 0 }
@@ -121,4 +122,56 @@ function KM:RecordKill(data)
     end
 
     return killmail
+end
+
+-- Record a validated PvE death (Player executed by an NPC/Monster)
+function KM:RecordPveDeath(data)
+    if not data or not data.npc or not data.victim then return end
+
+    local now = data.timestamp or time()
+    local seed = string.format("%s_%s_%s_%s", tostring(now), tostring(data.npc.guid or data.npc.name or "NPC"), tostring(data.victim.guid or ""), tostring(data.location and data.location.mapId or 0))
+    local deathId = "PVE-" .. KB.Utils.Hash(seed)
+
+    WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {}, pveDeaths = {} }
+    WoWKillboardDB.pveDeaths = WoWKillboardDB.pveDeaths or {}
+
+    if WoWKillboardDB.pveDeaths[deathId] then
+        return
+    end
+
+    local pveRecord = {
+        deathId = deathId,
+        timestamp = now,
+        npc = {
+            name = data.npc.name or "Unknown Monster",
+            id = data.npc.id or 0,
+            guid = data.npc.guid or "UNKNOWN",
+            spell = data.npc.spell or "Combat Strike",
+            damage = data.npc.damage or 0,
+        },
+        victim = {
+            guid = data.victim.guid or "UNKNOWN",
+            name = data.victim.name or "Unknown",
+            level = data.victim.level or 0,
+            class = data.victim.class or "UNKNOWN",
+            guild = data.victim.guild or "None",
+            faction = data.victim.faction or "Unknown",
+        },
+        location = data.location or {
+            mapId = 0,
+            zone = "Unknown Zone",
+            subZone = "",
+            x = 0,
+            y = 0,
+        },
+    }
+
+    WoWKillboardDB.pveDeaths[deathId] = pveRecord
+
+    -- Console chat feedback
+    local victimStr = KB.Utils.ColorizeByClass(string.format("[%d] %s", pveRecord.victim.level, pveRecord.victim.name), pveRecord.victim.class)
+    local chatMsg = string.format("|cffff2020[WoWKB PvE]|r %s was executed by |cffffd700[%s]|r (%s) in %s!", victimStr, pveRecord.npc.name, pveRecord.npc.spell or "Combat", pveRecord.location.zone)
+    print(chatMsg)
+
+    return pveRecord
 end

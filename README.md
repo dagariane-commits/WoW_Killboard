@@ -124,6 +124,15 @@ flowchart TD
   - Integrated Google typography: `'Cinzel'` for regal war room titles, `'Rajdhani'` for telemetry/meters, and `'Inter'` for combat feeds.
   - Multi-tiered responsiveness: Desktop Ultra-Wide (>1400px), Standard Desktop (1024px-1280px), Tablet Portrait/Landscape (768px-1024px), and Mobile Phones (320px-768px).
   - Clean dual-row command bridge: scrollable horizontal navigation rail (`#nav-rail`) plus slide-out Mobile Navigation Drawer (`#mobile-drawer`) with $\ge 44\text{px}$ touch targets and zero horizontal viewport blowout.
+- **Most Deadly NPC Leaderboard & Fallen Mortals Stream (`#nav-deadly_npcs`, `/api/pve/leaderboard`)**:
+  - Dedicated leaderboard ranking the realm's deadliest monsters, elites, and world bosses (e.g. Hogger, Son of Arugal, Stitches, Mor'Ladim, Devilsaur).
+  - Top Fallen Mortals graveyard tracking characters with the most PvE deaths.
+  - Live Fallen Mortals stream showing creature executions in real time.
+  - Strict PvE isolation: Zero pollution of PvP feeds, K/D ratios, or bounty contracts.
+- **Client Flavor Identification & Dynamic Feature Gating**:
+  - Header command bar switcher supporting **Classic Era / Anniversary (Vanilla 1.15)**, **TBC (2.4.3)**, **WotLK (3.3.5)**, and **Modern Retail**.
+  - Dynamic Player Armory class gating: unavailable classes (Death Knight, Monk, Demon Hunter, Evoker) are kept visible but styled grey with `disabled` lock tags.
+  - Dynamic combat mode gating: Unavailable modes (such as Arenas in Classic Era) are greyed out with tooltip guidance.
 - **Native Realm Player Armory Directory (`#nav-armory`, `/api/armory`)**:
   - Authoritative realm-wide character directory indexing all active PvP combatants.
   - Multi-faceted filters: live name/guild search, Faction pills (All, Alliance, Horde), Class dropdown (all 13 classes), and sorting (Most Lethal, Highest K/D, Solo Specialists, Level, Recently Active).

@@ -135,6 +135,8 @@ class LuaTableParser:
         # Flatten WoWKillboardDB if it has a nested "kills" table
         db = parsed.get("WoWKillboardDB", {})
         if isinstance(db, dict):
+            if "pveDeaths" in db and isinstance(db["pveDeaths"], dict):
+                parsed["pveDeaths"] = db["pveDeaths"]
             if "kills" in db and isinstance(db["kills"], dict):
                 parsed["WoWKillboardDB"] = db["kills"]
             if "stats" in db and isinstance(db["stats"], dict):
@@ -148,6 +150,7 @@ class KillboardWatcher:
         self.api_url = api_url.rstrip("/")
         self.last_mtime = 0
         self.known_kills = set()
+        self.known_pve_deaths = set()
         self.known_events = set()
         self.last_distress_time = 0
         self.warned_missing = False
@@ -177,6 +180,7 @@ class KillboardWatcher:
 
         parsed = LuaTableParser.parse_string(content)
         db_kills = parsed.get("WoWKillboardDB", {})
+        pve_deaths = parsed.get("pveDeaths", {})
         bounties = parsed.get("WoWKillboardBounties", {})
         debts = parsed.get("WoWKillboardDebtLedger", {})
         stats = parsed.get("stats", {})
@@ -187,6 +191,13 @@ class KillboardWatcher:
                 if self.upload_kill(kill_id, km_data):
                     self.known_kills.add(kill_id)
                     new_count += 1
+
+        new_pve_count = 0
+        for death_id, death_data in pve_deaths.items():
+            if death_id not in self.known_pve_deaths:
+                if self.upload_pve_death(death_id, death_data):
+                    self.known_pve_deaths.add(death_id)
+                    new_pve_count += 1
 
         for b_id, b_data in bounties.items():
             self.upload_bounty(b_id, b_data)
@@ -221,8 +232,29 @@ class KillboardWatcher:
                 if self.upload_event(evt_data):
                     self.known_events.add(evt_id)
 
-        print(f"[Watcher] Synced {new_count} new kills, {len(bounties)} bounties, {len(debts)} debt records.")
+        print(f"[Watcher] Synced {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debt records.")
         return new_count
+
+    def upload_pve_death(self, death_id: str, data: dict) -> bool:
+        url = f"{self.api_url}/api/pve/deaths"
+        payload = {
+            "deathId": death_id,
+            "timestamp": data.get("timestamp", int(time.time())),
+            "npc": data.get("npc", {}),
+            "victim": data.get("victim", {}),
+            "location": data.get("location", {})
+        }
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as response:
+                return response.status in (200, 201)
+        except Exception as e:
+            print(f"[Watcher] Failed to upload PvE death {death_id}: {e}")
+            return False
 
     def upload_kill(self, kill_id: str, data: dict) -> bool:
         url = f"{self.api_url}/api/kills"

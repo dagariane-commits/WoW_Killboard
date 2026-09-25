@@ -232,6 +232,65 @@ def init_db():
                 timestamp INTEGER
             )
         """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pve_deaths (
+                death_id TEXT PRIMARY KEY,
+                timestamp INTEGER,
+                npc_name TEXT,
+                npc_id INTEGER,
+                npc_guid TEXT,
+                npc_spell TEXT,
+                npc_damage INTEGER,
+                victim_name TEXT,
+                victim_guid TEXT,
+                victim_level INTEGER,
+                victim_class TEXT,
+                victim_guild TEXT,
+                victim_faction TEXT,
+                map_id INTEGER,
+                zone TEXT,
+                subzone TEXT,
+                coord_x REAL,
+                coord_y REAL,
+                raw_json TEXT
+            )
+        """)
+
+        # Initialize default flavor in platform_stats
+        try:
+            conn.execute("INSERT OR IGNORE INTO platform_stats (key, value) VALUES ('client_flavor', '\"CLASSIC_ERA\"')")
+        except Exception:
+            pass
+
+        # Seed iconic PvE execution data if table is empty
+        try:
+            cur = conn.execute("SELECT COUNT(*) FROM pve_deaths")
+            if cur.fetchone()[0] == 0:
+                now_ts = int(time.time())
+                sample_pve = [
+                    ("PVE-1001", now_ts - 360, "Hogger", 448, "Creature-0-1-0-0-448-1", "Vicious Bite", 650, "Noviceadventurer", "Player-01", 11, "WARRIOR", "Goldshire Militia", "Alliance", 1429, "Elwynn Forest", "Forest's Edge", 26.4, 76.8),
+                    ("PVE-1002", now_ts - 1200, "Hogger", 448, "Creature-0-1-0-0-448-1", "Skull Cracker", 720, "Elwynnhealer", "Player-02", 10, "PRIEST", "None", "Alliance", 1429, "Elwynn Forest", "Forest's Edge", 26.5, 76.9),
+                    ("PVE-1003", now_ts - 2100, "Defias Pillager", 589, "Creature-0-1-0-0-589-2", "Pyroblast", 1850, "Moonbrookscout", "Player-03", 15, "ROGUE", "Westfall Watch", "Alliance", 1436, "Westfall", "Moonbrook", 42.1, 68.3),
+                    ("PVE-1004", now_ts - 3400, "Son of Arugal", 4275, "Creature-0-1-0-0-4275-3", "Shadow Bolt", 2400, "Undeadshadow", "Player-04", 18, "WARLOCK", "Deathstalkers", "Horde", 1421, "Silverpine Forest", "The Decrepit Ferry", 54.3, 41.2),
+                    ("PVE-1005", now_ts - 4800, "Mor'Ladim", 522, "Creature-0-1-0-0-522-4", "Unholy Cleave", 3100, "Duskwoodrider", "Player-05", 28, "PALADIN", "Night's Watch", "Alliance", 1431, "Duskwood", "Raven Hill Cemetery", 18.2, 56.4),
+                    ("PVE-1006", now_ts - 6200, "Stitches", 412, "Creature-0-1-0-0-412-5", "Hook & Slam", 4500, "Towncrier", "Player-06", 32, "MAGE", "Darkshire Guardians", "Alliance", 1431, "Duskwood", "Darkshire Road", 73.1, 46.8),
+                    ("PVE-1007", now_ts - 8900, "Devilsaur", 6584, "Creature-0-1-0-0-6584-6", "Crush & Swallow", 5800, "Un'Gorobotanist", "Player-07", 52, "DRUID", "Cenarion Circle", "Alliance", 1449, "Un'Goro Crater", "Tar Pits", 51.2, 28.6),
+                    ("PVE-1008", now_ts - 11000, "Baron Geddon", 12056, "Creature-0-1-0-0-12056-7", "Living Bomb", 8200, "Raidtank", "Player-08", 60, "WARRIOR", "Vanguard Brigade", "Alliance", 1541, "Molten Core", "The Core", 44.0, 52.0),
+                    ("PVE-1009", now_ts - 14500, "Hogger", 448, "Creature-0-1-0-0-448-1", "Vicious Bite", 590, "Gnomecaster", "Player-09", 9, "MAGE", "Gnomeregan Exiles", "Alliance", 1429, "Elwynn Forest", "Forest's Edge", 26.2, 77.0),
+                    ("PVE-1010", now_ts - 18000, "Defias Pillager", 589, "Creature-0-1-0-0-589-2", "Fireball", 1420, "Farmboy", "Player-10", 14, "HUNTER", "None", "Alliance", 1436, "Westfall", "Moonbrook", 42.8, 67.9),
+                ]
+                for p in sample_pve:
+                    conn.execute("""
+                        INSERT OR IGNORE INTO pve_deaths (
+                            death_id, timestamp, npc_name, npc_id, npc_guid, npc_spell, npc_damage,
+                            victim_name, victim_guid, victim_level, victim_class, victim_guild, victim_faction,
+                            map_id, zone, subzone, coord_x, coord_y, raw_json
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}')
+                    """, p)
+        except Exception:
+            pass
+
         # Backfill character_guild_history from existing kills if any
         try:
             conn.execute("""
@@ -846,6 +905,147 @@ def get_leaderboard():
         "topGuilds": top_guilds,
         "topZones": top_zones,
     })
+
+# ----------------- PvE Combat & Deadly NPCs API -----------------
+
+@app.route("/api/pve/deaths", methods=["GET", "POST"])
+def pve_deaths_endpoint():
+    if request.method == "POST":
+        data = request.json or {}
+        death_id = data.get("deathId")
+        if not death_id:
+            return jsonify({"error": "Missing deathId"}), 400
+
+        npc = data.get("npc", {})
+        victim = data.get("victim", {})
+        loc = data.get("location", {})
+
+        with get_db() as conn:
+            conn.execute("""
+                INSERT OR IGNORE INTO pve_deaths (
+                    death_id, timestamp, npc_name, npc_id, npc_guid, npc_spell, npc_damage,
+                    victim_name, victim_guid, victim_level, victim_class, victim_guild, victim_faction,
+                    map_id, zone, subzone, coord_x, coord_y, raw_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                death_id,
+                data.get("timestamp", int(time.time())),
+                npc.get("name", "Unknown Monster"),
+                int(npc.get("id") or 0),
+                npc.get("guid", ""),
+                npc.get("spell", "Combat Strike"),
+                int(npc.get("damage") or 0),
+                victim.get("name", "Unknown"),
+                victim.get("guid", ""),
+                int(victim.get("level") or 0),
+                victim.get("class", "UNKNOWN"),
+                victim.get("guild", "None"),
+                victim.get("faction", "Unknown"),
+                int(loc.get("mapId") or 0),
+                loc.get("zone", "Unknown"),
+                loc.get("subZone", ""),
+                float(loc.get("x") or 0.0),
+                float(loc.get("y") or 0.0),
+                json.dumps(data)
+            ))
+            conn.commit()
+
+        return jsonify({"success": True, "deathId": death_id}), 201
+
+    else:
+        limit = int(request.args.get("limit", 50))
+        npc_name = request.args.get("npc")
+        victim_name = request.args.get("player")
+        with get_db() as conn:
+            query = "SELECT * FROM pve_deaths"
+            params = []
+            conds = []
+            if npc_name:
+                conds.append("npc_name LIKE ?")
+                params.append(f"%{npc_name}%")
+            if victim_name:
+                conds.append("victim_name LIKE ?")
+                params.append(f"%{victim_name}%")
+            if conds:
+                query += " WHERE " + " AND ".join(conds)
+            query += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
+
+            rows = conn.execute(query, tuple(params)).fetchall()
+            deaths = [dict(r) for r in rows]
+        return jsonify({"deaths": deaths, "count": len(deaths)})
+
+@app.route("/api/pve/leaderboard", methods=["GET"])
+def get_pve_leaderboard():
+    limit = int(request.args.get("limit", 20))
+    with get_db() as conn:
+        top_npcs_rows = conn.execute("""
+            SELECT npc_name, npc_id, COUNT(*) AS kills,
+                   COUNT(DISTINCT victim_name) AS unique_victims,
+                   MAX(timestamp) AS last_kill,
+                   zone,
+                   npc_spell
+            FROM pve_deaths
+            GROUP BY npc_name
+            ORDER BY kills DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+        top_npcs = [dict(r) for r in top_npcs_rows]
+
+        top_victims_rows = conn.execute("""
+            SELECT victim_name, victim_class, victim_faction, victim_guild,
+                   COUNT(*) AS deaths,
+                   MAX(timestamp) AS last_death
+            FROM pve_deaths
+            GROUP BY victim_name
+            ORDER BY deaths DESC
+            LIMIT 10
+        """, ()).fetchall()
+        top_victims = [dict(r) for r in top_victims_rows]
+
+        total_pve = conn.execute("SELECT COUNT(*) FROM pve_deaths").fetchone()[0]
+        unique_npcs = conn.execute("SELECT COUNT(DISTINCT npc_name) FROM pve_deaths").fetchone()[0]
+        most_dangerous_zone_row = conn.execute("""
+            SELECT zone, COUNT(*) as deaths
+            FROM pve_deaths
+            GROUP BY zone
+            ORDER BY deaths DESC
+            LIMIT 1
+        """).fetchone()
+        most_dangerous_zone = dict(most_dangerous_zone_row) if most_dangerous_zone_row else {"zone": "None", "deaths": 0}
+
+    return jsonify({
+        "summary": {
+            "totalDeaths": total_pve,
+            "uniqueDeadlyNpcs": unique_npcs,
+            "mostDangerousZone": most_dangerous_zone
+        },
+        "topDeadlyNpcs": top_npcs,
+        "topFallenPlayers": top_victims
+    })
+
+# ----------------- Client Flavor System API -----------------
+
+@app.route("/api/system/flavor", methods=["GET", "POST"])
+def client_flavor_endpoint():
+    valid_flavors = ["CLASSIC_ERA", "TBC", "WOTLK", "RETAIL"]
+    if request.method == "POST":
+        data = request.json or {}
+        flavor = (data.get("flavor") or "").upper()
+        if flavor not in valid_flavors:
+            return jsonify({"error": f"Invalid flavor. Supported: {valid_flavors}"}), 400
+        with get_db() as conn:
+            conn.execute("INSERT OR REPLACE INTO platform_stats (key, value) VALUES ('client_flavor', ?)", (json.dumps(flavor),))
+            conn.commit()
+        return jsonify({"success": True, "flavor": flavor}), 200
+    else:
+        with get_db() as conn:
+            row = conn.execute("SELECT value FROM platform_stats WHERE key = 'client_flavor'").fetchone()
+            flavor = json.loads(row[0]) if row else "CLASSIC_ERA"
+        return jsonify({
+            "flavor": flavor,
+            "supportedFlavors": valid_flavors
+        })
 
 # ----------------- Battleground Stats API -----------------
 
