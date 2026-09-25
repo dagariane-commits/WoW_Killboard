@@ -821,8 +821,8 @@ function renderFeed(kills) {
       modeTagText = `GANG x${km.attackersCount}`;
     }
 
-    const killerBadge = renderClassBadge(km.killer.class, 22);
-    const victimBadge = renderClassBadge(km.victim.class, 22);
+    const killerBadge = renderClassBadge(km.killer.class, 26);
+    const victimBadge = renderClassBadge(km.victim.class, 26);
     const killerSpan = colorizeClass(km.killer.name, km.killer.class);
     const victimSpan = colorizeClass(km.victim.name, km.victim.class);
 
