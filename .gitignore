@@ -29,3 +29,6 @@ ENV/
 
 # SavedVariables local dumps
 *.bak
+
+# Binaries & Tunnels
+cloudflared.exe
