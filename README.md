@@ -119,6 +119,11 @@ flowchart TD
 - **Streaming Lua Tokenizer**: High-speed recursive-descent parser.
 
 ### 3. Frontline War Room Web Intelligence Platform (`web/`)
+- **Dark Warcraft Tactical War Room & Mobile/Tablet Responsive Overhaul**:
+  - Immersive dark fantasy aesthetic with radial faction illumination (Alliance Blue & Horde Crimson), ambient tactical grid, and glassmorphic panels (`backdrop-filter: blur(16px)`).
+  - Integrated Google typography: `'Cinzel'` for regal war room titles, `'Rajdhani'` for telemetry/meters, and `'Inter'` for combat feeds.
+  - Multi-tiered responsiveness: Desktop Ultra-Wide (>1400px), Standard Desktop (1024px-1280px), Tablet Portrait/Landscape (768px-1024px), and Mobile Phones (320px-768px).
+  - Clean dual-row command bridge: scrollable horizontal navigation rail (`#nav-rail`) plus slide-out Mobile Navigation Drawer (`#mobile-drawer`) with $\ge 44\text{px}$ touch targets and zero horizontal viewport blowout.
 - **Native Realm Player Armory Directory (`#nav-armory`, `/api/armory`)**:
   - Authoritative realm-wide character directory indexing all active PvP combatants.
   - Multi-faceted filters: live name/guild search, Faction pills (All, Alliance, Horde), Class dropdown (all 13 classes), and sorting (Most Lethal, Highest K/D, Solo Specialists, Level, Recently Active).
