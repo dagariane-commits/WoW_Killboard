@@ -181,6 +181,7 @@ const FLAVOR_CONFIGS = {
     name: "Modern Retail (Dragonflight / War Within)",
     shortName: "RETAIL",
     tag: "RETAIL",
+    portalDescription: "The War Within, Cross-Faction Arenas, Rated Solo Shuffle & modern World PvP bounty hunts.",
     maxLevel: 80,
     iconColor: "#f59e0b",
     availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "MONK", "DRUID", "DEMONHUNTER", "EVOKER"],
@@ -191,6 +192,7 @@ const FLAVOR_CONFIGS = {
     name: "WoW Forever Beta (1.15)",
     shortName: "FOREVER",
     tag: "BETA",
+    portalDescription: "Custom Rebalanced Classic Vanilla, enhanced talent trees, custom balance & experimental arena ladder.",
     maxLevel: 60,
     iconColor: "#00e5ff",
     availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
@@ -205,11 +207,30 @@ const FLAVOR_CONFIGS = {
     }
   },
   CLASSIC_ERA: {
-    name: "Classic Era / Anniversary (1.15)",
+    name: "Classic Era (1.15)",
     shortName: "CLASSIC",
     tag: "ERA",
+    portalDescription: "Original World PvP, Tarren Mill vs Southshore & Stranglethorn Vale, Vanilla Rank 14 Honor System.",
     maxLevel: 60,
     iconColor: "#eab308",
+    availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
+    disabledClasses: {
+      DEATHKNIGHT: "WotLK 3.0+",
+      MONK: "MoP 5.0+",
+      DEMONHUNTER: "Legion 7.0+",
+      EVOKER: "DF 10.0+"
+    },
+    disabledModes: {
+      ARENA: "Introduced in TBC (Patch 2.0)"
+    }
+  },
+  ANNIVERSARY: {
+    name: "20th Anniversary Edition (1.15)",
+    shortName: "ANNIV",
+    tag: "ANNIV",
+    portalDescription: "Fresh 20th Anniversary Progression Realms, active leveling skirmishes, Hardcore & PvP warfare.",
+    maxLevel: 60,
+    iconColor: "#d97706",
     availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
     disabledClasses: {
       DEATHKNIGHT: "WotLK 3.0+",
@@ -225,6 +246,7 @@ const FLAVOR_CONFIGS = {
     name: "The Burning Crusade (2.4.3)",
     shortName: "TBC",
     tag: "TBC",
+    portalDescription: "Outland World PvP, Hellfire Peninsula, Halaa, Terokkar Towers & Arena Seasons 1–4.",
     maxLevel: 70,
     iconColor: "#22c55e",
     availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
@@ -240,6 +262,7 @@ const FLAVOR_CONFIGS = {
     name: "Wrath of the Lich King (3.3.5)",
     shortName: "WOTLK",
     tag: "WOTLK",
+    portalDescription: "Northrend Warfare, Death Knight introduction, epic Lake Wintergrasp fortress siege battles.",
     maxLevel: 80,
     iconColor: "#38bdf8",
     availableClasses: ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "DRUID"],
@@ -331,6 +354,7 @@ function updateFlavorUi() {
       : currentFlavor === "RETAIL" ? "retail"
       : currentFlavor === "TBC" ? "tbc"
       : currentFlavor === "WOTLK" ? "wotlk"
+      : currentFlavor === "ANNIVERSARY" ? "anniversary"
       : "classic";
     mWBadge.className = `wh-w-badge ${badgeCls}`;
     mWBadge.style.borderColor = cfg.iconColor || "#f59e0b";
@@ -2223,6 +2247,302 @@ function renderDeadlyNpcsView(lbData, deaths) {
   container.innerHTML = html;
 }
 
+// ----------------- War Room Entry Portal -----------------
+
+function loadPortalView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  const currentAuth = sessionStorage.getItem("wowkb_auth_type");
+  const storedHunter = localStorage.getItem("wowkb_user_character") || localStorage.getItem("wow_killboard_hunter_name") || "";
+  const storedRealm = localStorage.getItem("wowkb_user_realm") || "Crusader Strike";
+  const storedFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
+
+  const cfg = FLAVOR_CONFIGS[currentFlavor] || FLAVOR_CONFIGS.CLASSIC_ERA;
+
+  // 1. Build Interactive Flavor Cards
+  const flavorKeys = ["CLASSIC_ERA", "ANNIVERSARY", "FOREVER", "TBC", "WOTLK", "RETAIL"];
+  const flavorCardsHtml = flavorKeys.map(key => {
+    const f = FLAVOR_CONFIGS[key];
+    const isSelected = (key === currentFlavor);
+    const badgeCls = key === "FOREVER" ? "forever"
+      : key === "RETAIL" ? "retail"
+      : key === "TBC" ? "tbc"
+      : key === "WOTLK" ? "wotlk"
+      : key === "ANNIVERSARY" ? "anniversary"
+      : "classic";
+
+    return `
+      <div class="portal-flavor-card ${isSelected ? 'selected' : ''}" onclick="portalSelectFlavor('${key}')" style="--flavor-color: ${f.iconColor};">
+        <div class="portal-flavor-card-top">
+          <span class="wh-w-badge ${badgeCls}" style="border-color:${f.iconColor}; color:${f.iconColor}; font-size:0.75rem; width:22px; height:22px;">W</span>
+          <span class="portal-flavor-lvl-badge" style="color:${f.iconColor}; border-color:${f.iconColor};">LVL ${f.maxLevel} MAX</span>
+        </div>
+        <div class="portal-flavor-name">${f.name}</div>
+        <div class="portal-flavor-sub">${f.portalDescription || f.tag}</div>
+        <div class="portal-flavor-status">
+          ${isSelected 
+            ? `<span class="portal-selected-indicator" style="background:${f.iconColor};"><span class="portal-check">✓</span> ACTIVE ENGINE</span>`
+            : `<span class="portal-select-prompt">Click to Select</span>`}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // 2. Auth Options HTML
+  let authSectionHtml = "";
+  if (storedHunter && currentAuth === "officer") {
+    const factionColor = storedFaction === "Alliance" ? "var(--alliance-blue)" : "var(--horde-red)";
+    authSectionHtml = `
+      <div class="portal-signed-in-box">
+        <div class="signed-in-header">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:1.8rem;">👑</span>
+            <div>
+              <div style="font-weight:800; font-size:1.15rem; color:#fff;">Welcome Back, Vanguard Operative <span style="color:${factionColor}; font-weight:900;">${storedHunter}</span></div>
+              <div style="font-size:0.82rem; color:#94a3b8; margin-top:3px;">
+                Realm: <strong style="color:#fff;">${storedRealm}</strong> &bull; Allegiance: <strong style="color:${factionColor};">${storedFaction}</strong> &bull; Vanguard Supporter Active
+              </div>
+            </div>
+          </div>
+          <button class="portal-signout-btn" onclick="portalSignOut()">Sign Out / Switch</button>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="portal-cta-btn enter-direct" onclick="portalEnterFeed()">
+            <span>Enter Combat War Room (${cfg.shortName} &bull; Level ${cfg.maxLevel})</span>
+            <span>&rarr;</span>
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    authSectionHtml = `
+      <div class="portal-access-grid">
+        <!-- Option 1: Guest -->
+        <div class="portal-access-card guest">
+          <div class="access-card-badge">PUBLIC RECON</div>
+          <div class="access-card-icon">👁️</div>
+          <h3 class="access-card-title">Continue as Guest</h3>
+          <p class="access-card-desc">Immediate public reconnaissance across the frontline combat feed, certified solo kills, Most Wanted execution contracts, and deadly NPC casualty reports.</p>
+          <ul class="access-checklist">
+            <li>✓ Live Frontline Combat Feed for ${cfg.shortName}</li>
+            <li>✓ Certified 1v1 Solo Kills &amp; Gang Clustering</li>
+            <li>✓ Realm Most Wanted Execution Contracts</li>
+            <li>✓ Deadly NPC Casualty Leaderboard &amp; Armory</li>
+          </ul>
+          <button class="portal-cta-btn guest" onclick="portalContinueAsGuest()">
+            <span>Enter War Room as Guest</span>
+            <span>&rarr;</span>
+          </button>
+        </div>
+
+        <!-- Option 2: Officer Sign-In -->
+        <div class="portal-access-card login">
+          <div class="access-card-badge gold">VANGUARD OPERATIVE</div>
+          <div class="access-card-icon">👑</div>
+          <h3 class="access-card-title">Officer / Vanguard Sign-In</h3>
+          <p class="access-card-desc">Sign in with your character call-sign to link personal combat records, place in-game gold blood bounties, broadcast guild defense beacons, and access supporter perks.</p>
+          
+          <div class="portal-login-form">
+            <div class="portal-form-group">
+              <label class="portal-label">Character / Call-sign</label>
+              <input type="text" id="portal-input-char" class="portal-input" placeholder="e.g. Sylvanas, Lothar" value="${storedHunter}">
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-label">Realm / Server</label>
+              <input type="text" id="portal-input-realm" class="portal-input" placeholder="e.g. Crusader Strike" value="${storedRealm}">
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-label">Allegiance Faction</label>
+              <div class="portal-faction-toggle">
+                <label class="faction-radio alliance">
+                  <input type="radio" name="portal-faction" value="Alliance" ${storedFaction === 'Alliance' ? 'checked' : ''}>
+                  <span>🦁 Alliance</span>
+                </label>
+                <label class="faction-radio horde">
+                  <input type="radio" name="portal-faction" value="Horde" ${storedFaction === 'Horde' ? 'checked' : ''}>
+                  <span>🐺 Horde</span>
+                </label>
+              </div>
+            </div>
+            <button class="portal-cta-btn login" onclick="portalSubmitLogin()">
+              <span>Sign In &amp; Enter War Room</span>
+              <span>★</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 3. Render Complete Portal View
+  container.innerHTML = `
+    <div class="portal-container">
+      <!-- Portal Hero -->
+      <div class="portal-hero">
+        <div class="portal-crest-row">
+          <img src="/static/icons/factions/alliance.jpg" class="portal-crest alliance" alt="Alliance" title="For the Alliance!">
+          <div class="portal-emblem">⚔️</div>
+          <img src="/static/icons/factions/horde.jpg" class="portal-crest horde" alt="Horde" title="For the Horde!">
+        </div>
+        <h1 class="portal-title">AZEROTH COMBAT WAR ROOM PORTAL</h1>
+        <div class="portal-tagline">DECENTRALIZED COMBAT TELEMETRY &bull; ZERO-TAINT LOGGING &bull; BLOOD BOUNTY REGISTRY</div>
+        <p class="portal-lead">
+          Connect your World of Warcraft client to the premier cross-client PvP intelligence network. Track certified 1v1 solo kills, enforce realm execution bounties, and analyze guild warfare in real time.
+        </p>
+      </div>
+
+      <!-- Step 1: Version Selector -->
+      <section class="portal-step-section">
+        <div class="portal-step-header">
+          <span class="portal-step-num">STEP 1</span>
+          <div>
+            <h2 class="portal-section-title">Select Your World of Warcraft Version</h2>
+            <div class="portal-section-sub">Choose your active client flavor to calibrate telemetry, maximum level caps, and combat rules.</div>
+          </div>
+        </div>
+        <div class="portal-flavor-grid" id="portal-flavor-grid">
+          ${flavorCardsHtml}
+        </div>
+      </section>
+
+      <!-- Step 2: Access Gateway (Guest vs Login) -->
+      <section class="portal-step-section">
+        <div class="portal-step-header">
+          <span class="portal-step-num">STEP 2</span>
+          <div>
+            <h2 class="portal-section-title">War Room Access Level</h2>
+            <div class="portal-section-sub">Enter immediately as a guest field operative or sign in to link your character and bounties.</div>
+          </div>
+        </div>
+        ${authSectionHtml}
+      </section>
+
+      <!-- Step 3: Addon Architecture & Explanation -->
+      <section class="portal-step-section">
+        <div class="portal-step-header">
+          <span class="portal-step-num">INTEL</span>
+          <div>
+            <h2 class="portal-section-title">How the WoW Killboard Addon Works</h2>
+            <div class="portal-section-sub">Engineered to strict esports telemetry standards with zero Blizzard UI taint and zero Python barriers.</div>
+          </div>
+        </div>
+
+        <div class="portal-pillars-grid">
+          <div class="pillar-card">
+            <div class="pillar-icon">📡</div>
+            <h3 class="pillar-title">1. Passive Combat Log Capture</h3>
+            <p class="pillar-desc">
+              Pure Lua addon built exclusively with <code>BackdropTemplate</code> and anonymous widgets. Passively tracks combat events, player GUIDs, and spatial coordinates (<code>C_Map</code>) without modifying protected code or causing "Action Blocked" popups.
+            </p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon">⚡</div>
+            <h3 class="pillar-title">2. Zero-Python Auto-Sync</h3>
+            <p class="pillar-desc">
+              Standalone executable (<code>WoWKillboardSync.exe</code>) automatically discovers your WoW installation across <code>C:</code>, <code>D:</code>, and <code>E:</code> drives. Runs in the background with zero terminal commands or configuration required.
+            </p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon">🔐</div>
+            <h3 class="pillar-title">3. 32-Bit FNV-1a Deduplication</h3>
+            <p class="pillar-desc">
+              Every combat event generates a deterministic cryptographic hash based on timestamp, participant GUIDs, and zone coordinates. Even when 40 raid members log the same battle, our engine merges it into a single clean killmail.
+            </p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-icon">🩸</div>
+            <h3 class="pillar-title">4. Blood Bounties &amp; KOS Tracking</h3>
+            <p class="pillar-desc">
+              Post bounties in gold on enemy players. Defaulted bounty debts consign players to the server-wide <strong>Kill on Sight (KOS)</strong> blacklist, permanently tracked by GUID across character renames and guild hops.
+            </p>
+          </div>
+        </div>
+
+        <!-- Addon Quick Download & Setup Card -->
+        <div class="portal-download-box">
+          <div class="download-info">
+            <span style="font-size:2rem;">📦</span>
+            <div>
+              <div style="font-weight:800; font-size:1.15rem; color:#fff;">Get the Official Addon &amp; Sync Agent</div>
+              <div style="font-size:0.82rem; color:#94a3b8; margin-top:2px;">
+                Version 1.0.0 &bull; Verified across Forever Beta, Classic Era, 20th Anniversary, and Retail.
+              </div>
+            </div>
+          </div>
+          <div class="download-btn-group">
+            <a href="/WoWKillboard-v1.0.0.zip" class="portal-dl-btn primary" download>
+              <span>📥 Download Addon (.zip)</span>
+            </a>
+            <button class="portal-dl-btn secondary" onclick="alert('WoWKillboardSync.exe is included in your WoW_Killboard repository root and sync package!')">
+              <span>⚡ Desktop Sync Agent (.exe)</span>
+            </button>
+            <button class="portal-dl-btn tertiary" onclick="switchTab('INFO')">
+              <span>📖 Field Manual &amp; Codex</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function portalSelectFlavor(flavorKey) {
+  handleFlavorChange(flavorKey);
+  loadPortalView();
+}
+
+function portalContinueAsGuest() {
+  sessionStorage.setItem("wowkb_auth_type", "guest");
+  sessionStorage.setItem("wowkb_has_entered_feed", "1");
+  switchTab("FEED");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function portalSubmitLogin() {
+  const charEl = document.getElementById("portal-input-char");
+  const realmEl = document.getElementById("portal-input-realm");
+  const factionEl = document.querySelector('input[name="portal-faction"]:checked');
+  const name = charEl ? charEl.value.trim() : "";
+  const realm = realmEl ? realmEl.value.trim() : "Crusader Strike";
+  const faction = factionEl ? factionEl.value : "Alliance";
+
+  if (!name) {
+    alert("Please enter your character name or call-sign to sign in.");
+    if (charEl) charEl.focus();
+    return;
+  }
+
+  localStorage.setItem("wow_killboard_hunter_name", name);
+  localStorage.setItem("wowkb_user_character", name);
+  localStorage.setItem("wowkb_user_realm", realm);
+  localStorage.setItem("wowkb_user_faction", faction);
+  localStorage.setItem("wowkb_supporter_active", "1");
+  sessionStorage.setItem("wowkb_auth_type", "officer");
+  sessionStorage.setItem("wowkb_has_entered_feed", "1");
+
+  updateSupporterButton();
+  switchTab("FEED");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function portalEnterFeed() {
+  sessionStorage.setItem("wowkb_has_entered_feed", "1");
+  switchTab("FEED");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function portalSignOut() {
+  localStorage.removeItem("wowkb_user_character");
+  localStorage.removeItem("wowkb_user_realm");
+  localStorage.removeItem("wowkb_user_faction");
+  sessionStorage.removeItem("wowkb_auth_type");
+  loadPortalView();
+}
+
 // Tab Switching
 function switchTab(tab) {
   currentTab = tab;
@@ -2234,10 +2554,19 @@ function switchTab(tab) {
   const activeMobileBtn = document.getElementById(`m-nav-${tab.toLowerCase()}`);
   if (activeMobileBtn) activeMobileBtn.classList.add("active");
 
+  const isPortal = (tab === "PORTAL");
+  const mainContainer = document.querySelector(".container");
+  if (mainContainer) {
+    mainContainer.classList.toggle("portal-mode", isPortal);
+  }
+
   const mwSection = document.getElementById("most-wanted-section");
   if (mwSection) mwSection.style.display = (tab === "FEED") ? "block" : "none";
 
-  if (tab === "FEED") {
+  if (tab === "PORTAL") {
+    loadPortalView();
+  }
+  else if (tab === "FEED") {
     loadKills();
     loadMostWanted();
   }
@@ -3195,17 +3524,25 @@ document.addEventListener("DOMContentLoaded", () => {
   if (searchEl) {
     searchEl.addEventListener("input", (e) => {
       searchQuery = e.target.value;
-      loadKills();
+      if (currentTab === "FEED") {
+        loadKills();
+      }
     });
   }
 
   updateSupporterButton();
   initClientFlavor();
-  loadKills();
-  loadMostWanted();
   loadSidebar();
   checkGlobalSosBeacons();
   checkIntelSightings();
+
+  // First page is the War Room Portal gateway
+  const hasEntered = sessionStorage.getItem("wowkb_has_entered_feed");
+  if (!hasEntered) {
+    switchTab("PORTAL");
+  } else {
+    switchTab("FEED");
+  }
 
   // Polling update every 6 seconds
   setInterval(() => {

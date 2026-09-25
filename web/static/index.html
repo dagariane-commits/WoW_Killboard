@@ -17,7 +17,7 @@
     <!-- Wowhead-Style Global Flavor Top Header Strip -->
     <div class="wowhead-top-bar" id="wowhead-top-bar">
       <div class="wh-bar-left">
-        <button class="wh-home-btn" onclick="switchTab('FEED')" title="War Room Home">
+        <button class="wh-home-btn" onclick="switchTab('PORTAL')" title="War Room Portal Gateway">
           <span class="wh-home-icon">🏠</span>
         </button>
         <span class="wh-brand-label">WOW</span>
@@ -30,9 +30,13 @@
             <span class="wh-w-badge forever">W</span>
             <span class="wh-tab-text">FOREVER</span>
           </button>
-          <button class="wh-tab-btn active" data-flavor="CLASSIC_ERA" onclick="handleFlavorChange('CLASSIC_ERA')" title="Classic Era &amp; 20th Anniversary (1.15)">
+          <button class="wh-tab-btn active" data-flavor="CLASSIC_ERA" onclick="handleFlavorChange('CLASSIC_ERA')" title="Classic Era (1.15)">
             <span class="wh-w-badge classic">W</span>
             <span class="wh-tab-text">CLASSIC</span>
+          </button>
+          <button class="wh-tab-btn" data-flavor="ANNIVERSARY" onclick="handleFlavorChange('ANNIVERSARY')" title="20th Anniversary Edition (1.15)">
+            <span class="wh-w-badge anniversary">W</span>
+            <span class="wh-tab-text">ANNIV</span>
           </button>
           <button class="wh-tab-btn" data-flavor="TBC" onclick="handleFlavorChange('TBC')" title="The Burning Crusade (2.4.3)">
             <span class="wh-w-badge tbc">W</span>
@@ -54,7 +58,7 @@
     </div>
 
     <div class="header-top-row">
-      <div class="logo-group" onclick="switchTab('FEED')">
+      <div class="logo-group" onclick="switchTab('PORTAL')">
         <img src="/static/icons/factions/alliance.jpg" class="header-faction-crest alliance" alt="Alliance" title="For the Alliance!">
         <div class="logo-crest">⚔️</div>
         <img src="/static/icons/factions/horde.jpg" class="header-faction-crest horde" alt="Horde" title="For the Horde!">
@@ -91,6 +95,7 @@
     <!-- Navigation Tab Rail & Filter Strip -->
     <div class="header-sub-row">
       <nav class="nav-links-rail" id="nav-rail">
+        <button id="nav-portal" class="nav-btn" onclick="switchTab('PORTAL')">🏰 War Room Portal</button>
         <button id="nav-feed" class="nav-btn active" onclick="switchTab('FEED')">⚔️ Frontline Feed</button>
         <button id="nav-leaderboards" class="nav-btn" onclick="switchTab('LEADERBOARDS')">🏆 Hall of Heroes</button>
         <button id="nav-deadly_npcs" class="nav-btn" onclick="switchTab('DEADLY_NPCS')">☠️ Deadly NPCs</button>
@@ -143,6 +148,9 @@
         <button class="m-flavor-btn active" data-flavor="CLASSIC_ERA" onclick="handleFlavorChange('CLASSIC_ERA'); toggleMobileDrawer(false);">
           <span class="wh-w-badge classic">W</span> Classic
         </button>
+        <button class="m-flavor-btn" data-flavor="ANNIVERSARY" onclick="handleFlavorChange('ANNIVERSARY'); toggleMobileDrawer(false);">
+          <span class="wh-w-badge anniversary">W</span> Anniv 20
+        </button>
         <button class="m-flavor-btn" data-flavor="TBC" onclick="handleFlavorChange('TBC'); toggleMobileDrawer(false);">
           <span class="wh-w-badge tbc">W</span> TBC
         </button>
@@ -164,6 +172,10 @@
       <!-- Mobile Navigation Links -->
       <div class="mobile-drawer-label" style="margin-top: 14px;">WAR ROOM DIRECTORY</div>
       <div class="mobile-nav-list">
+        <button class="mobile-nav-item" id="m-nav-portal" onclick="switchTab('PORTAL'); toggleMobileDrawer(false);">
+          <span>🏰 War Room Portal</span>
+          <span>&rarr;</span>
+        </button>
         <button class="mobile-nav-item active" id="m-nav-feed" onclick="switchTab('FEED'); toggleMobileDrawer(false);">
           <span>⚔️ Frontline Feed</span>
           <span>&rarr;</span>

@@ -1028,7 +1028,7 @@ def get_pve_leaderboard():
 
 @app.route("/api/system/flavor", methods=["GET", "POST"])
 def client_flavor_endpoint():
-    valid_flavors = ["CLASSIC_ERA", "FOREVER", "TBC", "WOTLK", "RETAIL"]
+    valid_flavors = ["CLASSIC_ERA", "ANNIVERSARY", "FOREVER", "TBC", "WOTLK", "RETAIL"]
     if request.method == "POST":
         data = request.json or {}
         flavor = (data.get("flavor") or "").upper()
