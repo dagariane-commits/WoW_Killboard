@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.8] - 2026-09-25
+
+### Added
+- **Class, Spec & Level Cohort Percentile Engine**:
+  - Implemented mathematical cohort percentile ranking evaluating player combat effectiveness against all combatants sharing the exact same `(class, spec, level)` combination on the realm.
+  - Calculated exact percentile rankings (`percentile`, `topPct`, `rank`, `totalInCohort`, and `cohortLabel`) with dual-factor scoring (Total Kills primary, K/D ratio tie-breaker).
+  - Enriched `GET /api/character/<name>` and `GET /api/armory` to return cohort standing and percentile metrics on all character records.
+- **Cross-Client Addon Specialization Detection (`U.GetPlayerSpec`)**:
+  - Implemented dynamic runtime feature detection in `Addon/WoWKillboard/Utils.lua` supporting talent-point inspection (`GetTalentTabInfo`) on Classic Era / WoW Forever Beta and modern API (`GetSpecializationInfo`) on Retail.
+  - Updated `Killmail.lua` to persist `killer.spec` and `victim.spec` within in-game SavedVariables.
+- **Database Schema Expansion**:
+  - Added `killer_spec` and `victim_spec` columns to `kills` table with automatic database migration.
+  - Added default and valid talent spec resolution mapping across all 13 World of Warcraft classes.
+- **Percentile Badges & UI Integration**:
+  - **Personalized Operative Banner**: Displays green tactical badge `⭐ Top X% (Yth Pct) • Level 60 [Spec] [Class]` alongside Classic Military Rank and Standing (`Rank #X of Y`).
+  - **Character Dossier Modal**: Header features prominent percentile banner showing exact standing within cohort.
+  - **Armory Directory Cards**: Inlines class specialization and percentile badges across all character cards.
+  - Added `.operative-percentile-pill` and `.armory-percentile-pill` styles to `style.css`.
+
 ## [1.4.7] - 2026-09-25
 
 ### Changed

@@ -858,6 +858,15 @@ async function renderStats(kills) {
     const factionColor = (uFaction === "Horde") ? "var(--horde-red)" : "var(--alliance-blue)";
     const uRank = charData.rankTitle || "Operative";
 
+    const pct = charData.percentile || {
+      percentile: 95.0,
+      topPct: 5.0,
+      rank: 1,
+      totalInCohort: 1,
+      cohortLabel: `Level ${charData.level || 60} ${charData.spec ? charData.spec + ' ' : ''}${charData.class || 'Warrior'}`,
+      spec: charData.spec || 'Arms'
+    };
+
     hubContainer.innerHTML = `
       <div class="stats-hub-wrapper signed-in">
         <!-- Personalized Operative Hero Banner -->
@@ -870,10 +879,13 @@ async function renderStats(kills) {
               <div class="operative-title-row">
                 <span class="operative-name" style="cursor:pointer;" onclick="openCharacterProfile('${escapeHtml(accountUser)}')">${escapeHtml(accountUser)}</span>
                 <span class="operative-rank-tag">🎖️ ${escapeHtml(uRank)}</span>
+                <span class="operative-percentile-pill" title="${escapeHtml(pct.cohortLabel)} (${pct.totalInCohort} combatants)">
+                  ⭐ Top ${pct.topPct}% (${pct.percentile}th Pct)
+                </span>
                 <span class="operative-flavor-tag">WoW Forever</span>
               </div>
               <div class="operative-sub-row">
-                Allegiance: <strong style="color:${factionColor};">${escapeHtml(uFaction)}</strong> &bull; Class: <strong>${escapeHtml(charData.class || 'Champion')}</strong> &bull; Status: <strong style="color:var(--wow-gold-bright, #ffe680);">Active Combatant</strong>
+                Allegiance: <strong style="color:${factionColor};">${escapeHtml(uFaction)}</strong> &bull; Class &amp; Spec: <strong>${escapeHtml(charData.spec ? charData.spec + ' ' : '')}${escapeHtml(charData.class || 'Champion')}</strong> &bull; Standing: <strong style="color:var(--wow-gold-bright, #ffe680);">${escapeHtml(pct.cohortLabel)} &bull; Rank #${pct.rank} of ${pct.totalInCohort}</strong>
               </div>
             </div>
           </div>
@@ -1699,15 +1711,25 @@ async function openCharacterProfile(charName) {
     }
 
     body.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:16px; border-radius:8px; border:1px solid #1e293b;">
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:16px; border-radius:8px; border:1px solid #1e293b; flex-wrap:wrap; gap:12px;">
         <div>
-          <div style="display:flex; align-items:center; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <div style="font-size:1.4rem; font-weight:800;">${colorizeClass(data.name, data.class)}</div>
             ${data.rankTitle ? `<span class="armory-rank-pill">🎖️ ${data.rankTitle}</span>` : ''}
+            ${data.percentile ? `
+              <span class="armory-percentile-pill" title="${data.percentile.cohortLabel} (${data.percentile.totalInCohort} combatants in cohort)">
+                ⭐ Top ${data.percentile.topPct}% (${data.percentile.percentile}th Percentile)
+              </span>
+            ` : ''}
           </div>
           <div style="font-size:0.85rem; color:#94a3b8; margin-top:4px;">
-            Level ${data.level} ${data.class} &bull; <span style="color:${factionColor}; font-weight:700;">${data.faction}</span> &bull; ${guildText}
+            Level ${data.level} ${data.spec ? data.spec + ' ' : ''}${data.class} &bull; <span style="color:${factionColor}; font-weight:700;">${data.faction}</span> &bull; ${guildText}
           </div>
+          ${data.percentile ? `
+            <div style="font-size:0.75rem; color:#cbd5e1; margin-top:4px;">
+              Cohort Standing: <strong style="color:var(--wow-gold);">${data.percentile.cohortLabel}</strong> &bull; Ranked <strong style="color:#10b981;">#${data.percentile.rank}</strong> of ${data.percentile.totalInCohort} active combatants
+            </div>
+          ` : ''}
           ${data.bloodDebtor ? `
             <div class="armory-blood-debtor-banner">
               <div style="display:flex; align-items:center; gap:8px;">
@@ -2087,13 +2109,16 @@ async function fetchArmoryDataAndRender() {
                   ${colorizeClass(c.name, cls)}
                 </div>
                 <div class="armory-card-meta">
-                  Level ${c.level} ${c.class} &bull; <span style="color:${factionColor}; font-weight:700;">${c.faction}</span>
+                  Level ${c.level} ${c.spec ? c.spec + ' ' : ''}${c.class} &bull; <span style="color:${factionColor}; font-weight:700;">${c.faction}</span>
                 </div>
                 ${guildHtml}
               </div>
             </div>
 
-            ${c.rankTitle ? `<div class="armory-rank-pill">🎖️ ${c.rankTitle}</div>` : ''}
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+              ${c.rankTitle ? `<div class="armory-rank-pill" style="margin-top:0;">🎖️ ${c.rankTitle}</div>` : ''}
+              ${c.percentile ? `<div class="armory-percentile-pill" title="${c.percentile.cohortLabel} (${c.percentile.totalInCohort} in cohort)">⭐ Top ${c.percentile.topPct}% (${c.percentile.percentile}th Pct)</div>` : ''}
+            </div>
 
             <div class="armory-tags-row">
               ${c.isKos ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}

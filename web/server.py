@@ -60,12 +60,22 @@ def init_db():
                 subzone TEXT,
                 coord_x REAL,
                 coord_y REAL,
+                killer_spec TEXT,
+                victim_spec TEXT,
                 raw_json TEXT
             )
         """)
-        # Safe migration if table exists without is_duel
+        # Safe migration if table exists without is_duel, killer_spec, victim_spec
         try:
             conn.execute("ALTER TABLE kills ADD COLUMN is_duel INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE kills ADD COLUMN killer_spec TEXT")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE kills ADD COLUMN victim_spec TEXT")
         except sqlite3.OperationalError:
             pass
 
@@ -515,6 +525,110 @@ def streambox_view(character_name):
     limit = min(int(request.args.get("limit", 5)), 25)
     return render_template_string(STREAMBOX_HTML, character_name=character_name, vertical=vertical, limit=limit)
 
+# ----------------- Specialization & Percentile Engine -----------------
+
+DEFAULT_CLASS_SPECS = {
+    "WARRIOR": "Arms",
+    "MAGE": "Frost",
+    "ROGUE": "Subtlety",
+    "PRIEST": "Shadow",
+    "WARLOCK": "Affliction",
+    "HUNTER": "Marksmanship",
+    "DRUID": "Feral",
+    "PALADIN": "Retribution",
+    "SHAMAN": "Elemental",
+    "DEATHKNIGHT": "Unholy",
+    "MONK": "Windwalker",
+    "DEMONHUNTER": "Havoc",
+    "EVOKER": "Devastation"
+}
+
+VALID_SPECS_PER_CLASS = {
+    "WARRIOR": ["Arms", "Fury", "Protection"],
+    "PALADIN": ["Holy", "Protection", "Retribution"],
+    "HUNTER": ["Beast Mastery", "Marksmanship", "Survival"],
+    "ROGUE": ["Assassination", "Combat", "Subtlety", "Outlaw"],
+    "PRIEST": ["Discipline", "Holy", "Shadow"],
+    "DEATHKNIGHT": ["Blood", "Frost", "Unholy"],
+    "SHAMAN": ["Elemental", "Enhancement", "Restoration"],
+    "MAGE": ["Arcane", "Fire", "Frost"],
+    "WARLOCK": ["Affliction", "Demonology", "Destruction"],
+    "MONK": ["Brewmaster", "Mistweaver", "Windwalker"],
+    "DRUID": ["Balance", "Feral", "Restoration", "Guardian"],
+    "DEMONHUNTER": ["Havoc", "Vengeance"],
+    "EVOKER": ["Devastation", "Preservation", "Augmentation"]
+}
+
+def resolve_character_spec(char_class, spec_candidate=None):
+    cls_upper = (char_class or "WARRIOR").upper()
+    if spec_candidate and str(spec_candidate).strip():
+        sc = str(spec_candidate).strip()
+        valid = VALID_SPECS_PER_CLASS.get(cls_upper, [])
+        for v in valid:
+            if v.lower() == sc.lower():
+                return v
+        return sc.capitalize()
+    return DEFAULT_CLASS_SPECS.get(cls_upper, "Arms")
+
+def compute_character_percentile(conn, char_name, char_class, spec, level, kills, kd):
+    cls_upper = (char_class or "WARRIOR").upper()
+    spec_resolved = resolve_character_spec(cls_upper, spec)
+    lvl = int(level or 60)
+    
+    player_score = (int(kills or 0) * 1000) + float(kd or 0.0)
+    
+    cohort_query = """
+        SELECT killer_name AS name, killer_class AS class, killer_level AS level
+        FROM kills WHERE UPPER(killer_class) = ? AND killer_level = ? AND killer_name IS NOT NULL AND killer_name != 'Unknown'
+        UNION
+        SELECT victim_name AS name, victim_class AS class, victim_level AS level
+        FROM kills WHERE UPPER(victim_class) = ? AND victim_level = ? AND victim_name IS NOT NULL AND victim_name != 'Unknown'
+    """
+    cohort_rows = conn.execute(cohort_query, (cls_upper, lvl, cls_upper, lvl)).fetchall()
+    cohort_names = {r["name"] for r in cohort_rows if r["name"]}
+    if char_name:
+        cohort_names.add(char_name)
+
+    scores = []
+    for c_name in cohort_names:
+        if c_name == char_name:
+            scores.append((c_name, player_score))
+        else:
+            k_stat = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_name = ?", (c_name,)).fetchone()
+            d_stat = conn.execute("SELECT COUNT(*) FROM kills WHERE victim_name = ?", (c_name,)).fetchone()
+            c_k = k_stat[0] or 0
+            c_d = d_stat[0] or 0
+            c_kd = round(c_k / c_d, 2) if c_d > 0 else float(c_k)
+            scores.append((c_name, (c_k * 1000) + c_kd))
+
+    scores.sort(key=lambda x: x[1], reverse=True)
+    total_in_cohort = len(scores)
+    
+    rank = 1
+    for idx, (c_name, sc) in enumerate(scores):
+        if c_name == char_name:
+            rank = idx + 1
+            break
+
+    if total_in_cohort <= 1:
+        percentile = 99.0
+        top_pct = 1.0
+    else:
+        pct_raw = ((total_in_cohort - rank + 1) / total_in_cohort) * 100.0
+        percentile = round(min(99.9, max(1.0, pct_raw)), 1)
+        top_pct = round(max(0.1, 100.0 - percentile), 1)
+
+    return {
+        "percentile": percentile,
+        "topPct": top_pct,
+        "rank": rank,
+        "totalInCohort": total_in_cohort,
+        "cohortLabel": f"Level {lvl} {spec_resolved} {cls_upper.capitalize()}",
+        "spec": spec_resolved,
+        "class": cls_upper,
+        "level": lvl
+    }
+
 # ----------------- Kills API -----------------
 
 @app.route("/api/kills", methods=["GET"])
@@ -625,6 +739,8 @@ def post_kill():
     k = data.get("killer", {})
     v = data.get("victim", {})
     loc = data.get("location", {})
+    k_spec = resolve_character_spec(k.get("class", "WARRIOR"), k.get("spec"))
+    v_spec = resolve_character_spec(v.get("class", "ROGUE"), v.get("spec"))
 
     with get_db() as conn:
         conn.execute("""
@@ -634,8 +750,9 @@ def post_kill():
                 killer_name, killer_level, killer_class, killer_guild, killer_faction,
                 killer_party_size, killer_damage_done, killer_healing_done,
                 victim_name, victim_level, victim_class, victim_guild, victim_faction,
-                victim_party_size, map_id, zone, subzone, coord_x, coord_y, raw_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                victim_party_size, map_id, zone, subzone, coord_x, coord_y,
+                killer_spec, victim_spec, raw_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             kill_id, timestamp, is_duel, is_bg, is_arena, bg_name,
             is_solo, attackers_count, total_damage,
@@ -643,7 +760,7 @@ def post_kill():
             k.get("partySize", 1), k.get("damageDone", 0), k.get("healingDone", 0),
             v.get("name", "Unknown"), v.get("level", 60), v.get("class", "ROGUE"), v.get("guild", "None"), v.get("faction", "Horde"),
             v.get("partySize", 1), loc.get("mapId", 0), loc.get("zone", "Unknown"), loc.get("subZone", ""),
-            loc.get("x", 0.0), loc.get("y", 0.0), json.dumps(data)
+            loc.get("x", 0.0), loc.get("y", 0.0), k_spec, v_spec, json.dumps(data)
         ))
 
         # Track character guild history
@@ -1263,6 +1380,35 @@ def get_armory_directory():
             }
             characters.append(char_obj)
 
+        # Compute cohort percentiles based on (class, spec, level)
+        cohort_groups = {}
+        for c in characters:
+            c["spec"] = resolve_character_spec(c["class"])
+            key = (c["class"].upper(), c["spec"].lower(), c["level"])
+            if key not in cohort_groups:
+                cohort_groups[key] = []
+            cohort_groups[key].append(c)
+
+        for key, cohort_list in cohort_groups.items():
+            cohort_list.sort(key=lambda x: (x["kills"] * 1000) + x["kd"], reverse=True)
+            total_n = len(cohort_list)
+            for idx, c in enumerate(cohort_list):
+                rank = idx + 1
+                if total_n <= 1:
+                    pct = 99.0
+                    top = 1.0
+                else:
+                    pct = round(min(99.9, max(1.0, ((total_n - rank + 1) / total_n) * 100.0)), 1)
+                    top = round(max(0.1, 100.0 - pct), 1)
+                c["percentile"] = {
+                    "percentile": pct,
+                    "topPct": top,
+                    "rank": rank,
+                    "totalInCohort": total_n,
+                    "cohortLabel": f"Level {c['level']} {c['spec']} {c['class'].capitalize()}",
+                    "spec": c["spec"]
+                }
+
         # Sorting
         if sort_by == "kd":
             characters.sort(key=lambda x: (x["kd"], x["kills"]), reverse=True)
@@ -1428,14 +1574,30 @@ def get_character_profile(name):
             "warcraftlogs": f"https://classic.warcraftlogs.com/character/us/{realm}/{name.lower()}"
         }
 
+        # Check if killer_spec or victim_spec was logged
+        spec_row = conn.execute("""
+            SELECT killer_spec FROM kills WHERE killer_name = ? AND killer_spec IS NOT NULL AND killer_spec != ''
+            UNION
+            SELECT victim_spec FROM kills WHERE victim_name = ? AND victim_spec IS NOT NULL AND victim_spec != ''
+            LIMIT 1
+        """, (name, name)).fetchone()
+        raw_spec = spec_row[0] if spec_row else None
+        char_spec = resolve_character_spec(char_data.get("class", "WARRIOR"), raw_spec)
+
+        percentile_data = compute_character_percentile(
+            conn, name, char_data.get("class", "WARRIOR"), char_spec, char_data.get("level", 60), total_kills, kd
+        )
+
         return jsonify({
             "name": name,
             "guid": char_guid,
             "class": char_data.get("class", "UNKNOWN"),
+            "spec": char_spec,
             "level": char_data.get("level", 60),
             "faction": faction,
             "currentGuild": current_guild,
             "rankTitle": rank_title,
+            "percentile": percentile_data,
             "activeBountyGold": active_bounty_gold,
             "isKos": is_kos,
             "bloodDebtor": blood_debt_data,

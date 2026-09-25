@@ -180,3 +180,31 @@ function U.GetClientFlavor()
         return "RETAIL", version, tocversion
     end
 end
+
+-- Retrieve active player specialization (Cross-Client Parity)
+function U.GetPlayerSpec()
+    if type(GetSpecialization) == "function" and type(GetSpecializationInfo) == "function" then
+        local specIndex = GetSpecialization()
+        if specIndex then
+            local _, specName = GetSpecializationInfo(specIndex)
+            if specName and specName ~= "" then return specName end
+        end
+    end
+    -- Classic Era / Vanilla / Forever talent points inspection
+    if type(GetTalentTabInfo) == "function" and type(GetNumTalentTabs) == "function" then
+        local maxPoints = -1
+        local dominantSpec = nil
+        local numTabs = GetNumTalentTabs() or 3
+        for i = 1, numTabs do
+            local name, _, pointsSpent = GetTalentTabInfo(i)
+            if pointsSpent and pointsSpent > maxPoints then
+                maxPoints = pointsSpent
+                dominantSpec = name
+            end
+        end
+        if dominantSpec and maxPoints > 0 then
+            return dominantSpec
+        end
+    end
+    return nil
+end
