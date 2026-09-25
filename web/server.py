@@ -2409,9 +2409,9 @@ def pardon_kos_entity():
 
     return jsonify({"status": "ok", "message": f"{entity_name} pardoned from KOS Blacklist."})
 
-# ----------------- War Room Scribe & Combat Oracle API -----------------
+# ----------------- The War Archivist & Combat Oracle API -----------------
 
-SCRIBE_SYSTEM_PROMPT = """You are the Grand Inquisitor and War Scribe of Azeroth, chronicler of the bloodstained ledger for the WoW Killboard.
+SCRIBE_SYSTEM_PROMPT = """You are the Grand War Archivist of Azeroth, chronicler of the bloodstained ledger for the WoW Killboard.
 Your voice reflects the dark, grounded, unforgiving aesthetic of original Vanilla World of Warcraft (2004–2006). Azeroth is a scarred, volatile frontier recovering from the Third War—not a polished theme park.
 
 Core Voice Principles:
@@ -2606,7 +2606,7 @@ Answer strictly in your role as the Classic Azeroth Scribe. Grounded, utilitaria
 
     elif any(k in q_lower for k in ["addon", "how", "work", "sync", "download", "taint", "lua", "deduplication", "fnv", "cluster"]):
         reply = (
-            "**Scribe's Field Kit & Addon Blueprints:**\n\n"
+            "**The War Archivist's Architecture & Addon Guide:**\n\n"
             "Our combat logging apparatus is forged under strict martial discipline:\n\n"
             "1. **Zero Blizzard UI Taint**: Compiled purely in Lua with `BackdropTemplate` and anonymous widgets. It never inherits Blizzard XML button templates or touches `UISpecialFrames`. Runs silently with zero 'Action Blocked' errors during combat lockdown.\n"
             "2. **Cryptographic 32-Bit FNV-1a Blood Stamp**: Every clash generates a deterministic hash from timestamp, combatant GUIDs, and map coordinates (`C_Map`). When a 40-man raid logs the same fight, our ledger merges all dispatches into a single verified killmail.\n"
@@ -2639,7 +2639,7 @@ Answer strictly in your role as the Classic Azeroth Scribe. Grounded, utilitaria
             f"The ledger currently records **{tot}** fallen combatants across all tracked fronts, with **{solo}** certified 1v1 honorable solo kills.\n\n"
             f"- **Alliance Casualties Claimed**: {a} kills\n"
             f"- **Horde Casualties Claimed**: {h} kills\n\n"
-            f"Inquire regarding a specific soldier's call-sign, an active blood bounty, the deadliest wilderness creatures, or the inner workings of our addon field kit. The Scribe answers all who carry steel."
+            f"Inquire regarding a specific soldier's call-sign, an active blood bounty, the deadliest wilderness creatures, or the inner workings of our addon field kit. The War Archivist answers all who seek the records of conflict."
         )
         sources.append("Master Ledger Telemetry")
 

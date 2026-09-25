@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.4] - 2026-09-25
+
+### Changed
+- **Standard Account Authentication & Google SSO**:
+  - Replaced the roleplay "Character Call-Sign" and "Faction Allegiance" fields on the portal muster gate with standard modern account authentication.
+  - Implemented tabbed Sign-In / Create Account form with Username, Email, Password, "Remember me" checkbox, and "Forgot password" recovery link.
+  - Added clean "Sign in with Google" SSO button featuring the official 4-color SVG "G" logo.
+  - Authenticated operatives now see a verified account profile card with 1-click homepage entry and an explicit "Sign Out / Switch Account" control.
+- **Unified Direct Naming — The War Archivist & Addon Guide**:
+  - Christened the AI combat oracle **The War Archivist** (*Live Azeroth Combat Telemetry & Historical Codex*) across all interface buttons, header tools, mobile drawers, modal consoles, and the backend Python system prompt (`SCRIBE_SYSTEM_PROMPT`).
+  - Replaced ambiguous "Field Kit & Addon Blueprints" terminology with direct, player-friendly naming: **"How the Addon Works & Download"** (hero masthead and modal) and **"Addon Guide"** (floating action trigger and header).
+  - Streamlined the hero masthead actions by removing the redundant "Inquire with War Scribe" button, focusing attention on a single primary action: `[ How the Addon Works & Download ]`.
+- **Responsive Mobile Popouts & Tactical Bottom Sheet**:
+  - Resolved the modal container hierarchy issue caused by an unclosed `<footer>` tag in `index.html`.
+  - Configured `#addon-dossier-modal` (Addon Guide) to render as a responsive, centered dialog on mobile with stacked 1-column pillars and touch-friendly download targets (`95vw`, `92dvh`).
+  - Configured `#oracle-chat-modal` (The War Archivist) to deploy as a dedicated, full-screen tactical intelligence sheet on mobile viewports (`100vw`, `100dvh`, `z-index: 2800`), featuring safe-area inset padding and a sticky top navigation bar for immediate one-tap dismissal.
+- **Balanced Tactical Typography & Form Proportions**:
+  - Added explicit typography definitions for `.portal-title` (`1.85rem` desktop / `1.45rem` mobile), `.portal-tagline`, and `.portal-lead` to eliminate awkward browser defaults.
+  - Standardized all form inputs to uniform `42px` height, `0.88rem` font size, crisp `#26334d` borders, and burnished gold focus states.
+
 ## [1.4.3] - 2026-09-25
 
 ### Changed

@@ -121,6 +121,15 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - Dynamic Classic PvP Military Honor Rank Title calculation: Scout through High Warlord (Horde) and Private through Grand Marshal (Alliance) based on weighted kill volume and K/D efficiency.
    - Retribution status indicators: Realm KOS Blacklist flags, 30-Day Anti-Guild-Hop Deserter countdowns, and active blood bounty escrow gold badges.
    - Dual-access paradigm: Web directory view (`#nav-armory`), sidebar quick-search jump tool, and in-game slash commands (`/armory [Name]`, `/killboard armory [Name]`).
+9. **Azeroth War Room Entry Portal & Standard Account Authentication (`loadPortalView`)**:
+   - Two-screen gateway separating entry authorization (`GATE`) from campaign selection (`VERSIONS`).
+   - Standard account authentication: Tabbed Sign-In and Create Account forms (Username, Email, Password, Remember Me, and Forgot Password recovery) alongside clean Google SSO integration.
+   - Unauthenticated guest reconnaissance route (`portalAdvanceToVersions('guest')`) enabling instant read-only exploration of all four game versions without registration.
+   - Suppressed navigation stack on first visit (`body.portal-active`) providing a focused, distraction-free landing page.
+10. **The War Archivist & Architecture Guide Popout Modals (`#addon-dossier-modal`, `#oracle-chat-modal`)**:
+   - Direct Addon Architecture Guide modal with four martial pillars and 1-click packages.
+   - Diegetic AI combat intelligence console powered by the Grand War Archivist, querying live SQLite telemetry dispatches (`/api/oracle/chat`) with Google Gemini generative synthesis.
+   - Dedicated mobile layout transformations: centered modal card for Addon Guide and full-screen tactical bottom-sheet console for The War Archivist (`100vw`, `100dvh`, `z-index: 2800`) with safe-area padding.
 
 
 
