@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-24
 
 ### Added
+- **Recent Kills Player vs. Guild Display Toggle & Gritty Dark War Aesthetic**:
+  - Engineered 1-click **`[ 👤 Players | 🛡️ Guilds ]`** toggle on the Recent Kills feed header with local persistence (`localStorage: wow_killboard_feed_display_mode`).
+  - In **Guilds Mode**, hides individual player names completely to focus purely on Guild War clashes (`<Killer Guild> ⚔️ <Victim Guild>`) with faction crests and colors, with unguilded combatants displayed cleanly in muted text.
+  - In **Players Mode**, preserves streamlined combatant focus (`[Class Icon] Killer (60) ⚔️ [Class Icon] Victim (60)`) with guild affiliation.
+  - Pulled in official World of Warcraft raster assets locally (`web/static/icons/classes/` and `web/static/icons/factions/`) covering all 13 playable classes and Alliance/Horde PvP crests, with automatic fallback to vector SVGs.
+  - Crafted an immersive, dark, gritty Warcraft War Room background (`web/static/images/dark_war_bg.jpg`) capturing torchlit iron-bolted dungeon walls, chains, battle-worn Alliance & Horde banners, and a war planning table under atmospheric radial vignette shading.
 - **Streamlined Minimal Combat Feed & Authentic Warcraft UI Styling**:
   - Implemented a clean "less is more" recent kills feed: hid noisy text badges (`[SOLO]`, `[GANG]`, `[WORLD]`, `[DUEL]`) from the default row, eliminating visual clutter.
   - Added sleek 3.5px left-edge indicator bars color-coded by combat mode (Emerald for Solo, Amber for Gang, Gold for Duel, Cyan for BG, Purple for Arena).
