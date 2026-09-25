@@ -37,6 +37,16 @@ const CLASS_SYMBOLS = {
   UNKNOWN: "👤"
 };
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function getClassIconSvg(cls) {
   cls = (cls || "").toUpperCase();
   switch (cls) {
@@ -438,7 +448,7 @@ async function acceptBountyContract(bountyId, targetName) {
     });
     if (res.ok) {
       markBountyAcceptedLocally(bountyId);
-      alert(`⚔️ Blood contract accepted! You are now hunting ${targetName}. Deliver the certified killing blow in open combat to claim the gold!`);
+      alert(`Blood contract accepted! You are now hunting ${targetName}. Deliver the certified killing blow in open combat to claim the gold!`);
       loadMostWanted();
     } else {
       alert("Failed to accept blood bounty contract.");
@@ -488,7 +498,7 @@ function renderMostWanted(outlaws) {
 
       const btnHtml = accepted 
         ? `<button class="wanted-btn compact accepted" disabled title="Contract Accepted">✓ Tracking</button>`
-        : `<button class="wanted-btn compact" onclick="acceptBountyContract('${b.id}', '${b.target_name}')" title="Accept Bounty Contract">🎯 Accept</button>`;
+        : `<button class="wanted-btn compact" onclick="acceptBountyContract('${b.id}', '${b.target_name}')" title="Accept Bounty Contract">Accept</button>`;
 
       html += `
         <div class="wanted-card compact">
@@ -503,7 +513,7 @@ function renderMostWanted(outlaws) {
             ${colorizeClass(b.target_name, cls)}
           </div>
           <div class="wanted-guild" title="${b.target_faction || 'Neutral'}">&lt;${b.target_faction || 'Neutral'}&gt;</div>
-          <div class="wanted-lastseen" title="Last Seen: ${lastSeenText}">📍 ${lastSeenText}</div>
+          <div class="wanted-lastseen" title="Last Seen: ${lastSeenText}">${lastSeenText}</div>
           <div class="wanted-action-wrap">
             ${btnHtml}
           </div>
@@ -517,7 +527,7 @@ function renderMostWanted(outlaws) {
             <span class="wanted-reward-pill muted">OPEN</span>
           </div>
           <div class="wanted-avatar-wrap compact blank">
-            <span class="wanted-blank-icon">🎯</span>
+            <span class="wanted-blank-icon"></span>
           </div>
           <div class="wanted-name muted">Pending Target</div>
           <div class="wanted-guild muted">&lt;Unclaimed&gt;</div>
@@ -888,9 +898,9 @@ async function renderStats(kills) {
             <div>
               <div class="operative-title-row">
                 <span class="operative-name" style="cursor:pointer;" onclick="openCharacterProfile('${escapeHtml(accountUser)}')">${escapeHtml(accountUser)}</span>
-                <span class="operative-rank-tag">🎖️ ${escapeHtml(uRank)}</span>
+                <span class="operative-rank-tag">${escapeHtml(uRank)}</span>
                 <span class="operative-percentile-pill" title="${escapeHtml(pct.cohortLabel)} (${pct.totalInCohort} combatants)">
-                  ⭐ Top ${pct.topPct}% (${pct.percentile}th Pct)
+                  Top ${pct.topPct}% (${pct.percentile}th Pct)
                 </span>
                 <span class="operative-flavor-tag">WoW Forever</span>
               </div>
@@ -929,7 +939,7 @@ async function renderStats(kills) {
 
         <!-- Divider to Cumulative Frontier Stats -->
         <div class="stats-section-divider">
-          <span>⚔️ WOW FOREVER FRONTIER — CUMULATIVE REALM TELEMETRY (ALL STATS)</span>
+          <span>WOW FOREVER FRONTIER — CUMULATIVE REALM TELEMETRY (ALL STATS)</span>
         </div>
 
         <!-- 4 Cumulative Frontier Metrics -->
@@ -964,7 +974,6 @@ async function renderStats(kills) {
       <div class="guest-stats-header">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
           <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:1.15rem;">📊</span>
             <span class="wow-gold-header" style="font-size:0.95rem; font-weight:800; letter-spacing:0.5px;">WOW FOREVER FRONTIER — REALM TELEMETRY (ALL STATS)</span>
           </div>
           <span class="guest-recon-badge">UNMARKED RECON (GUEST)</span>
@@ -994,7 +1003,6 @@ async function renderStats(kills) {
 
       <div class="guest-auth-prompt-strip">
         <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:1rem;">⚔️</span>
           <span>Browsing as Guest Recon. Sign in to display your personalized combat kills, deaths, K/D, and blood bounties.</span>
         </div>
         <button class="guest-signin-link-btn" onclick="switchTab('PORTAL')">Sign In &rarr;</button>
@@ -1019,7 +1027,6 @@ function renderFeed(kills) {
     <div style="display: flex; flex-direction: column; gap: 6px;">
       <div class="feed-header-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); gap:10px; flex-wrap:wrap;">
         <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:1.15rem;">⚔️</span>
           <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
           <span class="feed-count-pill">${kills.length}</span>
         </div>
@@ -1091,7 +1098,7 @@ function renderFeed(kills) {
           </div>
 
           <div class="km-vs-wrapper">
-            <span class="km-vs" title="${km.isDuel ? 'Defeated in 1v1 Duel' : (km.isSolo ? 'Slew in 1v1 Combat' : 'Slew in Combat')}">⚔️</span>
+            <span class="km-vs" title="${km.isDuel ? 'Defeated in 1v1 Duel' : (km.isSolo ? 'Slew in 1v1 Combat' : 'Slew in Combat')}">VS</span>
           </div>
 
           <div class="km-combatant-col victim">
@@ -1126,11 +1133,11 @@ function renderLeaderboardView(data, bgData) {
       <!-- Hall of Legends Header Row with Mode Filter Pills -->
       <div class="legends-header-row">
         <div>
-          <h2 style="font-size: 1.35rem; color: var(--accent-gold); font-family: var(--font-tactical); letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
-            <span>🏆</span> Hall of Legends
+          <h2 style="font-size: 1.35rem; color: var(--accent-gold); font-family: var(--font-tactical); letter-spacing:0.5px; margin:0;">
+            Hall of Legends
           </h2>
           <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">
-            Most lethal combatants and certified executions across Azeroth [${currentMode}]
+            Most lethal combatants, cohort percentile efficiency, and certified executions across Azeroth [${currentMode}]
           </div>
         </div>
 
@@ -1149,6 +1156,7 @@ function renderLeaderboardView(data, bgData) {
             <tr style="border-bottom: 1px solid var(--border-color); color: #94a3b8; text-align: left; height: 32px;">
               <th>Rank</th>
               <th>Combatant</th>
+              <th>Percentile Standing</th>
               <th>Guild</th>
               <th>Faction</th>
               <th>Kills</th>
@@ -1162,10 +1170,19 @@ function renderLeaderboardView(data, bgData) {
     const guildHtml = (p.guild && p.guild !== 'None')
       ? `<span class="clickable-guild" onclick="openGuildProfile('${p.guild}')">${p.guild}</span>`
       : '-';
+
+    const pct = p.percentile;
+    const pctHtml = pct ? `
+      <span class="operative-percentile-pill" title="${escapeHtml(pct.cohortLabel || '')} (${pct.totalInCohort} in cohort)" style="font-size:0.72rem; padding:2px 8px; border-radius:4px; font-weight:700;">
+        Top ${pct.topPct}% (${pct.percentile}th Pct)
+      </span>
+    ` : `<span style="color:#64748b; font-size:0.75rem;">-</span>`;
+
     html += `
       <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
         <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
         <td><span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${p.name}')">${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)}</span></td>
+        <td>${pctHtml}</td>
         <td>${guildHtml}</td>
         <td style="color: ${p.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${p.faction}</td>
         <td style="color: #10b981; font-weight: 700;">${p.kills}</td>
@@ -1183,7 +1200,7 @@ function renderLeaderboardView(data, bgData) {
   if (currentMode === "BG" && bgData) {
     html += `
       <div style="margin-top:10px;">
-        <h3 style="font-size:1.1rem; color:var(--accent-cyan); margin-bottom:12px;">🚩 Battleground Gladiators (Damage &amp; Healing Telemetry)</h3>
+        <h3 style="font-size:1.1rem; color:var(--accent-cyan); margin-bottom:12px;">Battleground Gladiators (Damage &amp; Healing Telemetry)</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
             <h4 style="color: #f97316; font-size: 0.95rem; margin-bottom: 12px;">Top Damage Dealers</h4>
@@ -1252,7 +1269,7 @@ function renderSingleBountyCard(b, isSupporter) {
     if (isSupporter && lastSeen.subzone) {
       lastSeenHtml = `
         <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
-          <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.zone} <span style="color:#fbbf24;">(${lastSeen.subzone})</span>
+          <span style="font-weight:700;">Last Sighted:</span> ${lastSeen.zone} <span style="color:#fbbf24;">(${lastSeen.subzone})</span>
           <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">
             ~${lastSeen.minutesAgo}m ago &bull; <span style="color:#fbbf24; font-weight:700;">⭐ Subzone Intel</span>
           </div>
@@ -1262,17 +1279,17 @@ function renderSingleBountyCard(b, isSupporter) {
       lastSeenHtml = `
         <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <span style="font-weight:700;">📍 Last Sighted:</span> ${lastSeen.zone}
+            <span style="font-weight:700;">Last Sighted:</span> ${lastSeen.zone}
             <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">~${lastSeen.minutesAgo}m ago</div>
           </div>
-          <span style="color:#64748b; font-size:0.7rem; cursor:pointer;" onclick="toggleSupporterMode()" title="Toggle Supporter Mode to unlock Subzone Recon">[🔒 Subzone]</span>
+          <span style="color:#64748b; font-size:0.7rem; cursor:pointer;" onclick="toggleSupporterMode()" title="Toggle Supporter Mode to unlock Subzone Recon">[Subzone Locked]</span>
         </div>
       `;
     }
   } else {
     lastSeenHtml = `
       <div style="font-size:0.72rem; color:#64748b; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
-        📍 Last Sighted: <em>No recent combat logged</em>
+        Last Sighted: <em>No recent combat logged</em>
       </div>
     `;
   }
@@ -1314,7 +1331,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
           <div>
             <h2 style="font-size: 1.25rem; color: var(--wow-gold); font-family: var(--font-tactical); letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
-              <span>🎯</span> Your Active Contracts &amp; Targets (${myBounties.length})
+              Your Active Contracts &amp; Targets (${myBounties.length})
             </h2>
             <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
               Bounties placed by you or placed upon your head
@@ -1343,9 +1360,9 @@ function renderBountiesView(bounties, debts, leaderboards) {
     html += `
       <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div style="font-size:0.82rem; color:#94a3b8;">
-          💡 <strong>Personal Contracts:</strong> Sign in to pin bounties you placed or bounties placed upon your head to the top.
+          <strong>Personal Contracts:</strong> Sign in to pin bounties you placed or bounties placed upon your head to the top.
         </div>
-        <button class="header-signin-btn" onclick="switchTab('THEATER')">Sign In &rarr;</button>
+        <button class="header-signin-btn" onclick="switchTab('PORTAL')">Sign In &rarr;</button>
       </div>
     `;
   }
@@ -1376,13 +1393,13 @@ function renderBountiesView(bounties, debts, leaderboards) {
 
       <!-- Bounty Leaderboards: Hall of Fame -->
       <div>
-        <h2 style="font-size: 1.2rem; color: var(--accent-gold); margin-bottom: 12px;">🏆 Bounty Hall of Fame &amp; Records</h2>
+        <h2 style="font-size: 1.2rem; color: var(--accent-gold); margin-bottom: 12px;">Bounty Hall of Fame &amp; Records</h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           
           <!-- 1. Top Bounty Hunters -->
           <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="color:#10b981; font-size:0.95rem;">🎯 Top Bounty Hunters</h3>
+              <h3 style="color:#10b981; font-size:0.95rem;">Top Bounty Hunters</h3>
               <span style="font-size:0.7rem; color:#64748b;">Most Bounties Claimed</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
@@ -1404,7 +1421,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <!-- 2. Highest Bounty Contracts -->
           <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="color:var(--accent-gold); font-size:0.95rem;">💰 Highest Bounty Contracts</h3>
+              <h3 style="color:var(--accent-gold); font-size:0.95rem;">Highest Bounty Contracts</h3>
               <span style="font-size:0.7rem; color:#64748b;">Biggest Escrow Rewards</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
@@ -1426,7 +1443,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <!-- 3. Longest Outstanding (Most Elusive Outlaws) -->
           <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="color:#f97316; font-size:0.95rem;">⏳ Most Elusive Outlaws</h3>
+              <h3 style="color:#f97316; font-size:0.95rem;">Most Elusive Outlaws</h3>
               <span style="font-size:0.7rem; color:#64748b;">Longest Surviving Bounties</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
@@ -1448,7 +1465,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <!-- 4. Fastest Collected Manhunts -->
           <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="color:var(--accent-cyan); font-size:0.95rem;">⚡ Fastest Collected Manhunts</h3>
+              <h3 style="color:var(--accent-cyan); font-size:0.95rem;">Fastest Collected Manhunts</h3>
               <span style="font-size:0.7rem; color:#64748b;">Record Execution Times</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
@@ -1473,7 +1490,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
       <!-- Wall of Shame: Blood Debtor Ledger -->
       <div>
         <h2 style="font-size: 1.2rem; color: var(--accent-red); margin-bottom: 4px;">
-          ⚠️ Wall of Shame — Realm Blood Debtors (Kill On Sight)
+          Wall of Shame — Realm Blood Debtors (Kill On Sight)
         </h2>
         <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:12px;">
           Defaulters who failed to settle their bounty debts are marked Kill on Sight server-wide. Tracked permanently across character name changes and guild transfers.
@@ -1499,7 +1516,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
             Defaulted on bounty owed to <strong style="color:var(--accent-cyan);">${d.creditor}</strong> &bull; In default for <strong style="color:#f87171;">${d.days_in_default} days</strong>.
           </div>
           <div style="font-size:0.72rem; color:#f87171; margin-top:6px; display:flex; align-items:center; gap:6px;">
-            <span>🚨</span> <span>Marked KILL ON SIGHT realm-wide. Any citizen or bounty hunter may execute this target without penalty until bounty debt is paid.</span>
+            <span>Marked KILL ON SIGHT realm-wide. Any citizen or bounty hunter may execute this target without penalty until bounty debt is paid.</span>
           </div>
         </div>
       `;
@@ -1574,7 +1591,7 @@ function openKillModal(killId) {
   } else if (km.isDuel) {
     soloBanner = `
       <div class="battle-report-duel-banner">
-        <span>⚔️ CERTIFIED 1v1 FORMAL DUEL</span>
+        <span>CERTIFIED 1v1 FORMAL DUEL</span>
         <span style="font-size:0.75rem; color:#fde68a; font-weight:600;">Sanctioned Honor Duel Won</span>
       </div>
     `;
@@ -1648,7 +1665,7 @@ function openKillModal(killId) {
     <div style="background:#0a0d14; border:1px solid #1e293b; border-radius:8px; padding:14px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
         <div style="display:flex; align-items:center; gap:6px;">
-          <span style="font-size:1rem;">⚔️</span>
+
           <span style="color:var(--accent-gold); font-size:0.85rem; font-weight:800; letter-spacing:0.5px;">
             ASSAULT FORCE &amp; SPEC TELEMETRY (${attackersList.length} Attacker${attackersList.length > 1 ? 's' : ''})
           </span>
@@ -1812,7 +1829,7 @@ function buildCharacterDossierHtml(data) {
       <div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <div style="font-size:1.4rem; font-weight:800;">${colorizeClass(data.name, data.class)}</div>
-          ${data.rankTitle ? `<span class="armory-rank-pill">🎖️ ${data.rankTitle}</span>` : ''}
+          ${data.rankTitle ? `<span class="armory-rank-pill">${data.rankTitle}</span>` : ''}
           ${data.percentile ? `
             <span class="armory-percentile-pill" title="${data.percentile.cohortLabel} (${data.percentile.totalInCohort} combatants in cohort)">
               ⭐ Top ${data.percentile.topPct}% (${data.percentile.percentile}th Percentile)
@@ -1830,7 +1847,7 @@ function buildCharacterDossierHtml(data) {
         ${data.bloodDebtor ? `
           <div class="armory-blood-debtor-banner">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:1.3rem;">💀</span>
+
               <div>
                 <div style="font-weight:800; color:#ef4444; letter-spacing:0.5px;">REPUTATION: BLOOD DEBTOR (KILL ON SIGHT)</div>
                 <div style="font-size:0.75rem; color:#fca5a5;">Defaulted on ${formatCopper(data.bloodDebtor.amountOwedCopper)} bounty debt owed to ${data.bloodDebtor.creditor} (${data.bloodDebtor.daysInDefault} days in default). Marked KOS server-wide across all name & guild changes.</div>
@@ -1839,21 +1856,21 @@ function buildCharacterDossierHtml(data) {
           </div>
         ` : `
           <div style="margin-top:6px;">
-            <span class="reputation-badge-honorable">🛡️ ${data.reputation || 'HONORABLE COMBATANT'} &bull; DEBT-FREE</span>
+            <span class="reputation-badge-honorable">${data.reputation || 'HONORABLE COMBATANT'} &bull; DEBT-FREE</span>
           </div>
         `}
         ${(data.isKos || data.deserter || data.activeBountyGold > 0) ? `
           <div class="armory-tags-row">
-            ${(data.isKos && !data.bloodDebtor) ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}
-            ${data.deserter ? `<span class="armory-badge-deserter">⚡ DESERTER (${data.deserter.days_remaining}d)</span>` : ''}
-            ${data.activeBountyGold > 0 ? `<span class="armory-badge-bounty">💰 ACTIVE BOUNTY: ${data.activeBountyGold}g</span>` : ''}
+            ${(data.isKos && !data.bloodDebtor) ? '<span class="armory-badge-kos">KILL ON SIGHT</span>' : ''}
+            ${data.deserter ? `<span class="armory-badge-deserter">DESERTER (${data.deserter.days_remaining}d)</span>` : ''}
+            ${data.activeBountyGold > 0 ? `<span class="armory-badge-bounty">ACTIVE BOUNTY: ${data.activeBountyGold}g</span>` : ''}
           </div>
         ` : ''}
       </div>
       <div class="armory-group">
-        <a class="armory-btn" href="${data.armoryUrls.official}" target="_blank" rel="noopener">⚔️ Blizzard Armory</a>
-        <a class="armory-btn" href="${data.armoryUrls.ironforge}" target="_blank" rel="noopener">🛡️ Classic Armory</a>
-        <a class="armory-btn" href="${data.armoryUrls.warcraftlogs}" target="_blank" rel="noopener">📜 Warcraft Logs</a>
+        <a class="armory-btn" href="${data.armoryUrls.official}" target="_blank" rel="noopener">Blizzard Armory</a>
+        <a class="armory-btn" href="${data.armoryUrls.ironforge}" target="_blank" rel="noopener">Classic Armory</a>
+        <a class="armory-btn" href="${data.armoryUrls.warcraftlogs}" target="_blank" rel="noopener">Warcraft Logs</a>
       </div>
     </div>
 
@@ -1939,13 +1956,13 @@ async function loadPersonalArmoryView(charName) {
       container.innerHTML = `
         <div class="personal-armory-container" style="display:flex; flex-direction:column; gap:20px;">
           <div style="background:#0c0f17; border:1px solid #1e293b; border-radius:8px; padding:24px; text-align:center;">
-            <div style="font-size:2rem; margin-bottom:8px;">🛡️</div>
+
             <h2 style="color:var(--wow-gold); font-size:1.25rem;">Welcome, Operative ${escapeHtml(charName)}</h2>
             <p style="color:#94a3b8; font-size:0.85rem; margin-top:6px; max-width:550px; margin-left:auto; margin-right:auto;">
               Your personal combat dossier has not yet recorded open-world engagements. Equip the free in-game addon and engage in combat to log honorable kills, deaths, and rank telemetry!
             </p>
             <div style="margin-top:16px; display:flex; justify-content:center; gap:10px;">
-              <button class="nav-btn" style="background:var(--accent-cyan); color:#000; font-weight:700;" onclick="loadArmoryView()">🔍 Browse Realm Directory</button>
+              <button class="nav-btn" style="background:var(--accent-cyan); color:#000; font-weight:700;" onclick="loadArmoryView()">Browse Realm Directory</button>
               <button class="nav-btn" style="border:1px solid var(--wow-gold); color:var(--wow-gold);" onclick="openAddonDossierModal()">Download Addon</button>
             </div>
           </div>
@@ -1961,14 +1978,14 @@ async function loadPersonalArmoryView(charName) {
       <div class="personal-armory-container" style="display:flex; flex-direction:column; gap:20px;">
         <div class="personal-armory-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:16px 20px;">
           <div style="display:flex; align-items:center; gap:12px;">
-            <span style="font-size:1.6rem;">🛡️</span>
+
             <div>
               <div style="font-weight:800; font-size:1.15rem; color:#fff;">Your Personal Combat Armory</div>
               <div style="font-size:0.75rem; color:#94a3b8;">Career telemetry &amp; PvP standing for <strong style="color:var(--wow-gold);">${escapeHtml(data.name)}</strong></div>
             </div>
           </div>
           <button class="nav-btn" style="border:1px solid var(--border-color); background:rgba(255,255,255,0.05);" onclick="loadArmoryView()">
-            <span>🔍 Search Realm Directory</span> &rarr;
+            <span>Search Realm Directory</span> &rarr;
           </button>
         </div>
         ${dossierHtml}
@@ -2260,7 +2277,7 @@ async function fetchArmoryDataAndRender() {
     if (characters.length === 0) {
       gridContainer.innerHTML = `
         <div style="grid-column:1/-1; background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:32px; text-align:center; color:#64748b;">
-          <div style="font-size:2rem; margin-bottom:8px;">⚔️</div>
+
           <div style="color:#e2e8f0; font-weight:700; font-size:1.05rem;">No Character Records Found</div>
           <p style="font-size:0.8rem; margin-top:4px;">No players match your search filter criteria. Try adjusting class, faction, or search term.</p>
         </div>
@@ -2300,13 +2317,13 @@ async function fetchArmoryDataAndRender() {
             </div>
 
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
-              ${c.rankTitle ? `<div class="armory-rank-pill" style="margin-top:0;">🎖️ ${c.rankTitle}</div>` : ''}
+              ${c.rankTitle ? `<div class="armory-rank-pill" style="margin-top:0;">${c.rankTitle}</div>` : ''}
               ${c.percentile ? `<div class="armory-percentile-pill" title="${c.percentile.cohortLabel} (${c.percentile.totalInCohort} in cohort)">⭐ Top ${c.percentile.topPct}% (${c.percentile.percentile}th Pct)</div>` : ''}
             </div>
 
             <div class="armory-tags-row">
-              ${c.isKos ? '<span class="armory-badge-kos">🚨 KILL ON SIGHT</span>' : ''}
-              ${c.deserter ? `<span class="armory-badge-deserter">⚡ DESERTER (${c.deserter.days_remaining}d)</span>` : ''}
+              ${c.isKos ? '<span class="armory-badge-kos">KILL ON SIGHT</span>' : ''}
+              ${c.deserter ? `<span class="armory-badge-deserter">DESERTER (${c.deserter.days_remaining}d)</span>` : ''}
               ${c.activeBountyGold > 0 ? `<span class="armory-badge-bounty">${c.activeBountyGold} ${renderWowCoin('gold')} BOUNTY</span>` : ''}
             </div>
 
@@ -2332,10 +2349,10 @@ async function fetchArmoryDataAndRender() {
 
           <div class="armory-footer-row">
             <div class="armory-lastseen-txt" title="Last confirmed combat zone">
-              📍 ${lastSeenText}
+              ${lastSeenText}
             </div>
             <button class="armory-dossier-btn" onclick="openCharacterProfile('${c.name}')">
-              ⚔️ Dossier
+              Dossier &rarr;
             </button>
           </div>
         </div>
@@ -2370,7 +2387,7 @@ async function loadArmoryView() {
     <div class="armory-view-container">
       <div class="armory-header-row">
         <div class="armory-title-wrap">
-          <span style="font-size:1.5rem;">🏰</span>
+
           <div>
             <div class="armory-title">REALM PLAYER ARMORY — COMBAT DIRECTORY</div>
             <div class="armory-subtitle">Authoritative PvP profiles, Classic Military Honor Titles, and lifetime battle records across Azeroth</div>
@@ -2392,7 +2409,7 @@ async function loadArmoryView() {
 
         <!-- Class Filter Dropdown -->
         <select class="armory-select" onchange="setArmoryClass(this.value)">
-          <option value="" ${armoryState.class === '' ? 'selected' : ''}>⚔️ All Classes</option>
+          <option value="" ${armoryState.class === '' ? 'selected' : ''}>All Classes</option>
           ${allPossibleClasses.map(c => {
             const isAvail = cfg.availableClasses.includes(c);
             const label = c.charAt(0) + c.slice(1).toLowerCase();
@@ -2400,17 +2417,17 @@ async function loadArmoryView() {
               return `<option value="${c}" ${armoryState.class === c ? 'selected' : ''}>${label}</option>`;
             } else {
               const reason = cfg.disabledClasses[c] || "Later Exp.";
-              return `<option value="${c}" disabled style="color:#526075;">🔒 ${label} (${reason})</option>`;
+              return `<option value="${c}" disabled style="color:#526075;">${label} (${reason})</option>`;
             }
           }).join('')}
         </select>
 
         <!-- Sort Filter Dropdown -->
         <select class="armory-select" onchange="setArmorySort(this.value)">
-          <option value="kills" ${armoryState.sort === 'kills' ? 'selected' : ''}>🏆 Most Lethal (Kills)</option>
-          <option value="kd" ${armoryState.sort === 'kd' ? 'selected' : ''}>⚡ Highest K/D Ratio</option>
-          <option value="solo" ${armoryState.sort === 'solo' ? 'selected' : ''}>🎯 Solo Specialists</option>
-          <option value="level" ${armoryState.sort === 'level' ? 'selected' : ''}>🎖️ Character Level</option>
+          <option value="kills" ${armoryState.sort === 'kills' ? 'selected' : ''}>Most Lethal (Kills)</option>
+          <option value="kd" ${armoryState.sort === 'kd' ? 'selected' : ''}>Highest K/D Ratio</option>
+          <option value="solo" ${armoryState.sort === 'solo' ? 'selected' : ''}>Solo Specialists</option>
+          <option value="level" ${armoryState.sort === 'level' ? 'selected' : ''}>Character Level</option>
           <option value="recent" ${armoryState.sort === 'recent' ? 'selected' : ''}>⏱️ Recently Active</option>
         </select>
       </div>
@@ -2486,7 +2503,7 @@ function renderDeadlyNpcsView(lbData, deaths) {
       <div class="deadly-npcs-hero">
         <div>
           <div class="deadly-hero-title">
-            <span>☠️</span> MOST DEADLY NPCS &amp; FALLEN MORTALS LEADERBOARD
+            MOST DEADLY NPCS &amp; FALLEN MORTALS LEADERBOARD
           </div>
           <div class="deadly-hero-subtitle">
             Pure PvE Execution Telemetry &bull; Isolated from PvP feeds &bull; Tracking every player executed by beasts, elites, and raid bosses across Azeroth
@@ -2514,7 +2531,7 @@ function renderDeadlyNpcsView(lbData, deaths) {
         <div class="deadly-table-card">
           <div class="deadly-table-header">
             <div class="deadly-table-title">
-              <span>💀</span> TOP EXECUTIONER MONSTERS &amp; ELITES
+              TOP EXECUTIONER MONSTERS &amp; ELITES
             </div>
             <span style="font-size:0.75rem; color:#94a3b8;">Ranked by Confirmed Mortal Executions</span>
           </div>
@@ -2526,11 +2543,11 @@ function renderDeadlyNpcsView(lbData, deaths) {
                 <div class="npc-executioner-card">
                   <div class="npc-identity">
                     <div class="npc-rank-badge ${rankClass}">#${idx + 1}</div>
-                    <span class="npc-skull-icon">💀</span>
+                    <span class="npc-skull-icon"></span>
                     <div>
                       <div class="npc-name">${npc.npc_name}</div>
                       <div class="npc-subtext">
-                        <span>📍 ${npc.zone || 'Azeroth'}</span>
+                        <span>${npc.zone || 'Azeroth'}</span>
                         &bull;
                         <span class="npc-spell-badge">${npc.npc_spell || 'Combat'}</span>
                         ${npc.last_kill ? `&bull; <span>Last slain: ${timeAgo(npc.last_kill)}</span>` : ''}
@@ -2553,7 +2570,7 @@ function renderDeadlyNpcsView(lbData, deaths) {
           <div class="deadly-table-card">
             <div class="deadly-table-header">
               <div class="deadly-table-title">
-                <span>🪦</span> TOP FALLEN MORTALS
+                TOP FALLEN MORTALS
               </div>
               <span style="font-size:0.75rem; color:#94a3b8;">Most PvE Deaths</span>
             </div>
@@ -2585,7 +2602,7 @@ function renderDeadlyNpcsView(lbData, deaths) {
           <div class="deadly-table-card">
             <div class="deadly-table-header">
               <div class="deadly-table-title">
-                <span>🩸</span> RECENT FALLEN MORTALS STREAM
+                RECENT FALLEN MORTALS STREAM
               </div>
               <span style="font-size:0.72rem; color:#94a3b8;">Live Feed</span>
             </div>
@@ -2606,7 +2623,7 @@ function renderDeadlyNpcsView(lbData, deaths) {
                           <strong style="color:#f87171;">${d.npc_name}</strong>
                         </div>
                         <div style="font-size:0.68rem; color:#64748b; margin-top:1px;">
-                          <span>📍 ${locStr}</span> &bull; <span>${d.npc_spell || 'Combat'}</span>
+                          <span>${locStr}</span> &bull; <span>${d.npc_spell || 'Combat'}</span>
                         </div>
                       </div>
                     </div>
@@ -2767,8 +2784,9 @@ function portalDirectSignIn() {
 function portalLaunchFront(flavorKey) {
   const chosen = flavorKey || "FOREVER";
   handleFlavorChange(chosen);
+  updateTheaterNavLabel();
   sessionStorage.setItem("wowkb_has_entered_feed", "1");
-  switchTab("FEED");
+  switchTab("INTEL");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -2913,7 +2931,7 @@ function loadPortalView() {
       <div class="portal-hero dramatic-hero">
         <div class="portal-crest-row">
           <img src="/static/icons/factions/alliance.jpg" class="portal-crest alliance" alt="Alliance" title="For the Alliance!">
-          <div class="portal-emblem">⚔</div>
+          <div class="portal-emblem"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M9.5 17.5 21 6V3h-3L6.5 14.5"/><path d="m11 19-6-6"/><path d="M8 16l-4 4"/><path d="M5 21l-2-2"/></svg></div>
           <img src="/static/icons/factions/horde.jpg" class="portal-crest horde" alt="Horde" title="For the Horde!">
         </div>
         <h1 class="portal-title">AZEROTH COMBAT WAR ROOM</h1>
@@ -2924,7 +2942,7 @@ function loadPortalView() {
         <div class="portal-hero-actions">
           ${sessionStorage.getItem("wowkb_has_entered_feed") ? `
             <button class="portal-return-pill" onclick="switchTab('INTEL')">
-              <span>⚔️ Return to Active War Room &rarr;</span>
+              <span>Return to Active War Room &rarr;</span>
             </button>
           ` : ''}
           <button class="portal-fieldkit-pill" onclick="openAddonDossierModal()">
@@ -2971,6 +2989,114 @@ function loadPortalView() {
       </div>
     </div>
   `;
+}
+
+// ----------------- Theater Selector / Version Page -----------------
+
+function loadTheaterSelectorView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  const currentFlav = (typeof currentFlavor !== "undefined" && currentFlavor) ? currentFlavor : "FOREVER";
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:24px; max-width:1060px; margin:0 auto; padding:10px 0 40px 0;">
+      <!-- Masthead Header -->
+      <div style="background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.12) 0%, rgba(10, 13, 20, 0.95) 75%); border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 28px 24px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.7);">
+        <h2 style="font-family: var(--font-tactical); font-size: 1.6rem; color: #fff; margin: 0 0 6px 0; letter-spacing: 0.5px;">
+          Theaters of War — Campaign Selector
+        </h2>
+        <div style="font-size: 0.82rem; color: #94a3b8; max-width: 680px; margin: 0 auto;">
+          Select your active World of Warcraft theater. All combat telemetry, kill feeds, and leaderboards filter to the selected campaign ruleset.
+        </div>
+      </div>
+
+      <!-- Version Cards Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px;">
+        <!-- Card 1: WoW Forever (ACTIVE & SELECTABLE) -->
+        <div class="theater-version-card active-card" style="background:#0a0e16; border: 2px solid var(--wow-gold); border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; box-shadow: 0 0 20px rgba(212, 163, 41, 0.2);">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+              <span style="font-size:0.68rem; font-weight:800; color:#10b981; background:rgba(16, 185, 129, 0.15); border:1px solid #10b981; padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
+                ACTIVE THEATER
+              </span>
+              <span style="font-size:0.75rem; color:var(--wow-gold); font-weight:700;">Level 60 Cap</span>
+            </div>
+            <h3 style="font-size:1.2rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">WoW Forever</h3>
+            <p style="font-size:0.78rem; color:#cbd5e1; line-height:1.45; margin:0 0 16px 0;">
+              Classic Beta (1.15.x) &bull; Contested World PvP, Stranglethorn killing grounds, and 40-man battleground clashes.
+            </p>
+          </div>
+          <button class="nav-btn active" style="width:100%; padding:10px; font-weight:800; font-size:0.82rem; background:linear-gradient(135deg, #d97706, #b45309); border:1px solid var(--wow-gold); color:#fff; cursor:pointer;" onclick="handleSelectTheaterVersion('FOREVER')">
+            Enter WoW Forever Theater &rarr;
+          </button>
+        </div>
+
+        <!-- Card 2: Classic Era (GREYED OUT / TBD) -->
+        <div class="theater-version-card disabled-card" style="background:#07090e; border: 1px solid #1e293b; border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; opacity:0.55;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+              <span style="font-size:0.68rem; font-weight:800; color:#94a3b8; background:rgba(148, 163, 184, 0.1); border:1px solid #334155; padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
+                TBD &bull; IN DEVELOPMENT
+              </span>
+              <span style="font-size:0.75rem; color:#64748b; font-weight:700;">Level 60 Cap</span>
+            </div>
+            <h3 style="font-size:1.2rem; color:#94a3b8; font-family:var(--font-tactical); margin:0 0 6px 0;">Classic Era</h3>
+            <p style="font-size:0.78rem; color:#64748b; line-height:1.45; margin:0 0 16px 0;">
+              Patch 1.15.x &bull; Vanilla Whitemane and Firemaw legacy realm clusters.
+            </p>
+          </div>
+          <button class="nav-btn disabled" style="width:100%; padding:10px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed;" disabled>
+            Theater Offline
+          </button>
+        </div>
+
+        <!-- Card 3: Anniversary (GREYED OUT / TBD) -->
+        <div class="theater-version-card disabled-card" style="background:#07090e; border: 1px solid #1e293b; border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; opacity:0.55;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+              <span style="font-size:0.68rem; font-weight:800; color:#94a3b8; background:rgba(148, 163, 184, 0.1); border:1px solid #334155; padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
+                TBD &bull; IN DEVELOPMENT
+              </span>
+              <span style="font-size:0.75rem; color:#64748b; font-weight:700;">Level 60 Cap</span>
+            </div>
+            <h3 style="font-size:1.2rem; color:#94a3b8; font-family:var(--font-tactical); margin:0 0 6px 0;">Anniversary Edition</h3>
+            <p style="font-size:0.78rem; color:#64748b; line-height:1.45; margin:0 0 16px 0;">
+              Fresh Progression Realms &bull; Hardcore &amp; PvP seasonal server clusters.
+            </p>
+          </div>
+          <button class="nav-btn disabled" style="width:100%; padding:10px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed;" disabled>
+            Theater Offline
+          </button>
+        </div>
+
+        <!-- Card 4: Modern Retail (GREYED OUT / TBD) -->
+        <div class="theater-version-card disabled-card" style="background:#07090e; border: 1px solid #1e293b; border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; opacity:0.55;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+              <span style="font-size:0.68rem; font-weight:800; color:#94a3b8; background:rgba(148, 163, 184, 0.1); border:1px solid #334155; padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
+                TBD &bull; IN DEVELOPMENT
+              </span>
+              <span style="font-size:0.75rem; color:#64748b; font-weight:700;">Level 80 Cap</span>
+            </div>
+            <h3 style="font-size:1.2rem; color:#94a3b8; font-family:var(--font-tactical); margin:0 0 6px 0;">Modern Retail</h3>
+            <p style="font-size:0.78rem; color:#64748b; line-height:1.45; margin:0 0 16px 0;">
+              The War Within (11.x) &bull; Rated Arenas, Solo Shuffle, and Battleground Blitz.
+            </p>
+          </div>
+          <button class="nav-btn disabled" style="width:100%; padding:10px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed;" disabled>
+            Theater Offline
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function handleSelectTheaterVersion(flavor) {
+  handleFlavorChange(flavor);
+  updateTheaterNavLabel();
+  switchTab("INTEL");
 }
 
 // ----------------- Addon Field Kit Dossier Modal Handlers -----------------
@@ -3147,7 +3273,7 @@ async function sendOracleMessage() {
     const errorEl = document.createElement("div");
     errorEl.className = "oracle-msg scribe error";
     errorEl.innerHTML = `
-      <div class="msg-meta">⚔️ Dispatch Error</div>
+      <div class="msg-meta">Dispatch Error</div>
       <div class="msg-body">The raven was intercepted or the archives could not be reached. Ensure the garrison server is active.</div>
     `;
     msgContainer.appendChild(errorEl);
@@ -3173,7 +3299,6 @@ function formatScribeMarkdown(text) {
 // Tab Switching
 function switchTab(tab) {
   // Normalize alias tabs
-  if (tab === "PORTAL") tab = "THEATER";
   if (tab === "FEED") tab = "INTEL";
   if (tab === "LEADERBOARDS") tab = "LEGENDS";
   if (tab === "DEADLY_NPCS") tab = "HAZARDS";
@@ -3188,11 +3313,17 @@ function switchTab(tab) {
   const activeMobileBtn = document.getElementById(`m-nav-${tab.toLowerCase()}`);
   if (activeMobileBtn) activeMobileBtn.classList.add("active");
 
-  const isTheater = (tab === "THEATER");
-  document.body.classList.toggle("portal-active", isTheater);
+  const isPortal = (tab === "PORTAL");
+  document.body.classList.toggle("portal-active", isPortal);
   const mainContainer = document.querySelector(".container");
   if (mainContainer) {
-    mainContainer.classList.toggle("portal-mode", isTheater);
+    mainContainer.classList.toggle("portal-mode", isPortal);
+  }
+
+  // Hide sidebar on PORTAL and THEATER for clean presentation
+  const sidebarEl = document.querySelector(".sidebar-column");
+  if (sidebarEl) {
+    sidebarEl.style.display = (tab === "PORTAL" || tab === "THEATER") ? "none" : "";
   }
 
   const mwSection = document.getElementById("most-wanted-section");
@@ -3201,8 +3332,11 @@ function switchTab(tab) {
   const statsHub = document.getElementById("homepage-stats-hub");
   if (statsHub) statsHub.style.display = (tab === "INTEL") ? "block" : "none";
 
-  if (tab === "THEATER") {
+  if (tab === "PORTAL") {
     loadPortalView();
+  }
+  else if (tab === "THEATER") {
+    loadTheaterSelectorView();
   }
   else if (tab === "INTEL") {
     loadKills();
@@ -3238,7 +3372,7 @@ function renderHeaderAuthBadge() {
     const displayName = escapeHtml(username);
     badge.innerHTML = `
       <div class="header-user-pill">
-        <span>👤 <strong>${displayName}</strong></span>
+        <span><strong>${displayName}</strong></span>
         <button class="header-signout-btn" onclick="handleHeaderSignOut()" title="Sign out">Sign Out</button>
       </div>
     `;
@@ -3264,23 +3398,30 @@ function handleHeaderSignOut() {
 }
 
 function openLoginModal() {
-  switchTab("THEATER");
+  switchTab("PORTAL");
   if (typeof portalSetAuthTab === "function") {
     portalSetAuthTab("signin");
   }
 }
 
+const THEATER_NAMES = {
+  FOREVER: "WoW Forever",
+  CLASSIC_ERA: "Classic Era",
+  ANNIVERSARY: "Anniversary Edition",
+  RETAIL: "Modern Retail"
+};
+
 function updateTheaterNavLabel() {
   const versionEl = document.getElementById("theater-nav-version");
   const mNavEl = document.getElementById("m-nav-theater");
-  const cfg = (typeof FLAVOR_CONFIGS !== "undefined" && FLAVOR_CONFIGS[currentFlavor]) ? FLAVOR_CONFIGS[currentFlavor] : null;
-  const currentFlav = cfg ? cfg.name : (sessionStorage.getItem("wowkb_flavor") || localStorage.getItem("wowkb_flavor") || "WoW Forever");
+  const currentFlav = (typeof currentFlavor !== "undefined" && currentFlavor) ? currentFlavor : "FOREVER";
+  const displayVersion = THEATER_NAMES[currentFlav] || "WoW Forever";
   if (versionEl) {
-    versionEl.innerText = currentFlav;
+    versionEl.innerText = displayVersion;
   }
   if (mNavEl) {
     const textSpan = mNavEl.querySelector("span");
-    if (textSpan) textSpan.innerText = `🌐 Theater: ${currentFlav}`;
+    if (textSpan) textSpan.innerText = `Theater: ${displayVersion}`;
   }
 }
 
@@ -3332,15 +3473,15 @@ function renderSingleFeudCard(f) {
 
       <!-- Rules of Engagement Badges -->
       <div class="roe-pill-group">
-        <span class="roe-pill">🛡️ Min Level ${f.roe_min_level || 55}+</span>
-        ${f.roe_underdog_bonus ? '<span class="roe-pill" style="border-color:#10b981; color:#10b981;">⚡ 2x Underdog Bonus</span>' : ''}
-        <span class="roe-pill" style="border-color:#f59e0b; color:#f59e0b;">🚫 Zerg Filter (0 Pts)</span>
-        ${f.roe_zone ? `<span class="roe-pill">📍 Zone: ${escapeHtml(f.roe_zone)}</span>` : ''}
+        <span class="roe-pill">Min Level ${f.roe_min_level || 55}+</span>
+        ${f.roe_underdog_bonus ? '<span class="roe-pill" style="border-color:#10b981; color:#10b981;">2x Underdog Bonus</span>' : ''}
+        <span class="roe-pill" style="border-color:#f59e0b; color:#f59e0b;">Zerg Filter (0 Pts)</span>
+        ${f.roe_zone ? `<span class="roe-pill">Zone: ${escapeHtml(f.roe_zone)}</span>` : ''}
       </div>
 
       ${isCompleted ? `
         <div style="background:#110d14; border:1px solid #10b981; border-radius:4px; padding:8px 10px; margin-top:10px; font-size:0.75rem; text-align:center;">
-          🏆 <strong>Victor:</strong> <span style="color:#10b981; font-weight:800;">${escapeHtml(f.winner_name || "Unknown")}</span> &bull; Loser Consigned to KOS Blacklist!
+          <strong>Victor:</strong> <span style="color:#10b981; font-weight:800;">${escapeHtml(f.winner_name || "Unknown")}</span> &bull; Loser Consigned to KOS Blacklist!
         </div>
       ` : ''}
     </div>
@@ -3388,7 +3529,6 @@ async function loadWarroomView() {
         <div style="background:rgba(217, 119, 6, 0.08); border:1px solid var(--accent-gold); border-radius:8px; padding:18px 20px; margin-bottom:20px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:1.2rem;">⭐</span>
               <h3 style="font-size:1.05rem; color:var(--wow-gold); font-weight:800; margin:0;">
                 Personal Engagements (${personalFeuds.length})
               </h3>
@@ -3406,7 +3546,7 @@ async function loadWarroomView() {
     if (otherFeuds.length === 0 && personalFeuds.length === 0) {
       feudsGridHtml = `
         <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:24px; text-align:center; color:#64748b;">
-          <div style="font-size:1.5rem; margin-bottom:6px;">⚔️</div>
+
           <div style="color:#e2e8f0; font-weight:700;">No Blood Feuds Active</div>
           <p style="font-size:0.8rem; margin-top:4px;">Challenge an enemy guild or player to a grudge match with custom Rules of Engagement!</p>
         </div>
@@ -3425,14 +3565,14 @@ async function loadWarroomView() {
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
           <div>
             <h2 style="font-size:1.3rem; color:var(--accent-red); letter-spacing:-0.5px; display:flex; align-items:center; gap:8px; margin:0;">
-              <span>⚔️</span> Warroom: Blood Feuds &amp; Rules of Engagement
+              Warroom: Blood Feuds &amp; Rules of Engagement
             </h2>
             <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">
               Guild Wars &amp; 1v1 Grudge Matches &bull; First to target score wins &bull; Defeated guilds condemned to the Realm KOS Blacklist!
             </div>
           </div>
           <button class="supporter-btn" style="background:linear-gradient(135deg, #b91c1c, #991b1b); border:1px solid #ef4444; color:#fff;" onclick="openDeclareFeudModal()">
-            ⚔️ Declare Blood Feud
+            Declare Blood Feud
           </button>
         </div>
 
@@ -3442,7 +3582,7 @@ async function loadWarroomView() {
         <!-- All Active Contests Grid -->
         <div>
           <h3 style="font-size:1rem; color:#e2e8f0; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
-            <span>🌐</span> Active Realm Feuds (${otherFeuds.length})
+            Active Realm Feuds (${otherFeuds.length})
           </h3>
           ${feudsGridHtml}
         </div>
@@ -3452,7 +3592,7 @@ async function loadWarroomView() {
           <div style="border-top:1px solid #1e293b; padding-top:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div>
               <h2 style="font-size:1.25rem; color:var(--accent-red); display:flex; align-items:center; gap:8px; margin:0;">
-                <span>🚨</span> Realm KOS Blacklist &amp; Deserter Ledger
+                Realm KOS Blacklist &amp; Deserter Ledger
               </h2>
               <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
                 Zero-Gold Retribution &bull; Defeated Guilds &amp; Outlaws Branded for Immediate Eradication &bull; In-Game Proximity Sirens Active
@@ -3465,7 +3605,7 @@ async function loadWarroomView() {
 
           <!-- Blacklisted Guilds Table -->
           <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:16px; margin-top:14px;">
-            <h3 style="font-size:0.95rem; color:#f87171; margin-bottom:10px;">💀 Blacklisted Enemy Guilds</h3>
+            <h3 style="font-size:0.95rem; color:#f87171; margin-bottom:10px;">Blacklisted Enemy Guilds</h3>
             ${guilds.length === 0 ? '<div style="color:#64748b; font-size:0.8rem;">No enemy guilds currently blacklisted.</div>' : `
               <div style="display:flex; flex-direction:column; gap:8px;">
                 ${guilds.map(g => `
@@ -3475,7 +3615,7 @@ async function loadWarroomView() {
                       <span style="font-size:0.75rem; color:#94a3b8; margin-left:8px;">${escapeHtml(g.reason)}</span>
                     </div>
                     <span style="font-size:0.72rem; color:#f87171; background:rgba(220,38,38,0.2); padding:3px 8px; border-radius:4px; font-weight:800;">
-                      🚨 KILL ON SIGHT
+                      KILL ON SIGHT
                     </span>
                   </div>
                 `).join('')}
@@ -3487,7 +3627,7 @@ async function loadWarroomView() {
           <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:16px; margin-top:14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
               <div>
-                <h3 style="font-size:0.95rem; color:#fbbf24; margin:0;">⚡ 30-Day Anti-Guild-Hop Deserter Stain</h3>
+                <h3 style="font-size:0.95rem; color:#fbbf24; margin:0;">30-Day Anti-Guild-Hop Deserter Stain</h3>
                 <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">
                   Leaving (/gquit) a blacklisted guild does not erase your shame. Tracked by permanent character Player-GUID.
                 </div>
@@ -3500,7 +3640,7 @@ async function loadWarroomView() {
                 <div class="deserter-card">
                   <div class="deserter-header">
                     <span class="deserter-badge">DESERTER STAIN</span>
-                    <span class="days-pill">⏳ ${d.days_remaining} Days Remaining</span>
+                    <span class="days-pill">${d.days_remaining} Days Remaining</span>
                   </div>
                   <div style="font-size:1rem; font-weight:800; color:#fff; margin:4px 0;">
                     <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(d.player_name)}')">${escapeHtml(d.player_name)}</span>
@@ -3928,7 +4068,7 @@ function openPlaceBountyModal() {
       placerName: "WebUser"
     })
   }).then(() => {
-    alert(`⚔️ Blood Bounty of ${gold}g declared on ${target}! The execution contract is now active across the realm.`);
+    alert(`Blood Bounty of ${gold}g declared on ${target}! The execution contract is now active across the realm.`);
     loadBounties();
     loadMostWanted();
   });
@@ -3962,7 +4102,7 @@ function updateSupporterButton() {
     btn.style.color = "#ffffff";
     btn.title = "Supporter Perks Active (Subzone Intel Unlocked)";
   } else {
-    btn.innerText = "🔒 Unlock Subzones";
+    btn.innerText = "Unlock Subzones";
     btn.style.background = "#1e293b";
     btn.style.color = "#94a3b8";
     btn.title = "Click to activate Supporter Mode";
@@ -4004,7 +4144,7 @@ function openDeclareFeudModal() {
       roe_underdog_bonus: true
     })
   }).then(res => res.json()).then(d => {
-    alert("⚔️ " + (d.message || "Blood Feud challenge declared!"));
+    alert(d.message || "Blood Feud challenge declared!");
     loadFeudsView();
   }).catch(e => alert("Error declaring feud: " + e.message));
 }
@@ -4024,7 +4164,7 @@ function openBrandKosModal() {
       reason: reason.trim()
     })
   }).then(res => res.json()).then(d => {
-    alert("🚨 " + (d.message || "Entity consigned to KOS Blacklist!"));
+    alert(d.message || "Entity consigned to KOS Blacklist!");
     loadFeudsView();
   }).catch(e => alert("Error blacklisting entity: " + e.message));
 }
@@ -4044,7 +4184,7 @@ async function checkIntelSightings() {
       wire.style.display = "flex";
       wire.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px;">
-          <span class="intel-badge">👁️ LIVE RECON WIRE</span>
+          <span class="intel-badge">LIVE RECON WIRE</span>
           <div style="font-size:0.82rem; color:#cbd5e1;">
             Scout <strong>${topS.reporter_name}</strong> spotted <strong style="color:${classColor};">${topS.target_name}</strong>
             (Lvl ${topS.target_level} ${topS.target_class}${topS.target_guild ? ' &lt;' + topS.target_guild + '&gt;' : ''})
@@ -4083,13 +4223,8 @@ document.addEventListener("DOMContentLoaded", () => {
   checkGlobalSosBeacons();
   checkIntelSightings();
 
-  // First page is the War Room Portal gateway
-  const hasEntered = sessionStorage.getItem("wowkb_has_entered_feed");
-  if (!hasEntered) {
-    switchTab("PORTAL");
-  } else {
-    switchTab("FEED");
-  }
+  // Landing page is always the War Room Sign-In / Entry Portal
+  switchTab("PORTAL");
 
   // Polling update every 6 seconds
   setInterval(() => {
