@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     8. **Warroom**: Consolidated head-to-head guild wars, blood feuds, and realm KOS blacklist with personal wars pinned at the top.
   - Added `#header-auth-badge` displaying real-time user authentication status (`👤 Username [Sign Out]` or `[Sign In]`).
   - Purged legacy `INFO` tab and its 7-subpage clutter from public views.
+  - **Distraction-Free Landing Page (Pure Body Entrance)**: Enforced strict suppression of the header top menu, site footer, and floating action triggers on the main entrance / portal page (`body.portal-active`) so visitors encounter an uncluttered, immersive landing body with zero top menu distractions.
 - **Relocated Combat Mode Filter**:
   - Removed top-level mode filter buttons (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`) from the global header and embedded them directly into the **Hall of Legends** view header.
 - **Zero Creator PII in Web Application**:
