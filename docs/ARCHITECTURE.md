@@ -108,29 +108,49 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - Dynamic real-time event polling every 5s with class-colored combatants and killer/victim telemetry.
    - Dual layout options: Horizontal bottom-ticker or vertical side-panel (`?vertical=1`).
    - Backwards-compatible alias preserved at `/streambox/<name>`.
-6. **Frontline Field Manual & Codex, War Room Outlaw Gallery**:
-   - Static Top 10 High Command Execution List outlaw gallery rendered unconditionally without collapse toggle traps.
-   - Comprehensive tactical & policy documentation hub: Frontline Chronicles & Arsenal, FAQ, About, Tactical Fog of War, Vanguard Benefactor, War Correspondent HUD, and the Warcraft Accord.
-7. **War Council & Rallies Discord Webhook Gateway (`/api/backup/distress`, `/api/events`, `/api/discord/config`)**:
-   - Ingestion of live War Horn distress calls (strictly gated to Open World PvP) and tactical guild event rallies.
-   - Zero-dependency Discord embed dispatcher notifying guild channels in real-time with automated party auto-invite instructions.
-8. **Native Realm Player Armory & Military Honor Rank Titles (`GET /api/armory`, `calculate_pvp_rank_title`)**:
-   - High-performance character directory aggregating all realm combatants from `kills`, `character_guild_history`, and `bounties`.
-   - Real-time search by character name or guild name with dynamic filters for Faction (Alliance / Horde) and Class (all 13 WoW classes).
-   - Multi-mode sorting: Most Lethal (Kills), Highest K/D Ratio, Solo Specialists, Character Level, and Recently Active.
-   - Dynamic Classic PvP Military Honor Rank Title calculation: Scout through High Warlord (Horde) and Private through Grand Marshal (Alliance) based on weighted kill volume and K/D efficiency.
-   - Retribution status indicators: Realm KOS Blacklist flags, 30-Day Anti-Guild-Hop Deserter countdowns, and active blood bounty escrow gold badges.
-   - Dual-access paradigm: Web directory view (`#nav-armory`), sidebar quick-search jump tool, and in-game slash commands (`/armory [Name]`, `/killboard armory [Name]`).
-9. **Azeroth War Room Entry Portal & Dual-State Homepage Stats (`loadPortalView`, `renderStats`)**:
-   - Streamlined single-gate entry focused exclusively on **WoW Forever** (`FOREVER`), eliminating the Screen 2 version picker for immediate, zero-distraction deployment.
-   - Standard account authentication: Tabbed Sign-In and Create Account forms (Username, Email, Password, Remember Me, and Forgot Password recovery) alongside clean Google SSO integration.
-   - Unauthenticated guest reconnaissance route (`portalEnterAsGuest()`) enabling instant read-only exploration without registration.
-   - **Signed In Operative Banner**: Displays personalized combat stats at the top of the homepage (Character Name, Military Rank, Faction, Confirmed Kills, Casualties, K/D Ratio, Solo Kills) with 1-click link to their Armory Profile, followed by cumulative realm telemetry.
-   - **Guest Recon Mode**: Displays cumulative realm telemetry (Total Carnage, 1v1 Solo %, Faction Split, Active Mode Filter) with an unmarked recon badge and a sign-in prompt strip.
-10. **The War Archivist & Architecture Guide Popout Modals (`#addon-dossier-modal`, `#oracle-chat-modal`)**:
-   - Direct Addon Architecture Guide modal with four martial pillars and 1-click packages.
-   - Diegetic AI combat intelligence console powered by the Grand War Archivist, querying live SQLite telemetry dispatches (`/api/oracle/chat`) with Google Gemini generative synthesis.
-   - Dedicated mobile layout transformations: centered modal card for Addon Guide and full-screen tactical bottom-sheet console for The War Archivist (`100vw`, `100dvh`, `z-index: 2800`) with safe-area padding.
+6. **Streamlined 7-Item Navigation & Clean Header Architecture**:
+   - Replaced complex multi-tier menus with a unified, responsive single-row header navigation rail:
+     - **Logo**: Re-anchored to route directly to Intel command center.
+     - **Theater of War**: Displays active WoW flavor (`Theater: WoW Forever ▾`) and routes to the version selection gateway.
+     - **Intel**: Live combat killmail feed, Top 10 High Command Execution List outlaw gallery, and real-time recon wire.
+     - **Hall of Legends**: Competitive leaderboard embedding the 5-state combat mode filter pills (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`).
+     - **World Hazards**: Wilderness environmental deaths and deadly PvE NPC casualty telemetry.
+     - **Armory**: Context-aware routing—authenticated users immediately access their personalized combat dossier; guest users access the full realm combatant directory.
+     - **Bounties**: High Command execution list and contract ledger with personal bounties pinned in a dedicated gold card at the top.
+     - **Warroom**: Head-to-head guild wars, blood feuds, and realm KOS blacklist with personal wars pinned at the top.
+   - **Header Auth Badge (`#header-auth-badge`)**: Displays real-time authentication session state (`👤 Username [Sign Out]` or `[Sign In]`).
+
+7. **Class, Spec & Level Cohort Percentile Engine (`GET /api/character/<name>`, `GET /api/armory`)**:
+   - Mathematical cohort ranking computing exact player standing against all combatants sharing the exact same `(class, spec, level)` on the realm.
+   - Dual-factor evaluation: Total Kills primary, K/D ratio tie-breaker.
+   - Returns `percentile`, `topPct`, `rank`, `totalInCohort`, and `cohortLabel` (e.g., `⭐ Top 5% (95th Pct) • Level 60 Shadow Priest`).
+   - Integrated into the Operative Banner, Character Dossier modal, and Armory Directory cards.
+
+8. **Warroom: Head-to-Head Blood Feuds & 30-Day Deserter KOS Blacklist (`/api/feuds`, `/api/kos/blacklist`)**:
+   - Guild vs. Guild and 1v1 grudge match challenges with custom target score goals (e.g., First to 100 Kills).
+   - Custom Rules of Engagement (ROE): Minimum level filters, 2x Underdog bonuses, anti-zerg scoring, and zone restrictions.
+   - 30-day anti-guild-hop penalty tracking by permanent character Player-GUID to prevent evasion.
+   - Pinned personal engagements at the top for signed-in operatives.
+
+9. **World Hazards & Deadly PvE NPC Casualty Stream (`/api/pve/deadly-npcs`, `/api/pve/stream`)**:
+   - Wilderness environmental deaths, deadly NPC rankings, and complete PvP isolation.
+   - Tracks world bosses, elite patrol hazards, and dangerous fauna across Azeroth.
+
+10. **Native Realm Player Armory & Military Honor Rank Titles (`GET /api/armory`, `calculate_pvp_rank_title`)**:
+    - High-performance character directory aggregating all realm combatants from `kills`, `character_guild_history`, and `bounties`.
+    - Real-time search by character name or guild name with dynamic filters for Faction (Alliance / Horde) and Class (all 13 WoW classes).
+    - Multi-mode sorting: Most Lethal (Kills), Highest K/D Ratio, Solo Specialists, Character Level, and Recently Active.
+    - Dynamic Classic PvP Military Honor Rank Title calculation: Scout through High Warlord (Horde) and Private through Grand Marshal (Alliance).
+
+11. **War Correspondent HUD OBS Overlay (`GET /war-hud/<name>`)**:
+    - Zero-dependency transparent HTML/CSS/JS HUD designed for streaming software (OBS Studio Browser Source, Twitch/YouTube).
+    - Dynamic real-time event polling every 5s with class-colored combatants and killer/victim telemetry.
+    - Dual layout options: Horizontal bottom-ticker or vertical side-panel (`?vertical=1`).
+
+12. **War Council & Rallies Discord Webhook Gateway (`/api/backup/distress`, `/api/events`, `/api/discord/config`)**:
+    - Ingestion of live War Horn distress calls (strictly gated to Open World PvP) and tactical guild event rallies.
+    - Zero-dependency Discord embed dispatcher notifying guild channels in real-time with automated party auto-invite instructions.
+
 
 
 

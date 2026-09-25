@@ -10,9 +10,10 @@ This document outlines the strategic milestones, product phases, technical deliv
 timeline
     title WoW Killboard Product Trajectory
     Phase 1 : Core Engine Architecture : Combat Log & Gang Clustering : Multi-Client Taint Hardening : 3-Card KPI Header & Zero Overlap
-    Phase 2 : Public Open-Source Release : CurseForge & Wago Distribution : Standalone Desktop Sync Binary : Cloud Web Ingestion Pilot
-    Phase 3 : Guild Federation Network : Nemesis Radar & Siren Alerts : Discord War Room Webhooks : P2P Cross-Guild Gossip
-    Phase 4 : Competitive Ranked Seasons : Seasonal Leaderboards & Hall of Fame : Killboard Pro & NitroPay Ads : Multi-Realm Federation
+    Phase 2 : Ingestion & Desktop Courier : Multi-Drive Auto-Discovery : Streaming Lua Parser : Standalone Zero-Python EXE
+    Phase 3 : Guild Wars & Tactical Defense : Discord SOS Webhook Alerts : Head-to-Head Blood Feuds & ROE : 30-Day Deserter KOS Blacklist
+    Phase 4 : Competitive Intelligence & HUD : Cohort Percentile Engine : StreamBox OBS HUD : 7-Item Streamlined Web Navigation
+    Phase 5 : Public Release & Cloud Federation : CurseForge & Wago Distribution : Cloud SSL Hosting : Multi-Realm Federation
 ```
 
 ---
@@ -28,71 +29,87 @@ timeline
 - [x] **Zero-Taint UI Redesign**:
   - Eliminated all Blizzard XML templates and `UISpecialFrames` taint.
   - Implemented custom ESC key handling (`SetPropagateKeyboardInput`).
-  - Solved button overlap: 510px left tabs, 234px right filter pills, guaranteed **88px clear margin**.
+  - Solved button overlap: guaranteed clear margins and responsive scaling.
   - Excised Arena context for strict Vanilla/Forever parity.
   - 3 wide tactical KPI cards: `SESSION COMBAT K/D`, `1v1 DUELS RECORD`, `BATTLEGROUNDS RECORD`.
 - [x] **Bounty Escrow & Debt Ledger**: Player bounty placement, anti-win-trade heuristics, Oathbreaker state machine, proximity debtor sirens, and 1-click postal redemption.
-- [x] **Automated Testing & Deployment**: Python test suite (`test_pipeline.py`, `validate_lua.py`) and automated PowerShell sync to all 4 client directories.
+- [x] **Automated Testing & Deployment**: Python test suite (`test_pipeline.py`, `validate_lua.py`) and automated deployment script (`scripts/deploy.py`) across all 4 client directories.
 
 ---
 
-## Phase 2: Public Release & Community Adoption (Status: IN PROGRESS)
+## Phase 2: Desktop Ingestion & Standalone Courier (Status: COMPLETED)
 
-**Milestone Objective**: Package the system for public consumption across major addon repositories, establish open-source contribution channels, and launch the public web killboard.
+**Milestone Objective**: Establish a hands-off, zero-barrier desktop sync binary requiring zero technical knowledge from end users.
 
-### Action Items & Deliverables:
-1. **Repository & Public Packaging**:
-   - [ ] Initialize public GitHub repository with comprehensive README, license (GPLv3 or MIT), and code of conduct.
-   - [ ] Establish automated GitHub Action CI/CD workflow to validate Lua syntax (`validate_lua.py`) on every push.
-   - [ ] Package release zip files via GitHub Releases matching semantic version tags (`v1.0.0`).
-2. **Addon Portal Distribution**:
-   - [ ] Submit to **CurseForge** (`WoWKillboard.zip` matching interface versions `11503`, `11504`, `110002`).
-   - [ ] Submit to **Wago.io** Addons portal.
-   - [ ] Submit to **WoWInterface**.
-3. **Public Web Host Deployment**:
-   - [ ] Deploy Dockerized Flask + SQLite web platform to a production cloud server (DigitalOcean, AWS LightSail, or Heroku).
-   - [ ] Configure SSL via Let's Encrypt (`https://killboard.forgedbyvalor.com` or similar domain).
-   - [ ] Set up daily automated SQLite database backups.
-4. **Desktop Sync Distribution**:
-   - [ ] Distribute pre-compiled `WoWKillboardSync.exe` through GitHub Releases and the web platform download page.
-   - [ ] Add auto-update check to `WoWKillboardSync.exe` to notify players when a new addon or sync version is published.
+- [x] **Multi-Drive Auto-Discovery**:
+  - Scans across `C:`, `D:`, and `E:` drives automatically for Warcraft WTF directories (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+- [x] **Streaming Recursive Descent Lua Parser**:
+  - Custom zero-dependency lexer/parser ingesting SavedVariables files directly into structured payloads without requiring a Lua runtime.
+- [x] **Single Self-Contained Executable (`WoWKillboardSync.exe`)**:
+  - PyInstaller compiled runner (8.8 MB) requiring zero Python installation, terminal commands, or JSON config editing.
+- [x] **Batched REST Ingestion**:
+  - High-throughput deduplicating ingestion pipeline with cryptographic 32-bit FNV-1a hash matching.
 
 ---
 
-## Phase 3: Guild Federation & Nemesis Radar (Status: PLANNED)
+## Phase 3: Guild Wars, Tactical Defense & Discord Network (Status: COMPLETED)
 
-**Milestone Objective**: Turn WoW Killboard into the primary competitive tool for world PvP guilds, alliance networks, and rival battleground premades.
+**Milestone Objective**: Equip guilds and war parties with coordinated tactical defense tools, automated alerting, and grudge match mechanics.
 
-### Action Items & Deliverables:
-1. **Nemesis & KOS (Kill On Sight) Radar**:
-   - Allow players and guilds to designate specific rival players or entire hostile guilds as **Nemesis / KOS**.
-   - Triggers unique audio cues and visual crosshairs when a KOS target enters render distance.
-2. **Discord "War Room" SaaS Integration**:
-   - Ingest killmails and stream instant embeds to guild Discord channels via webhooks:
-     - Solo kill spotlights with victim gear/damage breakdown.
-     - Bounty announcements and bounty fulfillment payouts.
-     - Weekly Guild MVP reports (Top Damage, Top Medic, Most Lethal Assassin).
-3. **P2P Cross-Guild Gossip Mesh**:
-   - Expand `Sync.lua` to route telemetry across alliance guilds using designated global custom chat channels (e.g., `WoWKillboardNet`).
-   - Gossip deduplication to prevent packet storms and channel spam.
+- [x] **War Horn & Call for Backup SOS Beacons**:
+  - In-game `/warhorn` and `/kbsos` emergency beacons broadcast coordinates and enemy counts.
+  - Automated party auto-invite triggers (`rally`, `war`, `backup`).
+  - Web platform real-time SOS defense frequency monitor (`/api/backup/distress`).
+- [x] **Discord War Room Webhook Network**:
+  - Zero-dependency Discord embed dispatcher (`/api/discord/config`, `/api/discord/test`) broadcasting distress alerts and guild PvP events.
+- [x] **Head-to-Head Blood Feuds & Custom ROE**:
+  - Formal guild and 1v1 grudge match challenges with custom target score goals (e.g., First to 100 Kills).
+  - Custom Rules of Engagement (ROE): Minimum level filters, 2x Underdog bonuses, anti-zerg scoring, and zone restrictions.
+- [x] **Realm KOS Blacklist & 30-Day Deserter Stain**:
+  - Defeated enemy guilds consigned to the public KOS blacklist with in-game proximity sirens.
+  - 30-day anti-guild-hop tracking by permanent character Player-GUID to prevent evasion.
+- [x] **Tactical Intel Recon Wire**:
+  - Live scout sighting wire (`/api/intel/sightings`) broadcasting real-time enemy movements with coordinates and field notes.
 
 ---
 
-## Phase 4: Competitive Ranked Seasons & Monetization (Status: PLANNED)
+## Phase 4: Competitive Intelligence, HUD & Streamlined Web (Status: COMPLETED)
 
-**Milestone Objective**: Monetize the web platform sustainably, launch formal competitive PvP seasons, and provide premium analytical tooling for hardcore players.
+**Milestone Objective**: Deploy deep combat analytics, streamer HUD integration, and an uncluttered, modern 7-item navigation architecture.
+
+- [x] **Class, Spec & Level Cohort Percentile Engine**:
+  - Mathematical cohort ranking calculating exact player standing (`percentile`, `topPct`, `rank`, `totalInCohort`) against all combatants sharing the exact same `(class, spec, level)` on the realm.
+  - Dual-factor scoring: Total Kills primary, K/D ratio tie-breaker.
+- [x] **Native Realm Player Armory & Classic Military Honor Titles**:
+  - Complete character directory indexing all realm combatants with dynamic search, faction, and class filters.
+  - Dynamic PvP rank title resolution: Scout through High Warlord (Horde) and Private through Grand Marshal (Alliance).
+- [x] **War Correspondent HUD / StreamBox (`/war-hud/<name>`)**:
+  - Zero-dependency transparent HTML/CSS/JS battlefield overlay built specifically for OBS Studio and Streamlabs.
+- [x] **World Hazards & Deadly PvE NPC Casualties**:
+  - Open-world environmental casualty telemetry tracking world bosses, elite patrol hazards, and wilderness executioners with complete PvP isolation.
+- [x] **Streamlined 7-Item Navigation Architecture**:
+  - Single-row header: **Logo** &bull; **Theater of War** &bull; **Intel** &bull; **Hall of Legends** &bull; **World Hazards** &bull; **Armory** &bull; **Bounties** &bull; **Warroom**.
+  - Embedded 5-mode combat filter pills (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`) placed inside Hall of Legends.
+  - Header auth status badge (`👤 Username [Sign Out]` / `[Sign In]`).
+- [x] **100% Ad-Free Community Supporter Framework**:
+  - Zero commercial ads, zero tracking networks, and zero paywalls on in-game mechanics.
+  - Optional community patron preview unlocking live Subzone Recon GPS on active bounties.
+
+---
+
+## Phase 5: Public Release, Cloud Hosting & Multi-Realm Federation (Status: ACTIVE / NEXT FOCUS)
+
+**Milestone Objective**: Distribute the addon to public community portals, deploy production cloud hosting with SSL, and support multi-realm federation.
 
 ### Action Items & Deliverables:
-1. **Competitive Seasonal Leaderboards**:
-   - 90-day seasonal cycles matching PvP patch cadences.
-   - Seasonal Hall of Fame archiving champions across Solo K/D, Duelists, and BG Gladiators.
-   - In-game titles or profile badges commemorating seasonal placements.
-2. **Monetization Engine**:
-   - **NitroPay / Playwire Display Ads**: Deploy responsive display containers (728x90 header, 300x250 sidebar) on the web dashboard.
-   - **"Killboard Pro" ($4.99/mo via Stripe/Patreon)**:
-     - 100% ad-free experience.
-     - Custom animated gold borders and guild logos on the web platform.
-     - Advanced analytical reports (Class Counter Matrix, Enemy Cooldown Usage, GPS Hotspot Heatmaps).
+1. **Public Addon Portals**:
+   - [ ] Submit package to **CurseForge** (`WoWKillboard.zip` supporting interface versions `11503`, `11504`, `110002`).
+   - [ ] Submit to **Wago.io** and **WoWInterface**.
+   - [ ] Automated GitHub Release pipeline for semantic version tags (`v1.4.9`).
+2. **Production Cloud Deployment & SSL**:
+   - [ ] Deploy Dockerized Flask + SQLite platform to production cloud infrastructure.
+   - [ ] Configure automated SSL certificate provisioning via Let's Encrypt / Cloudflare.
+   - [ ] Automated nightly SQLite database backup snapshots.
 3. **Multi-Realm Federation**:
-   - Separate server-wide aggregations by realm (e.g., WoW Forever Realm 1, Era Whitemane, Retail Illidan).
-   - Global Realm-vs-Realm competitive standing.
+   - [ ] Segment combat telemetry by Realm (WoW Forever Realm 1, Era Whitemane, Retail Illidan).
+   - [ ] Realm-vs-Realm macro analytics and faction balance telemetry.
