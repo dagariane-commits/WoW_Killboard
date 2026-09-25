@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.2] - 2026-09-25
+
+### Fixed
+- **Mobile Flex-Basis Vertical Void Root Cause**:
+  - Diagnosed and resolved the root cause of the 400px+ tall empty killmail cards on mobile screens ($\le 768\text{px}$). When `.killmail-row` switched to `flex-direction: column`, the desktop rules `flex: 0 0 200px` on `.km-left-meta` and `.km-right-meta` caused the browser to assign 200px of vertical height to both metadata bars, leaving two ~180px empty black voids inside each card.
+  - Enforced `flex: 0 0 auto !important; height: auto !important; width: 100% !important;` on both meta containers within mobile media queries, shrinking mobile killmail cards from 460px down to ~88px (an 81% reduction in card height).
+- **CSS Cascade Specificity Override Bug**:
+  - Re-ordered stylesheet architecture so the desktop `.wowhead-top-bar` declarations precede all responsive media queries, ensuring `@media (max-width: 768px)` rules reliably override desktop properties without cascade collision.
+
+### Changed
+- **Mobile Header Optimization & Height Reduction**:
+  - Eliminated the awkward side-scrolling Wowhead expansion bar on mobile phones (`display: none !important;`), delegating expansion selection entirely to the native slide-in mobile navigation drawer.
+  - Removed desktop-only visual noise on mobile: hidden the 4-line subtitle, the redundant desktop nav links rail, the live recon pill, and the desktop supporter button from the mobile header bar.
+  - Added a compact, tactile active expansion indicator badge (`#mobile-flavor-badge`, e.g. `ERA 60` or `WOTLK 80`) next to the hamburger button, opening the drawer upon tap.
+  - Reduced total mobile header height from ~151px down to 44px, reclaiming 107px of immediate viewport space.
+- **Most Wanted Horizontal Touch-Snap Carousel on Mobile**:
+  - Converted the vertical 5-row Most Wanted grid on mobile into a sleek, horizontal touch-snap carousel (`scroll-snap-type: x mandatory`).
+  - Reduced Most Wanted vertical consumption from 825px down to 155px, allowing users to swipe through all 10 bounties without obscuring the frontline kill feed.
+- **Compact Mobile Realm Stats Grid**:
+  - Tightened the 2&times;2 Realm Stats grid with refined padding (6px 10px) and proportional typography, conserving an additional 60px of vertical space.
+
 ## [1.3.1] - 2026-09-25
 
 ### Added

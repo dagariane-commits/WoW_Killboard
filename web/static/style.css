@@ -2289,260 +2289,6 @@ body {
   color: var(--accent-cyan);
 }
 
-/* ----------------- Responsive Media Queries ----------------- */
-
-/* Desktop Narrow / Tablet Landscape (1024px to 1280px) */
-@media (max-width: 1280px) {
-  .container {
-    padding: 18px 16px;
-    gap: 18px;
-  }
-  .sidebar-column {
-    width: 300px;
-  }
-  .stats-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-/* Tablet Portrait & Small Laptops (769px to 1024px) */
-@media (max-width: 1024px) {
-  .mobile-menu-btn {
-    display: flex;
-  }
-
-  .site-header {
-    position: sticky;
-  }
-
-  .header-top-row {
-    padding: 10px 16px;
-  }
-
-  .header-sub-row {
-    padding: 6px 16px;
-  }
-
-  .container {
-    flex-direction: column;
-    padding: 16px 14px;
-  }
-
-  .sidebar-column {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-    gap: 16px;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .most-wanted-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
-  }
-
-  .km-combatants {
-    gap: 8px;
-  }
-}
-
-/* Mobile Phones (up to 768px) */
-@media (max-width: 768px) {
-  .wh-bar-right {
-    display: none;
-  }
-
-  .wowhead-top-bar {
-    padding: 0 10px;
-  }
-
-  .wh-tab-btn {
-    padding: 0 7px;
-    font-size: 0.64rem;
-  }
-
-  .header-top-row {
-    padding: 8px 12px;
-  }
-
-  .header-tools-group .search-wrap {
-    display: none; /* Accessible in mobile drawer */
-  }
-
-  .header-sub-row {
-    padding: 6px 12px;
-  }
-
-  .header-sub-row #mode-filter-pills {
-    display: none; /* Managed cleanly in mobile rail / drawer */
-  }
-
-  .nav-links-rail {
-    width: 100%;
-    padding: 2px 0;
-  }
-
-  .container {
-    padding: 12px 10px;
-    gap: 14px;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-
-  .stat-card {
-    padding: 12px 14px;
-  }
-
-  .stat-val {
-    font-size: 1.3rem;
-  }
-
-  .most-wanted-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .most-wanted-status-badge {
-    align-self: flex-start;
-  }
-
-  .most-wanted-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-  }
-
-  /* Responsive Killmail Card on Mobile */
-  .killmail-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px 12px;
-  }
-
-  .km-left-meta {
-    max-width: 100%;
-    min-width: unset;
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    padding-bottom: 4px;
-  }
-
-  .km-combatants-center {
-    width: 100%;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 2px 0;
-  }
-
-  .km-combatant-col {
-    min-width: unset;
-    max-width: 45%;
-  }
-
-  .km-player-row {
-    font-size: 0.85rem;
-  }
-
-  .km-right-meta {
-    width: 100%;
-    min-width: unset;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 4px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  .battle-report-attacker-row {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .sidebar-column {
-    grid-template-columns: 1fr;
-  }
-
-  .armory-header-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .armory-filters-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .armory-search-input {
-    width: 100%;
-  }
-
-  .faction-pill-group {
-    width: 100%;
-  }
-
-  .faction-pill {
-    flex: 1;
-    text-align: center;
-  }
-
-  .armory-select {
-    width: 100%;
-  }
-
-  .dossier-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .modal-card {
-    padding: 16px;
-    width: 100%;
-    max-width: 100%;
-    max-height: 95dvh;
-    border-radius: 8px;
-  }
-
-  .footer-inner {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-}
-
-/* Small Phones (< 480px) */
-@media (max-width: 480px) {
-  .logo-title {
-    font-size: 1.15rem;
-  }
-
-  .live-status-pill {
-    display: none;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .stat-card {
-    padding: 10px 12px;
-  }
-
-  .stat-val {
-    font-size: 1.15rem;
-  }
-}
-
 /* ----------------- Wowhead-Style Global Flavor Top Header Strip ----------------- */
 
 .wowhead-top-bar {
@@ -2755,6 +2501,11 @@ body {
   font-weight: 800;
 }
 
+/* Mobile Header Flavor Indicator Badge (hidden on desktop) */
+.mobile-flavor-badge {
+  display: none;
+}
+
 .armory-select option:disabled {
   color: #526075 !important;
   background-color: #080a0f !important;
@@ -2767,6 +2518,491 @@ body {
   background: transparent !important;
   border: 1px dashed rgba(255, 255, 255, 0.12) !important;
   box-shadow: none !important;
+}
+
+/* ----------------- Responsive Media Queries ----------------- */
+
+/* Desktop Narrow / Tablet Landscape (1024px to 1280px) */
+@media (max-width: 1280px) {
+  .container {
+    padding: 18px 16px;
+    gap: 18px;
+  }
+  .sidebar-column {
+    width: 300px;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Tablet Portrait & Small Laptops (769px to 1024px) */
+@media (max-width: 1024px) {
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .site-header {
+    position: sticky;
+  }
+
+  .header-top-row {
+    padding: 10px 16px;
+  }
+
+  .header-sub-row {
+    padding: 6px 16px;
+  }
+
+  .container {
+    flex-direction: column;
+    padding: 16px 14px;
+  }
+
+  .sidebar-column {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .most-wanted-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+
+  .km-combatants {
+    gap: 8px;
+  }
+}
+
+/* Mobile Phones & Phablets (up to 768px) */
+@media (max-width: 768px) {
+  /* 1. Global expansion switcher is completely housed in slide-in drawer on mobile */
+  .wowhead-top-bar {
+    display: none !important;
+  }
+
+  /* 2. Streamlined Ultra-Compact Header */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-top-row {
+    padding: 6px 12px;
+    min-height: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo-group {
+    gap: 6px;
+  }
+
+  .header-faction-crest {
+    width: 20px;
+    height: 20px;
+  }
+
+  .logo-crest {
+    font-size: 1.0rem;
+  }
+
+  .logo-title {
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+    line-height: 1.1;
+  }
+
+  /* Hide bloated subtitles and desktop pills from mobile top row */
+  .logo-subtitle {
+    display: none !important;
+  }
+
+  .live-status-pill {
+    display: none !important;
+  }
+
+  .header-tools-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-tools-group .search-wrap {
+    display: none !important; /* Accessible in mobile drawer */
+  }
+
+  .supporter-btn {
+    display: none !important; /* Accessible in mobile drawer */
+  }
+
+  .mobile-flavor-badge {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: #cbd5e1;
+    font-size: 0.70rem;
+    font-weight: 800;
+    font-family: var(--font-tactical);
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-flavor-badge:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Hide the 10-button navigation rail and desktop mode strip on mobile */
+  .header-sub-row {
+    display: none !important;
+  }
+
+  /* 3. Main Container Spacing */
+  .container {
+    padding: 10px 8px;
+    gap: 10px;
+  }
+
+  /* 4. Compact Realm Stats Bar (2x2 Grid) */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+
+  .stat-card {
+    padding: 6px 10px;
+    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
+  .stat-val {
+    font-size: 1.05rem;
+    line-height: 1.1;
+  }
+
+  /* 5. Most Wanted Showcase: Compact Touch-Snap Horizontal Carousel */
+  .most-wanted-section {
+    margin-bottom: 6px;
+  }
+
+  .most-wanted-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+  }
+
+  .most-wanted-title {
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+  }
+
+  .most-wanted-subtitle {
+    display: none !important;
+  }
+
+  .most-wanted-status-badge {
+    align-self: center;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+
+  .most-wanted-grid {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 8px !important;
+    padding: 2px 2px 8px 2px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .most-wanted-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .wanted-card {
+    flex: 0 0 135px !important;
+    min-width: 135px !important;
+    max-width: 135px !important;
+    min-height: 145px !important;
+    scroll-snap-align: start;
+    padding: 10px 8px;
+    gap: 4px;
+  }
+
+  .wanted-avatar-wrap {
+    width: 44px;
+    height: 44px;
+  }
+
+  .wanted-avatar-img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .wanted-name {
+    font-size: 0.85rem;
+    max-width: 120px;
+  }
+
+  .wanted-guild {
+    font-size: 0.68rem;
+    max-width: 120px;
+  }
+
+  .wanted-bounty-val {
+    font-size: 0.82rem;
+  }
+
+  /* 6. Precision Mobile Killmail Row (Card void permanently eliminated) */
+  .killmail-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    padding: 7px 10px !important;
+    min-height: unset !important;
+    border-radius: 4px;
+  }
+
+  .km-left-meta {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    padding: 0 0 3px 0 !important;
+    margin: 0 !important;
+  }
+
+  .km-zone-name {
+    font-size: 0.80rem !important;
+    font-weight: 700 !important;
+    color: #cbd5e1 !important;
+    max-width: 58% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .km-subzone-text {
+    font-size: 0.70rem !important;
+    color: #64748b !important;
+    max-width: 40% !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .km-combatants-center {
+    width: 100% !important;
+    flex: 0 0 auto !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 3px 0 !important;
+    min-width: 0 !important;
+  }
+
+  .km-combatant-col {
+    min-width: 0 !important;
+    max-width: 44% !important;
+    flex: 1 1 0% !important;
+  }
+
+  .km-player-row {
+    font-size: 0.82rem !important;
+    gap: 5px !important;
+  }
+
+  .km-player-row .class-badge-img {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .km-lvl {
+    font-size: 0.70rem !important;
+  }
+
+  .km-guild-sub {
+    font-size: 0.68rem !important;
+    margin-top: 1px !important;
+  }
+
+  .km-guild-sub-text {
+    max-width: 125px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .km-vs-wrapper {
+    flex: 0 0 22px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .km-vs {
+    font-size: 0.95rem !important;
+  }
+
+  .km-right-meta {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
+    padding: 3px 0 0 0 !important;
+    margin: 0 !important;
+    text-align: left !important;
+  }
+
+  .km-mode-tag {
+    font-size: 0.60rem !important;
+    padding: 1px 5px !important;
+  }
+
+  .km-time {
+    font-size: 0.68rem !important;
+    color: #64748b !important;
+  }
+
+  .battle-report-attacker-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .sidebar-column {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .armory-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .armory-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .armory-search-input {
+    width: 100%;
+  }
+
+  .faction-pill-group {
+    width: 100%;
+  }
+
+  .faction-pill {
+    flex: 1;
+    text-align: center;
+  }
+
+  .armory-select {
+    width: 100%;
+  }
+
+  .dossier-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modal-card {
+    padding: 14px;
+    width: 100%;
+    max-width: 100%;
+    max-height: 95dvh;
+    border-radius: 8px;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+/* Small Phones (< 480px) */
+@media (max-width: 480px) {
+  .logo-title {
+    font-size: 0.98rem;
+  }
+
+  .header-faction-crest {
+    width: 18px;
+    height: 18px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .stat-card {
+    padding: 6px 8px;
+  }
+
+  .stat-val {
+    font-size: 0.98rem;
+  }
+
+  .wanted-card {
+    flex: 0 0 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+    min-height: 135px !important;
+  }
+
+  .km-player-row {
+    font-size: 0.78rem !important;
+  }
+
+  .km-guild-sub-text {
+    max-width: 100px !important;
+  }
 }
 
 /* ----------------- Deadly NPCs Leaderboard & PvE View ----------------- */
