@@ -32,3 +32,4 @@ ENV/
 
 # Binaries & Tunnels
 cloudflared.exe
+backups/

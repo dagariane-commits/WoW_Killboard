@@ -22,7 +22,8 @@ flowchart TD
 1. **[System Architecture](ARCHITECTURE.md)**
    - The 3-tier operational model (In-Game Lua Addon, Desktop File Watcher, Web Platform).
    - Data flow pipelines, FNV-1a cryptographic hashing, and state persistence contracts.
-   - P2P Addon networking over Blizzard chat channels.
+   - Streamlined 7-item navigation architecture (`Theater`, `Intel`, `Hall of Legends`, `World Hazards`, `Armory`, `Bounties`, `Warroom`).
+   - Class, Spec & Level Cohort Percentile Engine with mathematical standing.
 
 2. **[Combat Telemetry & Gang Clustering Engine](COMBAT_ENGINE.md)**
    - Combat log event parsing across Classic (1.15.x) and Retail (11.x).
@@ -42,10 +43,11 @@ flowchart TD
    - Cross-Client Compatibility Matrix: WoW Forever Beta (`_classic_beta_`), Classic Era (`_classic_era_`), Anniversary (`_anniversary_`), and Retail (`_retail_`).
 
 5. **[Strategic Forward Roadmap](ROADMAP.md)**
-   - Phase 1: Core Engine, Combat Telemetry, Multi-Client Taint Hardening (*Completed*).
-   - Phase 2: Public Beta Launch & Community Sync Tooling (*Active*).
-   - Phase 3: Guild Federation & Nemesis Radar (*Planned*).
-   - Phase 4: Competitive Ranked Seasons & Monetization (*Future*).
+   - Phase 1: Core Engine & Combat Hardening (*Completed*).
+   - Phase 2: Desktop Ingestion & Standalone Courier (*Completed*).
+   - Phase 3: Guild Wars, Tactical Defense & Discord Network (*Completed*).
+   - Phase 4: Competitive Intelligence, HUD & Streamlined Web (*Completed*).
+   - Phase 5: Public Release, Cloud Hosting & Multi-Realm Federation (*Active / Next Focus*).
 
 6. **[Public Release & Distribution Playbook](PUBLIC_RELEASE_PLAYBOOK.md)**
    - Addon packaging and deployment automation.
@@ -54,13 +56,13 @@ flowchart TD
    - Production Docker containerization and Discord Webhook integration.
 
 7. **[Semantic Change Log](file:///c:/Users/SQUICK/WoW_Killboard/CHANGELOG.md)**
-   - Complete historical version log detailing every bug fix, feature addition, and refactor.
+   - Complete historical version log detailing every bug fix, feature addition, and refactor across semantic releases.
 
 8. **[Contributing Guide](file:///c:/Users/SQUICK/WoW_Killboard/CONTRIBUTING.md)**
    - Standards, style rules, and verification requirements for open-source contributors.
 
 9. **[Legal, Safety & Compliance Guide](LEGAL_AND_COMPLIANCE.md)**
-   - Authorship by Scott Quick, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
+   - Open-source governance, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
 
 ---
 
