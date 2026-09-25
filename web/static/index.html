@@ -75,14 +75,14 @@
           <input type="text" id="search-box" class="search-input" placeholder="Search Player, Guild, Zone...">
         </div>
 
-        <button class="header-action-pill fieldkit-btn" onclick="openAddonDossierModal()" title="View Addon Field Kit & Blueprints">
+        <button class="header-action-pill fieldkit-btn" onclick="openAddonDossierModal()" title="How the Addon Works & Download Guide">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Field Kit
+          Addon Guide
         </button>
 
-        <button class="header-action-pill oracle-btn" onclick="toggleOracleChatModal()" title="Consult the War Scribe (AI)">
+        <button class="header-action-pill oracle-btn" onclick="toggleOracleChatModal()" title="Consult The War Archivist (AI Intelligence)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          War Scribe
+          War Archivist
         </button>
 
         <button class="supporter-btn" onclick="toggleSupporterMode()">
@@ -227,11 +227,11 @@
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" onclick="openAddonDossierModal(); toggleMobileDrawer(false);">
-          <span>Addon Field Kit &amp; Blueprints</span>
+          <span>How the Addon Works &amp; Download</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" onclick="toggleOracleChatModal(); toggleMobileDrawer(false);">
-          <span>Consult the War Scribe (AI)</span>
+          <span>The War Archivist (AI Intelligence)</span>
           <span>&rarr;</span>
         </button>
       </div>
@@ -534,23 +534,24 @@
         <a href="javascript:void(0)" onclick="openInfoPage('legal')">Warcraft Accord &amp; Policies</a>
       </div>
     </div>
+  </footer>
+
   <!-- Persistent Floating Tactical Action Triggers -->
-  <!-- Persistent Floating Tactical Action Triggers -->
-  <button id="floating-fieldkit-btn" class="floating-action-trigger fieldkit-float" onclick="openAddonDossierModal()" title="Addon Architecture &amp; Field Kit">
+  <button id="floating-fieldkit-btn" class="floating-action-trigger fieldkit-float" onclick="openAddonDossierModal()" title="How the Addon Works &amp; Download Guide">
     <span class="float-icon">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     </span>
-    <span class="float-text">Field Kit</span>
+    <span class="float-text">Addon Guide</span>
   </button>
 
-  <button id="oracle-chat-trigger" class="floating-action-trigger oracle-float" onclick="toggleOracleChatModal()" title="Consult the War Scribe (AI)">
+  <button id="oracle-chat-trigger" class="floating-action-trigger oracle-float" onclick="toggleOracleChatModal()" title="Consult The War Archivist (AI Intelligence)">
     <span class="float-icon">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     </span>
-    <span class="float-text">Ask War Scribe</span>
+    <span class="float-text">War Archivist</span>
   </button>
 
-  <!-- Addon Field Kit & Blueprints Pop-Out Dossier Modal -->
+  <!-- Addon Field Kit & Architecture Guide Pop-Out Modal -->
   <div class="modal-overlay" id="addon-dossier-modal" style="display: none;" onclick="if(event.target===this) closeAddonDossierModal()">
     <div class="modal-card modal-card-lg dossier-card">
       <div class="modal-header dossier-header">
@@ -559,8 +560,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           </div>
           <div>
-            <strong style="color: var(--wow-gold); font-family: var(--font-tactical); font-size: 1.18rem; letter-spacing: 0.6px;">SCRIBE'S FIELD KIT &amp; ADDON BLUEPRINTS</strong>
-            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">VANILLA PURE LUA &bull; ZERO BLIZZARD UI TAINT &bull; 32-BIT FNV-1a BATTLE CERTIFICATION</div>
+            <strong style="color: var(--wow-gold); font-family: var(--font-tactical); font-size: 1.15rem; letter-spacing: 0.6px;">HOW THE ADDON WORKS &amp; ARCHITECTURE GUIDE</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">ZERO BLIZZARD UI TAINT &bull; PURE LUA &bull; BACKGROUND SYNC COURIER &bull; 32-BIT FNV-1a DETERMINISM</div>
           </div>
         </div>
         <button class="modal-close" onclick="closeAddonDossierModal()">&times;</button>
@@ -633,7 +634,7 @@
     </div>
   </div>
 
-  <!-- Grand Inquisitor & War Scribe AI Chat Window -->
+  <!-- The War Archivist AI Intelligence Console Window -->
   <div id="oracle-chat-modal" class="oracle-chat-window" style="display: none;">
     <div class="oracle-chat-header">
       <div style="display:flex; align-items:center; gap:10px;">
@@ -641,8 +642,8 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         </span>
         <div>
-          <div class="oracle-title">GRAND INQUISITOR &amp; WAR SCRIBE</div>
-          <div class="oracle-sub">Live Azeroth Combat Telemetry &amp; Field Codex</div>
+          <div class="oracle-title">THE WAR ARCHIVIST</div>
+          <div class="oracle-sub">Live Azeroth Combat Telemetry &amp; Historical Codex</div>
         </div>
       </div>
       <div class="oracle-header-actions">
@@ -664,9 +665,9 @@
     <!-- Messages Container -->
     <div class="oracle-chat-messages" id="oracle-chat-messages">
       <div class="oracle-msg scribe">
-        <div class="msg-meta">The War Scribe</div>
+        <div class="msg-meta">The War Archivist</div>
         <div class="msg-body">
-          Speak, soldier. The ledger holds every death, every bounty, and every fallen champion across the realms. What intelligence do you seek from the front?
+          Speak, traveler. The archives record every fallen champion, every placed bounty, and every engagement across the realms. What combat intelligence do you seek?
         </div>
       </div>
     </div>

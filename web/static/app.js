@@ -2249,8 +2249,9 @@ function renderDeadlyNpcsView(lbData, deaths) {
 
 // ----------------- War Room Entry Portal -----------------
 
-let portalScreen = "GATE"; // "GATE" (Muster Roll / Clearance) or "VERSIONS" (Theater of Conflict)
+let portalScreen = "GATE"; // "GATE" (Muster Gate / Sign In) or "VERSIONS" (Theater of Conflict)
 let portalAccessMode = "guest";
+let portalAuthTab = "signin"; // "signin" or "register"
 
 function portalSetScreen(screen) {
   portalScreen = screen;
@@ -2264,38 +2265,120 @@ function portalAdvanceToVersions(mode) {
   portalSetScreen("VERSIONS");
 }
 
-function portalDirectSignIn() {
-  let storedHunter = localStorage.getItem("wowkb_user_character") || localStorage.getItem("wow_killboard_hunter_name") || "Vanguard Champion";
-  let storedFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
-  localStorage.setItem("wow_killboard_hunter_name", storedHunter);
-  localStorage.setItem("wowkb_user_character", storedHunter);
-  localStorage.setItem("wowkb_user_faction", storedFaction);
+function portalSetAuthTab(tab) {
+  portalAuthTab = tab;
+  const signinForm = document.getElementById("auth-form-signin");
+  const registerForm = document.getElementById("auth-form-register");
+  const tabSigninBtn = document.getElementById("auth-tab-btn-signin");
+  const tabRegBtn = document.getElementById("auth-tab-btn-register");
+
+  if (signinForm && registerForm) {
+    if (tab === "signin") {
+      signinForm.style.display = "flex";
+      registerForm.style.display = "none";
+      if (tabSigninBtn) tabSigninBtn.classList.add("active");
+      if (tabRegBtn) tabRegBtn.classList.remove("active");
+    } else {
+      signinForm.style.display = "none";
+      registerForm.style.display = "flex";
+      if (tabSigninBtn) tabSigninBtn.classList.remove("active");
+      if (tabRegBtn) tabRegBtn.classList.add("active");
+    }
+  }
+}
+
+function handleNormalSignIn(event) {
+  if (event) event.preventDefault();
+  const userEl = document.getElementById("auth-input-username");
+  const passEl = document.getElementById("auth-input-password");
+  const username = userEl ? userEl.value.trim() : "";
+  const password = passEl ? passEl.value : "";
+
+  if (!username) {
+    alert("Please enter your account username or email.");
+    if (userEl) userEl.focus();
+    return;
+  }
+  if (!password) {
+    alert("Please enter your password.");
+    if (passEl) passEl.focus();
+    return;
+  }
+
+  localStorage.setItem("wowkb_account_username", username);
+  localStorage.setItem("wowkb_user_character", username);
+  localStorage.setItem("wow_killboard_hunter_name", username);
   localStorage.setItem("wowkb_supporter_active", "1");
-  sessionStorage.setItem("wowkb_auth_type", "officer");
-  portalAccessMode = "officer";
+  sessionStorage.setItem("wowkb_auth_type", "account");
+  portalAccessMode = "account";
+
   updateSupporterButton();
   portalLaunchFront(currentFlavor);
 }
 
-function portalSubmitOfficerAndEnterHomepage() {
-  const charEl = document.getElementById("gate-input-char");
-  const factionEl = document.querySelector('input[name="gate-faction"]:checked');
-  const name = charEl ? charEl.value.trim() : "";
-  const faction = factionEl ? factionEl.value : "Alliance";
+function handleNormalRegister(event) {
+  if (event) event.preventDefault();
+  const userEl = document.getElementById("reg-input-username");
+  const emailEl = document.getElementById("reg-input-email");
+  const passEl = document.getElementById("reg-input-password");
+  const username = userEl ? userEl.value.trim() : "";
+  const email = emailEl ? emailEl.value.trim() : "";
+  const password = passEl ? passEl.value : "";
 
-  if (!name) {
-    alert("Inscribe your character call-sign to record your name upon the muster roll, or march as an Unmarked Scout.");
-    if (charEl) charEl.focus();
+  if (!username) {
+    alert("Please choose a username for your account.");
+    if (userEl) userEl.focus();
+    return;
+  }
+  if (!email || !email.includes("@")) {
+    alert("Please enter a valid email address.");
+    if (emailEl) emailEl.focus();
+    return;
+  }
+  if (!password || password.length < 6) {
+    alert("Please create a password of at least 6 characters.");
+    if (passEl) passEl.focus();
     return;
   }
 
-  localStorage.setItem("wow_killboard_hunter_name", name);
-  localStorage.setItem("wowkb_user_character", name);
-  localStorage.setItem("wowkb_user_faction", faction);
+  localStorage.setItem("wowkb_account_username", username);
+  localStorage.setItem("wowkb_account_email", email);
+  localStorage.setItem("wowkb_user_character", username);
+  localStorage.setItem("wow_killboard_hunter_name", username);
   localStorage.setItem("wowkb_supporter_active", "1");
-  sessionStorage.setItem("wowkb_auth_type", "officer");
-  portalAccessMode = "officer";
+  sessionStorage.setItem("wowkb_auth_type", "account");
+  portalAccessMode = "account";
 
+  updateSupporterButton();
+  alert(`Account created successfully for ${username}! Welcome to the War Room.`);
+  portalLaunchFront(currentFlavor);
+}
+
+function handleGoogleSignIn() {
+  const googleUser = "Champion_" + Math.floor(1000 + Math.random() * 9000);
+  const googleEmail = "operative." + Math.floor(100 + Math.random() * 900) + "@gmail.com";
+
+  localStorage.setItem("wowkb_account_username", googleUser);
+  localStorage.setItem("wowkb_account_email", googleEmail);
+  localStorage.setItem("wowkb_account_provider", "google");
+  localStorage.setItem("wowkb_user_character", googleUser);
+  localStorage.setItem("wow_killboard_hunter_name", googleUser);
+  localStorage.setItem("wowkb_supporter_active", "1");
+  sessionStorage.setItem("wowkb_auth_type", "account");
+  portalAccessMode = "account";
+
+  updateSupporterButton();
+  portalLaunchFront(currentFlavor);
+}
+
+function portalDirectSignIn() {
+  let storedUser = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "Vanguard Champion";
+  localStorage.setItem("wow_killboard_hunter_name", storedUser);
+  localStorage.setItem("wowkb_user_character", storedUser);
+  localStorage.setItem("wowkb_account_username", storedUser);
+  localStorage.setItem("wowkb_supporter_active", "1");
+  sessionStorage.setItem("wowkb_auth_type", "account");
+  portalAccessMode = "account";
   updateSupporterButton();
   portalLaunchFront(currentFlavor);
 }
@@ -2308,6 +2391,9 @@ function portalLaunchFront(flavorKey) {
 }
 
 function portalSignOut() {
+  localStorage.removeItem("wowkb_account_username");
+  localStorage.removeItem("wowkb_account_email");
+  localStorage.removeItem("wowkb_account_provider");
   localStorage.removeItem("wowkb_user_character");
   localStorage.removeItem("wowkb_user_realm");
   localStorage.removeItem("wowkb_user_faction");
@@ -2321,81 +2407,127 @@ function loadPortalView() {
   if (!container) return;
 
   const currentAuth = sessionStorage.getItem("wowkb_auth_type");
-  const storedHunter = localStorage.getItem("wowkb_user_character") || localStorage.getItem("wow_killboard_hunter_name") || "";
-  const storedFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
+  const storedAccount = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "";
 
-  // Determine active clearance mode
-  if (storedHunter && currentAuth === "officer" && portalAccessMode !== "guest") {
-    portalAccessMode = "officer";
+  if (storedAccount && (currentAuth === "account" || currentAuth === "officer") && portalAccessMode !== "guest") {
+    portalAccessMode = "account";
   }
 
-  const cfg = FLAVOR_CONFIGS[currentFlavor] || FLAVOR_CONFIGS.CLASSIC_ERA;
-
-  // SCREEN 1: THE MUSTER GATE (Dramatic Guest vs Officer Choice)
+  // SCREEN 1: THE MUSTER GATE (Guest Recon vs Normal Sign-In / Create Account)
   if (portalScreen === "GATE") {
-    let officerBoxHtml = "";
-    if (storedHunter && currentAuth === "officer") {
-      const factionColor = storedFaction === "Alliance" ? "var(--alliance-blue)" : "var(--horde-red)";
-      officerBoxHtml = `
-        <div class="gate-officer-profile">
+    let authBoxHtml = "";
+    if (storedAccount && (currentAuth === "account" || currentAuth === "officer")) {
+      authBoxHtml = `
+        <div class="signedin-account-card">
           <div style="display:flex; align-items:center; gap:12px;">
             <div class="officer-sigil-badge">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <div>
-              <div style="font-weight:900; font-size:1.05rem; color:#fff;">
-                Inscribed: <span style="color:${factionColor};">${storedHunter}</span>
+              <div style="font-weight:800; font-size:1.0rem; color:#fff;">
+                Signed in as <span style="color:var(--wow-gold);">${storedAccount}</span>
               </div>
-              <div style="font-size:0.80rem; color:#94a3b8; margin-top:2px;">
-                Allegiance: <strong style="color:${factionColor};">${storedFaction}</strong> &bull; Clearance: <strong style="color:var(--wow-gold);">High Command</strong>
+              <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
+                Account Active &bull; High Command Clearance
               </div>
             </div>
           </div>
           <button class="dramatic-gate-btn officer" onclick="portalDirectSignIn()">
-            <span>Sign In to War Room Homepage</span>
+            <span>Enter War Room Homepage</span>
             <span>&rarr;</span>
           </button>
           <div style="text-align:center; margin-top:8px;">
-            <button class="gate-signout-link" onclick="portalSignOut()">Strike Name from Ledger / Enlist Anew</button>
+            <button class="gate-signout-link" onclick="portalSignOut()">Sign Out / Switch Account</button>
           </div>
         </div>
       `;
     } else {
-      officerBoxHtml = `
-        <div class="gate-officer-form">
-          <div class="portal-form-group">
-            <label class="portal-label">Character Call-Sign</label>
-            <input type="text" id="gate-input-char" class="portal-input" placeholder="e.g. Sylvanas, Lothar" value="${storedHunter}">
+      authBoxHtml = `
+        <div class="normal-auth-wrapper">
+          <div class="auth-mode-tabs">
+            <button type="button" id="auth-tab-btn-signin" class="auth-tab-btn ${portalAuthTab === 'signin' ? 'active' : ''}" onclick="portalSetAuthTab('signin')">Sign In</button>
+            <button type="button" id="auth-tab-btn-register" class="auth-tab-btn ${portalAuthTab === 'register' ? 'active' : ''}" onclick="portalSetAuthTab('register')">Create Account</button>
           </div>
-          <div class="portal-form-group">
-            <label class="portal-label">Faction Allegiance</label>
-            <div class="portal-faction-toggle">
-              <label class="faction-radio alliance">
-                <input type="radio" name="gate-faction" value="Alliance" ${storedFaction === 'Alliance' ? 'checked' : ''}>
-                <span>Alliance Vanguard</span>
-              </label>
-              <label class="faction-radio horde">
-                <input type="radio" name="gate-faction" value="Horde" ${storedFaction === 'Horde' ? 'checked' : ''}>
-                <span>Horde Warband</span>
+
+          <!-- Sign In Tab Form -->
+          <form id="auth-form-signin" class="normal-auth-form" style="display:${portalAuthTab === 'signin' ? 'flex' : 'none'};" onsubmit="handleNormalSignIn(event)">
+            <div class="auth-input-group">
+              <label class="auth-label" for="auth-input-username">Username or Email</label>
+              <input type="text" id="auth-input-username" class="normal-auth-input" placeholder="e.g. AzerothKnight" autocomplete="username">
+            </div>
+            <div class="auth-input-group">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label class="auth-label" for="auth-input-password">Password</label>
+                <a href="javascript:void(0)" class="auth-forgot-link" onclick="alert('Password reset instructions will be sent to your email.')">Forgot?</a>
+              </div>
+              <input type="password" id="auth-input-password" class="normal-auth-input" placeholder="Enter your password" autocomplete="current-password">
+            </div>
+            <div class="auth-options-row">
+              <label class="auth-checkbox-label">
+                <input type="checkbox" id="auth-remember" checked>
+                <span>Remember me</span>
               </label>
             </div>
-          </div>
-          <button class="dramatic-gate-btn officer" onclick="portalSubmitOfficerAndEnterHomepage()">
-            <span>Sign In &amp; Enter War Room</span>
-            <span>&rarr;</span>
-          </button>
-          <div style="text-align:center; margin-top:10px;">
-            <a href="javascript:void(0)" class="gate-sub-link" onclick="portalDirectSignIn()">
-              Direct Sign In to Homepage &rarr;
-            </a>
-          </div>
+            <button type="submit" class="normal-auth-submit-btn">
+              <span>Sign In &amp; Enter War Room</span>
+              <span>&rarr;</span>
+            </button>
+
+            <div class="auth-or-divider">
+              <span>or continue with</span>
+            </div>
+
+            <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
+              <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
+              </svg>
+              <span>Sign in with Google</span>
+            </button>
+          </form>
+
+          <!-- Create Account Tab Form -->
+          <form id="auth-form-register" class="normal-auth-form" style="display:${portalAuthTab === 'register' ? 'flex' : 'none'};" onsubmit="handleNormalRegister(event)">
+            <div class="auth-input-group">
+              <label class="auth-label" for="reg-input-username">Username</label>
+              <input type="text" id="reg-input-username" class="normal-auth-input" placeholder="Choose a username" autocomplete="username">
+            </div>
+            <div class="auth-input-group">
+              <label class="auth-label" for="reg-input-email">Email Address</label>
+              <input type="email" id="reg-input-email" class="normal-auth-input" placeholder="name@example.com" autocomplete="email">
+            </div>
+            <div class="auth-input-group">
+              <label class="auth-label" for="reg-input-password">Password</label>
+              <input type="password" id="reg-input-password" class="normal-auth-input" placeholder="Min. 6 characters" autocomplete="new-password">
+            </div>
+            <button type="submit" class="normal-auth-submit-btn">
+              <span>Create Account &amp; Enter</span>
+              <span>&rarr;</span>
+            </button>
+
+            <div class="auth-or-divider">
+              <span>or sign up with</span>
+            </div>
+
+            <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
+              <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
+              </svg>
+              <span>Sign up with Google</span>
+            </button>
+          </form>
         </div>
       `;
     }
 
     container.innerHTML = `
       <div class="portal-container dramatic-flow">
-        <!-- Dramatic Hero Masthead -->
+        <!-- Dramatic Hero Masthead (Clean single action button) -->
         <div class="portal-hero dramatic-hero">
           <div class="portal-crest-row">
             <img src="/static/icons/factions/alliance.jpg" class="portal-crest alliance" alt="Alliance" title="For the Alliance!">
@@ -2410,35 +2542,31 @@ function loadPortalView() {
           <div class="portal-hero-actions">
             <button class="portal-fieldkit-pill" onclick="openAddonDossierModal()">
               <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              <span>Field Kit &amp; Addon Blueprints</span>
-            </button>
-            <button class="portal-oracle-pill" onclick="toggleOracleChatModal()">
-              <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="16" y2="7"/><line x1="9" y1="11" x2="14" y2="11"/></svg>
-              <span>Inquire with War Scribe (AI)</span>
+              <span>How the Addon Works &amp; Download</span>
             </button>
           </div>
         </div>
 
-        <!-- Dramatic 2-Card Selection Gate -->
+        <!-- 2-Card Selection Gate -->
         <div class="dramatic-gate-grid">
-          <!-- Card 1: Unmarked Scout (Guest) -->
+          <!-- Card 1: Guest Recon -->
           <div class="dramatic-gate-card guest">
-            <div class="gate-card-badge guest">UNMARKED RECON</div>
+            <div class="gate-card-badge guest">GUEST PASS</div>
             <div class="gate-card-icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
             </div>
             <h2 class="gate-card-title">Continue as Guest</h2>
             <p class="gate-card-desc">
-              March past the gates without name or banner. Observe frontline skirmishes, inspect the death rolls, examine bounty contracts, and study armory records in secret.
+              Access the war room immediately without signing in. Inspect certified combat casualties, examine bounty contracts, explore the KOS gibbet, and browse armory statistics.
             </p>
             <ul class="gate-checklist">
-              <li>Read-only reconnaissance of open-world slaughter</li>
-              <li>Certified 1v1 solo kills &amp; temporal gang clustering</li>
-              <li>High Command execution contracts &amp; KOS gibbet</li>
-              <li>Wilderness casualty rolls from deadly beasts and commanders</li>
+              <li>Instant live combat feed across all 4 target WoW flavors</li>
+              <li>Certified 1v1 solo kills &amp; 15-second gang gank clustering</li>
+              <li>Server-wide blood bounties and KOS gibbet rolls</li>
+              <li>Wilderness casualties &amp; deadly world NPC telemetry</li>
             </ul>
             <button class="dramatic-gate-btn guest" onclick="portalAdvanceToVersions('guest')">
-              <span>Select War Front as Guest</span>
+              <span>Select WoW Version as Guest</span>
               <span>&rarr;</span>
             </button>
             <div style="text-align:center; margin-top:10px;">
@@ -2448,17 +2576,17 @@ function loadPortalView() {
             </div>
           </div>
 
-          <!-- Card 2: Inscribe Muster Roll (Officer Sign-In) -->
+          <!-- Card 2: Account Access (Normal Sign-In / Register / Google) -->
           <div class="dramatic-gate-card officer">
-            <div class="gate-card-badge officer">MUSTER ROLL</div>
+            <div class="gate-card-badge officer">ACCOUNT ACCESS</div>
             <div class="gate-card-icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
-            <h2 class="gate-card-title">Sign In &amp; Enlist</h2>
+            <h2 class="gate-card-title">Sign In or Create Account</h2>
             <p class="gate-card-desc">
-              Pledge your steel to High Command. Record your character call-sign to issue blood bounties in gold, rally defense beacons, and stamp personal combat dispatches.
+              Sign in to issue blood bounties in gold, claim slain marks, and stamp certified combat dispatches to your profile.
             </p>
-            ${officerBoxHtml}
+            ${authBoxHtml}
           </div>
         </div>
       </div>
@@ -2469,8 +2597,8 @@ function loadPortalView() {
   // SCREEN 2: CHOOSE YOUR THEATER OF CONFLICT (Version Selection)
   const isGuest = (portalAccessMode === "guest");
   const clearanceLabel = isGuest 
-    ? `CLEARANCE: Unmarked Scout (Guest Recon)`
-    : `CLEARANCE: Operative ${storedHunter || "Enlisted"} (${storedFaction})`;
+    ? `CLEARANCE: Guest Recon`
+    : `ACCOUNT: ${storedAccount || "Operative"}`;
 
   const flavorKeys = ["CLASSIC_ERA", "ANNIVERSARY", "FOREVER", "TBC", "WOTLK", "RETAIL"];
   const flavorCardsHtml = flavorKeys.map(key => {
@@ -2506,7 +2634,7 @@ function loadPortalView() {
       <!-- Screen 2 Navigation Bar -->
       <div class="theater-nav-bar">
         <button class="portal-back-btn" onclick="portalSetScreen('GATE')">
-          <span>&larr; Return to Muster Gate</span>
+          <span>&larr; Return to Sign In</span>
         </button>
         <div class="theater-clearance-wrap">
           <span class="theater-clearance-pill ${isGuest ? 'guest' : 'officer'}">${clearanceLabel}</span>
@@ -2514,11 +2642,11 @@ function loadPortalView() {
         <div style="display:flex; gap:8px;">
           <button class="portal-fieldkit-pill small" onclick="openAddonDossierModal()">
             <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-            <span>Field Kit Blueprints</span>
+            <span>Addon Guide</span>
           </button>
           <button class="portal-oracle-pill small" onclick="toggleOracleChatModal()">
             <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            <span>Ask War Scribe</span>
+            <span>War Archivist</span>
           </button>
         </div>
       </div>
@@ -2555,7 +2683,7 @@ function closeAddonDossierModal() {
   }
 }
 
-// ----------------- War Scribe & Combat Oracle AI Chat -----------------
+// ----------------- The War Archivist & Combat Oracle AI Chat -----------------
 
 function toggleOracleChatModal(forceOpen) {
   const modal = document.getElementById("oracle-chat-modal");
@@ -2595,10 +2723,10 @@ function saveOracleKey() {
     const key = input.value.trim();
     if (key) {
       localStorage.setItem("wowkb_gemini_api_key", key);
-      alert("Arcane Key saved into local cache. The War Scribe will now use deep generative synthesis.");
+      alert("Arcane Key saved into local cache. The War Archivist will now use deep generative synthesis.");
     } else {
       localStorage.removeItem("wowkb_gemini_api_key");
-      alert("Arcane Key cleared. Reverting to local Scribe intelligence.");
+      alert("Arcane Key cleared. Reverting to local Archivist intelligence.");
     }
     const drawer = document.getElementById("oracle-key-drawer");
     if (drawer) drawer.style.display = "none";
@@ -2610,9 +2738,9 @@ function clearOracleChat() {
   if (container) {
     container.innerHTML = `
       <div class="oracle-msg scribe">
-        <div class="msg-meta">⚔️ The War Scribe</div>
+        <div class="msg-meta">⚔️ The War Archivist</div>
         <div class="msg-body">
-          Speak, soldier. The ledger holds every death, every bounty, and every fallen champion across the realms. What intelligence do you seek from the front?
+          Speak, traveler. The ledger holds every death, every bounty, and every fallen champion across the realms. What combat intelligence do you seek from the front?
         </div>
       </div>
     `;
@@ -2659,13 +2787,13 @@ async function sendOracleMessage() {
   loadingEl.id = loaderId;
   loadingEl.className = "oracle-msg scribe loading";
   loadingEl.innerHTML = `
-    <div class="msg-meta">The War Scribe</div>
+    <div class="msg-meta">The War Archivist</div>
     <div class="msg-body"><span class="oracle-pulsing-rune">Searching the war ledger archives...</span></div>
   `;
   msgContainer.appendChild(loadingEl);
   msgContainer.scrollTop = msgContainer.scrollHeight;
 
-  const character = localStorage.getItem("wowkb_user_character") || "Unmarked Scout";
+  const character = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "Unmarked Scout";
   const apiKey = localStorage.getItem("wowkb_gemini_api_key") || "";
 
   try {
@@ -2700,7 +2828,7 @@ async function sendOracleMessage() {
     let formattedReply = formatScribeMarkdown(data.reply || "The dispatch is unreadable; our scouts report no findings.");
 
     scribeMsgEl.innerHTML = `
-      <div class="msg-meta">The War Scribe</div>
+      <div class="msg-meta">The War Archivist</div>
       <div class="msg-body">${formattedReply}</div>
       ${sourcesHtml}
     `;

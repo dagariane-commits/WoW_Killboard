@@ -3350,6 +3350,35 @@ body.portal-active .container {
   text-shadow: 0 0 12px rgba(212, 163, 41, 0.5) !important;
 }
 
+.portal-title {
+  font-family: var(--font-tactical);
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #fff;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.portal-tagline {
+  font-family: var(--font-tactical);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--wow-gold);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.portal-lead {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #94a3b8;
+  max-width: 660px;
+  margin: 0 auto;
+}
+
 .portal-hero-actions {
   display: flex;
   align-items: center;
@@ -3580,14 +3609,193 @@ body.portal-active .container {
   transform: translateY(-2px);
 }
 
-.gate-officer-form {
+.normal-auth-wrapper {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-top: 4px;
 }
 
-.gate-officer-profile {
+.auth-mode-tabs {
+  display: flex;
+  background: #06080f;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-family: var(--font-tactical);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.auth-tab-btn.active {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+}
+
+.normal-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.auth-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.auth-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.auth-forgot-link {
+  font-size: 0.70rem;
+  color: #94a3b8;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.auth-forgot-link:hover {
+  color: var(--wow-gold);
+}
+
+.normal-auth-input {
+  height: 42px;
+  background: #05070d;
+  border: 1px solid #26334d;
+  border-radius: 6px;
+  color: #fff;
+  padding: 0 12px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.normal-auth-input:focus {
+  outline: none;
+  border-color: var(--wow-gold);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.auth-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  color: #94a3b8;
+  margin: 2px 0;
+}
+
+.auth-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.normal-auth-submit-btn {
+  width: 100%;
+  height: 44px;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 230, 128, 0.35);
+  border-radius: 6px;
+  font-family: var(--font-tactical);
+  font-size: 0.88rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.normal-auth-submit-btn:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.5);
+  transform: translateY(-1px);
+}
+
+.auth-or-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 4px 0;
+  font-size: 0.68rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.auth-or-divider::before,
+.auth-or-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.auth-or-divider::before {
+  margin-right: 10px;
+}
+
+.auth-or-divider::after {
+  margin-left: 10px;
+}
+
+.google-auth-btn {
+  width: 100%;
+  height: 42px;
+  background: #0e131f;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.google-auth-btn:hover {
+  background: #171e2e;
+  border-color: #64748b;
+  color: #fff;
+}
+
+.google-g-logo {
+  flex-shrink: 0;
+}
+
+.signedin-account-card {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -4218,8 +4426,42 @@ body.portal-active .container {
 /* 8. Mobile Adaptations */
 @media (max-width: 768px) {
   body.portal-active .container {
-    padding-top: 16px;
+    padding-top: 14px;
     padding-bottom: 30px;
+  }
+
+  .portal-hero.dramatic-hero {
+    padding: 22px 14px;
+  }
+
+  .portal-title {
+    font-size: 1.45rem;
+    letter-spacing: 0.5px;
+  }
+
+  .portal-tagline {
+    font-size: 0.68rem;
+    letter-spacing: 0.8px;
+    line-height: 1.35;
+  }
+
+  .portal-lead {
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .portal-crest-row {
+    gap: 14px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .portal-crest {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .portal-emblem {
+    font-size: 1.4rem !important;
   }
 
   .dramatic-gate-grid {
@@ -4227,8 +4469,12 @@ body.portal-active .container {
     gap: 16px;
   }
 
-  .portal-hero.dramatic-hero {
-    padding: 24px 16px;
+  .dramatic-gate-card {
+    padding: 20px 16px;
+  }
+
+  .gate-card-title {
+    font-size: 1.2rem;
   }
 
   .dramatic-theater-grid {
@@ -4236,22 +4482,45 @@ body.portal-active .container {
     gap: 8px;
   }
 
+  /* Popout 1: Addon Architecture Dossier Modal on Mobile */
+  .modal-card.dossier-card {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    max-height: 92dvh !important;
+    padding: 14px !important;
+    margin: auto !important;
+  }
+
+  .dossier-header {
+    padding: 12px 14px !important;
+  }
+
+  .dossier-body {
+    padding: 12px 6px !important;
+    max-height: calc(92dvh - 70px) !important;
+  }
+
   .dossier-pillars-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .dossier-download-box {
     flex-direction: column;
     align-items: stretch;
+    padding: 14px;
   }
 
   .dossier-dl-actions {
     flex-direction: column;
+    gap: 8px;
+    width: 100%;
   }
 
   .dossier-dl-actions .portal-dl-btn {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
   }
 
   .floating-action-trigger {
@@ -4268,12 +4537,30 @@ body.portal-active .container {
     right: 12px;
   }
 
+  /* Popout 2: The War Archivist AI Intelligence Console on Mobile */
   .oracle-chat-window {
-    right: 8px;
-    left: 8px;
-    bottom: 8px;
-    width: auto;
-    height: 80vh;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    z-index: 2800 !important;
+    box-shadow: none !important;
+  }
+
+  .oracle-chat-header {
+    padding: 12px 16px !important;
+    min-height: 52px !important;
+  }
+
+  .oracle-chat-input-bar {
+    padding: 10px 14px !important;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .theater-nav-bar {
@@ -4286,6 +4573,25 @@ body.portal-active .container {
 @media (max-width: 480px) {
   .dramatic-theater-grid {
     grid-template-columns: 1fr;
+  }
+
+  .gate-checklist li {
+    font-size: 0.76rem;
+  }
+
+  .normal-auth-input {
+    height: 40px;
+    font-size: 0.84rem;
+  }
+
+  .normal-auth-submit-btn {
+    height: 42px;
+    font-size: 0.84rem;
+  }
+
+  .google-auth-btn {
+    height: 40px;
+    font-size: 0.80rem;
   }
 }
 
