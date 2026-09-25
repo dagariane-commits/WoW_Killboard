@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-09-25
+
+### Added
+- **Azeroth War Room Entry Portal (First Page Gateway)**:
+  - **First-Visit Gateway Experience**: Configured the platform so all new visits and fresh sessions land immediately on the immersive **War Room Portal**, providing full context before entering the frontline combat feed.
+  - **Interactive 6-Flavor WoW Version Selector**:
+    - Featured rich selection cards for **Classic Era (60)**, **20th Anniversary Edition (60)**, **WoW Forever Beta (60)**, **The Burning Crusade (70)**, **Wrath of the Lich King (80)**, and **Modern Retail (80)**.
+    - Displays active level caps, expansion summary descriptions, and instant engine calibration with glowing gold/cyan selection indicators.
+  - **Dual-Path Access Level (Guest vs. Officer Login)**:
+    - **Continue as Guest (Field Operative)**: Instant one-click entry to live frontline combat telemetry, death feeds, Most Wanted execution contracts, and player armory with zero sign-up.
+    - **Officer / Vanguard Sign-In**: Enables combatants to register their character call-sign, server realm, and allegiance faction (Alliance / Horde), automatically unlocking Vanguard Supporter status, personal combat synchronization, and bounty placement authority.
+  - **Comprehensive Addon Architecture & Explanation**:
+    - **Pillar 1 — Passive Combat Log Capture**: Pure Lua (`BackdropTemplate`, anonymous widgets), listening to `COMBAT_LOG_EVENT_UNFILTERED` with spatial GPS coordinates (`C_Map`) and 15-second sliding gang clustering. Zero Blizzard UI taint.
+    - **Pillar 2 — Zero-Python Desktop Auto-Sync**: Standalone `WoWKillboardSync.exe` with automated multi-drive auto-discovery across `C:`, `D:`, and `E:` drives.
+    - **Pillar 3 — 32-Bit FNV-1a Cryptographic Deduplication**: Guarantees distributed deduplication when 40 raid members log the same battle.
+    - **Pillar 4 — Blood Bounties & KOS Tracking**: In-game gold contracts with server-wide KOS branding for defaulted debtors across name changes and guild transfers.
+    - **One-Click Download Center**: Direct download links for `WoWKillboard-v1.0.0.zip` and `WoWKillboardSync.exe`.
+  - **Sleek Portal Navigation & Full-Width Layout**:
+    - Added dedicated **"🏰 War Room Portal"** buttons to the desktop navigation rail, the mobile drawer directory, and the site header crest logo.
+    - Introduced `.container.portal-mode` full-width layout, cleanly hiding sidebar widgets, stats grid, and feed cards during portal viewing.
+
 ## [1.3.2] - 2026-09-25
 
 ### Fixed
