@@ -72,10 +72,14 @@ function getClassIconSvg(cls) {
 }
 
 function renderClassBadge(cls, size = 20) {
-  cls = (cls || "").toUpperCase();
-  const color = CLASS_COLORS[cls] || "#94a3b8";
-  const svg = getClassIconSvg(cls);
-  return `<span class="wow-class-icon" style="width:${size}px; height:${size}px; border-color:${color}; color:${color};" title="${cls}">${svg}</span>`;
+  const clsLower = (cls || "").toLowerCase();
+  const clsUpper = (cls || "").toUpperCase();
+  const color = CLASS_COLORS[clsUpper] || "#94a3b8";
+  const svg = getClassIconSvg(clsUpper);
+  return `<span class="wow-class-icon" style="width:${size}px; height:${size}px; border-color:${color};" title="${clsUpper}">
+    <img src="/static/icons/classes/${clsLower}.jpg" alt="${clsUpper}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">
+    <span style="display:none; width:100%; height:100%; color:${color};">${svg}</span>
+  </span>`;
 }
 
 function renderWowCoin(type) {
@@ -86,6 +90,15 @@ let currentTab = "FEED";
 let currentMode = "ALL";
 let searchQuery = "";
 let cachedKills = [];
+let feedDisplayMode = localStorage.getItem("wow_killboard_feed_display_mode") || "PLAYERS"; // "PLAYERS" or "GUILDS"
+
+function setFeedDisplayMode(mode) {
+  feedDisplayMode = mode;
+  localStorage.setItem("wow_killboard_feed_display_mode", mode);
+  if (currentTab === "FEED" && cachedKills) {
+    renderFeed(cachedKills);
+  }
+}
 
 // Bounty Acceptance & Opt-In Helpers
 function isBountyAcceptedLocally(bountyId) {
@@ -483,12 +496,18 @@ function renderFeed(kills) {
 
   let html = `
     <div style="display: flex; flex-direction: column; gap: 6px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27);">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:1.15rem;">⚔️</span>
-          <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
+      <div class="feed-header-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); gap:10px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:1.15rem;">⚔️</span>
+            <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
+          </div>
+          <div class="feed-toggle-group">
+            <button class="feed-toggle-btn ${feedDisplayMode === 'PLAYERS' ? 'active' : ''}" onclick="setFeedDisplayMode('PLAYERS')">👤 Players</button>
+            <button class="feed-toggle-btn ${feedDisplayMode === 'GUILDS' ? 'active' : ''}" onclick="setFeedDisplayMode('GUILDS')">🛡️ Guilds</button>
+          </div>
         </div>
-        <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Log &bull; ${kills.length} events</span>
+        <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Feed &bull; ${kills.length} events</span>
       </div>
   `;
   kills.forEach(km => {
@@ -523,23 +542,59 @@ function renderFeed(kills) {
       ? `<span class="km-guild">&lt;${km.victim.guild}&gt;</span>`
       : '';
 
+    let combatantsHtml = "";
+    if (feedDisplayMode === "GUILDS") {
+      const killerGuildName = (km.killer.guild && km.killer.guild !== 'None') ? km.killer.guild : 'Unguilded';
+      const victimGuildName = (km.victim.guild && km.victim.guild !== 'None') ? km.victim.guild : 'Unguilded';
+      const killerFaction = (km.killer.faction || 'Neutral').toLowerCase();
+      const victimFaction = (km.victim.faction || 'Neutral').toLowerCase();
+
+      const killerGuildHtml = killerGuildName !== 'Unguilded'
+        ? `<span class="clickable-guild km-guild-title ${killerFaction}" onclick="event.stopPropagation(); openGuildProfile('${killerGuildName}')">&lt;${killerGuildName}&gt;</span>`
+        : `<span class="km-guild-unguilded">&lt;Unguilded&gt;</span>`;
+
+      const victimGuildHtml = victimGuildName !== 'Unguilded'
+        ? `<span class="clickable-guild km-guild-title ${victimFaction}" onclick="event.stopPropagation(); openGuildProfile('${victimGuildName}')">&lt;${victimGuildName}&gt;</span>`
+        : `<span class="km-guild-unguilded">&lt;Unguilded&gt;</span>`;
+
+      combatantsHtml = `
+        <div class="km-combatant killer">
+          <span class="km-guild-crest ${killerFaction}" title="${km.killer.faction || 'Faction'}">🛡️</span>
+          ${killerGuildHtml}
+        </div>
+        <span class="km-vs" title="Guild War Clash">⚔️</span>
+        <div class="km-combatant victim">
+          <span class="km-guild-crest ${victimFaction}" title="${km.victim.faction || 'Faction'}">🛡️</span>
+          ${victimGuildHtml}
+        </div>
+      `;
+    } else {
+      combatantsHtml = `
+        <div class="km-combatant killer">
+          ${killerBadge}
+          <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.killer.name}')">${killerSpan}</span>
+          <span class="km-lvl">(${km.killer.level})</span>
+          ${killerGuild}
+        </div>
+        <span class="km-vs" title="${km.isDuel ? 'Defeated in Duel' : 'Slew in Combat'}">⚔️</span>
+        <div class="km-combatant victim">
+          ${victimBadge}
+          <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.victim.name}')">${victimSpan}</span>
+          <span class="km-lvl">(${km.victim.level})</span>
+          ${victimGuild}
+        </div>
+      `;
+    }
+
+    const rowTooltip = feedDisplayMode === "GUILDS"
+      ? `${km.killer.name} defeated ${km.victim.name} • ${modeLabel} • ${km.location.zone} • Click to inspect combat dossier`
+      : `${modeLabel} • ${km.location.zone} • Click to inspect combat dossier`;
+
     html += `
-      <div class="killmail-row ${modeClass}" onclick="openKillModal('${km.killId}')" title="${modeLabel} • ${km.location.zone} • Click to inspect combat dossier">
+      <div class="killmail-row ${modeClass}" onclick="openKillModal('${km.killId}')" title="${rowTooltip}">
         <div class="km-left">
           <div class="km-combatants">
-            <div class="km-combatant killer">
-              ${killerBadge}
-              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.killer.name}')">${killerSpan}</span>
-              <span class="km-lvl">(${km.killer.level})</span>
-              ${killerGuild}
-            </div>
-            <span class="km-vs" title="${km.isDuel ? 'Defeated in Duel' : 'Slew in Combat'}">⚔️</span>
-            <div class="km-combatant victim">
-              ${victimBadge}
-              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.victim.name}')">${victimSpan}</span>
-              <span class="km-lvl">(${km.victim.level})</span>
-              ${victimGuild}
-            </div>
+            ${combatantsHtml}
           </div>
         </div>
         <div class="km-right">
