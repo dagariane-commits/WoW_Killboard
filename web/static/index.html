@@ -576,52 +576,156 @@
           </div>
         </div>
 
-        <!-- Free vs. Paid Features Section -->
+        <!-- Free, Personal & Paid Member Access Tiers (100% Blizzard ToS Compliant) -->
         <div class="dossier-tier-section">
           <div class="dossier-tier-title-row">
             <span class="dossier-tier-icon">⚖️</span>
-            <h3 class="dossier-tier-heading">WAR ROOM ACCESS TIERS: FREE VS. SUPPORTER PERKS</h3>
+            <div>
+              <h3 class="dossier-tier-heading">WAR ROOM ACCESS TIERS: GUEST, FREE MEMBER, &amp; PAID SUPPORTER</h3>
+              <div class="dossier-tier-subhead">100% Blizzard Addon Policy Compliant &bull; No In-Game Paywalls &bull; No Pay-to-Win Mechanics</div>
+            </div>
           </div>
 
           <div class="dossier-tier-grid">
-            <!-- Free Core Tier -->
-            <div class="dossier-tier-card free">
+            <!-- Tier 1: Guest Recon -->
+            <div class="dossier-tier-card guest-tier">
               <div class="tier-card-header">
-                <span class="tier-badge free">FREE // CORE AGENT</span>
-                <div class="tier-name">Standard Operative</div>
-                <div class="tier-sub">100% Free Forever For Every Player</div>
+                <span class="tier-badge guest">TIER 1 // GUEST PASS</span>
+                <div class="tier-name">Guest Recon</div>
+                <div class="tier-sub">No Registration Required</div>
               </div>
               <ul class="tier-features-list">
-                <li><span class="tier-check">✔</span> Automatic In-Game PvP Kill &amp; Death Tracking (Zero UI Taint)</li>
-                <li><span class="tier-check">✔</span> Standalone Multi-Drive Background Sync (<code>WoWKillboardSync.exe</code>)</li>
-                <li><span class="tier-check">✔</span> Certified 1v1 Solo Kills &amp; 15-Second Gang Gank Detection</li>
-                <li><span class="tier-check">✔</span> <strong>Place Gold Bounties on Gankers</strong> directly upon death</li>
-                <li><span class="tier-check">✔</span> Claim Gold Bounties by hunting and slaying Wanted marks</li>
-                <li><span class="tier-check">✔</span> Full Frontline Live Feed, Hall of Heroes, &amp; Deadly World NPCs</li>
-                <li><span class="tier-check">✔</span> Searchable Player Armory &amp; Classic Military Honor Rank Titles</li>
-              </ul>
-            </div>
-
-            <!-- Supporter Paid Tier -->
-            <div class="dossier-tier-card supporter">
-              <div class="tier-card-header">
-                <span class="tier-badge supporter">PAID // VANGUARD BENEFACTOR</span>
-                <div class="tier-name">High Command Supporter</div>
-                <div class="tier-sub">Optional Perks to Fund Realm Server Infrastructure</div>
-              </div>
-              <ul class="tier-features-list">
-                <li><span class="tier-star">★</span> <strong>Real-Time Subzone GPS Telemetry</strong> for Most Wanted bounty targets</li>
-                <li><span class="tier-star">★</span> <strong>Priority Discord SOS Defense Beacons</strong> with automated party auto-invites</li>
-                <li><span class="tier-star">★</span> <strong>StreamBox Broadcaster HUD Overlay</strong> for OBS / Twitch live streaming</li>
-                <li><span class="tier-star">★</span> <strong>Gilded Armory Insignia</strong> &amp; Golden Benefactor Crest on leaderboards</li>
-                <li><span class="tier-star">★</span> <strong>30-Day Activity Analytics</strong> &amp; Historical Cold Case Bounty Vault</li>
-                <li><span class="tier-star">★</span> <strong>War Council Priority Voting</strong> on upcoming addon &amp; platform features</li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Live Combat Feed:</strong> Real-time killmail dispatches across WoW Forever.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Cumulative Telemetry:</strong> Server-wide carnage metrics and faction war balance.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Most Wanted Bounties:</strong> Public bounty board and realm KOS gibbet.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Deadly NPC Rankings:</strong> Wilderness and dungeon lethal mob casualties.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Field Manual &amp; Codex:</strong> Complete rules of engagement and documentation.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet cross">✕</span>
+                  <span class="tier-text muted">No personal kill/death tracking or armory profile.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet cross">✕</span>
+                  <span class="tier-text muted">Cannot place or claim in-game gold bounties.</span>
+                </li>
               </ul>
               <div class="tier-card-action">
-                <button class="supporter-upgrade-btn" onclick="toggleSupporterMode()">
-                  <span>★ Toggle Supporter Preview Mode</span>
+                <button class="tier-cta-btn guest" onclick="closeAddonDossierModal(); portalEnterAsGuest();">
+                  <span>Enter as Guest &rarr;</span>
                 </button>
               </div>
+            </div>
+
+            <!-- Tier 2: Free Registered Operative (Personal Account) -->
+            <div class="dossier-tier-card free-tier">
+              <div class="tier-card-header">
+                <span class="tier-badge free">TIER 2 // FREE MEMBER</span>
+                <div class="tier-name">Registered Operative</div>
+                <div class="tier-sub">Free Personal Combat Tracking Account</div>
+              </div>
+              <ul class="tier-features-list">
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>100% Free Addon &amp; Sync:</strong> Zero-taint logging and automated courier.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Personalized Combat Banner:</strong> Your Kills, Deaths, K/D, and Solo statistics.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Personal Player Armory:</strong> Complete battle dossier &amp; Classic Military Honor Rank.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Gank Retaliation Bounties:</strong> Place gold bounties immediately upon death.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Bounty Hunter Rewards:</strong> Slay Most Wanted targets to claim escrow gold.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Guild Feuds &amp; Blacklist:</strong> Declare rivalries and brand oathbreakers KOS.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet check">✔</span>
+                  <span class="tier-text"><strong>Cross-Client Support:</strong> Compatible across all 4 WoW installations.</span>
+                </li>
+              </ul>
+              <div class="tier-card-action">
+                <button class="tier-cta-btn free" onclick="closeAddonDossierModal(); switchTab('PORTAL'); portalSetAuthTab('register');">
+                  <span>Create Free Account &rarr;</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tier 3: High Command Supporter (Paid Member - 100% ToS Compliant) -->
+            <div class="dossier-tier-card supporter-tier">
+              <div class="tier-card-header">
+                <span class="tier-badge supporter">TIER 3 // PAID SUPPORTER</span>
+                <div class="tier-name">High Command Supporter</div>
+                <div class="tier-sub">Web Perks &bull; Funds Server Infrastructure</div>
+              </div>
+              <ul class="tier-features-list">
+                <li class="tier-item">
+                  <span class="tier-bullet star">★</span>
+                  <span class="tier-text"><strong>Beta Tester Access:</strong> Early access to experimental addon &amp; web builds.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet star">★</span>
+                  <span class="tier-text"><strong>Priority Feature Voting:</strong> Cast weighted votes on upcoming platform features.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet star">★</span>
+                  <span class="tier-text"><strong>Live Subzone GPS:</strong> Pinpoint exact subzones for Most Wanted targets on web.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet star">★</span>
+                  <span class="tier-text"><strong>Discord SOS Defense:</strong> Automated webhook alerts with party auto-invites.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet star">★</span>
+                  <span class="tier-text"><strong>StreamBox Broadcaster HUD:</strong> Transparent OBS overlay for Twitch streamers.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet star">★</span>
+                  <span class="tier-text"><strong>Gilded Benefactor Insignia:</strong> Golden crest on Armory profiles &amp; leaderboards.</span>
+                </li>
+                <li class="tier-item">
+                  <span class="tier-bullet star">★</span>
+                  <span class="tier-text"><strong>Extended Cold Case Vault:</strong> 30-day deep combat trends &amp; bounty history.</span>
+                </li>
+              </ul>
+              <div class="tier-card-action">
+                <button class="tier-cta-btn supporter" onclick="toggleSupporterMode()">
+                  <span>★ Preview Supporter Mode</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Blizzard ToS & Addon Policy Guarantee Callout -->
+          <div class="dossier-tos-callout">
+            <div class="tos-callout-icon">🛡️</div>
+            <div class="tos-callout-text">
+              <strong>Blizzard Addon Policy &amp; Terms of Service Guarantee:</strong>
+              In strict accordance with Blizzard's UI &amp; Add-on Policy, the WoW Killboard addon and all in-game tracking mechanisms are 100% free and open for all players with zero gameplay advantages. Supporter subscriptions exclusively fund server hosting, bandwidth, and web companion features (StreamBox OBS overlays, beta testing, and cosmetic badges).
             </div>
           </div>
         </div>
