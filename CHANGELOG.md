@@ -21,8 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Direct WoW Forever Portal Routing (Zero Version Distractions)**:
   - Eliminated the Screen 2 version picker per user directive to focus exclusively on WoW Forever (`FOREVER`).
-  - Selecting either "Enter WoW Forever as Guest" or authenticating via username/password or Google SSO immediately routes the operative straight to the WoW Forever homepage with their stats loaded at the top.
+  - Selecting either "Continue as Guest" or authenticating via username/password or Google SSO immediately routes the operative straight to the WoW Forever homepage with their stats loaded at the top.
   - Locked top header flavor tabs and mobile drawer exclusively to **WoW Forever** (`LIVE FRONTIER`, Level 60 Max).
+- **Streamlined & Condensed Portal Muster Gate**:
+  - Removed the multi-flavor bullet point checklist from the Guest card to eliminate vertical sprawl and redundant marketing copy.
+  - Removed the secondary "Or enter Frontline Feed directly" link.
+  - Re-proportioned both Gate cards with tighter padding (`20px`), condensed badge/icon spacing, and streamlined typography for a compact, balanced presentation.
 
 ## [1.4.4] - 2026-09-25
 
