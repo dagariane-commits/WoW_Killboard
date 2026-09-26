@@ -81,9 +81,19 @@ function UI:ApplyTheme()
     local theme = UI:GetTheme()
     if not theme or not theme.mainBackdrop then return end
 
+    if UI.SolidBg then
+        UI.SolidBg:SetColorTexture(unpack(theme.solidBg or theme.mainBg))
+    end
+
     mainFrame:SetBackdrop(theme.mainBackdrop)
     mainFrame:SetBackdropColor(unpack(theme.mainBg))
     mainFrame:SetBackdropBorderColor(unpack(theme.mainBorder))
+
+    if UI.ContentInset then
+        UI.ContentInset:SetBackdrop(theme.insetBackdrop or theme.cardBackdrop)
+        UI.ContentInset:SetBackdropColor(unpack(theme.insetBg or theme.cardBg))
+        UI.ContentInset:SetBackdropBorderColor(unpack(theme.insetBorder or theme.cardBorder))
+    end
 
     if UI.TitleText then
         UI.TitleText:SetText(theme.titleText)
@@ -155,6 +165,12 @@ function UI:ApplyTheme()
             card:SetBackdrop(theme.cardBackdrop)
             card:SetBackdropColor(unpack(theme.cardBg))
             card:SetBackdropBorderColor(unpack(theme.cardBorder))
+            if card.HeaderStrip then
+                card.HeaderStrip:SetColorTexture(unpack(theme.cardHeaderBg or {0.09, 0.12, 0.17, 1.0}))
+            end
+            if card.HeaderDivider then
+                card.HeaderDivider:SetColorTexture(unpack(theme.cardHeaderBorder or {0.35, 0.28, 0.16, 0.8}))
+            end
             if card.TitleLabel and card.rawTitle then
                 local tColor = (theme.id == "classic") and "|cffffd100" or "|cffffffff"
                 card.TitleLabel:SetText(tColor .. card.rawTitle .. "|r")
@@ -292,6 +308,23 @@ function UI:CreateClassIcon(parent, classFilename, size)
     return tex
 end
 
+-- Helper: Update circular portrait medallion and player level
+function UI:UpdatePortrait()
+    if not UI.Medallion then return end
+    if UI.Medallion.Portrait and SetPortraitTexture then
+        SetPortraitTexture(UI.Medallion.Portrait, "player")
+        if not UI.Medallion.Portrait:GetTexture() then
+            UI.Medallion.Portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
+        end
+    end
+    if UI.Medallion.LevelBadge and UnitLevel then
+        local pLvl = UnitLevel("player")
+        if pLvl and pLvl > 0 then
+            UI.Medallion.LevelBadge:SetText(string.format("|cffffd100%d|r", pLvl))
+        end
+    end
+end
+
 -- Create or show main window
 function UI:Toggle()
     if InCombatLockdown() then
@@ -307,6 +340,7 @@ function UI:Toggle()
         mainFrame:Hide()
     else
         mainFrame:Show()
+        UI:UpdatePortrait()
         UI:Refresh()
     end
 end
@@ -355,36 +389,76 @@ function UI:CreateMainWindow()
         end
     end)
 
-    -- Modern Dark Gunmetal Framing (1px razor border)
+    -- 100% Solid Opaque Base (Guarantees zero world geometry/candle bleeding through)
+    local solidBg = mainFrame:CreateTexture(nil, "BACKGROUND", nil, -8)
+    solidBg:SetAllPoints(mainFrame)
+    solidBg:SetColorTexture(0.045, 0.055, 0.08, 1.0)
+    UI.SolidBg = solidBg
+
+    -- Modern Dark Gunmetal Framing (1px razor border default)
     mainFrame:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
     })
     local initTheme = UI:GetTheme()
-    mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {0.035, 0.045, 0.07, 0.98}))
+    mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {0.035, 0.045, 0.07, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {0.45, 0.35, 0.18, 0.95}))
 
-    -- Window Title Header
-    local titleIcon = mainFrame:CreateTexture(nil, "OVERLAY")
-    titleIcon:SetSize(18, 18)
-    titleIcon:SetPoint("TOPLEFT", 14, -12)
-    titleIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
+    -- Iconic Blizzard Circular Medallion Frame (TOPLEFT Overlap)
+    local medallion = CreateFrame("Frame", nil, mainFrame)
+    medallion:SetSize(62, 62)
+    medallion:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", -14, 14)
+    medallion:SetFrameLevel(mainFrame:GetFrameLevel() + 5)
 
+    local portBg = medallion:CreateTexture(nil, "BACKGROUND")
+    portBg:SetSize(46, 46)
+    portBg:SetPoint("CENTER", medallion, "CENTER", 0, 0)
+    portBg:SetColorTexture(0.02, 0.02, 0.03, 1.0)
+
+    local portrait = medallion:CreateTexture(nil, "ARTWORK")
+    portrait:SetSize(46, 46)
+    portrait:SetPoint("CENTER", medallion, "CENTER", 0, 0)
+    if SetPortraitTexture then
+        SetPortraitTexture(portrait, "player")
+    end
+    if not portrait:GetTexture() then
+        portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
+    end
+    medallion.Portrait = portrait
+
+    local ring = medallion:CreateTexture(nil, "OVERLAY")
+    ring:SetSize(62, 62)
+    ring:SetPoint("CENTER", medallion, "CENTER", 0, 0)
+    ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    medallion.Ring = ring
+
+    local lvlBadge = medallion:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    lvlBadge:SetPoint("BOTTOM", medallion, "BOTTOM", 0, -2)
+    if UnitLevel then
+        local pLvl = UnitLevel("player")
+        if pLvl and pLvl > 0 then
+            lvlBadge:SetText(string.format("|cffffd100%d|r", pLvl))
+        end
+    end
+    medallion.LevelBadge = lvlBadge
+    UI.Medallion = medallion
+
+    -- Window Title Header (Offset for top-left circular medallion)
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("LEFT", titleIcon, "RIGHT", 8, 0)
-    title:SetText("|cffffffffWoW Killboard|r |cffff3333[Frontline War Room]|r")
+    title:SetPoint("TOPLEFT", 52, -12)
+    title:SetText("|cffffd100WoW KILLBOARD|r")
     UI.TitleText = title
 
     local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    subtitle:SetPoint("LEFT", title, "RIGHT", 10, 0)
-    subtitle:SetText("|cff888888v" .. KB.Version .. " | Blood & Iron: Open World PvP Carnage & Telemetry|r")
+    subtitle:SetPoint("LEFT", title, "RIGHT", 8, 0)
+    subtitle:SetText("|cffc7b28cv" .. KB.Version .. " | Frontline Tactical War Room & Telemetry|r")
     UI.SubtitleText = subtitle
 
     -- Template-Free Close Button
     local closeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    closeBtn:SetSize(20, 20)
-    closeBtn:SetPoint("TOPRIGHT", -8, -8)
+    closeBtn:SetSize(28, 28)
+    closeBtn:SetPoint("TOPRIGHT", -4, -4)
     closeBtn:EnableMouse(true)
     local closeLabel = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     closeLabel:SetPoint("CENTER", 0, 0)
@@ -497,7 +571,7 @@ function UI:CreateMainWindow()
             GameTooltip:AddLine("|cff00ff00War Horn & Rally Active|r", 1, 1, 1)
             GameTooltip:AddLine("Click to dismiss War Horn and close war party recruitment.", 0.8, 0.8, 0.8)
         else
-            GameTooltip:AddLine("|cffff3333📯 War Horn: Call to Arms|r", 1, 1, 1)
+            GameTooltip:AddLine("|cffff3333WAR HORN: Call to Arms|r", 1, 1, 1)
             GameTooltip:AddLine("Sounds the War Horn across Guild, Group & P2P network.", 0.8, 0.8, 0.8)
             GameTooltip:AddLine("Broadcasts emergency coordinates, zone & threat telemetry.", 0.8, 0.8, 0.8)
             GameTooltip:AddLine("Activates 10-minute Auto-Invite squad recruitment (Open World only).", 0.8, 0.8, 0.8)
@@ -514,32 +588,47 @@ function UI:CreateMainWindow()
     end)
     UI.CallBackupButton = backupBtn
 
-    -- 3 KPI Tactical Header Stat Cards (K/D, Duels, Battlegrounds) - Clean & Balanced
+    -- 3 KPI Stat Cards (Authentic Warcraft Attribute Plate Style)
     local cardConfigs = {
         { id = "KD",    title = "SESSION COMBAT K/D",   color = "ffd100", w = 268 },
-        { id = "DUELS", title = "1v1 DUELS RECORD",     color = "ffd700", w = 268 },
-        { id = "BGS",   title = "BATTLEGROUNDS RECORD", color = "69ccf0", w = 268 },
+        { id = "DUELS", title = "1v1 DUELS RECORD",     color = "ffb82e", w = 268 },
+        { id = "BGS",   title = "BATTLEGROUNDS RECORD", color = "00e5ff", w = 268 },
     }
 
     UI.StatCards = {}
     local prevCard = nil
     for _, cfg in ipairs(cardConfigs) do
         local card = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-        card:SetSize(cfg.w, 36)
+        card:SetSize(cfg.w, 44)
         if not prevCard then
-            card:SetPoint("TOPLEFT", 14, -36)
+            card:SetPoint("TOPLEFT", 16, -38)
         else
-            card:SetPoint("LEFT", prevCard, "RIGHT", 14, 0)
+            card:SetPoint("LEFT", prevCard, "RIGHT", 12, 0)
         end
         card.rawTitle = cfg.title
 
+        -- Header Strip Bar (Character Attribute Ribbon)
+        local hStrip = card:CreateTexture(nil, "BACKGROUND", nil, -5)
+        hStrip:SetPoint("TOPLEFT", 2, -2)
+        hStrip:SetPoint("TOPRIGHT", -2, -2)
+        hStrip:SetHeight(16)
+        hStrip:SetColorTexture(0.09, 0.12, 0.17, 1.0)
+        card.HeaderStrip = hStrip
+
+        local hDiv = card:CreateTexture(nil, "BACKGROUND", nil, -4)
+        hDiv:SetPoint("TOPLEFT", hStrip, "BOTTOMLEFT", 0, 0)
+        hDiv:SetPoint("TOPRIGHT", hStrip, "BOTTOMRIGHT", 0, 0)
+        hDiv:SetHeight(1)
+        hDiv:SetColorTexture(0.35, 0.28, 0.16, 0.8)
+        card.HeaderDivider = hDiv
+
         local topLabel = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        topLabel:SetPoint("TOPLEFT", 8, -4)
+        topLabel:SetPoint("CENTER", hStrip, "CENTER", 0, 0)
         topLabel:SetText(string.format("|cff%s%s|r", cfg.color, cfg.title))
         card.TitleLabel = topLabel
 
-        local valLabel = card:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        valLabel:SetPoint("BOTTOMLEFT", 8, 4)
+        local valLabel = card:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        valLabel:SetPoint("CENTER", card, "CENTER", 0, -8)
         valLabel:SetText("0 / 0")
         card.ValueLabel = valLabel
 
@@ -549,10 +638,10 @@ function UI:CreateMainWindow()
 
     -- 1px Dividing Rule
     local divider = mainFrame:CreateTexture(nil, "ARTWORK")
-    divider:SetPoint("TOPLEFT", 14, -80)
-    divider:SetPoint("TOPRIGHT", -14, -80)
+    divider:SetPoint("TOPLEFT", 16, -88)
+    divider:SetPoint("TOPRIGHT", -16, -88)
     divider:SetHeight(1)
-    divider:SetColorTexture(0.0, 0.0, 0.0, 1.0)
+    divider:SetColorTexture(0.35, 0.28, 0.16, 0.9)
     UI.Divider = divider
 
     -- Navigation Bar (Tabs on Left, Filter Pills on Right - Zero Overlap)
@@ -569,7 +658,7 @@ function UI:CreateMainWindow()
     for _, t in ipairs(tabs) do
         local btn = UI:CreateButton(mainFrame, t.w, 24, t.text, "GameFontHighlightSmall")
         if not prevTab then
-            btn:SetPoint("TOPLEFT", 14, -88)
+            btn:SetPoint("TOPLEFT", 16, -94)
         else
             btn:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
         end
@@ -595,7 +684,7 @@ function UI:CreateMainWindow()
     for _, f in ipairs(filterConfigs) do
         local pill = UI:CreateButton(mainFrame, f.w, 22, f.text, "GameFontHighlightSmall")
         if not prevPill then
-            pill:SetPoint("TOPRIGHT", -14, -89)
+            pill:SetPoint("TOPRIGHT", -16, -95)
         else
             pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
         end
@@ -609,10 +698,17 @@ function UI:CreateMainWindow()
         prevPill = pill
     end
 
-    -- Scroll Area Container
-    local container = CreateFrame("ScrollFrame", nil, mainFrame)
-    container:SetPoint("TOPLEFT", 14, -120)
-    container:SetPoint("BOTTOMRIGHT", -16, 14)
+    -- Dedicated Content Inset Panel (Sunken Vault Plate)
+    local inset = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+    inset:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -122)
+    inset:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -14, 14)
+    inset:SetFrameLevel(mainFrame:GetFrameLevel() + 1)
+    UI.ContentInset = inset
+
+    -- Scroll Area Container (Anchored securely inside ContentInset)
+    local container = CreateFrame("ScrollFrame", nil, inset)
+    container:SetPoint("TOPLEFT", inset, "TOPLEFT", 6, -6)
+    container:SetPoint("BOTTOMRIGHT", inset, "BOTTOMRIGHT", -6, 6)
     container:EnableMouseWheel(true)
     container:SetScript("OnMouseWheel", function(self, delta)
         local current = self:GetVerticalScroll()
@@ -622,10 +718,23 @@ function UI:CreateMainWindow()
     end)
 
     local content = CreateFrame("Frame", nil, container)
-    content:SetSize(826, 400)
+    content:SetSize(820, 400)
     container:SetScrollChild(content)
     UI.ContentFrame = content
     UI.ScrollContainer = container
+
+    -- Register Portrait Update Events on mainFrame
+    mainFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+    mainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    mainFrame:SetScript("OnEvent", function(self, event, unit)
+        if event == "UNIT_PORTRAIT_UPDATE" then
+            if unit == "player" then
+                UI:UpdatePortrait()
+            end
+        elseif event == "PLAYER_ENTERING_WORLD" then
+            UI:UpdatePortrait()
+        end
+    end)
 
     -- Detail Modal Frame
     UI:CreateDetailModal()
@@ -1221,12 +1330,17 @@ function UI:CreateDetailModal()
     modal:SetClampedToScreen(true)
 
     local theme = UI:GetTheme()
+    local modalSolid = modal:CreateTexture(nil, "BACKGROUND", nil, -8)
+    modalSolid:SetAllPoints(modal)
+    modalSolid:SetColorTexture(0.04, 0.05, 0.07, 1.0)
+    modal.SolidBg = modalSolid
+
     modal:SetBackdrop(theme.modalBackdrop or {
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
     })
-    modal:SetBackdropColor(unpack(theme.modalBg or {0.05, 0.05, 0.05, 0.98}))
+    modal:SetBackdropColor(unpack(theme.modalBg or {0.05, 0.05, 0.05, 1.0}))
     modal:SetBackdropBorderColor(unpack(theme.modalBorder or {0.0, 0.0, 0.0, 1.0}))
     modal:Hide()
 
@@ -2297,12 +2411,19 @@ function UI:ShowAlertsConfig()
 
     -- Theme Backdrop Styling
     local theme = UI:GetTheme()
+    if not UI.AlertsDialog.SolidBg then
+        local solid = UI.AlertsDialog:CreateTexture(nil, "BACKGROUND", nil, -8)
+        solid:SetAllPoints(UI.AlertsDialog)
+        UI.AlertsDialog.SolidBg = solid
+    end
+    UI.AlertsDialog.SolidBg:SetColorTexture(unpack(theme.solidBg or theme.modalBg or {0.04, 0.05, 0.07, 1.0}))
+
     UI.AlertsDialog:SetBackdrop(theme.modalBackdrop or {
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
     })
-    UI.AlertsDialog:SetBackdropColor(unpack(theme.modalBg or {0.035, 0.045, 0.07, 0.98}))
+    UI.AlertsDialog:SetBackdropColor(unpack(theme.modalBg or {0.035, 0.045, 0.07, 1.0}))
     UI.AlertsDialog:SetBackdropBorderColor(unpack(theme.modalBorder or {0.45, 0.35, 0.18, 0.95}))
     if UI.AlertsDialog.Divider and theme.dividerColor then
         UI.AlertsDialog.Divider:SetColorTexture(unpack(theme.dividerColor))
