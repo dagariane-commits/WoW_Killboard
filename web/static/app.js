@@ -1309,7 +1309,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           </div>
         </div>
 
-        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div class="legends-header-controls" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           <!-- Rank Type Toggle: Players vs Guilds -->
           <div class="filter-pills" id="legends-type-pills">
             <button class="pill-btn ${!isGuilds ? 'active' : ''}" onclick="setLegendsTabType('PLAYERS')">Player Ranks</button>
@@ -1331,17 +1331,21 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
   if (isGuilds) {
     const guilds = guildsData || [];
     html += `
-      <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">
+      <div class="legends-table-wrapper" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+        <div class="mobile-table-scroll-hint" style="display:none; justify-content:space-between; align-items:center; font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); padding-bottom:6px; letter-spacing:0.3px;">
+          <span>⟵ Drag table to view all combat stats</span>
+          <span>8 Columns ⟶</span>
+        </div>
+        <table class="legends-table" style="width: 100%; min-width: 740px; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">
           <colgroup>
-            <col style="width: 60px;">
-            <col style="width: 24%;">
-            <col style="width: 14%;">
-            <col style="width: 12%;">
-            <col style="width: 10%;">
-            <col style="width: 10%;">
-            <col style="width: 10%;">
-            <col style="width: 20%;">
+            <col style="width: 55px;">
+            <col style="width: 160px;">
+            <col style="width: 90px;">
+            <col style="width: 90px;">
+            <col style="width: 70px;">
+            <col style="width: 70px;">
+            <col style="width: 65px;">
+            <col style="width: 140px;">
           </colgroup>
           <thead>
             <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
@@ -1443,7 +1447,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             </div>
           </div>
 
-          <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+          <div class="benchmark-stats-row" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
             <div>
               <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
               <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
@@ -1464,7 +1468,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
               <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
               <div>${pctBadge}</div>
             </div>
-            <div style="display:flex; align-items:center; gap:6px;">
+            <div class="benchmark-input-wrap" style="display:flex; align-items:center; gap:6px;">
               <input type="text" id="benchmark-callsign-input" placeholder="Compare callsign..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 8px; border-radius:4px; width:130px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
               <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn" style="padding:4px 8px; font-size:0.72rem;">Compare</button>
               ${sessionStorage.getItem("wowkb_benchmark_player") ? `<button onclick="setBenchmarkPlayer('')" class="pill-btn" style="padding:4px 6px; font-size:0.7rem; color:#ef4444;" title="Reset Benchmark">&times;</button>` : ''}
@@ -1479,7 +1483,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             <span style="font-size:1.1rem;">⚔️</span>
             <span style="font-size:0.82rem; color:#cbd5e1;">Benchmark your operative standing against realm leaders:</span>
           </div>
-          <div style="display:flex; align-items:center; gap:8px;">
+          <div class="benchmark-input-wrap" style="display:flex; align-items:center; gap:8px;">
             <input type="text" id="benchmark-callsign-input" placeholder="Enter Character Callsign..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 10px; border-radius:4px; width:180px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
             <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn active" style="padding:4px 12px; font-size:0.75rem;">Benchmark</button>
           </div>
@@ -1488,20 +1492,24 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
     }
 
     html += `
-      <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">
+      <div class="legends-table-wrapper" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+        <div class="mobile-table-scroll-hint" style="display:none; justify-content:space-between; align-items:center; font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); padding-bottom:6px; letter-spacing:0.3px;">
+          <span>⟵ Drag table to view all combat stats</span>
+          <span>7 Columns ⟶</span>
+        </div>
+        <table class="legends-table" style="width: 100%; min-width: 710px; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">
           <colgroup>
-            <col style="width: 60px;">
-            <col style="width: 26%;">
-            <col style="width: 20%;">
-            <col style="width: 14%;">
-            <col style="width: 12%;">
-            <col style="width: 12%;">
-            <col style="width: 16%;">
+            <col style="width: 55px;">
+            <col style="width: 180px;">
+            <col style="width: 130px;">
+            <col style="width: 90px;">
+            <col style="width: 70px;">
+            <col style="width: 75px;">
+            <col style="width: 110px;">
           </colgroup>
           <thead>
             <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
-              <th style="padding: 6px 10px; width: 60px;">Rank</th>
+              <th style="padding: 6px 10px; width: 55px;">Rank</th>
               <th style="padding: 6px 10px;">Combatant</th>
               <th style="padding: 6px 10px;">Guild</th>
               <th style="padding: 6px 10px;">Faction</th>
@@ -1767,7 +1775,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">Marks of Spite Hall of Fame &amp; Records</h2>
           <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">All-time outlaw hunts, highest bounties collected, and record survival times.</div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="bounty-hall-of-fame-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           
           <!-- 1. Top Bounty Hunters -->
           <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">

@@ -5,7 +5,16 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
----
+## [1.4.15] - 2026-09-26
+
+### Fixed
+- **Hall of Legends Mobile Table Sizing & Horizontal Touch Scrolling**:
+  - Encapsulated Player Ranks and Guild Ranks tables inside `.legends-table-wrapper` with `overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;` to enable frictionless native touch swipe side-scrolling on screens $< 768px$.
+  - Fixed table geometry to prevent column crushing: Player Ranks (`min-width: 710px; table-layout: fixed;`) and Guild Ranks (`min-width: 740px; table-layout: fixed;`) with strict `<colgroup>` pixel allocations and `white-space: nowrap` cells.
+  - Added visual `.mobile-table-scroll-hint` swipe guides (`⟵ Drag table to view all combat stats | N Columns ⟶`) displayed exclusively on mobile viewports.
+  - Reformatted Operative Benchmark Comparison Banner for mobile: responsive 3-column stats grid (`.benchmark-stats-row`) with full-width input container (`.benchmark-input-wrap`).
+  - Restructured `.legends-header-controls` for mobile: full-width stacked filter pills (`#legends-type-pills` with flexed buttons, `#legends-mode-pills` with horizontal touch scroll and hidden scrollbars).
+  - Responsive single-column wrap for Marks of Spite Hall of Fame cards (`.bounty-hall-of-fame-grid`).
 
 ## [1.4.14] - 2026-09-26
 
