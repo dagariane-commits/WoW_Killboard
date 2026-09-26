@@ -379,6 +379,26 @@ body {
   text-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
 }
 
+/* In-Development & Disabled Tabs: Greyed Out State */
+.nav-btn.in-development,
+.nav-btn:disabled,
+.mobile-nav-item.in-development,
+.mobile-nav-item:disabled {
+  color: #4b5563 !important;
+  cursor: not-allowed !important;
+  opacity: 0.55 !important;
+  border-bottom: 2px solid transparent !important;
+  pointer-events: none !important;
+}
+
+.nav-btn.in-development:hover,
+.nav-btn:disabled:hover,
+.mobile-nav-item.in-development:hover,
+.mobile-nav-item:disabled:hover {
+  color: #4b5563 !important;
+  border-bottom-color: transparent !important;
+}
+
 /* Theater Version Selector Button (No Box Backdrop) */
 .theater-btn {
   background: transparent !important;
@@ -5757,16 +5777,19 @@ body.portal-active .container {
 }
 
 /* ----------------- Warcraft Logs Parse Percentile System ----------------- */
-.wowlogs-percentile-pill {
+.wowlogs-percentile-pill,
+.wowlogs-percentile-text {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 2px 7px;
-  border-radius: 4px;
+  gap: 3px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
   font-family: var(--font-tactical);
   font-weight: 800;
-  font-size: 0.74rem;
+  font-size: 0.80rem;
   letter-spacing: 0.3px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }

@@ -1643,8 +1643,30 @@ def get_character_profile(name):
 
 @app.route("/api/guilds", methods=["GET"])
 def get_guilds_leaderboard():
+    mode = request.args.get("mode", "ALL").upper()
+    where = "WHERE k.killer_guild IS NOT NULL AND k.killer_guild != 'None' AND k.killer_guild != ''"
+    victim_where = "WHERE victim_guild = ?"
+    member_where = "WHERE killer_guild = ?"
+
+    if mode == "WORLD":
+        where += " AND k.is_battleground = 0 AND k.is_arena = 0 AND (k.is_duel = 0 OR k.is_duel IS NULL)"
+        victim_where += " AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)"
+        member_where += " AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)"
+    elif mode == "BG":
+        where += " AND k.is_battleground = 1"
+        victim_where += " AND is_battleground = 1"
+        member_where += " AND is_battleground = 1"
+    elif mode == "ARENA":
+        where += " AND k.is_arena = 1"
+        victim_where += " AND is_arena = 1"
+        member_where += " AND is_arena = 1"
+    elif mode == "DUEL":
+        where += " AND k.is_duel = 1"
+        victim_where += " AND is_duel = 1"
+        member_where += " AND is_duel = 1"
+
     with get_db() as conn:
-        guilds_query = """
+        guilds_query = f"""
             SELECT 
                 k.killer_guild AS guild,
                 k.killer_faction AS faction,
@@ -1652,7 +1674,7 @@ def get_guilds_leaderboard():
                 COALESCE(SUM(k.is_solo), 0) AS solo_kills,
                 COUNT(DISTINCT k.killer_name) AS members_count
             FROM kills k
-            WHERE k.killer_guild IS NOT NULL AND k.killer_guild != 'None' AND k.killer_guild != ''
+            {where}
             GROUP BY k.killer_guild
             ORDER BY kills DESC
             LIMIT 50
@@ -1661,15 +1683,15 @@ def get_guilds_leaderboard():
 
         for g in guilds:
             g_name = g["guild"]
-            death_count = conn.execute("""
-                SELECT COUNT(*) FROM kills WHERE victim_guild = ?
+            death_count = conn.execute(f"""
+                SELECT COUNT(*) FROM kills {victim_where}
             """, (g_name,)).fetchone()[0]
             g["deaths"] = death_count
             g["kd"] = round(g["kills"] / death_count, 2) if death_count > 0 else float(g["kills"])
 
-            top_member = conn.execute("""
+            top_member = conn.execute(f"""
                 SELECT killer_name AS name, killer_class AS class, COUNT(*) as kills
-                FROM kills WHERE killer_guild = ?
+                FROM kills {member_where}
                 GROUP BY killer_name
                 ORDER BY kills DESC LIMIT 1
             """, (g_name,)).fetchone()
@@ -2116,7 +2138,7 @@ def get_activity_7d():
             {"spec": k[0], "class": k[1], "kills": v}
             for k, v in all_specs_dict.items()
         ]
-        top_specs.sort(key=lambda x: (-x["kills"], x["spec"]))
+        top_specs.sort(key=lambda x: (x["spec"].lower(), x["class"]))
 
     return jsonify({
         "kills": total_kills,

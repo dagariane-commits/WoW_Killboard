@@ -723,11 +723,13 @@ function renderSidebarActivity(data) {
       classListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No class telemetry logged</div>`;
     } else {
       classListEl.innerHTML = classes.map(cls => {
-        const color = CLASS_COLORS[(cls.class || '').toUpperCase()] || CLASS_COLORS.UNKNOWN;
+        const rawCls = cls.class || '';
+        const color = CLASS_COLORS[rawCls.toUpperCase()] || CLASS_COLORS.UNKNOWN;
+        const formattedClassName = rawCls ? (rawCls.charAt(0).toUpperCase() + rawCls.slice(1).toLowerCase()) : 'Unknown';
         return `
           <div class="sidebar-rank-item">
             <span style="color:${color}; font-weight:700; display:flex; align-items:center; gap:6px;">
-              ${renderClassBadge(cls.class, 16)} ${escapeHtml(cls.class)}
+              ${renderClassBadge(rawCls, 16)} ${escapeHtml(formattedClassName)}
             </span>
             <span style="color:#e2e8f0; font-weight:700; font-family:var(--font-tactical);">${cls.kills} kills</span>
           </div>
@@ -739,7 +741,10 @@ function renderSidebarActivity(data) {
   // 6. Top Specializations (Lifetime)
   const specListEl = document.getElementById("sidebar-top-specs");
   if (specListEl) {
-    const specs = data.topSpecs || [];
+    const specs = (data.topSpecs || []).slice().sort((a, b) => {
+      const cmp = (a.spec || '').localeCompare(b.spec || '');
+      return cmp !== 0 ? cmp : (a.class || '').localeCompare(b.class || '');
+    });
     if (specs.length === 0) {
       specListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No specialization telemetry logged</div>`;
     } else {
@@ -778,7 +783,7 @@ async function loadLeaderboards() {
   const container = document.getElementById("main-content-area");
   try {
     if (legendsTabType === "GUILDS") {
-      const res = await fetch("/api/guilds");
+      const res = await fetch(`/api/guilds?mode=${currentMode}`);
       const data = await res.json();
       renderLeaderboardView(null, null, data.guilds || []);
     } else {
@@ -1083,13 +1088,6 @@ async function renderStats(kills) {
           <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 0.95rem; padding-top: 4px;">${activeModeName}</span>
         </div>
       </div>
-
-      <div class="guest-auth-prompt-strip">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span>Browsing as Guest Recon. Sign in to display your personalized combat kills, deaths, K/D, and blood bounties.</span>
-        </div>
-        <button class="guest-signin-link-btn" onclick="switchTab('PORTAL')">Sign In &rarr;</button>
-      </div>
     </div>
   `;
 }
@@ -1147,9 +1145,9 @@ function getWowLogsPercentileBadge(pct) {
   
   const title = escapeHtml(`${cohortLabel} (${totalInCohort} combatants)`);
   return `
-    <span class="wowlogs-percentile-pill" title="${title}" style="color:${color}; background:${bg}; border:1px solid ${border};">
+    <span class="wowlogs-percentile-text" title="${title}" style="color:${color}; font-family:var(--font-tactical); font-weight:800; font-size:0.80rem; letter-spacing:0.3px;">
       <span>Top ${topPct}%</span>
-      <span style="opacity:0.85; font-size:0.68rem;">(${p}th)</span>
+      <span style="opacity:0.75; font-size:0.70rem; margin-left:3px;">(${p}th)</span>
     </span>
   `;
 }
@@ -1318,8 +1316,8 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             <button class="pill-btn ${isGuilds ? 'active' : ''}" onclick="setLegendsTabType('GUILDS')">Guild Ranks</button>
           </div>
 
-          <!-- Combat Mode Filter Pills (Only shown for Player Ranks) -->
-          <div class="filter-pills" id="legends-mode-pills" style="${isGuilds ? 'display:none;' : ''}">
+          <!-- Combat Mode Filter Pills (Active for both Player and Guild Ranks) -->
+          <div class="filter-pills" id="legends-mode-pills">
             <button class="pill-btn ${currentMode === 'ALL' ? 'active' : ''}" onclick="setFilterMode('ALL')">All PvP</button>
             <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
             <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
@@ -1334,23 +1332,33 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
     const guilds = guildsData || [];
     html += `
       <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">
+          <colgroup>
+            <col style="width: 60px;">
+            <col style="width: 24%;">
+            <col style="width: 14%;">
+            <col style="width: 12%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 20%;">
+          </colgroup>
           <thead>
-            <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 34px;">
-              <th>Rank</th>
-              <th>Guild</th>
-              <th>Faction</th>
-              <th>Combatants</th>
-              <th>Kills</th>
-              <th>Deaths</th>
-              <th>K/D</th>
-              <th>Top Assassin</th>
+            <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+              <th style="padding: 6px 10px; width: 60px;">Rank</th>
+              <th style="padding: 6px 10px;">Guild</th>
+              <th style="padding: 6px 10px;">Faction</th>
+              <th style="padding: 6px 10px;">Combatants</th>
+              <th style="padding: 6px 10px;">Kills</th>
+              <th style="padding: 6px 10px;">Deaths</th>
+              <th style="padding: 6px 10px;">K/D</th>
+              <th style="padding: 6px 10px;">Top Assassin</th>
             </tr>
           </thead>
           <tbody>
     `;
     if (guilds.length === 0) {
-      html += `<tr><td colspan="8" style="text-align:center; padding:30px; color:#64748b;">No active guild combat records recorded yet.</td></tr>`;
+      html += `<tr><td colspan="8" style="text-align:center; padding:30px; color:#64748b;">No active guild combat records recorded yet for mode [${currentMode}].</td></tr>`;
     } else {
       guilds.forEach((g, idx) => {
         const topMemberHtml = g.topMember 
@@ -1359,14 +1367,14 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
         html += `
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
-            <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
-            <td><span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')">&lt;${escapeHtml(g.guild)}&gt;</span></td>
-            <td style="color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${escapeHtml(g.faction || 'Neutral')}</td>
-            <td style="color: #e2e8f0;">${g.members_count || 1}</td>
-            <td style="color: #10b981; font-weight: 700;">${g.kills}</td>
-            <td style="color: #ef4444; font-weight: 700;">${g.deaths || 0}</td>
-            <td style="color: var(--accent-gold); font-weight: 700;">${g.kd}</td>
-            <td>${topMemberHtml}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
+            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')">&lt;${escapeHtml(g.guild)}&gt;</span></td>
+            <td style="padding: 6px 10px; color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(g.faction || 'Neutral')}</td>
+            <td style="padding: 6px 10px; color: #e2e8f0; white-space: nowrap;">${g.members_count || 1}</td>
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${g.kills}</td>
+            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${g.deaths || 0}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${g.kd}</td>
+            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${topMemberHtml}</td>
           </tr>
         `;
       });
@@ -1481,16 +1489,25 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
     html += `
       <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">
+          <colgroup>
+            <col style="width: 60px;">
+            <col style="width: 26%;">
+            <col style="width: 20%;">
+            <col style="width: 14%;">
+            <col style="width: 12%;">
+            <col style="width: 12%;">
+            <col style="width: 16%;">
+          </colgroup>
           <thead>
-            <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 34px;">
-              <th>Rank</th>
-              <th>Combatant</th>
-              <th>Guild</th>
-              <th>Faction</th>
-              <th>Kills</th>
-              <th>Solo Kills</th>
-              <th style="text-align:right;">Percentile</th>
+            <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+              <th style="padding: 6px 10px; width: 60px;">Rank</th>
+              <th style="padding: 6px 10px;">Combatant</th>
+              <th style="padding: 6px 10px;">Guild</th>
+              <th style="padding: 6px 10px;">Faction</th>
+              <th style="padding: 6px 10px;">Kills</th>
+              <th style="padding: 6px 10px;">Solo Kills</th>
+              <th style="padding: 6px 10px; text-align:right;">Percentile</th>
             </tr>
           </thead>
           <tbody>
@@ -1511,17 +1528,17 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
         html += `
           <tr ${rowClass} style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
-            <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
-            <td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
+            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${escapeHtml(p.name)}')">
                 ${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)} ${youBadge}
               </span>
             </td>
-            <td>${guildHtml}</td>
-            <td style="color: ${p.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${escapeHtml(p.faction || 'Neutral')}</td>
-            <td style="color: #10b981; font-weight: 700;">${p.kills}</td>
-            <td style="color: #00e5ff; font-weight: 700;">${p.solo_kills || 0}</td>
-            <td style="text-align:right;">${pctBadge}</td>
+            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${guildHtml}</td>
+            <td style="padding: 6px 10px; color: ${p.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(p.faction || 'Neutral')}</td>
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
+            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.solo_kills || 0}</td>
+            <td style="padding: 6px 10px; text-align:right; white-space: nowrap;">${pctBadge}</td>
           </tr>
         `;
       });
@@ -1540,18 +1557,18 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
         html += `
           <tr style="border-top: 2px dashed rgba(245, 158, 11, 0.4); background: rgba(212, 163, 41, 0.08);" class="current-player-row">
-            <td style="color: var(--accent-gold); font-weight: 800;">#&gt;15</td>
-            <td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#&gt;15</td>
+            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${escapeHtml(bmName)}')">
                 ${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}
                 <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
               </span>
             </td>
-            <td>${bmGuildHtml}</td>
-            <td style="color: ${bmFaction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${escapeHtml(bmFaction || 'Neutral')}</td>
-            <td style="color: #10b981; font-weight: 700;">${bmKills}</td>
-            <td style="color: #00e5ff; font-weight: 700;">${bmSolo}</td>
-            <td style="text-align:right;">${pctBadge}</td>
+            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${bmGuildHtml}</td>
+            <td style="padding: 6px 10px; color: ${bmFaction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(bmFaction || 'Neutral')}</td>
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${bmKills}</td>
+            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${bmSolo}</td>
+            <td style="padding: 6px 10px; text-align:right; white-space: nowrap;">${pctBadge}</td>
           </tr>
         `;
       }
@@ -2355,16 +2372,8 @@ async function loadPersonalArmoryView(charName) {
 }
 
 function handleArmoryNavClick() {
-  const currentAuth = sessionStorage.getItem("wowkb_auth_type");
-  const storedAccount = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "";
-
-  if (storedAccount && (currentAuth === "account" || currentAuth === "officer")) {
-    switchTab("ARMORY");
-    loadPersonalArmoryView(storedAccount);
-  } else {
-    switchTab("ARMORY");
-    loadArmoryView();
-  }
+  // Armory is currently In Development
+  return;
 }
 
 // Guild Profile Modal Handlers
@@ -3792,11 +3801,14 @@ function formatScribeMarkdown(text) {
 
 // Tab Switching
 function switchTab(tab) {
+  // In-Development tabs: World Hazards, Armory, War Room
+  if (tab === "HAZARDS" || tab === "ARMORY" || tab === "WARROOM" || tab === "DEADLY_NPCS" || tab === "GUILDS" || tab === "FEUDS" || tab === "DEFENSE" || tab === "BG_METRICS") {
+    return;
+  }
+
   // Normalize alias tabs
   if (tab === "FEED") tab = "INTEL";
   if (tab === "LEADERBOARDS") tab = "LEGENDS";
-  if (tab === "DEADLY_NPCS") tab = "HAZARDS";
-  if (tab === "GUILDS" || tab === "FEUDS" || tab === "DEFENSE" || tab === "BG_METRICS") tab = "WARROOM";
 
   currentTab = tab;
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
