@@ -2064,7 +2064,7 @@ def get_activity_7d():
                 "class": cls,
                 "kills": class_dict.get(cls, 0)
             })
-        top_classes.sort(key=lambda x: (-x["kills"], x["class"]))
+        top_classes.sort(key=lambda x: x["class"])
 
         # 5. Top Specs (Lifetime)
         top_specs_rows = conn.execute("""

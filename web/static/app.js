@@ -649,7 +649,7 @@ function renderSidebarActivity(data) {
       zoneListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No conflict zones logged in last 24h</div>`;
     } else {
       zoneListEl.innerHTML = zones.map((z, i) => `
-        <div class="sidebar-rank-item">
+        <div class="sidebar-rank-item zone-item">
           <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
             <span class="rank-badge">#${i + 1}</span>
             <span style="font-weight:700; color:#e2e8f0; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${escapeHtml(z.zone)}</span>
@@ -1677,27 +1677,27 @@ function renderBountiesView(bounties, debts, leaderboards) {
     <div style="display: flex; flex-direction: column; gap: 24px;">
   `;
 
-  // 1. Personal Bounties Section (At the Top)
+  // 1. Personal Marks Section (At the Top)
   if (myUser) {
     html += `
       <div style="background: linear-gradient(180deg, rgba(212, 163, 41, 0.08) 0%, rgba(13, 17, 23, 0.95) 100%); border: 1px solid rgba(212, 163, 41, 0.35); border-radius: 8px; padding: 18px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
           <div>
             <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; margin:0;">
-              Your Active Contracts &amp; Targets (${myBounties.length})
+              Your Active Marks of Spite (${myBounties.length})
             </h2>
             <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
-              Bounties placed by you or placed upon your head
+              Marks of Spite issued by you or placed upon your head
             </div>
           </div>
-          <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Issue Bounty</button>
+          <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
         </div>
     `;
 
     if (myBounties.length === 0) {
       html += `
         <div style="color: #64748b; font-size:0.8rem; padding: 12px; background: rgba(0,0,0,0.3); border-radius:6px; border: 1px dashed rgba(255,255,255,0.08);">
-          You have no active bounties issued or placed against you. When ganked in the world, declare a bounty to dispatch the realm's hunters!
+          You have no active Marks of Spite issued or placed against you. When ganked in the world, brand your killer with a Mark of Spite to dispatch the realm's hunters!
         </div>
       `;
     } else {
@@ -1713,22 +1713,22 @@ function renderBountiesView(bounties, debts, leaderboards) {
     html += `
       <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div style="font-size:0.82rem; color:#94a3b8;">
-          <strong>Personal Contracts:</strong> Sign in to pin bounties you placed or bounties placed upon your head to the top.
+          <strong>Personal Marks:</strong> Sign in to pin Marks of Spite you issued or marks placed upon your head to the top.
         </div>
         <button class="header-signin-btn" onclick="switchTab('PORTAL')">Sign In &rarr;</button>
       </div>
     `;
   }
 
-  // 2. All Realm Bounty Contracts
+  // 2. All Realm Marks of Spite
   html += `
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div>
-            <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">Realm High Command Bounty Board</h2>
-            <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Track and execute targets to claim escrowed gold.</div>
+            <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">Realm High Command Marks of Spite</h2>
+            <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Track and execute targets in open combat to claim the reward.</div>
           </div>
-          <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Place Bounty</button>
+          <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
   `;
@@ -1746,14 +1746,14 @@ function renderBountiesView(bounties, debts, leaderboards) {
 
       <!-- Bounty Leaderboards: Hall of Fame -->
       <div>
-        <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin-bottom: 12px;">Bounty Hall of Fame &amp; Records</h2>
+        <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin-bottom: 12px;">Marks of Spite Hall of Fame &amp; Records</h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           
           <!-- 1. Top Bounty Hunters -->
           <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="color:#10b981; font-size:0.95rem;">Top Bounty Hunters</h3>
-              <span style="font-size:0.7rem; color:#64748b;">Most Bounties Claimed</span>
+              <h3 style="color:#10b981; font-size:0.95rem;">Top Mark Hunters</h3>
+              <span style="font-size:0.7rem; color:#64748b;">Most Marks Claimed</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
               ${(leaderboards.topHunters && leaderboards.topHunters.length > 0) 
@@ -1766,7 +1766,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
                     </span>
                   </div>
                 `).join('')
-                : '<div style="color:#64748b; font-size:0.8rem;">No bounties claimed yet.</div>'
+                : '<div style="color:#64748b; font-size:0.8rem;">No marks claimed yet.</div>'
               }
             </div>
           </div>
@@ -1774,7 +1774,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <!-- 2. Highest Bounty Contracts -->
           <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="color:var(--accent-gold); font-size:0.95rem;">Highest Bounty Contracts</h3>
+              <h3 style="color:var(--accent-gold); font-size:0.95rem;">Highest Mark of Spite Rewards</h3>
               <span style="font-size:0.7rem; color:#64748b;">Biggest Escrow Rewards</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
@@ -1788,7 +1788,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
                     </span>
                   </div>
                 `).join('')
-                : '<div style="color:#64748b; font-size:0.8rem;">No bounty records found.</div>'
+                : '<div style="color:#64748b; font-size:0.8rem;">No mark records found.</div>'
               }
             </div>
           </div>
@@ -1797,7 +1797,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <h3 style="color:#f97316; font-size:0.95rem;">Most Elusive Outlaws</h3>
-              <span style="font-size:0.7rem; color:#64748b;">Longest Surviving Bounties</span>
+              <span style="font-size:0.7rem; color:#64748b;">Longest Surviving Marks</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
               ${(leaderboards.longestOutstanding && leaderboards.longestOutstanding.length > 0)

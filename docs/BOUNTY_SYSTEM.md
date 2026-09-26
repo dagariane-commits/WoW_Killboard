@@ -1,8 +1,8 @@
-# Blood Bounties, Execution Contracts & The Traitor's Gibbet
+# Blood Bounties & Marks of Spite — Execution Contracts & The Traitor's Gibbet
 
-## 1. The Blood Bounty Ecosystem
+## 1. The Blood Bounty & Mark of Spite Ecosystem
 
-The WoW Killboard bounty system brings real player-driven economic assassination contracts to Azeroth, steeped in the brutal wartime rivalry between the Alliance and the Horde, complete with anti-fraud safeguards, strict open-world battleground gating, and automated debt enforcement.
+The WoW Killboard bounty system—formally designated as **Marks of Spite** across the realm High Command—brings real player-driven economic assassination contracts to Azeroth, steeped in the brutal wartime rivalry between the Alliance and the Horde, complete with anti-fraud safeguards, strict open-world battleground gating, and automated debt enforcement.
 
 ```mermaid
 stateDiagram-v2
