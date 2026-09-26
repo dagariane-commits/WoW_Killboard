@@ -600,7 +600,7 @@ function KB:CreateMinimapButton()
 
     btn:SetScript("OnEnter", function()
         local killsCount = (WoWKillboardDB and WoWKillboardDB.kills) and KB.Utils.TableLength(WoWKillboardDB.kills) or 0
-        local curTheme = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName():upper() or "TACTICAL"
+        local curTheme = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName():upper() or "CLASSIC"
         tipText:SetText(string.format("|cffffd100WoW Killboard|r |cff888888[%s]|r\n|cff10b981Session Kills Logged: %d|r\n|cff00e5ffLeft-Click:|r Dashboard | |cff00e5ffRight-Click:|r Theme\n|cff888888Drag to Reposition|r", curTheme, killsCount))
         tipFrame:Show()
     end)
@@ -613,10 +613,6 @@ coreFrame:SetScript("OnEvent", function(self, event, ...)
         local addonName = ...
         if addonName == "WoWKillboard" then
             KB:Initialize()
-            -- Ensure developer diagnostic taintLog is disabled in production to eliminate loading time warning popup
-            if GetCVar and (GetCVar("taintLog") == "2" or GetCVar("taintLog") == "1") then
-                pcall(SetCVar, "taintLog", "0")
-            end
         end
     elseif event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
         local blockedAddon, blockedFunc = ...

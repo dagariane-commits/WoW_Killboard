@@ -5,6 +5,20 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.23] - 2026-09-26
+
+### Fixed
+- **Blizzard UI Login Action Blocked Warning Eradication (`Core.lua`)**:
+  - Eradicated `pcall(SetCVar, "taintLog", "0")` from the `ADDON_LOADED` event handler in [`Core.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/Core.lua).
+  - Calling `SetCVar` on Blizzard-protected engine/developer CVars (`taintLog`) from an insecure addon environment triggered the C++ engine's `ADDON_ACTION_BLOCKED` / `ADDON_ACTION_FORBIDDEN` popup dialog (*"WoWKillboard has been blocked from an action only available to the Blizzard UI"*).
+  - Zero Blizzard engine CVars are touched, ensuring 100% silent, error-free client load on login.
+
+### Removed
+- **Warfronts Navigation Tab (`UI.lua`)**:
+  - Removed the `Warfronts` (`BG_METRICS`) tab from the primary navigation bar in [`UI.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/UI.lua).
+  - Consolidated the header navigation bar to the 4 essential tabs: **Intel** (`FEED`), **Hall of Legends** (`LEADERBOARD`), **Marks of Spite** (`BOUNTIES`), and **Zone Intel** (`ZONES`).
+  - Added self-healing fallback in `UI:Refresh()` to redirect any active `BG_METRICS` state to `FEED`.
+
 ## [1.4.22] - 2026-09-26
 
 ### Fixed
