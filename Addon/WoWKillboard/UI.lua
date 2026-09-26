@@ -316,7 +316,7 @@ end
 function UI:UpdatePortrait()
     if not UI.Medallion then return end
     if UI.Medallion.Portrait and SetPortraitTexture then
-        SetPortraitTexture(UI.Medallion.Portrait, "player")
+        pcall(SetPortraitTexture, UI.Medallion.Portrait, "player")
         if not UI.Medallion.Portrait:GetTexture() then
             UI.Medallion.Portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
         end
@@ -381,6 +381,7 @@ function UI:CreateMainWindow()
     mainFrame:SetScript("OnShow", function(self)
         if self.EnableKeyboard then self:EnableKeyboard(true) end
         if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        UI:UpdatePortrait()
     end)
     mainFrame:SetScript("OnHide", function(self)
         if self.EnableKeyboard then self:EnableKeyboard(false) end
@@ -787,19 +788,6 @@ function UI:CreateMainWindow()
     container:SetScrollChild(content)
     UI.ContentFrame = content
     UI.ScrollContainer = container
-
-    -- Register Portrait Update Events on mainFrame
-    mainFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
-    mainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    mainFrame:SetScript("OnEvent", function(self, event, unit)
-        if event == "UNIT_PORTRAIT_UPDATE" then
-            if unit == "player" then
-                UI:UpdatePortrait()
-            end
-        elseif event == "PLAYER_ENTERING_WORLD" then
-            UI:UpdatePortrait()
-        end
-    end)
 
     -- Detail Modal Frame
     UI:CreateDetailModal()
