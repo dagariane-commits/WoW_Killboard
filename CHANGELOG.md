@@ -5,6 +5,28 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.18] - 2026-09-26
+
+### Added
+- **Iconic Blizzard Circular Portrait Medallion (`UI.Medallion`)**:
+  - Engineered the signature World of Warcraft top-left circular medallion overlapping the frame corner (`TOPLEFT, -14, 14`), matching the native Character Sheet and Spellbook.
+  - Implemented dynamic player portrait rendering (`SetPortraitTexture(portrait, "player")`) with automatic fallback to high-resolution PvP crossed swords crest (`Interface\Icons\Achievement_PVP_P_01`).
+  - Added native circular gold tracking ring (`Interface\Minimap\MiniMap-TrackingBorder`) and character level badge pill.
+  - Added event listeners for `UNIT_PORTRAIT_UPDATE` and `PLAYER_ENTERING_WORLD` to refresh portrait upon leveling, shapeshifting, or gear changes.
+- **Character Attribute Plate Styling for KPI Stat Cards**:
+  - Overhauled the 3 KPI header cards (`SESSION COMBAT K/D`, `1v1 DUELS RECORD`, `BATTLEGROUNDS RECORD`) into authentic Blizzard attribute plates (mirroring Character Sheet "General", "Primary Attributes", "Weapons" panels).
+  - Designed beveled antique brass header ribbons with centered gold titles, solid dark iron plates, and bold high-contrast telemetry typography.
+- **Dedicated Recessed Content Inset Vault (`UI.ContentInset`)**:
+  - Implemented a sunken dark iron inner frame with antique brass border (`Interface\Tooltips\UI-Tooltip-Border`) to contain the scroll child, isolating feed rows, leaderboards, and bounties within a distinct Blizzard inset plate.
+
+### Fixed
+- **100% Solid Opaque Backdrops (Eliminated 3D World Bleed-Through)**:
+  - Eliminated see-through transparency in Classic, Tactical, and ElvUI themes by adding hardware texture backdrops (`UI.SolidBg`, `modal.SolidBg`, `dlg.SolidBg`) set to `alpha = 1.0`.
+  - Replaced semi-transparent `UI-DialogBox-Background` with solid opaque dark iron obsidian (`#0a0d14` / `#06080e`), preventing candles, furniture, and world geometry from bleeding through the text.
+- **Header Alignment & Utility Button Geometry**:
+  - Realigned title and subtitle typography to seamlessly accommodate the top-left circular portrait medallion.
+  - Standardized the Blizzard red close button (`Interface\Buttons\UI-Panel-MinimizeButton-Up`) and aligned utility button headers (`WAR HORN`, `Alerts`, `Theme`).
+
 ## [1.4.17] - 2026-09-26
 
 ### Added
