@@ -172,6 +172,26 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         local enemyClass = (enemyFaction == "Horde") and "ROGUE" or "WARRIOR"
         local enemyName = (enemyFaction == "Horde") and "Shadowstalker" or "Dawnbreaker"
         local enemyGuild = (enemyFaction == "Horde") and "Grim Syndicate" or "Silver Hand"
+        local enemyLevel = math.max(1, pLevel + 1)
+
+        if arg and arg ~= "" then
+            enemyName = arg:match("^%s*(.-)%s*$")
+        elseif UnitExists("target") then
+            local tName = UnitName("target")
+            if tName and tName ~= "" then
+                enemyName = tName
+                local _, tClass = UnitClass("target")
+                if tClass then enemyClass = tClass end
+                local tRace = UnitRace("target")
+                if tRace then enemyRace = tRace end
+                local tGuild = GetGuildInfo("target")
+                if tGuild then enemyGuild = tGuild end
+                local tFaction = UnitFactionGroup("target")
+                if tFaction then enemyFaction = tFaction end
+                local tLevel = UnitLevel("target")
+                if tLevel and tLevel > 0 then enemyLevel = tLevel end
+            end
+        end
 
         local loc = KB.Utils and KB.Utils.GetPlayerLocation and KB.Utils.GetPlayerLocation() or { mapId = 1421, zone = GetZoneText() or "Wilderness", subZone = GetSubZoneText() or "", x = 45.2, y = 32.8 }
         local dmgAmount = math.max(650, pLevel * 60)
@@ -196,9 +216,9 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
                 healingDone = math.floor(dmgAmount * 0.25),
             },
             victim = {
-                guid = "Player-DEMO-" .. tostring(time()),
+                guid = (UnitExists("target") and UnitGUID("target")) or ("Player-DEMO-" .. tostring(time())),
                 name = enemyName,
-                level = math.max(1, pLevel + 1),
+                level = enemyLevel,
                 class = enemyClass,
                 race = enemyRace,
                 guild = enemyGuild,

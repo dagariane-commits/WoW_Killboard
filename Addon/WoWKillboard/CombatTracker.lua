@@ -635,7 +635,7 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
 
     if not KB.Utils.CanAccess(victimName) then return end
 
-    if CT.LastKillVictim and (CT.LastKillVictim:lower() == victimName:lower()) and (now - (CT.LastKillTime or 0)) < 5 then
+    if CT.LastKillVictim and (CT.LastKillVictim:lower() == victimName:lower()) and (now - (CT.LastKillTime or 0)) < 2 then
         return
     end
     CT.LastKillVictim = victimName
@@ -943,9 +943,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
         local msg = ...
         local victimName = ExtractVictimFromHonorMsg(msg)
-        if victimName then
-            CT:OnPlayerHonorableKill(victimName)
-        end
+        CT:OnPlayerHonorableKill(victimName)
 
     elseif event == "CHAT_MSG_SYSTEM" then
         local msg = ...
@@ -999,33 +997,47 @@ frame:SetScript("OnEvent", function(self, event, ...)
         end
 
     elseif event == "PLAYER_TARGET_CHANGED" then
-        if UnitExists("target") and UnitIsPlayer("target") and UnitCanAttack("player", "target") then
-            local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
-            local tGuid = UnitGUID("target")
-            local tName = UnitName("target")
-            activeEnemyTarget = {
-                name = tName,
-                guid = tGuid,
-                level = UnitLevel("target") or (tInfo and tInfo.level or 0),
-                class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
-                guild = GetGuildInfo("target") or (tInfo and tInfo.guild or "None"),
-                faction = UnitFactionGroup("target") or (tInfo and tInfo.faction or "Unknown"),
-                lastSeen = time(),
-            }
-            if tGuid then
-                CT.RecentEngagedEnemies[tGuid] = activeEnemyTarget
+        if UnitExists("target") and UnitIsPlayer("target") then
+            local isEnemy = UnitIsEnemy("player", "target") or (UnitReaction("player", "target") and UnitReaction("player", "target") <= 4) or (not UnitIsFriend("player", "target")) or (UnitCanAttack and UnitCanAttack("player", "target"))
+            if isEnemy then
+                local isDead = UnitIsDead("target") or UnitIsDeadOrGhost("target") or (UnitHealth("target") and UnitHealth("target") <= 0)
+                local tGuid = UnitGUID("target")
+                local tName = UnitName("target")
+                if isDead and tName and tName ~= "" then
+                    if activeEnemyTarget and (activeEnemyTarget.guid == tGuid or activeEnemyTarget.name == tName) then
+                        CT:OnPlayerHonorableKill(tName, tGuid, "target")
+                    end
+                elseif not isDead then
+                    local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+                    activeEnemyTarget = {
+                        name = tName,
+                        guid = tGuid,
+                        level = UnitLevel("target") or (tInfo and tInfo.level or 0),
+                        class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
+                        guild = GetGuildInfo("target") or (tInfo and tInfo.guild or "None"),
+                        faction = UnitFactionGroup("target") or (tInfo and tInfo.faction or "Unknown"),
+                        lastSeen = time(),
+                    }
+                    if tGuid then
+                        CT.RecentEngagedEnemies[tGuid] = activeEnemyTarget
+                    end
+                end
             end
         end
 
     elseif event == "UNIT_HEALTH" or event == "UNIT_FLAGS" then
         local unit = ...
-        if unit == "target" or unit == "focus" then
-            if UnitExists(unit) and UnitIsPlayer(unit) and UnitCanAttack("player", unit) then
-                if UnitIsDead(unit) or UnitIsDeadOrGhost(unit) then
-                    local deadName = UnitName(unit)
-                    local deadGuid = UnitGUID(unit)
-                    if deadName then
-                        CT:OnPlayerHonorableKill(deadName, deadGuid, unit)
+        if unit == "target" or unit == "focus" or unit == "targettarget" or (unit and unit:match("^nameplate%d+$")) then
+            if UnitExists(unit) and UnitIsPlayer(unit) then
+                local isDead = UnitIsDead(unit) or UnitIsDeadOrGhost(unit) or (UnitHealth(unit) and UnitHealth(unit) <= 0)
+                if isDead then
+                    local isEnemy = UnitIsEnemy("player", unit) or (UnitReaction("player", unit) and UnitReaction("player", unit) <= 4) or (not UnitIsFriend("player", unit))
+                    if isEnemy or (activeEnemyTarget and activeEnemyTarget.guid == UnitGUID(unit)) then
+                        local deadName = UnitName(unit)
+                        local deadGuid = UnitGUID(unit)
+                        if deadName and deadName ~= "" then
+                            CT:OnPlayerHonorableKill(deadName, deadGuid, unit)
+                        end
                     end
                 end
             end
@@ -1144,8 +1156,8 @@ frame:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 
 if frame.RegisterUnitEvent then
-    pcall(frame.RegisterUnitEvent, frame, "UNIT_FLAGS", "target", "focus")
-    pcall(frame.RegisterUnitEvent, frame, "UNIT_HEALTH", "target", "focus")
+    pcall(frame.RegisterUnitEvent, frame, "UNIT_FLAGS", "target", "focus", "targettarget")
+    pcall(frame.RegisterUnitEvent, frame, "UNIT_HEALTH", "target", "focus", "targettarget")
 else
     pcall(frame.RegisterEvent, frame, "UNIT_FLAGS")
     pcall(frame.RegisterEvent, frame, "UNIT_HEALTH")

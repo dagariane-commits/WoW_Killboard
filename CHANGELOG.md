@@ -5,6 +5,22 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.28] - 2026-09-26
+
+### Fixed
+- **Enemy Player Death Detection & Corpse Attackable Gate (`CombatTracker.lua`)**:
+  - Eliminated critical WoW API trap where `UNIT_HEALTH` and `UNIT_FLAGS` evaluated `UnitCanAttack("player", unit)` before checking `UnitIsDead(unit)`. In World of Warcraft, dead corpses return `nil`/`false` for `UnitCanAttack`, causing the death handler to skip execution the exact moment an enemy player died.
+  - Replaced with direct hostility checks (`UnitIsEnemy`, reaction index `<= 4`, or `not UnitIsFriend`) decoupled from corpse attackability.
+  - Added unit monitoring for `targettarget` and `nameplate` units, capturing deaths of out-of-target enemies engaged in battle.
+  - Ensured `CHAT_MSG_COMBAT_HONOR_GAIN` triggers `OnPlayerHonorableKill` even if the server chat message omits the victim's name (e.g. Battleground honor awards), falling back seamlessly to `CT.RecentEngagedEnemies`.
+  - Reduced duplicate kill debounce threshold from 5.0s to 2.0s to properly capture rapid multi-kills and burst finishes.
+- **Dynamic `/kb testkill` Slash Command Target Inspection (`Core.lua`)**:
+  - Enhanced `/kb testkill [name]` to automatically inspect the current active target (`UnitExists("target")`), dynamically extracting the targeted unit's name, class, guild, faction, and level.
+- **Web War Room UI Fallback Resilience (`web/static/app.js`)**:
+  - Added graceful HTTP error handling with war room retry cards for both the "Hall of Legends" and "Marks of Spite" views when cloud backends are undergoing cold boot or schema initialization.
+- **Render Auto-Deployment Configuration (`render.yaml`)**:
+  - Added `autoDeploy: true` to the Render blueprint manifest to ensure future commits trigger continuous builds automatically.
+
 ## [1.4.27] - 2026-09-26
 
 ### Fixed
