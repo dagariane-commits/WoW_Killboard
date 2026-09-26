@@ -40,11 +40,6 @@ function KB:Initialize()
         KB.IntelScanner:Init()
     end
 
-    -- Pre-instantiate UI frames cleanly at load time (Zero frame allocation inside OnClick)
-    if KB.UI and KB.UI.CreateMainWindow then
-        KB.UI:CreateMainWindow()
-    end
-
     -- Create Minimap Button
     KB:CreateMinimapButton()
 
@@ -533,12 +528,6 @@ SlashCmdList["WOWKB_ALERTS"] = function()
     if KB.UI and KB.UI.ShowAlertsConfig then KB.UI:ShowAlertsConfig() end
 end
 
--- Addon Compartment Handler (Blizzard Native 10.0+ / 11.0+ / Modern Classic Integration)
-function WoWKillboard_OnAddonCompartmentClick(addonName, buttonName)
-    if not InCombatLockdown() and KB.UI then
-        KB.UI:Toggle()
-    end
-end
 
 -- Lightweight Floating Launcher Button (100% Taint-Free, Zero GameTooltip Touching, Anonymous Frame)
 function KB:CreateMinimapButton()
@@ -607,29 +596,15 @@ function KB:CreateMinimapButton()
     btn:SetScript("OnLeave", function() tipFrame:Hide() end)
 end
 
--- Event Router & Security Diagnostics
+-- Event Router
 coreFrame:SetScript("OnEvent", function(self, event, ...)
     if event == "ADDON_LOADED" then
         local addonName = ...
         if addonName == "WoWKillboard" then
             KB:Initialize()
         end
-    elseif event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
-        local blockedAddon, blockedFunc = ...
-        WoWKillboardDB = WoWKillboardDB or {}
-        WoWKillboardDB.blockedLog = WoWKillboardDB.blockedLog or {}
-        table.insert(WoWKillboardDB.blockedLog, {
-            time = date("%Y-%m-%d %H:%M:%S"),
-            event = event,
-            addon = tostring(blockedAddon),
-            func = tostring(blockedFunc),
-        })
-        print(string.format("|cffff0000[WoWKB Security Diagnostic]|r %s: Addon=|cffffd100%s|r, Action=|cffffd100%s()|r",
-            event, tostring(blockedAddon), tostring(blockedFunc)))
     end
 end)
 
 coreFrame:RegisterEvent("ADDON_LOADED")
-coreFrame:RegisterEvent("ADDON_ACTION_BLOCKED")
-coreFrame:RegisterEvent("ADDON_ACTION_FORBIDDEN")
 

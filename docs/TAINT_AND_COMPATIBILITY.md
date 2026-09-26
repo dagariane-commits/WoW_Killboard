@@ -99,6 +99,38 @@ Modifying frame anchors (`ClearAllPoints()` / `SetPoint()`) during active combat
 
 ---
 
+### Vector 6: `## AddonCompartmentFunc` in Classic / Forever Beta TOCs
+```toc
+-- INSECURE in Classic / Forever Beta:
+## AddonCompartmentFunc: WoWKillboard_OnAddonCompartmentClick
+```
+**Why this fails:** Blizzard's Modern Retail client supports the Addon Compartment dropdown on the Minimap via `AddonCompartmentFrame`. In Classic Era / Forever Beta (1.15.x / 1.60.x), the engine parses this TOC directive but attempts to bind or execute secure compartment buttons on an incomplete FrameXML implementation, triggering `ADDON_ACTION_BLOCKED: WoWKillboard has been blocked from an action only available to the Blizzard UI` directly on initial client load or reload.
+
+**Our Surgical Solution:**
+Removed all `## AddonCompartmentFunc` tags and functions from Classic builds. WoW Killboard provides its own 100% anonymous, taint-free floating Minimap button (`KB:CreateMinimapButton()`).
+
+---
+
+### Vector 7: `RegisterUnitEvent` Secure Unit Dispatcher Pollution
+```lua
+-- INSECURE in Classic:
+frame:RegisterUnitEvent("UNIT_HEALTH", "target")
+```
+**Why this fails:** `RegisterUnitEvent` attaches the caller frame directly into Blizzard's internal unit event dispatch tables used by secure unit frames (such as `TargetFrame`). On Classic engines without active targets at load time, this pollutes unit frame execution paths, flagging action blocked errors when targeting or entering combat.
+
+**Our Surgical Solution:**
+We use standard `frame:RegisterEvent("UNIT_HEALTH")` with internal unit filtering (`if unit == "target" then`), completely avoiding Blizzard's secure unit event registration subsystem.
+
+---
+
+### Vector 8: Lazy Frame Allocation vs Eager Load-Time Instantiation
+Instantiating large UI hierarchies (900px+ frames, text strings, scroll frames) during `ADDON_LOADED` causes heavy CPU and frame registration churn while Blizzard's core UI is still initializing.
+
+**Our Surgical Solution:**
+Main dashboard frames (`UI:CreateMainWindow()`) are completely lazy. Zero main UI frames are allocated on login. They are constructed only when the user first opens the dashboard via `/wowkb` or the Minimap button, guaranteeing zero load-time taint.
+
+---
+
 ## 3. Cross-Client Compatibility Matrix
 
 WoW Killboard maintains a single unified codebase supporting all active client flavors:

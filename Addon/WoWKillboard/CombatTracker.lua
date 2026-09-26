@@ -1001,11 +1001,7 @@ frame:RegisterEvent("CHAT_MSG_SYSTEM")
 frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-if frame.RegisterUnitEvent then
-    frame:RegisterUnitEvent("UNIT_HEALTH", "target")
-else
-    frame:RegisterEvent("UNIT_HEALTH")
-end
+frame:RegisterEvent("UNIT_HEALTH")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 pcall(frame.RegisterEvent, frame, "PVP_MATCH_COMPLETE")

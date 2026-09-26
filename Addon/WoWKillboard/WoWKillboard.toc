@@ -4,7 +4,6 @@
 ## Author: Scott Quick
 ## Version: 1.0.0
 ## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties, WoWKillboardDistress, WoWKillboardEvents
-## AddonCompartmentFunc: WoWKillboard_OnAddonCompartmentClick
 ## IconTexture: Interface\Icons\Achievement_PVP_P_01
 ## X-Category: PvP, Combat, Leaderboard
 ## X-Copyright: Copyright (c) 2026 Scott Quick. All rights reserved.

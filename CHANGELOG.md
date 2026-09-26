@@ -5,6 +5,22 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.25] - 2026-09-26
+
+### Fixed
+- **Complete Eradication of Blizzard Action Blocked Popup on Login (`WoWKillboard.toc`, `Core.lua`)**:
+  - Removed `## AddonCompartmentFunc: WoWKillboard_OnAddonCompartmentClick` from [`WoWKillboard.toc`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/WoWKillboard.toc) and deleted the global `WoWKillboard_OnAddonCompartmentClick` handler from [`Core.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/Core.lua).
+  - In WoW Classic / Forever Beta (1.60.1 / 1.15.x), third-party `AddonCompartmentFunc` tags cause Blizzard's secure Minimap code to block execution and generate the *"WoWKillboard has been blocked from an action only available to the Blizzard UI"* popup dialog upon loading.
+- **Secure Unit Event Dispatcher Taint Elimination (`CombatTracker.lua`)**:
+  - Replaced `frame:RegisterUnitEvent("UNIT_HEALTH", "target")` with standard `frame:RegisterEvent("UNIT_HEALTH")` in [`CombatTracker.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/CombatTracker.lua).
+  - Calling `RegisterUnitEvent` at load time in Classic binds the addon frame into Blizzard's internal unit event dispatch tables used by secure unit frames (such as `TargetFrame`), triggering action-blocked taint during target updates. Standard event registration with internal `if unit == "target"` checking completely bypasses the secure dispatcher.
+- **Unregistered Action Blocked Diagnostic Listeners (`Core.lua`)**:
+  - Removed `ADDON_ACTION_BLOCKED` and `ADDON_ACTION_FORBIDDEN` event registrations from `coreFrame` to eliminate handler loops and secondary taint during engine security notifications.
+- **Zero-Allocation Lazy Main Dashboard Initialization (`Core.lua`, `UI.lua`)**:
+  - Deferred `UI:CreateMainWindow()` to only instantiate when explicitly toggled by the player via `/wowkb` or the Minimap button, eliminating massive frame allocation during `ADDON_LOADED`.
+  - Removed `UNIT_PORTRAIT_UPDATE` and `PLAYER_ENTERING_WORLD` event handlers from `mainFrame`, leaving `UI.lua` with zero registered game events and refreshing portraits safely on `OnShow`.
+  - Wrapped `SetPortraitTexture` in `pcall` within `UI:UpdatePortrait()`.
+
 ## [1.4.24] - 2026-09-26
 
 ### Fixed
