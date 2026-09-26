@@ -748,7 +748,7 @@ function renderSidebarActivity(data) {
         return `
           <div class="sidebar-rank-item">
             <span style="color:${color}; font-weight:700;">${escapeHtml(s.spec || 'Unknown')}</span>
-            <span style="color:var(--accent-cyan); font-weight:700; font-family:var(--font-tactical);">${s.kills} kills</span>
+            <span style="color:${s.kills > 0 ? 'var(--accent-cyan)' : '#64748b'}; font-weight:700; font-family:var(--font-tactical);">${s.kills} kills</span>
           </div>
         `;
       }).join('');
@@ -1299,14 +1299,14 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
   const isGuilds = (legendsTabType === "GUILDS");
 
   let html = `
-    <div style="display: flex; flex-direction: column; gap: 20px;">
+    <div style="display: flex; flex-direction: column; gap: 16px;">
       <!-- Hall of Legends Header Row with Type Toggle and Mode Pills -->
-      <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+      <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); margin-bottom:4px;">
         <div>
           <h2 class="wow-gold-header" style="font-size: 1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
             Hall of Legends
           </h2>
-          <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">
+          <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">
             ${isGuilds ? 'Premier guild war standings, total kills, and combat effectiveness across Azeroth.' : 'Most lethal combatants, cohort percentile efficiency, and certified executions across Azeroth.'}
           </div>
         </div>
@@ -1333,10 +1333,10 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
   if (isGuilds) {
     const guilds = guildsData || [];
     html += `
-      <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+      <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
-            <tr style="border-bottom: 1px solid var(--border-color); color: #94a3b8; text-align: left; height: 32px;">
+            <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 34px;">
               <th>Rank</th>
               <th>Guild</th>
               <th>Faction</th>
@@ -1358,7 +1358,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           : '-';
 
         html += `
-          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
             <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
             <td><span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')">&lt;${escapeHtml(g.guild)}&gt;</span></td>
             <td style="color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${escapeHtml(g.faction || 'Neutral')}</td>
@@ -1421,7 +1421,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       }
 
       html += `
-        <div class="legends-comparison-banner ${factionThemeClass}">
+        <div class="legends-comparison-banner ${factionThemeClass}" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 12px 16px; margin-bottom: 4px;">
           <div style="display:flex; align-items:center; gap:12px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:1.15rem;">⚔️</span>
@@ -1437,23 +1437,23 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
           <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
             <div>
-              <div style="font-size:0.68rem; color:#94a3b8;">RANK</div>
+              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
               <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
             </div>
             <div>
-              <div style="font-size:0.68rem; color:#94a3b8;">KILLS</div>
+              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">KILLS</div>
               <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmKills}</div>
             </div>
             <div>
-              <div style="font-size:0.68rem; color:#94a3b8;">SOLO</div>
+              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">SOLO</div>
               <div style="font-size:0.9rem; font-weight:800; color:#00e5ff;">${bmSolo}</div>
             </div>
             <div>
-              <div style="font-size:0.68rem; color:#94a3b8;">DELTA VS #1</div>
+              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
               <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
             </div>
             <div>
-              <div style="font-size:0.68rem; color:#94a3b8;">PERCENTILE</div>
+              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
               <div>${pctBadge}</div>
             </div>
             <div style="display:flex; align-items:center; gap:6px;">
@@ -1466,7 +1466,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       `;
     } else {
       html += `
-        <div class="legends-comparison-banner" style="background: rgba(15, 23, 42, 0.7); border: 1px dashed rgba(245, 158, 11, 0.4);">
+        <div class="legends-comparison-banner" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px dashed rgba(212, 163, 41, 0.45); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 12px 16px; margin-bottom: 4px;">
           <div style="display:flex; align-items:center; gap:10px;">
             <span style="font-size:1.1rem;">⚔️</span>
             <span style="font-size:0.82rem; color:#cbd5e1;">Benchmark your operative standing against realm leaders:</span>
@@ -1480,10 +1480,10 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
     }
 
     html += `
-      <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+      <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
-            <tr style="border-bottom: 1px solid var(--border-color); color: #94a3b8; text-align: left; height: 32px;">
+            <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 34px;">
               <th>Rank</th>
               <th>Combatant</th>
               <th>Guild</th>
@@ -1510,7 +1510,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         const youBadge = isCurrent ? `<span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>` : '';
 
         html += `
-          <tr ${rowClass} style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
+          <tr ${rowClass} style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
             <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
             <td>
               <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${escapeHtml(p.name)}')">
@@ -1681,23 +1681,23 @@ function renderBountiesView(bounties, debts, leaderboards) {
   // 1. Personal Marks Section (At the Top)
   if (myUser) {
     html += `
-      <div style="background: linear-gradient(180deg, rgba(212, 163, 41, 0.08) 0%, rgba(13, 17, 23, 0.95) 100%); border: 1px solid rgba(212, 163, 41, 0.35); border-radius: 8px; padding: 18px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
           <div>
             <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; margin:0;">
               Your Active Marks of Spite (${myBounties.length})
             </h2>
-            <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
+            <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">
               Marks of Spite issued by you or placed upon your head
             </div>
           </div>
-          <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
+          <button class="see-all-marks-btn" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
         </div>
     `;
 
     if (myBounties.length === 0) {
       html += `
-        <div style="color: #64748b; font-size:0.8rem; padding: 12px; background: rgba(0,0,0,0.3); border-radius:6px; border: 1px dashed rgba(255,255,255,0.08);">
+        <div style="color: #64748b; font-size:0.8rem; padding: 14px 16px; background: rgba(3,4,7,0.7); border-radius:6px; border: 1px dashed rgba(255,255,255,0.08);">
           You have no active Marks of Spite issued or placed against you. When ganked in the world, brand your killer with a Mark of Spite to dispatch the realm's hunters!
         </div>
       `;
@@ -1712,9 +1712,9 @@ function renderBountiesView(bounties, debts, leaderboards) {
     html += `</div>`;
   } else {
     html += `
-      <div style="background:#07090e; border:1px solid #1e293b; border-radius:8px; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85); border-radius: 6px; padding: 12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div style="font-size:0.82rem; color:#94a3b8;">
-          <strong>Personal Marks:</strong> Sign in to pin Marks of Spite you issued or marks placed upon your head to the top.
+          <strong style="color:var(--wow-gold);">Personal Marks:</strong> Sign in to pin Marks of Spite you issued or marks placed upon your head to the top.
         </div>
         <button class="header-signin-btn" onclick="switchTab('PORTAL')">Sign In &rarr;</button>
       </div>
@@ -1724,18 +1724,18 @@ function renderBountiesView(bounties, debts, leaderboards) {
   // 2. All Realm Marks of Spite
   html += `
       <div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
           <div>
             <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">Realm High Command Marks of Spite</h2>
-            <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Track and execute targets in open combat to claim the reward.</div>
+            <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">Track and execute targets in open combat to claim the reward.</div>
           </div>
-          <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
+          <button class="see-all-marks-btn" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
   `;
 
   if (!allBounties || allBounties.length === 0) {
-    html += `<div style="color: #64748b; padding:16px;">No active bounties right now. Place one to ignite a manhunt!</div>`;
+    html += `<div style="color: #64748b; padding:16px;">No active marks right now. Place one to ignite a manhunt!</div>`;
   } else {
     html += allBounties.map(b => renderSingleBountyCard(b, isSupporter)).join('');
   }
@@ -1743,18 +1743,20 @@ function renderBountiesView(bounties, debts, leaderboards) {
   html += `
         </div>
       </div>
-      </div>
 
       <!-- Bounty Leaderboards: Hall of Fame -->
       <div>
-        <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin-bottom: 12px;">Marks of Spite Hall of Fame &amp; Records</h2>
+        <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27);">
+          <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">Marks of Spite Hall of Fame &amp; Records</h2>
+          <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">All-time outlaw hunts, highest bounties collected, and record survival times.</div>
+        </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           
           <!-- 1. Top Bounty Hunters -->
-          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+          <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <h3 style="color:#10b981; font-size:0.95rem;">Top Mark Hunters</h3>
-              <span style="font-size:0.7rem; color:#64748b;">Most Marks Claimed</span>
+              <span style="font-size:0.7rem; color:#856a36; font-family:var(--font-tactical); font-weight:700;">Most Marks Claimed</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
               ${(leaderboards.topHunters && leaderboards.topHunters.length > 0) 
@@ -1773,10 +1775,10 @@ function renderBountiesView(bounties, debts, leaderboards) {
           </div>
 
           <!-- 2. Highest Bounty Contracts -->
-          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+          <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <h3 style="color:var(--accent-gold); font-size:0.95rem;">Highest Mark of Spite Rewards</h3>
-              <span style="font-size:0.7rem; color:#64748b;">Biggest Escrow Rewards</span>
+              <span style="font-size:0.7rem; color:#856a36; font-family:var(--font-tactical); font-weight:700;">Biggest Escrow Rewards</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
               ${(leaderboards.highestBounties && leaderboards.highestBounties.length > 0)
@@ -1795,10 +1797,10 @@ function renderBountiesView(bounties, debts, leaderboards) {
           </div>
 
           <!-- 3. Longest Outstanding (Most Elusive Outlaws) -->
-          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+          <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <h3 style="color:#f97316; font-size:0.95rem;">Most Elusive Outlaws</h3>
-              <span style="font-size:0.7rem; color:#64748b;">Longest Surviving Marks</span>
+              <span style="font-size:0.7rem; color:#856a36; font-family:var(--font-tactical); font-weight:700;">Longest Surviving Marks</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
               ${(leaderboards.longestOutstanding && leaderboards.longestOutstanding.length > 0)
@@ -1817,10 +1819,10 @@ function renderBountiesView(bounties, debts, leaderboards) {
           </div>
 
           <!-- 4. Fastest Collected Manhunts -->
-          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+          <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <h3 style="color:var(--accent-cyan); font-size:0.95rem;">Fastest Collected Manhunts</h3>
-              <span style="font-size:0.7rem; color:#64748b;">Record Execution Times</span>
+              <span style="font-size:0.7rem; color:#856a36; font-family:var(--font-tactical); font-weight:700;">Record Execution Times</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
               ${(leaderboards.fastestCollected && leaderboards.fastestCollected.length > 0)

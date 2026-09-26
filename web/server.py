@@ -2079,16 +2079,44 @@ def get_activity_7d():
             })
         top_classes.sort(key=lambda x: x["class"])
 
-        # 5. Top Specs (Lifetime)
-        top_specs_rows = conn.execute("""
+        # 5. Top Specs (Lifetime) - All Specializations
+        CLASSIC_SPECS = [
+            ("Affliction", "WARLOCK"), ("Arcane", "MAGE"), ("Arms", "WARRIOR"),
+            ("Assassination", "ROGUE"), ("Balance", "DRUID"), ("Beast Mastery", "HUNTER"),
+            ("Combat", "ROGUE"), ("Demonology", "WARLOCK"), ("Destruction", "WARLOCK"),
+            ("Discipline", "PRIEST"), ("Elemental", "SHAMAN"), ("Enhancement", "SHAMAN"),
+            ("Feral Combat", "DRUID"), ("Fire", "MAGE"), ("Frost", "MAGE"),
+            ("Fury", "WARRIOR"), ("Holy", "PALADIN"), ("Holy", "PRIEST"),
+            ("Marksmanship", "HUNTER"), ("Protection", "PALADIN"), ("Protection", "WARRIOR"),
+            ("Restoration", "DRUID"), ("Restoration", "SHAMAN"), ("Retribution", "PALADIN"),
+            ("Shadow", "PRIEST"), ("Subtlety", "ROGUE"), ("Survival", "HUNTER")
+        ]
+
+        raw_specs = conn.execute("""
             SELECT killer_spec AS spec, killer_class AS class, COUNT(*) AS kills
             FROM kills
             WHERE killer_spec IS NOT NULL AND killer_spec != '' AND killer_spec != 'Unknown'
             GROUP BY killer_spec, killer_class
-            ORDER BY kills DESC
-            LIMIT 10
         """).fetchall()
-        top_specs = [dict(r) for r in top_specs_rows]
+        spec_dict = {(r["spec"].strip().lower(), (r["class"] or "").strip().upper()): r["kills"] for r in raw_specs}
+
+        all_specs_dict = {}
+        for sp_name, sp_cls in CLASSIC_SPECS:
+            kills_val = spec_dict.get((sp_name.lower(), sp_cls), 0)
+            all_specs_dict[(sp_name, sp_cls)] = kills_val
+
+        for r in raw_specs:
+            sp_name = r["spec"].strip()
+            sp_cls = (r["class"] or "").strip().upper()
+            key = (sp_name, sp_cls)
+            if key not in all_specs_dict:
+                all_specs_dict[key] = r["kills"]
+
+        top_specs = [
+            {"spec": k[0], "class": k[1], "kills": v}
+            for k, v in all_specs_dict.items()
+        ]
+        top_specs.sort(key=lambda x: (-x["kills"], x["spec"]))
 
     return jsonify({
         "kills": total_kills,
