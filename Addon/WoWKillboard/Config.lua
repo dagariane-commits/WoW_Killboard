@@ -6,6 +6,20 @@
 WoWKillboard = WoWKillboard or {}
 local KB = WoWKillboard
 
+-- Security Diagnostic Interceptor (File #1: Early-load listener for any blocked action)
+local diagFrame = CreateFrame("Frame")
+diagFrame:RegisterEvent("ADDON_ACTION_BLOCKED")
+diagFrame:RegisterEvent("ADDON_ACTION_FORBIDDEN")
+diagFrame:SetScript("OnEvent", function(self, event, addon, func)
+    local msg = string.format("[WoWKB Diagnostic] Blocked Addon: %s | Action: %s()", tostring(addon), tostring(func))
+    print("|cffff0000==================================================|r")
+    print("|cffff0000" .. msg .. "|r")
+    print("|cffff0000==================================================|r")
+    if UIErrorsFrame and UIErrorsFrame.AddMessage then
+        UIErrorsFrame:AddMessage(msg, 1, 0.2, 0.2, 1, 10)
+    end
+end)
+
 KB.Version = "1.0.0"
 KB.Prefix = "WOWKB"
 
