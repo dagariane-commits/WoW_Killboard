@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.9] - 2026-09-25
 
 ### Changed
+- **Canonical World of Warcraft Faction Artwork & Comprehensive Player Area Backdrops**:
+  - Replaced non-canonical web reference images with custom-generated, authentic World of Warcraft canonical heraldry:
+    - **Grand Alliance Canonical Crest**: Golden stylized roaring lion on cracked dark blue runic stone (`card_alliance_square.png`) and the vintage War of Lordaeron operational battlefront map (`banner_alliance_tactical.jpg`).
+    - **Orcish Horde Canonical Sigil**: Curved-horn battle-worn blood iron tribal sigil on dark charcoal stone with Orcish runes (`card_horde_square.png`) and the Kalimdor/Barrens military tactical war map (`banner_horde_tactical.png`).
+  - Extended authentic faction backdrops to all player-related areas across the web platform:
+    - **High Command Execution List / Bounty Board**: Target cards styled with authentic Alliance or Horde military execution warrant backdrops, target class badges, and gold escrow telemetry.
+    - **Hall of Legends Operative Benchmark**: Dynamically binds the benchmark comparison banner to the operative's faction war map.
+    - **Character Profile Dossier Modal**: Injects the authentic faction tactical map hero header when inspecting any player character.
 - **Authentic Textured Faction Banners & Square Card Blocks**:
   - Upgraded Intel Feed killmail rows with authentic World of Warcraft tactical war map banner backdrops (`banner_horde_tactical.png` and `banner_alliance_tactical.jpg`) for Horde and Alliance victories, featuring dark topographic battle lines, terrain contours, and subtle faction crest watermarks.
   - Applied authentic textured stone/grunge faction card blocks (`card_horde_square.png` and `card_alliance_square.png`) to landing entry gate cards with faction-tinted linear gradients, elevating visual parity to official Blizzard cinematic standards.
