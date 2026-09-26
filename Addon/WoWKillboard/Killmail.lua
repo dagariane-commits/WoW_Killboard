@@ -103,6 +103,11 @@ function KM:RecordKill(data)
         end
     end
 
+    -- Frontline Kill Banner UI Alert
+    if KB.UI and KB.UI.ShowKillBanner then
+        KB.UI:ShowKillBanner(killmail)
+    end
+
     -- P2P Broadcast
     if KB.Sync and KB.Sync.BroadcastKillmail then
         KB.Sync:BroadcastKillmail(killmail)

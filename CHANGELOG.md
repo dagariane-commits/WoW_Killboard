@@ -5,6 +5,28 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.16] - 2026-09-26
+
+### Added
+- **Aegis Tactical / Obsidian Gold In-Game Addon Theme**:
+  - Engineered the flagship **Aegis Tactical** visual theme for the in-game addon (`Addon/WoWKillboard/Config.lua` and `UI.lua`), perfectly matching the dark iron, brushed brass, and tactical gold aesthetic of the web platform.
+  - Deep obsidian velvet backdrop (`#090c12`), brushed aged brass framing, dark iron card plates, and radiant golden active buttons.
+  - Added seamless 3-way theme cycling (`Aegis Tactical` &rarr; `ElvUI Minimalist` &rarr; `Classic WoW`) via `/wowkb theme` or 1-click header switcher.
+- **Frontline Kill Banner & Combat Toast System**:
+  - Implemented an anonymous, taint-free on-screen combat banner (`UI:ShowKillBanner`) triggered whenever the player secures a PvP execution.
+  - Pre-allocated at addon load to guarantee zero memory allocation and 100% `InCombatLockdown()` safety.
+  - Displays high-resolution Blizzard class icons, colorized combatant callsigns, dynamic engagement badges (`[SOLO 1v1]`, `[DUEL]`, `[BG]`, `[GANG xN]`), location telemetry (Zone & GPS coordinates), and auto-dismisses after 4.5 seconds with sound feedback.
+- **Enhanced Interactive Minimap Launcher**:
+  - Upgraded floating minimap button to support Left-Click (Toggle Dashboard) and Right-Click (Quick Theme Cycle).
+  - Enriched private hover tooltip with active theme identifier and real-time combat session kill counter.
+- **Cloud Persistent Storage Compatibility**:
+  - Updated `web/server.py` to support `DB_PATH = os.environ.get("DB_PATH", ...)` allowing persistent storage volume mounting on cloud platforms (Render, Railway, Fly.io, Docker).
+
+### Changed
+- **In-Game Marks of Spite Terminology Synchronization**:
+  - Synchronized in-game tab labels, headers, and dialogue prompts from legacy "Blood Bounties" to **Marks of Spite**.
+  - Updated in-game contract creation modal to **Issue Mark of Spite** with reward bounty gold formatting.
+
 ## [1.4.15] - 2026-09-26
 
 ### Fixed

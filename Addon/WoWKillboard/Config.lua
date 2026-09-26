@@ -12,7 +12,7 @@ KB.Prefix = "WOWKB"
 -- Default User Settings
 KB.DefaultSettings = {
     enabled = true,
-    theme = "elvui",             -- "elvui" (Modern Dark Gunmetal) or "classic" (Classic WoW Stone & Gold)
+    theme = "tactical",          -- "tactical" (Aegis Obsidian Gold), "elvui" (Modern Dark Gunmetal), or "classic" (Classic WoW Stone & Gold)
     includeBattlegrounds = true,
     filterMode = "ALL",          -- "ALL", "WORLD", "BG"
     trackDamage = true,
@@ -68,8 +68,62 @@ KB.STATUS = {
     REDEEMED     = "REDEEMED",
 }
 
--- Theme Definitions: Classic WoW UI Theme vs ElvUI Minimalist Theme (100% Template-Free)
+-- Theme Definitions: Aegis Tactical vs Classic WoW UI vs ElvUI Minimalist (100% Template-Free)
 KB.Themes = {
+    ["tactical"] = {
+        id = "tactical",
+        name = "Aegis Tactical",
+        mainBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        mainBg = { 0.035, 0.045, 0.07, 0.98 }, -- Deep obsidian plate
+        mainBorder = { 0.45, 0.35, 0.18, 0.95 }, -- Aged brass/gold border
+        titleText = "|cffffffffWoW Killboard|r |cffffd100[Aegis Tactical]|r",
+        subtitleText = "|cff856a36v%s | Obsidian Plate & Aged Brass|r",
+        cardBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        cardBg = { 0.05, 0.07, 0.10, 0.95 },
+        cardBorder = { 0.29, 0.23, 0.15, 0.85 },
+        btnBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        btnBg = { 0.08, 0.10, 0.15, 1.0 },
+        btnBorder = { 0.38, 0.30, 0.16, 0.9 },
+        btnActiveBg = { 0.28, 0.20, 0.08, 1.0 },
+        btnActiveBorder = { 0.96, 0.72, 0.20, 1.0 }, -- Radiant WoW Gold
+        btnHoverBg = { 0.14, 0.17, 0.24, 1.0 },
+        btnHoverBorder = { 0.85, 0.65, 0.25, 1.0 },
+        dividerColor = { 0.29, 0.23, 0.15, 0.9 },
+        rowBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        rowBg = { 0.05, 0.06, 0.09, 0.92 },
+        rowBgAlt = { 0.03, 0.04, 0.06, 0.92 },
+        rowBorder = { 0.22, 0.18, 0.12, 0.5 },
+        modalBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        modalBg = { 0.04, 0.05, 0.07, 0.98 },
+        modalBorder = { 0.45, 0.35, 0.18, 1.0 },
+        tagColor = "ffd100",
+        themeBtnText = "|cffffffffTheme: |r|cffffd100Tactical|r",
+    },
     ["elvui"] = {
         id = "elvui",
         name = "ElvUI Minimalist",

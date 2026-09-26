@@ -155,12 +155,12 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     elseif cmd == "armory" then
         KB:PrintArmoryDossier(arg)
     elseif cmd == "theme" then
-        local tArg = arg and arg:lower():trim() or ""
-        if tArg == "classic" or tArg == "elvui" then
+        local tArg = arg and arg:lower():match("^%s*(.-)%s*$") or ""
+        if tArg == "classic" or tArg == "elvui" or tArg == "tactical" then
             if KB.UI then KB.UI:SetTheme(tArg) end
         else
-            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "elvui"
-            local nextTheme = (cur == "elvui") and "classic" or "elvui"
+            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "tactical"
+            local nextTheme = (cur == "tactical") and "elvui" or ((cur == "elvui") and "classic" or "tactical")
             if KB.UI then KB.UI:SetTheme(nextTheme) end
         end
     else
@@ -172,7 +172,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         print("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
         print("  |cffffd100/killboard kos [add|remove|list]|r - View or manage realm KOS Blacklist")
         print("  |cffffd100/killboard event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
-        print("  |cffffd100/killboard theme [classic|elvui]|r - Switch between Classic and ElvUI aesthetics")
+        print("  |cffffd100/killboard theme [tactical|elvui|classic]|r - Switch between Aegis Tactical, ElvUI, and Classic aesthetics")
         print("  |cffffd100/killboard stats|r - Review current combat session battle statistics")
         print("  |cffffd100/killboard bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
         print("  |cffffd100/killboard reset|r - Clear local battle records")
@@ -378,7 +378,7 @@ function KB:CreateMinimapButton()
         self:StopMovingOrSizing()
     end)
     btn:SetClampedToScreen(true)
-    btn:RegisterForClicks("LeftButtonUp")
+    btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
     local icon = btn:CreateTexture(nil, "BACKGROUND")
     icon:SetSize(22, 22)
@@ -392,13 +392,17 @@ function KB:CreateMinimapButton()
 
     btn:SetScript("OnClick", function(self, button)
         if button == "LeftButton" then
-            KB.UI:Toggle()
+            if KB.UI then KB.UI:Toggle() end
+        elseif button == "RightButton" then
+            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "tactical"
+            local nextTheme = (cur == "tactical") and "elvui" or ((cur == "elvui") and "classic" or "tactical")
+            if KB.UI then KB.UI:SetTheme(nextTheme) end
         end
     end)
 
     -- Dedicated Private Tooltip (Never touches or taints Blizzard's GameTooltip)
     local tipFrame = CreateFrame("Frame", nil, btn, "BackdropTemplate")
-    tipFrame:SetSize(210, 44)
+    tipFrame:SetSize(220, 64)
     tipFrame:SetPoint("BOTTOMLEFT", btn, "TOPLEFT", 0, 4)
     tipFrame:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -406,15 +410,20 @@ function KB:CreateMinimapButton()
         tile = true, tileSize = 12, edgeSize = 12,
         insets = { left = 2, right = 2, top = 2, bottom = 2 }
     })
-    tipFrame:SetBackdropColor(0.08, 0.09, 0.12, 0.95)
-    tipFrame:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    tipFrame:SetBackdropColor(0.035, 0.045, 0.07, 0.96)
+    tipFrame:SetBackdropBorderColor(0.85, 0.65, 0.20, 0.9)
     tipFrame:Hide()
 
     local tipText = tipFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     tipText:SetPoint("CENTER", 0, 0)
-    tipText:SetText("|cff00ccffWoW Killboard|r\n|cffffd100Click:|r Toggle | |cffffd100Drag:|r Move")
+    tipText:SetJustifyH("CENTER")
 
-    btn:SetScript("OnEnter", function() tipFrame:Show() end)
+    btn:SetScript("OnEnter", function()
+        local killsCount = (WoWKillboardDB and WoWKillboardDB.kills) and KB.Utils.TableLength(WoWKillboardDB.kills) or 0
+        local curTheme = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName():upper() or "TACTICAL"
+        tipText:SetText(string.format("|cffffd100WoW Killboard|r |cff888888[%s]|r\n|cff10b981Session Kills Logged: %d|r\n|cff00e5ffLeft-Click:|r Dashboard | |cff00e5ffRight-Click:|r Theme\n|cff888888Drag to Reposition|r", curTheme, killsCount))
+        tipFrame:Show()
+    end)
     btn:SetScript("OnLeave", function() tipFrame:Hide() end)
 end
 
