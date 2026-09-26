@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.9] - 2026-09-25
 
 ### Changed
+- **Comprehensive Grimdark Tactical War Room Design System**:
+  - Pushed the entire visual system deeply into a dark, grim, gritty Blizzard fantasy aesthetic: obsidian black base canvas (`#020305`), blackened slate surfaces (`#040609`), and cast iron plate cards (`#0c0f16` to `#030407`).
+  - Intensified body vignette falloff with deep charred stone background overlay, ensuring zero visual wash or low-contrast gray blocks.
+  - Weathered dark brass borders (`#241c10`) and heavy 18px-24px inset plate shadows across killmail rows, most wanted cards, sidebar rankings, bounty target warrants, and modal cards.
+  - Deepened faction tints to battle-worn midnight cobalt (`rgba(6, 12, 24, 0.92)`) for Alliance and dried blood-iron (`rgba(22, 6, 8, 0.92)`) for Horde.
 - **Dark & Gritty Atmospheric Faction Color Tuning**:
   - Replaced high-saturation neon washes with subtle, battle-worn dark tints across all player areas: a deep moody navy tint (`rgba(12, 22, 44, 0.86)`) for Alliance and an equally subtle dark blood-iron tint (`rgba(44, 12, 16, 0.86)`) for Horde.
   - Symmetrized dark borders and removed excessive neon box-shadows across killmail feed rows, Most Wanted cards, bounty execution target cards, and tactical sidebar items.

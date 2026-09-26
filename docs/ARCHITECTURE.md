@@ -152,6 +152,8 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
     - Ingestion of live War Horn distress calls (strictly gated to Open World PvP) and tactical guild event rallies.
     - Zero-dependency Discord embed dispatcher notifying guild channels in real-time with automated party auto-invite instructions.
 
-
-
-
+13. **Grimdark Tactical War Room Design System (`style.css`)**:
+    - Deep obsidian base canvas (`#020305`), blackened slate background (`#040609`), and cast iron plate surfaces (`#0c0f16` to `#030407`).
+    - Heavy radial vignette overlaying charred battlefield imagery for zero-wash contrast.
+    - Symmetrized battle-worn atmospheric faction tints: deep midnight cobalt (`rgba(6, 12, 24, 0.92)`) for Alliance and dried blood-iron (`rgba(22, 6, 8, 0.92)`) for Horde.
+    - Weathered dark brass borders (`#241c10`) and heavy 18px-24px inset plate shadows across killmail rows, most wanted cards, sidebar rankings, and modal cards.
