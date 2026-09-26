@@ -98,31 +98,39 @@ function BE:IsBountyAccepted(bountyId)
     return WoWKillboardAcceptedBounties and (WoWKillboardAcceptedBounties[bountyId] ~= nil)
 end
 
--- Taint-free Floating Screen Alert Frame (Anonymous, Zero Layout Serialization)
-local alertFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-alertFrame:SetSize(520, 48)
-alertFrame:SetPoint("TOP", UIParent, "TOP", 0, -160)
-alertFrame:SetBackdrop({
-    bgFile = "Interface\\Buttons\\WHITE8X8",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true, tileSize = 16, edgeSize = 16,
-    insets = { left = 4, right = 4, top = 4, bottom = 4 }
-})
-alertFrame:SetBackdropColor(0.1, 0.02, 0.02, 0.95)
-alertFrame:SetBackdropBorderColor(1, 0.2, 0.2, 1)
-alertFrame:Hide()
-
-local alertText = alertFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-alertText:SetPoint("CENTER", 0, 0)
-
+-- Taint-free Floating Screen Alert Frame (Lazy instantiation on demand)
+local alertFrame = nil
+local alertText = nil
 local alertTimer = nil
+
+local function EnsureAlertFrame()
+    if alertFrame or InCombatLockdown() then return end
+    alertFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    alertFrame:SetSize(520, 48)
+    alertFrame:SetPoint("TOP", UIParent, "TOP", 0, -160)
+    alertFrame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
+    })
+    alertFrame:SetBackdropColor(0.1, 0.02, 0.02, 0.95)
+    alertFrame:SetBackdropBorderColor(1, 0.2, 0.2, 1)
+    alertFrame:Hide()
+
+    alertText = alertFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    alertText:SetPoint("CENTER", 0, 0)
+end
+
 function BE:ShowAlert(msg, r, g, b)
     if InCombatLockdown() then return end
+    EnsureAlertFrame()
+    if not alertFrame then return end
     alertText:SetText(msg)
     alertText:SetTextColor(r or 1, g or 0.8, b or 0.2)
     alertFrame:Show()
     if alertTimer then alertTimer:Cancel() end
-    alertTimer = C_Timer.NewTimer(4.5, function() alertFrame:Hide() end)
+    alertTimer = C_Timer.NewTimer(4.5, function() if alertFrame then alertFrame:Hide() end end)
 end
 
 -- Anti-Win-Trade Verification Rule Engine
