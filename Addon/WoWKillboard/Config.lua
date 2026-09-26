@@ -28,6 +28,7 @@ KB.DefaultSettings = {
     bountyAlertRadius = 60,       -- alerts when wanted debtor is within proximity
     redemptionTaxPercent = 10,   -- 10% fee when redeeming Oathbreaker status
     combatWindowSeconds = 15,    -- temporal window for grouping/gang inference
+    enableRadarAlerts = true,    -- announce detected enemy players in chat on target
 }
 
 -- Fallback Class Colors (ARGB Hex)

@@ -89,11 +89,17 @@ WoW Killboard maintains a single unified codebase supporting all active client f
 
 ### API Normalization Table
 ```lua
--- Dynamic combat log detection in CombatTracker.lua
-local isModernClient = (type(CombatLogGetCurrentEventInfo) ~= "function")
+-- Dynamic combat log detection & payload normalization in CombatTracker.lua
+local hasCombatLogAPI = (type(CombatLogGetCurrentEventInfo) == "function")
 
-if not isModernClient then
-    frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+local function GetCombatLogPayload(...)
+    if hasCombatLogAPI then
+        return CombatLogGetCurrentEventInfo()
+    else
+        return ...
+    end
 end
+
+pcall(frame.RegisterEvent, frame, "COMBAT_LOG_EVENT_UNFILTERED")
 ```
 By branching only where the Blizzard C-engine differs, 99% of the codebase remains shared, battle-tested, and synchronized across every installation.

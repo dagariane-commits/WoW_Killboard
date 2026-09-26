@@ -5,6 +5,26 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.19] - 2026-09-26
+
+### Fixed
+- **P0 Combat Engine Restoration on WoW Forever Beta (`CombatTracker.lua`)**:
+  - Eradicated hardcoded TOC version check `(tocVersion >= 16000 and tocVersion <= 16999)` that mistakenly flagged WoW Forever Beta (TOC `16001`) as an unsupported modern client and suppressed `COMBAT_LOG_EVENT_UNFILTERED` registration.
+  - Implemented dynamic runtime feature detection `type(CombatLogGetCurrentEventInfo) == "function"` adhering strictly to Guardrail 2 (Cross-Client Parity).
+  - Normalised payload extraction via `GetCombatLogPayload(...)`, ensuring swing damage, spell damage, heals, party kills, and unit deaths are 100% captured across Forever Beta, Classic Era, Anniversary, and Retail.
+  - Made player GUID and unit death detection resilient against missing bit flags by inspecting `Player-` GUID prefixes in `RecordDamage` and `ProcessDeath`.
+  - Upgraded target death detection in `UNIT_HEALTH` to trigger on `UnitIsDeadOrGhost("target")` without requiring the transient player combat flag.
+
+### Added
+- **Tactical Open-World Hostile Radar Announcements (`UnitScanner.lua`)**:
+  - Implemented proximity targeting radar (`US:CheckHostileRadar`) that broadcasts an informative tactical notice in chat when an enemy hostile player is targeted in the open world: `[WoWKB Radar] Detected Hostile: Name (Lvl X Class) in Zone!`.
+  - Throttled to once per 30 seconds per unique target to prevent chat spam during combat.
+- **Rich Frontline Combat Radar Empty Feed State (`UI.lua`)**:
+  - Replaced the ambiguous one-line empty feed message with an informative status card: displays active Sector Surveillance (current zone), filter mode, "ARMED & LISTENING" combat engine status, and a direct hint to run `/wowkb testkill`.
+- **Synthetic PvP Verification Commands (`Core.lua`)**:
+  - Added `/wowkb testkill` (or `/wowkb demo`): instantly simulates an authentic open-world PvP kill in the player's current zone, popping the Kill Banner alert, playing the audio cue, incrementing K/D stat cards, and populating the live feed with a clickable Killmail Intelligence Dossier.
+  - Added `/wowkb testdeath`: simulates a PvP death to test the revenge blood bounty prompt and death counters.
+
 ## [1.4.18] - 2026-09-26
 
 ### Added

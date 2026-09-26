@@ -160,6 +160,150 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         if KB.UI and KB.UI.TestKillBanner then
             KB.UI:TestKillBanner()
         end
+    elseif cmd == "testkill" or cmd == "demo" then
+        local pName = UnitName("player") or "Hero"
+        local _, pClass = UnitClass("player")
+        pClass = pClass or "PALADIN"
+        local pLevel = UnitLevel("player") or 20
+        local pGuild = GetGuildInfo("player") or "None"
+        local pFaction = UnitFactionGroup("player") or "Alliance"
+
+        local enemyFaction = (pFaction == "Alliance") and "Horde" or "Alliance"
+        local enemyRace = (enemyFaction == "Horde") and "Undead" or "Human"
+        local enemyClass = (enemyFaction == "Horde") and "ROGUE" or "WARRIOR"
+        local enemyName = (enemyFaction == "Horde") and "Shadowstalker" or "Dawnbreaker"
+        local enemyGuild = (enemyFaction == "Horde") and "Grim Syndicate" or "Silver Hand"
+
+        local loc = KB.Utils and KB.Utils.GetPlayerLocation and KB.Utils.GetPlayerLocation() or { mapId = 1421, zone = GetZoneText() or "Wilderness", subZone = GetSubZoneText() or "", x = 45.2, y = 32.8 }
+        local dmgAmount = math.max(650, pLevel * 60)
+
+        local testKill = {
+            timestamp = time(),
+            isSolo = true,
+            isBattleground = false,
+            isArena = false,
+            isDuel = false,
+            attackersCount = 1,
+            totalDamage = dmgAmount,
+            killer = {
+                guid = UnitGUID("player") or "Player-0001",
+                name = pName,
+                level = pLevel,
+                class = pClass,
+                guild = pGuild,
+                faction = pFaction,
+                partySize = 1,
+                damageDone = dmgAmount,
+                healingDone = math.floor(dmgAmount * 0.25),
+            },
+            victim = {
+                guid = "Player-DEMO-" .. tostring(time()),
+                name = enemyName,
+                level = math.max(1, pLevel + 1),
+                class = enemyClass,
+                race = enemyRace,
+                guild = enemyGuild,
+                faction = enemyFaction,
+                partySize = 1,
+            },
+            location = loc,
+            attackers = {
+                {
+                    guid = UnitGUID("player") or "Player-0001",
+                    name = pName,
+                    class = pClass,
+                    level = pLevel,
+                    guild = pGuild,
+                    faction = pFaction,
+                    damage = dmgAmount,
+                    spell = (pClass == "PALADIN") and "Judgement" or ((pClass == "ROGUE") and "Eviscerate" or "Mortal Strike"),
+                    isPlayer = true,
+                }
+            },
+        }
+
+        if KB.CombatTracker then
+            KB.CombatTracker.SessionStats.kills = KB.CombatTracker.SessionStats.kills + 1
+            KB.CombatTracker.SessionStats.damageDone = KB.CombatTracker.SessionStats.damageDone + dmgAmount
+        end
+
+        if KB.Killmail and KB.Killmail.RecordKill then
+            KB.Killmail:RecordKill(testKill)
+        end
+        print(string.format("|cff00ff00[WoWKB]|r Generated synthetic Open-World PvP Kill against |cffff3333%s|r in %s!", enemyName, loc.zone))
+
+    elseif cmd == "testdeath" then
+        local pName = UnitName("player") or "Hero"
+        local _, pClass = UnitClass("player")
+        pClass = pClass or "PALADIN"
+        local pLevel = UnitLevel("player") or 20
+        local pGuild = GetGuildInfo("player") or "None"
+        local pFaction = UnitFactionGroup("player") or "Alliance"
+
+        local enemyFaction = (pFaction == "Alliance") and "Horde" or "Alliance"
+        local enemyClass = (enemyFaction == "Horde") and "WARLOCK" or "MAGE"
+        local enemyName = (enemyFaction == "Horde") and "Soulreaper" or "Pyromaster"
+
+        local loc = KB.Utils and KB.Utils.GetPlayerLocation and KB.Utils.GetPlayerLocation() or { mapId = 1421, zone = GetZoneText() or "Wilderness", subZone = GetSubZoneText() or "", x = 45.2, y = 32.8 }
+        local dmgAmount = math.max(800, pLevel * 75)
+
+        local testDeath = {
+            timestamp = time(),
+            isSolo = true,
+            isBattleground = false,
+            isArena = false,
+            isDuel = false,
+            attackersCount = 1,
+            totalDamage = dmgAmount,
+            killer = {
+                guid = "Player-DEMO-KILLER-" .. tostring(time()),
+                name = enemyName,
+                level = math.max(1, pLevel + 2),
+                class = enemyClass,
+                guild = "Blackout",
+                faction = enemyFaction,
+                partySize = 1,
+                damageDone = dmgAmount,
+                healingDone = 0,
+            },
+            victim = {
+                guid = UnitGUID("player") or "Player-0001",
+                name = pName,
+                level = pLevel,
+                class = pClass,
+                guild = pGuild,
+                faction = pFaction,
+                partySize = 1,
+            },
+            location = loc,
+            attackers = {
+                {
+                    guid = "Player-DEMO-KILLER-" .. tostring(time()),
+                    name = enemyName,
+                    class = enemyClass,
+                    level = math.max(1, pLevel + 2),
+                    guild = "Blackout",
+                    faction = enemyFaction,
+                    damage = dmgAmount,
+                    spell = "Shadow Bolt",
+                    isPlayer = true,
+                }
+            },
+        }
+
+        if KB.CombatTracker then
+            KB.CombatTracker.SessionStats.deaths = KB.CombatTracker.SessionStats.deaths + 1
+            KB.CombatTracker.LastPvpKiller = testDeath.killer
+        end
+
+        if KB.Killmail and KB.Killmail.RecordKill then
+            KB.Killmail:RecordKill(testDeath)
+        end
+
+        if KB.UI and KB.UI.ShowDeathBountyPrompt then
+            KB.UI:ShowDeathBountyPrompt(testDeath.killer)
+        end
+        print(string.format("|cffff3333[WoWKB]|r Simulated PvP death against |cffffd100%s|r! Death bounty prompt engaged.", enemyName))
     elseif cmd == "alerts" or cmd == "alert" or cmd == "config" then
         if KB.UI and KB.UI.ShowAlertsConfig then
             KB.UI:ShowAlertsConfig()
@@ -181,6 +325,8 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         print("  |cffffd100/killboard alerts|r or |cffffd100/wowkb alerts|r - Open Combat Alerts & Radar Configuration")
         print("  |cffffd100/killboard move|r or |cffffd100/wowkb move|r - Unlock or lock Kill Banner to reposition on screen")
         print("  |cffffd100/killboard test|r or |cffffd100/wowkb test|r - Preview Kill Alert Banner with sound and raid warning")
+        print("  |cffffd100/killboard testkill|r or |cffffd100/wowkb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
+        print("  |cffffd100/killboard testdeath|r or |cffffd100/wowkb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
         print("  |cffffd100/armory [Name]|r or |cffffd100/killboard armory [Name]|r - Inspect Character Combat Dossier")
         print("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
         print("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
