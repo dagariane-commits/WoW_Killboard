@@ -324,6 +324,17 @@ def init_db():
             pass
         conn.commit()
 
+# Ensure database tables and schema are initialized on startup (e.g. under Gunicorn / Docker / Render)
+init_db()
+
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    return jsonify({
+        "status": "ok",
+        "service": "WoW Killboard API",
+        "db": "ready"
+    })
+
 @app.route("/")
 def index():
     return send_from_directory(STATIC_DIR, "index.html")

@@ -5,6 +5,31 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.27] - 2026-09-26
+
+### Fixed
+- **Render Cloud Gunicorn Database Initialization & Health Endpoint (`web/server.py`)**:
+  - Resolved HTTP 500 error on Render cloud deployment (`https://wow-killboard.onrender.com/api/kills`). When deployed via Docker container, Gunicorn imports `server:app` where `__name__ == "server"`. Because `init_db()` was previously enclosed in `if __name__ == "__main__":`, database tables were never created, causing all API endpoints to crash with `sqlite3.OperationalError: no such table: kills`.
+  - Moved `init_db()` to execute unconditionally at module import time, ensuring Gunicorn worker threads immediately initialize SQLite tables, columns, and default seed data.
+  - Added dedicated `/api/health` endpoint returning `{"status": "ok", "service": "WoW Killboard API", "db": "ready"}` for automated Render container health probing.
+- **Tri-Lock Non-CLEU Open-World PvP Kill Detection & Victim Engine (`CombatTracker.lua`, `UnitScanner.lua`)**:
+  - Solved issue where open-world PvP kills on Forever Beta (`1.60.1`) were not logging after `COMBAT_LOG_EVENT_UNFILTERED` was disabled.
+  - Implemented Tri-Lock Failover Kill Detection:
+    1. **Blizzard Engine Signal**: Registered `PLAYER_PVP_KILLS_CHANGED` with `GetPVPLifetimeStats()` / `GetPVPSessionStats()` monitoring to guarantee kill registration from Blizzard's C++ engine even without combat log or chat events.
+    2. **Direct Death Dispatch**: Added `UNIT_FLAGS` and `UNIT_HEALTH` listeners for `"target"` and `"focus"` via `RegisterUnitEvent` (or fallback `RegisterEvent`), capturing instant enemy death flags during active combat.
+    3. **Honor Chat Parsing**: Upgraded `ExtractVictimFromHonorMsg()` to strip 26 PvP rank prefixes (e.g. `"Corporal Shadowstalker"` -> `"Shadowstalker"`) and added fallback to `CT.RecentEngagedEnemies` if honor gain messages omit the victim's name.
+  - Implemented `CT.RecentEngagedEnemies` temporal cache (30-second sliding window) preserving target metadata during tab-targeting and out-of-range combat finishes.
+  - Corrected solo kill classification: un-grouped players in open-world combat are properly recognized as `isSolo = true` with `attackersCount = 1` rather than being forced into gang gank status.
+  - Removed combat lockdown gates from read-only `UnitScanner:ScanUnit` queries on mouseover and nameplates, ensuring enemy player metadata is continuously populated during combat.
+  - Added `/kb testkill [name]` slash subcommand for instant player verification in-game.
+
+### Added
+- **Dual-Sync Pipeline & Automated Multi-Endpoint Broadcasting (`sync/watcher.py`)**:
+  - Upgraded `KillboardWatcher` to support multiple simultaneous ingestion targets (`api_urls`).
+  - By default, `WoWKillboardSync` broadcasts all combat telemetry, kills, bounties, and distress beacons to BOTH the production Render cloud platform (`https://wow-killboard.onrender.com`) and the local development server (`http://127.0.0.1:8080`).
+  - Added CLI flags `--cloud` / `--render` and `--local` for explicit routing overrides.
+  - Recompiled standalone Windows binary [`WoWKillboardSync.exe`](file:///c:/Users/SQUICK/WoW_Killboard/WoWKillboardSync.exe).
+
 ## [1.4.26] - 2026-09-26
 
 ### Fixed

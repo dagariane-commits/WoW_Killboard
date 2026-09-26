@@ -61,6 +61,10 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         if KB.Leaderboard then KB.Leaderboard:Rebuild() end
         if KB.UI then KB.UI:RefreshIfVisible() end
         print("|cff00ccff[WoWKB]|r Database has been reset.")
+    elseif cmd == "testkill" or cmd == "mockkill" or cmd == "recordkill" then
+        if KB.CombatTracker and KB.CombatTracker.RecordManualKill then
+            KB.CombatTracker:RecordManualKill(arg)
+        end
     elseif cmd == "stats" then
         local s = KB.CombatTracker.SessionStats
         local st = WoWKillboardDB and WoWKillboardDB.stats or {}

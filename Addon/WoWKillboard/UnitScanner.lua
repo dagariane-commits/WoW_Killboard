@@ -375,13 +375,11 @@ frame:SetScript("OnEvent", function(self, event, unit)
     if event == "PLAYER_TARGET_CHANGED" then
         US:ScanUnit("target")
     elseif event == "UPDATE_MOUSEOVER_UNIT" then
-        if not InCombatLockdown() then
-            US:ScanUnit("mouseover")
-        end
+        US:ScanUnit("mouseover")
     elseif event == "PLAYER_FOCUS_CHANGED" then
         US:ScanUnit("focus")
     elseif event == "NAME_PLATE_UNIT_ADDED" then
-        if unit and not InCombatLockdown() then
+        if unit then
             US:ScanUnit(unit)
         end
     elseif event == "PLAYER_ENTERING_WORLD" then
