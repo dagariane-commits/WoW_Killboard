@@ -47,21 +47,20 @@ local CLASS_COORDS = CLASS_ICON_TCOORDS or {
 function UI:GetCurrentThemeName()
     if WoWKillboardSettings and WoWKillboardSettings.theme then
         local t = WoWKillboardSettings.theme:lower()
-        if KB.Themes and KB.Themes[t] then return t end
+        if t == "classic" or t == "elvui" then return t end
     end
-    return "tactical"
+    return "classic"
 end
 
 function UI:GetTheme()
     local name = UI:GetCurrentThemeName()
-    return (KB.Themes and KB.Themes[name]) or (KB.Themes and KB.Themes["tactical"]) or (KB.Themes and KB.Themes["elvui"]) or {}
+    return (KB.Themes and KB.Themes[name]) or (KB.Themes and KB.Themes["classic"]) or (KB.Themes and KB.Themes["elvui"]) or {}
 end
 
 function UI:SetTheme(themeName)
     themeName = (themeName or ""):lower()
-    if not KB.Themes or not KB.Themes[themeName] then
-        print(string.format("|cffff9900[WoWKB]|r Unknown theme '%s'. Available: 'tactical', 'elvui', 'classic'.", tostring(themeName)))
-        return
+    if themeName ~= "classic" and themeName ~= "elvui" then
+        themeName = "classic"
     end
 
     WoWKillboardSettings = WoWKillboardSettings or {}
@@ -106,7 +105,7 @@ function UI:ApplyTheme()
         UI.TitleText:SetText(theme.titleText)
     end
     if UI.SubtitleText then
-        UI.SubtitleText:SetText(string.format(theme.subtitleText, KB.Version))
+        UI.SubtitleText:SetText(string.format("|cffc7b28cv%s|r", KB.Version))
     end
     if UI.ThemeButton and UI.ThemeButton.Label then
         UI.ThemeButton:SetBackdrop(theme.btnBackdrop)
@@ -156,8 +155,7 @@ function UI:ApplyTheme()
                 edgeSize = 1,
             })
             UI.CloseButton:SetBackdropColor(0.10, 0.10, 0.12, 1.0)
-            local closeBorder = (theme.id == "tactical") and { 0.45, 0.35, 0.18, 1.0 } or { 0.0, 0.0, 0.0, 1.0 }
-            UI.CloseButton:SetBackdropBorderColor(unpack(closeBorder))
+            UI.CloseButton:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
             if UI.CloseButton.Label then
                 UI.CloseButton.Label:SetFontObject("GameFontHighlightSmall")
                 UI.CloseButton.Label:SetText("|cffff3333X|r")
@@ -220,8 +218,7 @@ function UI:ApplyTheme()
                 if ht then ht:SetTexture(nil) ht:Hide() end
                 UI.DetailModal.CloseBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
                 UI.DetailModal.CloseBtn:SetBackdropColor(0.10, 0.10, 0.12, 1.0)
-                local closeBorder = (theme.id == "tactical") and { 0.45, 0.35, 0.18, 1.0 } or { 0.0, 0.0, 0.0, 1.0 }
-                UI.DetailModal.CloseBtn:SetBackdropBorderColor(unpack(closeBorder))
+                UI.DetailModal.CloseBtn:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
                 if UI.DetailModal.CloseBtn.Label then UI.DetailModal.CloseBtn.Label:SetText("|cffff3333X|r") end
             end
         end
@@ -364,7 +361,7 @@ function UI:CreateMainWindow()
 
     -- Anonymous frame to prevent Blizzard AccountData UI_LAYOUT tracking
     mainFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    mainFrame:SetSize(860, 560)
+    mainFrame:SetSize(860, 580)
     mainFrame:SetPoint("CENTER")
     mainFrame:SetMovable(true)
     mainFrame:EnableMouse(true)
@@ -412,19 +409,19 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {0.035, 0.045, 0.07, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {0.45, 0.35, 0.18, 0.95}))
 
-    -- Iconic Blizzard Circular Medallion Frame (Concentric & Aligned in Header)
+    -- Iconic Blizzard Circular Medallion Frame (Concentric & Grand in Header)
     local medallion = CreateFrame("Frame", nil, mainFrame)
-    medallion:SetSize(46, 46)
-    medallion:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 12, -8)
+    medallion:SetSize(60, 60)
+    medallion:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 12, -6)
     medallion:SetFrameLevel(mainFrame:GetFrameLevel() + 5)
 
     local portBg = medallion:CreateTexture(nil, "BACKGROUND")
-    portBg:SetSize(36, 36)
+    portBg:SetSize(48, 48)
     portBg:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     portBg:SetColorTexture(0.02, 0.02, 0.03, 1.0)
 
     local portrait = medallion:CreateTexture(nil, "ARTWORK")
-    portrait:SetSize(36, 36)
+    portrait:SetSize(48, 48)
     portrait:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     if SetPortraitTexture then
         SetPortraitTexture(portrait, "player")
@@ -432,17 +429,29 @@ function UI:CreateMainWindow()
     if not portrait:GetTexture() then
         portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
     end
-    portrait:SetTexCoord(0.15, 0.85, 0.15, 0.85) -- Concentric circular crop to prevent square corner bleed
+    portrait:SetTexCoord(0.12, 0.88, 0.12, 0.88) -- Concentric circular crop to prevent square corner bleed
     medallion.Portrait = portrait
 
     local ring = medallion:CreateTexture(nil, "OVERLAY")
-    ring:SetSize(46, 46)
+    ring:SetSize(60, 60)
     ring:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     ring:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\medallion_border.tga")
     medallion.Ring = ring
 
-    local lvlBadge = medallion:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    lvlBadge:SetPoint("BOTTOMRIGHT", medallion, "BOTTOMRIGHT", 2, -2)
+    -- Circular Level Plate Backing
+    local lvlFrame = CreateFrame("Frame", nil, medallion, "BackdropTemplate")
+    lvlFrame:SetSize(20, 20)
+    lvlFrame:SetPoint("BOTTOMRIGHT", medallion, "BOTTOMRIGHT", 2, -2)
+    lvlFrame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+    })
+    lvlFrame:SetBackdropColor(0.04, 0.05, 0.08, 0.95)
+    lvlFrame:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.95)
+
+    local lvlBadge = lvlFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    lvlBadge:SetPoint("CENTER", lvlFrame, "CENTER", 0, 0)
     if UnitLevel then
         local pLvl = UnitLevel("player")
         if pLvl and pLvl > 0 then
@@ -454,7 +463,7 @@ function UI:CreateMainWindow()
 
     -- Window Title Header (Dynamic Flavor & Realm Detection)
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("LEFT", medallion, "RIGHT", 10, 4)
+    title:SetPoint("LEFT", medallion, "RIGHT", 14, 6)
     if KB.Utils and KB.Utils.GetClientFlavorTitle then
         title:SetText(KB.Utils.GetClientFlavorTitle())
     else
@@ -463,8 +472,8 @@ function UI:CreateMainWindow()
     UI.TitleText = title
 
     local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
-    subtitle:SetText("|cffc7b28cv" .. KB.Version .. " | Frontline Tactical War Room & Telemetry|r")
+    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
+    subtitle:SetText("|cffc7b28cv" .. KB.Version .. "|r")
     UI.SubtitleText = subtitle
 
     -- Template-Free Close Button
@@ -491,7 +500,7 @@ function UI:CreateMainWindow()
     themeBtn.Label = themeLabel
     themeBtn:SetScript("OnClick", function()
         local cur = UI:GetCurrentThemeName()
-        local nextTheme = (cur == "tactical") and "elvui" or ((cur == "elvui") and "classic" or "tactical")
+        local nextTheme = (cur == "classic") and "elvui" or "classic"
         UI:SetTheme(nextTheme)
     end)
     themeBtn:SetScript("OnEnter", function(self)
@@ -613,7 +622,7 @@ function UI:CreateMainWindow()
         local card = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
         card:SetSize(cfg.w, 42)
         if not prevCard then
-            card:SetPoint("TOPLEFT", 14, -58)
+            card:SetPoint("TOPLEFT", 14, -70)
         else
             card:SetPoint("LEFT", prevCard, "RIGHT", 14, 0)
         end
@@ -670,8 +679,8 @@ function UI:CreateMainWindow()
 
     -- 1px Dividing Rule
     local divider = mainFrame:CreateTexture(nil, "ARTWORK")
-    divider:SetPoint("TOPLEFT", 14, -106)
-    divider:SetPoint("TOPRIGHT", -14, -106)
+    divider:SetPoint("TOPLEFT", 14, -118)
+    divider:SetPoint("TOPRIGHT", -14, -118)
     divider:SetHeight(1)
     divider:SetColorTexture(0.35, 0.28, 0.16, 0.9)
     UI.Divider = divider
@@ -690,7 +699,7 @@ function UI:CreateMainWindow()
     for _, t in ipairs(tabs) do
         local btn = UI:CreateButton(mainFrame, t.w, 24, t.text, "GameFontHighlightSmall")
         if not prevTab then
-            btn:SetPoint("TOPLEFT", 14, -112)
+            btn:SetPoint("TOPLEFT", 14, -124)
         else
             btn:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
         end
@@ -716,7 +725,7 @@ function UI:CreateMainWindow()
     for _, f in ipairs(filterConfigs) do
         local pill = UI:CreateButton(mainFrame, f.w, 22, f.text, "GameFontHighlightSmall")
         if not prevPill then
-            pill:SetPoint("TOPRIGHT", -14, -113)
+            pill:SetPoint("TOPRIGHT", -14, -125)
         else
             pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
         end
@@ -732,7 +741,7 @@ function UI:CreateMainWindow()
 
     -- Dedicated Content Inset Panel (Sunken Vault Plate with Website Battlefield Artwork)
     local inset = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-    inset:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -142)
+    inset:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -154)
     inset:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -14, 14)
     inset:SetFrameLevel(mainFrame:GetFrameLevel() + 1)
     UI.ContentInset = inset
@@ -800,6 +809,40 @@ function UI:Refresh()
     -- Update KPI Header Cards
     local s = KB.CombatTracker.SessionStats
     local st = WoWKillboardDB and WoWKillboardDB.stats or {}
+
+    -- Calculate total activity across the board and reconcile player stats
+    local totalKillsCount = 0
+    local totalDuelsCount = (st.duels and st.duels.total) or 0
+    local totalBgsCount = (st.bgs and st.bgs.total) or 0
+    if WoWKillboardDB and WoWKillboardDB.kills then
+        local pName = UnitName("player")
+        local histWins, histLosses = 0, 0
+        local duelKills, bgKills, worldKills = 0, 0, 0
+        for _, km in pairs(WoWKillboardDB.kills) do
+            if km.isDuel then
+                duelKills = duelKills + 1
+                if pName then
+                    local isW = (km.killer and km.killer.name and (km.killer.name:lower():find(pName:lower(), 1, true) ~= nil))
+                    local isL = (km.victim and km.victim.name and (km.victim.name:lower():find(pName:lower(), 1, true) ~= nil))
+                    if isW then histWins = histWins + 1 end
+                    if isL then histLosses = histLosses + 1 end
+                end
+            elseif km.isBattleground then
+                bgKills = bgKills + 1
+            else
+                worldKills = worldKills + 1
+            end
+        end
+        if st.duels then
+            st.duels.wins = math.max(st.duels.wins or 0, histWins)
+            st.duels.losses = math.max(st.duels.losses or 0, histLosses)
+            st.duels.total = math.max(st.duels.total or 0, duelKills)
+        end
+        totalDuelsCount = math.max(totalDuelsCount, duelKills)
+        totalBgsCount = math.max(totalBgsCount, bgKills)
+        totalKillsCount = worldKills
+    end
+
     local dW = st.duels and st.duels.wins or 0
     local dL = st.duels and st.duels.losses or 0
     local dTot = dW + dL
@@ -809,26 +852,6 @@ function UI:Refresh()
     local bgL = st.bgs and st.bgs.losses or 0
     local bgTot = bgW + bgL
     local bgRate = bgTot > 0 and math.floor((bgW / bgTot) * 100) or 0
-
-    -- Calculate total activity across the board
-    local totalKillsCount = 0
-    local totalDuelsCount = (st.duels and st.duels.total) or 0
-    local totalBgsCount = (st.bgs and st.bgs.total) or 0
-    if WoWKillboardDB and WoWKillboardDB.kills then
-        local duelKills, bgKills, worldKills = 0, 0, 0
-        for _, km in pairs(WoWKillboardDB.kills) do
-            if km.isDuel then
-                duelKills = duelKills + 1
-            elseif km.isBattleground then
-                bgKills = bgKills + 1
-            else
-                worldKills = worldKills + 1
-            end
-        end
-        totalDuelsCount = math.max(totalDuelsCount, duelKills)
-        totalBgsCount = math.max(totalBgsCount, bgKills)
-        totalKillsCount = worldKills
-    end
 
     local kd = (s.deaths > 0) and string.format("%.2f", s.kills / s.deaths) or tostring(s.kills)
 

@@ -12,7 +12,7 @@ KB.Prefix = "WOWKB"
 -- Default User Settings
 KB.DefaultSettings = {
     enabled = true,
-    theme = "tactical",          -- "tactical" (Aegis Obsidian Gold), "elvui" (Modern Dark Gunmetal), or "classic" (Classic WoW Stone & Gold)
+    theme = "classic",           -- "classic" (Classic WoW Stone & Gold) or "elvui" (Modern Dark Gunmetal)
     includeBattlegrounds = true,
     filterMode = "ALL",          -- "ALL", "WORLD", "BG"
     trackDamage = true,
@@ -47,7 +47,7 @@ KB.ClassColors = {
     ["DRUID"]       = "FF7D0A",
     ["DEMONHUNTER"] = "A330C9",
     ["EVOKER"]      = "33937F",
-    ["UNKNOWN"]     = "AAAAAA",
+    ["UNKNOWN"]     = "C7C7CF",
 }
 
 -- Faction Colors
@@ -74,73 +74,8 @@ KB.STATUS = {
     REDEEMED     = "REDEEMED",
 }
 
--- Theme Definitions: Aegis Tactical vs Classic WoW UI vs ElvUI Minimalist (100% Template-Free)
+-- Theme Definitions: Classic WoW UI vs ElvUI Minimalist (100% Template-Free)
 KB.Themes = {
-    ["tactical"] = {
-        id = "tactical",
-        name = "Aegis Tactical",
-        mainBackdrop = {
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            edgeSize = 14,
-            insets = { left = 3, right = 3, top = 3, bottom = 3 },
-        },
-        mainBg = { 0.04, 0.05, 0.08, 1.0 }, -- 100% OPAQUE Deep Obsidian Dark Iron
-        mainBorder = { 0.65, 0.52, 0.22, 1.0 }, -- Antique Brass / Gold
-        solidBg = { 0.04, 0.05, 0.08, 1.0 },
-        titleText = "|cffffffffWoW Killboard|r |cffffd100[Aegis Tactical]|r",
-        subtitleText = "|cffc7b28cv%s | Obsidian Plate & Aged Brass|r",
-        insetBackdrop = {
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            edgeSize = 12,
-            insets = { left = 3, right = 3, top = 3, bottom = 3 },
-        },
-        insetBg = { 0.025, 0.03, 0.045, 1.0 }, -- Sunken obsidian vault
-        insetBorder = { 0.35, 0.28, 0.16, 0.95 },
-        cardBackdrop = {
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            edgeSize = 10,
-            insets = { left = 2, right = 2, top = 2, bottom = 2 },
-        },
-        cardBg = { 0.06, 0.08, 0.12, 1.0 },
-        cardBorder = { 0.55, 0.44, 0.20, 0.95 },
-        cardHeaderBg = { 0.09, 0.12, 0.17, 1.0 },
-        cardHeaderBorder = { 0.35, 0.28, 0.16, 0.8 },
-        btnBackdrop = {
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            edgeSize = 10,
-            insets = { left = 2, right = 2, top = 2, bottom = 2 },
-        },
-        btnBg = { 0.08, 0.10, 0.15, 1.0 },
-        btnBorder = { 0.45, 0.35, 0.18, 0.95 },
-        btnActiveBg = { 0.25, 0.18, 0.07, 1.0 },
-        btnActiveBorder = { 1.0, 0.82, 0.0, 1.0 }, -- Radiant WoW Gold
-        btnHoverBg = { 0.14, 0.17, 0.24, 1.0 },
-        btnHoverBorder = { 0.85, 0.65, 0.25, 1.0 },
-        dividerColor = { 0.35, 0.28, 0.16, 0.9 },
-        rowBackdrop = {
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1,
-            insets = { left = 0, right = 0, top = 0, bottom = 0 },
-        },
-        rowBg = { 0.05, 0.06, 0.09, 1.0 },
-        rowBgAlt = { 0.035, 0.045, 0.065, 1.0 },
-        rowBorder = { 0.22, 0.18, 0.12, 0.6 },
-        modalBackdrop = {
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            edgeSize = 16,
-            insets = { left = 4, right = 4, top = 4, bottom = 4 },
-        },
-        modalBg = { 0.04, 0.05, 0.07, 1.0 },
-        modalBorder = { 0.70, 0.55, 0.25, 1.0 },
-        tagColor = "ffd100",
-        themeBtnText = "|cffffffffTheme: |r|cffffd100Tactical|r",
-    },
     ["elvui"] = {
         id = "elvui",
         name = "ElvUI Minimalist",
@@ -154,7 +89,7 @@ KB.Themes = {
         mainBorder = { 0.0, 0.0, 0.0, 1.0 },  -- 1px solid black razor outline
         solidBg = { 0.05, 0.05, 0.05, 1.0 },
         titleText = "|cffffffffWoW Killboard|r |cffffd100[zKillboard]|r",
-        subtitleText = "|cff888888v%s | ElvUI Minimalist|r",
+        subtitleText = "v%s",
         insetBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -220,7 +155,7 @@ KB.Themes = {
         mainBorder = { 1.0, 1.0, 1.0, 1.0 }, -- UI-DialogBox-Border native stone & gold trim
         solidBg = { 0.06, 0.06, 0.08, 1.0 },
         titleText = "|cffffd100WoW Killboard|r |cffffffff[Classic WoW]|r",
-        subtitleText = "|cffc7b28cv%s | Classic Blizzard Stone & Gold|r",
+        subtitleText = "v%s",
         insetBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
