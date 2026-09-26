@@ -191,6 +191,38 @@ function U.GetClientFlavor()
     end
 end
 
+-- Retrieve active WoW client flavor and realm label for UI Header
+function U.GetClientFlavorTitle()
+    local realm = (GetRealmName and GetRealmName()) or "PvP"
+    local version, build, date, tocversion
+    if GetBuildInfo then
+        version, build, date, tocversion = GetBuildInfo()
+    end
+    tocversion = tonumber(tocversion) or 11500
+
+    local isBeta = (type(IsTestBuild) == "function" and IsTestBuild())
+    local isClassicBeta = (version and (version:lower():find("beta") or version:lower():find("ptr")))
+
+    local flavorName = "WoW Forever"
+    local flavorColor = "00e5ff" -- Tactical Cyan for Forever Beta
+
+    if isBeta or isClassicBeta or (tocversion >= 11500 and tocversion < 11600) then
+        flavorName = "WoW Forever"
+        flavorColor = "00e5ff"
+    elseif tocversion >= 110000 then
+        flavorName = "Modern Retail"
+        flavorColor = "a855f7"
+    elseif tocversion >= 20000 then
+        flavorName = "Classic Progression"
+        flavorColor = "eab308"
+    else
+        flavorName = "Classic Era"
+        flavorColor = "d97706"
+    end
+
+    return string.format("|cffffffffWoW Killboard|r |cff%s[%s • %s]|r", flavorColor, flavorName, realm)
+end
+
 -- Retrieve active player specialization (Cross-Client Parity)
 function U.GetPlayerSpec()
     if type(GetSpecialization) == "function" and type(GetSpecializationInfo) == "function" then

@@ -28,10 +28,13 @@ def deploy_to_clients():
     synced = 0
     for target in WOW_TARGETS:
         if os.path.exists(target):
-            for fname in os.listdir(ADDON_SRC):
-                s_path = os.path.join(ADDON_SRC, fname)
-                t_path = os.path.join(target, fname)
-                if os.path.isfile(s_path):
+            for root, dirs, files in os.walk(ADDON_SRC):
+                rel_dir = os.path.relpath(root, ADDON_SRC)
+                dest_dir = os.path.join(target, rel_dir) if rel_dir != "." else target
+                os.makedirs(dest_dir, exist_ok=True)
+                for fname in files:
+                    s_path = os.path.join(root, fname)
+                    t_path = os.path.join(dest_dir, fname)
                     shutil.copy2(s_path, t_path)
             print(f"[DEPLOY] Successfully synced to: {target}")
             synced += 1
@@ -42,10 +45,11 @@ def deploy_to_clients():
 def rebuild_zip():
     zip_path = os.path.join(BASE_DIR, "WoWKillboard-v1.0.0.zip")
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
-        for fname in os.listdir(ADDON_SRC):
-            full_path = os.path.join(ADDON_SRC, fname)
-            if os.path.isfile(full_path):
-                z.write(full_path, os.path.join("WoWKillboard", fname))
+        for root, dirs, files in os.walk(ADDON_SRC):
+            for fname in files:
+                full_path = os.path.join(root, fname)
+                rel_path = os.path.relpath(full_path, ADDON_SRC)
+                z.write(full_path, os.path.join("WoWKillboard", rel_path))
     print(f"[BUILD] Rebuilt distribution package: {zip_path} ({os.path.getsize(zip_path)} bytes)")
 
 if __name__ == "__main__":

@@ -93,9 +93,16 @@ function UI:ApplyTheme()
         UI.ContentInset:SetBackdrop(theme.insetBackdrop or theme.cardBackdrop)
         UI.ContentInset:SetBackdropColor(unpack(theme.insetBg or theme.cardBg))
         UI.ContentInset:SetBackdropBorderColor(unpack(theme.insetBorder or theme.cardBorder))
+        if UI.ContentInset.BgArt then
+            UI.ContentInset.BgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\dark_war_bg.tga")
+            UI.ContentInset.BgArt:SetAlpha(0.65)
+            UI.ContentInset.BgArt:Show()
+        end
     end
 
-    if UI.TitleText then
+    if UI.TitleText and KB.Utils and KB.Utils.GetClientFlavorTitle then
+        UI.TitleText:SetText(KB.Utils.GetClientFlavorTitle())
+    elseif UI.TitleText then
         UI.TitleText:SetText(theme.titleText)
     end
     if UI.SubtitleText then
@@ -405,19 +412,19 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {0.035, 0.045, 0.07, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {0.45, 0.35, 0.18, 0.95}))
 
-    -- Iconic Blizzard Circular Medallion Frame (TOPLEFT Overlap)
+    -- Iconic Blizzard Circular Medallion Frame (Concentric & Aligned in Header)
     local medallion = CreateFrame("Frame", nil, mainFrame)
-    medallion:SetSize(62, 62)
-    medallion:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", -14, 14)
+    medallion:SetSize(46, 46)
+    medallion:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 12, -8)
     medallion:SetFrameLevel(mainFrame:GetFrameLevel() + 5)
 
     local portBg = medallion:CreateTexture(nil, "BACKGROUND")
-    portBg:SetSize(46, 46)
+    portBg:SetSize(36, 36)
     portBg:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     portBg:SetColorTexture(0.02, 0.02, 0.03, 1.0)
 
     local portrait = medallion:CreateTexture(nil, "ARTWORK")
-    portrait:SetSize(46, 46)
+    portrait:SetSize(36, 36)
     portrait:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     if SetPortraitTexture then
         SetPortraitTexture(portrait, "player")
@@ -425,16 +432,17 @@ function UI:CreateMainWindow()
     if not portrait:GetTexture() then
         portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
     end
+    portrait:SetTexCoord(0.15, 0.85, 0.15, 0.85) -- Concentric circular crop to prevent square corner bleed
     medallion.Portrait = portrait
 
     local ring = medallion:CreateTexture(nil, "OVERLAY")
-    ring:SetSize(62, 62)
+    ring:SetSize(46, 46)
     ring:SetPoint("CENTER", medallion, "CENTER", 0, 0)
-    ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    ring:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\medallion_border.tga")
     medallion.Ring = ring
 
     local lvlBadge = medallion:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    lvlBadge:SetPoint("BOTTOM", medallion, "BOTTOM", 0, -2)
+    lvlBadge:SetPoint("BOTTOMRIGHT", medallion, "BOTTOMRIGHT", 2, -2)
     if UnitLevel then
         local pLvl = UnitLevel("player")
         if pLvl and pLvl > 0 then
@@ -444,21 +452,25 @@ function UI:CreateMainWindow()
     medallion.LevelBadge = lvlBadge
     UI.Medallion = medallion
 
-    -- Window Title Header (Offset for top-left circular medallion)
+    -- Window Title Header (Dynamic Flavor & Realm Detection)
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 52, -12)
-    title:SetText("|cffffd100WoW KILLBOARD|r")
+    title:SetPoint("LEFT", medallion, "RIGHT", 10, 4)
+    if KB.Utils and KB.Utils.GetClientFlavorTitle then
+        title:SetText(KB.Utils.GetClientFlavorTitle())
+    else
+        title:SetText("|cffffffffWoW Killboard|r |cff00e5ff[WoW Forever • PvP Realm]|r")
+    end
     UI.TitleText = title
 
     local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    subtitle:SetPoint("LEFT", title, "RIGHT", 8, 0)
+    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
     subtitle:SetText("|cffc7b28cv" .. KB.Version .. " | Frontline Tactical War Room & Telemetry|r")
     UI.SubtitleText = subtitle
 
     -- Template-Free Close Button
     local closeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    closeBtn:SetSize(28, 28)
-    closeBtn:SetPoint("TOPRIGHT", -4, -4)
+    closeBtn:SetSize(26, 26)
+    closeBtn:SetPoint("TOPRIGHT", -8, -10)
     closeBtn:EnableMouse(true)
     local closeLabel = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     closeLabel:SetPoint("CENTER", 0, 0)
@@ -588,7 +600,7 @@ function UI:CreateMainWindow()
     end)
     UI.CallBackupButton = backupBtn
 
-    -- 3 KPI Stat Cards (Authentic Warcraft Attribute Plate Style)
+    -- 3 KPI Stat Cards (Authentic Warcraft Attribute Plate Style - Clean Vertical Separation)
     local cardConfigs = {
         { id = "KD",    title = "SESSION COMBAT K/D",   color = "ffd100", w = 268 },
         { id = "DUELS", title = "1v1 DUELS RECORD",     color = "ffb82e", w = 268 },
@@ -599,11 +611,11 @@ function UI:CreateMainWindow()
     local prevCard = nil
     for _, cfg in ipairs(cardConfigs) do
         local card = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-        card:SetSize(cfg.w, 44)
+        card:SetSize(cfg.w, 42)
         if not prevCard then
-            card:SetPoint("TOPLEFT", 16, -38)
+            card:SetPoint("TOPLEFT", 14, -58)
         else
-            card:SetPoint("LEFT", prevCard, "RIGHT", 12, 0)
+            card:SetPoint("LEFT", prevCard, "RIGHT", 14, 0)
         end
         card.rawTitle = cfg.title
 
@@ -638,8 +650,8 @@ function UI:CreateMainWindow()
 
     -- 1px Dividing Rule
     local divider = mainFrame:CreateTexture(nil, "ARTWORK")
-    divider:SetPoint("TOPLEFT", 16, -88)
-    divider:SetPoint("TOPRIGHT", -16, -88)
+    divider:SetPoint("TOPLEFT", 14, -106)
+    divider:SetPoint("TOPRIGHT", -14, -106)
     divider:SetHeight(1)
     divider:SetColorTexture(0.35, 0.28, 0.16, 0.9)
     UI.Divider = divider
@@ -658,7 +670,7 @@ function UI:CreateMainWindow()
     for _, t in ipairs(tabs) do
         local btn = UI:CreateButton(mainFrame, t.w, 24, t.text, "GameFontHighlightSmall")
         if not prevTab then
-            btn:SetPoint("TOPLEFT", 16, -94)
+            btn:SetPoint("TOPLEFT", 14, -112)
         else
             btn:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
         end
@@ -684,7 +696,7 @@ function UI:CreateMainWindow()
     for _, f in ipairs(filterConfigs) do
         local pill = UI:CreateButton(mainFrame, f.w, 22, f.text, "GameFontHighlightSmall")
         if not prevPill then
-            pill:SetPoint("TOPRIGHT", -16, -95)
+            pill:SetPoint("TOPRIGHT", -14, -113)
         else
             pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
         end
@@ -698,12 +710,26 @@ function UI:CreateMainWindow()
         prevPill = pill
     end
 
-    -- Dedicated Content Inset Panel (Sunken Vault Plate)
+    -- Dedicated Content Inset Panel (Sunken Vault Plate with Website Battlefield Artwork)
     local inset = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-    inset:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -122)
+    inset:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -142)
     inset:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -14, 14)
     inset:SetFrameLevel(mainFrame:GetFrameLevel() + 1)
     UI.ContentInset = inset
+
+    -- Website Dark War Battlefield Artwork Layer
+    local bgArt = inset:CreateTexture(nil, "BACKGROUND", nil, -5)
+    bgArt:SetAllPoints(inset)
+    bgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\dark_war_bg.tga")
+    bgArt:SetTexCoord(0, 1, 0, 1)
+    bgArt:SetAlpha(0.65)
+    inset.BgArt = bgArt
+
+    -- Soft dark gradient vignette so kill rows remain 100% readable
+    local vignette = inset:CreateTexture(nil, "BACKGROUND", nil, -4)
+    vignette:SetAllPoints(inset)
+    vignette:SetColorTexture(0.015, 0.02, 0.035, 0.40)
+    inset.Vignette = vignette
 
     -- Scroll Area Container (Anchored securely inside ContentInset)
     local container = CreateFrame("ScrollFrame", nil, inset)
@@ -718,7 +744,7 @@ function UI:CreateMainWindow()
     end)
 
     local content = CreateFrame("Frame", nil, container)
-    content:SetSize(820, 400)
+    content:SetSize(820, 390)
     container:SetScrollChild(content)
     UI.ContentFrame = content
     UI.ScrollContainer = container
