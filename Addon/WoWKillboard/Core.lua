@@ -43,12 +43,13 @@ function KB:Initialize()
     -- Create Minimap Button
     KB:CreateMinimapButton()
 
-    print(string.format("|cff00ccffWoW Killboard v%s|r loaded. Type |cffffd100/killboard|r or |cffffd100/wowkb|r to open dashboard.", KB.Version))
+    print(string.format("|cff00ccffWoW Killboard v%s|r loaded. Type |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r to open dashboard.", KB.Version))
 end
 
--- Slash Commands (avoid /kb collision with ElvUI keybinder)
+-- Slash Commands (Support /killboard, /wowkb, and /kb)
 SLASH_WOWKILLBOARD1 = "/killboard"
 SLASH_WOWKILLBOARD2 = "/wowkb"
+SLASH_WOWKILLBOARD3 = "/kb"
 
 SlashCmdList["WOWKILLBOARD"] = function(msg)
     local cmd, arg = msg:match("^(%S*)%s*(.-)$")
@@ -61,10 +62,6 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         if KB.Leaderboard then KB.Leaderboard:Rebuild() end
         if KB.UI then KB.UI:RefreshIfVisible() end
         print("|cff00ccff[WoWKB]|r Database has been reset.")
-    elseif cmd == "testkill" or cmd == "mockkill" or cmd == "recordkill" then
-        if KB.CombatTracker and KB.CombatTracker.RecordManualKill then
-            KB.CombatTracker:RecordManualKill(arg)
-        end
     elseif cmd == "stats" then
         local s = KB.CombatTracker.SessionStats
         local st = WoWKillboardDB and WoWKillboardDB.stats or {}
@@ -158,8 +155,9 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     elseif cmd == "test" then
         if KB.UI and KB.UI.TestKillBanner then
             KB.UI:TestKillBanner()
+            print("|cff00ff00[WoWKB]|r Frontline Kill Banner test preview triggered!")
         end
-    elseif cmd == "testkill" or cmd == "demo" then
+    elseif cmd == "testkill" or cmd == "mockkill" or cmd == "recordkill" or cmd == "demo" then
         local pName = UnitName("player") or "Hero"
         local _, pClass = UnitClass("player")
         pClass = pClass or "PALADIN"
@@ -216,7 +214,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
                 healingDone = math.floor(dmgAmount * 0.25),
             },
             victim = {
-                guid = (UnitExists("target") and UnitGUID("target")) or ("Player-DEMO-" .. tostring(time())),
+                guid = (UnitExists("target") and UnitGUID("target")) or ("Player-DEMO-" .. tostring(time()) .. "-" .. tostring(math.random(100, 999))),
                 name = enemyName,
                 level = enemyLevel,
                 class = enemyClass,
@@ -248,6 +246,9 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
 
         if KB.Killmail and KB.Killmail.RecordKill then
             KB.Killmail:RecordKill(testKill)
+        end
+        if KB.UI and KB.UI.ShowKillBanner then
+            KB.UI:ShowKillBanner(testKill, true)
         end
         print(string.format("|cff00ff00[WoWKB]|r Generated synthetic Open-World PvP Kill against |cffff3333%s|r in %s!", enemyName, loc.zone))
 
@@ -340,22 +341,22 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         end
     else
         print("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
-        print("  |cffffd100/killboard|r or |cffffd100/wowkb|r - Toggle the Frontline War Room Dashboard")
-        print("  |cffffd100/killboard alerts|r or |cffffd100/wowkb alerts|r - Open Combat Alerts & Radar Configuration")
-        print("  |cffffd100/killboard move|r or |cffffd100/wowkb move|r - Unlock or lock Kill Banner to reposition on screen")
-        print("  |cffffd100/killboard test|r or |cffffd100/wowkb test|r - Preview Kill Alert Banner with sound and raid warning")
-        print("  |cffffd100/killboard testkill|r or |cffffd100/wowkb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
-        print("  |cffffd100/killboard testdeath|r or |cffffd100/wowkb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
-        print("  |cffffd100/armory [Name]|r or |cffffd100/killboard armory [Name]|r - Inspect Character Combat Dossier")
+        print("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
+        print("  |cffffd100/kb alerts|r - Open Combat Alerts & Radar Configuration")
+        print("  |cffffd100/kb move|r - Unlock or lock Kill Banner to reposition on screen")
+        print("  |cffffd100/kb test|r - Preview Kill Alert Banner with sound and raid warning")
+        print("  |cffffd100/kb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
+        print("  |cffffd100/kb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
+        print("  |cffffd100/kb armory [Name]|r or |cffffd100/armory [Name]|r - Inspect Character Combat Dossier")
         print("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
         print("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
         print("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
-        print("  |cffffd100/killboard kos [add|remove|list]|r - View or manage realm KOS Blacklist")
-        print("  |cffffd100/killboard event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
-        print("  |cffffd100/killboard theme [classic|elvui]|r - Switch between Classic WoW and ElvUI aesthetics")
-        print("  |cffffd100/killboard stats|r - Review current combat session battle statistics")
-        print("  |cffffd100/killboard bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
-        print("  |cffffd100/killboard reset|r - Clear local battle records")
+        print("  |cffffd100/kb kos [add|remove|list]|r - View or manage realm KOS Blacklist")
+        print("  |cffffd100/kb event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
+        print("  |cffffd100/kb theme [classic|elvui]|r - Switch between Classic WoW and ElvUI aesthetics")
+        print("  |cffffd100/kb stats|r - Review current combat session battle statistics")
+        print("  |cffffd100/kb bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
+        print("  |cffffd100/kb reset|r - Clear local battle records")
     end
 end
 
