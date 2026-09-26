@@ -20,7 +20,8 @@ KB.DefaultSettings = {
     soundAlerts = true,
     alertMode = "SOUND_AND_BANNER", -- "SOUND_AND_BANNER", "BANNER_ONLY", "OFF"
     alertScope = "ZONE",             -- "ZONE" (Same zone only), "ALL" (All realm kills), "MINE" (Only my kills/deaths)
-    alertRaidWarning = true,         -- show secondary Raid Warning screen text
+    alertStyle = "BOTH",             -- "BOTH" (Banner + Raid Warning), "RAID_WARNING" (Raid Warning only), "BANNER" (Banner only)
+    alertRaidWarning = true,         -- backward compatibility alias for alertStyle ~= "BANNER"
     bannerPosition = nil,            -- saved position: { point, relPoint, x, y }
     bountyEscrowBanker = "BountyEscrow",
     p2pSyncEnabled = true,

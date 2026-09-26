@@ -5,6 +5,25 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.21] - 2026-09-26
+
+### Fixed
+- **P0 Blizzard UI Taint Elimination & Action Blocked Fix (`UI.lua`, `Config.lua`)**:
+  - Eradicated all calls to Blizzard's protected `RaidNotice_AddMessage(RaidWarningFrame, ...)` which caused the red-bordered *"WoWKillboard has been blocked from an action only available to the Blizzard UI"* popup during combat.
+  - Built an anonymous, 100% taint-free Raid Warning Notice frame (`UI.RaidNoticeFrame`) running on pure Lua widgets with zero Blizzard FrameXML dependencies.
+  - Fixed combat click interception: `UI.KillBanner` now defaults strictly to `EnableMouse(false)` (click-through in combat) and enables mouse interaction *only* while repositioning is active.
+  - Eradicated in-combat anchor mutations: removed `ClearAllPoints()` and `SetPoint()` calls from the combat execution path in `ShowKillBanner()`.
+
+### Added
+- **Frontline Combat Alerts & Radar Configuration Panel Overhaul (`UI.lua`)**:
+  - Redesigned the in-game Alerts modal (`UI:ShowAlertsConfig()`) into a streamlined 4-section calibration hub:
+    1. **Display & Audio Feedback**: 3 dedicated toggle selectors (`Sound + Alert`, `Alert Only (Muted)`, `Turn Off`) with real-time active highlights.
+    2. **Radar & Proximity Scope**: 3 dedicated proximity selectors (`Same Zone Only`, `Entire Realm`, `Personal Only`).
+    3. **Visual Alert Style**: Choose between `Both Displays`, `Raid Warning` (cinematic center-screen text), or `Tactical Banner` (compact bar with class icons).
+    4. **Screen Positioning & Calibration**: 1-click `Move / Unlock Alert Anchor` with live coordinate feedback (`TOP: X: 0, Y: -135`) and `Reset to Center`.
+  - Added live preview testing via `[Test Alert Preview]` and slash command `/wowkb test`.
+  - Added quick slash command `/wowkb move` (or `/wowkb unlock`) to toggle alert repositioning anywhere on screen with automatic persistence.
+
 ## [1.4.20] - 2026-09-26
 
 ### Fixed

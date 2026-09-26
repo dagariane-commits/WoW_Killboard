@@ -1968,10 +1968,82 @@ function UI:ShowKOSAlert(targetName, guildOrFormer, alertType, reason)
 end
 
 -- ----------------------------------------------------------------------------
--- Frontline Kill Banner & Combat Toast (100% Template-Free, InCombat Safe)
+-- Frontline Combat Alerts & Raid Warning Notice (100% Template-Free, Taint-Free)
 -- ----------------------------------------------------------------------------
 local killBanner = nil
 local killBannerTimer = nil
+local raidNoticeFrame = nil
+local raidNoticeTimer = nil
+
+function UI:InitializeRaidNotice()
+    if raidNoticeFrame or InCombatLockdown() then return end
+
+    raidNoticeFrame = CreateFrame("Frame", nil, UIParent)
+    raidNoticeFrame:SetSize(860, 80)
+    raidNoticeFrame:SetFrameStrata("HIGH")
+    raidNoticeFrame:SetClampedToScreen(true)
+    raidNoticeFrame:EnableMouse(false)
+
+    -- Anchor relative to UIParent
+    local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition
+    if pos and pos.point and pos.relPoint and pos.x and pos.y then
+        raidNoticeFrame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y - 65)
+    else
+        raidNoticeFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
+    end
+
+    local mainText = raidNoticeFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge")
+    mainText:SetPoint("TOP", 0, 0)
+    local fontFile, fontSize = mainText:GetFont()
+    if fontFile then
+        mainText:SetFont(fontFile, math.max(fontSize or 20, 22), "THICKOUTLINE")
+    end
+    mainText:SetJustifyH("CENTER")
+    raidNoticeFrame.MainText = mainText
+
+    local subText = raidNoticeFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    subText:SetPoint("TOP", mainText, "BOTTOM", 0, -4)
+    local sFontFile, sFontSize = subText:GetFont()
+    if sFontFile then
+        subText:SetFont(sFontFile, math.max(sFontSize or 14, 15), "OUTLINE")
+    end
+    subText:SetJustifyH("CENTER")
+    raidNoticeFrame.SubText = subText
+
+    raidNoticeFrame:Hide()
+    UI.RaidNoticeFrame = raidNoticeFrame
+end
+
+function UI:ShowRaidNotice(mainMsg, subMsg, r, g, b)
+    if not raidNoticeFrame then
+        UI:InitializeRaidNotice()
+    end
+    if not raidNoticeFrame then return end
+
+    raidNoticeFrame.MainText:SetText(mainMsg or "")
+    if r and g and b then
+        raidNoticeFrame.MainText:SetTextColor(r, g, b, 1.0)
+    else
+        raidNoticeFrame.MainText:SetTextColor(1.0, 0.28, 0.0, 1.0)
+    end
+
+    if subMsg and subMsg ~= "" then
+        raidNoticeFrame.SubText:SetText(subMsg)
+        raidNoticeFrame.SubText:Show()
+    else
+        raidNoticeFrame.SubText:Hide()
+    end
+
+    raidNoticeFrame:SetAlpha(1.0)
+    raidNoticeFrame:Show()
+
+    if raidNoticeTimer then raidNoticeTimer:Cancel() end
+    raidNoticeTimer = C_Timer.NewTimer(4.5, function()
+        if raidNoticeFrame and raidNoticeFrame:IsShown() then
+            raidNoticeFrame:Hide()
+        end
+    end)
+end
 
 function UI:InitializeKillBanner()
     if killBanner or InCombatLockdown() then return end
@@ -1981,7 +2053,7 @@ function UI:InitializeKillBanner()
     killBanner:SetFrameStrata("HIGH")
     killBanner:SetClampedToScreen(true)
     killBanner:SetMovable(true)
-    killBanner:EnableMouse(true)
+    killBanner:EnableMouse(false) -- Guardrail 1: Click-through during combat to prevent taint
     killBanner:RegisterForDrag("LeftButton")
 
     -- Restore saved position or default to TOP, 0, -135
@@ -2004,9 +2076,19 @@ function UI:InitializeKillBanner()
         WoWKillboardSettings.bannerPosition = {
             point = point or "TOP",
             relPoint = relPoint or "TOP",
-            x = x or 0,
-            y = y or -135,
+            x = math.floor((x or 0) + 0.5),
+            y = math.floor((y or -135) + 0.5),
         }
+        if self.LocText then
+            self.LocText:SetText(string.format("|cff00e5ffCurrent Anchor: %s (X: %d, Y: %d)|r", point or "TOP", math.floor((x or 0) + 0.5), math.floor((y or -135) + 0.5)))
+        end
+        if raidNoticeFrame then
+            raidNoticeFrame:ClearAllPoints()
+            raidNoticeFrame:SetPoint(point or "TOP", UIParent, relPoint or "TOP", math.floor((x or 0) + 0.5), math.floor((y or -135) + 0.5) - 65)
+        end
+        if UI.AlertsDialog and UI.AlertsDialog.UpdateControls then
+            UI.AlertsDialog:UpdateControls()
+        end
     end)
 
     killBanner:SetBackdrop({
@@ -2074,7 +2156,7 @@ function UI:ShowKillBanner(killmail, isTest)
     local settings = WoWKillboardSettings or KB.DefaultSettings
     local alertMode = settings.alertMode or "SOUND_AND_BANNER"
     local alertScope = settings.alertScope or "ZONE"
-    local alertRaidWarning = settings.alertRaidWarning ~= false
+    local alertStyle = settings.alertStyle or "BOTH"
 
     -- 1. If alerts are completely disabled, exit immediately (unless explicit test)
     if alertMode == "OFF" and not isTest then return end
@@ -2103,103 +2185,113 @@ function UI:ShowKillBanner(killmail, isTest)
         end
     end
 
-    -- 4. Raid Warning On-Screen Combat Notice
-    if alertRaidWarning and RaidNotice_AddMessage and RaidWarningFrame then
+    -- 4. Taint-Free Raid Warning Screen Combat Notice (Zero Blizzard FrameXML taint)
+    if alertStyle == "BOTH" or alertStyle == "RAID_WARNING" then
         local kName = killmail.killer.name or "Unknown"
         local vName = killmail.victim.name or "Unknown"
         local loc = killmail.location or {}
         local zName = (loc.zone and loc.zone ~= "") and loc.zone or (GetZoneText and GetZoneText()) or "Azeroth"
-        local rwMsg = string.format("|cffff3333[WoWKB]|r %s destroyed %s (%s)", kName, vName, zName)
-        local rwColor = (ChatTypeInfo and ChatTypeInfo["RAID_WARNING"]) or { r = 1.0, g = 0.28, b = 0.0 }
-        pcall(RaidNotice_AddMessage, RaidWarningFrame, rwMsg, rwColor)
+        local rwMain = string.format("|cffff3333[WoWKB]|r %s destroyed %s", kName, vName)
+        local rwSub = string.format("|cffffd100%s|r", zName)
+        if loc.subZone and loc.subZone ~= "" then
+            rwSub = rwSub .. " - " .. loc.subZone
+        end
+        if killmail.isSolo then
+            rwSub = rwSub .. " • |cff00ff00Certified 1v1 Solo Kill|r"
+        elseif killmail.isDuel then
+            rwSub = rwSub .. " • |cffffd7001v1 Certified Duel|r"
+        elseif killmail.isBattleground then
+            rwSub = rwSub .. string.format(" • |cff00ccff%s|r", killmail.battlegroundName or "Battleground")
+        elseif killmail.attackersCount and killmail.attackersCount > 1 then
+            rwSub = rwSub .. string.format(" • |cffff9900Gang Combat (x%d)|r", killmail.attackersCount)
+        end
+        UI:ShowRaidNotice(rwMain, rwSub, 1.0, 0.28, 0.0)
     end
 
     -- 5. Frontline Kill Banner Frame
-    if not UI.KillBanner then
-        UI:InitializeKillBanner()
-    end
-
-    local banner = UI.KillBanner
-    if not banner then return end
-
-    -- Restore saved position if not currently unlocked/dragged
-    if not UI.bannerUnlocked then
-        local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition
-        if pos and pos.point and pos.relPoint and pos.x and pos.y then
-            banner:ClearAllPoints()
-            banner:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+    if alertStyle == "BOTH" or alertStyle == "BANNER" then
+        if not UI.KillBanner then
+            UI:InitializeKillBanner()
         end
-    end
 
-    -- Setup Killer Icon & Name
-    local kClass = (killmail.killer.class or ""):upper()
-    local kCoords = CLASS_COORDS[kClass] or {0, 0.25, 0, 0.25}
-    banner.KillerIcon:SetTexture(CLASS_ICON_TEXTURE)
-    banner.KillerIcon:SetTexCoord(kCoords[1], kCoords[2], kCoords[3], kCoords[4])
-    banner.KillerText:SetText(KB.Utils.ColorizeByClass(string.format("[%d] %s", killmail.killer.level or 0, killmail.killer.name or "Unknown"), killmail.killer.class))
+        local banner = UI.KillBanner
+        if not banner then return end
 
-    -- Setup Victim Icon & Name
-    local vClass = (killmail.victim.class or ""):upper()
-    local vCoords = CLASS_COORDS[vClass] or {0, 0.25, 0, 0.25}
-    banner.VictimIcon:SetTexture(CLASS_ICON_TEXTURE)
-    banner.VictimIcon:SetTexCoord(vCoords[1], vCoords[2], vCoords[3], vCoords[4])
-    banner.VictimText:SetText(KB.Utils.ColorizeByClass(string.format("[%d] %s", killmail.victim.level or 0, killmail.victim.name or "Unknown"), killmail.victim.class))
+        -- Setup Killer Icon & Name
+        local kClass = (killmail.killer.class or ""):upper()
+        local kCoords = CLASS_COORDS[kClass] or {0, 0.25, 0, 0.25}
+        banner.KillerIcon:SetTexture(CLASS_ICON_TEXTURE)
+        banner.KillerIcon:SetTexCoord(kCoords[1], kCoords[2], kCoords[3], kCoords[4])
+        local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
+        banner.KillerText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", kLevelStr, killmail.killer.name or "Unknown"), killmail.killer.class))
 
-    -- Setup Engagement Theme & Accents
-    if killmail.isDuel then
-        banner.CenterAction:SetText("|cffffd100DUEL VICTORY|r")
-        banner.ModeTag:SetText("|cffffd7001v1 CERTIFIED DUEL|r")
-        banner.TopAccent:SetColorTexture(1.0, 0.84, 0.0, 1.0)
-        banner:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
-    elseif killmail.isArena then
-        banner.CenterAction:SetText("|cffa335eeARENA EXECUTION|r")
-        banner.ModeTag:SetText("|cffa335eeRATED ARENA MATCH|r")
-        banner.TopAccent:SetColorTexture(0.64, 0.21, 0.93, 1.0)
-        banner:SetBackdropBorderColor(0.64, 0.21, 0.93, 1.0)
-    elseif killmail.isBattleground then
-        banner.CenterAction:SetText("|cff00ccffWARFRONT EXECUTION|r")
-        banner.ModeTag:SetText(string.format("|cff00ccff%s (x%d)|r", killmail.battlegroundName or "Battleground", killmail.attackersCount or 1))
-        banner.TopAccent:SetColorTexture(0.0, 0.8, 1.0, 1.0)
-        banner:SetBackdropBorderColor(0.0, 0.8, 1.0, 1.0)
-    elseif killmail.isSolo then
-        banner.CenterAction:SetText("|cff00ff00SOLO DESTROYED|r")
-        banner.ModeTag:SetText("|cff00ff00CERTIFIED 1v1 OPEN WORLD|r")
-        banner.TopAccent:SetColorTexture(0.0, 1.0, 0.4, 1.0)
-        banner:SetBackdropBorderColor(0.0, 1.0, 0.4, 1.0)
-    else
-        banner.CenterAction:SetText("|cffff9900TARGET ELIMINATED|r")
-        banner.ModeTag:SetText(string.format("|cffff9900GANG COMBAT (x%d Attackers)|r", killmail.attackersCount or 2))
-        banner.TopAccent:SetColorTexture(1.0, 0.6, 0.0, 1.0)
-        banner:SetBackdropBorderColor(1.0, 0.6, 0.0, 1.0)
-    end
+        -- Setup Victim Icon & Name
+        local vClass = (killmail.victim.class or ""):upper()
+        local vCoords = CLASS_COORDS[vClass] or {0, 0.25, 0, 0.25}
+        banner.VictimIcon:SetTexture(CLASS_ICON_TEXTURE)
+        banner.VictimIcon:SetTexCoord(vCoords[1], vCoords[2], vCoords[3], vCoords[4])
+        local vLevelStr = (killmail.victim.level and killmail.victim.level > 0) and tostring(killmail.victim.level) or "??"
+        banner.VictimText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", vLevelStr, killmail.victim.name or "Unknown"), killmail.victim.class))
 
-    -- Location Subtitle
-    local loc = killmail.location or {}
-    local zoneStr = loc.zone or "Azeroth"
-    if loc.subZone and loc.subZone ~= "" then
-        zoneStr = zoneStr .. " - " .. loc.subZone
-    end
-    banner.LocText:SetText(string.format("|cff888888%s  |  %.1f, %.1f|r", zoneStr, loc.x or 0, loc.y or 0))
+        -- Setup Engagement Theme & Accents
+        if killmail.isDuel then
+            banner.CenterAction:SetText("|cffffd100DUEL VICTORY|r")
+            banner.ModeTag:SetText("|cffffd7001v1 CERTIFIED DUEL|r")
+            banner.TopAccent:SetColorTexture(1.0, 0.84, 0.0, 1.0)
+            banner:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
+        elseif killmail.isArena then
+            banner.CenterAction:SetText("|cffa335eeARENA EXECUTION|r")
+            banner.ModeTag:SetText("|cffa335eeRATED ARENA MATCH|r")
+            banner.TopAccent:SetColorTexture(0.64, 0.21, 0.93, 1.0)
+            banner:SetBackdropBorderColor(0.64, 0.21, 0.93, 1.0)
+        elseif killmail.isBattleground then
+            banner.CenterAction:SetText("|cff00ccffWARFRONT EXECUTION|r")
+            banner.ModeTag:SetText(string.format("|cff00ccff%s (x%d)|r", killmail.battlegroundName or "Battleground", killmail.attackersCount or 1))
+            banner.TopAccent:SetColorTexture(0.0, 0.8, 1.0, 1.0)
+            banner:SetBackdropBorderColor(0.0, 0.8, 1.0, 1.0)
+        elseif killmail.isSolo then
+            banner.CenterAction:SetText("|cff00ff00SOLO DESTROYED|r")
+            banner.ModeTag:SetText("|cff00ff00CERTIFIED 1v1 OPEN WORLD|r")
+            banner.TopAccent:SetColorTexture(0.0, 1.0, 0.4, 1.0)
+            banner:SetBackdropBorderColor(0.0, 1.0, 0.4, 1.0)
+        else
+            banner.CenterAction:SetText("|cffff9900TARGET ELIMINATED|r")
+            banner.ModeTag:SetText(string.format("|cffff9900GANG COMBAT (x%d Attackers)|r", killmail.attackersCount or 2))
+            banner.TopAccent:SetColorTexture(1.0, 0.6, 0.0, 1.0)
+            banner:SetBackdropBorderColor(1.0, 0.6, 0.0, 1.0)
+        end
 
-    banner:Show()
-    if not UI.bannerUnlocked then
-        if killBannerTimer then killBannerTimer:Cancel() end
-        killBannerTimer = C_Timer.NewTimer(4.5, function()
-            if banner and banner:IsShown() and not UI.bannerUnlocked then
-                banner:Hide()
-            end
-        end)
+        -- Location Subtitle
+        local loc = killmail.location or {}
+        local zoneStr = loc.zone or "Azeroth"
+        if loc.subZone and loc.subZone ~= "" then
+            zoneStr = zoneStr .. " - " .. loc.subZone
+        end
+        banner.LocText:SetText(string.format("|cff888888%s  |  %.1f, %.1f|r", zoneStr, loc.x or 0, loc.y or 0))
+
+        banner:Show()
+        if not UI.bannerUnlocked then
+            if killBannerTimer then killBannerTimer:Cancel() end
+            killBannerTimer = C_Timer.NewTimer(4.5, function()
+                if banner and banner:IsShown() and not UI.bannerUnlocked then
+                    banner:Hide()
+                end
+            end)
+        end
     end
 end
 
 -- Toggle Banner Drag / Positioning Mode
 function UI:ToggleBannerLock(explicitState)
     if InCombatLockdown() then
-        print("|cffff9900[WoWKB]|r Cannot move banner during combat.")
+        print("|cffff9900[WoWKB]|r Cannot move alert banner during combat.")
         return
     end
     if not UI.KillBanner then
         UI:InitializeKillBanner()
+    end
+    if not UI.RaidNoticeFrame then
+        UI:InitializeRaidNotice()
     end
     local banner = UI.KillBanner
     if not banner then return end
@@ -2212,22 +2304,30 @@ function UI:ToggleBannerLock(explicitState)
 
     if UI.bannerUnlocked then
         if killBannerTimer then killBannerTimer:Cancel() end
+        banner:EnableMouse(true) -- Enable mouse interaction only while repositioning
         banner.KillerIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
         banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
         banner.KillerText:SetText("|cff00ff00[60] Killer (You)|r")
         banner.VictimIcon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
         banner.VictimIcon:SetTexCoord(0, 1, 0, 1)
         banner.VictimText:SetText("|cffff3333[60] Hostile Victim|r")
-        banner.CenterAction:SetText("|cffffd100[DRAG TO MOVE]|r")
-        banner.ModeTag:SetText("|cffffffffClick 'Lock Banner' or /wowkb move to save|r")
-        banner.LocText:SetText("|cff888888Drag anywhere with Left-Click • Position is auto-saved|r")
+        banner.CenterAction:SetText("|cffffd100[DRAG TO MOVE ALERT ANCHOR]|r")
+        banner.ModeTag:SetText("|cffffffffClick 'Lock Position' or type /wowkb move to save|r")
+        local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
+        banner.LocText:SetText(string.format("|cff00e5ffCurrent Anchor: %s (X: %d, Y: %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -135))
         banner.TopAccent:SetColorTexture(1.0, 0.84, 0.0, 1.0)
         banner:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
         banner:Show()
-        print("|cff00ccff[WoWKB Alert]|r Kill Banner unlocked. Drag with |cffffd100Left-Click|r. Type |cffffd100/wowkb move|r again or click Lock to save.")
+
+        UI:ShowRaidNotice("|cffff3333[WoWKB RAID WARNING PREVIEW]|r Enemy Target Destroyed", "Raid Warning Style Text will display here", 1.0, 0.28, 0.0)
+
+        print("|cff00ccff[WoWKB Alert]|r Alert Anchor unlocked! Click and drag with |cffffd100Left-Click|r anywhere on your screen. Type |cffffd100/wowkb move|r again or click Lock to save.")
     else
+        banner:EnableMouse(false) -- Revert to click-through immediately
         banner:Hide()
-        print("|cff00ccff[WoWKB Alert]|r Kill Banner position locked and saved.")
+        if raidNoticeFrame then raidNoticeFrame:Hide() end
+        local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
+        print(string.format("|cff00ccff[WoWKB Alert]|r Alert Anchor locked at %s (X: %d, Y: %d). Saved across reloads!", pos.point or "TOP", pos.x or 0, pos.y or -135))
     end
 
     if UI.AlertsDialog and UI.AlertsDialog.UpdateControls then
@@ -2238,9 +2338,9 @@ end
 -- Reset Banner to Default Center-Top Position
 function UI:ResetBannerPosition()
     if InCombatLockdown() then return end
-    if not UI.KillBanner then
-        UI:InitializeKillBanner()
-    end
+    if not UI.KillBanner then UI:InitializeKillBanner() end
+    if not UI.RaidNoticeFrame then UI:InitializeRaidNotice() end
+
     if WoWKillboardSettings then
         WoWKillboardSettings.bannerPosition = nil
     end
@@ -2248,14 +2348,21 @@ function UI:ResetBannerPosition()
         UI.KillBanner:ClearAllPoints()
         UI.KillBanner:SetPoint("TOP", UIParent, "TOP", 0, -135)
     end
-    print("|cff00ccff[WoWKB Alert]|r Kill Banner position reset to default screen coordinates.")
+    if UI.RaidNoticeFrame then
+        UI.RaidNoticeFrame:ClearAllPoints()
+        UI.RaidNoticeFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
+    end
+    print("|cff00ccff[WoWKB Alert]|r Alert position reset to default screen coordinates (Center-Top).")
+    if UI.AlertsDialog and UI.AlertsDialog.UpdateControls then
+        UI.AlertsDialog:UpdateControls()
+    end
 end
 
 -- Fire Test Banner Preview
 function UI:TestKillBanner()
     local myName = UnitName("player") or "Player"
     local _, pClass = UnitClass("player")
-    local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Stranglethorn Vale"
+    local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Arathi Highlands"
     local testKM = {
         killId = "TEST-" .. tostring(time()),
         timestamp = time(),
@@ -2266,19 +2373,19 @@ function UI:TestKillBanner()
         attackersCount = 1,
         killer = {
             name = myName,
-            class = pClass or "WARRIOR",
-            level = UnitLevel("player") or 60,
+            class = pClass or "PALADIN",
+            level = UnitLevel("player") or 20,
         },
         victim = {
-            name = "EnemyScout",
+            name = "Shadowstalker",
             class = "ROGUE",
-            level = 60,
+            level = 21,
         },
         location = {
             zone = currentZone,
-            subZone = "Gurubashi Arena",
+            subZone = "Refuge Pointe",
             x = 45.2,
-            y = 38.6,
+            y = 47.1,
         },
     }
     UI:ShowKillBanner(testKM, true)
@@ -2293,8 +2400,8 @@ function UI:ShowAlertsConfig()
 
     if not UI.AlertsDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(480, 440)
-        dlg:SetPoint("CENTER", 0, 30)
+        dlg:SetSize(520, 500)
+        dlg:SetPoint("CENTER", 0, 20)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(120)
         dlg:EnableMouse(true)
@@ -2329,7 +2436,7 @@ function UI:ShowAlertsConfig()
 
         local subtitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         subtitle:SetPoint("TOP", 0, -38)
-        subtitle:SetText("|cff94a3b8Configure on-screen kill banners, audio feedback, raid warnings & positioning|r")
+        subtitle:SetText("|cff94a3b8Configure on-screen kill notifications, audio feedback, raid warnings & positioning|r")
         dlg.SubtitleText = subtitle
 
         local div = dlg:CreateTexture(nil, "ARTWORK")
@@ -2338,14 +2445,31 @@ function UI:ShowAlertsConfig()
         div:SetPoint("TOPRIGHT", -18, -56)
         dlg.Divider = div
 
-        -- Section 1: Alert Mode (Audio & Visual)
+        -- Helper to style segmented buttons
+        local function StyleSegmentButton(btn, text)
+            btn.baseText = text
+            btn.Label:SetText(text)
+        end
+
+        -- Section 1: Alert Mode (Display & Sound)
         local sec1Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sec1Title:SetPoint("TOPLEFT", 24, -68)
         sec1Title:SetText("|cffffffff1. DISPLAY & AUDIO FEEDBACK|r")
 
-        local modeBtn = UI:CreateButton(dlg, 280, 24, "Sound + Banner", "GameFontHighlightSmall")
-        modeBtn:SetPoint("TOPLEFT", 24, -88)
-        dlg.ModeBtn = modeBtn
+        local btnModeSound = UI:CreateButton(dlg, 150, 24, "Sound + Alert", "GameFontHighlightSmall")
+        btnModeSound:SetPoint("TOPLEFT", 24, -88)
+        StyleSegmentButton(btnModeSound, "Sound + Alert")
+        dlg.BtnModeSound = btnModeSound
+
+        local btnModeMute = UI:CreateButton(dlg, 150, 24, "Alert Only", "GameFontHighlightSmall")
+        btnModeMute:SetPoint("LEFT", btnModeSound, "RIGHT", 11, 0)
+        StyleSegmentButton(btnModeMute, "Alert Only")
+        dlg.BtnModeMute = btnModeMute
+
+        local btnModeOff = UI:CreateButton(dlg, 150, 24, "Turn Off", "GameFontHighlightSmall")
+        btnModeOff:SetPoint("LEFT", btnModeMute, "RIGHT", 11, 0)
+        StyleSegmentButton(btnModeOff, "Turn Off")
+        dlg.BtnModeOff = btnModeOff
 
         local modeHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         modeHint:SetPoint("TOPLEFT", 24, -116)
@@ -2353,156 +2477,233 @@ function UI:ShowAlertsConfig()
 
         -- Section 2: Proximity & Scope Filter (Radar)
         local sec2Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        sec2Title:SetPoint("TOPLEFT", 24, -138)
+        sec2Title:SetPoint("TOPLEFT", 24, -140)
         sec2Title:SetText("|cffffffff2. RADAR & PROXIMITY SCOPE|r")
 
-        local scopeBtn = UI:CreateButton(dlg, 280, 24, "Same Zone Only", "GameFontHighlightSmall")
-        scopeBtn:SetPoint("TOPLEFT", 24, -158)
-        dlg.ScopeBtn = scopeBtn
+        local btnScopeZone = UI:CreateButton(dlg, 150, 24, "Same Zone Only", "GameFontHighlightSmall")
+        btnScopeZone:SetPoint("TOPLEFT", 24, -160)
+        StyleSegmentButton(btnScopeZone, "Same Zone Only")
+        dlg.BtnScopeZone = btnScopeZone
+
+        local btnScopeAll = UI:CreateButton(dlg, 150, 24, "Entire Realm", "GameFontHighlightSmall")
+        btnScopeAll:SetPoint("LEFT", btnScopeZone, "RIGHT", 11, 0)
+        StyleSegmentButton(btnScopeAll, "Entire Realm")
+        dlg.BtnScopeAll = btnScopeAll
+
+        local btnScopeMine = UI:CreateButton(dlg, 150, 24, "Personal Only", "GameFontHighlightSmall")
+        btnScopeMine:SetPoint("LEFT", btnScopeAll, "RIGHT", 11, 0)
+        StyleSegmentButton(btnScopeMine, "Personal Only")
+        dlg.BtnScopeMine = btnScopeMine
 
         local scopeHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        scopeHint:SetPoint("TOPLEFT", 24, -186)
+        scopeHint:SetPoint("TOPLEFT", 24, -188)
         dlg.ScopeHint = scopeHint
 
-        -- Section 3: Raid Warning Screen Combat Notice
+        -- Section 3: Visual Alert Style (Raid Warning vs Tactical Banner)
         local sec3Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        sec3Title:SetPoint("TOPLEFT", 24, -208)
-        sec3Title:SetText("|cffffffff3. RAID WARNING COMBAT NOTICE|r")
+        sec3Title:SetPoint("TOPLEFT", 24, -212)
+        sec3Title:SetText("|cffffffff3. VISUAL ALERT STYLE|r")
 
-        local rwBtn = UI:CreateButton(dlg, 280, 24, "[ON] RAID WARNING", "GameFontHighlightSmall")
-        rwBtn:SetPoint("TOPLEFT", 24, -228)
-        dlg.RwBtn = rwBtn
+        local btnStyleBoth = UI:CreateButton(dlg, 150, 24, "Both Displays", "GameFontHighlightSmall")
+        btnStyleBoth:SetPoint("TOPLEFT", 24, -232)
+        StyleSegmentButton(btnStyleBoth, "Both Displays")
+        dlg.BtnStyleBoth = btnStyleBoth
 
-        local rwHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        rwHint:SetPoint("TOPLEFT", 24, -256)
-        dlg.RwHint = rwHint
+        local btnStyleRW = UI:CreateButton(dlg, 150, 24, "Raid Warning", "GameFontHighlightSmall")
+        btnStyleRW:SetPoint("LEFT", btnStyleBoth, "RIGHT", 11, 0)
+        StyleSegmentButton(btnStyleRW, "Raid Warning")
+        dlg.BtnStyleRW = btnStyleRW
 
-        -- Section 4: Banner Position & Repositioning
+        local btnStyleBanner = UI:CreateButton(dlg, 150, 24, "Tactical Banner", "GameFontHighlightSmall")
+        btnStyleBanner:SetPoint("LEFT", btnStyleRW, "RIGHT", 11, 0)
+        StyleSegmentButton(btnStyleBanner, "Tactical Banner")
+        dlg.BtnStyleBanner = btnStyleBanner
+
+        local styleHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        styleHint:SetPoint("TOPLEFT", 24, -260)
+        dlg.StyleHint = styleHint
+
+        -- Section 4: Screen Positioning & Calibration
         local sec4Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        sec4Title:SetPoint("TOPLEFT", 24, -278)
+        sec4Title:SetPoint("TOPLEFT", 24, -284)
         sec4Title:SetText("|cffffffff4. SCREEN POSITIONING & CALIBRATION|r")
 
-        local unlockBtn = UI:CreateButton(dlg, 200, 24, "Move / Unlock Banner", "GameFontHighlightSmall")
-        unlockBtn:SetPoint("TOPLEFT", 24, -298)
+        local unlockBtn = UI:CreateButton(dlg, 230, 24, "Move / Unlock Alert Anchor", "GameFontHighlightSmall")
+        unlockBtn:SetPoint("TOPLEFT", 24, -304)
         dlg.UnlockBtn = unlockBtn
 
-        local resetBtn = UI:CreateButton(dlg, 140, 24, "Reset Position", "GameFontHighlightSmall")
-        resetBtn:SetPoint("LEFT", unlockBtn, "RIGHT", 10, 0)
+        local resetBtn = UI:CreateButton(dlg, 230, 24, "Reset to Center", "GameFontHighlightSmall")
+        resetBtn:SetPoint("LEFT", unlockBtn, "RIGHT", 12, 0)
         dlg.ResetBtn = resetBtn
 
         local posHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        posHint:SetPoint("TOPLEFT", 24, -326)
-        posHint:SetText("|cff94a3b8Unlock to drag banner anywhere on screen. Position is auto-saved.|r")
+        posHint:SetPoint("TOPLEFT", 24, -332)
+        posHint:SetText("|cff94a3b8Click 'Move / Unlock' or type |cffffd100/wowkb move|r to drag alert anywhere on screen.|r")
         dlg.PosHint = posHint
+
+        local posCoords = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        posCoords:SetPoint("TOPLEFT", 24, -348)
+        dlg.PosCoords = posCoords
 
         -- Bottom Divider
         local bDiv = dlg:CreateTexture(nil, "ARTWORK")
         bDiv:SetHeight(1)
-        bDiv:SetPoint("TOPLEFT", 18, -350)
-        bDiv:SetPoint("TOPRIGHT", -18, -350)
+        bDiv:SetPoint("TOPLEFT", 18, -370)
+        bDiv:SetPoint("TOPRIGHT", -18, -370)
         dlg.BottomDivider = bDiv
 
         -- Footer Action Buttons
-        local testBtn = UI:CreateButton(dlg, 180, 28, "Test Alert Preview", "GameFontNormal")
-        testBtn:SetPoint("BOTTOMLEFT", 24, 20)
+        local testBtn = UI:CreateButton(dlg, 190, 28, "Test Alert Preview", "GameFontNormal")
+        testBtn:SetPoint("BOTTOMLEFT", 24, 18)
         dlg.TestBtn = testBtn
 
         local closeBtn = UI:CreateButton(dlg, 120, 28, "Close", "GameFontHighlight")
-        closeBtn:SetPoint("BOTTOMRIGHT", -24, 20)
+        closeBtn:SetPoint("BOTTOMRIGHT", -24, 18)
         dlg.CloseBtn = closeBtn
+
+        -- Helper to apply active/inactive visual state to segmented buttons
+        local function ApplySegmentState(btn, isActive)
+            btn.isActive = isActive
+            local theme = UI:GetTheme()
+            if isActive then
+                btn:SetBackdropColor(unpack(theme.btnActiveBg or { 0.25, 0.18, 0.07, 1.0 }))
+                btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder or { 1.0, 0.82, 0.0, 1.0 }))
+                btn.Label:SetText(string.format("|cff00ff00●|r |cffffd100%s|r", btn.baseText or ""))
+            else
+                btn:SetBackdropColor(unpack(theme.btnBg or { 0.08, 0.10, 0.15, 1.0 }))
+                btn:SetBackdropBorderColor(unpack(theme.btnBorder or { 0.45, 0.35, 0.18, 0.95 }))
+                btn.Label:SetText(string.format("|cff888888%s|r", btn.baseText or ""))
+            end
+        end
 
         -- Synchronize Controls
         local function UpdateControls()
             local s = WoWKillboardSettings or KB.DefaultSettings
             local mode = s.alertMode or "SOUND_AND_BANNER"
             local scope = s.alertScope or "ZONE"
-            local rw = s.alertRaidWarning ~= false
+            local style = s.alertStyle or "BOTH"
+
+            -- Section 1: Display & Audio
+            ApplySegmentState(dlg.BtnModeSound, mode == "SOUND_AND_BANNER")
+            ApplySegmentState(dlg.BtnModeMute, mode == "BANNER_ONLY")
+            ApplySegmentState(dlg.BtnModeOff, mode == "OFF")
 
             if mode == "SOUND_AND_BANNER" then
-                dlg.ModeBtn.Label:SetText("|cff00ff00[ACTIVE] Sound + Banner|r")
-                dlg.ModeHint:SetText("|cff94a3b8Plays audio alert and displays on-screen kill banner.|r")
+                dlg.ModeHint:SetText("|cff00ff00● Active:|r |cff94a3b8Plays combat sound alert and displays visual notification.|r")
             elseif mode == "BANNER_ONLY" then
-                dlg.ModeBtn.Label:SetText("|cffffd100[MUTED] Banner Only|r")
-                dlg.ModeHint:SetText("|cff94a3b8Displays on-screen kill banner with zero audio feedback.|r")
+                dlg.ModeHint:SetText("|cffffd100● Muted:|r |cff94a3b8Displays visual notification silently with sound muted.|r")
             else
-                dlg.ModeBtn.Label:SetText("|cffff3333[DISABLED] Alerts Off|r")
-                dlg.ModeHint:SetText("|cff94a3b8Suppresses all kill banners, sounds, and raid warnings.|r")
+                dlg.ModeHint:SetText("|cffff3333● Off:|r |cff94a3b8Suppresses all kill banners, sounds, and raid warnings.|r")
             end
+
+            -- Section 2: Proximity Scope
+            ApplySegmentState(dlg.BtnScopeZone, scope == "ZONE")
+            ApplySegmentState(dlg.BtnScopeAll, scope == "ALL")
+            ApplySegmentState(dlg.BtnScopeMine, scope == "MINE")
 
             if scope == "ZONE" then
-                dlg.ScopeBtn.Label:SetText("|cff00e5ff[RADAR] Same Zone Only|r")
-                dlg.ScopeHint:SetText("|cff94a3b8Alerts only when combat occurs in your current zone.|r")
+                dlg.ScopeHint:SetText("|cff00e5ff● Radar:|r |cff94a3b8Alerts only when combat occurs in your current zone.|r")
             elseif scope == "ALL" then
-                dlg.ScopeBtn.Label:SetText("|cffffd700[BROADCAST] All Realm Kills|r")
-                dlg.ScopeHint:SetText("|cff94a3b8Alerts for all kills broadcasted across realm network.|r")
+                dlg.ScopeHint:SetText("|cffffd700● Broadcast:|r |cff94a3b8Alerts for all kills broadcasted across realm network.|r")
             else
-                dlg.ScopeBtn.Label:SetText("|cff10b981[SOLO] My Kills & Deaths Only|r")
-                dlg.ScopeHint:SetText("|cff94a3b8Only triggers when you personally kill or are killed.|r")
+                dlg.ScopeHint:SetText("|cff10b981● Solo:|r |cff94a3b8Only triggers when you personally kill or are killed.|r")
             end
 
-            if rw then
-                dlg.RwBtn.Label:SetText("|cff00ff00[ON] RAID WARNING|r")
-                dlg.RwHint:SetText("|cff94a3b8Flashes large Raid Warning text in screen center on kill.|r")
+            -- Section 3: Visual Alert Style
+            ApplySegmentState(dlg.BtnStyleBoth, style == "BOTH")
+            ApplySegmentState(dlg.BtnStyleRW, style == "RAID_WARNING")
+            ApplySegmentState(dlg.BtnStyleBanner, style == "BANNER")
+
+            if style == "BOTH" then
+                dlg.StyleHint:SetText("|cff00e5ff● Dual Display:|r |cff94a3b8Flashes large Raid Warning text AND Tactical Kill Banner.|r")
+            elseif style == "RAID_WARNING" then
+                dlg.StyleHint:SetText("|cffff3333● Raid Warning:|r |cff94a3b8Flashes high-visibility cinematic text across screen center.|r")
             else
-                dlg.RwBtn.Label:SetText("|cffff3333[OFF] RAID WARNING|r")
-                dlg.RwHint:SetText("|cff94a3b8Suppresses screen-center Raid Warning combat notice.|r")
+                dlg.StyleHint:SetText("|cffffd100● Tactical Banner:|r |cff94a3b8Displays compact banner with combatant class icons & GPS.|r")
             end
+
+            -- Section 4: Screen Positioning
+            local pos = s.bannerPosition or { point = "TOP", x = 0, y = -135 }
+            dlg.PosCoords:SetText(string.format("|cff00e5ffCurrent Anchor:|r |cffffffff%s (X: %d, Y: %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -135))
 
             if UI.bannerUnlocked then
-                dlg.UnlockBtn.Label:SetText("|cffff3333Lock Banner Position|r")
+                dlg.UnlockBtn.Label:SetText("|cffff3333Lock Anchor Position|r")
             else
-                dlg.UnlockBtn.Label:SetText("|cffffd100Move / Unlock Banner|r")
+                dlg.UnlockBtn.Label:SetText("|cffffd100Move / Unlock Alert Anchor|r")
             end
         end
         dlg.UpdateControls = UpdateControls
 
-        -- Button Event Handlers
-        modeBtn:SetScript("OnClick", function()
+        -- Section 1 Event Handlers
+        btnModeSound:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings
-            if s.alertMode == "SOUND_AND_BANNER" then
-                s.alertMode = "BANNER_ONLY"
-                s.soundAlerts = false
-            elseif s.alertMode == "BANNER_ONLY" then
-                s.alertMode = "OFF"
-                s.soundAlerts = false
-            else
-                s.alertMode = "SOUND_AND_BANNER"
-                s.soundAlerts = true
-            end
+            s.alertMode = "SOUND_AND_BANNER"
+            s.soundAlerts = true
+            UpdateControls()
+        end)
+        btnModeMute:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.alertMode = "BANNER_ONLY"
+            s.soundAlerts = false
+            UpdateControls()
+        end)
+        btnModeOff:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.alertMode = "OFF"
+            s.soundAlerts = false
             UpdateControls()
         end)
 
-        scopeBtn:SetScript("OnClick", function()
+        -- Section 2 Event Handlers
+        btnScopeZone:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings
-            if s.alertScope == "ZONE" then
-                s.alertScope = "ALL"
-            elseif s.alertScope == "ALL" then
-                s.alertScope = "MINE"
-            else
-                s.alertScope = "ZONE"
-            end
+            s.alertScope = "ZONE"
+            UpdateControls()
+        end)
+        btnScopeAll:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.alertScope = "ALL"
+            UpdateControls()
+        end)
+        btnScopeMine:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.alertScope = "MINE"
             UpdateControls()
         end)
 
-        rwBtn:SetScript("OnClick", function()
+        -- Section 3 Event Handlers
+        btnStyleBoth:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings
-            s.alertRaidWarning = not (s.alertRaidWarning ~= false)
+            s.alertStyle = "BOTH"
+            s.alertRaidWarning = true
+            UpdateControls()
+        end)
+        btnStyleRW:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.alertStyle = "RAID_WARNING"
+            s.alertRaidWarning = true
+            UpdateControls()
+        end)
+        btnStyleBanner:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.alertStyle = "BANNER"
+            s.alertRaidWarning = false
             UpdateControls()
         end)
 
+        -- Section 4 Event Handlers
         unlockBtn:SetScript("OnClick", function()
             UI:ToggleBannerLock()
             UpdateControls()
         end)
-
         resetBtn:SetScript("OnClick", function()
             UI:ResetBannerPosition()
         end)
 
+        -- Footer Event Handlers
         testBtn:SetScript("OnClick", function()
             UI:TestKillBanner()
         end)
-
         closeBtn:SetScript("OnClick", function()
             if UI.bannerUnlocked then UI:ToggleBannerLock(false) end
             dlg:Hide()
@@ -2522,8 +2723,9 @@ function UI:ShowAlertsConfig()
 
     UI.AlertsDialog:SetBackdrop(theme.modalBackdrop or {
         bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 },
     })
     UI.AlertsDialog:SetBackdropColor(unpack(theme.modalBg or {0.035, 0.045, 0.07, 1.0}))
     UI.AlertsDialog:SetBackdropBorderColor(unpack(theme.modalBorder or {0.45, 0.35, 0.18, 0.95}))
