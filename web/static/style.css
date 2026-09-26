@@ -1016,8 +1016,11 @@ body {
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 800;
-  color: var(--accent-gold);
   letter-spacing: 0.5px;
+  background: linear-gradient(180deg, #fff2a3 0%, #d4a329 45%, #7a5704 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
 }
 
 .most-wanted-subtitle {
@@ -1245,32 +1248,32 @@ body {
   color: #fff !important;
 }
 
-/* ----------------- Most Wanted Faction Backdrops ----------------- */
+/* ----------------- Most Wanted Faction Backdrops (Dark Gritty Tints) ----------------- */
 .wanted-card.compact.alliance {
   background: 
-    linear-gradient(180deg, rgba(16, 40, 95, 0.82) 0%, rgba(10, 22, 50, 0.90) 55%, rgba(6, 12, 28, 0.96) 100%),
+    linear-gradient(180deg, rgba(12, 22, 44, 0.88) 0%, rgba(9, 15, 30, 0.94) 55%, rgba(6, 10, 20, 0.98) 100%),
     url('/static/images/card_alliance_square.png') center center / cover no-repeat !important;
-  border: 1.5px solid rgba(59, 130, 246, 0.55) !important;
-  box-shadow: inset 0 0 14px rgba(30, 58, 138, 0.4), 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(59, 130, 246, 0.35) !important;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.7), 0 3px 8px rgba(0, 0, 0, 0.5) !important;
 }
 
 .wanted-card.compact.alliance:hover {
-  border-color: var(--alliance-blue, #3b82f6) !important;
-  box-shadow: inset 0 0 20px rgba(37, 99, 235, 0.55), 0 0 14px rgba(59, 130, 246, 0.35) !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(59, 130, 246, 0.25) !important;
   transform: translateY(-2px);
 }
 
 .wanted-card.compact.horde {
   background: 
-    linear-gradient(180deg, rgba(95, 18, 22, 0.82) 0%, rgba(50, 10, 14, 0.90) 55%, rgba(24, 6, 8, 0.96) 100%),
+    linear-gradient(180deg, rgba(44, 12, 16, 0.88) 0%, rgba(30, 8, 12, 0.94) 55%, rgba(20, 6, 8, 0.98) 100%),
     url('/static/images/card_horde_square.png') center center / cover no-repeat !important;
-  border: 1.5px solid rgba(220, 38, 38, 0.55) !important;
-  box-shadow: inset 0 0 14px rgba(153, 27, 27, 0.4), 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(220, 38, 38, 0.35) !important;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.7), 0 3px 8px rgba(0, 0, 0, 0.5) !important;
 }
 
 .wanted-card.compact.horde:hover {
-  border-color: var(--horde-red, #dc2626) !important;
-  box-shadow: inset 0 0 20px rgba(220, 38, 38, 0.55), 0 0 14px rgba(220, 38, 38, 0.35) !important;
+  border-color: rgba(220, 38, 38, 0.6) !important;
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(220, 38, 38, 0.25) !important;
   transform: translateY(-2px);
 }
 
@@ -1304,48 +1307,46 @@ body {
 /* Victor Faction Accent on Left Edge (Alliance Blue vs Horde Red) */
 .killmail-row.winner-alliance::before {
   background-color: var(--alliance-blue, #3b82f6) !important;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
 }
 .killmail-row.winner-horde::before {
   background-color: var(--horde-red, #dc2626) !important;
-  box-shadow: 0 0 8px rgba(220, 38, 38, 0.8);
 }
 .killmail-row.winner-neutral::before { background-color: #64748b !important; }
 .killmail-row.km-solo::before { background-color: var(--alliance-blue, #3b82f6); }
 .killmail-row.km-gang::before { background-color: var(--horde-red, #dc2626); }
 
-/* Victor Faction Full-Row Banner Backdrops (Authentic Tactical Map & Crest Banners) */
+/* Victor Faction Full-Row Banner Backdrops (Dark Gritty Tactical Map & Crest Banners) */
 .killmail-row.winner-alliance {
   background: 
-    linear-gradient(90deg, rgba(24, 75, 185, 0.68) 0%, rgba(16, 48, 120, 0.78) 45%, rgba(10, 20, 48, 0.92) 100%),
+    linear-gradient(90deg, rgba(12, 22, 44, 0.86) 0%, rgba(10, 16, 32, 0.90) 45%, rgba(8, 12, 22, 0.96) 100%),
     url('/static/images/banner_alliance_tactical.jpg') center center / cover no-repeat !important;
-  border-color: rgba(59, 130, 246, 0.60) !important;
-  box-shadow: inset 0 0 18px rgba(37, 99, 235, 0.45), 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.5) !important;
 }
 
 .killmail-row.winner-alliance:hover {
   background: 
-    linear-gradient(90deg, rgba(37, 99, 235, 0.75) 0%, rgba(24, 60, 140, 0.85) 45%, rgba(10, 20, 48, 0.94) 100%),
+    linear-gradient(90deg, rgba(18, 32, 64, 0.90) 0%, rgba(12, 22, 44, 0.92) 45%, rgba(8, 14, 26, 0.98) 100%),
     url('/static/images/banner_alliance_tactical.jpg') center center / cover no-repeat !important;
-  border-color: #60a5fa !important;
-  box-shadow: inset 0 0 24px rgba(37, 99, 235, 0.65), 0 0 16px rgba(59, 130, 246, 0.4) !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(59, 130, 246, 0.25) !important;
   transform: translateY(-1px);
 }
 
 .killmail-row.winner-horde {
   background: 
-    linear-gradient(90deg, rgba(145, 24, 28, 0.68) 0%, rgba(90, 18, 22, 0.78) 45%, rgba(38, 10, 14, 0.92) 100%),
+    linear-gradient(90deg, rgba(44, 14, 18, 0.86) 0%, rgba(32, 10, 14, 0.90) 45%, rgba(22, 8, 10, 0.96) 100%),
     url('/static/images/banner_horde_tactical.png') center center / cover no-repeat !important;
-  border-color: rgba(239, 68, 68, 0.60) !important;
-  box-shadow: inset 0 0 18px rgba(220, 38, 38, 0.45), 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.5) !important;
 }
 
 .killmail-row.winner-horde:hover {
   background: 
-    linear-gradient(90deg, rgba(239, 68, 68, 0.75) 0%, rgba(140, 24, 30, 0.85) 45%, rgba(48, 12, 16, 0.94) 100%),
+    linear-gradient(90deg, rgba(64, 18, 22, 0.90) 0%, rgba(44, 12, 16, 0.92) 45%, rgba(26, 8, 10, 0.98) 100%),
     url('/static/images/banner_horde_tactical.png') center center / cover no-repeat !important;
-  border-color: #f87171 !important;
-  box-shadow: inset 0 0 24px rgba(220, 38, 38, 0.65), 0 0 16px rgba(220, 38, 38, 0.4) !important;
+  border-color: rgba(220, 38, 38, 0.6) !important;
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(220, 38, 38, 0.25) !important;
   transform: translateY(-1px);
 }
 
@@ -1395,29 +1396,29 @@ body {
 
 .bounty-target-card.bounty-card-alliance {
   background: 
-    linear-gradient(180deg, rgba(16, 42, 100, 0.82) 0%, rgba(10, 20, 48, 0.94) 100%),
+    linear-gradient(180deg, rgba(12, 22, 44, 0.88) 0%, rgba(8, 14, 26, 0.96) 100%),
     url('/static/images/banner_alliance_tactical.jpg') center center / cover no-repeat !important;
-  border: 1.5px solid rgba(59, 130, 246, 0.55) !important;
-  box-shadow: inset 0 0 16px rgba(30, 58, 138, 0.4), 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.35) !important;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.7), 0 3px 8px rgba(0, 0, 0, 0.5) !important;
 }
 
 .bounty-target-card.bounty-card-alliance:hover {
-  border-color: var(--alliance-blue, #3b82f6) !important;
-  box-shadow: inset 0 0 20px rgba(30, 58, 138, 0.55), 0 0 16px rgba(59, 130, 246, 0.4) !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(59, 130, 246, 0.25) !important;
   transform: translateY(-2px);
 }
 
 .bounty-target-card.bounty-card-horde {
   background: 
-    linear-gradient(180deg, rgba(95, 18, 22, 0.82) 0%, rgba(42, 10, 14, 0.94) 100%),
+    linear-gradient(180deg, rgba(44, 12, 16, 0.88) 0%, rgba(24, 8, 10, 0.96) 100%),
     url('/static/images/banner_horde_tactical.png') center center / cover no-repeat !important;
-  border: 1.5px solid rgba(220, 38, 38, 0.55) !important;
-  box-shadow: inset 0 0 16px rgba(153, 27, 27, 0.4), 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+  border: 1.5px solid rgba(220, 38, 38, 0.35) !important;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.7), 0 3px 8px rgba(0, 0, 0, 0.5) !important;
 }
 
 .bounty-target-card.bounty-card-horde:hover {
-  border-color: var(--horde-red, #dc2626) !important;
-  box-shadow: inset 0 0 20px rgba(153, 27, 27, 0.55), 0 0 16px rgba(220, 38, 38, 0.4) !important;
+  border-color: rgba(220, 38, 38, 0.6) !important;
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(220, 38, 38, 0.25) !important;
   transform: translateY(-2px);
 }
 
@@ -1973,13 +1974,28 @@ body {
 
 .section-title {
   font-family: var(--font-display);
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   font-weight: 800;
   letter-spacing: 0.5px;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--wow-gold);
+  background: linear-gradient(180deg, #fff2a3 0%, #d4a329 45%, #7a5704 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
+}
+
+.sidebar-sub-title {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: linear-gradient(180deg, #fff2a3 0%, #d4a329 45%, #7a5704 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  margin-bottom: 8px;
 }
 
 .sidebar-armory-wrap {
@@ -2131,33 +2147,33 @@ body {
 
 .sidebar-rank-item.alliance {
   background: 
-    linear-gradient(90deg, rgba(16, 42, 100, 0.78) 0%, rgba(12, 24, 55, 0.88) 50%, rgba(8, 12, 24, 0.95) 100%),
+    linear-gradient(90deg, rgba(12, 22, 44, 0.85) 0%, rgba(9, 15, 30, 0.92) 50%, rgba(7, 10, 18, 0.96) 100%),
     url('/static/images/banner_alliance_tactical.jpg') center right / cover no-repeat !important;
-  border: 1px solid rgba(59, 130, 246, 0.35) !important;
-  border-left: 3.5px solid var(--alliance-blue, #3b82f6) !important;
-  box-shadow: inset 0 0 12px rgba(30, 58, 138, 0.3), 0 2px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  border-left: 3px solid var(--alliance-blue, #3b82f6) !important;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .sidebar-rank-item.alliance:hover {
-  border-color: rgba(59, 130, 246, 0.65) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
   border-left-color: #60a5fa !important;
-  box-shadow: inset 0 0 16px rgba(37, 99, 235, 0.45), 0 0 10px rgba(59, 130, 246, 0.25) !important;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7), 0 0 8px rgba(59, 130, 246, 0.2) !important;
   transform: translateX(2px);
 }
 
 .sidebar-rank-item.horde {
   background: 
-    linear-gradient(90deg, rgba(100, 18, 22, 0.78) 0%, rgba(55, 10, 14, 0.88) 50%, rgba(24, 6, 8, 0.95) 100%),
+    linear-gradient(90deg, rgba(44, 12, 16, 0.85) 0%, rgba(30, 8, 12, 0.92) 50%, rgba(18, 6, 8, 0.96) 100%),
     url('/static/images/banner_horde_tactical.png') center right / cover no-repeat !important;
-  border: 1px solid rgba(220, 38, 38, 0.35) !important;
-  border-left: 3.5px solid var(--horde-red, #dc2626) !important;
-  box-shadow: inset 0 0 12px rgba(153, 27, 27, 0.3), 0 2px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(220, 38, 38, 0.25) !important;
+  border-left: 3px solid var(--horde-red, #dc2626) !important;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .sidebar-rank-item.horde:hover {
-  border-color: rgba(220, 38, 38, 0.65) !important;
+  border-color: rgba(220, 38, 38, 0.5) !important;
   border-left-color: #f87171 !important;
-  box-shadow: inset 0 0 16px rgba(220, 38, 38, 0.45), 0 0 10px rgba(220, 38, 38, 0.25) !important;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7), 0 0 8px rgba(220, 38, 38, 0.2) !important;
   transform: translateX(2px);
 }
 

@@ -1068,7 +1068,6 @@ async function renderStats(kills) {
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="wow-gold-header" style="font-size:0.95rem; font-weight:800; letter-spacing:0.5px;">WOW FOREVER FRONTIER — REALM TELEMETRY (ALL STATS)</span>
           </div>
-          <span class="guest-recon-badge">UNMARKED RECON (GUEST)</span>
         </div>
       </div>
 
@@ -1312,7 +1311,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       <!-- Hall of Legends Header Row with Type Toggle and Mode Pills -->
       <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
         <div>
-          <h2 style="font-size: 1.35rem; color: var(--accent-gold); font-family: var(--font-tactical); letter-spacing:0.5px; margin:0;">
+          <h2 class="wow-gold-header" style="font-size: 1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
             Hall of Legends
           </h2>
           <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">
@@ -1693,7 +1692,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
       <div style="background: linear-gradient(180deg, rgba(212, 163, 41, 0.08) 0%, rgba(13, 17, 23, 0.95) 100%); border: 1px solid rgba(212, 163, 41, 0.35); border-radius: 8px; padding: 18px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
           <div>
-            <h2 style="font-size: 1.25rem; color: var(--wow-gold); font-family: var(--font-tactical); letter-spacing:0.5px; display:flex; align-items:center; gap:8px;">
+            <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; margin:0;">
               Your Active Contracts &amp; Targets (${myBounties.length})
             </h2>
             <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
@@ -1735,7 +1734,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div>
-            <h2 style="font-size: 1.2rem; color: var(--accent-gold);">Realm High Command Bounty Board</h2>
+            <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">Realm High Command Bounty Board</h2>
             <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Track and execute targets to claim escrowed gold.</div>
           </div>
           <button class="supporter-btn" onclick="openPlaceBountyModal()">+ Place Bounty</button>
@@ -1756,7 +1755,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
 
       <!-- Bounty Leaderboards: Hall of Fame -->
       <div>
-        <h2 style="font-size: 1.2rem; color: var(--accent-gold); margin-bottom: 12px;">Bounty Hall of Fame &amp; Records</h2>
+        <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin-bottom: 12px;">Bounty Hall of Fame &amp; Records</h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           
           <!-- 1. Top Bounty Hunters -->
@@ -1852,7 +1851,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
 
       <!-- Wall of Shame: Blood Debtor Ledger -->
       <div>
-        <h2 style="font-size: 1.2rem; color: var(--accent-red); margin-bottom: 4px;">
+        <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin-bottom: 4px;">
           Wall of Shame — Realm Blood Debtors (Kill On Sight)
         </h2>
         <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:12px;">
@@ -3691,12 +3690,6 @@ function switchTab(tab) {
     sidebarEl.style.display = (tab === "PORTAL" || tab === "THEATER") ? "none" : "";
   }
 
-  // Hide recon wire on non-intel tabs
-  const reconWire = document.getElementById("intel-sighting-wire");
-  if (reconWire && tab !== "INTEL") {
-    reconWire.style.display = "none";
-  }
-
   const mwSection = document.getElementById("most-wanted-section");
   if (mwSection) mwSection.style.display = (tab === "INTEL") ? "block" : "none";
 
@@ -3718,7 +3711,6 @@ function switchTab(tab) {
     }
     loadKills();
     loadMostWanted();
-    checkIntelSightings();
   }
   else if (tab === "LEGENDS") {
     loadLeaderboards();
@@ -4560,45 +4552,11 @@ function openBrandKosModal() {
   }).catch(e => alert("Error blacklisting entity: " + e.message));
 }
 
-// ----------------- Tactical Intel Recon Wire -----------------
+// ----------------- Tactical Intel Recon Wire (In-game only) -----------------
 
 async function checkIntelSightings() {
-  const wire = document.getElementById("intel-sighting-wire");
-  if (!wire) return;
-  if (currentTab !== "INTEL" && currentTab !== "FEED") {
-    wire.style.display = "none";
-    return;
-  }
-  try {
-    const res = await fetch("/api/intel/sightings");
-    if (!res.ok) {
-      wire.style.display = "none";
-      return;
-    }
-    const sightings = await res.json();
-    if (sightings && sightings.length > 0 && (currentTab === "INTEL" || currentTab === "FEED")) {
-      const topS = sightings[0];
-      const classColor = CLASS_COLORS[(topS.target_class || "").toUpperCase()] || CLASS_COLORS.UNKNOWN;
-      wire.style.display = "flex";
-      wire.innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span class="intel-badge">LIVE RECON WIRE</span>
-          <div style="font-size:0.82rem; color:#cbd5e1;">
-            Scout <strong>${topS.reporter_name}</strong> spotted <strong style="color:${classColor};">${topS.target_name}</strong>
-            (Lvl ${topS.target_level} ${topS.target_class}${topS.target_guild ? ' &lt;' + topS.target_guild + '&gt;' : ''})
-            in <strong style="color:#fff;">${topS.zone}</strong>${topS.subzone ? ' (' + topS.subzone + ')' : ''} &bull; <em>"${topS.notes}"</em>
-          </div>
-        </div>
-        <div style="font-size:0.72rem; color:#f59e0b; font-weight:700;">
-          (${topS.coord_x.toFixed(1)}, ${topS.coord_y.toFixed(1)}) &bull; ${timeAgo(topS.timestamp)}
-        </div>
-      `;
-    } else {
-      wire.style.display = "none";
-    }
-  } catch (e) {
-    wire.style.display = "none";
-  }
+  // Disabled: Tactical recon wire broadcasts are now dispatched strictly in-game
+  return;
 }
 
 // Initialization
@@ -4619,7 +4577,6 @@ document.addEventListener("DOMContentLoaded", () => {
   updateTheaterNavLabel();
   loadSidebar();
   checkGlobalSosBeacons();
-  checkIntelSightings();
 
   // Landing page is always the War Room Sign-In / Entry Portal
   switchTab("PORTAL");
@@ -4632,7 +4589,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     loadSidebar();
     checkGlobalSosBeacons();
-    checkIntelSightings();
   }, 6000);
 });
 
