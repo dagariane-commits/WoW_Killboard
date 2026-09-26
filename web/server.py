@@ -1169,22 +1169,35 @@ def get_pve_leaderboard():
 @app.route("/api/system/flavor", methods=["GET", "POST"])
 def client_flavor_endpoint():
     valid_flavors = ["CLASSIC_ERA", "ANNIVERSARY", "FOREVER", "TBC", "WOTLK", "RETAIL"]
+    valid_servers = ["PVP", "PVE", "RP", "HARDCORE"]
     if request.method == "POST":
         data = request.json or {}
         flavor = (data.get("flavor") or "").upper()
+        server = (data.get("server") or "").upper()
         if flavor not in valid_flavors:
             return jsonify({"error": f"Invalid flavor. Supported: {valid_flavors}"}), 400
+        if server and server not in valid_servers:
+            server = "PVP"
         with get_db() as conn:
             conn.execute("INSERT OR REPLACE INTO platform_stats (key, value) VALUES ('client_flavor', ?)", (json.dumps(flavor),))
+            if server:
+                conn.execute("INSERT OR REPLACE INTO platform_stats (key, value) VALUES ('forever_server', ?)", (json.dumps(server),))
             conn.commit()
-        return jsonify({"success": True, "flavor": flavor}), 200
+        resp = {"success": True, "flavor": flavor}
+        if server:
+            resp["server"] = server
+        return jsonify(resp), 200
     else:
         with get_db() as conn:
             row = conn.execute("SELECT value FROM platform_stats WHERE key = 'client_flavor'").fetchone()
             flavor = json.loads(row[0]) if row else "CLASSIC_ERA"
+            srow = conn.execute("SELECT value FROM platform_stats WHERE key = 'forever_server'").fetchone()
+            server = json.loads(srow[0]) if srow else "PVP"
         return jsonify({
             "flavor": flavor,
-            "supportedFlavors": valid_flavors
+            "server": server,
+            "supportedFlavors": valid_flavors,
+            "supportedServers": valid_servers
         })
 
 # ----------------- Battleground Stats API -----------------

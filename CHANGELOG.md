@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.11] - 2026-09-26
+
+### Added
+- **WoW Forever 4-Server Realm Selector (PvP, PvE, RP, Hardcore)**:
+  - Added dedicated realm server selector modal (`#server-modal`) and interactive theater card quick-switch pills for all 4 WoW Forever servers (PvP, PvE, RP, Hardcore).
+  - Selecting WoW Forever in Campaign Selector now triggers the additional server ruleset picker.
+  - Top navigation rail displays the active server pill badge (`Theater: WoW Forever [PvP] ▾`), allowing instant 1-click server switching anywhere on the platform.
+  - Backend `/api/system/flavor` updated to persist and return active realm server (`server` & `supportedServers`).
+
+### Removed
+- **High Command Execution List Outer Rectangle Container**:
+  - Purged background, border, shadow, and inset padding from `.most-wanted-section`.
+  - The High Command header and subtitle now sit directly on the dark textured stone backdrop, achieving visual parity with the `Recent Kills` feed.
+- **Guild Names from Top Active Gankers**:
+  - Removed `<guild>` tags from the Top Active Gankers sidebar widget, delivering clean single-line player rank rows.
+
 ## [1.4.10] - 2026-09-26
 
 ### Added

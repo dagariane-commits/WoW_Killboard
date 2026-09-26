@@ -29,7 +29,7 @@
       <!-- 2. Primary Navigation Rail -->
       <nav class="nav-links-rail" id="nav-rail">
         <button id="nav-theater" class="nav-btn theater-btn" onclick="switchTab('THEATER')" title="Active Theater of War / Select Version">
-          <span class="theater-label">Theater:</span> <strong id="theater-nav-version" class="theater-version-name">WoW Forever</strong> <span class="theater-caret">▾</span>
+          <span class="theater-label">Theater:</span> <strong id="theater-nav-version" class="theater-version-name">WoW Forever</strong> <span id="theater-nav-server" class="theater-server-pill" onclick="event.stopPropagation(); openServerSelectorModal();" title="Click to Switch Realm Server">PvP</span> <span class="theater-caret">▾</span>
         </button>
         <button id="nav-intel" class="nav-btn active" onclick="switchTab('INTEL')">Intel</button>
         <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">Hall of Legends</button>
@@ -331,6 +331,22 @@
           <button class="nav-btn" onclick="closeEventModal()">Cancel</button>
           <button class="nav-btn active" style="background:var(--accent-cyan); color:#000; font-weight:700;" onclick="submitGuildEvent()">Announce &amp; Broadcast</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WoW Forever Realm / Server Selector Modal -->
+  <div class="modal-overlay" id="server-modal" style="display: none;">
+    <div class="modal-card modal-card-lg" style="max-width: 640px;">
+      <div class="modal-header">
+        <div>
+          <strong style="color: var(--wow-gold); font-size: 1.15rem; font-family: var(--font-display);">WoW Forever — Select Realm Server</strong>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">Choose your active realm ruleset. All telemetry, kill feeds, and bounties filter to this server.</div>
+        </div>
+        <button class="modal-close" onclick="closeServerSelectorModal()">&times;</button>
+      </div>
+      <div id="server-modal-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+        <!-- Filled by app.js with the 4 servers: PvP, PvE, RP, Hardcore -->
       </div>
     </div>
   </div>
