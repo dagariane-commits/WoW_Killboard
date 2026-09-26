@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.9] - 2026-09-25
 
 ### Changed
+- **Authentic Textured Faction Banners & Square Card Blocks**:
+  - Upgraded Intel Feed killmail rows with authentic World of Warcraft tactical war map banner backdrops (`banner_horde_tactical.png` and `banner_alliance_tactical.jpg`) for Horde and Alliance victories, featuring dark topographic battle lines, terrain contours, and subtle faction crest watermarks.
+  - Applied authentic textured stone/grunge faction card blocks (`card_horde_square.png` and `card_alliance_square.png`) to landing entry gate cards with faction-tinted linear gradients, elevating visual parity to official Blizzard cinematic standards.
 - **Dark Alliance & Horde Full-Row Banner Backdrops**:
   - Implemented full-width atmospheric banner backdrops across the entire killmail row for both factions: dark royal blue gradient (`rgba(29, 78, 216, 0.24)` to `rgba(9, 13, 22, 0.98)`) for Alliance victories and dark crimson gradient (`rgba(185, 28, 28, 0.24)` to `rgba(14, 10, 12, 0.98)`) for Horde victories.
   - Added high-contrast borders and interactive hover glows while preserving clear text readability, guild tags, and class color hierarchy.
