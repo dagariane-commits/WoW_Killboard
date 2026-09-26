@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.9] - 2026-09-25
 
 ### Changed
+- **Landing Portal Card Rebalancing & Side Alignment**:
+  - Aligned `.dramatic-gate-grid` max-width (`1060px`) to match `.portal-hero.dramatic-hero`, ensuring left and right containers are inline with each other on the sides.
+  - Rebalanced landing page cards: moved Create Free Account registration form into the left card alongside a clean Guest Pass entry button, eliminating vertical emptiness and balancing height with the Sign In card.
+  - Aligned both cards to the top with responsive, matched flex layout.
+- **Operational Specification Modal Header & Section Alignment**:
+  - Replaced buzzword header with tactical title: `WAR ROOM OPERATIONAL SPECIFICATION` / `REAL-TIME COMBAT TRACKING • ZERO TAINT • AUTOMATED DESKTOP COURIER • OPEN-WORLD BOUNTIES`.
+  - Enforced top-alignment across all 3 tier cards (`.dossier-tier-card`), with standardized header height (`min-height: 72px`) so feature lists start at the exact same horizontal baseline, and pinned action buttons to the bottom (`margin-top: auto`).
+  - Centered download box info and action buttons (`.dossier-download-box`, `.dossier-dl-actions`).
+- **Intel Combat Feed Victor Faction Accent & 15-Row View More Pagination**:
+  - Replaced kill mode left-border accent with dynamic Victor Faction colors: Alliance Blue (`#3b82f6`) vs. Horde Red (`#dc2626`).
+  - Preserved unique mode badge tag colors (`1V1 SOLO`, `GANG X...`, `ARENA`, `1V1 DUEL`, `BG`, `WORLD`).
+  - Implemented 15-row display limit with dynamic "View More Combat Records" button to keep feed responsive and prevent vertical overload.
+  - Streamlined right-meta column width (`130px`) and harmonized right sidebar text sizes.
+- **Hall of Legends: Player vs. Guild Toggle, WoWLogs Parse Colors, & BG Gladiators Removal**:
+  - Added direct toggle: `[ Player Ranks | Guild Ranks ]` next to combat mode filter pills.
+  - Cleaned subtitle by removing raw mode string concatenation (`[${currentMode}]`).
+  - Completely purged unwanted Battleground Gladiators (damage & healing telemetry) section from Hall of Legends.
+  - Moved Percentile column to the last position in the Player table.
+  - Implemented authentic Warcraft Logs parse color tiers: Gold (`100`), Pink (`99`), Legendary Orange (`95-98`), Epic Purple (`75-94`), Rare Blue (`50-74`), Uncommon Green (`25-49`), and Common Grey (`<25`).
 - **Clean Text-Only Navigation & Authentic WoW Version Accent System**:
   - Completely stripped all box backdrops, borders, and box shadows from `.nav-btn` and `.theater-btn` across the primary navigation rail.
   - Replaced box styling with clean, readable muted slate typography (`#94a3b8`), hover highlights, and an authentic bottom underline (`border-bottom: 2px solid var(--active-flavor-color)`) for the active tab.

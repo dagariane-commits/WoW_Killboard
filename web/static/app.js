@@ -654,7 +654,7 @@ function renderSidebarActivity(data) {
                 <div style="font-size:0.7rem; color:#94a3b8;">${guildPart}</div>
               </div>
             </div>
-            <span style="color:#10b981; font-weight:800; font-size:0.85rem;">${c.kills} kills</span>
+            <span style="color:#10b981; font-weight:700; font-size:0.76rem;">${c.kills} kills</span>
           </div>
         `;
       }).join('');
@@ -678,7 +678,7 @@ function renderSidebarActivity(data) {
                 <div style="font-size:0.68rem; color:${factionColor};">${g.faction || 'Neutral'}</div>
               </div>
             </div>
-            <span style="color:var(--accent-gold); font-weight:800; font-size:0.85rem;">${g.kills} kills</span>
+            <span style="color:var(--accent-gold); font-weight:700; font-size:0.76rem;">${g.kills} kills</span>
           </div>
         `;
       }).join('');
@@ -719,23 +719,31 @@ function renderSidebarActivity(data) {
   }
 }
 
+let legendsTabType = "PLAYERS"; // "PLAYERS" or "GUILDS"
+
 async function loadLeaderboards() {
+  const container = document.getElementById("main-content-area");
   try {
-    const res = await fetch(`/api/leaderboard?mode=${currentMode}`);
-    const data = await res.json();
-    let bgData = null;
-    if (currentMode === "BG") {
-      try {
-        const bgRes = await fetch(`/api/bg/stats`);
-        bgData = await bgRes.json();
-      } catch (e) {
-        console.warn("Could not fetch BG stats:", e);
-      }
+    if (legendsTabType === "GUILDS") {
+      const res = await fetch("/api/guilds");
+      const data = await res.json();
+      renderLeaderboardView(null, null, data.guilds || []);
+    } else {
+      const res = await fetch(`/api/leaderboard?mode=${currentMode}`);
+      const data = await res.json();
+      renderLeaderboardView(data, null, null);
     }
-    renderLeaderboardView(data, bgData);
   } catch (err) {
     console.error("Failed to load leaderboards:", err);
+    if (container) {
+      container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Hall of Legends: ${err.message}</div>`;
+    }
   }
+}
+
+function setLegendsTabType(type) {
+  legendsTabType = type;
+  loadLeaderboards();
 }
 
 async function loadBgGladiators() {
@@ -1011,6 +1019,59 @@ async function renderStats(kills) {
   `;
 }
 
+let feedDisplayLimit = 15;
+
+function feedShowMoreKills() {
+  feedDisplayLimit += 15;
+  if (cachedKills && cachedKills.length > 0) {
+    renderFeed(cachedKills);
+  }
+}
+
+function getWowLogsPercentileBadge(pct) {
+  if (!pct || typeof pct.percentile === 'undefined') {
+    return `<span style="color:#64748b; font-size:0.75rem;">-</span>`;
+  }
+  const p = pct.percentile;
+  let color = "#9d9d9d";      // 0-24 Grey (Common)
+  let bg = "rgba(157, 157, 157, 0.12)";
+  let border = "rgba(157, 157, 157, 0.3)";
+  
+  if (p >= 100) {
+    color = "#e5cc80";        // 100 Gold / Artifact
+    bg = "rgba(229, 204, 128, 0.18)";
+    border = "rgba(229, 204, 128, 0.5)";
+  } else if (p >= 99) {
+    color = "#e268a8";        // 99 Pink
+    bg = "rgba(226, 104, 168, 0.18)";
+    border = "rgba(226, 104, 168, 0.5)";
+  } else if (p >= 95) {
+    color = "#ff8000";        // 95-98 Orange (Legendary)
+    bg = "rgba(255, 128, 0, 0.18)";
+    border = "rgba(255, 128, 0, 0.5)";
+  } else if (p >= 75) {
+    color = "#a335ee";        // 75-94 Purple (Epic)
+    bg = "rgba(163, 53, 238, 0.18)";
+    border = "rgba(163, 53, 238, 0.5)";
+  } else if (p >= 50) {
+    color = "#0070dd";        // 50-74 Blue (Rare)
+    bg = "rgba(0, 112, 221, 0.18)";
+    border = "rgba(0, 112, 221, 0.5)";
+  } else if (p >= 25) {
+    color = "#1eff00";        // 25-49 Green (Uncommon)
+    bg = "rgba(30, 255, 0, 0.18)";
+    border = "rgba(30, 255, 0, 0.5)";
+  }
+  
+  const title = escapeHtml(`${pct.cohortLabel || 'Cohort'} (${pct.totalInCohort || 0} combatants)`);
+  return `
+    <span class="wowlogs-percentile-pill" title="${title}" style="color:${color}; background:${bg}; border:1px solid ${border};">
+      <span>Top ${pct.topPct}%</span>
+      <span style="opacity:0.85; font-size:0.68rem;">(${p}th)</span>
+    </span>
+  `;
+}
+
 function renderFeed(kills) {
   const container = document.getElementById("main-content-area");
   if (!kills || kills.length === 0) {
@@ -1023,6 +1084,8 @@ function renderFeed(kills) {
     return;
   }
 
+  const visibleKills = kills.slice(0, feedDisplayLimit);
+
   let html = `
     <div style="display: flex; flex-direction: column; gap: 6px;">
       <div class="feed-header-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); gap:10px; flex-wrap:wrap;">
@@ -1033,7 +1096,7 @@ function renderFeed(kills) {
         <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Feed &bull; Live Telemetry</span>
       </div>
   `;
-  kills.forEach(km => {
+  visibleKills.forEach(km => {
     let modeClass = "km-world";
     let modeLabel = "Open World";
     let modeTagText = "WORLD";
@@ -1059,6 +1122,12 @@ function renderFeed(kills) {
       modeTagText = `GANG x${km.attackersCount}`;
     }
 
+    // Determine victor faction (Alliance Blue vs Horde Red)
+    const killerFaction = (km.killer && km.killer.faction) ? km.killer.faction : 'Unknown';
+    let victorClass = 'winner-neutral';
+    if (killerFaction === 'Alliance') victorClass = 'winner-alliance';
+    else if (killerFaction === 'Horde') victorClass = 'winner-horde';
+
     const killerBadge = renderClassBadge(km.killer.class, 26);
     const victimBadge = renderClassBadge(km.victim.class, 26);
     const killerSpan = colorizeClass(km.killer.name, km.killer.class);
@@ -1079,7 +1148,7 @@ function renderFeed(kills) {
     const rowTooltip = `${km.killer.name} defeated ${km.victim.name} • ${modeLabel} • ${km.location.zone} • Click for Battle Report`;
 
     html += `
-      <div class="killmail-row ${modeClass}" onclick="openKillModal('${km.killId}')" title="${rowTooltip}">
+      <div class="killmail-row ${modeClass} ${victorClass}" onclick="openKillModal('${km.killId}')" title="${rowTooltip}">
         <div class="km-left-meta">
           <span class="km-zone-name">${km.location.zone}</span>
           <span class="km-subzone-text">${subzoneOrCoords}</span>
@@ -1120,109 +1189,153 @@ function renderFeed(kills) {
       </div>
     `;
   });
+
+  if (kills.length > visibleKills.length) {
+    html += `
+      <div class="feed-view-more-wrap">
+        <button class="feed-view-more-btn" onclick="feedShowMoreKills()">
+          <span>View More Combat Records (Showing ${visibleKills.length} of ${kills.length})</span>
+          <span>&darr;</span>
+        </button>
+      </div>
+    `;
+  }
+
   html += `</div>`;
   container.innerHTML = html;
 }
 
-function renderLeaderboardView(data, bgData) {
+function renderLeaderboardView(data, bgData, guildsData) {
   const container = document.getElementById("main-content-area");
   if (!container) return;
 
+  const isGuilds = (legendsTabType === "GUILDS");
+
   let html = `
     <div style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- Hall of Legends Header Row with Mode Filter Pills -->
-      <div class="legends-header-row">
+      <!-- Hall of Legends Header Row with Type Toggle and Mode Pills -->
+      <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
         <div>
           <h2 style="font-size: 1.35rem; color: var(--accent-gold); font-family: var(--font-tactical); letter-spacing:0.5px; margin:0;">
             Hall of Legends
           </h2>
           <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">
-            Most lethal combatants, cohort percentile efficiency, and certified executions across Azeroth [${currentMode}]
+            ${isGuilds ? 'Premier guild war standings, total kills, and combat effectiveness across Azeroth.' : 'Most lethal combatants, cohort percentile efficiency, and certified executions across Azeroth.'}
           </div>
         </div>
 
-        <div class="filter-pills" id="legends-mode-pills">
-          <button class="pill-btn ${currentMode === 'ALL' ? 'active' : ''}" onclick="setFilterMode('ALL')">All PvP</button>
-          <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
-          <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
-          <button class="pill-btn ${currentMode === 'ARENA' ? 'active' : ''}" onclick="setFilterMode('ARENA')">Arenas</button>
-          <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <!-- Rank Type Toggle: Players vs Guilds -->
+          <div class="filter-pills" id="legends-type-pills">
+            <button class="pill-btn ${!isGuilds ? 'active' : ''}" onclick="setLegendsTabType('PLAYERS')">Player Ranks</button>
+            <button class="pill-btn ${isGuilds ? 'active' : ''}" onclick="setLegendsTabType('GUILDS')">Guild Ranks</button>
+          </div>
+
+          <!-- Combat Mode Filter Pills (Only shown for Player Ranks) -->
+          <div class="filter-pills" id="legends-mode-pills" style="${isGuilds ? 'display:none;' : ''}">
+            <button class="pill-btn ${currentMode === 'ALL' ? 'active' : ''}" onclick="setFilterMode('ALL')">All PvP</button>
+            <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
+            <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
+            <button class="pill-btn ${currentMode === 'ARENA' ? 'active' : ''}" onclick="setFilterMode('ARENA')">Arenas</button>
+            <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
+          </div>
         </div>
       </div>
+  `;
 
+  if (isGuilds) {
+    const guilds = guildsData || [];
+    html += `
+      <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); color: #94a3b8; text-align: left; height: 32px;">
+              <th>Rank</th>
+              <th>Guild</th>
+              <th>Faction</th>
+              <th>Combatants</th>
+              <th>Kills</th>
+              <th>Deaths</th>
+              <th>K/D</th>
+              <th>Top Assassin</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    if (guilds.length === 0) {
+      html += `<tr><td colspan="8" style="text-align:center; padding:30px; color:#64748b;">No active guild combat records recorded yet.</td></tr>`;
+    } else {
+      guilds.forEach((g, idx) => {
+        const topMemberHtml = g.topMember 
+          ? `<span class="clickable-player" onclick="openCharacterProfile('${g.topMember.name}')">${colorizeClass(g.topMember.name, g.topMember.class)}</span> <small style="color:#10b981;">(${g.topMember.kills}k)</small>`
+          : '-';
+
+        html += `
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
+            <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
+            <td><span class="clickable-guild" onclick="openGuildProfile('${g.guild}')">&lt;${g.guild}&gt;</span></td>
+            <td style="color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${g.faction || 'Neutral'}</td>
+            <td style="color: #e2e8f0;">${g.members_count || 1}</td>
+            <td style="color: #10b981; font-weight: 700;">${g.kills}</td>
+            <td style="color: #ef4444; font-weight: 700;">${g.deaths || 0}</td>
+            <td style="color: var(--accent-gold); font-weight: 700;">${g.kd}</td>
+            <td>${topMemberHtml}</td>
+          </tr>
+        `;
+      });
+    }
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  } else {
+    html += `
       <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
             <tr style="border-bottom: 1px solid var(--border-color); color: #94a3b8; text-align: left; height: 32px;">
               <th>Rank</th>
               <th>Combatant</th>
-              <th>Percentile Standing</th>
               <th>Guild</th>
               <th>Faction</th>
               <th>Kills</th>
               <th>Solo Kills</th>
+              <th style="text-align:right;">Percentile</th>
             </tr>
           </thead>
           <tbody>
-  `;
-
-  (data.topKillers || []).forEach((p, idx) => {
-    const guildHtml = (p.guild && p.guild !== 'None')
-      ? `<span class="clickable-guild" onclick="openGuildProfile('${p.guild}')">${p.guild}</span>`
-      : '-';
-
-    const pct = p.percentile;
-    const pctHtml = pct ? `
-      <span class="operative-percentile-pill" title="${escapeHtml(pct.cohortLabel || '')} (${pct.totalInCohort} in cohort)" style="font-size:0.72rem; padding:2px 8px; border-radius:4px; font-weight:700;">
-        Top ${pct.topPct}% (${pct.percentile}th Pct)
-      </span>
-    ` : `<span style="color:#64748b; font-size:0.75rem;">-</span>`;
-
-    html += `
-      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
-        <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
-        <td><span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${p.name}')">${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)}</span></td>
-        <td>${pctHtml}</td>
-        <td>${guildHtml}</td>
-        <td style="color: ${p.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${p.faction}</td>
-        <td style="color: #10b981; font-weight: 700;">${p.kills}</td>
-        <td style="color: #00e5ff; font-weight: 700;">${p.solo_kills || 0}</td>
-      </tr>
     `;
-  });
 
-  html += `
-          </tbody>
-        </table>
-      </div>
-  `;
+    const killers = (data && data.topKillers) ? data.topKillers : [];
+    if (killers.length === 0) {
+      html += `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No combatant kills logged for mode [${currentMode}].</td></tr>`;
+    } else {
+      killers.forEach((p, idx) => {
+        const guildHtml = (p.guild && p.guild !== 'None')
+          ? `<span class="clickable-guild" onclick="openGuildProfile('${p.guild}')">${p.guild}</span>`
+          : '-';
 
-  if (currentMode === "BG" && bgData) {
+        const pctBadge = getWowLogsPercentileBadge(p.percentile);
+
+        html += `
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
+            <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
+            <td><span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${p.name}')">${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)}</span></td>
+            <td>${guildHtml}</td>
+            <td style="color: ${p.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${p.faction}</td>
+            <td style="color: #10b981; font-weight: 700;">${p.kills}</td>
+            <td style="color: #00e5ff; font-weight: 700;">${p.solo_kills || 0}</td>
+            <td style="text-align:right;">${pctBadge}</td>
+          </tr>
+        `;
+      });
+    }
+
     html += `
-      <div style="margin-top:10px;">
-        <h3 style="font-size:1.1rem; color:var(--accent-cyan); margin-bottom:12px;">Battleground Gladiators (Damage &amp; Healing Telemetry)</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
-            <h4 style="color: #f97316; font-size: 0.95rem; margin-bottom: 12px;">Top Damage Dealers</h4>
-            ${(bgData.topDamage || []).map((p, i) => `
-              <div class="leader-item">
-                <span>#${i+1} ${colorizeClass(p.name, p.class)}</span>
-                <span style="color:#f97316; font-weight:700;">${formatNumber(p.total_damage)} Dmg</span>
-              </div>
-            `).join('')}
-          </div>
-
-          <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
-            <h4 style="color: #10b981; font-size: 0.95rem; margin-bottom: 12px;">Combat Medics (Top Healing)</h4>
-            ${(bgData.topHealing || []).map((p, i) => `
-              <div class="leader-item">
-                <span>#${i+1} ${colorizeClass(p.name, p.class)}</span>
-                <span style="color:#10b981; font-weight:700;">${formatNumber(p.total_healing)} Heal</span>
-              </div>
-            `).join('')}
-          </div>
+            </tbody>
+          </table>
         </div>
-      </div>
     `;
   }
 
@@ -2814,10 +2927,10 @@ function loadPortalView() {
     portalAccessMode = "account";
   }
 
-  // MUSTER GATE (Guest Recon vs Normal Sign-In / Create Account)
-  let authBoxHtml = "";
+  // Right card: Account Sign-In (or Active Session)
+  let rightCardContent = "";
   if (storedAccount && (currentAuth === "account" || currentAuth === "officer")) {
-    authBoxHtml = `
+    rightCardContent = `
       <div class="signedin-account-card">
         <div style="display:flex; align-items:center; gap:12px;">
           <div class="officer-sigil-badge">
@@ -2842,88 +2955,91 @@ function loadPortalView() {
       </div>
     `;
   } else {
-    authBoxHtml = `
-      <div class="normal-auth-wrapper">
-        <div class="auth-mode-tabs">
-          <button type="button" id="auth-tab-btn-signin" class="auth-tab-btn ${portalAuthTab === 'signin' ? 'active' : ''}" onclick="portalSetAuthTab('signin')">Sign In</button>
-          <button type="button" id="auth-tab-btn-register" class="auth-tab-btn ${portalAuthTab === 'register' ? 'active' : ''}" onclick="portalSetAuthTab('register')">Create Account</button>
+    rightCardContent = `
+      <form id="auth-form-signin" class="normal-auth-form" style="display:flex; flex-direction:column; gap:10px; width:100%;" onsubmit="handleNormalSignIn(event)">
+        <div class="auth-input-group">
+          <label class="auth-label" for="auth-input-username">Username or Email</label>
+          <input type="text" id="auth-input-username" class="normal-auth-input" placeholder="e.g. AzerothKnight" autocomplete="username">
+        </div>
+        <div class="auth-input-group">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="auth-label" for="auth-input-password">Password</label>
+            <a href="javascript:void(0)" class="auth-forgot-link" onclick="alert('Password reset instructions will be sent to your email.')">Forgot?</a>
+          </div>
+          <input type="password" id="auth-input-password" class="normal-auth-input" placeholder="Enter your password" autocomplete="current-password">
+        </div>
+        <div class="auth-options-row">
+          <label class="auth-checkbox-label">
+            <input type="checkbox" id="auth-remember" checked>
+            <span>Remember me</span>
+          </label>
+        </div>
+        <button type="submit" class="normal-auth-submit-btn">
+          <span>Sign In &amp; Enter War Room</span>
+          <span>&rarr;</span>
+        </button>
+
+        <div class="auth-or-divider">
+          <span>or continue with</span>
         </div>
 
-        <!-- Sign In Tab Form -->
-        <form id="auth-form-signin" class="normal-auth-form" style="display:${portalAuthTab === 'signin' ? 'flex' : 'none'};" onsubmit="handleNormalSignIn(event)">
-          <div class="auth-input-group">
-            <label class="auth-label" for="auth-input-username">Username or Email</label>
-            <input type="text" id="auth-input-username" class="normal-auth-input" placeholder="e.g. AzerothKnight" autocomplete="username">
-          </div>
-          <div class="auth-input-group">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label class="auth-label" for="auth-input-password">Password</label>
-              <a href="javascript:void(0)" class="auth-forgot-link" onclick="alert('Password reset instructions will be sent to your email.')">Forgot?</a>
-            </div>
-            <input type="password" id="auth-input-password" class="normal-auth-input" placeholder="Enter your password" autocomplete="current-password">
-          </div>
-          <div class="auth-options-row">
-            <label class="auth-checkbox-label">
-              <input type="checkbox" id="auth-remember" checked>
-              <span>Remember me</span>
-            </label>
-          </div>
-          <button type="submit" class="normal-auth-submit-btn">
-            <span>Sign In &amp; Enter War Room</span>
-            <span>&rarr;</span>
-          </button>
-
-          <div class="auth-or-divider">
-            <span>or continue with</span>
-          </div>
-
-          <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
-            <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
-              <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
-            </svg>
-            <span>Sign in with Google</span>
-          </button>
-        </form>
-
-        <!-- Create Account Tab Form -->
-        <form id="auth-form-register" class="normal-auth-form" style="display:${portalAuthTab === 'register' ? 'flex' : 'none'};" onsubmit="handleNormalRegister(event)">
-          <div class="auth-input-group">
-            <label class="auth-label" for="reg-input-username">Username</label>
-            <input type="text" id="reg-input-username" class="normal-auth-input" placeholder="Choose a username" autocomplete="username">
-          </div>
-          <div class="auth-input-group">
-            <label class="auth-label" for="reg-input-email">Email Address</label>
-            <input type="email" id="reg-input-email" class="normal-auth-input" placeholder="name@example.com" autocomplete="email">
-          </div>
-          <div class="auth-input-group">
-            <label class="auth-label" for="reg-input-password">Password</label>
-            <input type="password" id="reg-input-password" class="normal-auth-input" placeholder="Min. 6 characters" autocomplete="new-password">
-          </div>
-          <button type="submit" class="normal-auth-submit-btn">
-            <span>Create Account &amp; Enter</span>
-            <span>&rarr;</span>
-          </button>
-
-          <div class="auth-or-divider">
-            <span>or sign up with</span>
-          </div>
-
-          <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
-            <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
-              <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
-            </svg>
-            <span>Sign up with Google</span>
-          </button>
-        </form>
-      </div>
+        <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
+          <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
+          </svg>
+          <span>Sign in with Google</span>
+        </button>
+      </form>
     `;
   }
+
+  // Left card: Registration + Guest Pass (Zero empty space)
+  const leftCardContent = `
+    <form id="auth-form-register" class="normal-auth-form" style="display:flex; flex-direction:column; gap:10px; width:100%;" onsubmit="handleNormalRegister(event)">
+      <div class="auth-input-group">
+        <label class="auth-label" for="reg-input-username">Operative Callsign (Username)</label>
+        <input type="text" id="reg-input-username" class="normal-auth-input" placeholder="Choose a username" autocomplete="username">
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label" for="reg-input-email">Email Address</label>
+        <input type="email" id="reg-input-email" class="normal-auth-input" placeholder="name@example.com" autocomplete="email">
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label" for="reg-input-password">Password</label>
+        <input type="password" id="reg-input-password" class="normal-auth-input" placeholder="Min. 6 characters" autocomplete="new-password">
+      </div>
+      <button type="submit" class="normal-auth-submit-btn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+        <span>Create Free Account &amp; Enter</span>
+        <span>&rarr;</span>
+      </button>
+
+      <div class="auth-or-divider">
+        <span>or sign up with</span>
+      </div>
+
+      <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
+        <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
+        </svg>
+        <span>Sign up with Google</span>
+      </button>
+
+      <div class="auth-or-divider" style="margin: 8px 0 4px 0;">
+        <span>or browse immediately without account</span>
+      </div>
+
+      <button type="button" class="dramatic-gate-btn guest" onclick="portalEnterAsGuest()" style="background:#0f172a; border:1px solid #334155; color:#94a3b8; padding:9px 14px; font-size:0.78rem;">
+        <span>Continue as Guest (Read-Only)</span>
+        <span>&rarr;</span>
+      </button>
+    </form>
+  `;
 
   container.innerHTML = `
     <div class="portal-container dramatic-flow">
@@ -2947,44 +3063,41 @@ function loadPortalView() {
           ` : ''}
           <button class="portal-fieldkit-pill" onclick="openAddonDossierModal()">
             <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <span>How the Addon Works &amp; Download</span>
+            <span>War Room Operational Specification &amp; Download</span>
           </button>
         </div>
       </div>
 
-      <!-- 2-Card Selection Gate -->
+      <!-- 2-Card Selection Gate (Inline With Masthead Sides) -->
       <div class="dramatic-gate-grid">
-        <!-- Card 1: Guest Recon -->
+        <!-- Card 1: New Recruits & Guest Pass -->
         <div class="dramatic-gate-card guest">
           <div>
-            <div class="gate-card-badge guest">GUEST PASS</div>
+            <div class="gate-card-badge guest">NEW RECRUITS &amp; GUEST ACCESS</div>
             <div class="gate-card-icon">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
             </div>
-            <h2 class="gate-card-title">Continue as Guest</h2>
+            <h2 class="gate-card-title">Create Free Account</h2>
             <p class="gate-card-desc">
-              Access the war room immediately without signing in. Inspect certified combat casualties, examine bounty contracts, explore the KOS gibbet, and browse cumulative realm telemetry.
+              Register your callsign to track personal kills, deaths, K/D ratios, and Classic military ranks across all your characters, or browse immediately as guest.
             </p>
           </div>
-          <button class="dramatic-gate-btn guest" onclick="portalEnterAsGuest()">
-            <span>Continue as Guest</span>
-            <span>&rarr;</span>
-          </button>
+          ${leftCardContent}
         </div>
 
-        <!-- Card 2: Account Access (Normal Sign-In / Register / Google) -->
+        <!-- Card 2: Account Access (Normal Sign-In / Google) -->
         <div class="dramatic-gate-card officer">
           <div>
             <div class="gate-card-badge officer">ACCOUNT ACCESS</div>
             <div class="gate-card-icon">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
-            <h2 class="gate-card-title">Sign In or Create Account</h2>
+            <h2 class="gate-card-title">Sign In to War Room</h2>
             <p class="gate-card-desc">
               Sign in to display your personalized combat kills, deaths, K/D ratio, and military rank atop your war room feed, issue blood bounties in gold, and claim slain marks.
             </p>
           </div>
-          ${authBoxHtml}
+          ${rightCardContent}
         </div>
       </div>
     </div>
