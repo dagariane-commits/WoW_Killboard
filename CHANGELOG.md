@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added unit monitoring for `targettarget` and `nameplate` units, capturing deaths of out-of-target enemies engaged in battle.
   - Ensured `CHAT_MSG_COMBAT_HONOR_GAIN` triggers `OnPlayerHonorableKill` even if the server chat message omits the victim's name (e.g. Battleground honor awards), falling back seamlessly to `CT.RecentEngagedEnemies`.
   - Reduced duplicate kill debounce threshold from 5.0s to 2.0s to properly capture rapid multi-kills and burst finishes.
+- **Universal `/kb` Slash Command Registration & Subcommand Dispatch (`Core.lua`)**:
+  - Registered `SLASH_WOWKILLBOARD3 = "/kb"` alongside `/killboard` and `/wowkb`. Previously, `/kb` was omitted, causing WoW's default chat parser to return `Type '/help' for a listing of a few commands.` whenever `/kb test` or `/kb testkill` was entered.
+  - Eliminated duplicate `cmd == "testkill"` handler at line 64 that shadowed the full synthetic killmail generator at line 162.
+  - Added instant chat confirmation and sound playback for `/kb test` (Kill Banner preview) and guaranteed banner popups (`isTest = true`) during synthetic combat simulations.
 - **Dynamic `/kb testkill` Slash Command Target Inspection (`Core.lua`)**:
   - Enhanced `/kb testkill [name]` to automatically inspect the current active target (`UnitExists("target")`), dynamically extracting the targeted unit's name, class, guild, faction, and level.
 - **Web War Room UI Fallback Resilience (`web/static/app.js`)**:
