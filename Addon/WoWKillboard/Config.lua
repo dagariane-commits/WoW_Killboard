@@ -10,23 +10,29 @@ local KB = WoWKillboard
 local diagFrame = CreateFrame("Frame")
 diagFrame:RegisterEvent("ADDON_ACTION_BLOCKED")
 diagFrame:RegisterEvent("ADDON_ACTION_FORBIDDEN")
-diagFrame:SetScript("OnEvent", function(self, event, addon, func)
-    WoWKillboardDB = WoWKillboardDB or {}
-    WoWKillboardDB.lastBlocked = {
-        time = date("%Y-%m-%d %H:%M:%S"),
-        addon = tostring(addon),
-        action = tostring(func),
-        event = tostring(event),
-        stack = debugstack(2, 10, 10),
-    }
-    print("|cffff0000==================================================|r")
-    print(string.format("|cffff0000[WoWKB Diagnostic] Blocked Addon:|r |cffffd100%s|r", tostring(addon)))
-    print(string.format("|cffff0000[WoWKB Diagnostic] Blocked Action:|r |cffffff00%s()|r", tostring(func)))
-    print("|cffff0000==================================================|r")
+diagFrame:SetScript("OnEvent", function(self, event, ...)
+    local argCount = select("#", ...)
+    local argStr = ""
+    for i = 1, argCount do
+        argStr = argStr .. string.format(" [Arg%d: %s]", i, tostring(select(i, ...)))
+    end
+    print(string.format("|cffff0000[WoWKB EVENT]|r |cffffd100%s|r (%d args):%s", tostring(event), argCount, argStr))
     if UIErrorsFrame and UIErrorsFrame.AddMessage then
-        UIErrorsFrame:AddMessage(string.format("[WoWKB] BLOCKED: %s()", tostring(func)), 1, 1, 0, 1, 12)
+        UIErrorsFrame:AddMessage("[WoWKB] " .. tostring(event) .. ":" .. argStr, 1, 1, 0, 1, 15)
     end
 end)
+
+-- Forensic Hook on StaticPopup_Show to catch who opened the blocked popup
+if hooksecurefunc then
+    hooksecurefunc("StaticPopup_Show", function(which, arg1, arg2)
+        if which and (which == "ADDON_ACTION_BLOCKED" or which == "ADDON_ACTION_FORBIDDEN") then
+            print(string.format("|cffff0000[WoWKB POPUP TRACE]|r which=%s | arg1=%s | arg2=%s", tostring(which), tostring(arg1), tostring(arg2)))
+            if debugstack then
+                print(string.format("|cffff7700[WoWKB CALL STACK]:|r\n%s", debugstack(2, 6, 2)))
+            end
+        end
+    end)
+end
 
 -- Purge any residual AddonCompartment registration from memory (prevents Leatrix Plus HideMiniAddonMenu collision)
 if AddonCompartmentFrame and AddonCompartmentFrame.registeredAddons then
