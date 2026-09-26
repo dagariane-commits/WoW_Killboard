@@ -2131,49 +2131,47 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #040508;
-  padding: 7px 10px;
+  background: #030407;
+  padding: 5px 8px;
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--wow-brass-border);
+  font-size: 0.76rem;
   position: relative;
   overflow: hidden;
   transition: all 0.15s ease;
 }
 
 .sidebar-rank-item:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--wow-brass-border-light);
+  background: #080b12;
   transform: translateX(2px);
 }
 
 .sidebar-rank-item.alliance {
-  background: 
-    linear-gradient(90deg, rgba(6, 12, 26, 0.92) 0%, rgba(4, 8, 18, 0.95) 50%, rgba(2, 4, 10, 0.98) 100%),
-    url('/static/images/banner_alliance_tactical.jpg') center right / cover no-repeat !important;
-  border: 1px solid rgba(37, 75, 140, 0.28) !important;
+  background: linear-gradient(90deg, rgba(8, 16, 32, 0.75) 0%, #030407 65%) !important;
+  border: 1px solid rgba(37, 75, 140, 0.35) !important;
   border-left: 3px solid var(--alliance-blue, #3b82f6) !important;
-  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .sidebar-rank-item.alliance:hover {
-  border-color: rgba(59, 130, 246, 0.5) !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
   border-left-color: #60a5fa !important;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.88), 0 0 8px rgba(59, 130, 246, 0.2) !important;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8), 0 0 8px rgba(59, 130, 246, 0.2) !important;
   transform: translateX(2px);
 }
 
 .sidebar-rank-item.horde {
-  background: 
-    linear-gradient(90deg, rgba(26, 6, 8, 0.92) 0%, rgba(16, 4, 6, 0.95) 50%, rgba(8, 2, 3, 0.98) 100%),
-    url('/static/images/banner_horde_tactical.png') center right / cover no-repeat !important;
-  border: 1px solid rgba(135, 22, 22, 0.28) !important;
+  background: linear-gradient(90deg, rgba(32, 8, 12, 0.75) 0%, #030407 65%) !important;
+  border: 1px solid rgba(135, 22, 22, 0.35) !important;
   border-left: 3px solid var(--horde-red, #dc2626) !important;
-  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .sidebar-rank-item.horde:hover {
-  border-color: rgba(220, 38, 38, 0.5) !important;
+  border-color: rgba(220, 38, 38, 0.6) !important;
   border-left-color: #f87171 !important;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.88), 0 0 8px rgba(220, 38, 38, 0.2) !important;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8), 0 0 8px rgba(220, 38, 38, 0.2) !important;
   transform: translateX(2px);
 }
 
@@ -2182,7 +2180,8 @@ body {
   font-size: 0.75rem;
   font-weight: 800;
   color: var(--accent-gold);
-  width: 20px;
+  width: 18px;
+  flex-shrink: 0;
 }
 
 .leader-item {

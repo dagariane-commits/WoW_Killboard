@@ -650,14 +650,11 @@ function renderSidebarActivity(data) {
     } else {
       zoneListEl.innerHTML = zones.map((z, i) => `
         <div class="sidebar-rank-item">
-          <div style="display:flex; align-items:center; gap:8px;">
+          <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
             <span class="rank-badge">#${i + 1}</span>
-            <div>
-              <span style="font-weight:700; color:#e2e8f0; font-size:0.8rem;">${escapeHtml(z.zone)}</span>
-              <div style="font-size:0.68rem; color:#94a3b8;">High Conflict Zone</div>
-            </div>
+            <span style="font-weight:700; color:#e2e8f0; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${escapeHtml(z.zone)}</span>
           </div>
-          <span style="color:#ef4444; font-weight:700; font-size:0.76rem;">${z.kills} kills</span>
+          <span style="color:#ef4444; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${z.kills} kills</span>
         </div>
       `).join('');
     }
@@ -672,9 +669,8 @@ function renderSidebarActivity(data) {
     } else {
       charListEl.innerHTML = chars.map((c, i) => {
         const guildPart = (c.guild && c.guild !== 'None') 
-          ? `<span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(c.guild)}')">&lt;${escapeHtml(c.guild)}&gt;</span>`
+          ? ` <span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(c.guild)}')" style="font-size:0.7rem; color:#94a3b8; font-weight:normal;">&lt;${escapeHtml(c.guild)}&gt;</span>`
           : '';
-        const specPart = c.spec ? `<span style="color:#cbd5e1; font-weight:600;">${escapeHtml(c.spec)}</span> • ` : '';
         let faction = (c.faction || "").toLowerCase();
         if (!faction && c.class) {
           const cu = c.class.toUpperCase();
@@ -684,14 +680,12 @@ function renderSidebarActivity(data) {
         const factionClass = faction === 'alliance' ? 'alliance' : (faction === 'horde' ? 'horde' : '');
         return `
           <div class="sidebar-rank-item ${factionClass}">
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
               <span class="rank-badge">#${i + 1}</span>
-              <div>
-                <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(c.name)}')">${colorizeClass(c.name, c.class)}</span>
-                <div style="font-size:0.7rem; color:#94a3b8;">${specPart}${guildPart}</div>
-              </div>
+              <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(c.name)}')" style="white-space:nowrap;">${colorizeClass(c.name, c.class)}</span>
+              ${guildPart}
             </div>
-            <span style="color:#10b981; font-weight:700; font-size:0.76rem;">${c.kills} kills</span>
+            <span style="color:#10b981; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${c.kills} kills</span>
           </div>
         `;
       }).join('');
@@ -709,13 +703,11 @@ function renderSidebarActivity(data) {
         const factionClass = (g.faction || '').toLowerCase() === 'alliance' ? 'alliance' : ((g.faction || '').toLowerCase() === 'horde' ? 'horde' : '');
         return `
           <div class="sidebar-rank-item ${factionClass}">
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
               <span class="rank-badge">#${i + 1}</span>
-              <div>
-                <span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')" style="font-weight:700;">&lt;${escapeHtml(g.guild)}&gt;</span>
-              </div>
+              <span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')" style="font-weight:700; color:var(--text-main); white-space:nowrap;">&lt;${escapeHtml(g.guild)}&gt;</span>
             </div>
-            <span style="color:var(--accent-gold); font-weight:700; font-size:0.76rem;">${g.kills} kills</span>
+            <span style="color:var(--accent-gold); font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${g.kills} kills</span>
           </div>
         `;
       }).join('');
@@ -730,11 +722,13 @@ function renderSidebarActivity(data) {
       classListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No class telemetry logged</div>`;
     } else {
       classListEl.innerHTML = classes.map(cls => {
-        const color = CLASS_COLORS[cls.class] || CLASS_COLORS.UNKNOWN;
+        const color = CLASS_COLORS[(cls.class || '').toUpperCase()] || CLASS_COLORS.UNKNOWN;
         return `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:5px 8px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
-            <span style="color:${color}; font-weight:700; display:flex; align-items:center; gap:6px;">${renderClassBadge(cls.class, 16)} ${escapeHtml(cls.class)}</span>
-            <span style="color:#e2e8f0; font-weight:700;">${cls.kills} kills</span>
+          <div class="sidebar-rank-item">
+            <span style="color:${color}; font-weight:700; display:flex; align-items:center; gap:6px;">
+              ${renderClassBadge(cls.class, 16)} ${escapeHtml(cls.class)}
+            </span>
+            <span style="color:#e2e8f0; font-weight:700; font-family:var(--font-tactical);">${cls.kills} kills</span>
           </div>
         `;
       }).join('');
@@ -749,14 +743,11 @@ function renderSidebarActivity(data) {
       specListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No specialization telemetry logged</div>`;
     } else {
       specListEl.innerHTML = specs.map(s => {
-        const color = CLASS_COLORS[s.class] || CLASS_COLORS.UNKNOWN;
+        const color = CLASS_COLORS[(s.class || '').toUpperCase()] || CLASS_COLORS.UNKNOWN;
         return `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:5px 8px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
-            <div style="display:flex; align-items:center; gap:6px;">
-              <span style="color:#f8fafc; font-weight:700;">${escapeHtml(s.spec || 'Unknown')}</span>
-              <span style="color:${color}; font-size:0.7rem; font-weight:600;">(${escapeHtml(s.class)})</span>
-            </div>
-            <span style="color:var(--accent-cyan); font-weight:700;">${s.kills} kills</span>
+          <div class="sidebar-rank-item">
+            <span style="color:${color}; font-weight:700;">${escapeHtml(s.spec || 'Unknown')}</span>
+            <span style="color:var(--accent-cyan); font-weight:700; font-family:var(--font-tactical);">${s.kills} kills</span>
           </div>
         `;
       }).join('');

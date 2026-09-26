@@ -2030,16 +2030,41 @@ def get_activity_7d():
             """).fetchall()
         top_guilds_24h = [dict(r) for r in top_guilds_rows]
 
-        # 4. Top Classes (Lifetime)
-        top_classes_rows = conn.execute("""
-            SELECT killer_class AS class, COUNT(*) AS kills
+        # 4. Top Classes (Lifetime) - All Classes for Realm
+        CLASSIC_CLASSES = ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"]
+        RETAIL_CLASSES = CLASSIC_CLASSES + ["DEATHKNIGHT", "MONK", "DEMONHUNTER", "EVOKER"]
+
+        flavor_str = "CLASSIC_ERA"
+        flavor_row = conn.execute("SELECT value FROM platform_stats WHERE key='client_flavor'").fetchone()
+        if flavor_row and flavor_row[0]:
+            try:
+                flavor_str = json.loads(flavor_row[0])
+            except Exception:
+                flavor_str = flavor_row[0]
+
+        base_classes = RETAIL_CLASSES if flavor_str == "RETAIL" else (CLASSIC_CLASSES + ["DEATHKNIGHT"] if flavor_str == "WOTLK" else CLASSIC_CLASSES)
+
+        raw_classes = conn.execute("""
+            SELECT UPPER(killer_class) AS class, COUNT(*) AS kills
             FROM kills
             WHERE killer_class IS NOT NULL AND killer_class != ''
-            GROUP BY killer_class
-            ORDER BY kills DESC
-            LIMIT 5
+            GROUP BY UPPER(killer_class)
         """).fetchall()
-        top_classes = [dict(r) for r in top_classes_rows]
+        class_dict = {r["class"]: r["kills"] for r in raw_classes}
+
+        # Include all flavor base classes, plus any logged class with recorded kills
+        all_class_keys = list(base_classes)
+        for k in class_dict.keys():
+            if k not in all_class_keys:
+                all_class_keys.append(k)
+
+        top_classes = []
+        for cls in all_class_keys:
+            top_classes.append({
+                "class": cls,
+                "kills": class_dict.get(cls, 0)
+            })
+        top_classes.sort(key=lambda x: (-x["kills"], x["class"]))
 
         # 5. Top Specs (Lifetime)
         top_specs_rows = conn.execute("""
@@ -2048,7 +2073,7 @@ def get_activity_7d():
             WHERE killer_spec IS NOT NULL AND killer_spec != '' AND killer_spec != 'Unknown'
             GROUP BY killer_spec, killer_class
             ORDER BY kills DESC
-            LIMIT 5
+            LIMIT 10
         """).fetchall()
         top_specs = [dict(r) for r in top_specs_rows]
 
