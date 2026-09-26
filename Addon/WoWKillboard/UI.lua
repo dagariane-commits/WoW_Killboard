@@ -376,20 +376,31 @@ function UI:CreateMainWindow()
     end)
     mainFrame:SetClampedToScreen(true)
 
-    -- Custom ESC key handling (100% taint-free, zero UISpecialFrames global pollution)
-    mainFrame:EnableKeyboard(true)
-    mainFrame:SetPropagateKeyboardInput(true)
+    -- Custom ESC key handling (100% taint-free, active strictly when shown)
+    mainFrame:EnableKeyboard(false)
+    mainFrame:SetScript("OnShow", function(self)
+        if self.EnableKeyboard then self:EnableKeyboard(true) end
+        if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+    end)
+    mainFrame:SetScript("OnHide", function(self)
+        if self.EnableKeyboard then self:EnableKeyboard(false) end
+        if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+    end)
     mainFrame:SetScript("OnKeyDown", function(self, key)
+        if not self:IsShown() then
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+            return
+        end
         if key == "ESCAPE" then
             if UI.DetailModal and UI.DetailModal:IsShown() then
-                self:SetPropagateKeyboardInput(false)
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
                 UI.DetailModal:Hide()
                 return
             end
-            self:SetPropagateKeyboardInput(false)
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
             self:Hide()
         else
-            self:SetPropagateKeyboardInput(true)
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
         end
     end)
 
@@ -424,7 +435,7 @@ function UI:CreateMainWindow()
     portrait:SetSize(48, 48)
     portrait:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     if SetPortraitTexture then
-        SetPortraitTexture(portrait, "player")
+        pcall(SetPortraitTexture, portrait, "player")
     end
     if not portrait:GetTexture() then
         portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
@@ -1825,15 +1836,26 @@ function UI:ShowReinforcementAlert(beaconData)
         dlg:SetBackdropColor(0.08, 0.04, 0.04, 0.98)
         dlg:SetBackdropBorderColor(1.0, 0.2, 0.2, 1.0)
 
-        -- Safe ESC key handling (100% taint-free)
-        dlg:EnableKeyboard(true)
-        dlg:SetPropagateKeyboardInput(true)
+        -- Safe ESC key handling (100% taint-free, only active when shown)
+        dlg:EnableKeyboard(false)
+        dlg:SetScript("OnShow", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(true) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
+        dlg:SetScript("OnHide", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(false) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
         dlg:SetScript("OnKeyDown", function(self, key)
+            if not self:IsShown() then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+                return
+            end
             if key == "ESCAPE" then
-                self:SetPropagateKeyboardInput(false)
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
                 self:Hide()
             else
-                self:SetPropagateKeyboardInput(true)
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
             end
         end)
 
@@ -1931,14 +1953,25 @@ function UI:ShowKOSAlert(targetName, guildOrFormer, alertType, reason)
         dlg:SetBackdropColor(0.12, 0.02, 0.02, 0.98)
         dlg:SetBackdropBorderColor(1.0, 0.0, 0.0, 1.0)
 
-        dlg:EnableKeyboard(true)
-        dlg:SetPropagateKeyboardInput(true)
+        dlg:EnableKeyboard(false)
+        dlg:SetScript("OnShow", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(true) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
+        dlg:SetScript("OnHide", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(false) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
         dlg:SetScript("OnKeyDown", function(self, key)
+            if not self:IsShown() then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+                return
+            end
             if key == "ESCAPE" then
-                self:SetPropagateKeyboardInput(false)
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
                 self:Hide()
             else
-                self:SetPropagateKeyboardInput(true)
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
             end
         end)
 
@@ -2439,16 +2472,27 @@ function UI:ShowAlertsConfig()
             self:StopMovingOrSizing()
         end)
 
-        -- ESC Key Handling
-        dlg:EnableKeyboard(true)
-        dlg:SetPropagateKeyboardInput(true)
+        -- ESC Key Handling (only active when shown)
+        dlg:EnableKeyboard(false)
+        dlg:SetScript("OnShow", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(true) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
+        dlg:SetScript("OnHide", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(false) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
         dlg:SetScript("OnKeyDown", function(self, key)
+            if not self:IsShown() then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+                return
+            end
             if key == "ESCAPE" then
                 if UI.bannerUnlocked then UI:ToggleBannerLock(false) end
-                self:SetPropagateKeyboardInput(false)
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
                 self:Hide()
             else
-                self:SetPropagateKeyboardInput(true)
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
             end
         end)
 
