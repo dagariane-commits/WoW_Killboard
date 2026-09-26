@@ -784,10 +784,12 @@ async function loadLeaderboards() {
   try {
     if (legendsTabType === "GUILDS") {
       const res = await fetch(`/api/guilds?mode=${currentMode}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       renderLeaderboardView(null, null, data.guilds || []);
     } else {
       const res = await fetch(`/api/leaderboard?mode=${currentMode}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
       // Resolve benchmark profile if benchmark player is outside top killers
@@ -817,7 +819,16 @@ async function loadLeaderboards() {
   } catch (err) {
     console.error("Failed to load leaderboards:", err);
     if (container) {
-      container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Hall of Legends: ${err.message}</div>`;
+      container.innerHTML = `
+        <div style="background: linear-gradient(180deg, #1e1313 0%, #0a0505 100%); border: 1px solid #7f1d1d; border-radius: 8px; padding: 32px 24px; text-align: center; max-width: 640px; margin: 40px auto;">
+          <div style="font-size: 2rem; margin-bottom: 12px;">⚔️</div>
+          <h2 style="color: #ef4444; font-family: var(--font-cinzel, Cinzel, serif); font-size: 1.25rem; margin-bottom: 8px;">Hall of Legends Offline</h2>
+          <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.6; margin-bottom: 16px;">
+            The server was unable to retrieve combat records (${escapeHtml(err.message)}). If you are viewing on Render Cloud, click <strong>Manual Deploy &rarr; Deploy latest commit</strong> in your Render dashboard to complete database initialization, or view your local war room at <a href="http://localhost:8080" style="color: var(--wow-gold, #c69b3a); text-decoration: underline;">http://localhost:8080</a>.
+          </p>
+          <button class="pill-btn active" onclick="loadLeaderboards()" style="padding: 8px 20px; font-size: 0.85rem;">🔄 Retry Connection</button>
+        </div>
+      `;
     }
   }
 }
@@ -849,14 +860,24 @@ async function loadBounties() {
       fetch(`/api/bounties/debt-ledger`),
       fetch(`/api/bounties/leaderboards`)
     ]);
+    if (!bntRes.ok) throw new Error(`HTTP ${bntRes.status}`);
     const bounties = await bntRes.json();
-    const debts = await debtRes.json();
-    const leaderboards = await lbRes.json();
+    const debts = debtRes.ok ? await debtRes.json() : [];
+    const leaderboards = lbRes.ok ? await lbRes.json() : {};
     renderBountiesView(bounties, debts, leaderboards);
   } catch (err) {
     console.error("Failed to load bounties:", err);
     if (container) {
-      container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load bounties: ${err.message}</div>`;
+      container.innerHTML = `
+        <div style="background: linear-gradient(180deg, #1e1313 0%, #0a0505 100%); border: 1px solid #7f1d1d; border-radius: 8px; padding: 32px 24px; text-align: center; max-width: 640px; margin: 40px auto;">
+          <div style="font-size: 2rem; margin-bottom: 12px;">📜</div>
+          <h2 style="color: #ef4444; font-family: var(--font-cinzel, Cinzel, serif); font-size: 1.25rem; margin-bottom: 8px;">Marks of Spite Offline</h2>
+          <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.6; margin-bottom: 16px;">
+            The server was unable to retrieve bounty contracts (${escapeHtml(err.message)}). If you are viewing on Render Cloud, click <strong>Manual Deploy &rarr; Deploy latest commit</strong> in your Render dashboard to complete database initialization, or view your local war room at <a href="http://localhost:8080" style="color: var(--wow-gold, #c69b3a); text-decoration: underline;">http://localhost:8080</a>.
+          </p>
+          <button class="pill-btn active" onclick="loadBounties()" style="padding: 8px 20px; font-size: 0.85rem;">🔄 Retry Connection</button>
+        </div>
+      `;
     }
   }
 }
