@@ -5,6 +5,33 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.22] - 2026-09-26
+
+### Fixed
+- **Grand Character Portrait Medallion Overhaul (`UI.lua`)**:
+  - Resized the header medallion to a bold, authentic Blizzard unit-frame scale: expanded outer medallion from 46x46 to 60x60 and inner character portrait from 36x36 to 48x48.
+  - Adjusted concentric texture coordinates (`SetTexCoord(0.12, 0.88, 0.12, 0.88)`) to eliminate square corner bleed while showcasing maximum character detail.
+  - Added a dedicated 20x20 circular dark gunmetal backing plate (`lvlFrame`) anchored at `BOTTOMRIGHT, 2, -2` with crisp gold level typography.
+  - Realignment of title (`LEFT, medallion, RIGHT, 14, 6`), stat cards (`TOPLEFT, 14, -70`), dividing rule (`-118`), navigation tabs (`-124`), filter pills (`-125`), and content inset (`-154`), expanding main frame height to 580px for zero overlap.
+- **Strict Solo Kill Certification & Friendly Proximity Guard (`CombatTracker.lua`)**:
+  - Resolved false positive solo kill awards (e.g. against `Shadowstalker` in Refuge Pointe) when nearby guards or friendly players were engaged in combat.
+  - Implemented `CT.FriendlyCluster` tracking all friendly players dealing damage or healing within the 15-second combat window.
+  - Hardened `ProcessDeath()`: an engagement is certified `isSolo = true` if and only if `#attackersList == 1`, `friendlyPartySize == 1`, and `friendlyAssists == 0`. Open-world skirmishes with nearby allies are strictly tagged as `[GANG]`.
+  - Chat honorable kill broadcasts now default to `isSolo = false` to prevent gang kills from masquerading as solo duels.
+- **Proactive Class Sniffing & Warrior Class Color Parity (`UnitScanner.lua`, `Utils.lua`, `CombatTracker.lua`)**:
+  - Resolved issue where warrior combatants (such as `Commando Joe`) appeared in plain white/grey text due to unknown class status prior to targeting.
+  - Implemented `CLASS_SPELL_SIGNATURES` across all 9 classic classes (e.g., Warrior `Heroic Strike`, `Charge`, `Mortal Strike`, `Rend`, `Overpower`, `Thunder Clap`, `Execute`).
+  - Added `US:InferClassFromSpell(guid, name, spellName)` hooked into `SPELL_DAMAGE`, `SPELL_HEAL`, and `SPELL_CAST_SUCCESS` to dynamically identify player classes from combat log casts without requiring mouseover.
+  - Added `NAME_PLATE_UNIT_ADDED` event scanner to proactively index visible nearby players into the unit cache.
+  - Overhauled `U.ColorizeByClass` to safely read `RAID_CLASS_COLORS`, strip extraneous `ff` alpha prefixes, and guarantee authentic Blizzard tan/brown (`#C79C6E`) formatting for Warriors.
+- **1v1 Duel Telemetry Surnames & Self-Healing Reconciliation (`CombatTracker.lua`, `UI.lua`)**:
+  - Upgraded player name matching in `OnDuelCompleted` with multi-word surname tolerance (`MatchesPlayer`), ensuring duel records with server surnames (e.g. `Wrastarim Moonshadow`) accurately attribute personal wins and losses.
+  - Added automatic stat reconciliation in `UI:Refresh()`: parses stored killmails in `WoWKillboardDB.kills` to restore historical duel wins, losses, and total board counts even if counters were desynchronized.
+- **Theme Deprecation & Subtitle Streamlining (`Config.lua`, `Core.lua`, `UI.lua`)**:
+  - Permanently deprecated and eradicated the redundant `"tactical"` theme. Retained strictly 2 high-contrast themes: **Classic Blizzard** (`classic`) and **ElvUI Minimalist** (`elvui`).
+  - Updated theme switcher button in header, `/wowkb theme`, and minimap right-click to toggle directly between Classic and ElvUI.
+  - Eradicated redundant theme description text ("Classic Blizzard Stone & Gold") from the main window header, setting subtitle strictly to `v1.0.0`.
+
 ## [1.4.21] - 2026-09-26
 
 ### Fixed

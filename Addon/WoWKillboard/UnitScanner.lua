@@ -181,6 +181,180 @@ function US:CheckHostileRadar(info)
 end
 
 
+-- Known class ability signature dictionary for proactive combat sniffing
+local CLASS_SPELL_SIGNATURES = {
+    -- WARRIOR
+    ["Charge"] = "WARRIOR",
+    ["Intercept"] = "WARRIOR",
+    ["Heroic Strike"] = "WARRIOR",
+    ["Mortal Strike"] = "WARRIOR",
+    ["Bloodthirst"] = "WARRIOR",
+    ["Shield Slam"] = "WARRIOR",
+    ["Overpower"] = "WARRIOR",
+    ["Rend"] = "WARRIOR",
+    ["Battle Shout"] = "WARRIOR",
+    ["Sunder Armor"] = "WARRIOR",
+    ["Thunder Clap"] = "WARRIOR",
+    ["Whirlwind"] = "WARRIOR",
+    ["Execute"] = "WARRIOR",
+    ["Shield Block"] = "WARRIOR",
+    ["Pummel"] = "WARRIOR",
+    ["Hamstring"] = "WARRIOR",
+    ["Demoralizing Shout"] = "WARRIOR",
+    ["Berserker Rage"] = "WARRIOR",
+    ["Bloodrage"] = "WARRIOR",
+    ["Sweeping Strikes"] = "WARRIOR",
+    ["Disarm"] = "WARRIOR",
+
+    -- PALADIN
+    ["Judgement"] = "PALADIN",
+    ["Holy Light"] = "PALADIN",
+    ["Flash of Light"] = "PALADIN",
+    ["Blessing of Might"] = "PALADIN",
+    ["Blessing of Protection"] = "PALADIN",
+    ["Hammer of Justice"] = "PALADIN",
+    ["Consecration"] = "PALADIN",
+    ["Seal of Righteousness"] = "PALADIN",
+    ["Seal of Command"] = "PALADIN",
+    ["Lay on Hands"] = "PALADIN",
+    ["Divine Shield"] = "PALADIN",
+    ["Exorcism"] = "PALADIN",
+    ["Hammer of Wrath"] = "PALADIN",
+    ["Cleanse"] = "PALADIN",
+
+    -- ROGUE
+    ["Sinister Strike"] = "ROGUE",
+    ["Eviscerate"] = "ROGUE",
+    ["Backstab"] = "ROGUE",
+    ["Stealth"] = "ROGUE",
+    ["Gouge"] = "ROGUE",
+    ["Kidney Shot"] = "ROGUE",
+    ["Ambush"] = "ROGUE",
+    ["Sprint"] = "ROGUE",
+    ["Vanish"] = "ROGUE",
+    ["Cheap Shot"] = "ROGUE",
+    ["Blind"] = "ROGUE",
+    ["Sap"] = "ROGUE",
+    ["Slice and Dice"] = "ROGUE",
+    ["Rupture"] = "ROGUE",
+    ["Garrote"] = "ROGUE",
+    ["Kick"] = "ROGUE",
+
+    -- HUNTER
+    ["Auto Shot"] = "HUNTER",
+    ["Aimed Shot"] = "HUNTER",
+    ["Arcane Shot"] = "HUNTER",
+    ["Multi-Shot"] = "HUNTER",
+    ["Serpent Sting"] = "HUNTER",
+    ["Hunter's Mark"] = "HUNTER",
+    ["Concussive Shot"] = "HUNTER",
+    ["Feign Death"] = "HUNTER",
+    ["Disengage"] = "HUNTER",
+    ["Raptor Strike"] = "HUNTER",
+    ["Wing Clip"] = "HUNTER",
+    ["Explosive Trap"] = "HUNTER",
+    ["Freezing Trap"] = "HUNTER",
+
+    -- MAGE
+    ["Frostbolt"] = "MAGE",
+    ["Fireball"] = "MAGE",
+    ["Arcane Missiles"] = "MAGE",
+    ["Fire Blast"] = "MAGE",
+    ["Frost Nova"] = "MAGE",
+    ["Blink"] = "MAGE",
+    ["Polymorph"] = "MAGE",
+    ["Arcane Explosion"] = "MAGE",
+    ["Blizzard"] = "MAGE",
+    ["Cone of Cold"] = "MAGE",
+    ["Pyroblast"] = "MAGE",
+    ["Scorch"] = "MAGE",
+    ["Ice Barrier"] = "MAGE",
+    ["Ice Block"] = "MAGE",
+
+    -- WARLOCK
+    ["Shadow Bolt"] = "WARLOCK",
+    ["Corruption"] = "WARLOCK",
+    ["Immolate"] = "WARLOCK",
+    ["Life Tap"] = "WARLOCK",
+    ["Curse of Agony"] = "WARLOCK",
+    ["Drain Life"] = "WARLOCK",
+    ["Fear"] = "WARLOCK",
+    ["Searing Pain"] = "WARLOCK",
+    ["Hellfire"] = "WARLOCK",
+    ["Rain of Fire"] = "WARLOCK",
+    ["Soul Fire"] = "WARLOCK",
+    ["Death Coil"] = "WARLOCK",
+    ["Shadowburn"] = "WARLOCK",
+    ["Conflagrate"] = "WARLOCK",
+
+    -- PRIEST
+    ["Smite"] = "PRIEST",
+    ["Shadow Word: Pain"] = "PRIEST",
+    ["Power Word: Shield"] = "PRIEST",
+    ["Lesser Heal"] = "PRIEST",
+    ["Heal"] = "PRIEST",
+    ["Flash Heal"] = "PRIEST",
+    ["Greater Heal"] = "PRIEST",
+    ["Renew"] = "PRIEST",
+    ["Mind Blast"] = "PRIEST",
+    ["Mind Flay"] = "PRIEST",
+    ["Psychic Scream"] = "PRIEST",
+    ["Dispel Magic"] = "PRIEST",
+    ["Holy Nova"] = "PRIEST",
+
+    -- SHAMAN
+    ["Lightning Bolt"] = "SHAMAN",
+    ["Chain Lightning"] = "SHAMAN",
+    ["Earth Shock"] = "SHAMAN",
+    ["Flame Shock"] = "SHAMAN",
+    ["Frost Shock"] = "SHAMAN",
+    ["Healing Wave"] = "SHAMAN",
+    ["Lesser Healing Wave"] = "SHAMAN",
+    ["Chain Heal"] = "SHAMAN",
+    ["Purge"] = "SHAMAN",
+    ["Ghost Wolf"] = "SHAMAN",
+
+    -- DRUID
+    ["Wrath"] = "DRUID",
+    ["Moonfire"] = "DRUID",
+    ["Rejuvenation"] = "DRUID",
+    ["Healing Touch"] = "DRUID",
+    ["Regrowth"] = "DRUID",
+    ["Entangling Roots"] = "DRUID",
+    ["Maul"] = "DRUID",
+    ["Claw"] = "DRUID",
+    ["Shred"] = "DRUID",
+    ["Rake"] = "DRUID",
+    ["Rip"] = "DRUID",
+    ["Ferocious Bite"] = "DRUID",
+    ["Swipe"] = "DRUID",
+}
+
+function US:InferClassFromSpell(guid, name, spellName)
+    if not spellName then return nil end
+    local detectedClass = CLASS_SPELL_SIGNATURES[spellName]
+    if not detectedClass then return nil end
+
+    if guid and KB.Utils.CanAccess(guid) then
+        local entry = US.Cache[guid] or { guid = guid, name = name or "Unknown", level = 0, guild = "None", faction = "Unknown" }
+        if not entry.class or entry.class == "UNKNOWN" then
+            entry.class = detectedClass
+        end
+        US.Cache[guid] = entry
+    end
+    if name and KB.Utils.CanAccess(name) then
+        local existingGUID = US.NameCache[name]
+        if existingGUID and US.Cache[existingGUID] then
+            if not US.Cache[existingGUID].class or US.Cache[existingGUID].class == "UNKNOWN" then
+                US.Cache[existingGUID].class = detectedClass
+            end
+        elseif guid then
+            US.NameCache[name] = guid
+        end
+    end
+    return detectedClass
+end
+
 -- Retrieve cached unit info by GUID or name
 function US:GetUnitInfo(guid)
     if not guid or not KB.Utils.CanAccess(guid) then return nil end
@@ -206,6 +380,10 @@ frame:SetScript("OnEvent", function(self, event, unit)
         end
     elseif event == "PLAYER_FOCUS_CHANGED" then
         US:ScanUnit("focus")
+    elseif event == "NAME_PLATE_UNIT_ADDED" then
+        if unit and not InCombatLockdown() then
+            US:ScanUnit(unit)
+        end
     elseif event == "PLAYER_ENTERING_WORLD" then
         US:ScanUnit("player")
     end
@@ -214,4 +392,5 @@ end)
 frame:RegisterEvent("PLAYER_TARGET_CHANGED")
 frame:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 frame:RegisterEvent("PLAYER_FOCUS_CHANGED")
+pcall(frame.RegisterEvent, frame, "NAME_PLATE_UNIT_ADDED")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")

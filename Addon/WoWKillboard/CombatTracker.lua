@@ -12,6 +12,7 @@ local CT = KB.CombatTracker
 -- Active combat states
 CT.RecentDamage = {}       -- keyed by victimGUID: { [attackerGUID] = { totalDamage, lastTime, class, name } }
 CT.HostileCluster = {}     -- active hostile GUIDs in proximity combat: [hostileGUID] = timestamp
+CT.FriendlyCluster = {}    -- active friendly GUIDs assisting in proximity combat: [friendlyGUID] = timestamp
 CT.SessionStats = {
     damageDone = 0,
     healingDone = 0,
@@ -87,6 +88,12 @@ function CT:PruneCombatInteractions()
             CT.HostileCluster[hostileGUID] = nil
         end
     end
+
+    for friendlyGUID, timestamp in pairs(CT.FriendlyCluster) do
+        if timestamp < cutoff then
+            CT.FriendlyCluster[friendlyGUID] = nil
+        end
+    end
 end
 
 -- Calculate hostile party/gang size from active hostile cluster
@@ -124,6 +131,12 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
         CT.HostileCluster[sourceGUID] = time()
     end
 
+    -- If source is friendly to player (or in player's faction), track in FriendlyCluster
+    local isFriendly = (sourceFlags and type(sourceFlags) == "number" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) > 0)
+    if isFriendly and isSourcePlayer and playerGUID and sourceGUID ~= playerGUID then
+        CT.FriendlyCluster[sourceGUID] = time()
+    end
+
     -- Track recent damage to victim for killmail attribution
     CT.RecentDamage[destGUID] = CT.RecentDamage[destGUID] or {}
     local vData = CT.RecentDamage[destGUID][sourceGUID] or {
@@ -142,11 +155,16 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
 end
 
 -- Record healing telemetry
-function CT:RecordHeal(sourceGUID, amount)
+function CT:RecordHeal(sourceGUID, destGUID, amount)
     if not sourceGUID or not KB.Utils.CanAccess(sourceGUID) then return end
     local playerGUID = UnitGUID("player")
-    if playerGUID and KB.Utils.CanAccess(playerGUID) and sourceGUID == playerGUID then
-        CT.SessionStats.healingDone = CT.SessionStats.healingDone + (amount or 0)
+    if playerGUID and KB.Utils.CanAccess(playerGUID) then
+        if sourceGUID == playerGUID then
+            CT.SessionStats.healingDone = CT.SessionStats.healingDone + (amount or 0)
+        elseif destGUID == playerGUID and sourceGUID ~= playerGUID then
+            -- External player healed us: record friendly assist
+            CT.FriendlyCluster[sourceGUID] = time()
+        end
     end
 end
 
@@ -346,8 +364,23 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         end
     end
 
-    local isSolo = (#attackersList == 1)
-    local friendlyPartySize = CT:GetFriendlyPartySize()
+    CT:PruneCombatInteractions()
+    local friendlyAssists = 0
+    for fGUID, fTime in pairs(CT.FriendlyCluster) do
+        if fGUID ~= playerGUID and (now - fTime) <= 15 then
+            friendlyAssists = friendlyAssists + 1
+        end
+    end
+
+    -- Strict Certified 1v1 Solo Kill criteria:
+    -- 1. Attacker list contains ONLY 1 combatant
+    -- 2. Friendly party size is strictly 1
+    -- 3. Zero active friendly assists or cluster participants in the 15-second sliding window
+    local isSolo = (#attackersList == 1) and (CT:GetFriendlyPartySize() == 1) and (friendlyAssists == 0)
+    local friendlyPartySize = math.max(CT:GetFriendlyPartySize(), #attackersList)
+    if friendlyAssists > 0 then
+        friendlyPartySize = friendlyPartySize + friendlyAssists
+    end
     local hostilePartySize = CT:GetInferredHostilePartySize()
 
     -- Extract unit scanner details for killer & victim
@@ -486,8 +519,8 @@ function CT:OnPlayerHonorableKill(victimName)
         if tInfo then victimInfo = tInfo end
     end
 
-    local friendlyPartySize = CT:GetFriendlyPartySize()
-    local isSolo = (friendlyPartySize == 1)
+    local friendlyPartySize = math.max(2, CT:GetFriendlyPartySize())
+    local isSolo = false -- Honorable kill broadcasts without combat log proof indicate group/nearby presence
     local playerGUID = UnitGUID("player")
     local playerName = UnitName("player")
     local _, pClass = UnitClass("player")
@@ -546,10 +579,22 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
 
     local now = time()
     local playerName = UnitName("player")
+    local function MatchesPlayer(name)
+        if not name or not playerName then return false end
+        local cName = name:match("^([^-]+)") or name
+        cName = cName:match("^%s*(.-)%s*$") -- trim
+        if cName:lower() == playerName:lower() then return true end
+        -- Check if first word of name matches playerName (handles RP surnames / titles)
+        local firstWord = cName:match("^([%w_]+)")
+        if firstWord and firstWord:lower() == playerName:lower() then return true end
+        -- Check if playerName is contained within cName
+        if cName:lower():find(playerName:lower(), 1, true) then return true end
+        return false
+    end
     local cleanWinner = winnerName:match("^([^-]+)") or winnerName
     local cleanLoser = loserName:match("^([^-]+)") or loserName
-    local isPlayerWinner = (cleanWinner == playerName) or (winnerName == playerName)
-    local isPlayerLoser = (cleanLoser == playerName) or (loserName == playerName)
+    local isPlayerWinner = MatchesPlayer(winnerName) or MatchesPlayer(cleanWinner)
+    local isPlayerLoser = MatchesPlayer(loserName) or MatchesPlayer(cleanLoser)
 
     -- Update W/L and Total statistics in WoWKillboardDB
     WoWKillboardDB = WoWKillboardDB or {}
@@ -573,35 +618,104 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
             killerInfo = KB.UnitScanner:ScanUnit("mouseover")
         end
     end
-    killerInfo = killerInfo or {
-        guid = isPlayerWinner and UnitGUID("player") or "DUEL_WINNER",
-        name = winnerName,
-        level = isPlayerWinner and (UnitLevel("player") or 0) or 0,
-        class = isPlayerWinner and (select(2, UnitClass("player")) or "UNKNOWN") or "UNKNOWN",
-        guild = isPlayerWinner and (GetGuildInfo("player") or "None") or "None",
-        faction = isPlayerWinner and (UnitFactionGroup("player") or "Unknown") or "Unknown",
-        partySize = 1,
-        damageDone = isPlayerWinner and CT.SessionStats.damageDone or 0,
-        healingDone = isPlayerWinner and CT.SessionStats.healingDone or 0,
-    }
 
-    local victimInfo = KB.UnitScanner:GetUnitInfoByName(loserName) or KB.UnitScanner:GetUnitInfoByName(cleanLoser)
-    if not victimInfo then
-        if UnitExists("target") and (UnitName("target") == loserName or UnitName("target") == cleanLoser) then
-            victimInfo = KB.UnitScanner:ScanUnit("target")
-        elseif UnitExists("mouseover") and (UnitName("mouseover") == loserName or UnitName("mouseover") == cleanLoser) then
-            victimInfo = KB.UnitScanner:ScanUnit("mouseover")
+    local kClass = isPlayerWinner and (select(2, UnitClass("player")) or "UNKNOWN") or (killerInfo and killerInfo.class or "UNKNOWN")
+    if kClass == "UNKNOWN" then
+        for _, victimAtts in pairs(CT.RecentDamage) do
+            for _, att in pairs(victimAtts) do
+                if att.name == winnerName or att.name == cleanWinner then
+                    if att.class and att.class ~= "UNKNOWN" then
+                        kClass = att.class
+                        break
+                    elseif att.spellName and KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
+                        local inferred = KB.UnitScanner:InferClassFromSpell(att.guid, att.name, att.spellName)
+                        if inferred then kClass = inferred; break end
+                    end
+                end
+            end
+            if kClass ~= "UNKNOWN" then break end
         end
     end
-    victimInfo = victimInfo or {
-        guid = isPlayerLoser and UnitGUID("player") or "DUEL_LOSER",
-        name = loserName,
-        level = isPlayerLoser and (UnitLevel("player") or 0) or 0,
-        class = isPlayerLoser and (select(2, UnitClass("player")) or "UNKNOWN") or "UNKNOWN",
-        guild = isPlayerLoser and (GetGuildInfo("player") or "None") or "None",
-        faction = isPlayerLoser and (UnitFactionGroup("player") or "Unknown") or "Unknown",
-        partySize = 1,
-    }
+
+    if isPlayerWinner then
+        kClass = select(2, UnitClass("player")) or "UNKNOWN"
+        killerInfo = {
+            guid = UnitGUID("player") or "PLAYER",
+            name = winnerName,
+            level = UnitLevel("player") or 0,
+            class = kClass,
+            guild = GetGuildInfo("player") or "None",
+            faction = UnitFactionGroup("player") or "Unknown",
+            partySize = 1,
+            damageDone = CT.SessionStats.damageDone or 0,
+            healingDone = CT.SessionStats.healingDone or 0,
+        }
+    else
+        killerInfo = killerInfo or {
+            guid = "DUEL_WINNER",
+            name = winnerName,
+            level = 0,
+            class = kClass,
+            guild = "None",
+            faction = "Unknown",
+            partySize = 1,
+            damageDone = 0,
+            healingDone = 0,
+        }
+        killerInfo.class = kClass
+    end
+
+    local victimInfo = nil
+    if isPlayerLoser then
+        vClass = select(2, UnitClass("player")) or "UNKNOWN"
+        victimInfo = {
+            guid = UnitGUID("player") or "PLAYER",
+            name = loserName,
+            level = UnitLevel("player") or 0,
+            class = vClass,
+            guild = GetGuildInfo("player") or "None",
+            faction = UnitFactionGroup("player") or "Unknown",
+            partySize = 1,
+        }
+    else
+        victimInfo = KB.UnitScanner:GetUnitInfoByName(loserName) or KB.UnitScanner:GetUnitInfoByName(cleanLoser)
+        if not victimInfo then
+            if UnitExists("target") and (UnitName("target") == loserName or UnitName("target") == cleanLoser) then
+                victimInfo = KB.UnitScanner:ScanUnit("target")
+            elseif UnitExists("mouseover") and (UnitName("mouseover") == loserName or UnitName("mouseover") == cleanLoser) then
+                victimInfo = KB.UnitScanner:ScanUnit("mouseover")
+            end
+        end
+
+        local vClass = victimInfo and victimInfo.class or "UNKNOWN"
+        if vClass == "UNKNOWN" then
+            for _, victimAtts in pairs(CT.RecentDamage) do
+                for _, att in pairs(victimAtts) do
+                    if att.name == loserName or att.name == cleanLoser then
+                        if att.class and att.class ~= "UNKNOWN" then
+                            vClass = att.class
+                            break
+                        elseif att.spellName and KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
+                            local inferred = KB.UnitScanner:InferClassFromSpell(att.guid, att.name, att.spellName)
+                            if inferred then vClass = inferred; break end
+                        end
+                    end
+                end
+                if vClass ~= "UNKNOWN" then break end
+            end
+        end
+
+        victimInfo = victimInfo or {
+            guid = "DUEL_LOSER",
+            name = loserName,
+            level = 0,
+            class = vClass,
+            guild = "None",
+            faction = "Unknown",
+            partySize = 1,
+        }
+        victimInfo.class = vClass
+    end
 
     local location = KB.Utils.GetPlayerLocation()
 
@@ -638,10 +752,25 @@ frame:SetScript("OnEvent", function(self, event, ...)
             CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount or 0, "Melee Swing")
         elseif subevent == "SPELL_DAMAGE" or subevent == "SPELL_PERIODIC_DAMAGE" or subevent == "RANGE_DAMAGE" then
             local spellId, spellName, _, amount = select(12, GetCombatLogPayload(...))
+            if KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
+                KB.UnitScanner:InferClassFromSpell(sourceGUID, sourceName, spellName)
+            end
             CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount or 0, spellName)
         elseif subevent == "SPELL_HEAL" or subevent == "SPELL_PERIODIC_HEAL" then
-            local _, _, _, amount = select(12, GetCombatLogPayload(...))
-            CT:RecordHeal(sourceGUID, amount or 0)
+            local spellId, spellName, _, amount = select(12, GetCombatLogPayload(...))
+            if KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
+                KB.UnitScanner:InferClassFromSpell(sourceGUID, sourceName, spellName)
+            end
+            CT:RecordHeal(sourceGUID, destGUID, amount or 0)
+        elseif subevent == "SPELL_CAST_SUCCESS" or subevent == "SPELL_AURA_APPLIED" then
+            local spellId, spellName = select(12, GetCombatLogPayload(...))
+            if KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
+                KB.UnitScanner:InferClassFromSpell(sourceGUID, sourceName, spellName)
+            end
+            local playerGUID = UnitGUID("player")
+            if playerGUID and destGUID == playerGUID and sourceGUID ~= playerGUID then
+                CT.FriendlyCluster[sourceGUID] = time()
+            end
         elseif subevent == "PARTY_KILL" then
             CT:ProcessDeath(destGUID, destName, destFlags, sourceGUID, sourceName)
         elseif subevent == "UNIT_DIED" then

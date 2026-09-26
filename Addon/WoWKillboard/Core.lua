@@ -312,11 +312,11 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         KB:PrintArmoryDossier(arg)
     elseif cmd == "theme" then
         local tArg = arg and arg:lower():match("^%s*(.-)%s*$") or ""
-        if tArg == "classic" or tArg == "elvui" or tArg == "tactical" then
+        if tArg == "classic" or tArg == "elvui" then
             if KB.UI then KB.UI:SetTheme(tArg) end
         else
-            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "tactical"
-            local nextTheme = (cur == "tactical") and "elvui" or ((cur == "elvui") and "classic" or "tactical")
+            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "classic"
+            local nextTheme = (cur == "classic") and "elvui" or "classic"
             if KB.UI then KB.UI:SetTheme(nextTheme) end
         end
     else
@@ -333,7 +333,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         print("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
         print("  |cffffd100/killboard kos [add|remove|list]|r - View or manage realm KOS Blacklist")
         print("  |cffffd100/killboard event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
-        print("  |cffffd100/killboard theme [tactical|elvui|classic]|r - Switch between Aegis Tactical, ElvUI, and Classic aesthetics")
+        print("  |cffffd100/killboard theme [classic|elvui]|r - Switch between Classic WoW and ElvUI aesthetics")
         print("  |cffffd100/killboard stats|r - Review current combat session battle statistics")
         print("  |cffffd100/killboard bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
         print("  |cffffd100/killboard reset|r - Clear local battle records")
@@ -574,8 +574,8 @@ function KB:CreateMinimapButton()
         if button == "LeftButton" then
             if KB.UI then KB.UI:Toggle() end
         elseif button == "RightButton" then
-            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "tactical"
-            local nextTheme = (cur == "tactical") and "elvui" or ((cur == "elvui") and "classic" or "tactical")
+            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "classic"
+            local nextTheme = (cur == "classic") and "elvui" or "classic"
             if KB.UI then KB.UI:SetTheme(nextTheme) end
         end
     end)

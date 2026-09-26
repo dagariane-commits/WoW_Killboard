@@ -92,11 +92,27 @@ function U.FormatTimeAgo(epoch)
     end
 end
 
--- Class colorizer
+-- Class colorizer (Guaranteed Blizzard & Custom Class Colors parity)
 function U.ColorizeByClass(text, class)
-    if not class then return text end
+    if not text then return "" end
+    if not class or class == "" then return text end
     class = string.upper(class)
-    local colorHex = KB.ClassColors[class] or "FFFFFF"
+    if class == "UNKNOWN" then
+        return string.format("|cffc7c7cf%s|r", text)
+    end
+
+    local colorHex = nil
+    if RAID_CLASS_COLORS and RAID_CLASS_COLORS[class] then
+        local c = RAID_CLASS_COLORS[class]
+        if c.colorStr then
+            colorHex = c.colorStr:gsub("^ff", ""):gsub("^FF", "")
+        elseif c.r and c.g and c.b then
+            colorHex = string.format("%02x%02x%02x", math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255))
+        end
+    end
+    if not colorHex or colorHex == "" then
+        colorHex = KB.ClassColors[class] or "C7C7CF"
+    end
     return string.format("|cff%s%s|r", colorHex, text)
 end
 
