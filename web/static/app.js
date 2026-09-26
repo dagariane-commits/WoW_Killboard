@@ -1390,10 +1390,12 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
     // Render Operative Benchmark Comparison Banner
     if (bmName) {
       const bmClass = bmMatch ? bmMatch.class : (benchmarkProfile && benchmarkProfile.character ? benchmarkProfile.character.class : 'WARRIOR');
+      const bmFaction = bmMatch ? bmMatch.faction : (benchmarkProfile && benchmarkProfile.character ? benchmarkProfile.character.faction : 'Alliance');
       const bmKills = bmMatch ? bmMatch.kills : (benchmarkProfile ? (benchmarkProfile.total_kills || 0) : 0);
       const bmSolo = bmMatch ? (bmMatch.solo_kills || 0) : (benchmarkProfile ? (benchmarkProfile.solo_kills || 0) : 0);
       const bmPct = bmMatch ? bmMatch.percentile : (benchmarkProfile && benchmarkProfile.percentile ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 });
       const pctBadge = getWowLogsPercentileBadge(bmPct);
+      const factionThemeClass = bmFaction === 'Horde' ? 'benchmark-horde' : 'benchmark-alliance';
 
       const rankDisplay = bmRank ? `#${bmRank}` : '#>15';
       let deltaDisplay = '-';
@@ -1410,7 +1412,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       }
 
       html += `
-        <div class="legends-comparison-banner">
+        <div class="legends-comparison-banner ${factionThemeClass}">
           <div style="display:flex; align-items:center; gap:12px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:1.15rem;">⚔️</span>
@@ -1595,8 +1597,8 @@ function renderSingleBountyCard(b, isSupporter) {
   if (lastSeen.hasTelemetry) {
     if (isSupporter && lastSeen.subzone) {
       lastSeenHtml = `
-        <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
-          <span style="font-weight:700;">Last Sighted:</span> ${lastSeen.zone} <span style="color:#fbbf24;">(${lastSeen.subzone})</span>
+        <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:rgba(7,9,14,0.75); padding:6px 10px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);">
+          <span style="font-weight:700;">Last Sighted:</span> ${escapeHtml(lastSeen.zone)} <span style="color:#fbbf24;">(${escapeHtml(lastSeen.subzone)})</span>
           <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">
             ~${lastSeen.minutesAgo}m ago &bull; <span style="color:#fbbf24; font-weight:700;">⭐ Subzone Intel</span>
           </div>
@@ -1604,9 +1606,9 @@ function renderSingleBountyCard(b, isSupporter) {
       `;
     } else {
       lastSeenHtml = `
-        <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:rgba(7,9,14,0.75); padding:6px 10px; border-radius:4px; border:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <span style="font-weight:700;">Last Sighted:</span> ${lastSeen.zone}
+            <span style="font-weight:700;">Last Sighted:</span> ${escapeHtml(lastSeen.zone)}
             <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">~${lastSeen.minutesAgo}m ago</div>
           </div>
           <span style="color:#64748b; font-size:0.7rem; cursor:pointer;" onclick="toggleSupporterMode()" title="Toggle Supporter Mode to unlock Subzone Recon">[Subzone Locked]</span>
@@ -1615,23 +1617,39 @@ function renderSingleBountyCard(b, isSupporter) {
     }
   } else {
     lastSeenHtml = `
-      <div style="font-size:0.72rem; color:#64748b; margin-top:8px; background:#07090e; padding:6px 10px; border-radius:4px; border:1px solid #1e293b;">
+      <div style="font-size:0.72rem; color:#64748b; margin-top:8px; background:rgba(7,9,14,0.75); padding:6px 10px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);">
         Last Sighted: <em>No recent combat logged</em>
       </div>
     `;
   }
 
+  // Determine target faction
+  const targetFaction = b.target_faction || (b.target_class === 'PALADIN' ? 'Alliance' : (b.target_class === 'SHAMAN' ? 'Horde' : 'Unknown'));
+  let factionCardClass = 'bounty-card-alliance';
+  if (targetFaction === 'Horde') factionCardClass = 'bounty-card-horde';
+  else if (targetFaction === 'Alliance') factionCardClass = 'bounty-card-alliance';
+
+  const factionBadge = targetFaction !== 'Unknown' 
+    ? `<span class="bounty-faction-pill ${targetFaction.toLowerCase()}">${targetFaction.toUpperCase()} TARGET</span>`
+    : `<span class="bounty-faction-pill neutral">WANTED TARGET</span>`;
+
   return `
-    <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.4);">
+    <div class="stat-card bounty-target-card ${factionCardClass}">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span class="clickable-player" onclick="openCharacterProfile('${b.target_name}')" style="color:var(--accent-red); font-weight:800; font-size:1.15rem;">${b.target_name}</span>
-        <span style="color:var(--accent-gold); font-weight:800; font-size:1.1rem;">${b.amount_gold || Math.floor(b.amount_copper/10000)}g</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          ${renderClassBadge(b.target_class, 22)}
+          <div>
+            <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(b.target_name)}')" style="color:#fff; font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${escapeHtml(b.target_name)}</span>
+            <div style="font-size:0.68rem; color:#cbd5e1;">Level 60 ${escapeHtml(b.target_class || 'Combatant')}</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span style="color:var(--accent-gold); font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${b.amount_gold || Math.floor((b.amount_copper || 0)/10000)}g</span>
+          <div>${factionBadge}</div>
+        </div>
       </div>
-      <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">
-        Target: <span style="color:#cbd5e1;">Level ${b.target_class || 'UNKNOWN'}</span> &bull; Placer: <strong style="color:#e2e8f0;">${b.placer_name}</strong>
-      </div>
-      <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">
-        Status: <span style="color:#10b981; font-weight:700;">${b.status}</span> ${b.hunter_name ? `(Claimed by ${b.hunter_name})` : ''}
+      <div style="font-size:0.75rem; color:#94a3b8; margin-top:8px;">
+        Contract Placer: <strong style="color:#e2e8f0;">${escapeHtml(b.placer_name)}</strong> &bull; Status: <span style="color:#10b981; font-weight:700;">${escapeHtml(b.status)}</span> ${b.hunter_name ? `(Claimed by ${escapeHtml(b.hunter_name)})` : ''}
       </div>
       ${lastSeenHtml}
     </div>
@@ -2151,8 +2169,10 @@ function buildCharacterDossierHtml(data) {
     `;
   }
 
+  const dossierHeroClass = data.faction === 'Alliance' ? 'dossier-hero-alliance' : (data.faction === 'Horde' ? 'dossier-hero-horde' : '');
+
   return `
-    <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:16px; border-radius:8px; border:1px solid #1e293b; flex-wrap:wrap; gap:12px;">
+    <div class="${dossierHeroClass}" style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:18px; border-radius:8px; border:1px solid #1e293b; flex-wrap:wrap; gap:12px;">
       <div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <div style="font-size:1.4rem; font-weight:800;">${colorizeClass(data.name, data.class)}</div>

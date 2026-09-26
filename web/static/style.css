@@ -1335,6 +1335,97 @@ body {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(212, 163, 41, 0.08);
 }
 
+.legends-comparison-banner.benchmark-alliance {
+  background: 
+    linear-gradient(90deg, rgba(12, 18, 32, 0.88) 0%, rgba(15, 23, 42, 0.92) 50%, rgba(10, 15, 26, 0.96) 100%),
+    url('/static/images/banner_alliance_tactical.jpg') center center / cover no-repeat !important;
+  border: 1px solid var(--alliance-blue, #3b82f6) !important;
+  box-shadow: inset 0 0 20px rgba(30, 58, 138, 0.35), 0 4px 16px rgba(0, 0, 0, 0.6) !important;
+}
+
+.legends-comparison-banner.benchmark-horde {
+  background: 
+    linear-gradient(90deg, rgba(28, 12, 14, 0.88) 0%, rgba(20, 10, 12, 0.92) 50%, rgba(14, 8, 10, 0.96) 100%),
+    url('/static/images/banner_horde_tactical.png') center center / cover no-repeat !important;
+  border: 1px solid var(--horde-red, #dc2626) !important;
+  box-shadow: inset 0 0 20px rgba(153, 27, 27, 0.35), 0 4px 16px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ----------------- High Command Execution List Bounty Cards ----------------- */
+.bounty-target-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bounty-target-card.bounty-card-alliance {
+  background: 
+    linear-gradient(180deg, rgba(10, 16, 28, 0.88) 0%, rgba(9, 13, 22, 0.96) 100%),
+    url('/static/images/banner_alliance_tactical.jpg') center center / cover no-repeat !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.45) !important;
+  box-shadow: inset 0 0 16px rgba(30, 58, 138, 0.3), 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+.bounty-target-card.bounty-card-alliance:hover {
+  border-color: var(--alliance-blue, #3b82f6) !important;
+  box-shadow: inset 0 0 20px rgba(30, 58, 138, 0.45), 0 0 16px rgba(59, 130, 246, 0.3) !important;
+  transform: translateY(-2px);
+}
+
+.bounty-target-card.bounty-card-horde {
+  background: 
+    linear-gradient(180deg, rgba(24, 10, 12, 0.88) 0%, rgba(14, 8, 10, 0.96) 100%),
+    url('/static/images/banner_horde_tactical.png') center center / cover no-repeat !important;
+  border: 1.5px solid rgba(220, 38, 38, 0.45) !important;
+  box-shadow: inset 0 0 16px rgba(153, 27, 27, 0.3), 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+.bounty-target-card.bounty-card-horde:hover {
+  border-color: var(--horde-red, #dc2626) !important;
+  box-shadow: inset 0 0 20px rgba(153, 27, 27, 0.45), 0 0 16px rgba(220, 38, 38, 0.3) !important;
+  transform: translateY(-2px);
+}
+
+.bounty-faction-pill {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.bounty-faction-pill.alliance {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--alliance-blue, #3b82f6);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+}
+.bounty-faction-pill.horde {
+  background: rgba(220, 38, 38, 0.2);
+  color: var(--horde-red, #dc2626);
+  border: 1px solid rgba(220, 38, 38, 0.5);
+}
+.bounty-faction-pill.neutral {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+/* ----------------- Character Profile Dossier Faction Hero ----------------- */
+.dossier-hero-alliance {
+  background: 
+    linear-gradient(90deg, rgba(10, 16, 28, 0.86) 0%, rgba(15, 24, 42, 0.90) 50%, rgba(10, 16, 28, 0.94) 100%),
+    url('/static/images/banner_alliance_tactical.jpg') center center / cover no-repeat !important;
+  border-color: rgba(59, 130, 246, 0.45) !important;
+  box-shadow: inset 0 0 20px rgba(30, 58, 138, 0.4), 0 4px 14px rgba(0, 0, 0, 0.6) !important;
+}
+
+.dossier-hero-horde {
+  background: 
+    linear-gradient(90deg, rgba(24, 10, 12, 0.86) 0%, rgba(28, 14, 18, 0.90) 50%, rgba(16, 8, 10, 0.94) 100%),
+    url('/static/images/banner_horde_tactical.png') center center / cover no-repeat !important;
+  border-color: rgba(220, 38, 38, 0.45) !important;
+  box-shadow: inset 0 0 20px rgba(153, 27, 27, 0.4), 0 4px 14px rgba(0, 0, 0, 0.6) !important;
+}
+
 .current-player-row {
   background: rgba(212, 163, 41, 0.14) !important;
   border-left: 3px solid var(--wow-gold) !important;
