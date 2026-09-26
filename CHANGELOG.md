@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced `/kb testkill [name]` to automatically inspect the current active target (`UnitExists("target")`), dynamically extracting the targeted unit's name, class, guild, faction, and level.
 - **Web War Room UI Fallback Resilience (`web/static/app.js`)**:
   - Added graceful HTTP error handling with war room retry cards for both the "Hall of Legends" and "Marks of Spite" views when cloud backends are undergoing cold boot or schema initialization.
+- **Test Database Isolation (`tests/test_pipeline.py`)**:
+  - Redirected unit test database path via `os.environ["DB_PATH"] = "tests/test_killboard.db"`, ensuring automated test teardowns never delete or mutate live combat records in `web/killboard.db`.
 - **Render Auto-Deployment Configuration (`render.yaml`)**:
   - Added `autoDeploy: true` to the Render blueprint manifest to ensure future commits trigger continuous builds automatically.
 
