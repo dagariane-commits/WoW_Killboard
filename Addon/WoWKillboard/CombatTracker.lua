@@ -22,6 +22,45 @@ CT.SessionStats = {
 
 local frame = CreateFrame("Frame")
 
+-- Canonical Blizzard Combat Log Bitmask Constants (Cross-Client Guardrail 2 Compliant)
+local COMBATLOG_OBJECT_TYPE_PLAYER = _G.COMBATLOG_OBJECT_TYPE_PLAYER or 0x00000400
+local COMBATLOG_OBJECT_CONTROL_PLAYER = _G.COMBATLOG_OBJECT_CONTROL_PLAYER or 0x00000100
+local COMBATLOG_OBJECT_REACTION_FRIENDLY = _G.COMBATLOG_OBJECT_REACTION_FRIENDLY or 0x00000010
+local COMBATLOG_OBJECT_REACTION_HOSTILE = _G.COMBATLOG_OBJECT_REACTION_HOSTILE or 0x00000040
+
+local function HasFlag(flags, mask)
+    if not flags or not mask or type(flags) ~= "number" or type(mask) ~= "number" then
+        return false
+    end
+    if bit and bit.band then
+        return bit.band(flags, mask) > 0
+    elseif bit32 and bit32.band then
+        return bit32.band(flags, mask) > 0
+    end
+    return false
+end
+
+local function IsPlayerUnit(guid, flags, name)
+    if guid and type(guid) == "string" and guid:match("^Player%-") then
+        return true
+    end
+    if flags and (HasFlag(flags, COMBATLOG_OBJECT_TYPE_PLAYER) or HasFlag(flags, COMBATLOG_OBJECT_CONTROL_PLAYER)) then
+        return true
+    end
+    if guid and KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(guid) then
+        return true
+    end
+    if name and KB.UnitScanner and KB.UnitScanner.GetUnitInfoByName and KB.UnitScanner:GetUnitInfoByName(name) then
+        return true
+    end
+    local pGUID = UnitGUID("player")
+    if guid and pGUID and guid == pGUID then return true end
+    if guid and UnitExists("target") and UnitGUID("target") == guid and UnitIsPlayer("target") then return true end
+    if name and UnitExists("target") and UnitName("target") == name and UnitIsPlayer("target") then return true end
+    if guid and UnitExists("mouseover") and UnitGUID("mouseover") == guid and UnitIsPlayer("mouseover") then return true end
+    return false
+end
+
 -- Cross-Client Dynamic Combat Log Feature Detection (Guardrail 2 Compliant)
 -- Supports WoW Forever Beta (_classic_beta_), Classic Era (_classic_era_), Anniversary (_anniversary_), and Modern Retail (_retail_)
 local hasCombatLogAPI = (type(CombatLogGetCurrentEventInfo) == "function")
@@ -110,10 +149,8 @@ end
 function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount, spellName)
     if not KB.Utils.CanAccess(sourceGUID) or not KB.Utils.CanAccess(destGUID) then return end
 
-    local isSourcePlayer = (sourceGUID and sourceGUID:match("^Player%-") ~= nil) or
-        (sourceFlags and KB.Utils.CanAccess(sourceFlags) and type(sourceFlags) == "number" and bit.band(sourceFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0)
-    local isDestPlayer = (destGUID and destGUID:match("^Player%-") ~= nil) or
-        (destFlags and KB.Utils.CanAccess(destFlags) and type(destFlags) == "number" and bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0)
+    local isSourcePlayer = IsPlayerUnit(sourceGUID, sourceFlags, sourceName)
+    local isDestPlayer = IsPlayerUnit(destGUID, destFlags, destName)
 
     if not isDestPlayer then return end
 
@@ -126,13 +163,13 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
     end
 
     -- If source is hostile to player, add to HostileCluster
-    local isHostile = (sourceFlags and type(sourceFlags) == "number" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) > 0)
+    local isHostile = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE)
     if isHostile and isSourcePlayer then
         CT.HostileCluster[sourceGUID] = time()
     end
 
     -- If source is friendly to player (or in player's faction), track in FriendlyCluster
-    local isFriendly = (sourceFlags and type(sourceFlags) == "number" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) > 0)
+    local isFriendly = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY)
     if isFriendly and isSourcePlayer and playerGUID and sourceGUID ~= playerGUID then
         CT.FriendlyCluster[sourceGUID] = time()
     end
@@ -171,8 +208,7 @@ end
 -- Process death event
 function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killerName)
     if not victimGUID or not KB.Utils.CanAccess(victimGUID) then return end
-    local isDestPlayer = (victimGUID and victimGUID:match("^Player%-") ~= nil) or
-        (victimFlags and KB.Utils.CanAccess(victimFlags) and type(victimFlags) == "number" and bit.band(victimFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0)
+    local isDestPlayer = IsPlayerUnit(victimGUID, victimFlags, victimName)
     if not isDestPlayer then return end
 
     local playerGUID = UnitGUID("player")
@@ -287,6 +323,32 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             faction = attFaction,
             isPlayer = isFinalPlayer,
         })
+    end
+
+    -- Fallback: If no recorded attackers in RecentDamage, check active target / player attribution
+    if #attackersList == 0 then
+        local pGUID = UnitGUID("player")
+        local isTargetVictim = (UnitExists("target") and (UnitGUID("target") == victimGUID or UnitName("target") == victimName)) or
+                               (activeEnemyTarget and (activeEnemyTarget.guid == victimGUID or activeEnemyTarget.name == victimName))
+        if isTargetVictim and pGUID then
+            finalBlowKillerGUID = pGUID
+            finalBlowKillerName = UnitName("player")
+            local _, pClass = UnitClass("player")
+            local pGuild = GetGuildInfo("player")
+            local pFaction = UnitFactionGroup("player")
+            table.insert(attackersList, {
+                guid = pGUID,
+                name = finalBlowKillerName or "Player",
+                damage = CT.SessionStats.damageDone or 0,
+                spell = "Killing Blow",
+                class = pClass or "UNKNOWN",
+                level = UnitLevel("player") or 0,
+                guild = pGuild or "None",
+                faction = pFaction or "Unknown",
+                isPlayer = true,
+            })
+            hasPlayerAttacker = true
+        end
     end
 
     -- Only proceed if there was at least one attacker
@@ -474,6 +536,9 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         location = location,
     })
 
+    CT.LastKillVictim = victimInfo.name
+    CT.LastKillTime = now
+
     -- Clean up victim recent damage
     CT.RecentDamage[victimGUID] = nil
 end
@@ -481,12 +546,16 @@ end
 -- Helper to parse victim name from CHAT_MSG_COMBAT_HONOR_GAIN
 local function ExtractVictimFromHonorMsg(msg)
     if not msg or not KB.Utils.CanAccess(msg) or type(msg) ~= "string" then return nil end
-    local victim = msg:match("^(%S+)%s+dies")
+    local clean = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1"):gsub("[%.,!%?:;]", "")
+    local victim = clean:match("^(.-)%s+dies")
     if not victim then
-        victim = msg:match("death of (%S+)")
+        victim = clean:match("death of%s+(%S+)")
+    end
+    if not victim then
+        victim = clean:match("Honorable Kill:%s*(%S+)")
     end
     if victim then
-        victim = victim:gsub("[%.,!%?:;]", "")
+        victim = victim:match("^%s*(.-)%s*$") -- trim
         if KB.Utils.CanAccess(victim) and victim ~= "" then
             return victim
         end
@@ -498,7 +567,7 @@ end
 function CT:OnPlayerHonorableKill(victimName)
     if not victimName or not KB.Utils.CanAccess(victimName) then return end
     local now = time()
-    if CT.LastKillVictim == victimName and (now - (CT.LastKillTime or 0)) < 3 then
+    if CT.LastKillVictim and (CT.LastKillVictim:lower() == victimName:lower()) and (now - (CT.LastKillTime or 0)) < 5 then
         return
     end
     CT.LastKillVictim = victimName
@@ -747,6 +816,15 @@ frame:SetScript("OnEvent", function(self, event, ...)
     if event == "COMBAT_LOG_EVENT_UNFILTERED" then
         local timestamp, subevent, _, sourceGUID, sourceName, sourceFlags, _, destGUID, destName, destFlags, _ = GetCombatLogPayload(...)
 
+        local playerGUID = UnitGUID("player")
+        if sourceGUID and playerGUID and sourceGUID ~= playerGUID and IsPlayerUnit(sourceGUID, sourceFlags, sourceName) then
+            if HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) then
+                CT.FriendlyCluster[sourceGUID] = time()
+            elseif HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) then
+                CT.HostileCluster[sourceGUID] = time()
+            end
+        end
+
         if subevent == "SWING_DAMAGE" then
             local amount = select(12, GetCombatLogPayload(...))
             CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount or 0, "Melee Swing")
@@ -846,15 +924,14 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 guild = GetGuildInfo("target") or (tInfo and tInfo.guild or "None"),
                 faction = UnitFactionGroup("target") or (tInfo and tInfo.faction or "Unknown"),
             }
-        else
-            activeEnemyTarget = nil
         end
 
     elseif event == "UNIT_HEALTH" then
         local unit = ...
-        if unit == "target" and activeEnemyTarget and (UnitIsDead("target") or UnitIsDeadOrGhost("target")) then
-            if activeEnemyTarget.name then
-                CT:OnPlayerHonorableKill(activeEnemyTarget.name)
+        if unit == "target" and (UnitIsDead("target") or UnitIsDeadOrGhost("target")) then
+            local deadName = (activeEnemyTarget and activeEnemyTarget.name) or (UnitExists("target") and UnitIsPlayer("target") and UnitName("target"))
+            if deadName then
+                CT:OnPlayerHonorableKill(deadName)
             end
         end
 

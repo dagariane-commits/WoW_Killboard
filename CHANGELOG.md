@@ -5,6 +5,28 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.24] - 2026-09-26
+
+### Fixed
+- **Open-World PvP Combat Log Crash & Nil Bitmask Error Fix (`CombatTracker.lua`)**:
+  - Resolved fatal Lua error `bad argument #2 to 'band' (number expected, got nil)` that occurred in `RecordDamage()` when evaluating `bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE)` in WoW Forever Beta / Classic client environments where `COMBATLOG_OBJECT_REACTION_HOSTILE` was undefined in FrameXML globals.
+  - Implemented local bitmask constants and type-safe `HasFlag(flags, mask)` supporting both `bit` and `bit32` across all WoW client flavors without relying on external FrameXML globals.
+  - Upgraded `IsPlayerUnit(guid, flags, name)` with multi-heuristic resolution (Player GUID match, player/control bitmasks, unit cache, active target, and mouseover tokens).
+  - Ensured `CT.RecentDamage` is reliably populated on every combat swing or spell hit, preventing missing attacker records.
+- **Player Death Kill Dropping & Zero-Attacker Target Fallback (`CombatTracker.lua`)**:
+  - Resolved issue where open-world kills were silently dropped by `ProcessDeath()` on `UNIT_DIED` when `RecentDamage` was empty.
+  - Added robust target fallback: if `#attackersList == 0` upon enemy death, the engine checks whether the victim was the player's active target or recent enemy target (`UnitGUID("target")`, `UnitName("target")`, or `activeEnemyTarget`), seamlessly attributing the killing blow to the player.
+  - Added bidirectional kill deduplication (`CT.LastKillVictim` and `CT.LastKillTime` with a 5-second sliding window) between combat log death events and honor chat announcements.
+- **Honor Chat Message Color Stripping & Multi-Word Parsing (`CombatTracker.lua`)**:
+  - Overhauled `ExtractVictimFromHonorMsg()` to strip Blizzard UI color codes (`|c...`, `|r`) and hyperlink formatting before matching.
+  - Added comprehensive pattern support for `"Victim dies..."`, `"death of Victim..."`, and `"Honorable Kill: Victim..."` with whitespace trimming.
+- **Proximity Friendly Temporal Clustering Parity (`CombatTracker.lua`)**:
+  - Added proactive friendly combatant tracking in `COMBAT_LOG_EVENT_UNFILTERED`: any friendly player performing a combat action in proximity is added to `FriendlyCluster`.
+  - Guarantees certified 1v1 solo kills are strictly awarded when the player is truly alone, marking multi-combatant open-world skirmishes as `[GANG]`.
+- **Top Header Duel & Battleground Stat Card Visibility (`UI.lua`)**:
+  - Resolved bug where the `1v1 DUELS RECORD` and `BATTLEGROUNDS RECORD` header stat cards showed `"No duels recorded"` even when duels or battleground matches were logged on the board by other players.
+  - Cards now display accurate logged counts (`0W - 0L (You) • X Logged`) when spectated or witnessed matches are present.
+
 ## [1.4.23] - 2026-09-26
 
 ### Fixed
