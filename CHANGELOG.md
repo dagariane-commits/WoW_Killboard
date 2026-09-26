@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.9] - 2026-09-25
 
 ### Changed
+- **Dark Alliance & Horde Full-Row Banner Backdrops**:
+  - Implemented full-width atmospheric banner backdrops across the entire killmail row for both factions: dark royal blue gradient (`rgba(29, 78, 216, 0.24)` to `rgba(9, 13, 22, 0.98)`) for Alliance victories and dark crimson gradient (`rgba(185, 28, 28, 0.24)` to `rgba(14, 10, 12, 0.98)`) for Horde victories.
+  - Added high-contrast borders and interactive hover glows while preserving clear text readability, guild tags, and class color hierarchy.
+- **Hall of Legends Operative Benchmark Comparison**:
+  - Added live Operative Benchmark Comparison banner above the Player Ranks table.
+  - Automatically benchmarks the signed-in player's standing (or guest user via quick callsign benchmark input) directly against the realm's top killers: current rank, total kills, solo kills, kill delta relative to #1 apex leader, and Warcraft Logs percentile standing.
+  - Highlights the operative's row with an illuminated gold border and `[YOU]` badge in the rankings table, or appends a pinned benchmark standing row if outside the top 15.
+- **Intel Tactical Sidebar 24-Hour Telemetry Overhaul**:
+  - Transitioned combat telemetry cards to high-urgency 24-hour windows:
+    - **Deadliest Zones (Last 24 Hours)**: Ranks top 5 active conflict zones by 24h kill count.
+    - **Top Active Gankers (Last 24 Hours)**: Displays top 5 assassins with class badge, specialization, guild, and kill count.
+    - **Top Active Guilds (Last 24 Hours)**: Displays top 5 guilds with faction coloring and kill volume.
+    - **Top Classes & Specializations (Lifetime)**: Real-time class breakdown and talent specialization distributions (Arms Warrior, Subtlety Rogue, Marksmanship Hunter, Frost Mage, etc.).
+- **Lifetime Combat Activity Card**:
+  - Renamed 7-day activity card to **Lifetime Combat Activity**, reporting all-time realm kills, Alliance kills, Horde kills, active characters, and active guilds.
+  - Removed deprecated active conflict zones row from the activity card.
+- **Redundant Sidebar Player Armory Card Purge**:
+  - Completely purged the sidebar Player Armory card to eliminate redundancy with the primary Armory navigation tab and character dossier modals, streamlining the tactical sidebar column.
 - **Landing Portal Card Rebalancing & Side Alignment**:
   - Aligned `.dramatic-gate-grid` max-width (`1060px`) to match `.portal-hero.dramatic-hero`, ensuring left and right containers are inline with each other on the sides.
   - Rebalanced landing page cards: moved Create Free Account registration form into the left card alongside a clean Guest Pass entry button, eliminating vertical emptiness and balancing height with the Sign In card.

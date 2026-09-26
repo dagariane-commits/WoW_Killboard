@@ -616,7 +616,9 @@ async function loadSidebar() {
 }
 
 function renderSidebarActivity(data) {
-  // 1. Current Activity Table Numbers
+  if (!data) return;
+
+  // 1. Lifetime Combat Activity Table Numbers
   const charsEl = document.getElementById("act-7d-chars");
   if (charsEl) charsEl.innerText = formatNumber(data.characters || 0);
 
@@ -632,26 +634,47 @@ function renderSidebarActivity(data) {
   const hordeEl = document.getElementById("act-7d-horde");
   if (hordeEl) hordeEl.innerText = formatNumber(data.hordeKills || 0);
 
-  const zonesEl = document.getElementById("act-7d-zones");
-  if (zonesEl) zonesEl.innerText = formatNumber(data.zones || 0);
-
-  // 2. Top Characters (7 Days)
-  const charListEl = document.getElementById("sidebar-7d-characters");
-  if (charListEl) {
-    if (!data.topCharacters || data.topCharacters.length === 0) {
-      charListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No character kills logged in last 7 days</div>`;
+  // 2. Deadliest Zones (Last 24 Hours)
+  const zoneListEl = document.getElementById("sidebar-24h-zones") || document.getElementById("sidebar-7d-zones-list");
+  if (zoneListEl) {
+    const zones = data.deadliestZones24h || data.topZones || [];
+    if (zones.length === 0) {
+      zoneListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No conflict zones logged in last 24h</div>`;
     } else {
-      charListEl.innerHTML = data.topCharacters.map((c, i) => {
+      zoneListEl.innerHTML = zones.map((z, i) => `
+        <div class="sidebar-rank-item">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="rank-badge">#${i + 1}</span>
+            <div>
+              <span style="font-weight:700; color:#e2e8f0; font-size:0.8rem;">${escapeHtml(z.zone)}</span>
+              <div style="font-size:0.68rem; color:#94a3b8;">High Conflict Zone</div>
+            </div>
+          </div>
+          <span style="color:#ef4444; font-weight:700; font-size:0.76rem;">${z.kills} kills</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  // 3. Top Active Gankers (Last 24 Hours)
+  const charListEl = document.getElementById("sidebar-24h-characters") || document.getElementById("sidebar-7d-characters");
+  if (charListEl) {
+    const chars = data.topGankers24h || data.topCharacters || [];
+    if (chars.length === 0) {
+      charListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No character kills logged in last 24h</div>`;
+    } else {
+      charListEl.innerHTML = chars.map((c, i) => {
         const guildPart = (c.guild && c.guild !== 'None') 
-          ? `<span class="clickable-guild" onclick="openGuildProfile('${c.guild}')">&lt;${c.guild}&gt;</span>`
+          ? `<span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(c.guild)}')">&lt;${escapeHtml(c.guild)}&gt;</span>`
           : '';
+        const specPart = c.spec ? `<span style="color:#cbd5e1; font-weight:600;">${escapeHtml(c.spec)}</span> • ` : '';
         return `
           <div class="sidebar-rank-item">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="rank-badge">#${i + 1}</span>
               <div>
-                <span class="clickable-player" onclick="openCharacterProfile('${c.name}')">${colorizeClass(c.name, c.class)}</span>
-                <div style="font-size:0.7rem; color:#94a3b8;">${guildPart}</div>
+                <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(c.name)}')">${colorizeClass(c.name, c.class)}</span>
+                <div style="font-size:0.7rem; color:#94a3b8;">${specPart}${guildPart}</div>
               </div>
             </div>
             <span style="color:#10b981; font-weight:700; font-size:0.76rem;">${c.kills} kills</span>
@@ -661,21 +684,22 @@ function renderSidebarActivity(data) {
     }
   }
 
-  // 3. Top Guilds (7 Days)
-  const guildListEl = document.getElementById("sidebar-7d-guilds");
+  // 4. Top Active Guilds (Last 24 Hours)
+  const guildListEl = document.getElementById("sidebar-24h-guilds") || document.getElementById("sidebar-7d-guilds");
   if (guildListEl) {
-    if (!data.topGuilds || data.topGuilds.length === 0) {
-      guildListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No active guild combat in last 7 days</div>`;
+    const guilds = data.topGuilds24h || data.topGuilds || [];
+    if (guilds.length === 0) {
+      guildListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No active guild combat in last 24h</div>`;
     } else {
-      guildListEl.innerHTML = data.topGuilds.map((g, i) => {
+      guildListEl.innerHTML = guilds.map((g, i) => {
         const factionColor = g.faction === 'Alliance' ? 'var(--alliance-blue)' : (g.faction === 'Horde' ? 'var(--horde-red)' : '#94a3b8');
         return `
           <div class="sidebar-rank-item">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="rank-badge">#${i + 1}</span>
               <div>
-                <span class="clickable-guild" onclick="openGuildProfile('${g.guild}')" style="font-weight:700;">&lt;${g.guild}&gt;</span>
-                <div style="font-size:0.68rem; color:${factionColor};">${g.faction || 'Neutral'}</div>
+                <span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')" style="font-weight:700;">&lt;${escapeHtml(g.guild)}&gt;</span>
+                <div style="font-size:0.68rem; color:${factionColor};">${escapeHtml(g.faction || 'Neutral')}</div>
               </div>
             </div>
             <span style="color:var(--accent-gold); font-weight:700; font-size:0.76rem;">${g.kills} kills</span>
@@ -685,17 +709,18 @@ function renderSidebarActivity(data) {
     }
   }
 
-  // 4. Top Classes (7 Days)
-  const classListEl = document.getElementById("sidebar-7d-classes");
+  // 5. Top Classes (Lifetime)
+  const classListEl = document.getElementById("sidebar-top-classes") || document.getElementById("sidebar-7d-classes");
   if (classListEl) {
-    if (!data.topClasses || data.topClasses.length === 0) {
+    const classes = data.topClasses || [];
+    if (classes.length === 0) {
       classListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No class telemetry logged</div>`;
     } else {
-      classListEl.innerHTML = data.topClasses.map(cls => {
+      classListEl.innerHTML = classes.map(cls => {
         const color = CLASS_COLORS[cls.class] || CLASS_COLORS.UNKNOWN;
         return `
           <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:5px 8px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
-            <span style="color:${color}; font-weight:700;">${cls.class}</span>
+            <span style="color:${color}; font-weight:700; display:flex; align-items:center; gap:6px;">${renderClassBadge(cls.class, 16)} ${escapeHtml(cls.class)}</span>
             <span style="color:#e2e8f0; font-weight:700;">${cls.kills} kills</span>
           </div>
         `;
@@ -703,23 +728,46 @@ function renderSidebarActivity(data) {
     }
   }
 
-  // 5. Top Zones (7 Days)
-  const zoneListEl = document.getElementById("sidebar-7d-zones-list");
-  if (zoneListEl) {
-    if (!data.topZones || data.topZones.length === 0) {
-      zoneListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No conflict zones logged</div>`;
+  // 6. Top Specializations (Lifetime)
+  const specListEl = document.getElementById("sidebar-top-specs");
+  if (specListEl) {
+    const specs = data.topSpecs || [];
+    if (specs.length === 0) {
+      specListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No specialization telemetry logged</div>`;
     } else {
-      zoneListEl.innerHTML = data.topZones.map(z => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:5px 8px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
-          <span style="color:#e2e8f0;">${z.zone}</span>
-          <span style="color:#ef4444; font-weight:700;">${z.kills} kills</span>
-        </div>
-      `).join('');
+      specListEl.innerHTML = specs.map(s => {
+        const color = CLASS_COLORS[s.class] || CLASS_COLORS.UNKNOWN;
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:5px 8px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="color:#f8fafc; font-weight:700;">${escapeHtml(s.spec || 'Unknown')}</span>
+              <span style="color:${color}; font-size:0.7rem; font-weight:600;">(${escapeHtml(s.class)})</span>
+            </div>
+            <span style="color:var(--accent-cyan); font-weight:700;">${s.kills} kills</span>
+          </div>
+        `;
+      }).join('');
     }
   }
 }
 
 let legendsTabType = "PLAYERS"; // "PLAYERS" or "GUILDS"
+let benchmarkPlayerCache = {};
+
+function getBenchmarkPlayerName() {
+  return sessionStorage.getItem("wowkb_benchmark_player") || 
+         localStorage.getItem("wowkb_account_username") || 
+         localStorage.getItem("wowkb_user_character") || "";
+}
+
+function setBenchmarkPlayer(name) {
+  if (name && name.trim()) {
+    sessionStorage.setItem("wowkb_benchmark_player", name.trim());
+  } else {
+    sessionStorage.removeItem("wowkb_benchmark_player");
+  }
+  loadLeaderboards();
+}
 
 async function loadLeaderboards() {
   const container = document.getElementById("main-content-area");
@@ -731,7 +779,30 @@ async function loadLeaderboards() {
     } else {
       const res = await fetch(`/api/leaderboard?mode=${currentMode}`);
       const data = await res.json();
-      renderLeaderboardView(data, null, null);
+
+      // Resolve benchmark profile if benchmark player is outside top killers
+      const bmName = getBenchmarkPlayerName();
+      let benchmarkProfile = null;
+      if (bmName && data && data.topKillers) {
+        const inTop = data.topKillers.find(p => p.name.toLowerCase() === bmName.toLowerCase());
+        if (!inTop) {
+          try {
+            if (benchmarkPlayerCache[bmName.toLowerCase()]) {
+              benchmarkProfile = benchmarkPlayerCache[bmName.toLowerCase()];
+            } else {
+              const charRes = await fetch(`/api/character/${encodeURIComponent(bmName)}`);
+              if (charRes.ok) {
+                benchmarkProfile = await charRes.json();
+                benchmarkPlayerCache[bmName.toLowerCase()] = benchmarkProfile;
+              }
+            }
+          } catch (e) {
+            console.warn("Could not fetch benchmark profile:", e);
+          }
+        }
+      }
+
+      renderLeaderboardView(data, null, null, benchmarkProfile);
     }
   } catch (err) {
     console.error("Failed to load leaderboards:", err);
@@ -1029,10 +1100,17 @@ function feedShowMoreKills() {
 }
 
 function getWowLogsPercentileBadge(pct) {
-  if (!pct || typeof pct.percentile === 'undefined') {
+  if (pct === null || pct === undefined) {
     return `<span style="color:#64748b; font-size:0.75rem;">-</span>`;
   }
-  const p = pct.percentile;
+  let p = typeof pct === 'number' ? pct : pct.percentile;
+  if (typeof p !== 'number') {
+    return `<span style="color:#64748b; font-size:0.75rem;">-</span>`;
+  }
+  let topPct = (typeof pct === 'object' && typeof pct.topPct !== 'undefined') ? pct.topPct : Math.max(1, 100 - p);
+  let cohortLabel = (typeof pct === 'object' && pct.cohortLabel) ? pct.cohortLabel : 'Cohort';
+  let totalInCohort = (typeof pct === 'object' && pct.totalInCohort) ? pct.totalInCohort : 0;
+
   let color = "#9d9d9d";      // 0-24 Grey (Common)
   let bg = "rgba(157, 157, 157, 0.12)";
   let border = "rgba(157, 157, 157, 0.3)";
@@ -1063,10 +1141,10 @@ function getWowLogsPercentileBadge(pct) {
     border = "rgba(30, 255, 0, 0.5)";
   }
   
-  const title = escapeHtml(`${pct.cohortLabel || 'Cohort'} (${pct.totalInCohort || 0} combatants)`);
+  const title = escapeHtml(`${cohortLabel} (${totalInCohort} combatants)`);
   return `
     <span class="wowlogs-percentile-pill" title="${title}" style="color:${color}; background:${bg}; border:1px solid ${border};">
-      <span>Top ${pct.topPct}%</span>
+      <span>Top ${topPct}%</span>
       <span style="opacity:0.85; font-size:0.68rem;">(${p}th)</span>
     </span>
   `;
@@ -1205,7 +1283,7 @@ function renderFeed(kills) {
   container.innerHTML = html;
 }
 
-function renderLeaderboardView(data, bgData, guildsData) {
+function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
   const container = document.getElementById("main-content-area");
   if (!container) return;
 
@@ -1267,14 +1345,14 @@ function renderLeaderboardView(data, bgData, guildsData) {
     } else {
       guilds.forEach((g, idx) => {
         const topMemberHtml = g.topMember 
-          ? `<span class="clickable-player" onclick="openCharacterProfile('${g.topMember.name}')">${colorizeClass(g.topMember.name, g.topMember.class)}</span> <small style="color:#10b981;">(${g.topMember.kills}k)</small>`
+          ? `<span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(g.topMember.name)}')">${colorizeClass(g.topMember.name, g.topMember.class)}</span> <small style="color:#10b981;">(${g.topMember.kills}k)</small>`
           : '-';
 
         html += `
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
             <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
-            <td><span class="clickable-guild" onclick="openGuildProfile('${g.guild}')">&lt;${g.guild}&gt;</span></td>
-            <td style="color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${g.faction || 'Neutral'}</td>
+            <td><span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')">&lt;${escapeHtml(g.guild)}&gt;</span></td>
+            <td style="color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${escapeHtml(g.faction || 'Neutral')}</td>
             <td style="color: #e2e8f0;">${g.members_count || 1}</td>
             <td style="color: #10b981; font-weight: 700;">${g.kills}</td>
             <td style="color: #ef4444; font-weight: 700;">${g.deaths || 0}</td>
@@ -1290,6 +1368,106 @@ function renderLeaderboardView(data, bgData, guildsData) {
       </div>
     `;
   } else {
+    const killers = (data && data.topKillers) ? data.topKillers : [];
+    const topRank1 = killers.length > 0 ? killers[0] : null;
+    const bmName = getBenchmarkPlayerName();
+
+    let bmMatch = null;
+    let bmRank = null;
+    if (bmName && killers.length > 0) {
+      const foundIdx = killers.findIndex(p => p.name.toLowerCase() === bmName.toLowerCase());
+      if (foundIdx !== -1) {
+        bmMatch = killers[foundIdx];
+        bmRank = foundIdx + 1;
+      }
+    }
+
+    const isAccountUser = Boolean(
+      (localStorage.getItem("wowkb_account_username") && localStorage.getItem("wowkb_account_username").toLowerCase() === (bmName || '').toLowerCase()) ||
+      (localStorage.getItem("wowkb_user_character") && localStorage.getItem("wowkb_user_character").toLowerCase() === (bmName || '').toLowerCase())
+    );
+
+    // Render Operative Benchmark Comparison Banner
+    if (bmName) {
+      const bmClass = bmMatch ? bmMatch.class : (benchmarkProfile && benchmarkProfile.character ? benchmarkProfile.character.class : 'WARRIOR');
+      const bmKills = bmMatch ? bmMatch.kills : (benchmarkProfile ? (benchmarkProfile.total_kills || 0) : 0);
+      const bmSolo = bmMatch ? (bmMatch.solo_kills || 0) : (benchmarkProfile ? (benchmarkProfile.solo_kills || 0) : 0);
+      const bmPct = bmMatch ? bmMatch.percentile : (benchmarkProfile && benchmarkProfile.percentile ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 });
+      const pctBadge = getWowLogsPercentileBadge(bmPct);
+
+      const rankDisplay = bmRank ? `#${bmRank}` : '#>15';
+      let deltaDisplay = '-';
+      let deltaColor = '#94a3b8';
+      if (topRank1) {
+        if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
+          deltaDisplay = '⭐ #1 Apex Leader';
+          deltaColor = 'var(--accent-gold)';
+        } else {
+          const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
+          deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
+          deltaColor = '#ef4444';
+        }
+      }
+
+      html += `
+        <div class="legends-comparison-banner">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.15rem;">⚔️</span>
+              <div>
+                <div style="font-size:0.68rem; color:var(--wow-gold, #f59e0b); font-weight:800; letter-spacing:0.5px;">OPERATIVE BENCHMARK COMPARISON</div>
+                <div style="font-size:0.95rem; font-weight:700;">
+                  <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(bmName)}')">${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}</span>
+                  <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div>
+              <div style="font-size:0.68rem; color:#94a3b8;">RANK</div>
+              <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem; color:#94a3b8;">KILLS</div>
+              <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmKills}</div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem; color:#94a3b8;">SOLO</div>
+              <div style="font-size:0.9rem; font-weight:800; color:#00e5ff;">${bmSolo}</div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem; color:#94a3b8;">DELTA VS #1</div>
+              <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem; color:#94a3b8;">PERCENTILE</div>
+              <div>${pctBadge}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <input type="text" id="benchmark-callsign-input" placeholder="Compare callsign..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 8px; border-radius:4px; width:130px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
+              <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn" style="padding:4px 8px; font-size:0.72rem;">Compare</button>
+              ${sessionStorage.getItem("wowkb_benchmark_player") ? `<button onclick="setBenchmarkPlayer('')" class="pill-btn" style="padding:4px 6px; font-size:0.7rem; color:#ef4444;" title="Reset Benchmark">&times;</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="legends-comparison-banner" style="background: rgba(15, 23, 42, 0.7); border: 1px dashed rgba(245, 158, 11, 0.4);">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.1rem;">⚔️</span>
+            <span style="font-size:0.82rem; color:#cbd5e1;">Benchmark your operative standing against realm leaders:</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="text" id="benchmark-callsign-input" placeholder="Enter Character Callsign..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 10px; border-radius:4px; width:180px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
+            <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn active" style="padding:4px 12px; font-size:0.75rem;">Benchmark</button>
+          </div>
+        </div>
+      `;
+    }
+
     html += `
       <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
@@ -1307,29 +1485,65 @@ function renderLeaderboardView(data, bgData, guildsData) {
           <tbody>
     `;
 
-    const killers = (data && data.topKillers) ? data.topKillers : [];
     if (killers.length === 0) {
       html += `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No combatant kills logged for mode [${currentMode}].</td></tr>`;
     } else {
       killers.forEach((p, idx) => {
         const guildHtml = (p.guild && p.guild !== 'None')
-          ? `<span class="clickable-guild" onclick="openGuildProfile('${p.guild}')">${p.guild}</span>`
+          ? `<span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(p.guild)}')">${escapeHtml(p.guild)}</span>`
           : '-';
 
         const pctBadge = getWowLogsPercentileBadge(p.percentile);
+        const isCurrent = Boolean(bmName && p.name.toLowerCase() === bmName.toLowerCase());
+        const rowClass = isCurrent ? 'class="current-player-row"' : '';
+        const youBadge = isCurrent ? `<span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>` : '';
 
         html += `
-          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
+          <tr ${rowClass} style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
             <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
-            <td><span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${p.name}')">${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)}</span></td>
+            <td>
+              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${escapeHtml(p.name)}')">
+                ${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)} ${youBadge}
+              </span>
+            </td>
             <td>${guildHtml}</td>
-            <td style="color: ${p.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${p.faction}</td>
+            <td style="color: ${p.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${escapeHtml(p.faction || 'Neutral')}</td>
             <td style="color: #10b981; font-weight: 700;">${p.kills}</td>
             <td style="color: #00e5ff; font-weight: 700;">${p.solo_kills || 0}</td>
             <td style="text-align:right;">${pctBadge}</td>
           </tr>
         `;
       });
+
+      if (bmName && !bmMatch && (benchmarkProfile || bmRank)) {
+        const bmClass = (benchmarkProfile && benchmarkProfile.character) ? benchmarkProfile.character.class : 'WARRIOR';
+        const bmFaction = (benchmarkProfile && benchmarkProfile.character) ? benchmarkProfile.character.faction : 'Alliance';
+        const bmGuild = (benchmarkProfile && benchmarkProfile.character && benchmarkProfile.character.guild) ? benchmarkProfile.character.guild : 'None';
+        const bmKills = benchmarkProfile ? (benchmarkProfile.total_kills || 0) : 0;
+        const bmSolo = benchmarkProfile ? (benchmarkProfile.solo_kills || 0) : 0;
+        const bmPct = (benchmarkProfile && benchmarkProfile.percentile) ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 };
+        const pctBadge = getWowLogsPercentileBadge(bmPct);
+        const bmGuildHtml = (bmGuild && bmGuild !== 'None')
+          ? `<span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(bmGuild)}')">${escapeHtml(bmGuild)}</span>`
+          : '-';
+
+        html += `
+          <tr style="border-top: 2px dashed rgba(245, 158, 11, 0.4); background: rgba(212, 163, 41, 0.08);" class="current-player-row">
+            <td style="color: var(--accent-gold); font-weight: 800;">#&gt;15</td>
+            <td>
+              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${escapeHtml(bmName)}')">
+                ${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}
+                <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
+              </span>
+            </td>
+            <td>${bmGuildHtml}</td>
+            <td style="color: ${bmFaction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${escapeHtml(bmFaction || 'Neutral')}</td>
+            <td style="color: #10b981; font-weight: 700;">${bmKills}</td>
+            <td style="color: #00e5ff; font-weight: 700;">${bmSolo}</td>
+            <td style="text-align:right;">${pctBadge}</td>
+          </tr>
+        `;
+      }
     }
 
     html += `
