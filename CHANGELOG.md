@@ -19,8 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Enhanced Interactive Minimap Launcher**:
   - Upgraded floating minimap button to support Left-Click (Toggle Dashboard) and Right-Click (Quick Theme Cycle).
   - Enriched private hover tooltip with active theme identifier and real-time combat session kill counter.
-- **Cloud Persistent Storage Compatibility**:
-  - Updated `web/server.py` to support `DB_PATH = os.environ.get("DB_PATH", ...)` allowing persistent storage volume mounting on cloud platforms (Render, Railway, Fly.io, Docker).
+- **Cloud Persistent Storage & Infrastructure as Code**:
+  - Engineered `render.yaml` blueprint defining the web service, persistent disk mount (`/data/killboard.db`), and cloud environment variables for 1-click deployment on Render.com.
+  - Updated `Dockerfile` CMD to dynamically bind to `$PORT` via shell expansion, ensuring compliance with container orchestrators.
+  - Enhanced `get_db()` in `web/server.py` to auto-create parent directories when mounting cloud volumes.
+- **Production-Ready Desktop Sync Agent (`WoWKillboardSync.exe`)**:
+  - Upgraded `sync/watcher.py` with dual-endpoint resolution: defaults to the public cloud URL (`https://wow-killboard.onrender.com`), auto-detects active local development servers (`http://127.0.0.1:8080`), and supports `wowkb_sync_config.json` overrides.
+  - Configured UTF-8 console output with cp1252-safe ASCII terminal formatting.
+  - Recompiled standalone binary `dist/WoWKillboardSync.exe` (8.8 MB).
 
 ### Changed
 - **In-Game Marks of Spite Terminology Synchronization**:

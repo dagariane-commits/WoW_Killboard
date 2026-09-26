@@ -16,6 +16,16 @@ import argparse
 import urllib.request
 import urllib.error
 
+# Ensure UTF-8 console output across all Windows terminals
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 class LuaTableParser:
     """Robust tokenizer and recursive-descent parser for WoW SavedVariables Lua tables."""
     
@@ -386,7 +396,7 @@ class KillboardWatcher:
                 method="POST"
             )
             with urllib.request.urlopen(req, timeout=5) as resp:
-                print(f"[Watcher] 🚨 Broadcasted Call for Backup SOS beacon for {data.get('character_name')} in {data.get('zone')}!")
+                print(f"[Watcher] [SOS] Broadcasted Call for Backup SOS beacon for {data.get('character_name')} in {data.get('zone')}!")
                 return resp.status in (200, 201)
         except Exception as e:
             print(f"[Watcher] Distress upload notice: {e}")
@@ -402,7 +412,7 @@ class KillboardWatcher:
                 method="POST"
             )
             with urllib.request.urlopen(req, timeout=5) as resp:
-                print(f"[Watcher] ⚔️ Broadcasted Guild Event: {data.get('title')} in {data.get('zone')}!")
+                print(f"[Watcher] [EVENT] Broadcasted Guild Event: {data.get('title')} in {data.get('zone')}!")
                 return resp.status in (200, 201)
         except Exception as e:
             print(f"[Watcher] Event upload notice: {e}")
@@ -448,12 +458,60 @@ def auto_detect_saved_variables() -> str:
 
     return ""
 
+SYNC_VERSION = "1.0.0-beta.1"
+DEFAULT_PROD_URL = "https://wow-killboard.onrender.com"
+DEFAULT_LOCAL_URL = "http://127.0.0.1:8080"
+
+def resolve_api_endpoint(cli_arg: str = None) -> str:
+    """Resolves target API endpoint checking CLI arg, config file, local dev, or production."""
+    if cli_arg:
+        return cli_arg.rstrip("/")
+
+    # Check environment variable
+    env_url = os.environ.get("WOWKB_API_URL")
+    if env_url:
+        return env_url.rstrip("/")
+
+    # Check local config file next to executable / script
+    base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    config_file = os.path.join(base_dir, "wowkb_sync_config.json")
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                if cfg.get("api_url"):
+                    return cfg["api_url"].rstrip("/")
+        except Exception:
+            pass
+
+    # Check if local dev server is currently running
+    try:
+        req = urllib.request.Request(f"{DEFAULT_LOCAL_URL}/api/stats/kills?limit=1", headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
+        with urllib.request.urlopen(req, timeout=0.8) as resp:
+            if resp.status in (200, 201):
+                print(f"[+] Active local development server detected at {DEFAULT_LOCAL_URL}")
+                return DEFAULT_LOCAL_URL
+    except Exception:
+        pass
+
+    # Default to production cloud URL
+    return DEFAULT_PROD_URL
+
 if __name__ == "__main__":
+    print("=" * 64)
+    print(f"  [WoW Killboard] Desktop Sync Client v{SYNC_VERSION}")
+    print("  Automated Combat Telemetry & Marks of Spite Ingestion")
+    print("=" * 64)
+
     parser = argparse.ArgumentParser(description="WoWKillboard SavedVariables Watcher")
     parser.add_argument("--file", "-f", default="", help="Path to WoWKillboard.lua (auto-detected if omitted)")
-    parser.add_argument("--api", "-a", default="http://127.0.0.1:8080", help="Web Killboard API URL")
+    parser.add_argument("--api", "-a", default="", help="Web Killboard API URL (defaults to production)")
+    parser.add_argument("--local", action="store_true", help="Force local development endpoint (http://127.0.0.1:8080)")
     parser.add_argument("--once", action="store_true", help="Run once and exit instead of continuous daemon")
     args = parser.parse_args()
+
+    target_api = DEFAULT_LOCAL_URL if args.local else resolve_api_endpoint(args.api)
+    print(f"[*] Ingestion Target API: {target_api}")
 
     target_file = args.file
     if not target_file:
@@ -465,7 +523,7 @@ if __name__ == "__main__":
             target_file = "WoWKillboard.lua"
             print(f"[*] Could not auto-detect WoW directory. Defaulting to local: {target_file}")
 
-    watcher = KillboardWatcher(target_file, args.api)
+    watcher = KillboardWatcher(target_file, target_api)
     if args.once:
         watcher.process_file()
     else:
