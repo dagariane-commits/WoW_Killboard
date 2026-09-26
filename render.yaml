@@ -2,18 +2,10 @@ services:
   - type: web
     name: wow-killboard
     runtime: docker
-    dockerfilePath: Dockerfile
-    plan: starter
+    dockerfilePath: ./Dockerfile
+    plan: free
     region: oregon
-    disk:
-      name: killboard-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
-      - key: PORT
-        value: 8080
-      - key: DB_PATH
-        value: /data/killboard.db
       - key: GEMINI_API_KEY
         sync: false
       - key: DISCORD_WEBHOOK_URL
