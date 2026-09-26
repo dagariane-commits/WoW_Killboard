@@ -5,6 +5,17 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.26] - 2026-09-26
+
+### Fixed
+- **Root-Cause Eradication of `ADDON_ACTION_FORBIDDEN` on `COMBAT_LOG_EVENT_UNFILTERED` (`CombatTracker.lua`)**:
+  - Identified the exact root cause of the Blizzard popup from in-game call stack telemetry: `[Interface/AddOns/WoWKillboard/CombatTracker.lua]:998: in main chunk` calling into `Blizzard_Game/Shared/EventRouting.lua:48`.
+  - In WoW Forever Beta (1.60.1 / `tocversion` 16001) and modern Midnight (12.0+) engines, `COMBAT_LOG_EVENT_UNFILTERED` is a restricted, protected internal event. Attempting to call `frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` (even wrapped in `pcall`) causes Blizzard's secure `EventRouting.lua` to throw `ADDON_ACTION_FORBIDDEN: WoWKillboard, UNKNOWN()`.
+  - Implemented dynamic runtime gating: `if not isCLEUForbidden then frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED") end`. On Forever Beta and modern engines, the registration is completely bypassed with zero security violations.
+  - Combat and killmail tracking on Forever Beta operates cleanly via public, unrestricted events (`CHAT_MSG_COMBAT_HONOR_GAIN`, `CHAT_MSG_SYSTEM`, `UNIT_HEALTH`, `PLAYER_DEAD`, `PLAYER_TARGET_CHANGED`).
+  - Removed `pcall(frame.RegisterEvent, frame, "PVP_MATCH_COMPLETE")` in favor of standard `UPDATE_BATTLEFIELD_STATUS`.
+  - Cleaned up all diagnostic stack tracers and temporary hooks from [`Config.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/Config.lua).
+
 ## [1.4.25] - 2026-09-26
 
 ### Fixed

@@ -6,33 +6,7 @@
 WoWKillboard = WoWKillboard or {}
 local KB = WoWKillboard
 
--- Security Diagnostic Interceptor (File #1: Early-load listener for any blocked action)
-local diagFrame = CreateFrame("Frame")
-diagFrame:RegisterEvent("ADDON_ACTION_BLOCKED")
-diagFrame:RegisterEvent("ADDON_ACTION_FORBIDDEN")
-diagFrame:SetScript("OnEvent", function(self, event, ...)
-    local argCount = select("#", ...)
-    local argStr = ""
-    for i = 1, argCount do
-        argStr = argStr .. string.format(" [Arg%d: %s]", i, tostring(select(i, ...)))
-    end
-    print(string.format("|cffff0000[WoWKB EVENT]|r |cffffd100%s|r (%d args):%s", tostring(event), argCount, argStr))
-    if UIErrorsFrame and UIErrorsFrame.AddMessage then
-        UIErrorsFrame:AddMessage("[WoWKB] " .. tostring(event) .. ":" .. argStr, 1, 1, 0, 1, 15)
-    end
-end)
 
--- Forensic Hook on StaticPopup_Show to catch who opened the blocked popup
-if hooksecurefunc then
-    hooksecurefunc("StaticPopup_Show", function(which, arg1, arg2)
-        if which and (which == "ADDON_ACTION_BLOCKED" or which == "ADDON_ACTION_FORBIDDEN") then
-            print(string.format("|cffff0000[WoWKB POPUP TRACE]|r which=%s | arg1=%s | arg2=%s", tostring(which), tostring(arg1), tostring(arg2)))
-            if debugstack then
-                print(string.format("|cffff7700[WoWKB CALL STACK]:|r\n%s", debugstack(2, 6, 2)))
-            end
-        end
-    end)
-end
 
 -- Purge any residual AddonCompartment registration from memory (prevents Leatrix Plus HideMiniAddonMenu collision)
 if AddonCompartmentFrame and AddonCompartmentFrame.registeredAddons then
