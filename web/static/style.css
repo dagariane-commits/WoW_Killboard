@@ -659,7 +659,7 @@ body {
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  z-index: 1999;
+  z-index: 3000;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -679,7 +679,7 @@ body {
   background: #090c14;
   border-left: 1px solid var(--border-color);
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.8);
-  z-index: 2000;
+  z-index: 3001;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -3349,22 +3349,71 @@ body {
 
 /* Tablet Portrait & Small Laptops (769px to 1024px) */
 @media (max-width: 1024px) {
-  .mobile-menu-btn {
-    display: flex !important;
-  }
-
-  .nav-links-rail {
-    display: none !important;
-  }
-
   .site-header {
     position: sticky;
+    top: 0;
+    z-index: 1000;
   }
 
   .header-main-row,
   .header-top-row {
-    padding: 8px 16px;
-    min-height: 48px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    padding: 8px 16px 4px 16px !important;
+    gap: 8px !important;
+    min-height: auto !important;
+  }
+
+  .logo-group {
+    flex-shrink: 0;
+    gap: 10px;
+  }
+
+  .header-tools-group {
+    display: flex !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 6px !important;
+    border: 1px solid var(--wow-brass-border, #4a3b27) !important;
+    background: rgba(10, 13, 20, 0.9) !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Dual-Tier Header: Primary Navigation Rail as Sticky Horizontal Strip */
+  .nav-links-rail {
+    display: flex !important;
+    width: 100% !important;
+    order: 3 !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 6px 0 2px 0 !important;
+    gap: 6px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .nav-links-rail::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .nav-btn {
+    padding: 6px 10px !important;
+    font-size: 0.80rem !important;
+    flex-shrink: 0 !important;
   }
 
   .container {
@@ -3407,17 +3456,20 @@ body {
     z-index: 100;
   }
 
+  .header-main-row,
   .header-top-row {
-    padding: 6px 12px;
-    min-height: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    padding: 6px 12px 4px 12px !important;
+    min-height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 6px 8px !important;
   }
 
   .logo-group {
     gap: 6px;
+    flex-shrink: 0;
   }
 
   .header-faction-crest {
@@ -3445,9 +3497,16 @@ body {
   }
 
   .header-tools-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: flex !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-signin-btn {
+    padding: 5px 10px !important;
+    font-size: 0.75rem !important;
   }
 
   .header-tools-group .search-wrap {
@@ -3480,14 +3539,40 @@ body {
   }
 
   .mobile-menu-btn {
-    display: flex;
-    width: 34px;
-    height: 34px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 6px !important;
+    border: 1px solid var(--wow-brass-border, #4a3b27) !important;
+    background: rgba(10, 13, 20, 0.9) !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
   }
 
-  /* Hide the 10-button navigation rail and desktop mode strip on mobile */
-  .header-sub-row {
+  /* Dual-Tier Header: Primary Navigation Rail as Sticky Horizontal Strip */
+  .nav-links-rail {
+    display: flex !important;
+    width: 100% !important;
+    order: 3 !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 4px 0 2px 0 !important;
+    gap: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .nav-links-rail::-webkit-scrollbar {
     display: none !important;
+  }
+
+  .nav-btn {
+    padding: 5px 8px !important;
+    font-size: 0.76rem !important;
+    flex-shrink: 0 !important;
   }
 
   /* 3. Main Container Spacing */
@@ -3782,6 +3867,11 @@ body {
 @media (max-width: 480px) {
   .logo-title {
     font-size: 0.98rem;
+  }
+
+  .nav-btn {
+    padding: 4px 6px !important;
+    font-size: 0.74rem !important;
   }
 
   .header-faction-crest {

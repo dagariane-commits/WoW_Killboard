@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.14] - 2026-09-26
+
+### Fixed
+- **Mobile Navigation Rail & Menu Options Availability**:
+  - Restored primary navigation rail (`.nav-links-rail`) on all mobile and tablet viewports ($\le 1024px$, $\le 768px$, and $\le 480px$), eliminating the `display: none !important` rule that hid menu options on mobile.
+  - Implemented dual-tier responsive header: row 1 houses the crests, title, and tools; row 2 houses a smooth, horizontally scrollable navigation rail granting instant 1-tap access to **Theater**, **Intel**, **Hall of Legends**, and **Marks**.
+  - Re-anchored `.header-main-row` with `flex-wrap: wrap` and scaled tool padding to prevent the hamburger menu button from clipping off-screen on compact phones ($< 390px$).
+  - Elevated mobile drawer z-index to `3001` and backdrop to `3000` to guarantee smooth, unobstructed slide-out menu operation.
+
 ## [1.4.13] - 2026-09-26
 
 ### Added
