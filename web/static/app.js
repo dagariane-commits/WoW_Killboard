@@ -299,17 +299,22 @@ async function initClientFlavor() {
   updateFlavorUi();
 }
 
-async function handleFlavorChange(newFlavor) {
+async function handleFlavorChange(newFlavor, newServer) {
   currentFlavor = newFlavor;
   localStorage.setItem("wowkb_client_flavor", currentFlavor);
+  const srv = newServer || (localStorage.getItem("wowkb_forever_server") || "PVP");
+  if (newFlavor === "FOREVER") {
+    localStorage.setItem("wowkb_forever_server", srv);
+  }
   try {
     await fetch("/api/system/flavor", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ flavor: newFlavor })
+      body: JSON.stringify({ flavor: newFlavor, server: srv })
     });
   } catch (e) {}
   updateFlavorUi();
+  updateTheaterNavLabel();
   if (currentTab === "ARMORY") {
     loadArmoryView();
   }
@@ -668,9 +673,6 @@ function renderSidebarActivity(data) {
       charListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No character kills logged in last 24h</div>`;
     } else {
       charListEl.innerHTML = chars.map((c, i) => {
-        const guildPart = (c.guild && c.guild !== 'None') 
-          ? ` <span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(c.guild)}')" style="font-size:0.7rem; color:#94a3b8; font-weight:normal;">&lt;${escapeHtml(c.guild)}&gt;</span>`
-          : '';
         let faction = (c.faction || "").toLowerCase();
         if (!faction && c.class) {
           const cu = c.class.toUpperCase();
@@ -683,7 +685,6 @@ function renderSidebarActivity(data) {
             <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
               <span class="rank-badge">#${i + 1}</span>
               <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(c.name)}')" style="white-space:nowrap;">${colorizeClass(c.name, c.class)}</span>
-              ${guildPart}
             </div>
             <span style="color:#10b981; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${c.kills} kills</span>
           </div>
@@ -3346,6 +3347,121 @@ function loadPortalView() {
   `;
 }
 
+// ----------------- WoW Forever Realm Server Configuration -----------------
+
+const FOREVER_SERVERS = {
+  PVP: {
+    id: "PVP",
+    name: "PvP",
+    title: "Forever PvP",
+    ruleset: "Contested World PvP",
+    badge: "CONTESTED WORLD PVP",
+    badgeColor: "#ef4444",
+    badgeBg: "rgba(239, 68, 68, 0.15)",
+    badgeBorder: "rgba(239, 68, 68, 0.45)",
+    desc: "Unrestricted faction conflict in open contested zones. Stranglethorn kill zones, cross-roads raids, and active bounty hunting.",
+    popStatus: "High Population",
+    icon: "⚔️"
+  },
+  PVE: {
+    id: "PVE",
+    name: "PvE",
+    title: "Forever PvE",
+    ruleset: "Normal Progression",
+    badge: "NORMAL PROGRESSION",
+    badgeColor: "#10b981",
+    badgeBg: "rgba(16, 185, 129, 0.15)",
+    badgeBorder: "rgba(16, 185, 129, 0.45)",
+    desc: "Voluntary PvP flagging. Focus on open-world leveling, realm defense alerts, and 40-man dungeon & raid progression.",
+    popStatus: "Active",
+    icon: "🛡️"
+  },
+  RP: {
+    id: "RP",
+    name: "RP",
+    title: "Forever RP",
+    ruleset: "Roleplaying Immersion",
+    badge: "IMMERSION & LORE",
+    badgeColor: "#c084fc",
+    badgeBg: "rgba(192, 132, 252, 0.15)",
+    badgeBorder: "rgba(192, 132, 252, 0.45)",
+    desc: "In-character realm war campaigns, lore-driven skirmishes, tavern gatherings, and dedicated story-based guild rivalries.",
+    popStatus: "Active",
+    icon: "📜"
+  },
+  HARDCORE: {
+    id: "HARDCORE",
+    name: "Hardcore",
+    title: "Forever Hardcore",
+    ruleset: "Permadeath — 1 Life",
+    badge: "PERMADEATH — 1 LIFE",
+    badgeColor: "#f59e0b",
+    badgeBg: "rgba(245, 158, 11, 0.15)",
+    badgeBorder: "rgba(245, 158, 11, 0.45)",
+    desc: "Zero resurrection in open combat. High-stakes blood feuds, mortal combat dispatches, and Mak'gora duels to the death.",
+    popStatus: "Extreme Risk",
+    icon: "💀"
+  }
+};
+
+function getCurrentForeverServer() {
+  return (localStorage.getItem("wowkb_forever_server") || "PVP").toUpperCase();
+}
+
+function openServerSelectorModal() {
+  const modal = document.getElementById("server-modal");
+  const grid = document.getElementById("server-modal-grid");
+  if (!modal || !grid) return;
+  const activeSrv = getCurrentForeverServer();
+
+  grid.innerHTML = Object.values(FOREVER_SERVERS).map(s => {
+    const isAct = s.id === activeSrv;
+    return `
+      <div class="server-card ${isAct ? 'active' : ''}" onclick="handleSelectForeverServer('${s.id}')">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span class="server-card-badge" style="background:${s.badgeBg}; border:1px solid ${s.badgeBorder}; color:${s.badgeColor};">
+              ${s.badge}
+            </span>
+            <span style="font-size:0.7rem; color:${isAct ? 'var(--wow-gold)' : '#64748b'}; font-weight:700;">
+              ${isAct ? 'ACTIVE REALM' : s.popStatus}
+            </span>
+          </div>
+          <h4 style="font-size:1.15rem; color:#fff; font-family:var(--font-tactical); margin:0 0 4px 0; display:flex; align-items:center; gap:6px;">
+            <span>${s.icon}</span> <span>${escapeHtml(s.title)}</span>
+          </h4>
+          <div style="font-size:0.75rem; color:var(--wow-gold); font-weight:600; margin-bottom:8px;">${escapeHtml(s.ruleset)}</div>
+          <p style="font-size:0.76rem; color:#94a3b8; line-height:1.4; margin:0 0 14px 0;">
+            ${escapeHtml(s.desc)}
+          </p>
+        </div>
+        <button style="width:100%; box-sizing:border-box; padding:8px 12px; font-weight:800; font-size:0.78rem; background:${isAct ? 'linear-gradient(135deg, #d97706, #b45309)' : 'rgba(255,255,255,0.06)'}; border:1px solid ${isAct ? 'var(--wow-gold)' : 'rgba(255,255,255,0.12)'}; color:${isAct ? '#fff' : '#cbd5e1'}; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <span>${isAct ? '✓ Selected Realm' : 'Select Server &rarr;'}</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  modal.style.display = "flex";
+}
+
+function closeServerSelectorModal() {
+  const modal = document.getElementById("server-modal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
+function handleSelectForeverServer(serverId) {
+  const chosen = (serverId || "PVP").toUpperCase();
+  localStorage.setItem("wowkb_forever_server", chosen);
+  handleFlavorChange("FOREVER", chosen);
+  closeServerSelectorModal();
+  updateTheaterNavLabel();
+  switchTab("INTEL");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 // ----------------- Theater Selector / Version Page -----------------
 
 function loadTheaterSelectorView() {
@@ -3353,6 +3469,8 @@ function loadTheaterSelectorView() {
   if (!container) return;
 
   const currentFlav = (typeof currentFlavor !== "undefined" && currentFlavor) ? currentFlavor : "FOREVER";
+  const activeSrv = getCurrentForeverServer();
+  const activeSrvObj = FOREVER_SERVERS[activeSrv] || FOREVER_SERVERS.PVP;
 
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:24px; max-width:1060px; margin:0 auto; padding:10px 0 40px 0;">
@@ -3362,7 +3480,7 @@ function loadTheaterSelectorView() {
           Theaters of War — Campaign Selector
         </h2>
         <div style="font-size: 0.82rem; color: #94a3b8; max-width: 680px; margin: 0 auto;">
-          Select your active World of Warcraft theater. All combat telemetry, kill feeds, and leaderboards filter to the selected campaign ruleset.
+          Select your active World of Warcraft theater and realm server. All combat telemetry, kill feeds, and leaderboards filter to the selected campaign ruleset.
         </div>
       </div>
 
@@ -3378,12 +3496,26 @@ function loadTheaterSelectorView() {
               <span style="font-size:0.75rem; color:var(--wow-gold); font-weight:700;">Level 60 Cap</span>
             </div>
             <h3 style="font-size:1.2rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">WoW Forever</h3>
-            <p style="font-size:0.78rem; color:#cbd5e1; line-height:1.45; margin:0 0 16px 0;">
-              Classic Beta (1.15.x) &bull; Contested World PvP, Stranglethorn killing grounds, and 40-man battleground clashes.
+            <p style="font-size:0.78rem; color:#cbd5e1; line-height:1.45; margin:0 0 10px 0;">
+              Classic Beta (1.15.x) &bull; 4 dedicated server realms with specialized campaign rulesets.
             </p>
+
+            <!-- 4 Realm Ruleset Selection Pills -->
+            <div style="margin: 12px 0 16px 0; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                <span style="font-size:0.68rem; color:#94a3b8; font-weight:800; letter-spacing:0.04em;">CHOOSE REALM:</span>
+                <span style="font-size:0.68rem; color:var(--wow-gold); font-weight:800;">ACTIVE: ${activeSrvObj.name}</span>
+              </div>
+              <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                <button class="server-quick-pill ${activeSrv === 'PVP' ? 'active' : ''}" onclick="event.stopPropagation(); handleSelectForeverServer('PVP')">⚔️ PvP</button>
+                <button class="server-quick-pill ${activeSrv === 'PVE' ? 'active' : ''}" onclick="event.stopPropagation(); handleSelectForeverServer('PVE')">🛡️ PvE</button>
+                <button class="server-quick-pill ${activeSrv === 'RP' ? 'active' : ''}" onclick="event.stopPropagation(); handleSelectForeverServer('RP')">📜 RP</button>
+                <button class="server-quick-pill ${activeSrv === 'HARDCORE' ? 'active' : ''}" onclick="event.stopPropagation(); handleSelectForeverServer('HARDCORE')">💀 HC</button>
+              </div>
+            </div>
           </div>
           <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-weight:800; font-size:0.82rem; background:linear-gradient(135deg, #d97706, #b45309); border:1px solid var(--wow-gold); color:#fff; cursor:pointer; border-radius:6px; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none;" onclick="handleSelectTheaterVersion('FOREVER')">
-            <span>Enter WoW Forever</span> <span>&rarr;</span>
+            <span>Select Realm &amp; Enter WoW Forever</span> <span>&rarr;</span>
           </button>
         </div>
 
@@ -3449,6 +3581,11 @@ function loadTheaterSelectorView() {
 }
 
 function handleSelectTheaterVersion(flavor) {
+  if (flavor === "FOREVER") {
+    handleFlavorChange("FOREVER");
+    openServerSelectorModal();
+    return;
+  }
   handleFlavorChange(flavor);
   updateTheaterNavLabel();
   switchTab("INTEL");
@@ -3774,11 +3911,16 @@ const THEATER_NAMES = {
 
 function updateTheaterNavLabel() {
   const versionEl = document.getElementById("theater-nav-version");
+  const serverPillEl = document.getElementById("theater-nav-server");
   const mNavEl = document.getElementById("m-nav-theater");
   const currentFlav = (typeof currentFlavor !== "undefined" && currentFlavor) ? currentFlavor : "FOREVER";
   const cfg = (typeof FLAVOR_CONFIGS !== "undefined" && FLAVOR_CONFIGS[currentFlav]) ? FLAVOR_CONFIGS[currentFlav] : null;
   const flavorColor = cfg ? (cfg.iconColor || "#00e5ff") : "#00e5ff";
   const displayVersion = THEATER_NAMES[currentFlav] || "WoW Forever";
+  const activeSrvKey = (typeof getCurrentForeverServer === "function") ? getCurrentForeverServer() : "PVP";
+  const srvInfo = (typeof FOREVER_SERVERS !== "undefined" && FOREVER_SERVERS[activeSrvKey]) 
+    ? FOREVER_SERVERS[activeSrvKey] 
+    : { name: "PvP", badgeColor: "#ef4444", badgeBg: "rgba(239, 68, 68, 0.15)", badgeBorder: "rgba(239, 68, 68, 0.45)" };
 
   // Update dynamic CSS variable for active menu underline and version color
   document.documentElement.style.setProperty("--active-flavor-color", flavorColor);
@@ -3787,6 +3929,17 @@ function updateTheaterNavLabel() {
     versionEl.innerText = displayVersion;
     versionEl.style.color = flavorColor;
   }
+  if (serverPillEl) {
+    if (currentFlav === "FOREVER") {
+      serverPillEl.style.display = "inline-flex";
+      serverPillEl.innerText = srvInfo.name;
+      serverPillEl.style.color = srvInfo.badgeColor;
+      serverPillEl.style.backgroundColor = srvInfo.badgeBg;
+      serverPillEl.style.borderColor = srvInfo.badgeBorder;
+    } else {
+      serverPillEl.style.display = "none";
+    }
+  }
   const caretEl = document.querySelector(".theater-caret");
   if (caretEl) {
     caretEl.style.color = flavorColor;
@@ -3794,7 +3947,8 @@ function updateTheaterNavLabel() {
   if (mNavEl) {
     const textSpan = mNavEl.querySelector("span");
     if (textSpan) {
-      textSpan.innerHTML = `<span class="theater-label">Theater:</span> <strong style="color:${flavorColor};">${displayVersion}</strong>`;
+      const srvSuffix = currentFlav === "FOREVER" ? ` (${srvInfo.name})` : "";
+      textSpan.innerHTML = `<span class="theater-label">Theater:</span> <strong style="color:${flavorColor};">${displayVersion}${srvSuffix}</strong>`;
     }
   }
 }
