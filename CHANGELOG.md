@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.13] - 2026-09-26
+
+### Added
+- **"In Development" Lifecycle Gating for War Room, Armory, and World Hazards**:
+  - Gated navigation tabs for **World Hazards**, **Armory**, and **War Room** on both desktop and mobile drawer with `.in-development` styling, `[In Dev]` amber pills, `disabled` attributes, and click suppression.
+  - Added programmatic guards in `switchTab()` and `handleArmoryNavClick()` preventing route activation.
+- **Cross-Mode Guild Leaderboard Filtering**:
+  - Added `mode` query parameter support (`WORLD`, `BG`, `ARENA`, `DUEL`, `ALL`) to `/api/guilds`, mirroring Player Ranks.
+  - Persisted combat mode filter pills (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`) when switching between Player Ranks and Guild Ranks in Hall of Legends.
+
+### Changed
+- **Alphabetical Realm Talent Specializations**:
+  - Re-sorted Top Specs strictly from A to Z across all 27 canonical talent archetypes (Affliction through Survival) on both backend (`server.py`) and frontend (`app.js`).
+- **Standardized Class Name Typography in Intel Sidebar**:
+  - Converted realm class labels from all-caps (`DRUID`, `HUNTER`) to standard title-case layout (`Druid`, `Hunter`, `Mage`, `Paladin`, `Priest`, `Rogue`, `Shaman`, `Warlock`, `Warrior`).
+- **Hall of Legends Table Cell Stabilization**:
+  - Enforced `table-layout: fixed;` with explicit `<colgroup>` column widths and uniform `6px 10px` padding on all table headers and cells across both Player Ranks and Guild Ranks, eliminating layout shifting when cycling combat modes.
+  - Purged rectangular background and border backdrops from percentile numbers, rendering clean tactical cohort text.
+
+### Removed
+- **Guest Reconnaissance Sign-In Prompt**:
+  - Purged the *"Browsing as Guest Recon. Sign in to display your personalized combat kills..."* prompt strip from the homepage stats hub.
+
 ## [1.4.12] - 2026-09-26
 
 ### Added

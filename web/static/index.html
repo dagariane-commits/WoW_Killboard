@@ -33,10 +33,10 @@
         </button>
         <button id="nav-intel" class="nav-btn active" onclick="switchTab('INTEL')">Intel</button>
         <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">Hall of Legends</button>
-        <button id="nav-hazards" class="nav-btn" onclick="switchTab('HAZARDS')">World Hazards</button>
-        <button id="nav-armory" class="nav-btn" onclick="handleArmoryNavClick()">Armory</button>
+        <button id="nav-hazards" class="nav-btn in-development" disabled title="World Hazards — In Development">World Hazards <span class="in-dev-pill">In Dev</span></button>
+        <button id="nav-armory" class="nav-btn in-development" disabled title="Player Armory — In Development">Armory <span class="in-dev-pill">In Dev</span></button>
         <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Marks</button>
-        <button id="nav-warroom" class="nav-btn" onclick="switchTab('WARROOM')">Warroom</button>
+        <button id="nav-warroom" class="nav-btn in-development" disabled title="War Room — In Development">War Room <span class="in-dev-pill">In Dev</span></button>
       </nav>
 
       <!-- 3. Tools Group -->
@@ -86,21 +86,21 @@
           <span>Hall of Legends</span>
           <span>&rarr;</span>
         </button>
-        <button class="mobile-nav-item" id="m-nav-hazards" onclick="switchTab('HAZARDS'); toggleMobileDrawer(false);">
-          <span>World Hazards</span>
-          <span>&rarr;</span>
+        <button class="mobile-nav-item in-development" id="m-nav-hazards" disabled title="World Hazards — In Development">
+          <span>World Hazards <span class="in-dev-pill">In Dev</span></span>
+          <span style="opacity:0.4;">🔒</span>
         </button>
-        <button class="mobile-nav-item" id="m-nav-armory" onclick="handleArmoryNavClick(); toggleMobileDrawer(false);">
-          <span>Armory</span>
-          <span>&rarr;</span>
+        <button class="mobile-nav-item in-development" id="m-nav-armory" disabled title="Player Armory — In Development">
+          <span>Armory <span class="in-dev-pill">In Dev</span></span>
+          <span style="opacity:0.4;">🔒</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
           <span>Marks</span>
           <span>&rarr;</span>
         </button>
-        <button class="mobile-nav-item" id="m-nav-warroom" onclick="switchTab('WARROOM'); toggleMobileDrawer(false);">
-          <span>Warroom</span>
-          <span>&rarr;</span>
+        <button class="mobile-nav-item in-development" id="m-nav-warroom" disabled title="War Room — In Development">
+          <span>War Room <span class="in-dev-pill">In Dev</span></span>
+          <span style="opacity:0.4;">🔒</span>
         </button>
       </div>
 
