@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.12] - 2026-09-26
+
+### Added
+- **Complete 27-Archetype Classic Specialization Indexing**:
+  - Indexed all 27 canonical Classic talent specializations in `/api/stats/activity-7d` across all 9 classes (Affliction, Arcane, Arms, Assassination, Balance, Beast Mastery, Combat, Demonology, Destruction, Discipline, Elemental, Enhancement, Feral Combat, Fire, Frost, Fury, Holy [Paladin], Holy [Priest], Marksmanship, Protection [Paladin], Protection [Warrior], Restoration [Druid], Restoration [Shaman], Retribution, Shadow, Subtlety, Survival).
+  - Actively logged kills bubble to the top sorted by `(-kills, spec_name)`, while unused specs remain indexed alphabetically.
+  - Active kills rendered in bright cyan (`var(--accent-cyan)`), while unlogged specs are rendered in muted slate (`#64748b`).
+
+### Changed
+- **Right Sidebar Tactical Card Reordering**:
+  - Repositioned **All Classes** directly above **Top Active Specs** in `index.html`.
+- **Hall of Legends & Marks of Spite Visual Realignment**:
+  - Aligned main view headers directly against the dark stone backdrop with brass bottom borders (`border-bottom: 1px solid var(--wow-brass-border)`) and `#856a36` tactical subtitles, matching the Intel combat feed.
+  - Purged bulky outer card wrapper containers from the Personal Marks and High Command Marks sections.
+  - Replaced generic card styling with dark iron plate styling (`linear-gradient(180deg, #0a0d14 0%, #030407 100%)`, heavy inset shadows, and subtle brass borders) across Hall of Legends leaderboards and Marks of Spite Hall of Fame cards.
+
 ## [1.4.11] - 2026-09-26
 
 ### Added
