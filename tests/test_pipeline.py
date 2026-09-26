@@ -12,8 +12,9 @@ import json
 import time
 import unittest
 
-# Ensure web/ is importable
+# Ensure web/ is importable and isolated from production database
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.environ["DB_PATH"] = os.path.join(BASE_DIR, "tests", "test_killboard.db")
 sys.path.insert(0, os.path.join(BASE_DIR, "web"))
 sys.path.insert(0, os.path.join(BASE_DIR, "sync"))
 
