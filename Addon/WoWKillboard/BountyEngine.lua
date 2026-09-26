@@ -185,7 +185,8 @@ function BE:CheckKillForBounty(killmail)
                     print(string.format("|cffffd700[WoWKB CONTRACT EXECUTED]|r Vanguard Hunter |cff00ff00%s|r executed |cffff3333%s|r! Reward: %s. Contractor |cff00ccff%s|r has 48h to honor the blood debt.",
                         bounty.hunterName, bounty.targetName, goldStr, bounty.placerName))
 
-                    if KB.DefaultSettings.soundAlerts then
+                    local s = WoWKillboardSettings or KB.DefaultSettings
+                    if (s.alertMode == "SOUND_AND_BANNER" or (s.alertMode ~= "BANNER_ONLY" and s.alertMode ~= "OFF" and s.soundAlerts ~= false)) then
                         PlaySound(KB.SoundAlerts.BOUNTY_CLAIMED, "Master")
                     end
 
@@ -254,7 +255,8 @@ function BE:CheckUnitForDebt(unit)
     if debt and debt.status == KB.STATUS.OATHBREAKER then
         local owedStr = KB.Utils.FormatMoney(debt.amountOwedCopper)
         BE:ShowAlert(string.format("⚠️ CONDEMNED TRAITOR SIGHTED: %s (Owes %s to %s)!", name, owedStr, debt.creditor), 1, 0.2, 0.2)
-        if KB.DefaultSettings.soundAlerts then
+        local s = WoWKillboardSettings or KB.DefaultSettings
+        if (s.alertMode == "SOUND_AND_BANNER" or (s.alertMode ~= "BANNER_ONLY" and s.alertMode ~= "OFF" and s.soundAlerts ~= false)) then
             PlaySound(KB.SoundAlerts.DEBTOR_SIGHTED, "Master")
         end
     end

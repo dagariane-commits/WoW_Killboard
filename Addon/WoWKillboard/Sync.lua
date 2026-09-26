@@ -214,6 +214,11 @@ function S:OnAddonMessage(prefix, message, channel, sender)
                 KB.Leaderboard:OnNewKill(syncedKM)
             end
 
+            -- Trigger Frontline Kill Banner UI alert (respects alertScope, alertMode, raid warning)
+            if KB.UI and KB.UI.ShowKillBanner then
+                KB.UI:ShowKillBanner(syncedKM)
+            end
+
             if KB.UI and KB.UI.RefreshIfVisible then
                 KB.UI:RefreshIfVisible()
             end

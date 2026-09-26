@@ -5,6 +5,25 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.17] - 2026-09-26
+
+### Added
+- **Frontline Combat Alerts & Radar Configuration System**:
+  - Implemented 1-click in-game Alerts Configuration modal (`UI:ShowAlertsConfig`) accessible via `⚙️ Alerts` button in the dashboard header or `/wowkb alerts`.
+  - Added 3-way **Alert Mode** audio/visual toggling: `🔊 Sound + Banner`, `🔕 Banner Only (No Sound)`, or `⛔ Alerts Disabled (Off)`.
+  - Added 3-way **Radar & Proximity Scope** filtering: `📍 Same Zone Only` (Zone Radar: alerts only for combat in current zone), `🌐 All Realm Kills` (broadcasts across realm), or `⚔️ My Kills Only` (personal engagements).
+  - Implemented secondary **Raid Warning Screen Notice** (`alertRaidWarning`): flashes large raid warning text across screen center on confirmed kills via `RaidNotice_AddMessage(RaidWarningFrame, ...)`.
+  - Added **Draggable Kill Banner Calibration**: `/wowkb move` or `📐 Move / Unlock Banner` unlocks banner for left-click repositioning with auto-saving to `WoWKillboardSettings.bannerPosition`.
+  - Added `↺ Reset Position` button to restore default center-top coordinates (`TOP, 0, -135`).
+  - Added `▶️ Test Alert Preview` (`/wowkb test`) for instant live preview of banner placement, sound, and raid warning text.
+  - Linked P2P synchronized kill reception (`Sync.lua`) to `UI:ShowKillBanner(syncedKM)`, enabling real-time cross-player frontline radar alerts filtered by zone and scope.
+
+### Fixed
+- **Minimap Button Hover Lua Error (`TableLength` nil value)**:
+  - Resolved `Core.lua:422: attempt to call a nil value` by implementing `U.TableLength(t)` in `Utils.lua` for safe dictionary and sparse array length calculation.
+- **Unified Audio Alert Dispatch**:
+  - Centralized sound dispatch and audio gating inside `UI:ShowKillBanner`, eliminating duplicate audio triggers and ensuring strict adherence to the player's `alertMode` preference across `Killmail.lua` and `BountyEngine.lua`.
+
 ## [1.4.16] - 2026-09-26
 
 ### Added

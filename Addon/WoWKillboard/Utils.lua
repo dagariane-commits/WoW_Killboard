@@ -23,6 +23,16 @@ function U.SafeString(val, fallback)
     return str
 end
 
+-- Count entries in a hash table
+function U.TableLength(t)
+    if not t or type(t) ~= "table" then return 0 end
+    local count = 0
+    for _ in pairs(t) do
+        count = count + 1
+    end
+    return count
+end
+
 -- Simple FNV-1a 32-bit Hash for deterministic Kill IDs
 function U.Hash(str)
     local hash = 2166136261
