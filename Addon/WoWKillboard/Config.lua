@@ -11,14 +11,32 @@ local diagFrame = CreateFrame("Frame")
 diagFrame:RegisterEvent("ADDON_ACTION_BLOCKED")
 diagFrame:RegisterEvent("ADDON_ACTION_FORBIDDEN")
 diagFrame:SetScript("OnEvent", function(self, event, addon, func)
-    local msg = string.format("[WoWKB Diagnostic] Blocked Addon: %s | Action: %s()", tostring(addon), tostring(func))
+    WoWKillboardDB = WoWKillboardDB or {}
+    WoWKillboardDB.lastBlocked = {
+        time = date("%Y-%m-%d %H:%M:%S"),
+        addon = tostring(addon),
+        action = tostring(func),
+        event = tostring(event),
+        stack = debugstack(2, 10, 10),
+    }
     print("|cffff0000==================================================|r")
-    print("|cffff0000" .. msg .. "|r")
+    print(string.format("|cffff0000[WoWKB Diagnostic] Blocked Addon:|r |cffffd100%s|r", tostring(addon)))
+    print(string.format("|cffff0000[WoWKB Diagnostic] Blocked Action:|r |cffffff00%s()|r", tostring(func)))
     print("|cffff0000==================================================|r")
     if UIErrorsFrame and UIErrorsFrame.AddMessage then
-        UIErrorsFrame:AddMessage(msg, 1, 0.2, 0.2, 1, 10)
+        UIErrorsFrame:AddMessage(string.format("[WoWKB] BLOCKED: %s()", tostring(func)), 1, 1, 0, 1, 12)
     end
 end)
+
+-- Purge any residual AddonCompartment registration from memory (prevents Leatrix Plus HideMiniAddonMenu collision)
+if AddonCompartmentFrame and AddonCompartmentFrame.registeredAddons then
+    for i = #AddonCompartmentFrame.registeredAddons, 1, -1 do
+        local entry = AddonCompartmentFrame.registeredAddons[i]
+        if type(entry) == "table" and (entry.text == "WoWKillboard" or entry.addonName == "WoWKillboard") then
+            table.remove(AddonCompartmentFrame.registeredAddons, i)
+        end
+    end
+end
 
 KB.Version = "1.0.0"
 KB.Prefix = "WOWKB"
