@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.9] - 2026-09-25
 
 ### Changed
+- **Alliance vs. Horde Visual Luminosity & Vibrancy Equalization**:
+  - Color-graded `banner_alliance_tactical.jpg` using luminance-preserving cobalt remapping, raising the blue channel mean to 147.0 to eliminate faded sepia/charcoal tones.
+  - Symmetrized CSS gradient opacities (`rgba(24, 75, 185, 0.68)` for Alliance vs `rgba(145, 24, 28, 0.68)` for Horde), inset spreads, and left-edge glowing accents in `.killmail-row`, providing identical optical vibrancy for Alliance and Horde kill rows.
+- **Faction Backdrops for Most Wanted Outlaws**:
+  - Dynamically bound authentic Alliance (`card_alliance_square.png`) and Horde (`card_horde_square.png`) stone crest backdrops to active outlaws in the Most Wanted grid.
+  - Automatically infers faction from `target_faction` and class identity (e.g. Paladin/Shaman fallback), while keeping unclaimed slots cleanly neutral.
+- **Tactical Sidebar Faction Backdrops & Redundant Text Purge**:
+  - Created distinct Alliance and Horde tactical map backdrops, glowing 3.5px faction accent borders, and hover slide animations for "Top Active Gankers" and "Top Active Guilds" sidebar items.
+  - Completely purged redundant literal text labels ("Alliance" / "Horde") from guild blocks, letting the visual faction heraldry and border styling communicate allegiance directly.
 - **Canonical World of Warcraft Faction Artwork & Comprehensive Player Area Backdrops**:
   - Replaced non-canonical web reference images with custom-generated, authentic World of Warcraft canonical heraldry:
     - **Grand Alliance Canonical Crest**: Golden stylized roaring lion on cracked dark blue runic stone (`card_alliance_square.png`) and the vintage War of Lordaeron operational battlefront map (`banner_alliance_tactical.jpg`).
