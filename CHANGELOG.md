@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Completely removed the supporter/patron widget from the tactical sidebar to maintain a 100% focused, battle-ready intelligence feed with zero non-combat distractions.
 
 ### Changed
+- **Tactical Sidebar Block Standardization (Lifetime Combat Activity Standard)**:
+  - Standardized all right-sidebar widget items to a clean, compact dark iron plate design matching the Lifetime Combat Activity and Top Classes layout (`0.76rem`, `#030407` plate with subtle brass border).
+  - Purged feed-style banner image backgrounds from sidebar items, replacing them with crisp 3px faction left borders to keep the sidebar visually distinct and non-redundant with the center combat feed.
+  - **All Classes Displayed**: Removed the 5-class restriction so all realm classes are dynamically indexed and tracked in real-time.
+  - **Specialization Class Coloration**: Individual talent specializations now directly display in their signature class color (e.g. Marksmanship in hunter green `#abd473`) with the redundant class name text removed.
+  - **Deadliest Zones Streamlined**: Removed the redundant secondary "High Conflict Zone" sub-line, aligning zone names and rank badges into single-row entries.
 - **Comprehensive Grimdark Tactical War Room Design System**:
   - Pushed the entire visual system deeply into a dark, grim, gritty Blizzard fantasy aesthetic: obsidian black base canvas (`#020305`), blackened slate surfaces (`#040609`), and cast iron plate cards (`#0c0f16` to `#030407`).
   - Intensified body vignette falloff with deep charred stone background overlay, ensuring zero visual wash or low-contrast gray blocks.
