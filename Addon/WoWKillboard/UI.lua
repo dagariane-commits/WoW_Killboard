@@ -43,24 +43,24 @@ local CLASS_COORDS = CLASS_ICON_TCOORDS or {
     EVOKER      = {0, 0.25, 0.75, 1.0},
 }
 
--- Theme Engine: Classic WoW UI vs ElvUI Minimalist
+-- Theme Engine: Aegis Tactical vs ElvUI Minimalist vs Classic WoW UI
 function UI:GetCurrentThemeName()
     if WoWKillboardSettings and WoWKillboardSettings.theme then
         local t = WoWKillboardSettings.theme:lower()
         if KB.Themes and KB.Themes[t] then return t end
     end
-    return "elvui"
+    return "tactical"
 end
 
 function UI:GetTheme()
     local name = UI:GetCurrentThemeName()
-    return (KB.Themes and KB.Themes[name]) or (KB.Themes and KB.Themes["elvui"]) or {}
+    return (KB.Themes and KB.Themes[name]) or (KB.Themes and KB.Themes["tactical"]) or (KB.Themes and KB.Themes["elvui"]) or {}
 end
 
 function UI:SetTheme(themeName)
     themeName = (themeName or ""):lower()
     if not KB.Themes or not KB.Themes[themeName] then
-        print(string.format("|cffff9900[WoWKB]|r Unknown theme '%s'. Available: 'classic', 'elvui'.", tostring(themeName)))
+        print(string.format("|cffff9900[WoWKB]|r Unknown theme '%s'. Available: 'tactical', 'elvui', 'classic'.", tostring(themeName)))
         return
     end
 
@@ -133,8 +133,9 @@ function UI:ApplyTheme()
                 edgeFile = "Interface\\Buttons\\WHITE8X8",
                 edgeSize = 1,
             })
-            UI.CloseButton:SetBackdropColor(0.12, 0.12, 0.12, 1.0)
-            UI.CloseButton:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+            UI.CloseButton:SetBackdropColor(0.10, 0.10, 0.12, 1.0)
+            local closeBorder = (theme.id == "tactical") and { 0.45, 0.35, 0.18, 1.0 } or { 0.0, 0.0, 0.0, 1.0 }
+            UI.CloseButton:SetBackdropBorderColor(unpack(closeBorder))
             if UI.CloseButton.Label then
                 UI.CloseButton.Label:SetFontObject("GameFontHighlightSmall")
                 UI.CloseButton.Label:SetText("|cffff3333X|r")
@@ -190,8 +191,9 @@ function UI:ApplyTheme()
                 local ht = UI.DetailModal.CloseBtn:GetHighlightTexture()
                 if ht then ht:SetTexture(nil) ht:Hide() end
                 UI.DetailModal.CloseBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-                UI.DetailModal.CloseBtn:SetBackdropColor(0.12, 0.12, 0.12, 1.0)
-                UI.DetailModal.CloseBtn:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+                UI.DetailModal.CloseBtn:SetBackdropColor(0.10, 0.10, 0.12, 1.0)
+                local closeBorder = (theme.id == "tactical") and { 0.45, 0.35, 0.18, 1.0 } or { 0.0, 0.0, 0.0, 1.0 }
+                UI.DetailModal.CloseBtn:SetBackdropBorderColor(unpack(closeBorder))
                 if UI.DetailModal.CloseBtn.Label then UI.DetailModal.CloseBtn.Label:SetText("|cffff3333X|r") end
             end
         end
@@ -354,8 +356,9 @@ function UI:CreateMainWindow()
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
     })
-    mainFrame:SetBackdropColor(0.05, 0.05, 0.05, 0.98)
-    mainFrame:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+    local initTheme = UI:GetTheme()
+    mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {0.035, 0.045, 0.07, 0.98}))
+    mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {0.45, 0.35, 0.18, 0.95}))
 
     -- Window Title Header
     local titleIcon = mainFrame:CreateTexture(nil, "OVERLAY")
@@ -389,7 +392,7 @@ function UI:CreateMainWindow()
 
     -- Template-Free Theme Switcher Button
     local themeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    themeBtn:SetSize(112, 20)
+    themeBtn:SetSize(116, 20)
     themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -6, 0)
     themeBtn:EnableMouse(true)
     local themeLabel = themeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -397,7 +400,7 @@ function UI:CreateMainWindow()
     themeBtn.Label = themeLabel
     themeBtn:SetScript("OnClick", function()
         local cur = UI:GetCurrentThemeName()
-        local nextTheme = (cur == "elvui") and "classic" or "elvui"
+        local nextTheme = (cur == "tactical") and "elvui" or ((cur == "elvui") and "classic" or "tactical")
         UI:SetTheme(nextTheme)
     end)
     themeBtn:SetScript("OnEnter", function(self)
@@ -518,7 +521,7 @@ function UI:CreateMainWindow()
     local tabs = {
         { id = "FEED",        text = "Intel",           w = 70 },
         { id = "LEADERBOARD", text = "Hall of Legends", w = 112 },
-        { id = "BOUNTIES",    text = "Blood Bounties",  w = 100 },
+        { id = "BOUNTIES",    text = "Marks of Spite",  w = 108 },
         { id = "BG_METRICS",  text = "Warfronts",       w = 88 },
         { id = "ZONES",       text = "Zone Intel",      w = 84 },
     }
@@ -588,6 +591,9 @@ function UI:CreateMainWindow()
 
     -- Detail Modal Frame
     UI:CreateDetailModal()
+
+    -- Frontline Kill Banner
+    UI:InitializeKillBanner()
 
     UI:ApplyTheme()
     mainFrame:Hide()
@@ -914,10 +920,10 @@ function UI:RenderBounties()
 
     local bntTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bntTitle:SetPoint("TOPLEFT", 10, yOffset)
-    bntTitle:SetText("⚔️ Active Blood Bounties & Execution Contracts")
+    bntTitle:SetText("⚔️ Active Marks of Spite & Execution Contracts")
 
     -- Place Bounty Button
-    local placeBtn = UI:CreateButton(UI.ContentFrame, 140, 24, "+ Declare Bounty")
+    local placeBtn = UI:CreateButton(UI.ContentFrame, 150, 24, "+ Issue Mark of Spite")
     placeBtn:SetPoint("TOPRIGHT", -20, yOffset)
     placeBtn:SetScript("OnClick", function()
         UI:ShowBountyPrompt()
@@ -962,7 +968,7 @@ function UI:RenderBounties()
 
             local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-            txt:SetText(string.format("EXECUTION CONTRACT: |cffff3333%s|r (%s)  |  Reward: |cffffd700%s|r  |  Declared by: |cffcbd5e1%s|r%s",
+            txt:SetText(string.format("MARK OF SPITE: |cffff3333%s|r (%s)  |  Reward: |cffffd700%s|r  |  Issued by: |cffcbd5e1%s|r%s",
                 b.targetName, b.targetClass, KB.Utils.FormatMoney(b.amountCopper), b.placerName, lastSeenStr))
 
             local bId = b.id
@@ -1382,11 +1388,11 @@ function UI:ShowBountyPrompt()
 
         local t = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         t:SetPoint("TOP", 0, -16)
-        t:SetText("|cffff3333Declare Blood Bounty|r")
+        t:SetText("|cffff3333Issue Mark of Spite|r")
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         desc:SetPoint("TOP", 0, -42)
-        desc:SetText("Enter: <TargetName> <GoldAmount> (e.g. 'Thrall 500')")
+        desc:SetText("Enter: <TargetName> <RewardGold> (e.g. 'Thrall 500')")
 
         local eb = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
         eb:SetSize(260, 26)
@@ -1705,6 +1711,146 @@ function UI:ShowKOSAlert(targetName, guildOrFormer, alertType, reason)
 
     UI.KOSDialog:Show()
     if UI.KOSDialog.Raise then UI.KOSDialog:Raise() end
+end
+
+-- ----------------------------------------------------------------------------
+-- Frontline Kill Banner & Combat Toast (100% Template-Free, InCombat Safe)
+-- ----------------------------------------------------------------------------
+local killBanner = nil
+local killBannerTimer = nil
+
+function UI:InitializeKillBanner()
+    if killBanner or InCombatLockdown() then return end
+
+    killBanner = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    killBanner:SetSize(540, 54)
+    killBanner:SetPoint("TOP", UIParent, "TOP", 0, -135)
+    killBanner:SetFrameStrata("HIGH")
+    killBanner:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 },
+    })
+    killBanner:SetBackdropColor(0.035, 0.045, 0.07, 0.96)
+    killBanner:SetBackdropBorderColor(0.85, 0.65, 0.20, 1.0)
+    killBanner:Hide()
+
+    -- 2px Top Accent Rule (Dynamic engagement colored)
+    local topAccent = killBanner:CreateTexture(nil, "OVERLAY")
+    topAccent:SetHeight(2)
+    topAccent:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 0, 0)
+    topAccent:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", 0, 0)
+    topAccent:SetColorTexture(0.96, 0.72, 0.20, 1.0)
+    killBanner.TopAccent = topAccent
+
+    -- Killer Class Icon
+    local killerIcon = killBanner:CreateTexture(nil, "ARTWORK")
+    killerIcon:SetSize(26, 26)
+    killerIcon:SetPoint("LEFT", 12, 4)
+    killBanner.KillerIcon = killerIcon
+
+    -- Killer Text
+    local killerText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    killerText:SetPoint("LEFT", killerIcon, "RIGHT", 8, 0)
+    killBanner.KillerText = killerText
+
+    -- Center Combat Action
+    local centerAction = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    centerAction:SetPoint("CENTER", 0, 8)
+    centerAction:SetText("|cffff3333⚔️ DESTROYED ⚔️|r")
+    killBanner.CenterAction = centerAction
+
+    -- Engagement Tag (Solo 1v1, Duel, BG, Gang)
+    local modeTag = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    modeTag:SetPoint("TOP", centerAction, "BOTTOM", 0, -2)
+    killBanner.ModeTag = modeTag
+
+    -- Victim Class Icon
+    local victimIcon = killBanner:CreateTexture(nil, "ARTWORK")
+    victimIcon:SetSize(26, 26)
+    victimIcon:SetPoint("RIGHT", -12, 4)
+    killBanner.VictimIcon = victimIcon
+
+    -- Victim Text
+    local victimText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    victimText:SetPoint("RIGHT", victimIcon, "LEFT", -8, 0)
+    killBanner.VictimText = victimText
+
+    -- Location Subtitle
+    local locText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    locText:SetPoint("BOTTOM", 0, 5)
+    killBanner.LocText = locText
+
+    UI.KillBanner = killBanner
+end
+
+function UI:ShowKillBanner(killmail)
+    if not killmail or not killmail.killer or not killmail.victim then return end
+    if not UI.KillBanner then
+        UI:InitializeKillBanner()
+    end
+
+    local banner = UI.KillBanner
+    if not banner then return end
+
+    -- Setup Killer Icon & Name
+    local kClass = (killmail.killer.class or ""):upper()
+    local kCoords = CLASS_COORDS[kClass] or {0, 0.25, 0, 0.25}
+    banner.KillerIcon:SetTexture(CLASS_ICON_TEXTURE)
+    banner.KillerIcon:SetTexCoord(kCoords[1], kCoords[2], kCoords[3], kCoords[4])
+    banner.KillerText:SetText(KB.Utils.ColorizeByClass(string.format("[%d] %s", killmail.killer.level or 0, killmail.killer.name or "Unknown"), killmail.killer.class))
+
+    -- Setup Victim Icon & Name
+    local vClass = (killmail.victim.class or ""):upper()
+    local vCoords = CLASS_COORDS[vClass] or {0, 0.25, 0, 0.25}
+    banner.VictimIcon:SetTexture(CLASS_ICON_TEXTURE)
+    banner.VictimIcon:SetTexCoord(vCoords[1], vCoords[2], vCoords[3], vCoords[4])
+    banner.VictimText:SetText(KB.Utils.ColorizeByClass(string.format("[%d] %s", killmail.victim.level or 0, killmail.victim.name or "Unknown"), killmail.victim.class))
+
+    -- Setup Engagement Theme & Accents
+    if killmail.isDuel then
+        banner.CenterAction:SetText("|cffffd100⚔️ DUEL VICTORY ⚔️|r")
+        banner.ModeTag:SetText("|cffffd7001v1 CERTIFIED DUEL|r")
+        banner.TopAccent:SetColorTexture(1.0, 0.84, 0.0, 1.0)
+        banner:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
+    elseif killmail.isArena then
+        banner.CenterAction:SetText("|cffa335ee⚔️ ARENA EXECUTION ⚔️|r")
+        banner.ModeTag:SetText("|cffa335eeRATED ARENA MATCH|r")
+        banner.TopAccent:SetColorTexture(0.64, 0.21, 0.93, 1.0)
+        banner:SetBackdropBorderColor(0.64, 0.21, 0.93, 1.0)
+    elseif killmail.isBattleground then
+        banner.CenterAction:SetText("|cff00ccff⚔️ WARFRONT EXECUTION ⚔️|r")
+        banner.ModeTag:SetText(string.format("|cff00ccff%s (x%d)|r", killmail.battlegroundName or "Battleground", killmail.attackersCount or 1))
+        banner.TopAccent:SetColorTexture(0.0, 0.8, 1.0, 1.0)
+        banner:SetBackdropBorderColor(0.0, 0.8, 1.0, 1.0)
+    elseif killmail.isSolo then
+        banner.CenterAction:SetText("|cff00ff00⚔️ SOLO DESTROYED ⚔️|r")
+        banner.ModeTag:SetText("|cff00ff00CERTIFIED 1v1 OPEN WORLD|r")
+        banner.TopAccent:SetColorTexture(0.0, 1.0, 0.4, 1.0)
+        banner:SetBackdropBorderColor(0.0, 1.0, 0.4, 1.0)
+    else
+        banner.CenterAction:SetText("|cffff9900⚔️ TARGET ELIMINATED ⚔️|r")
+        banner.ModeTag:SetText(string.format("|cffff9900GANG COMBAT (x%d Attackers)|r", killmail.attackersCount or 2))
+        banner.TopAccent:SetColorTexture(1.0, 0.6, 0.0, 1.0)
+        banner:SetBackdropBorderColor(1.0, 0.6, 0.0, 1.0)
+    end
+
+    -- Location Subtitle
+    local loc = killmail.location or {}
+    local zoneStr = loc.zone or "Azeroth"
+    if loc.subZone and loc.subZone ~= "" then
+        zoneStr = zoneStr .. " - " .. loc.subZone
+    end
+    banner.LocText:SetText(string.format("|cff888888%s  |  %.1f, %.1f|r", zoneStr, loc.x or 0, loc.y or 0))
+
+    banner:Show()
+    if killBannerTimer then killBannerTimer:Cancel() end
+    killBannerTimer = C_Timer.NewTimer(4.5, function()
+        if banner and banner:IsShown() then
+            banner:Hide()
+        end
+    end)
 end
 
 

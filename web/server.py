@@ -18,7 +18,7 @@ from flask_cors import CORS
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(APP_DIR, "static")
-DB_PATH = os.path.join(APP_DIR, "killboard.db")
+DB_PATH = os.environ.get("DB_PATH", os.path.join(APP_DIR, "killboard.db"))
 
 app = Flask(__name__, static_folder=STATIC_DIR)
 CORS(app)
