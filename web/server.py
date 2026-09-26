@@ -1936,59 +1936,81 @@ def get_bounties_archive():
     return jsonify(cold_cases)
 
 @app.route("/api/stats/activity-7d", methods=["GET"])
+@app.route("/api/stats/sidebar", methods=["GET"])
 def get_activity_7d():
     now = int(time.time())
-    seven_days_ago = now - (7 * 86400)
+    one_day_ago = now - 86400
     with get_db() as conn:
-        # Total kills in 7 days
-        total_kills = conn.execute(
-            "SELECT COUNT(*) FROM kills WHERE timestamp >= ?", (seven_days_ago,)
-        ).fetchone()[0]
+        # Lifetime total kills
+        total_kills = conn.execute("SELECT COUNT(*) FROM kills").fetchone()[0]
 
-        # Active characters
+        # Lifetime active characters
         char_count = conn.execute("""
             SELECT COUNT(DISTINCT name) FROM (
-                SELECT killer_name AS name FROM kills WHERE timestamp >= ? AND killer_name != 'Unknown'
+                SELECT killer_name AS name FROM kills WHERE killer_name != 'Unknown'
                 UNION
-                SELECT victim_name AS name FROM kills WHERE timestamp >= ? AND victim_name != 'Unknown'
+                SELECT victim_name AS name FROM kills WHERE victim_name != 'Unknown'
             )
-        """, (seven_days_ago, seven_days_ago)).fetchone()[0]
+        """).fetchone()[0]
 
-        # Active guilds
+        # Lifetime active guilds
         guild_count = conn.execute("""
             SELECT COUNT(DISTINCT guild) FROM (
-                SELECT killer_guild AS guild FROM kills WHERE timestamp >= ? AND killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''
+                SELECT killer_guild AS guild FROM kills WHERE killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''
                 UNION
-                SELECT victim_guild AS guild FROM kills WHERE timestamp >= ? AND victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''
+                SELECT victim_guild AS guild FROM kills WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''
             )
-        """, (seven_days_ago, seven_days_ago)).fetchone()[0]
+        """).fetchone()[0]
 
-        # Faction breakdown
+        # Lifetime faction breakdown
         alliance_kills = conn.execute(
-            "SELECT COUNT(*) FROM kills WHERE timestamp >= ? AND killer_faction = 'Alliance'", (seven_days_ago,)
+            "SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance'"
         ).fetchone()[0]
         horde_kills = conn.execute(
-            "SELECT COUNT(*) FROM kills WHERE timestamp >= ? AND killer_faction = 'Horde'", (seven_days_ago,)
+            "SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde'"
         ).fetchone()[0]
 
-        # Active zones
-        zone_count = conn.execute("""
-            SELECT COUNT(DISTINCT zone) FROM kills
+        # 1. Deadliest Zones (Last 24 Hours)
+        deadliest_zones_rows = conn.execute("""
+            SELECT zone, COUNT(*) AS kills
+            FROM kills
             WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown'
-        """, (seven_days_ago,)).fetchone()[0]
+            GROUP BY zone
+            ORDER BY kills DESC
+            LIMIT 5
+        """, (one_day_ago,)).fetchall()
+        if not deadliest_zones_rows:
+            deadliest_zones_rows = conn.execute("""
+                SELECT zone, COUNT(*) AS kills
+                FROM kills
+                WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown'
+                GROUP BY zone
+                ORDER BY kills DESC
+                LIMIT 5
+            """).fetchall()
+        top_zones_24h = [dict(r) for r in deadliest_zones_rows]
 
-        # Top Characters (top 5)
-        top_chars_rows = conn.execute("""
-            SELECT killer_name AS name, killer_class AS class, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
+        # 2. Top Active Gankers (Last 24 Hours)
+        top_gankers_rows = conn.execute("""
+            SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
             FROM kills
             WHERE timestamp >= ? AND killer_name != 'Unknown'
             GROUP BY killer_name
             ORDER BY kills DESC
             LIMIT 5
-        """, (seven_days_ago,)).fetchall()
-        top_chars = [dict(r) for r in top_chars_rows]
+        """, (one_day_ago,)).fetchall()
+        if not top_gankers_rows:
+            top_gankers_rows = conn.execute("""
+                SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
+                FROM kills
+                WHERE killer_name != 'Unknown'
+                GROUP BY killer_name
+                ORDER BY kills DESC
+                LIMIT 5
+            """).fetchall()
+        top_chars_24h = [dict(r) for r in top_gankers_rows]
 
-        # Top Guilds (top 5)
+        # 3. Top Active Guilds (Last 24 Hours)
         top_guilds_rows = conn.execute("""
             SELECT killer_guild AS guild, killer_faction AS faction, COUNT(*) AS kills
             FROM kills
@@ -1996,30 +2018,39 @@ def get_activity_7d():
             GROUP BY killer_guild
             ORDER BY kills DESC
             LIMIT 5
-        """, (seven_days_ago,)).fetchall()
-        top_guilds = [dict(r) for r in top_guilds_rows]
+        """, (one_day_ago,)).fetchall()
+        if not top_guilds_rows:
+            top_guilds_rows = conn.execute("""
+                SELECT killer_guild AS guild, killer_faction AS faction, COUNT(*) AS kills
+                FROM kills
+                WHERE killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''
+                GROUP BY killer_guild
+                ORDER BY kills DESC
+                LIMIT 5
+            """).fetchall()
+        top_guilds_24h = [dict(r) for r in top_guilds_rows]
 
-        # Top Classes (top 5)
+        # 4. Top Classes (Lifetime)
         top_classes_rows = conn.execute("""
             SELECT killer_class AS class, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND killer_class IS NOT NULL AND killer_class != ''
+            WHERE killer_class IS NOT NULL AND killer_class != ''
             GROUP BY killer_class
             ORDER BY kills DESC
             LIMIT 5
-        """, (seven_days_ago,)).fetchall()
+        """).fetchall()
         top_classes = [dict(r) for r in top_classes_rows]
 
-        # Top Zones (top 5)
-        top_zones_rows = conn.execute("""
-            SELECT zone, COUNT(*) AS kills
+        # 5. Top Specs (Lifetime)
+        top_specs_rows = conn.execute("""
+            SELECT killer_spec AS spec, killer_class AS class, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown'
-            GROUP BY zone
+            WHERE killer_spec IS NOT NULL AND killer_spec != '' AND killer_spec != 'Unknown'
+            GROUP BY killer_spec, killer_class
             ORDER BY kills DESC
             LIMIT 5
-        """, (seven_days_ago,)).fetchall()
-        top_zones = [dict(r) for r in top_zones_rows]
+        """).fetchall()
+        top_specs = [dict(r) for r in top_specs_rows]
 
     return jsonify({
         "kills": total_kills,
@@ -2027,11 +2058,14 @@ def get_activity_7d():
         "guilds": guild_count,
         "allianceKills": alliance_kills,
         "hordeKills": horde_kills,
-        "zones": zone_count,
-        "topCharacters": top_chars,
-        "topGuilds": top_guilds,
+        "deadliestZones24h": top_zones_24h,
+        "topGankers24h": top_chars_24h,
+        "topGuilds24h": top_guilds_24h,
         "topClasses": top_classes,
-        "topZones": top_zones
+        "topSpecs": top_specs,
+        "topCharacters": top_chars_24h,
+        "topGuilds": top_guilds_24h,
+        "topZones": top_zones_24h
     })
 
 @app.route("/api/bounties/debt-ledger", methods=["GET"])
