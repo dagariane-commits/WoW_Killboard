@@ -546,23 +546,34 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
 
     local now = time()
     local playerName = UnitName("player")
-    local isPlayerWinner = (winnerName == playerName)
-    local isPlayerLoser = (loserName == playerName)
+    local cleanWinner = winnerName:match("^([^-]+)") or winnerName
+    local cleanLoser = loserName:match("^([^-]+)") or loserName
+    local isPlayerWinner = (cleanWinner == playerName) or (winnerName == playerName)
+    local isPlayerLoser = (cleanLoser == playerName) or (loserName == playerName)
 
-    -- Update W/L statistics in WoWKillboardDB
+    -- Update W/L and Total statistics in WoWKillboardDB
     WoWKillboardDB = WoWKillboardDB or {}
     WoWKillboardDB.stats = WoWKillboardDB.stats or {}
-    WoWKillboardDB.stats.duels = WoWKillboardDB.stats.duels or { wins = 0, losses = 0 }
+    WoWKillboardDB.stats.duels = WoWKillboardDB.stats.duels or { wins = 0, losses = 0, total = 0 }
+    WoWKillboardDB.stats.duels.total = (WoWKillboardDB.stats.duels.total or 0) + 1
 
     if isPlayerWinner then
-        WoWKillboardDB.stats.duels.wins = WoWKillboardDB.stats.duels.wins + 1
+        WoWKillboardDB.stats.duels.wins = (WoWKillboardDB.stats.duels.wins or 0) + 1
         CT.SessionStats.kills = CT.SessionStats.kills + 1
     elseif isPlayerLoser then
-        WoWKillboardDB.stats.duels.losses = WoWKillboardDB.stats.duels.losses + 1
+        WoWKillboardDB.stats.duels.losses = (WoWKillboardDB.stats.duels.losses or 0) + 1
         CT.SessionStats.deaths = CT.SessionStats.deaths + 1
     end
 
-    local killerInfo = KB.UnitScanner:GetUnitInfoByName(winnerName) or {
+    local killerInfo = KB.UnitScanner:GetUnitInfoByName(winnerName) or KB.UnitScanner:GetUnitInfoByName(cleanWinner)
+    if not killerInfo then
+        if UnitExists("target") and (UnitName("target") == winnerName or UnitName("target") == cleanWinner) then
+            killerInfo = KB.UnitScanner:ScanUnit("target")
+        elseif UnitExists("mouseover") and (UnitName("mouseover") == winnerName or UnitName("mouseover") == cleanWinner) then
+            killerInfo = KB.UnitScanner:ScanUnit("mouseover")
+        end
+    end
+    killerInfo = killerInfo or {
         guid = isPlayerWinner and UnitGUID("player") or "DUEL_WINNER",
         name = winnerName,
         level = isPlayerWinner and (UnitLevel("player") or 0) or 0,
@@ -574,7 +585,15 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
         healingDone = isPlayerWinner and CT.SessionStats.healingDone or 0,
     }
 
-    local victimInfo = KB.UnitScanner:GetUnitInfoByName(loserName) or {
+    local victimInfo = KB.UnitScanner:GetUnitInfoByName(loserName) or KB.UnitScanner:GetUnitInfoByName(cleanLoser)
+    if not victimInfo then
+        if UnitExists("target") and (UnitName("target") == loserName or UnitName("target") == cleanLoser) then
+            victimInfo = KB.UnitScanner:ScanUnit("target")
+        elseif UnitExists("mouseover") and (UnitName("mouseover") == loserName or UnitName("mouseover") == cleanLoser) then
+            victimInfo = KB.UnitScanner:ScanUnit("mouseover")
+        end
+    end
+    victimInfo = victimInfo or {
         guid = isPlayerLoser and UnitGUID("player") or "DUEL_LOSER",
         name = loserName,
         level = isPlayerLoser and (UnitLevel("player") or 0) or 0,
