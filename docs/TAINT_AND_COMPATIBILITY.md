@@ -76,6 +76,29 @@ end
 
 ---
 
+### Vector 4: Blizzard `RaidWarningFrame` & `RaidNotice` Pollution
+```lua
+-- INSECURE (Causes "Action Blocked by Blizzard UI" Popup)
+pcall(RaidNotice_AddMessage, RaidWarningFrame, rwMsg, rwColor)
+```
+**Why this fails:** `RaidWarningFrame` is an internal Blizzard FrameXML widget shared with secure combat UI routines. When an addon passes strings or invokes `RaidNotice_AddMessage`, the frame's execution stack is marked tainted. When the player enters combat or executes an action, Blizzard blocks the action and presents the red-bordered alert:
+`"WoWKillboard has been blocked from an action only available to the Blizzard UI."`
+
+**Our Surgical Solution:**
+We eliminated all calls to `RaidWarningFrame` and `RaidNotice_AddMessage`. In their place, WoW Killboard renders alerts through an anonymous, pure-Lua, non-interactive overlay (`UI.RaidNoticeFrame`) created directly on `UIParent` with zero Blizzard FrameXML dependencies.
+
+---
+
+### Vector 5: In-Combat Anchor Mutation & Mouse Click Interception
+Modifying frame anchors (`ClearAllPoints()` / `SetPoint()`) during active combat lockdown or leaving alert banners mouse-enabled (`EnableMouse(true)`) allows unsecure frames to intercept combat targeting clicks.
+
+**Our Surgical Solution:**
+- `UI.KillBanner` has `EnableMouse(false)` by default so all combat clicks pass cleanly through to the 3D world.
+- Mouse interaction is enabled *only* while explicitly unlocked via `/wowkb move` or the Alerts dialog.
+- Anchor coordinates are restored once at initialization and modified only on drag stop, never during combat.
+
+---
+
 ## 3. Cross-Client Compatibility Matrix
 
 WoW Killboard maintains a single unified codebase supporting all active client flavors:
