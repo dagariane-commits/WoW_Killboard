@@ -995,7 +995,19 @@ frame:SetScript("OnEvent", function(self, event, ...)
 end)
 
 -- Universal Event Registration across all 4 WoW client flavors (Guardrail 2 Compliant)
-pcall(frame.RegisterEvent, frame, "COMBAT_LOG_EVENT_UNFILTERED")
+local isCLEUForbidden = false
+if GetBuildInfo then
+    local _, _, _, tocversion = GetBuildInfo()
+    tocversion = tonumber(tocversion) or 11500
+    if tocversion >= 16000 or tocversion >= 120000 then
+        isCLEUForbidden = true
+    end
+end
+
+if not isCLEUForbidden then
+    pcall(frame.RegisterEvent, frame, "COMBAT_LOG_EVENT_UNFILTERED")
+end
+
 frame:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
 frame:RegisterEvent("CHAT_MSG_SYSTEM")
 frame:RegisterEvent("PLAYER_DEAD")
@@ -1004,4 +1016,3 @@ frame:RegisterEvent("PLAYER_TARGET_CHANGED")
 frame:RegisterEvent("UNIT_HEALTH")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
-pcall(frame.RegisterEvent, frame, "PVP_MATCH_COMPLETE")
