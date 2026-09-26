@@ -431,7 +431,7 @@ function UI:CreateMainWindow()
     alertsBtn:EnableMouse(true)
     local alertsLabel = alertsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     alertsLabel:SetPoint("CENTER", 0, 0)
-    alertsLabel:SetText("|cffffd100⚙️ Alerts|r")
+    alertsLabel:SetText("|cffffd100Alerts|r")
     alertsBtn.Label = alertsLabel
     alertsBtn:SetScript("OnClick", function()
         UI:ShowAlertsConfig()
@@ -443,7 +443,7 @@ function UI:CreateMainWindow()
             self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
         end
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:AddLine("|cffffd100⚙️ Combat Alert Settings|r", 1, 1, 1)
+        GameTooltip:AddLine("|cffffd100Combat Alert Settings|r", 1, 1, 1)
         GameTooltip:AddLine("Configure Kill Banner, Sound Alerts, Raid Warnings & Position.", 0.8, 0.8, 0.8)
         GameTooltip:Show()
     end)
@@ -464,12 +464,12 @@ function UI:CreateMainWindow()
     backupBtn:EnableMouse(true)
     local backupLabel = backupBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     backupLabel:SetPoint("CENTER", 0, 0)
-    backupLabel:SetText("|cffff4444📯 WAR HORN|r")
+    backupLabel:SetText("|cffff4444WAR HORN|r")
     backupBtn.Label = backupLabel
     backupBtn:SetScript("OnClick", function()
         if KB.Reinforcements and KB.Reinforcements.IsBeaconActive and KB.Reinforcements:IsBeaconActive() then
             KB.Reinforcements:ResolveBeacon(false)
-            backupLabel:SetText("|cffff4444📯 WAR HORN|r")
+            backupLabel:SetText("|cffff4444WAR HORN|r")
         else
             if IsInInstance then
                 local inInst, instType = IsInInstance()
@@ -481,7 +481,7 @@ function UI:CreateMainWindow()
             if KB.Reinforcements and KB.Reinforcements.TriggerCallForBackup then
                 local ok, _ = KB.Reinforcements:TriggerCallForBackup()
                 if ok then
-                    backupLabel:SetText("|cff00ff00✓ RALLY ACTIVE|r")
+                    backupLabel:SetText("|cff00ff00RALLY ACTIVE|r")
                 end
             end
         end
@@ -1825,7 +1825,7 @@ function UI:InitializeKillBanner()
     -- Center Combat Action
     local centerAction = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     centerAction:SetPoint("CENTER", 0, 8)
-    centerAction:SetText("|cffff3333⚔️ DESTROYED ⚔️|r")
+    centerAction:SetText("|cffff3333DESTROYED|r")
     killBanner.CenterAction = centerAction
 
     -- Engagement Tag (Solo 1v1, Duel, BG, Gang)
@@ -1931,27 +1931,27 @@ function UI:ShowKillBanner(killmail, isTest)
 
     -- Setup Engagement Theme & Accents
     if killmail.isDuel then
-        banner.CenterAction:SetText("|cffffd100⚔️ DUEL VICTORY ⚔️|r")
+        banner.CenterAction:SetText("|cffffd100DUEL VICTORY|r")
         banner.ModeTag:SetText("|cffffd7001v1 CERTIFIED DUEL|r")
         banner.TopAccent:SetColorTexture(1.0, 0.84, 0.0, 1.0)
         banner:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
     elseif killmail.isArena then
-        banner.CenterAction:SetText("|cffa335ee⚔️ ARENA EXECUTION ⚔️|r")
+        banner.CenterAction:SetText("|cffa335eeARENA EXECUTION|r")
         banner.ModeTag:SetText("|cffa335eeRATED ARENA MATCH|r")
         banner.TopAccent:SetColorTexture(0.64, 0.21, 0.93, 1.0)
         banner:SetBackdropBorderColor(0.64, 0.21, 0.93, 1.0)
     elseif killmail.isBattleground then
-        banner.CenterAction:SetText("|cff00ccff⚔️ WARFRONT EXECUTION ⚔️|r")
+        banner.CenterAction:SetText("|cff00ccffWARFRONT EXECUTION|r")
         banner.ModeTag:SetText(string.format("|cff00ccff%s (x%d)|r", killmail.battlegroundName or "Battleground", killmail.attackersCount or 1))
         banner.TopAccent:SetColorTexture(0.0, 0.8, 1.0, 1.0)
         banner:SetBackdropBorderColor(0.0, 0.8, 1.0, 1.0)
     elseif killmail.isSolo then
-        banner.CenterAction:SetText("|cff00ff00⚔️ SOLO DESTROYED ⚔️|r")
+        banner.CenterAction:SetText("|cff00ff00SOLO DESTROYED|r")
         banner.ModeTag:SetText("|cff00ff00CERTIFIED 1v1 OPEN WORLD|r")
         banner.TopAccent:SetColorTexture(0.0, 1.0, 0.4, 1.0)
         banner:SetBackdropBorderColor(0.0, 1.0, 0.4, 1.0)
     else
-        banner.CenterAction:SetText("|cffff9900⚔️ TARGET ELIMINATED ⚔️|r")
+        banner.CenterAction:SetText("|cffff9900TARGET ELIMINATED|r")
         banner.ModeTag:SetText(string.format("|cffff9900GANG COMBAT (x%d Attackers)|r", killmail.attackersCount or 2))
         banner.TopAccent:SetColorTexture(1.0, 0.6, 0.0, 1.0)
         banner:SetBackdropBorderColor(1.0, 0.6, 0.0, 1.0)
@@ -2108,7 +2108,7 @@ function UI:ShowAlertsConfig()
         -- Header
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffffd100⚙️ FRONTLINE COMBAT ALERTS & RADAR|r")
+        title:SetText("|cffffd100FRONTLINE COMBAT ALERTS & RADAR|r")
         dlg.TitleText = title
 
         local subtitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -2127,7 +2127,7 @@ function UI:ShowAlertsConfig()
         sec1Title:SetPoint("TOPLEFT", 24, -68)
         sec1Title:SetText("|cffffffff1. DISPLAY & AUDIO FEEDBACK|r")
 
-        local modeBtn = UI:CreateButton(dlg, 280, 24, "🔊 Sound + Banner", "GameFontHighlightSmall")
+        local modeBtn = UI:CreateButton(dlg, 280, 24, "Sound + Banner", "GameFontHighlightSmall")
         modeBtn:SetPoint("TOPLEFT", 24, -88)
         dlg.ModeBtn = modeBtn
 
@@ -2140,7 +2140,7 @@ function UI:ShowAlertsConfig()
         sec2Title:SetPoint("TOPLEFT", 24, -138)
         sec2Title:SetText("|cffffffff2. RADAR & PROXIMITY SCOPE|r")
 
-        local scopeBtn = UI:CreateButton(dlg, 280, 24, "📍 Same Zone Only", "GameFontHighlightSmall")
+        local scopeBtn = UI:CreateButton(dlg, 280, 24, "Same Zone Only", "GameFontHighlightSmall")
         scopeBtn:SetPoint("TOPLEFT", 24, -158)
         dlg.ScopeBtn = scopeBtn
 
@@ -2153,7 +2153,7 @@ function UI:ShowAlertsConfig()
         sec3Title:SetPoint("TOPLEFT", 24, -208)
         sec3Title:SetText("|cffffffff3. RAID WARNING COMBAT NOTICE|r")
 
-        local rwBtn = UI:CreateButton(dlg, 280, 24, "✓ RAID WARNING: ON", "GameFontHighlightSmall")
+        local rwBtn = UI:CreateButton(dlg, 280, 24, "[ON] RAID WARNING", "GameFontHighlightSmall")
         rwBtn:SetPoint("TOPLEFT", 24, -228)
         dlg.RwBtn = rwBtn
 
@@ -2166,11 +2166,11 @@ function UI:ShowAlertsConfig()
         sec4Title:SetPoint("TOPLEFT", 24, -278)
         sec4Title:SetText("|cffffffff4. SCREEN POSITIONING & CALIBRATION|r")
 
-        local unlockBtn = UI:CreateButton(dlg, 200, 24, "📐 Move / Unlock Banner", "GameFontHighlightSmall")
+        local unlockBtn = UI:CreateButton(dlg, 200, 24, "Move / Unlock Banner", "GameFontHighlightSmall")
         unlockBtn:SetPoint("TOPLEFT", 24, -298)
         dlg.UnlockBtn = unlockBtn
 
-        local resetBtn = UI:CreateButton(dlg, 140, 24, "↺ Reset Position", "GameFontHighlightSmall")
+        local resetBtn = UI:CreateButton(dlg, 140, 24, "Reset Position", "GameFontHighlightSmall")
         resetBtn:SetPoint("LEFT", unlockBtn, "RIGHT", 10, 0)
         dlg.ResetBtn = resetBtn
 
@@ -2187,7 +2187,7 @@ function UI:ShowAlertsConfig()
         dlg.BottomDivider = bDiv
 
         -- Footer Action Buttons
-        local testBtn = UI:CreateButton(dlg, 180, 28, "▶️ Test Alert Preview", "GameFontNormal")
+        local testBtn = UI:CreateButton(dlg, 180, 28, "Test Alert Preview", "GameFontNormal")
         testBtn:SetPoint("BOTTOMLEFT", 24, 20)
         dlg.TestBtn = testBtn
 
@@ -2203,39 +2203,39 @@ function UI:ShowAlertsConfig()
             local rw = s.alertRaidWarning ~= false
 
             if mode == "SOUND_AND_BANNER" then
-                dlg.ModeBtn.Label:SetText("|cff00ff00🔊 Sound + Banner (Active)|r")
+                dlg.ModeBtn.Label:SetText("|cff00ff00[ACTIVE] Sound + Banner|r")
                 dlg.ModeHint:SetText("|cff94a3b8Plays audio alert and displays on-screen kill banner.|r")
             elseif mode == "BANNER_ONLY" then
-                dlg.ModeBtn.Label:SetText("|cffffd100🔕 Banner Only (No Sound)|r")
+                dlg.ModeBtn.Label:SetText("|cffffd100[MUTED] Banner Only|r")
                 dlg.ModeHint:SetText("|cff94a3b8Displays on-screen kill banner with zero audio feedback.|r")
             else
-                dlg.ModeBtn.Label:SetText("|cffff3333⛔ Alerts Disabled (Off)|r")
+                dlg.ModeBtn.Label:SetText("|cffff3333[DISABLED] Alerts Off|r")
                 dlg.ModeHint:SetText("|cff94a3b8Suppresses all kill banners, sounds, and raid warnings.|r")
             end
 
             if scope == "ZONE" then
-                dlg.ScopeBtn.Label:SetText("|cff00e5ff📍 Same Zone Only (Zone Radar)|r")
+                dlg.ScopeBtn.Label:SetText("|cff00e5ff[RADAR] Same Zone Only|r")
                 dlg.ScopeHint:SetText("|cff94a3b8Alerts only when combat occurs in your current zone.|r")
             elseif scope == "ALL" then
-                dlg.ScopeBtn.Label:SetText("|cffffd700🌐 All Realm Kills (Broadcast)|r")
+                dlg.ScopeBtn.Label:SetText("|cffffd700[BROADCAST] All Realm Kills|r")
                 dlg.ScopeHint:SetText("|cff94a3b8Alerts for all kills broadcasted across realm network.|r")
             else
-                dlg.ScopeBtn.Label:SetText("|cff10b981⚔️ My Kills & Deaths Only|r")
+                dlg.ScopeBtn.Label:SetText("|cff10b981[SOLO] My Kills & Deaths Only|r")
                 dlg.ScopeHint:SetText("|cff94a3b8Only triggers when you personally kill or are killed.|r")
             end
 
             if rw then
-                dlg.RwBtn.Label:SetText("|cff00ff00✓ RAID WARNING: ON|r")
+                dlg.RwBtn.Label:SetText("|cff00ff00[ON] RAID WARNING|r")
                 dlg.RwHint:SetText("|cff94a3b8Flashes large Raid Warning text in screen center on kill.|r")
             else
-                dlg.RwBtn.Label:SetText("|cffff3333✗ RAID WARNING: OFF|r")
+                dlg.RwBtn.Label:SetText("|cffff3333[OFF] RAID WARNING|r")
                 dlg.RwHint:SetText("|cff94a3b8Suppresses screen-center Raid Warning combat notice.|r")
             end
 
             if UI.bannerUnlocked then
-                dlg.UnlockBtn.Label:SetText("|cffff3333🔒 Lock Banner Position|r")
+                dlg.UnlockBtn.Label:SetText("|cffff3333Lock Banner Position|r")
             else
-                dlg.UnlockBtn.Label:SetText("|cffffd100📐 Move / Unlock Banner|r")
+                dlg.UnlockBtn.Label:SetText("|cffffd100Move / Unlock Banner|r")
             end
         end
         dlg.UpdateControls = UpdateControls
