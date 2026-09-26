@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.10] - 2026-09-26
+
+### Added
+- **Topographic Azeroth Battle Terrain Backdrop for Deadliest Zones**:
+  - Generated and installed custom grimdark topographic battle terrain backdrop (`zone_map_backdrop.jpg`) for the Deadliest Zones widget.
+  - Applied subtle brass borders and dark gradient overlays to guarantee pristine contrast and readability.
+- **Dedicated "See All Marks →" High Command Action**:
+  - Replaced the static "LIVE CONTRACTS" status badge with a direct routing button navigating to the Marks of Spite board.
+
+### Changed
+- **Transitioned to "Mark of Spite" Terminology**:
+  - Rebranded the realm contract ecosystem to **Marks of Spite** across the web platform, High Command Execution List, navigation tabs, personal mark tracking, and Hall of Fame leaderboards.
+  - High Command Execution List subtitle updated to: *"Certified Marks of Spite across Azeroth • Deliver the final blow in open combat to claim the reward"*.
+  - Renamed primary navigation buttons from "Bounties" to "Marks" across desktop header and mobile navigation drawer.
+- **Separated Top Active Specs & Alphabetical Realm Classes**:
+  - Split "Top Classes & Specs" into two dedicated cards: **Top Active Specs** (indexing top 10 talent archetypes colored by class) and **All Classes**.
+  - All realm classes are sorted server-side strictly in alphabetical order (A–Z: Druid, Hunter, Mage, Paladin, Priest, Rogue, Shaman, Warlock, Warrior).
+- **Uniform 1px Sidebar Rank Borders**:
+  - Removed solid 3px left edge accent borders (`border-left`) from `.sidebar-rank-item.alliance` and `.sidebar-rank-item.horde` for a clean, consistent border design across all sidebar blocks.
+
 ## [1.4.9] - 2026-09-25
 
 ### Added

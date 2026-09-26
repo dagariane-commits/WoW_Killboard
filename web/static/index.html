@@ -35,7 +35,7 @@
         <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">Hall of Legends</button>
         <button id="nav-hazards" class="nav-btn" onclick="switchTab('HAZARDS')">World Hazards</button>
         <button id="nav-armory" class="nav-btn" onclick="handleArmoryNavClick()">Armory</button>
-        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Bounties</button>
+        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Marks</button>
         <button id="nav-warroom" class="nav-btn" onclick="switchTab('WARROOM')">Warroom</button>
       </nav>
 
@@ -95,7 +95,7 @@
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
-          <span>Bounties</span>
+          <span>Marks</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-warroom" onclick="switchTab('WARROOM'); toggleMobileDrawer(false);">
@@ -152,11 +152,11 @@
         <div class="most-wanted-header">
           <div>
             <div class="most-wanted-title">HIGH COMMAND EXECUTION LIST — REALM'S MOST NOTORIOUS</div>
-            <div class="most-wanted-subtitle">Certified blood bounties across Azeroth &bull; Deliver the final blow in open combat to claim the gold</div>
+            <div class="most-wanted-subtitle">Certified Marks of Spite across Azeroth &bull; Deliver the final blow in open combat to claim the reward</div>
           </div>
-          <div class="most-wanted-status-badge">
-            <span class="live-dot"></span> LIVE CONTRACTS
-          </div>
+          <button class="see-all-marks-btn" onclick="switchTab('BOUNTIES')">
+            See All Marks &rarr;
+          </button>
         </div>
 
         <div id="most-wanted-cards-container" class="most-wanted-grid">
@@ -233,17 +233,22 @@
         </div>
       </div>
 
-      <!-- Top Classes & Specializations -->
+      <!-- Top Active Specs -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">Top Classes &amp; Specs</div>
+          <div class="section-title">Top Active Specs</div>
         </div>
-        <div class="sidebar-sub-title">Top Classes</div>
-        <div id="sidebar-top-classes" style="display:flex; flex-direction:column; gap:4px; margin-bottom:14px;">
+        <div id="sidebar-top-specs" class="sidebar-rank-list">
           <!-- Populated by app.js -->
         </div>
-        <div class="sidebar-sub-title">Top Specializations</div>
-        <div id="sidebar-top-specs" style="display:flex; flex-direction:column; gap:4px;">
+      </div>
+
+      <!-- All Classes -->
+      <div class="sidebar-card">
+        <div class="section-header">
+          <div class="section-title">All Classes</div>
+        </div>
+        <div id="sidebar-top-classes" class="sidebar-rank-list">
           <!-- Populated by app.js -->
         </div>
       </div>
