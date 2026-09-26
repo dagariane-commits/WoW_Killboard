@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Top Header Duel & Battleground Stat Card Visibility (`UI.lua`)**:
   - Resolved bug where the `1v1 DUELS RECORD` and `BATTLEGROUNDS RECORD` header stat cards showed `"No duels recorded"` even when duels or battleground matches were logged on the board by other players.
   - Cards now display accurate logged counts (`0W - 0L (You) • X Logged`) when spectated or witnessed matches are present.
+- **Zero-Taint Keyboard & ESC Event Cycle Overhaul (`UI.lua`)**:
+  - Eradicated permanent `EnableKeyboard(true)` allocations from hidden root frames (`mainFrame`, `UI.ReinforcementDialog`, `UI.KOSDialog`, `UI.AlertsDialog`).
+  - Previously, `mainFrame` retained keyboard capture even when hidden at login, intercepting the `ESCAPE` key and executing `self:SetPropagateKeyboardInput(false)`. This blocked Blizzard's secure `ToggleGameMenu()` / `ClearTarget()` calls and triggered the *"WoWKillboard has been blocked from an action only available to the Blizzard UI"* popup dialog.
+  - Keyboard listening is now initialized to `EnableKeyboard(false)` and activates strictly on `OnShow`, instantly disabling on `OnHide` with unconditional propagation fallback (`not self:IsShown()`). Safe `pcall` guards added for `SetPortraitTexture`.
 
 ## [1.4.23] - 2026-09-26
 
