@@ -66,9 +66,12 @@ function US:ScanUnit(unit)
     US.NameCache[fullName] = guid
     US.NameCache[name] = guid
 
-    -- KOS Blacklist & 30-Day Deserter Check (Hostile units only)
-    if UnitCanAttack and UnitCanAttack("player", unit) then
-        US:CheckKOS(info)
+    -- KOS Blacklist & Hostile Radar Check (Hostile player units only)
+    if UnitCanAttack and UnitCanAttack("player", unit) and UnitIsPlayer(unit) then
+        local isKos = US:CheckKOS(info)
+        if not isKos then
+            US:CheckHostileRadar(info)
+        end
     end
 
     return info
@@ -148,7 +151,33 @@ function US:CheckKOS(info)
                 KB.UI:ShowKOSAlert(name, guild, "PLAYER_KOS", kosPlayerReason)
             end
         end
+        return true
     end
+    return false
+end
+
+US.LastRadarAlert = US.LastRadarAlert or {}
+
+-- Tactical radar telemetry notice when an enemy player hostile is spotted
+function US:CheckHostileRadar(info)
+    if not info or not info.name then return end
+    local s = WoWKillboardSettings or KB.DefaultSettings
+    if s and s.enableRadarAlerts == false then return end
+
+    local name = info.name
+    local now = time()
+    if (now - (US.LastRadarAlert[name] or 0)) < 30 then
+        return
+    end
+    US.LastRadarAlert[name] = now
+
+    local guildTag = (info.guild and info.guild ~= "None" and info.guild ~= "") and (" <" .. info.guild .. ">") or ""
+    local classStr = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(info.class or "HOSTILE", info.class) or (info.class or "HOSTILE")
+    local levelStr = (info.level and info.level > 0) and tostring(info.level) or "??"
+    local zoneStr = GetZoneText() or "Wilderness"
+
+    print(string.format("|cff00ccff[WoWKB Radar]|r Detected Hostile: |cffff3333%s|r%s (Lvl %s %s) in |cffffffff%s|r!",
+        name, guildTag, levelStr, classStr, zoneStr))
 end
 
 

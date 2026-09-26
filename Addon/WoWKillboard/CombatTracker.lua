@@ -21,11 +21,17 @@ CT.SessionStats = {
 
 local frame = CreateFrame("Frame")
 
--- Modern Client Detection (Forever Beta 16000-16999 or Retail >= 100000)
--- On these modern clients, COMBAT_LOG_EVENT_UNFILTERED is strictly forbidden by Blizzard C++ security.
-local _, _, _, tocVersion = GetBuildInfo()
-tocVersion = tonumber(tocVersion) or 0
-local isModernClient = (tocVersion >= 16000 and tocVersion <= 16999) or (tocVersion >= 100000)
+-- Cross-Client Dynamic Combat Log Feature Detection (Guardrail 2 Compliant)
+-- Supports WoW Forever Beta (_classic_beta_), Classic Era (_classic_era_), Anniversary (_anniversary_), and Modern Retail (_retail_)
+local hasCombatLogAPI = (type(CombatLogGetCurrentEventInfo) == "function")
+
+local function GetCombatLogPayload(...)
+    if hasCombatLogAPI then
+        return CombatLogGetCurrentEventInfo()
+    else
+        return ...
+    end
+end
 
 CT.LastKillVictim = nil
 CT.LastKillTime = 0
@@ -96,10 +102,11 @@ end
 -- Record incoming or outgoing damage
 function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount, spellName)
     if not KB.Utils.CanAccess(sourceGUID) or not KB.Utils.CanAccess(destGUID) then return end
-    if not KB.Utils.CanAccess(sourceFlags) or not KB.Utils.CanAccess(destFlags) then return end
 
-    local isSourcePlayer = bit.band(sourceFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0
-    local isDestPlayer = bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0
+    local isSourcePlayer = (sourceGUID and sourceGUID:match("^Player%-") ~= nil) or
+        (sourceFlags and KB.Utils.CanAccess(sourceFlags) and type(sourceFlags) == "number" and bit.band(sourceFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0)
+    local isDestPlayer = (destGUID and destGUID:match("^Player%-") ~= nil) or
+        (destFlags and KB.Utils.CanAccess(destFlags) and type(destFlags) == "number" and bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0)
 
     if not isDestPlayer then return end
 
@@ -112,7 +119,7 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
     end
 
     -- If source is hostile to player, add to HostileCluster
-    local isHostile = bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) > 0
+    local isHostile = (sourceFlags and type(sourceFlags) == "number" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) > 0)
     if isHostile and isSourcePlayer then
         CT.HostileCluster[sourceGUID] = time()
     end
@@ -146,8 +153,8 @@ end
 -- Process death event
 function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killerName)
     if not victimGUID or not KB.Utils.CanAccess(victimGUID) then return end
-    if not victimFlags or not KB.Utils.CanAccess(victimFlags) then return end
-    local isDestPlayer = bit.band(victimFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0
+    local isDestPlayer = (victimGUID and victimGUID:match("^Player%-") ~= nil) or
+        (victimFlags and KB.Utils.CanAccess(victimFlags) and type(victimFlags) == "number" and bit.band(victimFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0)
     if not isDestPlayer then return end
 
     local playerGUID = UnitGUID("player")
@@ -605,23 +612,21 @@ end
 -- Event Listener Frame
 frame:SetScript("OnEvent", function(self, event, ...)
     if event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        if not isModernClient then
-            local timestamp, subevent, _, sourceGUID, sourceName, sourceFlags, _, destGUID, destName, destFlags, _ = CombatLogGetCurrentEventInfo()
+        local timestamp, subevent, _, sourceGUID, sourceName, sourceFlags, _, destGUID, destName, destFlags, _ = GetCombatLogPayload(...)
 
-            if subevent == "SWING_DAMAGE" then
-                local amount = select(12, CombatLogGetCurrentEventInfo())
-                CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount or 0, "Melee Swing")
-            elseif subevent == "SPELL_DAMAGE" or subevent == "SPELL_PERIODIC_DAMAGE" or subevent == "RANGE_DAMAGE" then
-                local spellId, spellName, _, amount = select(12, CombatLogGetCurrentEventInfo())
-                CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount or 0, spellName)
-            elseif subevent == "SPELL_HEAL" or subevent == "SPELL_PERIODIC_HEAL" then
-                local _, _, _, amount = select(12, CombatLogGetCurrentEventInfo())
-                CT:RecordHeal(sourceGUID, amount or 0)
-            elseif subevent == "PARTY_KILL" then
-                CT:ProcessDeath(destGUID, destName, destFlags, sourceGUID, sourceName)
-            elseif subevent == "UNIT_DIED" then
-                CT:ProcessDeath(destGUID, destName, destFlags, nil, nil)
-            end
+        if subevent == "SWING_DAMAGE" then
+            local amount = select(12, GetCombatLogPayload(...))
+            CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount or 0, "Melee Swing")
+        elseif subevent == "SPELL_DAMAGE" or subevent == "SPELL_PERIODIC_DAMAGE" or subevent == "RANGE_DAMAGE" then
+            local spellId, spellName, _, amount = select(12, GetCombatLogPayload(...))
+            CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount or 0, spellName)
+        elseif subevent == "SPELL_HEAL" or subevent == "SPELL_PERIODIC_HEAL" then
+            local _, _, _, amount = select(12, GetCombatLogPayload(...))
+            CT:RecordHeal(sourceGUID, amount or 0)
+        elseif subevent == "PARTY_KILL" then
+            CT:ProcessDeath(destGUID, destName, destFlags, sourceGUID, sourceName)
+        elseif subevent == "UNIT_DIED" then
+            CT:ProcessDeath(destGUID, destName, destFlags, nil, nil)
         end
 
     elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
@@ -699,7 +704,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "UNIT_HEALTH" then
         local unit = ...
-        if unit == "target" and activeEnemyTarget and UnitAffectingCombat("player") and UnitIsDead("target") then
+        if unit == "target" and activeEnemyTarget and (UnitIsDead("target") or UnitIsDeadOrGhost("target")) then
             if activeEnemyTarget.name then
                 CT:OnPlayerHonorableKill(activeEnemyTarget.name)
             end
@@ -764,10 +769,8 @@ frame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
--- Safe event registration: NEVER register COMBAT_LOG_EVENT_UNFILTERED on modern clients
-if not isModernClient then
-    frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-end
+-- Universal Event Registration across all 4 WoW client flavors (Guardrail 2 Compliant)
+pcall(frame.RegisterEvent, frame, "COMBAT_LOG_EVENT_UNFILTERED")
 frame:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
 frame:RegisterEvent("CHAT_MSG_SYSTEM")
 frame:RegisterEvent("PLAYER_DEAD")

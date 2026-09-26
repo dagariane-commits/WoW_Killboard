@@ -883,9 +883,20 @@ function UI:RenderLiveFeed()
     if #kills == 0 then
         if not UI.EmptyFeedText then
             UI.EmptyFeedText = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            UI.EmptyFeedText:SetPoint("TOP", 0, -40)
+            UI.EmptyFeedText:SetPoint("TOP", UI.ContentFrame, "TOP", 0, -50)
+            UI.EmptyFeedText:SetJustifyH("CENTER")
+            UI.EmptyFeedText:SetSpacing(4)
         end
-        UI.EmptyFeedText:SetText(string.format("|cff94a3b8No PvP kill records under mode:|r |cffffd100[%s]|r\n|cff888888Engage in world PvP, 1v1 duels, or battlegrounds to populate the feed.|r", currentMode))
+        local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Azeroth"
+        UI.EmptyFeedText:SetText(string.format(
+            "|cffffd100● FRONTLINE COMBAT RADAR ONLINE|r\n\n" ..
+            "|cff94a3b8Sector Surveillance:|r |cffffffff%s|r   |cff64748b•|r   |cff94a3b8Filter Mode:|r |cffffd100[%s]|r\n" ..
+            "|cff94a3b8Combat Engine Status:|r |cff00ff00ARMED & LISTENING|r |cff64748b(Zero confirmed combat deaths yet)|r\n\n" ..
+            "|cff888888Killmails are automatically recorded upon confirming an open-world player kill,\n" ..
+            "battleground victory, or sanctioned 1v1 duel.|r\n\n" ..
+            "|cff00e5ffQuick Verification:|r |cffccccccType |cffffd100/wowkb testkill|r to simulate a live killmail and preview the feed.|r",
+            currentZone, currentMode
+        ))
         UI.EmptyFeedText:Show()
         return
     elseif UI.EmptyFeedText then
