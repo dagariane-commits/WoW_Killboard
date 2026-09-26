@@ -1272,12 +1272,12 @@ body {
   background-color: var(--wow-brass-border-light);
 }
 
-.killmail-row.km-solo::before { background-color: var(--accent-green); }
-.killmail-row.km-gang::before { background-color: #f97316; }
-.killmail-row.km-duel::before { background-color: var(--wow-gold); }
-.killmail-row.km-arena::before { background-color: #a855f7; }
-.killmail-row.km-bg::before { background-color: var(--accent-cyan); }
-.killmail-row.km-world::before { background-color: #475569; }
+/* Victor Faction Accent on Left Edge (Alliance Blue vs Horde Red) */
+.killmail-row.winner-alliance::before { background-color: var(--alliance-blue, #3b82f6) !important; }
+.killmail-row.winner-horde::before { background-color: var(--horde-red, #dc2626) !important; }
+.killmail-row.winner-neutral::before { background-color: #64748b !important; }
+.killmail-row.km-solo::before { background-color: var(--alliance-blue, #3b82f6); }
+.killmail-row.km-gang::before { background-color: var(--horde-red, #dc2626); }
 
 .killmail-row:hover {
   background: linear-gradient(90deg, rgba(26, 32, 46, 0.98) 0%, rgba(16, 21, 31, 0.98) 100%);
@@ -1425,10 +1425,10 @@ body {
 }
 
 .km-right-meta {
-  width: 200px;
-  min-width: 200px;
-  max-width: 200px;
-  flex: 0 0 200px;
+  width: 130px;
+  min-width: 130px;
+  max-width: 130px;
+  flex: 0 0 130px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -3905,18 +3905,21 @@ body.portal-active .container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18px;
-  max-width: 920px;
+  width: 100%;
+  max-width: 1060px;
   margin: 0 auto;
+  align-items: stretch;
 }
 
 .dramatic-gate-card {
   background: linear-gradient(180deg, #0e121b 0%, #07090e 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 20px 20px;
+  padding: 22px 22px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 14px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.6);
   position: relative;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
@@ -4569,6 +4572,7 @@ body.portal-active .container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+  align-items: stretch;
 }
 
 .dossier-tier-card {
@@ -4577,7 +4581,8 @@ body.portal-active .container {
   padding: 14px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  align-items: stretch;
   border: 1px solid #1a2336;
 }
 
@@ -4599,6 +4604,10 @@ body.portal-active .container {
 
 .tier-card-header {
   margin-bottom: 12px;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .tier-badge {
@@ -4717,7 +4726,8 @@ body.portal-active .container {
 }
 
 .tier-card-action {
-  margin-top: 14px;
+  margin-top: auto;
+  padding-top: 14px;
 }
 
 .tier-cta-btn {
@@ -4801,30 +4811,35 @@ body.portal-active .container {
   color: #cbd5e1;
 }
 
-/* Download Box & Action Buttons */
+/* Download Box & Action Buttons (Centered) */
 .dossier-download-box {
   background: linear-gradient(135deg, rgba(17, 21, 30, 0.98) 0%, rgba(10, 13, 19, 0.98) 100%);
   border: 1px solid var(--wow-brass-border, #4a3b27);
   border-radius: 8px;
-  padding: 16px 18px;
+  padding: 22px 24px;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 14px;
+  text-align: center;
+  gap: 16px;
 }
 
 .dossier-dl-info {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  text-align: center;
+  gap: 8px;
 }
 
 .dossier-dl-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .dossier-btn {
@@ -5353,6 +5368,53 @@ body.portal-active .container {
     height: 40px;
     font-size: 0.80rem;
   }
+}
+
+/* ----------------- Warcraft Logs Parse Percentile System ----------------- */
+.wowlogs-percentile-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--font-tactical);
+  font-weight: 800;
+  font-size: 0.74rem;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* ----------------- Combat Feed View More Button ----------------- */
+.feed-view-more-wrap {
+  text-align: center;
+  padding: 14px 0 6px 0;
+}
+
+.feed-view-more-btn {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--wow-brass-border, #4a3b27);
+  color: #cbd5e1;
+  font-family: var(--font-tactical);
+  font-size: 0.80rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 9px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.feed-view-more-btn:hover {
+  background: rgba(212, 163, 41, 0.18);
+  border-color: var(--wow-gold);
+  color: var(--wow-gold-bright);
+  box-shadow: 0 0 14px rgba(212, 163, 41, 0.3);
+  transform: translateY(-1px);
 }
 
 
