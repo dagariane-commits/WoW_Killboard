@@ -19,7 +19,7 @@ KB.UI = {}
 local UI = KB.UI
 
 local mainFrame = nil
-local activeTab = "FEED"   -- "FEED", "LEADERBOARD", "BOUNTIES", "BG_METRICS", "ZONES"
+local activeTab = "FEED"   -- "FEED", "LEADERBOARD", "BOUNTIES", "ZONES"
 local currentMode = "ALL"  -- "ALL", "WORLD", "BG", "ARENA", "DUEL"
 
 local tabButtons = {}
@@ -690,7 +690,6 @@ function UI:CreateMainWindow()
         { id = "FEED",        text = "Intel",           w = 70 },
         { id = "LEADERBOARD", text = "Hall of Legends", w = 112 },
         { id = "BOUNTIES",    text = "Marks of Spite",  w = 108 },
-        { id = "BG_METRICS",  text = "Warfronts",       w = 88 },
         { id = "ZONES",       text = "Zone Intel",      w = 84 },
     }
 
@@ -948,16 +947,18 @@ function UI:Refresh()
         region:Hide()
     end
 
-    if activeTab == "FEED" then
+    if activeTab == "FEED" or activeTab == "BG_METRICS" then
+        activeTab = "FEED"
         UI:RenderLiveFeed()
     elseif activeTab == "LEADERBOARD" then
         UI:RenderLeaderboard()
     elseif activeTab == "BOUNTIES" then
         UI:RenderBounties()
-    elseif activeTab == "BG_METRICS" then
-        UI:RenderBGMetrics()
     elseif activeTab == "ZONES" then
         UI:RenderZones()
+    else
+        activeTab = "FEED"
+        UI:RenderLiveFeed()
     end
 end
 
