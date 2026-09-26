@@ -608,17 +608,3 @@ end)
 
 coreFrame:RegisterEvent("ADDON_LOADED")
 
--- Security Diagnostic Interceptor: Captures exact blocked function name
-local diagFrame = CreateFrame("Frame")
-diagFrame:RegisterEvent("ADDON_ACTION_BLOCKED")
-diagFrame:RegisterEvent("ADDON_ACTION_FORBIDDEN")
-diagFrame:SetScript("OnEvent", function(self, event, addon, func)
-    local msg = string.format("[WoWKB Diagnostic] Blocked Addon: %s | Action: %s()", tostring(addon), tostring(func))
-    print("|cffff0000==================================================|r")
-    print("|cffff0000" .. msg .. "|r")
-    print("|cffff0000==================================================|r")
-    if UIErrorsFrame and UIErrorsFrame.AddMessage then
-        UIErrorsFrame:AddMessage(msg, 1, 0.2, 0.2, 1, 10)
-    end
-end)
-
