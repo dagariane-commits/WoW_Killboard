@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.9] - 2026-09-25
 
+### Added
+- **Automated Full Project Snapshot & Backup Tool (`scripts/backup.py`)**:
+  - Engineered zero-dependency backup engine packaging complete codebase, addon files, web app, databases, documentation, and tests into high-compression zip archives under `backups/`.
+  - Automatically filters ephemeral files (`.git`, `build`, `dist`, `__pycache__`, `cloudflared.exe`) and prints compression statistics.
+
 ### Changed
 - **Comprehensive Grimdark Tactical War Room Design System**:
   - Pushed the entire visual system deeply into a dark, grim, gritty Blizzard fantasy aesthetic: obsidian black base canvas (`#020305`), blackened slate surfaces (`#040609`), and cast iron plate cards (`#0c0f16` to `#030407`).
