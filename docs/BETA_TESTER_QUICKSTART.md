@@ -43,6 +43,9 @@ flowchart LR
 | Command | Action |
 | :--- | :--- |
 | `/killboard` or `/wowkb` | Toggle the War Room Dashboard |
+| `/killboard alerts` or `/wowkb alerts` | Open Frontline Combat Alerts & Radar Settings (or click `⚙️ Alerts` in header) |
+| `/killboard move` or `/wowkb move` | Unlock/lock Kill Banner to drag and reposition anywhere on screen |
+| `/killboard test` or `/wowkb test` | Fire preview Kill Banner with sound and raid warning |
 | `/killboard theme` | Cycle between Aegis Tactical, ElvUI, and Classic themes |
 | `/armory [Name]` | Inspect detailed combat dossier for any combatant |
 | `/spot` or `/scout` | Broadcast enemy sighting with coordinates to allies |

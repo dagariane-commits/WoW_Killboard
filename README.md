@@ -216,8 +216,11 @@ WoW_Killboard/
 2. Start WoW and ensure **WoW Killboard** is checked in your AddOns menu.
 3. In-game commands:
    - `/killboard` or `/wowkb` — Open the Frontline War Room dashboard.
+   - `/killboard alerts` or `/wowkb alerts` — Open Combat Alerts & Radar settings (or click `⚙️ Alerts` button in header).
+   - `/killboard move` or `/wowkb move` — Unlock and reposition Kill Banner anywhere on screen.
+   - `/killboard test` or `/wowkb test` — Preview Kill Banner with audio and raid warning.
+   - `/killboard theme` — Switch between Aegis Tactical, ElvUI, and Classic themes.
    - `/warhorn` or `/kbrally` — Sound the War Horn (open-world emergency distress & auto-invite rally).
-   - `/killboard theme [classic|elvui]` — Switch between Classic WoW and ElvUI themes.
    - `/killboard stats` — View current session damage, healing, kills, and K/D.
    - `/killboard bounty <Name> <Gold>` — Declare a blood bounty upon an enemy player (open world only).
    - `/killboard reset` — Clear local kill database.

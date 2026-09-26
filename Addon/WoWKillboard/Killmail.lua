@@ -96,14 +96,7 @@ function KM:RecordKill(data)
     local chatMsg = string.format("|cff00ccff[WoWKB]|r %s %s %s %s in %s", badge, killerStr, actionVerb, victimStr, locStr)
     print(chatMsg)
 
-    -- Sound feedback
-    if KB.DefaultSettings.soundAlerts then
-        if killmail.isSolo then
-            PlaySound(KB.SoundAlerts.SOLO_KILL, "Master")
-        end
-    end
-
-    -- Frontline Kill Banner UI Alert
+    -- Frontline Kill Banner UI Alert & Audio Dispatch (respects alertMode, scope, and sound settings)
     if KB.UI and KB.UI.ShowKillBanner then
         KB.UI:ShowKillBanner(killmail)
     end

@@ -152,6 +152,18 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             end
             if count == 0 then print("  (No active KOS blacklist targets)") end
         end
+    elseif cmd == "move" or cmd == "unlock" then
+        if KB.UI and KB.UI.ToggleBannerLock then
+            KB.UI:ToggleBannerLock()
+        end
+    elseif cmd == "test" then
+        if KB.UI and KB.UI.TestKillBanner then
+            KB.UI:TestKillBanner()
+        end
+    elseif cmd == "alerts" or cmd == "alert" or cmd == "config" then
+        if KB.UI and KB.UI.ShowAlertsConfig then
+            KB.UI:ShowAlertsConfig()
+        end
     elseif cmd == "armory" then
         KB:PrintArmoryDossier(arg)
     elseif cmd == "theme" then
@@ -166,6 +178,9 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     else
         print("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
         print("  |cffffd100/killboard|r or |cffffd100/wowkb|r - Toggle the Frontline War Room Dashboard")
+        print("  |cffffd100/killboard alerts|r or |cffffd100/wowkb alerts|r - Open Combat Alerts & Radar Configuration")
+        print("  |cffffd100/killboard move|r or |cffffd100/wowkb move|r - Unlock or lock Kill Banner to reposition on screen")
+        print("  |cffffd100/killboard test|r or |cffffd100/wowkb test|r - Preview Kill Alert Banner with sound and raid warning")
         print("  |cffffd100/armory [Name]|r or |cffffd100/killboard armory [Name]|r - Inspect Character Combat Dossier")
         print("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
         print("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
@@ -351,6 +366,25 @@ SlashCmdList["WOWKILLBOARDSOS"] = function(msg)
     else
         if KB.Reinforcements then KB.Reinforcements:TriggerCallForBackup() end
     end
+end
+
+-- Dedicated Quick-Slash Commands for Kill Alert Calibration & Testing
+SLASH_WOWKB_MOVE1 = "/wowkbmove"
+SLASH_WOWKB_MOVE2 = "/kbmove"
+SlashCmdList["WOWKB_MOVE"] = function()
+    if KB.UI and KB.UI.ToggleBannerLock then KB.UI:ToggleBannerLock() end
+end
+
+SLASH_WOWKB_TEST1 = "/wowkbtest"
+SLASH_WOWKB_TEST2 = "/kbtest"
+SlashCmdList["WOWKB_TEST"] = function()
+    if KB.UI and KB.UI.TestKillBanner then KB.UI:TestKillBanner() end
+end
+
+SLASH_WOWKB_ALERTS1 = "/wowkbalerts"
+SLASH_WOWKB_ALERTS2 = "/kbalerts"
+SlashCmdList["WOWKB_ALERTS"] = function()
+    if KB.UI and KB.UI.ShowAlertsConfig then KB.UI:ShowAlertsConfig() end
 end
 
 -- Addon Compartment Handler (Blizzard Native 10.0+ / 11.0+ / Modern Classic Integration)
