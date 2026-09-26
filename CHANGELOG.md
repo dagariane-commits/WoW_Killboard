@@ -10,9 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.9] - 2026-09-25
 
 ### Changed
-- **Alliance vs. Horde Visual Luminosity & Vibrancy Equalization**:
-  - Color-graded `banner_alliance_tactical.jpg` using luminance-preserving cobalt remapping, raising the blue channel mean to 147.0 to eliminate faded sepia/charcoal tones.
-  - Symmetrized CSS gradient opacities (`rgba(24, 75, 185, 0.68)` for Alliance vs `rgba(145, 24, 28, 0.68)` for Horde), inset spreads, and left-edge glowing accents in `.killmail-row`, providing identical optical vibrancy for Alliance and Horde kill rows.
+- **Dark & Gritty Atmospheric Faction Color Tuning**:
+  - Replaced high-saturation neon washes with subtle, battle-worn dark tints across all player areas: a deep moody navy tint (`rgba(12, 22, 44, 0.86)`) for Alliance and an equally subtle dark blood-iron tint (`rgba(44, 12, 16, 0.86)`) for Horde.
+  - Symmetrized dark borders and removed excessive neon box-shadows across killmail feed rows, Most Wanted cards, bounty execution target cards, and tactical sidebar items.
+- **Unified Heading Typography (Cinzel Metallic Gold Standard)**:
+  - Standardized all major section and card headings across the center main column and right sidebar column to match the "Recent Kills" heading style (`font-family: var(--font-display)` Cinzel, 3D metallic gold gradient, and drop shadow).
+  - Aligned `.section-title`, `.sidebar-sub-title`, `.most-wanted-title`, `Hall of Legends`, `Bounty Board`, and `Wall of Shame` headings to this uniform Blizzard aesthetic.
+- **Purged Unmarked Recon (Guest) Badge**:
+  - Removed the `UNMARKED RECON (GUEST)` badge from the homepage realm telemetry header.
+- **Live Recon Wire Retired from Web (In-Game Dispatch Only)**:
+  - Retired `#intel-sighting-wire` from the web platform; tactical reconnaissance sightings are dispatched strictly in-game via addon communication channels and combat tracker alerts.
 - **Faction Backdrops for Most Wanted Outlaws**:
   - Dynamically bound authentic Alliance (`card_alliance_square.png`) and Horde (`card_horde_square.png`) stone crest backdrops to active outlaws in the Most Wanted grid.
   - Automatically infers faction from `target_faction` and class identity (e.g. Paladin/Shaman fallback), while keeping unclaimed slots cleanly neutral.
