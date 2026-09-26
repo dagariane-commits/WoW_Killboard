@@ -644,6 +644,26 @@ function UI:CreateMainWindow()
         valLabel:SetText("0 / 0")
         card.ValueLabel = valLabel
 
+        card:EnableMouse(true)
+        local cardId = cfg.id
+        card:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            if cardId == "KD" then
+                GameTooltip:AddLine("|cffffd100Session Combat K/D|r", 1, 1, 1)
+                GameTooltip:AddLine("Personal session combat record (You) and total open-world PvP kills logged.", 0.8, 0.8, 0.8)
+            elseif cardId == "DUELS" then
+                GameTooltip:AddLine("|cffffb82e1v1 Duels Record|r", 1, 1, 1)
+                GameTooltip:AddLine("Personal duel record (You) and total witnessed realm duels logged on board.", 0.8, 0.8, 0.8)
+            elseif cardId == "BGS" then
+                GameTooltip:AddLine("|cff00e5ffBattlegrounds Record|r", 1, 1, 1)
+                GameTooltip:AddLine("Personal battleground record (You) and total battleground matches logged.", 0.8, 0.8, 0.8)
+            end
+            GameTooltip:Show()
+        end)
+        card:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+
         UI.StatCards[cfg.id] = card
         prevCard = card
     end
@@ -790,17 +810,60 @@ function UI:Refresh()
     local bgTot = bgW + bgL
     local bgRate = bgTot > 0 and math.floor((bgW / bgTot) * 100) or 0
 
+    -- Calculate total activity across the board
+    local totalKillsCount = 0
+    local totalDuelsCount = (st.duels and st.duels.total) or 0
+    local totalBgsCount = (st.bgs and st.bgs.total) or 0
+    if WoWKillboardDB and WoWKillboardDB.kills then
+        local duelKills, bgKills, worldKills = 0, 0, 0
+        for _, km in pairs(WoWKillboardDB.kills) do
+            if km.isDuel then
+                duelKills = duelKills + 1
+            elseif km.isBattleground then
+                bgKills = bgKills + 1
+            else
+                worldKills = worldKills + 1
+            end
+        end
+        totalDuelsCount = math.max(totalDuelsCount, duelKills)
+        totalBgsCount = math.max(totalBgsCount, bgKills)
+        totalKillsCount = worldKills
+    end
+
     local kd = (s.deaths > 0) and string.format("%.2f", s.kills / s.deaths) or tostring(s.kills)
 
     if UI.StatCards then
         if UI.StatCards.KD and UI.StatCards.KD.ValueLabel then
-            UI.StatCards.KD.ValueLabel:SetText(string.format("|cffffffff%d|r K  |cff64748b/|r  |cffff4444%d|r D  (|cff00ff66%s|r)", s.kills, s.deaths, kd))
+            UI.StatCards.KD.ValueLabel:SetText(string.format(
+                "|cffffffff%d|rK / |cffff4444%d|rD |cff64748b(You)|r  |cff64748b•|r  |cffffd100%d|r |cff94a3b8Logged|r",
+                s.kills, s.deaths, totalKillsCount
+            ))
         end
         if UI.StatCards.DUELS and UI.StatCards.DUELS.ValueLabel then
-            UI.StatCards.DUELS.ValueLabel:SetText(string.format("|cffffffff%d|rW - |cffff4444%d|rL  (|cffffd700%d%%|r)", dW, dL, dRate))
+            if dTot > 0 then
+                UI.StatCards.DUELS.ValueLabel:SetText(string.format(
+                    "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b•|r  |cffffd100%d|r |cff94a3b8Logged|r",
+                    dW, dL, dRate, totalDuelsCount
+                ))
+            else
+                UI.StatCards.DUELS.ValueLabel:SetText(string.format(
+                    "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b•|r  |cffffd100%d|r |cff94a3b8Logged|r",
+                    totalDuelsCount
+                ))
+            end
         end
         if UI.StatCards.BGS and UI.StatCards.BGS.ValueLabel then
-            UI.StatCards.BGS.ValueLabel:SetText(string.format("|cffffffff%d|rW - |cffff4444%d|rL  (|cff69ccf0%d%%|r)", bgW, bgL, bgRate))
+            if bgTot > 0 then
+                UI.StatCards.BGS.ValueLabel:SetText(string.format(
+                    "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b•|r  |cff00e5ff%d|r |cff94a3b8Logged|r",
+                    bgW, bgL, bgRate, totalBgsCount
+                ))
+            else
+                UI.StatCards.BGS.ValueLabel:SetText(string.format(
+                    "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b•|r  |cff00e5ff%d|r |cff94a3b8Logged|r",
+                    totalBgsCount
+                ))
+            end
         end
     end
 
@@ -947,7 +1010,8 @@ function UI:RenderLiveFeed()
         -- Killer Level Pill
         local kLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         kLvl:SetPoint("LEFT", kIcon, "RIGHT", 4, 0)
-        kLvl:SetText(string.format("|cff94a3b8%d|r", km.killer.level or 0))
+        local kLvlVal = km.killer.level or 0
+        kLvl:SetText((kLvlVal > 0) and string.format("|cff94a3b8%d|r", kLvlVal) or "|cff64748b??|r")
 
         -- Killer Name & Guild
         local killerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -968,7 +1032,8 @@ function UI:RenderLiveFeed()
         -- Victim Level Pill
         local vLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         vLvl:SetPoint("LEFT", vIcon, "RIGHT", 4, 0)
-        vLvl:SetText(string.format("|cff94a3b8%d|r", km.victim.level or 0))
+        local vLvlVal = km.victim.level or 0
+        vLvl:SetText((vLvlVal > 0) and string.format("|cff94a3b8%d|r", vLvlVal) or "|cff64748b??|r")
 
         -- Victim Name & Guild
         local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")

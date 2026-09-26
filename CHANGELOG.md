@@ -5,6 +5,21 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.20] - 2026-09-26
+
+### Fixed
+- **Duel Telemetry & KPI Stat Cards Synchronization (`CombatTracker.lua`, `UI.lua`)**:
+  - Resolved stat card discrepancy where witnessed realm duels (e.g. duels between other players in the Wetlands) appeared in the live feed but left the top `1v1 DUELS RECORD` card at `0W - 0L (0%)`.
+  - Added realm-wide total duel tracking in `WoWKillboardDB.stats.duels.total` and dynamic fallback aggregation from `WoWKillboardDB.kills`.
+  - Updated all 3 top KPI Stat Cards to display **both** the player's personal performance (`You`) and the total activity tracked on the board (`Logged`), formatted cleanly as:
+    - `SESSION COMBAT K/D`: `0K / 0D (You) • X Logged`
+    - `1v1 DUELS RECORD`: `0W - 0L (You) • X Logged` (e.g., `0W - 0L (You) • 1 Logged` for the Wetlands duel)
+    - `BATTLEGROUNDS RECORD`: `0W - 0L (You) • X Logged`
+  - Added interactive mouse hover tooltips to all 3 attribute stat cards explaining personal records vs total board telemetry.
+  - Hardened duel combatant name matching against cross-realm hyphenated suffixes (`cleanWinner`, `cleanLoser`) to ensure reliable personal win/loss attribution.
+  - Implemented proximity targeting/mouseover unit scanning fallback in `OnDuelCompleted` to capture levels and classes for active duelists.
+  - Cleaned up feed row level rendering: unscanned combatants now display as `??` instead of `0`.
+
 ## [1.4.19] - 2026-09-26
 
 ### Fixed
