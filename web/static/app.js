@@ -500,8 +500,15 @@ function renderMostWanted(outlaws) {
         ? `<button class="wanted-btn compact accepted" disabled title="Contract Accepted">✓ Tracking</button>`
         : `<button class="wanted-btn compact" onclick="acceptBountyContract('${b.id}', '${b.target_name}')" title="Accept Bounty Contract">Accept</button>`;
 
+      let targetFaction = (b.target_faction || "").trim();
+      if (!targetFaction && cls) {
+        if (cls === "PALADIN") targetFaction = "Alliance";
+        else if (cls === "SHAMAN") targetFaction = "Horde";
+      }
+      const factionClass = targetFaction.toLowerCase() === "alliance" ? "alliance" : (targetFaction.toLowerCase() === "horde" ? "horde" : "");
+
       html += `
-        <div class="wanted-card compact">
+        <div class="wanted-card compact ${factionClass}">
           <div class="wanted-card-top">
             <span class="wanted-stamp">#${idx + 1} WANTED</span>
             <span class="wanted-reward-pill">${formatNumber(b.amount_gold)} ${renderWowCoin('gold')}</span>
@@ -512,7 +519,7 @@ function renderMostWanted(outlaws) {
           <div class="wanted-name" onclick="openCharacterProfile('${b.target_name}')" title="${b.target_name}">
             ${colorizeClass(b.target_name, cls)}
           </div>
-          <div class="wanted-guild" title="${b.target_faction || 'Neutral'}">&lt;${b.target_faction || 'Neutral'}&gt;</div>
+          <div class="wanted-guild" title="${targetFaction || 'Neutral'}">&lt;${targetFaction || 'Neutral'}&gt;</div>
           <div class="wanted-lastseen" title="Last Seen: ${lastSeenText}">${lastSeenText}</div>
           <div class="wanted-action-wrap">
             ${btnHtml}
@@ -668,8 +675,15 @@ function renderSidebarActivity(data) {
           ? `<span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(c.guild)}')">&lt;${escapeHtml(c.guild)}&gt;</span>`
           : '';
         const specPart = c.spec ? `<span style="color:#cbd5e1; font-weight:600;">${escapeHtml(c.spec)}</span> • ` : '';
+        let faction = (c.faction || "").toLowerCase();
+        if (!faction && c.class) {
+          const cu = c.class.toUpperCase();
+          if (cu === "PALADIN") faction = "alliance";
+          else if (cu === "SHAMAN") faction = "horde";
+        }
+        const factionClass = faction === 'alliance' ? 'alliance' : (faction === 'horde' ? 'horde' : '');
         return `
-          <div class="sidebar-rank-item">
+          <div class="sidebar-rank-item ${factionClass}">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="rank-badge">#${i + 1}</span>
               <div>
@@ -692,14 +706,13 @@ function renderSidebarActivity(data) {
       guildListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No active guild combat in last 24h</div>`;
     } else {
       guildListEl.innerHTML = guilds.map((g, i) => {
-        const factionColor = g.faction === 'Alliance' ? 'var(--alliance-blue)' : (g.faction === 'Horde' ? 'var(--horde-red)' : '#94a3b8');
+        const factionClass = (g.faction || '').toLowerCase() === 'alliance' ? 'alliance' : ((g.faction || '').toLowerCase() === 'horde' ? 'horde' : '');
         return `
-          <div class="sidebar-rank-item">
+          <div class="sidebar-rank-item ${factionClass}">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="rank-badge">#${i + 1}</span>
               <div>
                 <span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')" style="font-weight:700;">&lt;${escapeHtml(g.guild)}&gt;</span>
-                <div style="font-size:0.68rem; color:${factionColor};">${escapeHtml(g.faction || 'Neutral')}</div>
               </div>
             </div>
             <span style="color:var(--accent-gold); font-weight:700; font-size:0.76rem;">${g.kills} kills</span>
@@ -1201,10 +1214,15 @@ function renderFeed(kills) {
     }
 
     // Determine victor faction (Alliance Blue vs Horde Red)
-    const killerFaction = (km.killer && km.killer.faction) ? km.killer.faction : 'Unknown';
+    let killerFaction = ((km.killer && km.killer.faction) || '').trim();
+    if (!killerFaction && km.killer && km.killer.class) {
+      const kc = km.killer.class.toUpperCase();
+      if (kc === 'PALADIN') killerFaction = 'Alliance';
+      else if (kc === 'SHAMAN') killerFaction = 'Horde';
+    }
     let victorClass = 'winner-neutral';
-    if (killerFaction === 'Alliance') victorClass = 'winner-alliance';
-    else if (killerFaction === 'Horde') victorClass = 'winner-horde';
+    if (killerFaction.toLowerCase() === 'alliance') victorClass = 'winner-alliance';
+    else if (killerFaction.toLowerCase() === 'horde') victorClass = 'winner-horde';
 
     const killerBadge = renderClassBadge(km.killer.class, 26);
     const victimBadge = renderClassBadge(km.victim.class, 26);
