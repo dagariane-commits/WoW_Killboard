@@ -75,6 +75,8 @@ end
 
 CT.LastKillVictim = nil
 CT.LastKillTime = 0
+CT.LastLifetimeHK = nil
+CT.RecentEngagedEnemies = {}
 local activeEnemyTarget = nil
 
 -- Get current instance & BG metadata
@@ -543,19 +545,46 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     CT.RecentDamage[victimGUID] = nil
 end
 
+local PVP_RANK_PREFIXES = {
+    "Grand Marshal%s+", "Field Marshal%s+", "Marshal%s+", "Commander%s+",
+    "Lieutenant Commander%s+", "Knight%-Champion%s+", "Knight%-Lieutenant%s+",
+    "Knight%s+", "Sergeant Major%s+", "Master Sergeant%s+", "Sergeant%s+",
+    "Corporal%s+", "Private%s+",
+    "High Warlord%s+", "Warlord%s+", "General%s+", "Lieutenant General%s+",
+    "Champion%s+", "Centurion%s+", "Legionnaire%s+", "Blood Guard%s+",
+    "Stone Guard%s+", "First Sergeant%s+", "Senior Sergeant%s+", "Grunt%s+",
+    "Scout%s+",
+}
+
+local function StripRankPrefix(name)
+    if not name or type(name) ~= "string" then return name end
+    for _, prefix in ipairs(PVP_RANK_PREFIXES) do
+        name = name:gsub("^" .. prefix, "")
+    end
+    return name:match("^%s*(.-)%s*$")
+end
+
 -- Helper to parse victim name from CHAT_MSG_COMBAT_HONOR_GAIN
 local function ExtractVictimFromHonorMsg(msg)
     if not msg or not KB.Utils.CanAccess(msg) or type(msg) ~= "string" then return nil end
-    local clean = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1"):gsub("[%.,!%?:;]", "")
+    local clean = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1")
+
+    -- Format 1: "%s dies, honorable kill ..."
     local victim = clean:match("^(.-)%s+dies")
+
+    -- Format 2: "... for the death of %s."
     if not victim then
-        victim = clean:match("death of%s+(%S+)")
+        victim = clean:match("death of%s+([^%.%,%!]+)")
     end
+
+    -- Format 3: "Honorable Kill: %s"
     if not victim then
-        victim = clean:match("Honorable Kill:%s*(%S+)")
+        victim = clean:match("Honorable Kill:%s*([^%.%,%!%(]+)")
     end
+
     if victim then
-        victim = victim:match("^%s*(.-)%s*$") -- trim
+        victim = victim:gsub("[%.,!%?:;]", "")
+        victim = StripRankPrefix(victim)
         if KB.Utils.CanAccess(victim) and victim ~= "" then
             return victim
         end
@@ -563,33 +592,69 @@ local function ExtractVictimFromHonorMsg(msg)
     return nil
 end
 
--- Process an honorable kill on modern / Forever clients
-function CT:OnPlayerHonorableKill(victimName)
-    if not victimName or not KB.Utils.CanAccess(victimName) then return end
+-- Process an honorable kill across all clients (CLEU, UnitEvents, Chat, HK counter)
+function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     local now = time()
+
+    local victimInfo = nil
+    if unitToken and UnitExists(unitToken) and UnitIsPlayer(unitToken) then
+        victimInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit(unitToken)
+        if (not victimName or victimName == "") and victimInfo then
+            victimName = victimInfo.name
+        end
+    end
+
+    if (not victimName or victimName == "") and UnitExists("target") and UnitIsPlayer("target") and (UnitIsDead("target") or UnitIsDeadOrGhost("target")) then
+        victimName = UnitName("target")
+        victimInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+    end
+
+    if (not victimName or victimName == "") and activeEnemyTarget and (now - (activeEnemyTarget.lastSeen or 0)) <= 30 then
+        victimName = activeEnemyTarget.name
+        victimInfo = activeEnemyTarget
+    end
+
+    if not victimName or victimName == "" then
+        local bestEnemy = nil
+        local bestTime = 0
+        for guid, e in pairs(CT.RecentEngagedEnemies) do
+            if e.lastSeen and e.lastSeen > bestTime and (now - e.lastSeen) <= 30 then
+                bestEnemy = e
+                bestTime = e.lastSeen
+            end
+        end
+        if bestEnemy then
+            victimName = bestEnemy.name
+            victimInfo = bestEnemy
+        end
+    end
+
+    if not victimName or victimName == "" then
+        victimName = "Hostile Combatant"
+    end
+
+    if not KB.Utils.CanAccess(victimName) then return end
+
     if CT.LastKillVictim and (CT.LastKillVictim:lower() == victimName:lower()) and (now - (CT.LastKillTime or 0)) < 5 then
         return
     end
     CT.LastKillVictim = victimName
     CT.LastKillTime = now
 
-    local victimInfo = KB.UnitScanner:GetUnitInfoByName(victimName) or {
-        guid = "UNKNOWN",
-        name = victimName,
-        level = 0,
-        class = "UNKNOWN",
-        guild = "None",
-        faction = "Unknown",
-        partySize = 1,
-    }
-
-    if UnitExists("target") and UnitName("target") == victimName then
-        local tInfo = KB.UnitScanner:ScanUnit("target")
-        if tInfo then victimInfo = tInfo end
+    if not victimInfo then
+        victimInfo = KB.UnitScanner:GetUnitInfoByName(victimName) or {
+            guid = explicitGuid or "UNKNOWN",
+            name = victimName,
+            level = 0,
+            class = "UNKNOWN",
+            guild = "None",
+            faction = "Unknown",
+            partySize = 1,
+        }
     end
 
-    local friendlyPartySize = math.max(2, CT:GetFriendlyPartySize())
-    local isSolo = false -- Honorable kill broadcasts without combat log proof indicate group/nearby presence
+    local partySize = CT:GetFriendlyPartySize()
+    local isSolo = (partySize <= 1)
     local playerGUID = UnitGUID("player")
     local playerName = UnitName("player")
     local _, pClass = UnitClass("player")
@@ -607,7 +672,7 @@ function CT:OnPlayerHonorableKill(victimName)
         isArena = context.isArena,
         battlegroundName = context.battlegroundName,
         isSolo = isSolo,
-        attackersCount = friendlyPartySize,
+        attackersCount = partySize > 0 and partySize or 1,
         attackers = {
             {
                 guid = playerGUID or "PLAYER",
@@ -624,21 +689,41 @@ function CT:OnPlayerHonorableKill(victimName)
             class = pClass or "UNKNOWN",
             guild = pGuild or "None",
             faction = pFaction or "Unknown",
-            partySize = friendlyPartySize,
+            partySize = partySize > 0 and partySize or 1,
             damageDone = CT.SessionStats.damageDone,
             healingDone = CT.SessionStats.healingDone,
         },
         victim = {
-            guid = victimInfo.guid or "UNKNOWN",
-            name = victimInfo.name,
-            level = victimInfo.level or 0,
-            class = victimInfo.class or "UNKNOWN",
-            guild = victimInfo.guild or "None",
-            faction = victimInfo.faction or "Unknown",
+            guid = (victimInfo and victimInfo.guid) or explicitGuid or "UNKNOWN",
+            name = (victimInfo and victimInfo.name) or victimName,
+            level = (victimInfo and victimInfo.level) or 0,
+            class = (victimInfo and victimInfo.class) or "UNKNOWN",
+            guild = (victimInfo and victimInfo.guild) or "None",
+            faction = (victimInfo and victimInfo.faction) or "Unknown",
             partySize = 1,
         },
         location = location,
     })
+end
+
+-- Manual kill registration for in-game testing (/kb testkill)
+function CT:RecordManualKill(customTargetName)
+    local targetName = customTargetName
+    local targetGuid = nil
+    local targetInfo = nil
+
+    if (not targetName or targetName == "") and UnitExists("target") and UnitIsPlayer("target") then
+        targetName = UnitName("target")
+        targetGuid = UnitGUID("target")
+        targetInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+    end
+
+    if not targetName or targetName == "" then
+        targetName = "Target Dummy"
+    end
+
+    self:OnPlayerHonorableKill(targetName, targetGuid, "target")
+    print(string.format("|cff00ff00[WoWKB]|r Manual killmail registered for |cffffff00%s|r.", targetName))
 end
 
 -- Process a 1v1 Duel result (Knockout or Forfeit)
@@ -916,23 +1001,62 @@ frame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "PLAYER_TARGET_CHANGED" then
         if UnitExists("target") and UnitIsPlayer("target") and UnitCanAttack("player", "target") then
             local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+            local tGuid = UnitGUID("target")
+            local tName = UnitName("target")
             activeEnemyTarget = {
-                name = UnitName("target"),
-                guid = UnitGUID("target"),
+                name = tName,
+                guid = tGuid,
                 level = UnitLevel("target") or (tInfo and tInfo.level or 0),
                 class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
                 guild = GetGuildInfo("target") or (tInfo and tInfo.guild or "None"),
                 faction = UnitFactionGroup("target") or (tInfo and tInfo.faction or "Unknown"),
+                lastSeen = time(),
             }
+            if tGuid then
+                CT.RecentEngagedEnemies[tGuid] = activeEnemyTarget
+            end
         end
 
-    elseif event == "UNIT_HEALTH" then
+    elseif event == "UNIT_HEALTH" or event == "UNIT_FLAGS" then
         local unit = ...
-        if unit == "target" and (UnitIsDead("target") or UnitIsDeadOrGhost("target")) then
-            local deadName = (activeEnemyTarget and activeEnemyTarget.name) or (UnitExists("target") and UnitIsPlayer("target") and UnitName("target"))
-            if deadName then
-                CT:OnPlayerHonorableKill(deadName)
+        if unit == "target" or unit == "focus" then
+            if UnitExists(unit) and UnitIsPlayer(unit) and UnitCanAttack("player", unit) then
+                if UnitIsDead(unit) or UnitIsDeadOrGhost(unit) then
+                    local deadName = UnitName(unit)
+                    local deadGuid = UnitGUID(unit)
+                    if deadName then
+                        CT:OnPlayerHonorableKill(deadName, deadGuid, unit)
+                    end
+                end
             end
+        end
+
+    elseif event == "PLAYER_PVP_KILLS_CHANGED" then
+        local currentHK = nil
+        if type(GetPVPLifetimeStats) == "function" then
+            local ok, hk = pcall(GetPVPLifetimeStats)
+            if ok and hk then currentHK = tonumber(hk) end
+        end
+        if not currentHK and type(GetPVPSessionStats) == "function" then
+            local ok, hk = pcall(GetPVPSessionStats)
+            if ok and hk then currentHK = tonumber(hk) end
+        end
+
+        if currentHK and CT.LastLifetimeHK and currentHK > CT.LastLifetimeHK then
+            CT.LastLifetimeHK = currentHK
+            CT:OnPlayerHonorableKill(nil)
+        elseif currentHK and not CT.LastLifetimeHK then
+            CT.LastLifetimeHK = currentHK
+        end
+
+    elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
+        if type(GetPVPLifetimeStats) == "function" then
+            local ok, hk = pcall(GetPVPLifetimeStats)
+            if ok and hk then CT.LastLifetimeHK = tonumber(hk) end
+        end
+        if not CT.LastLifetimeHK and type(GetPVPSessionStats) == "function" then
+            local ok, hk = pcall(GetPVPSessionStats)
+            if ok and hk then CT.LastLifetimeHK = tonumber(hk) end
         end
 
     elseif event == "UPDATE_BATTLEFIELD_SCORE" then
@@ -1013,6 +1137,16 @@ frame:RegisterEvent("CHAT_MSG_SYSTEM")
 frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-frame:RegisterEvent("UNIT_HEALTH")
+frame:RegisterEvent("PLAYER_PVP_KILLS_CHANGED")
+frame:RegisterEvent("PLAYER_LOGIN")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
+
+if frame.RegisterUnitEvent then
+    pcall(frame.RegisterUnitEvent, frame, "UNIT_FLAGS", "target", "focus")
+    pcall(frame.RegisterUnitEvent, frame, "UNIT_HEALTH", "target", "focus")
+else
+    pcall(frame.RegisterEvent, frame, "UNIT_FLAGS")
+    pcall(frame.RegisterEvent, frame, "UNIT_HEALTH")
+end

@@ -155,9 +155,15 @@ class LuaTableParser:
         return parsed
 
 class KillboardWatcher:
-    def __init__(self, filepath: str, api_url: str = "http://127.0.0.1:8080"):
+    def __init__(self, filepath: str, api_urls = None):
         self.filepath = filepath
-        self.api_url = api_url.rstrip("/")
+        if isinstance(api_urls, list):
+            self.api_urls = [u.rstrip("/") for u in api_urls if u]
+        elif isinstance(api_urls, str) and api_urls:
+            self.api_urls = [api_urls.rstrip("/")]
+        else:
+            self.api_urls = ["https://wow-killboard.onrender.com", "http://127.0.0.1:8080"]
+        self.api_url = ", ".join(self.api_urls)
         self.last_mtime = 0
         self.known_kills = set()
         self.known_pve_deaths = set()
@@ -246,7 +252,6 @@ class KillboardWatcher:
         return new_count
 
     def upload_pve_death(self, death_id: str, data: dict) -> bool:
-        url = f"{self.api_url}/api/pve/deaths"
         payload = {
             "deathId": death_id,
             "timestamp": data.get("timestamp", int(time.time())),
@@ -254,20 +259,23 @@ class KillboardWatcher:
             "victim": data.get("victim", {}),
             "location": data.get("location", {})
         }
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"}
-            )
-            with urllib.request.urlopen(req, timeout=5) as response:
-                return response.status in (200, 201)
-        except Exception as e:
-            print(f"[Watcher] Failed to upload PvE death {death_id}: {e}")
-            return False
+        any_success = False
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/pve/deaths"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    if response.status in (200, 201):
+                        any_success = True
+            except Exception as e:
+                pass
+        return any_success
 
     def upload_kill(self, kill_id: str, data: dict) -> bool:
-        url = f"{self.api_url}/api/kills"
         killer_data = data.get("killer", {}) if isinstance(data.get("killer"), dict) else {}
         victim_data = data.get("victim", {}) if isinstance(data.get("victim"), dict) else {}
         loc_data = data.get("location", {}) if isinstance(data.get("location"), dict) else {}
@@ -311,22 +319,24 @@ class KillboardWatcher:
             }
         }
 
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                return resp.status in (200, 201)
-        except Exception as e:
-            # If server is not yet running, print gracefully
-            print(f"[Watcher] Ingestion notice for {kill_id}: {e}")
-            return False
+        any_success = False
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/kills"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    if resp.status in (200, 201):
+                        any_success = True
+            except Exception as e:
+                print(f"[Watcher] Notice for {kill_id} -> {endpoint}: {e}")
+        return any_success
 
     def upload_bounty(self, b_id: str, data: dict):
-        url = f"{self.api_url}/api/bounties"
         payload = {
             "id": b_id,
             "targetName": data.get("targetName", "Unknown"),
@@ -340,19 +350,20 @@ class KillboardWatcher:
             "killId": data.get("killId"),
             "timestamp": data.get("timestamp", int(time.time())),
         }
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            urllib.request.urlopen(req, timeout=5)
-        except Exception:
-            pass
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/bounties"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                urllib.request.urlopen(req, timeout=5)
+            except Exception:
+                pass
 
     def upload_debt(self, player_name: str, data: dict):
-        url = f"{self.api_url}/api/bounties/debt-ledger"
         payload = {
             "playerName": player_name,
             "creditor": data.get("creditor", "BountyPool"),
@@ -362,64 +373,73 @@ class KillboardWatcher:
             "status": data.get("status", "OATHBREAKER"),
             "daysInDefault": data.get("daysInDefault", 1),
         }
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            urllib.request.urlopen(req, timeout=5)
-        except Exception:
-            pass
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/bounties/debt-ledger"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                urllib.request.urlopen(req, timeout=5)
+            except Exception:
+                pass
 
     def upload_stats(self, stats: dict):
-        url = f"{self.api_url}/api/stats"
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(stats).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            urllib.request.urlopen(req, timeout=5)
-        except Exception:
-            pass
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/stats"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(stats).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                urllib.request.urlopen(req, timeout=5)
+            except Exception:
+                pass
 
     def upload_distress(self, data: dict) -> bool:
-        url = f"{self.api_url}/api/backup/distress"
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(data).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                print(f"[Watcher] [SOS] Broadcasted Call for Backup SOS beacon for {data.get('character_name')} in {data.get('zone')}!")
-                return resp.status in (200, 201)
-        except Exception as e:
-            print(f"[Watcher] Distress upload notice: {e}")
-            return False
+        any_success = False
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/backup/distress"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(data).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    print(f"[Watcher] [SOS] Broadcasted Call for Backup SOS beacon for {data.get('character_name')} in {data.get('zone')} to {endpoint}!")
+                    if resp.status in (200, 201):
+                        any_success = True
+            except Exception as e:
+                print(f"[Watcher] Distress upload notice for {endpoint}: {e}")
+        return any_success
 
     def upload_event(self, data: dict) -> bool:
-        url = f"{self.api_url}/api/events"
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(data).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                print(f"[Watcher] [EVENT] Broadcasted Guild Event: {data.get('title')} in {data.get('zone')}!")
-                return resp.status in (200, 201)
-        except Exception as e:
-            print(f"[Watcher] Event upload notice: {e}")
-            return False
+        any_success = False
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/events"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(data).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    print(f"[Watcher] [EVENT] Broadcasted Guild Event: {data.get('title')} in {data.get('zone')} to {endpoint}!")
+                    if resp.status in (200, 201):
+                        any_success = True
+            except Exception as e:
+                print(f"[Watcher] Event upload notice for {endpoint}: {e}")
+        return any_success
 
     def run_daemon(self, poll_interval: float = 3.0):
-        print(f"[Watcher] Watching '{self.filepath}' -> API: '{self.api_url}'")
+        print(f"[Watcher] Watching '{self.filepath}' -> APIs: {', '.join(self.api_urls)}")
         print("[Watcher] Polling for changes... (Press Ctrl+C to stop)")
         while True:
             try:
@@ -458,19 +478,23 @@ def auto_detect_saved_variables() -> str:
 
     return ""
 
-SYNC_VERSION = "1.0.0-beta.1"
+SYNC_VERSION = "1.0.0-beta.2"
 DEFAULT_PROD_URL = "https://wow-killboard.onrender.com"
 DEFAULT_LOCAL_URL = "http://127.0.0.1:8080"
 
-def resolve_api_endpoint(cli_arg: str = None) -> str:
-    """Resolves target API endpoint checking CLI arg, config file, local dev, or production."""
+def resolve_api_endpoints(cli_arg: str = None, force_local: bool = False, force_cloud: bool = False) -> list:
+    """Resolves target API endpoints: cloud, local, or dual broadcasting."""
     if cli_arg:
-        return cli_arg.rstrip("/")
+        return [cli_arg.rstrip("/")]
+    if force_local:
+        return [DEFAULT_LOCAL_URL]
+    if force_cloud:
+        return [DEFAULT_PROD_URL]
 
     # Check environment variable
     env_url = os.environ.get("WOWKB_API_URL")
     if env_url:
-        return env_url.rstrip("/")
+        return [env_url.rstrip("/")]
 
     # Check local config file next to executable / script
     base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -480,22 +504,21 @@ def resolve_api_endpoint(cli_arg: str = None) -> str:
             with open(config_file, "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 if cfg.get("api_url"):
-                    return cfg["api_url"].rstrip("/")
+                    return [cfg["api_url"].rstrip("/")]
         except Exception:
             pass
 
-    # Check if local dev server is currently running
+    # Default to dual broadcasting: Cloud Render + Local Server (if reachable)
+    endpoints = [DEFAULT_PROD_URL]
     try:
-        req = urllib.request.Request(f"{DEFAULT_LOCAL_URL}/api/stats/kills?limit=1", headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
-        with urllib.request.urlopen(req, timeout=0.8) as resp:
+        req = urllib.request.Request(f"{DEFAULT_LOCAL_URL}/api/health", headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
+        with urllib.request.urlopen(req, timeout=0.6) as resp:
             if resp.status in (200, 201):
-                print(f"[+] Active local development server detected at {DEFAULT_LOCAL_URL}")
-                return DEFAULT_LOCAL_URL
+                endpoints.append(DEFAULT_LOCAL_URL)
     except Exception:
         pass
 
-    # Default to production cloud URL
-    return DEFAULT_PROD_URL
+    return endpoints
 
 if __name__ == "__main__":
     print("=" * 64)
@@ -505,13 +528,14 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="WoWKillboard SavedVariables Watcher")
     parser.add_argument("--file", "-f", default="", help="Path to WoWKillboard.lua (auto-detected if omitted)")
-    parser.add_argument("--api", "-a", default="", help="Web Killboard API URL (defaults to production)")
-    parser.add_argument("--local", action="store_true", help="Force local development endpoint (http://127.0.0.1:8080)")
+    parser.add_argument("--api", "-a", default="", help="Web Killboard API URL (defaults to dual sync)")
+    parser.add_argument("--local", action="store_true", help="Force local development endpoint only (http://127.0.0.1:8080)")
+    parser.add_argument("--cloud", "--render", action="store_true", help="Force cloud production endpoint only (https://wow-killboard.onrender.com)")
     parser.add_argument("--once", action="store_true", help="Run once and exit instead of continuous daemon")
     args = parser.parse_args()
 
-    target_api = DEFAULT_LOCAL_URL if args.local else resolve_api_endpoint(args.api)
-    print(f"[*] Ingestion Target API: {target_api}")
+    target_apis = resolve_api_endpoints(args.api, force_local=args.local, force_cloud=getattr(args, 'cloud', False))
+    print(f"[*] Ingestion Target APIs: {', '.join(target_apis)}")
 
     target_file = args.file
     if not target_file:
@@ -523,7 +547,7 @@ if __name__ == "__main__":
             target_file = "WoWKillboard.lua"
             print(f"[*] Could not auto-detect WoW directory. Defaulting to local: {target_file}")
 
-    watcher = KillboardWatcher(target_file, target_api)
+    watcher = KillboardWatcher(target_file, target_apis)
     if args.once:
         watcher.process_file()
     else:
