@@ -5,6 +5,27 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.33] - 2026-09-27
+
+### Added
+- **In-Game Rallies Vanguard (`Reinforcements.lua`, `UI.lua`)**:
+  - Added dedicated `Rallies` navigation tab (`UI.lua`) displaying open vanguard rallies across the realm with War Horn status card.
+  - Implemented `RF:GetOpenRallies()` returning active distress beacons for the player's faction within a 30-minute window, sorted newest first with zone, GPS coordinates, hostile counts, and commander identity.
+  - Added easy 1-click `[⚔️ Join Rally]` button that auto-whispers `"rally"` to the squad commander to trigger instant raid/party invites and raid conversion, with status badge updating to `|cff00ff00Requested!|r`.
+  - Added `[Close Rally]` option allowing commanders to stand down active beacons directly from the UI.
+  - Updated `Reinforcements.lua` and `Sync.lua` to mark resolved beacons with status `"RESOLVED"` locally and broadcast resolution over peer-to-peer sync.
+- **Frontline Telemetry Web Rallies View (`web/static/index.html`, `web/static/app.js`)**:
+  - Added `#nav-rallies` and `#m-nav-rallies` to desktop and mobile navigation rails.
+  - Implemented read-only `loadRalliesView()` querying `/api/backup/distress` to display real-time active rallies with zone, GPS coordinates, hostile counts, faction badges, elapsed duration, and commander whisper instructions (`/w CommanderName rally`).
+  - Read-only web design ensures complete separation between live web telemetry and in-game command execution with zero security risk.
+
+### Fixed
+- **Container Text Boundary Constraints & Header Overlap Fixes (`UI.lua`)**:
+  - Centered Title and Flavor Subtitle directly onto the arched crest `Interface\DialogFrame\UI-DialogBox-Header`.
+  - Relocated `[Web Profile]` button to the left side adjacent to the character medallion to prevent collision with right-side action buttons (`Alerts`, `Theme`, `Close`).
+  - Fixed text overflow in `RenderLiveFeed()` and `RenderLeaderboard()` by enforcing strict double-anchored boundaries (`LEFT` to icon, `RIGHT` to separator/stats) and setting `fontString:SetWordWrap(false)`, preventing long player names and combat text from spilling across adjacent columns.
+  - Balanced tab widths (`Intel`, `Hall of Legends`, `Marks of Spite`, `Rallies`, `Zone Intel`) with adequate spacing before right-aligned mode filter pills (`World`, `BGs`, `Duels`, `Arenas`).
+
 ## [1.4.32] - 2026-09-27
 
 ### Fixed
