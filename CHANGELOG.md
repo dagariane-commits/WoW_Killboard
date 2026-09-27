@@ -5,6 +5,22 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.43] - 2026-09-27
+
+### Fixed
+- **Forensic Elimination of In-Combat Action Blocked Taint (Guardrail 1: Zero Blizzard UI Taint)**:
+  - **Combat Wire CircularBuffer Deferral (`UI.lua:5120-5145`)**: Discovered that calling `combatWireHUD.msgFrame:AddMessage(line)` on a `ScrollingMessageFrame` during combat executed Blizzard's `CircularBuffer.lua:49 PushFront` -> `SecureTypes.lua:279 GetValue()`, triggering execution taint. Implemented `UI.PendingWireEntries` queue to buffer all combat wire logs during `InCombatLockdown()` and flush cleanly upon `PLAYER_REGEN_ENABLED`.
+  - **Complete Secure Nameplate Hook Purge (`UnitScanner.lua:430-452`)**: Purged `NAME_PLATE_UNIT_ADDED` event registration and handler, completely uncoupling WoWKillboard from Blizzard's secure `NamePlateDriverFrame` pipeline.
+  - **Combat Unit Token Inspection Lockdown (`UnitScanner.lua:18`, `CombatTracker.lua:67-70`, `1775-1785`)**:
+    - Gated `US:ScanUnit(unit)` with `if InCombatLockdown() and unit ~= "player" then return end`, preventing inspecting secure unit frames or writing to DB during combat.
+    - Gated `UnitScanner` event listeners (`UPDATE_MOUSEOVER_UNIT`, `PLAYER_TARGET_CHANGED`, `PLAYER_FOCUS_CHANGED`) behind `if InCombatLockdown() then return end`.
+    - Gated `UnitExists("mouseover")` and `UnitExists("target")` in `CT:IsPlayerUnit` behind `not InCombatLockdown()`.
+    - Gated `GetGuildInfo("target")` and `US:ScanUnit("target")` in `PLAYER_TARGET_CHANGED` behind `not InCombatLockdown()`.
+  - **Global Frame Anonymization (`UI.lua:4403, 4642, 4999`)**: Replaced named frame declarations (`WoWKillboardRadarHUD`, `WoWKillboardRallyDialog`, `WoWKillboardCombatWire`) with pure anonymous Lua widgets (`CreateFrame("Frame", nil, UIParent, "BackdropTemplate")`), preventing `_G` global table pollution.
+  - **Dynamic Banner Drag Unregistration (`UI.lua:3578, 3834-3860`)**: Removed eager `RegisterForDrag("LeftButton")` from `killBanner` initialization. Drag listeners and mouse interaction are now registered ONLY when explicitly unlocked via `/wowkb move`, guaranteeing the banner remains 100% click-through in combat.
+  - **Raid Conversion & Sync Chat Lockdown (`Reinforcements.lua:62`, `Sync.lua:300`)**: Added strict `InCombatLockdown()` gating to `EnsureRaidConversion` and fallback `DEFAULT_CHAT_FRAME` outputs.
+  - **Diagnostic Taint Logging (`WTF/Config.wtf`)**: Injected `SET taintLog "2"` and `SET scriptErrors "1"` across all local client environments (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+
 ## [1.4.42] - 2026-09-27
 
 ### Added

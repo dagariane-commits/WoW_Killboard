@@ -16,6 +16,7 @@ local frame = CreateFrame("Frame")
 
 -- Inspect a given unit token and update cache
 function US:ScanUnit(unit)
+    if InCombatLockdown() and unit ~= "player" then return end
     if not unit or not UnitExists(unit) or not UnitIsPlayer(unit) then
         return
     end
@@ -427,18 +428,15 @@ function US:GetKnownCharactersCount()
     return count
 end
 
--- Event handler for unit scanner (100% taint-free, no secure nameplate hooks)
+-- Event handler for unit scanner (100% taint-free, zero secure nameplate hooks)
 frame:SetScript("OnEvent", function(self, event, unit)
+    if InCombatLockdown() then return end
     if event == "PLAYER_TARGET_CHANGED" then
         US:ScanUnit("target")
     elseif event == "UPDATE_MOUSEOVER_UNIT" then
         US:ScanUnit("mouseover")
     elseif event == "PLAYER_FOCUS_CHANGED" then
         US:ScanUnit("focus")
-    elseif event == "NAME_PLATE_UNIT_ADDED" then
-        if unit then
-            US:ScanUnit(unit)
-        end
     elseif event == "PLAYER_ENTERING_WORLD" then
         US:ScanUnit("player")
     end
@@ -447,5 +445,4 @@ end)
 frame:RegisterEvent("PLAYER_TARGET_CHANGED")
 frame:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 frame:RegisterEvent("PLAYER_FOCUS_CHANGED")
-pcall(frame.RegisterEvent, frame, "NAME_PLATE_UNIT_ADDED")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
