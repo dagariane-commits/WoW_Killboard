@@ -1879,8 +1879,20 @@ frame:SetScript("OnEvent", function(self, event, ...)
 end)
 
 -- Universal Event Registration across all 4 WoW client flavors (Guardrail 2 Compliant)
--- CLEU is registered cleanly across WoW Forever Beta (1.16/16001), Classic Era (11500), Anniversary (11500), and Modern Retail
-frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+-- In Modern Retail (12.0+) and WoW Forever Beta (16001+), COMBAT_LOG_EVENT_UNFILTERED is restricted
+-- to Blizzard UI only. Calling RegisterEvent on it triggers an immediate ADDON_ACTION_BLOCKED popup.
+local isCLEUForbidden = false
+if GetBuildInfo then
+    local _, _, _, tocversion = GetBuildInfo()
+    tocversion = tonumber(tocversion) or 11500
+    if tocversion >= 16000 or tocversion >= 120000 then
+        isCLEUForbidden = true
+    end
+end
+
+if not isCLEUForbidden and type(CombatLogGetCurrentEventInfo) == "function" then
+    frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+end
 
 frame:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
 frame:RegisterEvent("CHAT_MSG_SYSTEM")
