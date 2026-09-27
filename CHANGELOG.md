@@ -5,6 +5,31 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.29] - 2026-09-26
+
+### Added
+- **Web Drag-and-Drop Log Ingestion & Idempotent Upsert (`/api/upload`, `web/static/app.js`, `web/static/index.html`)**:
+  - Implemented zero-download browser ingestion pipeline allowing players to synchronize `WoWKillboard.lua` SavedVariables or raw JSON logs directly via drag-and-drop.
+  - Powered by deterministic 32-bit FNV-1a Kill IDs (`Hash(timestamp + killerGUID + victimGUID + mapId)`) guaranteeing that asynchronous, multi-player uploads across different timeframes merge idempotently into SQLite via `INSERT OR REPLACE` with zero duplicate kills.
+  - Added `#nav-upload` to the desktop navigation rail and `#m-nav-upload` to the mobile slide-in drawer.
+  - Includes interactive visual dropzone, local SavedVariables file path instructions, copy-paste text fallback, and live telemetry banners.
+- **Master Archivist Administrative Reset Protocol (`POST /api/admin/reset`, `--reset-db`)**:
+  - Engineered administrative database purge system gated by `ADMIN_SECRET_KEY` (`valor2026`).
+  - Added `POST /api/admin/reset` endpoint and `--reset-db` server startup CLI flag to safely drop and re-initialize all 13 SQLite tables for clean state testing.
+  - Integrated restricted Master War Archivist reset controls directly into the Web Upload interface with confirmation guards.
+- **Authentic Classic WoW Dialog & Quest Parchment UI Overhaul (`UI.lua`, `Config.lua`)**:
+  - Upgraded in-game addon UI to authentic Classic Blizzard Dialog frame styling:
+    - Main frame backdrop upgraded to canonical Blizzard stone texture: `Interface\DialogFrame\UI-DialogBox-Background` (tile = true, tileSize = 32).
+    - Outer border upgraded to canonical diamond gold corner trim: `Interface\DialogFrame\UI-DialogBox-Border` (edgeSize = 32, insets = {11, 12, 12, 11}).
+    - Added arched dialogue title crest: `Interface\DialogFrame\UI-DialogBox-Header` (340x68) framing the window title along the top frame edge.
+  - Custom Aged Fibrous Parchment Background:
+    - Synthesized 1024x512 high-resolution `Addon/WoWKillboard/Textures/classic_parchment_bg.tga` capturing the authentic warm amber tones, organic paper fibers, and burnt vignette of Classic WoW quest logs and dialogue scrolls.
+    - Wired `UI.ContentInset.BgArt` to display parchment at 95% opacity in Classic theme and dark tactical war art in ElvUI theme.
+  - Red Marble Panel Buttons & Taint-Free State Transitions:
+    - Upgraded all interactive addon buttons (`UI:CreateButton`) to use Blizzard's canonical red marble panel textures (`UI-Panel-Button-Up`, `UI-Panel-Button-Down`, `UI-Panel-Button-Highlight`) with antique gold text in Classic theme.
+    - Engineered using pure Lua widgets on `"BackdropTemplate"` without inheriting from Blizzard XML templates (`UIPanelButtonTemplate`), preserving 100% Guardrail 1 Zero UI Taint security standard.
+    - Integrated visual push-state transitions (`SetButtonState("PUSHED", true)`) for active tabs and filter pills.
+
 ## [1.4.28] - 2026-09-26
 
 ### Fixed

@@ -75,6 +75,42 @@ function UI:SetTheme(themeName)
     print(string.format("|cff00ccff[WoWKB]|r Theme switched to: |cffffd100%s|r", th.name))
 end
 
+function UI:ApplyButtonStyle(btn, theme)
+    if not btn then return end
+    theme = theme or UI:GetTheme()
+    if theme.id == "classic" then
+        btn:SetBackdrop(nil)
+        btn:SetNormalTexture("Interface\\Buttons\\UI-Panel-Button-Up")
+        btn:SetPushedTexture("Interface\\Buttons\\UI-Panel-Button-Down")
+        btn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-Button-Highlight", "ADD")
+        btn:SetDisabledTexture("Interface\\Buttons\\UI-Panel-Button-Disabled")
+        local nt = btn:GetNormalTexture()
+        if nt then nt:Show() end
+        local pt = btn:GetPushedTexture()
+        if pt then pt:Show() end
+        local ht = btn:GetHighlightTexture()
+        if ht then ht:Show() end
+        if btn.Label then
+            btn.Label:SetTextColor(1.0, 0.82, 0.0)
+        end
+    else
+        local nt = btn:GetNormalTexture()
+        if nt then nt:SetTexture(nil) nt:Hide() end
+        local pt = btn:GetPushedTexture()
+        if pt then pt:SetTexture(nil) pt:Hide() end
+        local ht = btn:GetHighlightTexture()
+        if ht then ht:SetTexture(nil) ht:Hide() end
+        if theme.btnBackdrop then
+            btn:SetBackdrop(theme.btnBackdrop)
+            btn:SetBackdropColor(unpack(theme.btnBg))
+            btn:SetBackdropBorderColor(unpack(theme.btnBorder))
+        end
+        if btn.Label then
+            btn.Label:SetTextColor(1.0, 1.0, 1.0)
+        end
+    end
+end
+
 function UI:ApplyTheme()
     if not mainFrame then return end
     local theme = UI:GetTheme()
@@ -93,9 +129,42 @@ function UI:ApplyTheme()
         UI.ContentInset:SetBackdropColor(unpack(theme.insetBg or theme.cardBg))
         UI.ContentInset:SetBackdropBorderColor(unpack(theme.insetBorder or theme.cardBorder))
         if UI.ContentInset.BgArt then
-            UI.ContentInset.BgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\dark_war_bg.tga")
-            UI.ContentInset.BgArt:SetAlpha(0.65)
+            if theme.id == "classic" then
+                UI.ContentInset.BgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\classic_parchment_bg.tga")
+                UI.ContentInset.BgArt:SetAlpha(0.95)
+                if UI.ContentInset.Vignette then UI.ContentInset.Vignette:SetAlpha(0.12) end
+            else
+                UI.ContentInset.BgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\dark_war_bg.tga")
+                UI.ContentInset.BgArt:SetAlpha(0.65)
+                if UI.ContentInset.Vignette then UI.ContentInset.Vignette:SetAlpha(0.40) end
+            end
             UI.ContentInset.BgArt:Show()
+        end
+    end
+
+    if UI.HeaderPlate then
+        if theme.id == "classic" then
+            UI.HeaderPlate:Show()
+            if UI.TitleText then
+                UI.TitleText:ClearAllPoints()
+                UI.TitleText:SetPoint("TOP", mainFrame, "TOP", 0, -2)
+                UI.TitleText:SetFontObject("GameFontNormal")
+            end
+            if UI.SubtitleText and UI.TitleText then
+                UI.SubtitleText:ClearAllPoints()
+                UI.SubtitleText:SetPoint("TOP", UI.TitleText, "BOTTOM", 0, -2)
+            end
+        else
+            UI.HeaderPlate:Hide()
+            if UI.TitleText and UI.Medallion then
+                UI.TitleText:ClearAllPoints()
+                UI.TitleText:SetPoint("LEFT", UI.Medallion, "RIGHT", 14, 6)
+                UI.TitleText:SetFontObject("GameFontNormalLarge")
+            end
+            if UI.SubtitleText and UI.TitleText then
+                UI.SubtitleText:ClearAllPoints()
+                UI.SubtitleText:SetPoint("TOPLEFT", UI.TitleText, "BOTTOMLEFT", 0, -3)
+            end
         end
     end
 
@@ -107,21 +176,20 @@ function UI:ApplyTheme()
     if UI.SubtitleText then
         UI.SubtitleText:SetText(string.format("|cffc7b28cv%s|r", KB.Version))
     end
-    if UI.ThemeButton and UI.ThemeButton.Label then
-        UI.ThemeButton:SetBackdrop(theme.btnBackdrop)
-        UI.ThemeButton:SetBackdropColor(unpack(theme.btnBg))
-        UI.ThemeButton:SetBackdropBorderColor(unpack(theme.btnBorder))
-        UI.ThemeButton.Label:SetText(theme.themeBtnText)
+    if UI.ThemeButton then
+        UI:ApplyButtonStyle(UI.ThemeButton, theme)
+        if UI.ThemeButton.Label then UI.ThemeButton.Label:SetText(theme.themeBtnText) end
     end
     if UI.AlertsButton then
-        UI.AlertsButton:SetBackdrop(theme.btnBackdrop)
-        UI.AlertsButton:SetBackdropColor(unpack(theme.btnBg))
-        UI.AlertsButton:SetBackdropBorderColor(unpack(theme.btnBorder))
+        UI:ApplyButtonStyle(UI.AlertsButton, theme)
     end
     if UI.CallBackupButton then
-        UI.CallBackupButton:SetBackdrop(theme.btnBackdrop)
-        UI.CallBackupButton:SetBackdropColor(unpack(theme.btnBg))
-        UI.CallBackupButton:SetBackdropBorderColor(unpack(theme.btnBorder))
+        UI:ApplyButtonStyle(UI.CallBackupButton, theme)
+    end
+    if UI.RegisteredButtons then
+        for _, b in ipairs(UI.RegisteredButtons) do
+            UI:ApplyButtonStyle(b, theme)
+        end
     end
     if UI.CloseButton then
         if theme.id == "classic" then
@@ -268,31 +336,30 @@ function UI:CreateButton(parent, w, h, text, fontSize)
     local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
     btn:SetSize(w, h)
     btn:EnableMouse(true)
-    local theme = UI:GetTheme()
-    if theme and theme.btnBackdrop then
-        btn:SetBackdrop(theme.btnBackdrop)
-        btn:SetBackdropColor(unpack(theme.btnBg))
-        btn:SetBackdropBorderColor(unpack(theme.btnBorder))
-    end
 
     local label = btn:CreateFontString(nil, "OVERLAY", fontSize or "GameFontHighlightSmall")
     label:SetPoint("CENTER", 0, 0)
     label:SetText(text or "")
     btn.Label = label
 
+    UI:ApplyButtonStyle(btn, UI:GetTheme())
+
+    UI.RegisteredButtons = UI.RegisteredButtons or {}
+    table.insert(UI.RegisteredButtons, btn)
+
     btn:SetScript("OnEnter", function(self)
-        if not self.isActive then
-            local t = UI:GetTheme()
-            if t and t.btnHoverBg then
+        local t = UI:GetTheme()
+        if t.id ~= "classic" then
+            if not self.isActive and t.btnHoverBg then
                 self:SetBackdropColor(unpack(t.btnHoverBg))
                 self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
             end
         end
     end)
     btn:SetScript("OnLeave", function(self)
-        if not self.isActive then
-            local t = UI:GetTheme()
-            if t and t.btnBg then
+        local t = UI:GetTheme()
+        if t.id ~= "classic" then
+            if not self.isActive and t.btnBg then
                 self:SetBackdropColor(unpack(t.btnBg))
                 self:SetBackdropBorderColor(unpack(t.btnBorder))
             end
@@ -471,7 +538,12 @@ function UI:CreateMainWindow()
         end
     end
     medallion.LevelBadge = lvlBadge
-    UI.Medallion = medallion
+    -- Authentic Classic Dialog Arched Header Crest
+    local headerPlate = mainFrame:CreateTexture(nil, "ARTWORK", nil, 1)
+    headerPlate:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
+    headerPlate:SetSize(340, 68)
+    headerPlate:SetPoint("TOP", mainFrame, "TOP", 0, 14)
+    UI.HeaderPlate = headerPlate
 
     -- Window Title Header (Dynamic Flavor & Realm Detection)
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -892,43 +964,61 @@ function UI:Refresh()
 
     -- Update Tab Button Highlights
     for tid, btn in pairs(tabButtons) do
-        if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
         if tid == activeTab then
             btn.isActive = true
-            btn:SetBackdropColor(unpack(theme.btnActiveBg))
-            btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder))
-            local activeColor = (theme.id == "classic") and "|cffffd100" or "|cffffd100"
-            btn.Label:SetText(activeColor .. btn.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
+            if theme.id == "classic" then
+                btn:SetButtonState("PUSHED", true)
+                btn.Label:SetTextColor(1.0, 0.82, 0.0)
+            else
+                if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
+                btn:SetBackdropColor(unpack(theme.btnActiveBg))
+                btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder))
+                btn.Label:SetTextColor(1.0, 0.82, 0.0)
+            end
         else
             btn.isActive = false
-            btn:SetBackdropColor(unpack(theme.btnBg))
-            btn:SetBackdropBorderColor(unpack(theme.btnBorder))
-            local normalColor = (theme.id == "classic") and "|cffc7b28c" or "|cffa0a0a0"
-            btn.Label:SetText(normalColor .. btn.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
+            if theme.id == "classic" then
+                btn:SetButtonState("NORMAL", false)
+                btn.Label:SetTextColor(0.85, 0.75, 0.60)
+            else
+                if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
+                btn:SetBackdropColor(unpack(theme.btnBg))
+                btn:SetBackdropBorderColor(unpack(theme.btnBorder))
+                btn.Label:SetTextColor(0.65, 0.65, 0.65)
+            end
         end
     end
 
     -- Update Filter Pill Active Glow
     for fid, pill in pairs(filterButtons) do
-        if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
         local c = pill.BaseColor or {1.0, 0.82, 0.0}
         if fid == currentMode then
             pill.isActive = true
-            if theme.id == "elvui" then
+            if theme.id == "classic" then
+                pill:SetButtonState("PUSHED", true)
+                pill.Label:SetTextColor(c[1], c[2], c[3])
+            elseif theme.id == "elvui" then
+                if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
                 pill:SetBackdropColor(0.20, 0.20, 0.20, 1.0)
                 pill:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
-                pill.Label:SetText(string.format("|cffffd100%s|r", pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")))
+                pill.Label:SetTextColor(1.0, 0.82, 0.0)
             else
+                if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
                 pill:SetBackdropColor(c[1] * 0.35, c[2] * 0.35, c[3] * 0.35, 1.0)
                 pill:SetBackdropBorderColor(c[1], c[2], c[3], 1.0)
-                pill.Label:SetText(string.format("|cff%02x%02x%02x%s|r", math.floor(c[1]*255), math.floor(c[2]*255), math.floor(c[3]*255), pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")))
+                pill.Label:SetTextColor(c[1], c[2], c[3])
             end
         else
             pill.isActive = false
-            pill:SetBackdropColor(unpack(theme.btnBg))
-            pill:SetBackdropBorderColor(unpack(theme.btnBorder))
-            local pillNormal = (theme.id == "classic") and "|cffc7b28c" or "|cffa0a0a0"
-            pill.Label:SetText(pillNormal .. pill.Label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r")
+            if theme.id == "classic" then
+                pill:SetButtonState("NORMAL", false)
+                pill.Label:SetTextColor(0.80, 0.70, 0.55)
+            else
+                if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
+                pill:SetBackdropColor(unpack(theme.btnBg))
+                pill:SetBackdropBorderColor(unpack(theme.btnBorder))
+                pill.Label:SetTextColor(0.65, 0.65, 0.65)
+            end
         end
     end
 

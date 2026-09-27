@@ -44,13 +44,16 @@ flowchart TD
         KM --> SV["SavedVariables\n(WoWKillboardDB.lua)"]
     end
 
-    subgraph Desktop ["Desktop Ingestion Agent (Zero-Config EXE)"]
+    subgraph Ingestion ["Ingestion & Synchronization Pipeline"]
         SV --> Watcher["WoWKillboardSync.exe\n(Multi-Drive Auto-Discovery)"]
-        Watcher --> API["HTTPS REST Ingestion"]
+        SV --> WebDrop["Web Drag-and-Drop Uploader\n(/upload • Zero Installation)"]
+        Watcher --> API["HTTPS REST Ingestion\n(POST /api/kills)"]
+        WebDrop --> API2["Direct Parser Ingestion\n(POST /api/upload)"]
     end
 
     subgraph Web ["Frontline War Room Web Platform"]
         API --> Server["web/server.py (Flask API + SQLite)"]
+        API2 --> Server
         Server --> WebUI["Tactical Dark Web UI\n(Live Ticker, BGs, Blood Bounties, Traitor's Gibbet)"]
     end
 ```

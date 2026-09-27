@@ -19,6 +19,18 @@ from flask_cors import CORS
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(APP_DIR, "static")
 DB_PATH = os.environ.get("DB_PATH", os.path.join(APP_DIR, "killboard.db"))
+ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "valor2026")
+
+try:
+    from sync.watcher import LuaTableParser
+except ImportError:
+    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+    try:
+        from sync.watcher import LuaTableParser
+    except ImportError:
+        LuaTableParser = None
 
 app = Flask(__name__, static_folder=STATIC_DIR)
 CORS(app)
@@ -734,13 +746,28 @@ def get_kill(kill_id):
             return jsonify({"error": "Killmail not found"}), 404
         return jsonify(json.loads(row["raw_json"]))
 
-@app.route("/api/kills", methods=["POST"])
-def post_kill():
-    data = request.json
-    if not data or "killId" not in data:
-        return jsonify({"error": "Invalid payload"}), 400
+def wipe_database():
+    """Drops and re-creates all SQLite tables for a clean slate."""
+    tables = [
+        "kills", "platform_stats", "bounties", "bounty_acceptances",
+        "pve_deaths", "character_guild_history", "debt_ledger",
+        "distress_beacons", "guild_events", "discord_config", "intel_sightings",
+        "blood_feuds", "kos_blacklist", "kos_deserters"
+    ]
+    with get_db() as conn:
+        for tbl in tables:
+            conn.execute(f"DROP TABLE IF EXISTS {tbl}")
+        conn.commit()
+    init_db()
 
-    kill_id = data["killId"]
+def ingest_kill_data(data, conn):
+    """Surgically ingests or updates a single killmail record with full bounty, feud, and guild tracking."""
+    if not data or not isinstance(data, dict):
+        return None
+    kill_id = data.get("killId")
+    if not kill_id:
+        return None
+
     timestamp = data.get("timestamp", int(time.time()))
     is_duel = 1 if data.get("isDuel") else 0
     is_bg = 1 if data.get("isBattleground") else 0
@@ -756,190 +783,329 @@ def post_kill():
     k_spec = resolve_character_spec(k.get("class", "WARRIOR"), k.get("spec"))
     v_spec = resolve_character_spec(v.get("class", "ROGUE"), v.get("spec"))
 
-    with get_db() as conn:
-        conn.execute("""
-            INSERT OR REPLACE INTO kills (
-                kill_id, timestamp, is_duel, is_battleground, is_arena, bg_name,
-                is_solo, attackers_count, total_damage,
-                killer_name, killer_level, killer_class, killer_guild, killer_faction,
-                killer_party_size, killer_damage_done, killer_healing_done,
-                victim_name, victim_level, victim_class, victim_guild, victim_faction,
-                victim_party_size, map_id, zone, subzone, coord_x, coord_y,
-                killer_spec, victim_spec, raw_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            kill_id, timestamp, is_duel, is_bg, is_arena, bg_name,
+    conn.execute("""
+        INSERT OR REPLACE INTO kills (
+            kill_id, timestamp, is_duel, is_battleground, is_arena, bg_name,
             is_solo, attackers_count, total_damage,
-            k.get("name", "Unknown"), k.get("level", 60), k.get("class", "WARRIOR"), k.get("guild", "None"), k.get("faction", "Alliance"),
-            k.get("partySize", 1), k.get("damageDone", 0), k.get("healingDone", 0),
-            v.get("name", "Unknown"), v.get("level", 60), v.get("class", "ROGUE"), v.get("guild", "None"), v.get("faction", "Horde"),
-            v.get("partySize", 1), loc.get("mapId", 0), loc.get("zone", "Unknown"), loc.get("subZone", ""),
-            loc.get("x", 0.0), loc.get("y", 0.0), k_spec, v_spec, json.dumps(data)
-        ))
+            killer_name, killer_level, killer_class, killer_guild, killer_faction,
+            killer_party_size, killer_damage_done, killer_healing_done,
+            victim_name, victim_level, victim_class, victim_guild, victim_faction,
+            victim_party_size, map_id, zone, subzone, coord_x, coord_y,
+            killer_spec, victim_spec, raw_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        kill_id, timestamp, is_duel, is_bg, is_arena, bg_name,
+        is_solo, attackers_count, total_damage,
+        k.get("name", "Unknown"), k.get("level", 60), k.get("class", "WARRIOR"), k.get("guild", "None"), k.get("faction", "Alliance"),
+        k.get("partySize", 1), k.get("damageDone", 0), k.get("healingDone", 0),
+        v.get("name", "Unknown"), v.get("level", 60), v.get("class", "ROGUE"), v.get("guild", "None"), v.get("faction", "Horde"),
+        v.get("partySize", 1), loc.get("mapId", 0), loc.get("zone", "Unknown"), loc.get("subZone", ""),
+        loc.get("x", 0.0), loc.get("y", 0.0), k_spec, v_spec, json.dumps(data)
+    ))
 
-        # Track character guild history
-        killer_name = k.get("name", "Unknown")
-        killer_guild = k.get("guild", "None")
-        killer_faction = k.get("faction", "Unknown")
-        if killer_name != "Unknown" and killer_guild and killer_guild != "None" and killer_guild != "":
-            try:
-                conn.execute("""
-                    INSERT INTO character_guild_history (character_name, guild_name, faction, first_seen, last_seen)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(character_name, guild_name) DO UPDATE SET last_seen = MAX(last_seen, excluded.last_seen)
-                """, (killer_name, killer_guild, killer_faction, timestamp, timestamp))
-            except Exception:
-                pass
+    # Track character guild history
+    killer_name = k.get("name", "Unknown")
+    killer_guild = k.get("guild", "None")
+    killer_faction = k.get("faction", "Unknown")
+    if killer_name != "Unknown" and killer_guild and killer_guild != "None" and killer_guild != "":
+        try:
+            conn.execute("""
+                INSERT INTO character_guild_history (character_name, guild_name, faction, first_seen, last_seen)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(character_name, guild_name) DO UPDATE SET last_seen = MAX(last_seen, excluded.last_seen)
+            """, (killer_name, killer_guild, killer_faction, timestamp, timestamp))
+        except Exception:
+            pass
 
-        victim_name = v.get("name", "Unknown")
-        victim_guild = v.get("guild", "None")
-        victim_faction = v.get("faction", "Unknown")
-        if victim_name != "Unknown" and victim_guild and victim_guild != "None" and victim_guild != "":
-            try:
-                conn.execute("""
-                    INSERT INTO character_guild_history (character_name, guild_name, faction, first_seen, last_seen)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(character_name, guild_name) DO UPDATE SET last_seen = MAX(last_seen, excluded.last_seen)
-                """, (victim_name, victim_guild, victim_faction, timestamp, timestamp))
-            except Exception:
-                pass
+    victim_name = v.get("name", "Unknown")
+    victim_guild = v.get("guild", "None")
+    victim_faction = v.get("faction", "Unknown")
+    if victim_name != "Unknown" and victim_guild and victim_guild != "None" and victim_guild != "":
+        try:
+            conn.execute("""
+                INSERT INTO character_guild_history (character_name, guild_name, faction, first_seen, last_seen)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(character_name, guild_name) DO UPDATE SET last_seen = MAX(last_seen, excluded.last_seen)
+            """, (victim_name, victim_guild, victim_faction, timestamp, timestamp))
+        except Exception:
+            pass
 
-        # Auto-claim active bounty on victim if killed by another player
-        # Anti-Name-Change Evasion: Check if victim renamed using permanent Character GUID
-        victim_guid = v.get("guid") or "UNKNOWN"
-        killer_guid = k.get("guid") or "UNKNOWN"
+    # Auto-claim active bounty on victim if killed by another player
+    victim_guid = v.get("guid") or "UNKNOWN"
+    killer_guid = k.get("guid") or "UNKNOWN"
 
-        # Anti-Name-Change Evasion for Debt Ledger & KOS Blacklist (Immutable GUID Tracking)
-        for char_n, char_g in [(victim_name, victim_guid), (killer_name, killer_guid)]:
-            if char_n != "Unknown" and char_g != "UNKNOWN":
-                debt_row = conn.execute("SELECT player_name, status, amount_owed_copper FROM debt_ledger WHERE player_guid = ?", (char_g,)).fetchone()
-                if debt_row:
-                    old_n = debt_row["player_name"]
-                    if old_n != char_n:
-                        conn.execute("UPDATE debt_ledger SET player_name = ? WHERE player_guid = ?", (char_n, char_g))
-                        conn.execute("UPDATE kos_blacklist SET entity_name = ? WHERE entity_name = ?", (char_n, old_n))
+    # Anti-Name-Change Evasion for Debt Ledger & KOS Blacklist (Immutable GUID Tracking)
+    for char_n, char_g in [(victim_name, victim_guid), (killer_name, killer_guid)]:
+        if char_n != "Unknown" and char_g != "UNKNOWN":
+            debt_row = conn.execute("SELECT player_name, status, amount_owed_copper FROM debt_ledger WHERE player_guid = ?", (char_g,)).fetchone()
+            if debt_row:
+                old_n = debt_row["player_name"]
+                if old_n != char_n:
+                    conn.execute("UPDATE debt_ledger SET player_name = ? WHERE player_guid = ?", (char_n, char_g))
+                    conn.execute("UPDATE kos_blacklist SET entity_name = ? WHERE entity_name = ?", (char_n, old_n))
 
-        if victim_name != "Unknown" and killer_name != "Unknown" and killer_name != victim_name:
-            if victim_guid != "UNKNOWN":
+    if victim_name != "Unknown" and killer_name != "Unknown" and killer_name != victim_name:
+        if victim_guid != "UNKNOWN":
+            conn.execute("""
+                UPDATE bounties
+                SET target_name = ?
+                WHERE target_guid = ? AND target_name != ?
+            """, (victim_name, victim_guid, victim_name))
+
+        active_bounty = conn.execute("""
+            SELECT id, amount_gold FROM bounties
+            WHERE (target_name = ? OR (target_guid = ? AND target_guid != 'UNKNOWN')) AND status = 'ACTIVE'
+            ORDER BY amount_gold DESC LIMIT 1
+        """, (victim_name, victim_guid)).fetchone()
+
+        if active_bounty:
+            b_id = active_bounty["id"]
+            accepted = conn.execute("SELECT 1 FROM bounty_acceptances WHERE bounty_id = ? AND hunter_name = ?", (b_id, killer_name)).fetchone()
+            accepted_via_addon = (data.get("acceptedBounties") and b_id in data.get("acceptedBounties"))
+            if accepted or accepted_via_addon:
                 conn.execute("""
                     UPDATE bounties
-                    SET target_name = ?
-                    WHERE target_guid = ? AND target_name != ?
-                """, (victim_name, victim_guid, victim_name))
+                    SET status = 'CLAIMED', hunter_name = ?, kill_id = ?, payment_deadline = ?
+                    WHERE id = ?
+                """, (killer_name, kill_id, timestamp, b_id))
 
-            active_bounty = conn.execute("""
-                SELECT id, amount_gold FROM bounties
-                WHERE (target_name = ? OR (target_guid = ? AND target_guid != 'UNKNOWN')) AND status = 'ACTIVE'
-                ORDER BY amount_gold DESC LIMIT 1
-            """, (victim_name, victim_guid)).fetchone()
+    # Process Active Blood Feuds & ROE scoring
+    if killer_name != "Unknown" and victim_name != "Unknown" and killer_name != victim_name:
+        active_feuds = conn.execute("SELECT * FROM blood_feuds WHERE status = 'ACTIVE'").fetchall()
+        for feud in active_feuds:
+            f_id = feud["id"]
+            c_name = feud["challenger_name"]
+            c_guild = feud["challenger_guild"]
+            t_name = feud["target_name"]
+            t_guild = feud["target_guild"]
+            f_type = feud["feud_type"]
+            roe_min_lvl = feud["roe_min_level"] or 0
+            v_lvl = v.get("level", 60)
+            zone_name = loc.get("zone", "")
+            roe_zone = feud["roe_zone"]
 
-            if active_bounty:
-                b_id = active_bounty["id"]
-                # Requirement: Killing blow hunter must have accepted the contract
-                accepted = conn.execute("SELECT 1 FROM bounty_acceptances WHERE bounty_id = ? AND hunter_name = ?", (b_id, killer_name)).fetchone()
-                accepted_via_addon = (data.get("acceptedBounties") and b_id in data.get("acceptedBounties"))
-                if accepted or accepted_via_addon:
+            # ROE Check 1: Zone restriction
+            if roe_zone and roe_zone.strip() and roe_zone.lower() not in zone_name.lower():
+                continue
+
+            # ROE Check 2: Minimum level (Anti-lowbie filter)
+            if roe_min_lvl > 0 and v_lvl < roe_min_lvl:
+                continue
+
+            # ROE Check 3: Underdog Multiplier & Zerg Filter
+            victim_party = v.get("partySize", 1)
+            points = 1
+            if feud["roe_underdog_bonus"]:
+                if attackers_count == 1 and victim_party >= 2:
+                    points = 2
+                elif attackers_count >= 3 and victim_party <= 1:
+                    points = 0
+
+            if points == 0:
+                continue
+
+            is_challenger_kill = False
+            is_target_kill = False
+
+            if f_type == "GUILD":
+                if killer_guild and c_guild and killer_guild == c_guild and victim_guild == t_guild:
+                    is_challenger_kill = True
+                elif killer_guild and t_guild and killer_guild == t_guild and victim_guild == c_guild:
+                    is_target_kill = True
+            else:
+                if killer_name == c_name and victim_name == t_name:
+                    is_challenger_kill = True
+                elif killer_name == t_name and victim_name == c_name:
+                    is_target_kill = True
+
+            now_ts = int(time.time())
+            exp_ts = now_ts + (30 * 86400)
+
+            if is_challenger_kill:
+                new_score = feud["challenger_score"] + points
+                conn.execute("UPDATE blood_feuds SET challenger_score = ? WHERE id = ?", (new_score, f_id))
+                if new_score >= feud["target_score"]:
+                    winner = c_guild if f_type == "GUILD" else c_name
+                    loser = t_guild if f_type == "GUILD" else t_name
+                    conn.execute("UPDATE blood_feuds SET status = 'COMPLETED', winner_name = ? WHERE id = ?", (winner, f_id))
                     conn.execute("""
-                        UPDATE bounties
-                        SET status = 'CLAIMED', hunter_name = ?, kill_id = ?, payment_deadline = ?
-                        WHERE id = ?
-                    """, (killer_name, kill_id, timestamp, b_id))
+                        INSERT OR REPLACE INTO kos_blacklist (entity_name, entity_type, reason, branded_at, status)
+                        VALUES (?, ?, ?, ?, 'KOS')
+                    """, (loser, f_type, f"Defeated in Blood Feud by {winner}", now_ts))
+                    if f_type == "GUILD":
+                        roster = conn.execute("SELECT DISTINCT character_name FROM character_guild_history WHERE guild_name = ?", (loser,)).fetchall()
+                        for m in roster:
+                            m_name = m["character_name"]
+                            conn.execute("""
+                                INSERT OR REPLACE INTO kos_deserters (player_guid, player_name, former_guild, branded_at, expires_at)
+                                VALUES (?, ?, ?, ?, ?)
+                            """, (f"Player-KOS-{m_name}", m_name, loser, now_ts, exp_ts))
 
-        # Process Active Blood Feuds & ROE scoring
-        if killer_name != "Unknown" and victim_name != "Unknown" and killer_name != victim_name:
-            active_feuds = conn.execute("SELECT * FROM blood_feuds WHERE status = 'ACTIVE'").fetchall()
-            for feud in active_feuds:
-                f_id = feud["id"]
-                c_name = feud["challenger_name"]
-                c_guild = feud["challenger_guild"]
-                t_name = feud["target_name"]
-                t_guild = feud["target_guild"]
-                f_type = feud["feud_type"]
-                roe_min_lvl = feud["roe_min_level"] or 0
-                v_lvl = v.get("level", 60)
-                zone_name = loc.get("zone", "")
-                roe_zone = feud["roe_zone"]
+            elif is_target_kill:
+                new_score = feud["target_score_current"] + points
+                conn.execute("UPDATE blood_feuds SET target_score_current = ? WHERE id = ?", (new_score, f_id))
+                if new_score >= feud["target_score"]:
+                    winner = t_guild if f_type == "GUILD" else t_name
+                    loser = c_guild if f_type == "GUILD" else c_name
+                    conn.execute("UPDATE blood_feuds SET status = 'COMPLETED', winner_name = ? WHERE id = ?", (winner, f_id))
+                    conn.execute("""
+                        INSERT OR REPLACE INTO kos_blacklist (entity_name, entity_type, reason, branded_at, status)
+                        VALUES (?, ?, ?, ?, 'KOS')
+                    """, (loser, f_type, f"Defeated in Blood Feud by {winner}", now_ts))
+                    if f_type == "GUILD":
+                        roster = conn.execute("SELECT DISTINCT character_name FROM character_guild_history WHERE guild_name = ?", (loser,)).fetchall()
+                        for m in roster:
+                            m_name = m["character_name"]
+                            conn.execute("""
+                                INSERT OR REPLACE INTO kos_deserters (player_guid, player_name, former_guild, branded_at, expires_at)
+                                VALUES (?, ?, ?, ?, ?)
+                            """, (f"Player-KOS-{m_name}", m_name, loser, now_ts, exp_ts))
 
-                # ROE Check 1: Zone restriction
-                if roe_zone and roe_zone.strip() and roe_zone.lower() not in zone_name.lower():
-                    continue
+    return kill_id
 
-                # ROE Check 2: Minimum level (Anti-lowbie filter)
-                if roe_min_lvl > 0 and v_lvl < roe_min_lvl:
-                    continue
+@app.route("/api/kills", methods=["POST"])
+def post_kill():
+    data = request.json
+    if not data or "killId" not in data:
+        return jsonify({"error": "Invalid payload"}), 400
 
-                # ROE Check 3: Underdog Multiplier & Zerg Filter
-                victim_party = v.get("partySize", 1)
-                points = 1
-                if feud["roe_underdog_bonus"]:
-                    if attackers_count == 1 and victim_party >= 2:
-                        points = 2  # Outnumbered underdog win!
-                    elif attackers_count >= 3 and victim_party <= 1:
-                        points = 0  # Zero points for cheap zerg ganks
+    with get_db() as conn:
+        k_id = ingest_kill_data(data, conn)
+        conn.commit()
 
-                if points == 0:
-                    continue
+    if k_id:
+        return jsonify({"success": True, "killId": k_id}), 201
+    return jsonify({"error": "Failed to ingest kill"}), 400
 
-                is_challenger_kill = False
-                is_target_kill = False
+@app.route("/api/upload", methods=["POST"])
+def upload_saved_variables():
+    """
+    Drag-and-Drop & File Upload Endpoint.
+    Ingests raw SavedVariables (WoWKillboard.lua) or JSON combat logs idempotently.
+    Commutative and safe across arbitrary upload timestamps from multiple players.
+    """
+    raw_text = ""
+    if "file" in request.files:
+        f = request.files["file"]
+        raw_text = f.read().decode("utf-8", errors="replace")
+    elif request.data:
+        raw_text = request.data.decode("utf-8", errors="replace")
+    elif request.is_json:
+        raw_text = json.dumps(request.json)
 
-                if f_type == "GUILD":
-                    if killer_guild and c_guild and killer_guild == c_guild and victim_guild == t_guild:
-                        is_challenger_kill = True
-                    elif killer_guild and t_guild and killer_guild == t_guild and victim_guild == c_guild:
-                        is_target_kill = True
-                else:
-                    if killer_name == c_name and victim_name == t_name:
-                        is_challenger_kill = True
-                    elif killer_name == t_name and victim_name == c_name:
-                        is_target_kill = True
+    if not raw_text.strip():
+        return jsonify({"error": "No content received. Please select or drop a valid WoWKillboard.lua file."}), 400
 
-                now_ts = int(time.time())
-                exp_ts = now_ts + (30 * 86400)  # 30-day deserter stain
+    parsed = {}
+    is_lua = "WoWKillboardDB" in raw_text or ("=" in raw_text and "{" in raw_text)
+    if is_lua:
+        if not LuaTableParser:
+            return jsonify({"error": "LuaTableParser not available on this server instance."}), 500
+        try:
+            parsed = LuaTableParser.parse_string(raw_text)
+        except Exception as e:
+            return jsonify({"error": f"Failed to parse Lua SavedVariables: {str(e)}"}), 400
+    else:
+        try:
+            parsed = json.loads(raw_text)
+        except Exception as e:
+            return jsonify({"error": f"Failed to parse JSON content: {str(e)}"}), 400
 
-                if is_challenger_kill:
-                    new_score = feud["challenger_score"] + points
-                    conn.execute("UPDATE blood_feuds SET challenger_score = ? WHERE id = ?", (new_score, f_id))
-                    if new_score >= feud["target_score"]:
-                        winner = c_guild if f_type == "GUILD" else c_name
-                        loser = t_guild if f_type == "GUILD" else t_name
-                        conn.execute("UPDATE blood_feuds SET status = 'COMPLETED', winner_name = ? WHERE id = ?", (winner, f_id))
-                        conn.execute("""
-                            INSERT OR REPLACE INTO kos_blacklist (entity_name, entity_type, reason, branded_at, status)
-                            VALUES (?, ?, ?, ?, 'KOS')
-                        """, (loser, f_type, f"Defeated in Blood Feud by {winner}", now_ts))
-                        if f_type == "GUILD":
-                            roster = conn.execute("SELECT DISTINCT character_name FROM character_guild_history WHERE guild_name = ?", (loser,)).fetchall()
-                            for m in roster:
-                                m_name = m["character_name"]
-                                conn.execute("""
-                                    INSERT OR REPLACE INTO kos_deserters (player_guid, player_name, former_guild, branded_at, expires_at)
-                                    VALUES (?, ?, ?, ?, ?)
-                                """, (f"Player-KOS-{m_name}", m_name, loser, now_ts, exp_ts))
+    kills_to_ingest = []
+    if isinstance(parsed, dict):
+        if "WoWKillboardDB" in parsed and isinstance(parsed["WoWKillboardDB"], dict):
+            w_db = parsed["WoWKillboardDB"]
+            if "kills" in w_db and isinstance(w_db["kills"], dict):
+                kills_to_ingest.extend(w_db["kills"].values())
+            else:
+                for v in w_db.values():
+                    if isinstance(v, dict) and ("killId" in v or "victim" in v):
+                        kills_to_ingest.append(v)
+        elif "kills" in parsed and isinstance(parsed["kills"], dict):
+            kills_to_ingest.extend(parsed["kills"].values())
+        elif "kills" in parsed and isinstance(parsed["kills"], list):
+            kills_to_ingest.extend(parsed["kills"])
+        elif "killId" in parsed:
+            kills_to_ingest.append(parsed)
+        else:
+            for v in parsed.values():
+                if isinstance(v, dict) and ("killId" in v or "victim" in v):
+                    kills_to_ingest.append(v)
+    elif isinstance(parsed, list):
+        kills_to_ingest.extend(parsed)
 
-                elif is_target_kill:
-                    new_score = feud["target_score_current"] + points
-                    conn.execute("UPDATE blood_feuds SET target_score_current = ? WHERE id = ?", (new_score, f_id))
-                    if new_score >= feud["target_score"]:
-                        winner = t_guild if f_type == "GUILD" else t_name
-                        loser = c_guild if f_type == "GUILD" else c_name
-                        conn.execute("UPDATE blood_feuds SET status = 'COMPLETED', winner_name = ? WHERE id = ?", (winner, f_id))
-                        conn.execute("""
-                            INSERT OR REPLACE INTO kos_blacklist (entity_name, entity_type, reason, branded_at, status)
-                            VALUES (?, ?, ?, ?, 'KOS')
-                        """, (loser, f_type, f"Defeated in Blood Feud by {winner}", now_ts))
-                        if f_type == "GUILD":
-                            roster = conn.execute("SELECT DISTINCT character_name FROM character_guild_history WHERE guild_name = ?", (loser,)).fetchall()
-                            for m in roster:
-                                m_name = m["character_name"]
-                                conn.execute("""
-                                    INSERT OR REPLACE INTO kos_deserters (player_guid, player_name, former_guild, branded_at, expires_at)
-                                    VALUES (?, ?, ?, ?, ?)
-                                """, (f"Player-KOS-{m_name}", m_name, loser, now_ts, exp_ts))
+    processed_count = 0
+    with get_db() as conn:
+        for k in kills_to_ingest:
+            if isinstance(k, dict) and "killId" in k:
+                res = ingest_kill_data(k, conn)
+                if res:
+                    processed_count += 1
+
+        # Also extract pveDeaths if present
+        pve_list = []
+        if isinstance(parsed, dict):
+            if "pveDeaths" in parsed and isinstance(parsed["pveDeaths"], dict):
+                pve_list.extend(parsed["pveDeaths"].values())
+            elif "WoWKillboardDB" in parsed and isinstance(parsed["WoWKillboardDB"], dict) and "pveDeaths" in parsed["WoWKillboardDB"]:
+                pve_list.extend(parsed["WoWKillboardDB"]["pveDeaths"].values())
+        for pd in pve_list:
+            if isinstance(pd, dict) and "deathId" in pd:
+                try:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO pve_deaths (
+                            death_id, timestamp, npc_name, npc_id, npc_guid, npc_spell, npc_damage,
+                            victim_name, victim_guid, victim_level, victim_class, victim_guild, victim_faction,
+                            map_id, zone, subzone, coord_x, coord_y, raw_json
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        pd["deathId"], pd.get("timestamp", int(time.time())),
+                        pd.get("npc", {}).get("name") or pd.get("creature", {}).get("name", "Unknown"),
+                        pd.get("npc", {}).get("id") or pd.get("creature", {}).get("id", 0),
+                        pd.get("npc", {}).get("guid") or pd.get("creature", {}).get("guid", "Creature-0"),
+                        pd.get("npc", {}).get("spell", "Physical Strike"),
+                        pd.get("npc", {}).get("damage", 0),
+                        pd.get("player", {}).get("name") or pd.get("victim", {}).get("name", "Unknown"),
+                        pd.get("player", {}).get("guid") or pd.get("victim", {}).get("guid", "Player-0"),
+                        pd.get("player", {}).get("level") or pd.get("victim", {}).get("level", 60),
+                        pd.get("player", {}).get("class") or pd.get("victim", {}).get("class", "WARRIOR"),
+                        pd.get("player", {}).get("guild") or pd.get("victim", {}).get("guild", "None"),
+                        pd.get("player", {}).get("faction") or pd.get("victim", {}).get("faction", "Alliance"),
+                        pd.get("location", {}).get("mapId", 0), pd.get("location", {}).get("zone", "Unknown"),
+                        pd.get("location", {}).get("subZone", ""), pd.get("location", {}).get("x", 0.0),
+                        pd.get("location", {}).get("y", 0.0), json.dumps(pd)
+                    ))
+                except Exception:
+                    pass
 
         conn.commit()
 
-    return jsonify({"success": True, "killId": kill_id}), 201
+    return jsonify({
+        "success": True,
+        "kills_processed": processed_count,
+        "message": f"Successfully parsed and synchronized {processed_count} combat records into Master Ledger."
+    }), 200
+
+@app.route("/api/admin/reset", methods=["POST"])
+def admin_reset():
+    """
+    Administrative Endpoint: Complete reset of combat ledger, bounties, and leaderboards.
+    Requires ADMIN_SECRET_KEY.
+    """
+    req_secret = None
+    if request.is_json:
+        req_secret = request.json.get("secret")
+    if not req_secret:
+        req_secret = request.args.get("secret") or request.form.get("secret")
+
+    if req_secret != ADMIN_SECRET_KEY:
+        return jsonify({"error": "Unauthorized: Invalid administrative secret key."}), 403
+
+    wipe_database()
+    return jsonify({
+        "success": True,
+        "message": "All combat tables, leaderboards, and telemetry ledgers have been completely reset."
+    }), 200
 
 # ----------------- Stats & Telemetry API -----------------
 
@@ -2971,7 +3137,12 @@ Answer strictly in your role as the Classic Azeroth Scribe. Grounded, utilitaria
     })
 
 if __name__ == "__main__":
-    init_db()
+    if "--reset-db" in sys.argv:
+        print("[*] Admin flag --reset-db detected. Wiping all database tables...")
+        wipe_database()
+        print("[*] Database successfully re-initialized with fresh schema.")
+    else:
+        init_db()
     port = int(os.environ.get("PORT", 8080))
     print(f"[*] WoW Killboard Web Server running at http://127.0.0.1:{port}")
     app.run(host="0.0.0.0", port=port, debug=True)

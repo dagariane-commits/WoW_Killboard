@@ -78,6 +78,56 @@ def generate_medallion_border():
     im.save(dst, format="TGA")
     print(f"[TEXTURE] Successfully created: {dst} ({os.path.getsize(dst)} bytes)")
 
+def generate_classic_parchment_bg():
+    """Generate high-resolution authentic aged parchment texture for Classic WoW quest log look."""
+    dst = os.path.join(TEX_DIR, "classic_parchment_bg.tga")
+    width, height = 1024, 512
+    im = Image.new("RGB", (width, height), (225, 202, 155))
+    draw = ImageDraw.Draw(im)
+
+    # Procedural antique parchment synthesis: noise + fibers + vignette
+    import random
+    random.seed(1337) # Deterministic grain
+
+    pixels = im.load()
+    cx, cy = width / 2.0, height / 2.0
+
+    for y in range(height):
+        # Vertical gradient (slightly lighter at top, deeper warm amber at bottom)
+        y_ratio = y / height
+        base_lum = -10 + int(y_ratio * 12)
+
+        for x in range(width):
+            # Distance from center for vignette
+            dx = (x - cx) / cx
+            dy = (y - cy) / cy
+            vignette = (dx * dx + dy * dy) * 0.45
+
+            # Fiber noise
+            grain = random.randint(-8, 8)
+            fiber_h = int(math.sin(x * 0.15) * 3)
+            fiber_v = int(math.sin(y * 0.25) * 3)
+
+            r = 228 + base_lum + grain + fiber_h - int(vignette * 45)
+            g = 205 + base_lum + grain + fiber_v - int(vignette * 50)
+            b = 158 + base_lum + grain - int(vignette * 55)
+
+            # Clamp RGB bounds
+            r = min(245, max(140, r))
+            g = min(225, max(115, g))
+            b = min(185, max(75, b))
+
+            pixels[x, y] = (r, g, b)
+
+    # Subtle inner parchment border line
+    border_color = (155, 125, 75)
+    draw.rectangle([8, 8, width - 9, height - 9], outline=border_color, width=2)
+    draw.rectangle([14, 14, width - 15, height - 15], outline=(185, 155, 105), width=1)
+
+    im.save(dst, format="TGA")
+    print(f"[TEXTURE] Successfully created: {dst} ({os.path.getsize(dst)} bytes)")
+
 if __name__ == "__main__":
     generate_dark_war_bg()
     generate_medallion_border()
+    generate_classic_parchment_bg()
