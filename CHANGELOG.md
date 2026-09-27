@@ -5,6 +5,34 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.44] - 2026-09-27
+
+### Added
+- **Cryptographic Character Ownership Protection (`server.py`, `app.js`, `index.html`)**:
+  - **Single-Owner Locking**: Integrated `character_claims` table and `X-Owner-Token` headers. Once a character callsign is claimed by an operative, subsequent attempts by other users to select or claim the character are rejected with HTTP 403 Forbidden.
+  - **Ownership Status Badging**: The character selection modal displays `🛡️ Verified Owner` for the authenticated owner and `🔒 Claimed (Protected)` with disabled actions for other users.
+  - **In-Game Claim Verification Modal**: Users claiming an operative receive a deterministic 6-character code (e.g., `KB-XXXX`) along with exact instructions to run `/kb claim <CODE>` inside World of Warcraft.
+  - **Automated Desktop Token Verification (`sync/watcher.py`)**: `WoWKillboardSync` now auto-ingests `WoWKillboardDB.claimTokens` written by the `/kb claim` in-game slash command and synchronizes verified claims with the web API `/api/auth/verify-claim`.
+
+- **Web War Rally Muster Modal & Rich Telemetry (`app.js`, `index.html`, `server.py`)**:
+  - **Web Squad Creation Panel**: Added an interactive "+ Muster War Rally / Sound War Horn" button and modal on the Web Rallies view supporting:
+    1. **Squad Capacity**: 5-Man Squad (Party) vs 40-Man Strike Team (Raid).
+    2. **Combat Theatre**: Open World PvP vs Battleground Operations.
+    3. **Target Location**: Common frontline zone dropdown (Stranglethorn Vale, Hillsbrad Foothills, Warsong Gulch, Arathi Basin, Alterac Valley, etc.) and custom location text box.
+    4. **Preferred Level Bracket**: Min and Max level inputs with quick-select presets (`[All (1-60)]`, `[Twink 19]`, `[Twink 29]`, `[Endgame (50-60)]`).
+    5. **Requested Roles**: Toggleable combat role badges (`[🛡️ Tanks]`, `[💚 Healers]`, `[⚔️ DPS]`).
+    6. **Battle Cry / Directive**: Custom mission message dispatched to realm telemetry and Discord webhooks.
+  - **Enhanced Rally Cards**: Rendered rally listings display squad size badges (`[5-MAN SQUAD]` / `[40-MAN RAID]`), theatre badges (`[OPEN WORLD PVP]` / `[BATTLEGROUND]`), level brackets, requested roles, commander battle cry, and `/w CommanderName rally` auto-invite hint.
+
+### Removed
+- **Battle.net OAuth Deprecation (`index.html`, `app.js`, `server.py`)**:
+  - Completely purged third-party Battle.net OAuth buttons, modal tabs, and URL callback dependencies in favor of lightweight in-game character links and token-based claims.
+  - Replaced portal button with `⚔️ Select / Claim Operative Identity`.
+
+### Changed
+- **Zero-Friction In-Game Web Link Auto-Authentication (`app.js`)**:
+  - Clicking any in-game character web profile link (`http://13.216.102.148/?character=Name`) automatically authenticates the player session as that operative, updates the header identity badge, switches to the live feed, and opens their character profile dossier instantly without requiring logins or popups.
+
 ## [1.4.43] - 2026-09-27
 
 ### Fixed

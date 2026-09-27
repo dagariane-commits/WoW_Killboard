@@ -173,6 +173,15 @@ def init_db():
                 last_seen INTEGER
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS character_claims (
+                character_name TEXT PRIMARY KEY,
+                owner_token TEXT,
+                claim_code TEXT,
+                claimed_at INTEGER,
+                verified INTEGER DEFAULT 0
+            )
+        """)
         # Backfill characters from known kills if empty or updated
         try:
             conn.execute("""
@@ -204,9 +213,27 @@ def init_db():
                 hostile_count INTEGER,
                 hostile_names TEXT,
                 timestamp INTEGER,
-                status TEXT DEFAULT 'ACTIVE'
+                status TEXT DEFAULT 'ACTIVE',
+                group_type TEXT DEFAULT 'PARTY',
+                content_type TEXT DEFAULT 'WORLD',
+                min_level INTEGER DEFAULT 1,
+                max_level INTEGER DEFAULT 60,
+                roles TEXT DEFAULT 'TANK,HEAL,DPS',
+                message TEXT
             )
         """)
+        for col_def in [
+            ("group_type", "TEXT DEFAULT 'PARTY'"),
+            ("content_type", "TEXT DEFAULT 'WORLD'"),
+            ("min_level", "INTEGER DEFAULT 1"),
+            ("max_level", "INTEGER DEFAULT 60"),
+            ("roles", "TEXT DEFAULT 'TANK,HEAL,DPS'"),
+            ("message", "TEXT DEFAULT ''"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE distress_beacons ADD COLUMN {col_def[0]} {col_def[1]}")
+            except Exception:
+                pass
         conn.execute("""
             CREATE TABLE IF NOT EXISTS guild_events (
                 id TEXT PRIMARY KEY,
@@ -1752,27 +1779,33 @@ def get_characters_directory():
     search = request.args.get("search", "").strip().lower()
     faction = request.args.get("faction", "").strip().lower()
     limit = min(int(request.args.get("limit", 100)), 200)
+    owner_token = request.headers.get("X-Owner-Token", "").strip() or request.args.get("owner_token", "").strip()
 
     with get_db() as conn:
         query = """
-            SELECT name, realm, class, race, level, faction, guild, last_seen
-            FROM characters
-            WHERE name IS NOT NULL AND name != 'Unknown' AND name != ''
+            SELECT c.name, c.realm, c.class, c.race, c.level, c.faction, c.guild, c.last_seen,
+                   cc.owner_token, cc.claim_code, cc.verified
+            FROM characters c
+            LEFT JOIN character_claims cc ON LOWER(cc.character_name) = LOWER(c.name)
+            WHERE c.name IS NOT NULL AND c.name != 'Unknown' AND c.name != ''
         """
         params = []
         if search:
-            query += " AND LOWER(name) LIKE ?"
+            query += " AND LOWER(c.name) LIKE ?"
             params.append(f"%{search}%")
         if faction and faction in ("alliance", "horde"):
-            query += " AND LOWER(faction) = ?"
+            query += " AND LOWER(c.faction) = ?"
             params.append(faction)
 
-        query += " ORDER BY last_seen DESC, level DESC LIMIT ?"
+        query += " ORDER BY c.last_seen DESC, c.level DESC LIMIT ?"
         params.append(limit)
 
         rows = conn.execute(query, params).fetchall()
         result = []
         for r in rows:
+            claimed_token = r["owner_token"]
+            is_claimed = bool(claimed_token)
+            is_owner = bool(is_claimed and owner_token and claimed_token == owner_token)
             result.append({
                 "name": r["name"],
                 "realm": r["realm"] or "WoW Forever",
@@ -1782,16 +1815,24 @@ def get_characters_directory():
                 "faction": r["faction"] or "Unknown",
                 "guild": r["guild"] or "None",
                 "last_seen": r["last_seen"] or 0,
+                "is_claimed": is_claimed,
+                "is_verified": bool(r["verified"] and r["verified"] == 1),
+                "is_owner": is_owner,
             })
         return jsonify(result)
 
 @app.route("/api/auth/claim-character", methods=["POST"])
 def claim_character():
-    """Allows a user to claim or register a character directly."""
+    """Allows a user to claim or register a character with cryptographic ownership protection."""
     data = request.json or {}
     name = (data.get("name") or data.get("characterName") or "").strip()
     if not name or name.lower() == "unknown":
         return jsonify({"error": "Valid character name required"}), 400
+
+    owner_token = (data.get("owner_token") or request.headers.get("X-Owner-Token") or "").strip()
+    if not owner_token:
+        import uuid
+        owner_token = f"tok_{uuid.uuid4().hex[:16]}"
 
     realm = (data.get("realm") or "WoW Forever").strip()
     char_class = (data.get("class") or "UNKNOWN").strip().upper()
@@ -1801,6 +1842,32 @@ def claim_character():
     now_ts = int(time.time())
 
     with get_db() as conn:
+        # Check if already claimed by someone else
+        existing_claim = conn.execute(
+            "SELECT owner_token, verified, claim_code FROM character_claims WHERE LOWER(character_name) = LOWER(?)",
+            (name,)
+        ).fetchone()
+        if existing_claim:
+            if existing_claim["owner_token"] != owner_token:
+                return jsonify({
+                    "error": f"Character '{name}' is already claimed and locked by its owner. Only the verified owner can claim or select this character.",
+                    "is_claimed": True,
+                    "is_owner": False
+                }), 403
+            else:
+                claim_code = existing_claim["claim_code"]
+                verified = bool(existing_claim["verified"])
+        else:
+            # Generate deterministic in-game verification code e.g. KB-XXXX
+            import hashlib
+            claim_hash = hashlib.md5(f"{name}_{now_ts}_{owner_token}".encode()).hexdigest()[:4].upper()
+            claim_code = f"KB-{claim_hash}"
+            verified = False
+            conn.execute("""
+                INSERT INTO character_claims (character_name, owner_token, claim_code, claimed_at, verified)
+                VALUES (?, ?, ?, ?, ?)
+            """, (name, owner_token, claim_code, now_ts, 0))
+
         conn.execute("""
             INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1816,6 +1883,9 @@ def claim_character():
 
     return jsonify({
         "success": True,
+        "owner_token": owner_token,
+        "claim_code": claim_code,
+        "verified": verified,
         "character": {
             "name": name,
             "realm": realm,
@@ -1825,6 +1895,29 @@ def claim_character():
             "guild": guild
         }
     })
+
+@app.route("/api/auth/verify-claim", methods=["POST"])
+def verify_claim():
+    """Verifies in-game claim code from SavedVariables sync or user submission."""
+    data = request.json or {}
+    name = (data.get("name") or data.get("character_name") or "").strip()
+    code = (data.get("code") or data.get("claim_code") or "").strip().upper()
+    if not name or not code:
+        return jsonify({"error": "Character name and claim code required"}), 400
+
+    with get_db() as conn:
+        claim = conn.execute(
+            "SELECT * FROM character_claims WHERE LOWER(character_name) = LOWER(?)",
+            (name,)
+        ).fetchone()
+        if not claim:
+            return jsonify({"error": "No pending claim found for this character"}), 404
+        if claim["claim_code"] == code:
+            conn.execute("UPDATE character_claims SET verified = 1 WHERE LOWER(character_name) = LOWER(?)", (name,))
+            conn.commit()
+            return jsonify({"success": True, "message": f"Character '{name}' ownership verified and locked to owner."})
+        else:
+            return jsonify({"error": "Invalid verification code"}), 400
 
 @app.route("/api/auth/bnet", methods=["GET"])
 def auth_bnet():
@@ -2745,10 +2838,10 @@ def get_discord_config_for_guild(guild_name: str = None) -> dict:
 
 @app.route("/api/backup/distress", methods=["POST"])
 def post_distress_beacon():
-    """Receives in-game Call for Backup (SOS / War Horn) distress beacons and broadcasts to Discord."""
+    """Receives in-game Call for Backup (SOS / War Horn / Vanguard Rally) distress beacons and broadcasts to Discord."""
     data = request.json or {}
-    if data.get("is_instance") or data.get("isBattleground") or data.get("isArena"):
-        return jsonify({"error": "The War Horn and Call for Backup are restricted to Open World PvP only."}), 400
+    if data.get("is_instance") or data.get("isArena"):
+        return jsonify({"error": "The War Horn cannot be sounded inside PvE dungeons, raids, or competitive arenas."}), 400
 
     beacon_id = data.get("id") or f"SOS-{int(time.time())}-{data.get('character_name', 'Unknown')}"
     char_name = data.get("character_name")
@@ -2756,7 +2849,7 @@ def post_distress_beacon():
         return jsonify({"error": "Missing character_name"}), 400
 
     char_class = data.get("character_class", "WARRIOR")
-    char_level = data.get("character_level", 60)
+    char_level = int(data.get("character_level") or 60)
     guild_name = data.get("guild_name", "None")
     faction = data.get("faction", "Unknown")
     zone = data.get("zone", "Wilderness")
@@ -2768,17 +2861,42 @@ def post_distress_beacon():
     ts = int(data.get("timestamp") or time.time())
     status = data.get("status", "ACTIVE")
 
+    # Rich Rally metadata
+    group_type = (data.get("group_type") or data.get("groupType") or "PARTY").upper()
+    content_type = (data.get("content_type") or data.get("contentType") or ("BG" if data.get("isBattleground") else "WORLD")).upper()
+    min_level = int(data.get("min_level") or data.get("minLevel") or 1)
+    max_level = int(data.get("max_level") or data.get("maxLevel") or 60)
+    
+    # Format roles
+    raw_roles = data.get("roles")
+    if isinstance(raw_roles, dict):
+        r_list = []
+        if raw_roles.get("tank"): r_list.append("TANK")
+        if raw_roles.get("heal"): r_list.append("HEAL")
+        if raw_roles.get("dps"): r_list.append("DPS")
+        roles_str = ",".join(r_list) if r_list else "ALL"
+    elif isinstance(raw_roles, list):
+        roles_str = ",".join(str(r).upper() for r in raw_roles)
+    elif isinstance(raw_roles, str) and raw_roles.strip():
+        roles_str = raw_roles.strip().upper()
+    else:
+        roles_str = "TANK,HEAL,DPS"
+
+    message = (data.get("message") or data.get("notes") or "").strip()
+
     with get_db() as conn:
         conn.execute("""
             INSERT OR REPLACE INTO distress_beacons (
                 id, character_name, character_class, character_level,
                 guild_name, faction, zone, subzone, coord_x, coord_y,
-                hostile_count, hostile_names, timestamp, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                hostile_count, hostile_names, timestamp, status,
+                group_type, content_type, min_level, max_level, roles, message
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             beacon_id, char_name, char_class, char_level,
             guild_name, faction, zone, subzone, coord_x, coord_y,
-            hostile_count, hostile_names, ts, status
+            hostile_count, hostile_names, ts, status,
+            group_type, content_type, min_level, max_level, roles_str, message
         ))
         conn.commit()
 
@@ -2786,20 +2904,30 @@ def post_distress_beacon():
     discord_notified = False
     cfg = get_discord_config_for_guild(guild_name)
     if cfg and cfg.get("webhook_url") and cfg.get("alerts_enabled", 1):
+        content_label = "Battleground Operations" if content_type == "BG" else "Open World PvP Frontline"
+        group_label = "40-Man Strike Team (Raid)" if group_type == "RAID" else "5-Man Squad (Party)"
+        fields = [
+            {"name": "Commander", "value": f"**{char_name}** (Lvl {char_level} {char_class})", "inline": True},
+            {"name": "Guild", "value": f"<{guild_name}>" if guild_name and guild_name != "None" else "Unaligned", "inline": True},
+            {"name": "Faction", "value": f"{faction}", "inline": True},
+            {"name": "Objective / Theatre", "value": f"**{content_label}** in **{zone}** {f'({subzone})' if subzone else ''}", "inline": True},
+            {"name": "Squad Capacity", "value": f"{group_label}", "inline": True},
+            {"name": "Level Bracket", "value": f"Levels **{min_level} – {max_level}**", "inline": True},
+            {"name": "Roles Requested", "value": f"`{roles_str}`", "inline": True},
+        ]
+        if coord_x > 0 or coord_y > 0:
+            fields.append({"name": "GPS Coordinates", "value": f"`({coord_x:.1f}, {coord_y:.1f})`", "inline": True})
+        if message:
+            fields.append({"name": "Battle Cry / Directive", "value": f"💬 *\"{message}\"*", "inline": False})
+        fields.append({"name": "Join Vanguard Squad", "value": f"Whisper `/w {char_name} rally` in-game for **instant auto-invite** into the group!", "inline": False})
+
         discord_payload = {
-            "content": f"📯 **THE WAR HORN HAS BEEN SOUNDED — VANGUARD DISTRESS CALL!**",
+            "content": f"📯 **THE WAR HORN HAS BEEN SOUNDED — VANGUARD CALL TO ARMS!**",
             "embeds": [{
-                "title": f"📯 WAR HORN: {char_name} is Engaged in Mortal Combat in {zone}!",
-                "description": f"Blood calls to blood! **{char_name}** has sounded the War Horn. Vanguard reinforcements requested immediately on the front line!",
-                "color": 0xDD2E44,  # Red
-                "fields": [
-                    {"name": "Vanguard Combatant", "value": f"**{char_name}** (Lvl {char_level} {char_class})", "inline": True},
-                    {"name": "Guild", "value": f"<{guild_name}>" if guild_name and guild_name != "None" else "Unaligned", "inline": True},
-                    {"name": "Faction", "value": f"{faction}", "inline": True},
-                    {"name": "Frontline GPS Location", "value": f"**{zone}** {f'({subzone})' if subzone else ''}\n`({coord_x:.1f}, {coord_y:.1f})`", "inline": True},
-                    {"name": "Hostiles Engaging", "value": f"**{hostile_count} Hostile(s)**: {hostile_names}", "inline": True},
-                    {"name": "Muster War Party", "value": f"Whisper `/w {char_name} rally` in-game for **instant auto-invite** into the war party!", "inline": False}
-                ],
+                "title": f"📯 {faction.upper()} RALLY: {char_name} Mustering Troops for {zone}!",
+                "description": f"Blood calls to blood! **{char_name}** has sounded the War Horn for **{content_label}**.",
+                "color": 0x00A8FF if faction.lower() == "alliance" else 0xDD2E44,
+                "fields": fields,
                 "footer": {"text": "WoW Killboard Frontline War Room"},
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
             }]
