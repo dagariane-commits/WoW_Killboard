@@ -173,6 +173,22 @@ def init_db():
                 last_seen INTEGER
             )
         """)
+        # Backfill characters from known kills if empty or updated
+        try:
+            conn.execute("""
+                INSERT OR IGNORE INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+                SELECT killer_name, 'WoW Forever', 'UNKNOWN', killer_class, 'Unknown', killer_level, killer_faction, killer_guild, MAX(timestamp)
+                FROM kills WHERE killer_name IS NOT NULL AND killer_name != 'Unknown' AND killer_name != ''
+                GROUP BY killer_name
+            """)
+            conn.execute("""
+                INSERT OR IGNORE INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+                SELECT victim_name, 'WoW Forever', 'UNKNOWN', victim_class, 'Unknown', victim_level, victim_faction, victim_guild, MAX(timestamp)
+                FROM kills WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''
+                GROUP BY victim_name
+            """)
+        except Exception:
+            pass
         conn.execute("""
             CREATE TABLE IF NOT EXISTS distress_beacons (
                 id TEXT PRIMARY KEY,
@@ -859,6 +875,30 @@ def ingest_kill_data(data, conn):
             """, (victim_name, victim_guild, victim_faction, timestamp, timestamp))
         except Exception:
             pass
+
+    # Upsert killer and victim into characters directory table
+    for c_info in [k, v]:
+        c_name = c_info.get("name")
+        if c_name and c_name != "Unknown" and c_name != "":
+            c_guid = c_info.get("guid") or "UNKNOWN"
+            c_cls = c_info.get("class") or "UNKNOWN"
+            c_lvl = _parse_lvl(c_info.get("level"))
+            c_fac = c_info.get("faction") or "Unknown"
+            c_gld = c_info.get("guild") or "None"
+            try:
+                conn.execute("""
+                    INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(name) DO UPDATE SET
+                        guid = COALESCE(excluded.guid, characters.guid),
+                        class = CASE WHEN excluded.class != 'UNKNOWN' THEN excluded.class ELSE characters.class END,
+                        level = CASE WHEN excluded.level > 0 AND excluded.level <= 85 THEN excluded.level ELSE characters.level END,
+                        faction = CASE WHEN excluded.faction != 'Unknown' THEN excluded.faction ELSE characters.faction END,
+                        guild = CASE WHEN excluded.guild != 'None' THEN excluded.guild ELSE characters.guild END,
+                        last_seen = MAX(characters.last_seen, excluded.last_seen)
+                """, (c_name, "WoW Forever", c_guid, c_cls, "Unknown", c_lvl, c_fac, c_gld, timestamp))
+            except Exception:
+                pass
 
     # Auto-claim active bounty on victim if killed by another player
     victim_guid = v.get("guid") or "UNKNOWN"
@@ -1696,6 +1736,191 @@ def get_armory_directory():
         "total": total_count,
         "characters": paged_characters
     })
+
+@app.route("/api/characters", methods=["GET"])
+def get_characters_directory():
+    """Returns a list of indexed characters known to the platform for character selection/linking."""
+    search = request.args.get("search", "").strip().lower()
+    faction = request.args.get("faction", "").strip().lower()
+    limit = min(int(request.args.get("limit", 100)), 200)
+
+    with get_db() as conn:
+        query = """
+            SELECT name, realm, class, race, level, faction, guild, last_seen
+            FROM characters
+            WHERE name IS NOT NULL AND name != 'Unknown' AND name != ''
+        """
+        params = []
+        if search:
+            query += " AND LOWER(name) LIKE ?"
+            params.append(f"%{search}%")
+        if faction and faction in ("alliance", "horde"):
+            query += " AND LOWER(faction) = ?"
+            params.append(faction)
+
+        query += " ORDER BY last_seen DESC, level DESC LIMIT ?"
+        params.append(limit)
+
+        rows = conn.execute(query, params).fetchall()
+        result = []
+        for r in rows:
+            result.append({
+                "name": r["name"],
+                "realm": r["realm"] or "WoW Forever",
+                "class": r["class"] or "UNKNOWN",
+                "race": r["race"] or "Unknown",
+                "level": r["level"] or 0,
+                "faction": r["faction"] or "Unknown",
+                "guild": r["guild"] or "None",
+                "last_seen": r["last_seen"] or 0,
+            })
+        return jsonify(result)
+
+@app.route("/api/auth/claim-character", methods=["POST"])
+def claim_character():
+    """Allows a user to claim or register a character directly."""
+    data = request.json or {}
+    name = (data.get("name") or data.get("characterName") or "").strip()
+    if not name or name.lower() == "unknown":
+        return jsonify({"error": "Valid character name required"}), 400
+
+    realm = (data.get("realm") or "WoW Forever").strip()
+    char_class = (data.get("class") or "UNKNOWN").strip().upper()
+    faction = (data.get("faction") or "Alliance").strip().capitalize()
+    level = int(data.get("level") or 60)
+    guild = (data.get("guild") or "None").strip()
+    now_ts = int(time.time())
+
+    with get_db() as conn:
+        conn.execute("""
+            INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET
+                realm = excluded.realm,
+                class = CASE WHEN excluded.class != 'UNKNOWN' THEN excluded.class ELSE characters.class END,
+                faction = excluded.faction,
+                level = CASE WHEN excluded.level > 0 THEN excluded.level ELSE characters.level END,
+                guild = CASE WHEN excluded.guild != 'None' THEN excluded.guild ELSE characters.guild END,
+                last_seen = excluded.last_seen
+        """, (name, realm, f"Player-CLAIM-{name}", char_class, "Unknown", level, faction, guild, now_ts))
+        conn.commit()
+
+    return jsonify({
+        "success": True,
+        "character": {
+            "name": name,
+            "realm": realm,
+            "class": char_class,
+            "faction": faction,
+            "level": level,
+            "guild": guild
+        }
+    })
+
+@app.route("/api/auth/bnet", methods=["GET"])
+def auth_bnet():
+    """Redirects user to Blizzard Battle.net OAuth authorize endpoint."""
+    client_id = os.environ.get("BLIZZARD_CLIENT_ID", "").strip()
+    client_secret = os.environ.get("BLIZZARD_CLIENT_SECRET", "").strip()
+    region = os.environ.get("BLIZZARD_REGION", "us").strip()
+
+    if not client_id or not client_secret:
+        return jsonify({
+            "status": "config_needed",
+            "message": "Battle.net OAuth requires BLIZZARD_CLIENT_ID and BLIZZARD_CLIENT_SECRET environment variables. You can claim or select any character immediately in the War Room character selector modal!",
+            "instructions": "Register an application at https://develop.battle.net to obtain credentials, or select your character from the active Killboard directory."
+        }), 200
+
+    import urllib.parse
+    from flask import redirect
+    redirect_uri = request.host_url.rstrip("/") + "/api/auth/bnet/callback"
+    state = f"bnet_{int(time.time())}"
+    bnet_auth_url = (
+        f"https://oauth.battle.net/authorize?"
+        f"client_id={urllib.parse.quote(client_id)}&"
+        f"scope=wow.profile&"
+        f"response_type=code&"
+        f"redirect_uri={urllib.parse.quote(redirect_uri)}&"
+        f"state={state}"
+    )
+    return redirect(bnet_auth_url)
+
+@app.route("/api/auth/bnet/callback", methods=["GET"])
+def auth_bnet_callback():
+    """Handles OAuth 2.0 callback from Blizzard Battle.net, extracts characters, and persists."""
+    code = request.args.get("code")
+    client_id = os.environ.get("BLIZZARD_CLIENT_ID", "").strip()
+    client_secret = os.environ.get("BLIZZARD_CLIENT_SECRET", "").strip()
+    region = os.environ.get("BLIZZARD_REGION", "us").strip()
+
+    if not code or not client_id or not client_secret:
+        from flask import redirect
+        return redirect("/?bnet_error=missing_code_or_credentials")
+
+    import urllib.parse
+    import requests
+    from flask import redirect
+    redirect_uri = request.host_url.rstrip("/") + "/api/auth/bnet/callback"
+
+    try:
+        token_resp = requests.post(
+            "https://oauth.battle.net/oauth/token",
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": redirect_uri
+            },
+            auth=(client_id, client_secret),
+            timeout=10
+        )
+        if token_resp.status_code != 200:
+            return redirect(f"/?bnet_error=token_failed&detail={urllib.parse.quote(token_resp.text[:100])}")
+
+        token_data = token_resp.json()
+        access_token = token_data.get("access_token")
+
+        user_resp = requests.get(
+            "https://oauth.battle.net/oauth/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10
+        )
+        battletag = user_resp.json().get("battletag", "Player") if user_resp.status_code == 200 else "Player"
+
+        chars_resp = requests.get(
+            f"https://{region}.battle.net/profile/user/wow?namespace=profile-{region}&locale=en_US",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10
+        )
+
+        discovered = []
+        now_ts = int(time.time())
+        if chars_resp.status_code == 200:
+            profile_data = chars_resp.json()
+            with get_db() as conn:
+                for acct in profile_data.get("wow_accounts", []):
+                    for ch in acct.get("characters", []):
+                        ch_name = ch.get("name")
+                        ch_realm = ch.get("realm", {}).get("name", "WoW Forever")
+                        ch_class = ch.get("playable_class", {}).get("name", "WARRIOR").upper()
+                        ch_faction = ch.get("faction", {}).get("name", "Alliance")
+                        ch_lvl = ch.get("level", 60)
+                        if ch_name:
+                            discovered.append(ch_name)
+                            conn.execute("""
+                                INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                ON CONFLICT(name) DO UPDATE SET
+                                    realm = excluded.realm,
+                                    class = excluded.class,
+                                    level = excluded.level,
+                                    faction = excluded.faction,
+                                    last_seen = excluded.last_seen
+                            """, (ch_name, ch_realm, f"Player-BNET-{ch_name}", ch_class, "Unknown", ch_lvl, ch_faction, "None", now_ts))
+                conn.commit()
+
+        return redirect(f"/?bnet_user={urllib.parse.quote(battletag)}&bnet_chars={urllib.parse.quote(','.join(discovered[:10]))}")
+    except Exception as e:
+        return redirect(f"/?bnet_error=exception&detail={urllib.parse.quote(str(e)[:100])}")
 
 @app.route("/api/character/<name>", methods=["GET"])
 

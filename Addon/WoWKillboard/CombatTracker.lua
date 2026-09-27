@@ -635,15 +635,40 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
 
     if not KB.Utils.CanAccess(victimName) then return end
 
-    if CT.LastKillVictim and (CT.LastKillVictim:lower() == victimName:lower()) and (now - (CT.LastKillTime or 0)) < 2 then
+    if CT.LastKillVictim and (CT.LastKillVictim:lower() == victimName:lower()) and (now - (CT.LastKillTime or 0)) < 5 then
         return
     end
     CT.LastKillVictim = victimName
     CT.LastKillTime = now
 
+    local victimGUID = explicitGuid or (victimInfo and victimInfo.guid)
+    if (not victimGUID or victimGUID == "UNKNOWN") and UnitExists("target") and UnitName("target") == victimName then
+        victimGUID = UnitGUID("target")
+    end
+    if (not victimGUID or victimGUID == "UNKNOWN") and activeEnemyTarget and activeEnemyTarget.name == victimName then
+        victimGUID = activeEnemyTarget.guid
+    end
+    if (not victimGUID or victimGUID == "UNKNOWN") then
+        for guid, e in pairs(CT.RecentEngagedEnemies) do
+            if e.name == victimName then
+                victimGUID = guid
+                break
+            end
+        end
+    end
+    if (not victimGUID or victimGUID == "UNKNOWN") then
+        for guid, attackers in pairs(CT.RecentDamage) do
+            local uInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(guid)
+            if uInfo and uInfo.name == victimName then
+                victimGUID = guid
+                break
+            end
+        end
+    end
+
     if not victimInfo then
-        victimInfo = KB.UnitScanner:GetUnitInfoByName(victimName) or {
-            guid = explicitGuid or "UNKNOWN",
+        victimInfo = (victimGUID and KB.UnitScanner:GetUnitInfo(victimGUID)) or KB.UnitScanner:GetUnitInfoByName(victimName) or {
+            guid = victimGUID or "UNKNOWN",
             name = victimName,
             level = 0,
             class = "UNKNOWN",
@@ -652,14 +677,112 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             partySize = 1,
         }
     end
+    if victimGUID and victimGUID ~= "UNKNOWN" and victimInfo then
+        victimInfo.guid = victimGUID
+    end
 
     local partySize = CT:GetFriendlyPartySize()
-    local isSolo = (partySize <= 1)
     local playerGUID = UnitGUID("player")
     local playerName = UnitName("player")
     local _, pClass = UnitClass("player")
     local pFaction = UnitFactionGroup("player")
     local pGuild = GetGuildInfo("player")
+
+    CT:PruneCombatInteractions()
+
+    -- Check FriendlyCluster for friendly assists in the last 15 seconds
+    local friendlyAssists = 0
+    local clusterAssists = {}
+    for fGUID, fTime in pairs(CT.FriendlyCluster) do
+        if fGUID ~= playerGUID and (now - fTime) <= 15 then
+            friendlyAssists = friendlyAssists + 1
+            table.insert(clusterAssists, fGUID)
+        end
+    end
+
+    -- Gather all attackers from RecentDamage for this victim
+    local attackersList = {}
+    local totalDamage = 0
+    local recordedAttackersMap = {}
+
+    if victimGUID and CT.RecentDamage[victimGUID] then
+        for attGUID, attData in pairs(CT.RecentDamage[victimGUID]) do
+            local isAttPlayer = attData.isPlayer
+            if isAttPlayer == nil then
+                isAttPlayer = (attGUID:match("^Player%-") ~= nil)
+            end
+            local unitInfo = KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(attGUID)
+            local attClass = "UNKNOWN"
+            local attLevel = 0
+            local attGuild = "None"
+            local attFaction = "Unknown"
+            if playerGUID and attGUID == playerGUID then
+                attClass = pClass or "UNKNOWN"
+                attLevel = UnitLevel("player") or 0
+                attGuild = pGuild or "None"
+                attFaction = pFaction or "Unknown"
+            elseif unitInfo then
+                attClass = unitInfo.class or "UNKNOWN"
+                attLevel = unitInfo.level or 0
+                attGuild = unitInfo.guild or "None"
+                attFaction = unitInfo.faction or "Unknown"
+            end
+            table.insert(attackersList, {
+                guid = attGUID,
+                name = attData.name or "Unknown",
+                damage = attData.totalDamage or 0,
+                spell = attData.spellName or "Combat",
+                class = attClass,
+                level = attLevel,
+                guild = attGuild,
+                faction = attFaction,
+                isPlayer = isAttPlayer,
+            })
+            totalDamage = totalDamage + (attData.totalDamage or 0)
+            recordedAttackersMap[attGUID] = true
+        end
+    end
+
+    -- If player was not in RecentDamage, insert player
+    if playerGUID and not recordedAttackersMap[playerGUID] then
+        table.insert(attackersList, {
+            guid = playerGUID,
+            name = playerName or "Player",
+            damage = 0,
+            spell = "Honorable Combat",
+            class = pClass or "UNKNOWN",
+            level = UnitLevel("player") or 0,
+            guild = pGuild or "None",
+            faction = pFaction or "Unknown",
+            isPlayer = true,
+        })
+    end
+
+    -- Append friendly cluster participants who assisted recently
+    for _, fGUID in ipairs(clusterAssists) do
+        if not recordedAttackersMap[fGUID] then
+            local fInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(fGUID)
+            table.insert(attackersList, {
+                guid = fGUID,
+                name = (fInfo and fInfo.name) or "Friendly Ally",
+                damage = 0,
+                spell = "Support Assist",
+                class = (fInfo and fInfo.class) or "UNKNOWN",
+                level = (fInfo and fInfo.level) or 0,
+                guild = (fInfo and fInfo.guild) or "None",
+                faction = (fInfo and fInfo.faction) or (pFaction or "Unknown"),
+                isPlayer = true,
+            })
+            recordedAttackersMap[fGUID] = true
+        end
+    end
+
+    -- Strict Certified 1v1 Solo Kill criteria:
+    -- 1. Attacker list contains ONLY 1 combatant
+    -- 2. Friendly party size is strictly 1
+    -- 3. Zero active friendly assists or cluster participants in the 15-second sliding window
+    local isSolo = (#attackersList <= 1) and (partySize <= 1) and (friendlyAssists == 0)
+    local attackersCount = math.max(#attackersList, partySize, 1 + friendlyAssists)
 
     CT.SessionStats.kills = CT.SessionStats.kills + 1
 
@@ -672,16 +795,9 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         isArena = context.isArena,
         battlegroundName = context.battlegroundName,
         isSolo = isSolo,
-        attackersCount = partySize > 0 and partySize or 1,
-        attackers = {
-            {
-                guid = playerGUID or "PLAYER",
-                name = playerName or "Player",
-                damage = CT.SessionStats.damageDone,
-                spell = "Honorable Combat",
-            }
-        },
-        totalDamage = CT.SessionStats.damageDone,
+        attackersCount = attackersCount,
+        attackers = attackersList,
+        totalDamage = totalDamage,
         killer = {
             guid = playerGUID or "PLAYER",
             name = playerName or "Player",
@@ -689,12 +805,12 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             class = pClass or "UNKNOWN",
             guild = pGuild or "None",
             faction = pFaction or "Unknown",
-            partySize = partySize > 0 and partySize or 1,
-            damageDone = CT.SessionStats.damageDone,
+            partySize = attackersCount,
+            damageDone = totalDamage > 0 and totalDamage or CT.SessionStats.damageDone,
             healingDone = CT.SessionStats.healingDone,
         },
         victim = {
-            guid = (victimInfo and victimInfo.guid) or explicitGuid or "UNKNOWN",
+            guid = (victimInfo and victimInfo.guid) or victimGUID or "UNKNOWN",
             name = (victimInfo and victimInfo.name) or victimName,
             level = (victimInfo and victimInfo.level) or 0,
             class = (victimInfo and victimInfo.class) or "UNKNOWN",
@@ -704,6 +820,10 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         },
         location = location,
     })
+
+    if victimGUID and CT.RecentDamage[victimGUID] then
+        CT.RecentDamage[victimGUID] = nil
+    end
 end
 
 -- Manual kill registration for in-game testing (/kb testkill)

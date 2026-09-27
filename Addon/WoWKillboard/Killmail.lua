@@ -99,6 +99,9 @@ function KM:RecordKill(data)
         local actionVerb = killmail.isDuel and "defeated" or "destroyed"
         local chatMsg = string.format("|cff00ccff[WoWKB]|r %s %s %s %s in %s", badge, killerStr, actionVerb, victimStr, locStr)
         print(chatMsg)
+        if not killmail.isDuel and isPlayerInvolved then
+            print("|cff888888[WoWKB]|r Tip: Type |cffffff00/reload|r or |cffffff00/kb sync|r to sync combat data to the website.")
+        end
     end
 
     -- Frontline Kill Banner UI Alert & Audio Dispatch (Duels NEVER trigger banner or sirens)

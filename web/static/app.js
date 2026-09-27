@@ -1192,6 +1192,7 @@ function renderFeed(kills) {
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
           <span class="feed-count-pill">${kills.length}</span>
+          <button class="pill-btn" onclick="loadKills(); loadSidebar();" title="Refresh Live Combat Feed" style="padding:2px 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Refresh</button>
         </div>
         <div class="filter-pills" id="feed-mode-pills" style="display:flex; align-items:center; gap:6px;">
           <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
@@ -1199,7 +1200,7 @@ function renderFeed(kills) {
           <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
           <button class="pill-btn disabled" disabled title="Arenas (Unavailable in Classic Era/Beta)" style="opacity:0.5; cursor:not-allowed;">Arenas</button>
         </div>
-        <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Feed &bull; Live Telemetry</span>
+        <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Feed &bull; Type <code style="color:var(--wow-gold);">/reload</code> in WoW to sync</span>
       </div>
   `;
   visibleKills.forEach(km => {
@@ -3178,20 +3179,7 @@ function handleNormalRegister(event) {
 }
 
 function handleGoogleSignIn() {
-  const googleUser = "Champion_" + Math.floor(1000 + Math.random() * 9000);
-  const googleEmail = "operative." + Math.floor(100 + Math.random() * 900) + "@gmail.com";
-
-  localStorage.setItem("wowkb_account_username", googleUser);
-  localStorage.setItem("wowkb_account_email", googleEmail);
-  localStorage.setItem("wowkb_account_provider", "google");
-  localStorage.setItem("wowkb_user_character", googleUser);
-  localStorage.setItem("wow_killboard_hunter_name", googleUser);
-  localStorage.setItem("wowkb_supporter_active", "1");
-  sessionStorage.setItem("wowkb_auth_type", "account");
-  portalAccessMode = "account";
-
-  updateSupporterButton();
-  portalLaunchFront("FOREVER");
+  openCharacterLinkModal();
 }
 
 function portalDirectSignIn() {
@@ -3220,11 +3208,15 @@ function portalSignOut() {
   localStorage.removeItem("wowkb_account_email");
   localStorage.removeItem("wowkb_account_provider");
   localStorage.removeItem("wowkb_user_character");
+  localStorage.removeItem("wowkb_user_class");
+  localStorage.removeItem("wowkb_user_level");
+  localStorage.removeItem("wowkb_user_guild");
   localStorage.removeItem("wowkb_user_realm");
   localStorage.removeItem("wowkb_user_faction");
   sessionStorage.removeItem("wowkb_auth_type");
   sessionStorage.removeItem("wowkb_has_entered_feed");
   portalAccessMode = "guest";
+  renderHeaderAuthBadge();
   switchTab("PORTAL");
 }
 
@@ -3242,6 +3234,10 @@ function loadPortalView() {
   // Right card: Account Sign-In (or Active Session)
   let rightCardContent = "";
   if (storedAccount && (currentAuth === "account" || currentAuth === "officer")) {
+    const userCls = (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase();
+    const userLvl = localStorage.getItem("wowkb_user_level") || 60;
+    const userFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
+    const userClsColor = CLASS_COLORS[userCls] || CLASS_COLORS.UNKNOWN;
     rightCardContent = `
       <div class="signedin-account-card">
         <div style="display:flex; align-items:center; gap:12px;">
@@ -3250,10 +3246,11 @@ function loadPortalView() {
           </div>
           <div>
             <div style="font-weight:800; font-size:1.0rem; color:#fff;">
-              Signed in as <span style="color:var(--wow-gold);">${escapeHtml(storedAccount)}</span>
+              Active: <span style="color:${userClsColor};">${escapeHtml(storedAccount)}</span>
+              <span style="font-size:0.75rem; color:#94a3b8;">(Lvl ${userLvl} ${userCls.charAt(0) + userCls.slice(1).toLowerCase()})</span>
             </div>
             <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
-              Account Active &bull; High Command Clearance
+              ${escapeHtml(userFaction)} Vanguard &bull; High Command Clearance
             </div>
           </div>
         </div>
@@ -3261,8 +3258,9 @@ function loadPortalView() {
           <span>Enter WoW Forever War Room</span>
           <span>&rarr;</span>
         </button>
-        <div style="text-align:center; margin-top:8px;">
-          <button class="gate-signout-link" onclick="portalSignOut()">Sign Out / Switch Account</button>
+        <div style="display:flex; justify-content:center; gap:16px; margin-top:8px;">
+          <button class="gate-signout-link" onclick="openCharacterLinkModal()" style="color:var(--accent-cyan);">Switch / Link Character</button>
+          <button class="gate-signout-link" onclick="portalSignOut()">Sign Out</button>
         </div>
       </div>
     `;
@@ -3292,17 +3290,12 @@ function loadPortalView() {
         </button>
 
         <div class="auth-or-divider">
-          <span>or continue with</span>
+          <span>or connect your combat identity</span>
         </div>
 
-        <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
-          <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
-            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
-            <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
-            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
-          </svg>
-          <span>Sign in with Google</span>
+        <button type="button" class="google-auth-btn" style="background: linear-gradient(135deg, #0070ba 0%, #004d80 100%); color:#fff; border: 1px solid rgba(0, 229, 255, 0.4); display:flex; align-items:center; justify-content:center; gap:8px;" onclick="openCharacterLinkModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <span>Connect Battle.net or Select Character</span>
         </button>
       </form>
     `;
@@ -4222,6 +4215,200 @@ function handleAdminResetSubmit() {
   });
 }
 
+// ----------------- Character Selector & Battle.net Account Linking -----------------
+
+let knownCharactersCache = [];
+
+function openCharacterLinkModal() {
+  const modal = document.getElementById("character-link-modal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  switchCharModalTab("known");
+  loadKnownCharacters();
+}
+
+function closeCharacterLinkModal() {
+  const modal = document.getElementById("character-link-modal");
+  if (modal) modal.style.display = "none";
+}
+
+function handleCharacterModalBackdrop(event) {
+  if (event.target && event.target.id === "character-link-modal") {
+    closeCharacterLinkModal();
+  }
+}
+
+function switchCharModalTab(tab) {
+  const tabs = ["known", "bnet", "custom"];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`char-tab-btn-${t}`);
+    const panel = document.getElementById(`char-panel-${t}`);
+    if (btn) btn.classList.toggle("active", t === tab);
+    if (panel) panel.style.display = (t === tab) ? "block" : "none";
+  });
+}
+
+async function loadKnownCharacters() {
+  const listEl = document.getElementById("char-known-list");
+  const countEl = document.getElementById("char-known-count");
+  if (!listEl) return;
+
+  try {
+    const res = await fetch("/api/characters?limit=100");
+    if (!res.ok) throw new Error("Failed to fetch characters");
+    knownCharactersCache = await res.json();
+    if (countEl) countEl.innerText = knownCharactersCache.length;
+    renderKnownCharactersList(knownCharactersCache);
+  } catch (err) {
+    listEl.innerHTML = `<div style="text-align:center; padding:20px; color:#ef4444;">Failed to load characters: ${err.message}</div>`;
+  }
+}
+
+function filterKnownCharacters(query) {
+  const searchInput = document.getElementById("char-search-input");
+  const factionSelect = document.getElementById("char-faction-filter");
+  const search = (query !== undefined ? query : (searchInput ? searchInput.value : "")).trim().toLowerCase();
+  const faction = factionSelect ? factionSelect.value.toLowerCase() : "";
+
+  const filtered = knownCharactersCache.filter(c => {
+    const matchesSearch = !search || c.name.toLowerCase().includes(search) || (c.guild && c.guild.toLowerCase().includes(search));
+    const matchesFaction = !faction || (c.faction && c.faction.toLowerCase() === faction);
+    return matchesSearch && matchesFaction;
+  });
+
+  renderKnownCharactersList(filtered);
+}
+
+function renderKnownCharactersList(chars) {
+  const listEl = document.getElementById("char-known-list");
+  if (!listEl) return;
+
+  if (!chars || chars.length === 0) {
+    listEl.innerHTML = `
+      <div style="text-align:center; padding:30px; color:#64748b;">
+        <div>No matching combatants found.</div>
+        <button type="button" class="pill-btn" style="margin-top:10px; background:var(--accent-cyan); color:#000; font-weight:700;" onclick="switchCharModalTab('custom')">
+          + Enter Custom Character
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  const activeChar = (localStorage.getItem("wowkb_user_character") || "").toLowerCase();
+
+  listEl.innerHTML = chars.map(c => {
+    const cls = (c.class || "WARRIOR").toUpperCase();
+    const clsColor = CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN;
+    const isAct = (c.name.toLowerCase() === activeChar);
+    const lvlStr = (c.level && c.level > 0 && c.level <= 85) ? `Level ${c.level}` : "Level ??";
+    const guildStr = (c.guild && c.guild !== "None") ? `&lt;${escapeHtml(c.guild)}&gt;` : "";
+    const isAlliance = (c.faction && c.faction.toLowerCase() === "alliance");
+    const factionIcon = isAlliance ? "/static/icons/factions/alliance.jpg" : "/static/icons/factions/horde.jpg";
+
+    return `
+      <div class="char-select-card" style="display:flex; justify-content:space-between; align-items:center; background:${isAct ? 'rgba(0, 229, 255, 0.12)' : 'rgba(255, 255, 255, 0.03)'}; border:1px solid ${isAct ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.08)'}; border-radius:6px; padding:10px 14px; transition:all 0.2s ease;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="${factionIcon}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'};" alt="${c.faction || 'Faction'}">
+          <div class="char-avatar-mini" style="border:1px solid ${clsColor}; border-radius:4px; overflow:hidden; width:28px; height:28px;">
+            <img src="/static/icons/classes/${cls.toLowerCase()}.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/static/icons/classes/warrior.jpg'" alt="${cls}">
+          </div>
+          <div>
+            <div style="font-weight:800; font-size:0.95rem;">
+              <span style="color:${clsColor};">${escapeHtml(c.name)}</span>
+              ${isAct ? '<span style="background:var(--accent-cyan); color:#000; font-size:0.65rem; font-weight:800; padding:1px 6px; border-radius:3px; margin-left:6px;">ACTIVE</span>' : ''}
+            </div>
+            <div style="font-size:0.75rem; color:#94a3b8; display:flex; align-items:center; gap:6px; margin-top:2px;">
+              <span>${lvlStr} ${cls.charAt(0) + cls.slice(1).toLowerCase()}</span>
+              <span>&bull;</span>
+              <span style="color:${isAlliance ? '#60a5fa' : '#f87171'};">${escapeHtml(c.faction || 'Neutral')}</span>
+              ${guildStr ? `<span>&bull;</span> <span style="color:#cbd5e1;">${guildStr}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div>
+          ${isAct ? `
+            <button class="pill-btn active" style="background:#10b981; color:#fff; font-size:0.75rem; padding:4px 12px;" disabled>
+              ✓ Selected
+            </button>
+          ` : `
+            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.75rem; padding:5px 14px; border:none; cursor:pointer;" onclick="selectKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">
+              Claim &rarr;
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectKnownCharacter(name, cls, lvl, faction, guild, realm) {
+  localStorage.setItem("wowkb_account_username", name);
+  localStorage.setItem("wowkb_user_character", name);
+  localStorage.setItem("wow_killboard_hunter_name", name);
+  localStorage.setItem("wowkb_user_class", cls || "WARRIOR");
+  localStorage.setItem("wowkb_user_faction", faction || "Alliance");
+  localStorage.setItem("wowkb_user_level", lvl || 60);
+  localStorage.setItem("wowkb_user_guild", guild || "None");
+  localStorage.setItem("wowkb_user_realm", realm || "WoW Forever");
+  localStorage.setItem("wowkb_supporter_active", "1");
+  sessionStorage.setItem("wowkb_auth_type", "account");
+  sessionStorage.setItem("wowkb_has_entered_feed", "1");
+  portalAccessMode = "account";
+
+  closeCharacterLinkModal();
+  renderHeaderAuthBadge();
+  updateSupporterButton();
+
+  if (currentTab === "PORTAL") {
+    portalLaunchFront("FOREVER");
+  } else {
+    loadKills();
+    loadSidebar();
+    if (currentTab === "FEED" || currentTab === "INTEL") {
+      loadMostWanted();
+    }
+  }
+}
+
+async function handleCustomCharacterClaim(event) {
+  if (event) event.preventDefault();
+  const nameInput = document.getElementById("custom-char-name");
+  const realmInput = document.getElementById("custom-char-realm");
+  const levelInput = document.getElementById("custom-char-level");
+  const classInput = document.getElementById("custom-char-class");
+  const factionInput = document.getElementById("custom-char-faction");
+  const guildInput = document.getElementById("custom-char-guild");
+
+  const name = nameInput ? nameInput.value.trim() : "";
+  if (!name) {
+    alert("Please enter a character name.");
+    return;
+  }
+
+  const realm = realmInput ? realmInput.value.trim() : "WoW Forever";
+  const level = levelInput ? parseInt(levelInput.value) || 60 : 60;
+  const cls = classInput ? classInput.value : "WARRIOR";
+  const faction = factionInput ? factionInput.value : "Alliance";
+  const guild = guildInput ? guildInput.value.trim() : "None";
+
+  try {
+    const res = await fetch("/api/auth/claim-character", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, realm, level, class: cls, faction, guild })
+    });
+    const d = await res.json();
+    if (d.success) {
+      selectKnownCharacter(name, cls, level, faction, guild, realm);
+    } else {
+      alert("Error claiming character: " + (d.error || "Unknown error"));
+    }
+  } catch (err) {
+    alert("Network error claiming character: " + err.message);
+  }
+}
+
 // ----------------- Header Auth & Theater State -----------------
 
 function renderHeaderAuthBadge() {
@@ -4229,19 +4416,33 @@ function renderHeaderAuthBadge() {
   if (!badge) return;
 
   const authType = sessionStorage.getItem("wowkb_auth_type");
-  const username = localStorage.getItem("wowkb_account_username") || sessionStorage.getItem("wowkb_character_name");
+  const username = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || sessionStorage.getItem("wowkb_character_name");
+  const cls = (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase();
+  const clsColor = CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN;
+  const lvl = localStorage.getItem("wowkb_user_level") || 60;
+  const faction = (localStorage.getItem("wowkb_user_faction") || "Alliance").toLowerCase();
+  const isAlliance = (faction === "alliance");
+  const factionIcon = isAlliance ? "/static/icons/factions/alliance.jpg" : "/static/icons/factions/horde.jpg";
 
   if (authType && username) {
     const displayName = escapeHtml(username);
     badge.innerHTML = `
-      <div class="header-user-pill">
-        <span><strong>${displayName}</strong></span>
+      <div class="header-user-pill" style="display:flex; align-items:center; gap:8px;">
+        <img src="${factionIcon}" style="width:20px; height:20px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'};" alt="${faction}">
+        <div style="border:1px solid ${clsColor}; border-radius:3px; overflow:hidden; width:20px; height:20px;">
+          <img src="/static/icons/classes/${cls.toLowerCase()}.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/static/icons/classes/warrior.jpg'" alt="${cls}">
+        </div>
+        <span class="clickable-player" onclick="openCharacterProfile('${displayName}')" style="cursor:pointer;" title="View Profile">
+          <strong style="color:${clsColor};">${displayName}</strong>
+          <span style="font-size:0.75rem; color:#94a3b8;">(${lvl})</span>
+        </span>
+        <button class="header-switch-btn" onclick="openCharacterLinkModal()" title="Switch or Link Battle.net Character" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; border-radius:4px; padding:2px 8px; font-size:0.72rem; cursor:pointer;">Switch</button>
         <button class="header-signout-btn" onclick="handleHeaderSignOut()" title="Sign out">Sign Out</button>
       </div>
     `;
   } else {
     badge.innerHTML = `
-      <button class="header-signin-btn" onclick="openLoginModal()">Sign In</button>
+      <button class="header-signin-btn" onclick="openCharacterLinkModal()">Select Character / Link Battle.net</button>
     `;
   }
 }
@@ -4361,15 +4562,18 @@ function loadRalliesView() {
 function handleHeaderSignOut() {
   sessionStorage.removeItem("wowkb_auth_type");
   sessionStorage.removeItem("wowkb_character_name");
+  sessionStorage.removeItem("wowkb_has_entered_feed");
   localStorage.removeItem("wowkb_account_username");
+  localStorage.removeItem("wowkb_user_character");
+  localStorage.removeItem("wowkb_user_class");
+  localStorage.removeItem("wowkb_user_faction");
+  localStorage.removeItem("wowkb_user_level");
+  localStorage.removeItem("wowkb_user_guild");
+  localStorage.removeItem("wowkb_user_realm");
+  localStorage.removeItem("wowkb_account_provider");
+  portalAccessMode = "guest";
   renderHeaderAuthBadge();
-  if (currentTab === "ARMORY") {
-    handleArmoryNavClick();
-  } else if (currentTab === "WARROOM") {
-    loadWarroomView();
-  } else if (currentTab === "BOUNTIES") {
-    loadBounties();
-  }
+  switchTab("PORTAL");
 }
 
 function openLoginModal() {
@@ -5209,13 +5413,37 @@ document.addEventListener("DOMContentLoaded", () => {
   // Handle external character web links (?character=Name or ?char=Name or ?player=Name)
   const urlParams = new URLSearchParams(window.location.search);
   const charParam = urlParams.get("character") || urlParams.get("char") || urlParams.get("player");
-  if (charParam) {
+  const bnetUser = urlParams.get("bnet_user");
+  const bnetChars = urlParams.get("bnet_chars");
+  const bnetError = urlParams.get("bnet_error");
+
+  if (bnetError) {
+    alert("Battle.net sign-in notice: " + bnetError);
+    switchTab("PORTAL");
+  } else if (bnetUser) {
+    sessionStorage.setItem("wowkb_auth_type", "account");
+    sessionStorage.setItem("wowkb_has_entered_feed", "1");
+    portalAccessMode = "account";
+    const charsList = bnetChars ? bnetChars.split(",").filter(Boolean) : [];
+    if (charsList.length > 0) {
+      selectKnownCharacter(charsList[0], "PALADIN", 60, "Alliance", "None", "WoW Forever");
+      alert(`Connected Battle.net account (${bnetUser})! Active combatant set to: ${charsList[0]}`);
+    } else {
+      localStorage.setItem("wowkb_account_username", bnetUser);
+      localStorage.setItem("wowkb_user_character", bnetUser);
+      renderHeaderAuthBadge();
+      alert(`Connected Battle.net account (${bnetUser})! Please select or claim your primary WoW character.`);
+      openCharacterLinkModal();
+    }
+  } else if (charParam) {
     switchTab("FEED");
     setTimeout(() => {
       openCharacterProfile(charParam);
     }, 350);
+  } else if (sessionStorage.getItem("wowkb_has_entered_feed") === "1") {
+    switchTab("INTEL");
   } else {
-    // Landing page is always the War Room Sign-In / Entry Portal
+    // Landing page is the War Room Sign-In / Entry Portal
     switchTab("PORTAL");
   }
 

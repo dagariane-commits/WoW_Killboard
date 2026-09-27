@@ -225,6 +225,7 @@ WoW_Killboard/
    - `/killboard theme` — Switch between Aegis Tactical, ElvUI, and Classic themes.
    - `/warhorn` or `/kbrally` — Sound the War Horn (open-world emergency distress & auto-invite rally).
    - `/killboard stats` — View current session damage, healing, kills, and K/D.
+   - `/killboard sync` or `/kb sync` — Flush combat SavedVariables to disk (`/reload`) to sync immediately with the live website.
    - `/killboard bounty <Name> <Gold>` — Declare a blood bounty upon an enemy player (open world only).
    - `/killboard reset` — Clear local kill database.
 
