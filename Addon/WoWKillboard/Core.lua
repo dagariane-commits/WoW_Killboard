@@ -716,7 +716,9 @@ diagFrame:SetScript("OnEvent", function(self, event, addon, func)
     local fStr = tostring(func or "UnknownFunc")
     local inCombat = InCombatLockdown() and "YES" or "NO"
     local alert = string.format("|cffff0000[WoWKB Diagnostic]|r %s: Blocked |cffffd100%s|r by |cffffff00%s|r (InCombat: %s)", event, fStr, aStr, inCombat)
-    if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+    if KB.Utils and KB.Utils.SafePrint then
+        KB.Utils.SafePrint(alert)
+    elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
         DEFAULT_CHAT_FRAME:AddMessage(alert)
     end
     WoWKillboardDB = WoWKillboardDB or {}
