@@ -18,13 +18,13 @@ function BE:InitDB()
     WoWKillboardAcceptedBounties = WoWKillboardAcceptedBounties or {}
 end
 
--- Validate and place a new bounty (with permanent Character GUID binding)
-function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount, targetGUID)
+-- Validate and place a new Mark of Spite (with permanent Character GUID binding)
+function BE:PlaceBounty(targetName, targetClass, targetFaction, amountInput, targetGUID, isCopper)
     -- Guard: Open World PvP only!
     if IsInInstance then
         local inInstance, instanceType = IsInInstance()
         if inInstance or (instanceType and instanceType ~= "none") then
-            print("|cffff0000[WoWKB Error]|r Blood bounties can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
+            print("|cffff0000[WoWKB Error]|r Marks of Spite can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
             return false, "Instances prohibited"
         end
     end
@@ -34,13 +34,21 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount, targ
         return false, "Target name empty"
     end
 
-    goldAmount = tonumber(goldAmount) or 0
-    if goldAmount <= 0 then
-        print("|cffff0000[WoWKB Error]|r Blood bounty amount must be greater than 0 gold.")
+    local copper = 0
+    local goldAmount = 0
+    if isCopper then
+        copper = math.floor(tonumber(amountInput) or 0)
+        goldAmount = math.floor(copper / 10000)
+    else
+        goldAmount = tonumber(amountInput) or 0
+        copper = math.floor(goldAmount * 10000)
+    end
+
+    if copper <= 0 then
+        print("|cffff0000[WoWKB Error]|r Mark amount must be greater than 0.")
         return false, "Invalid amount"
     end
 
-    local copper = goldAmount * 10000
     local playerGold = GetMoney()
     if playerGold < copper then
         print(string.format("|cffff0000[WoWKB Error]|r Insufficient funds! You have %s, but need %s.", KB.Utils.FormatMoney(playerGold), KB.Utils.FormatMoney(copper)))
@@ -71,7 +79,7 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, goldAmount, targ
     BE:InitDB()
     WoWKillboardBounties[bountyId] = bounty
 
-    print(string.format("|cffffd700[WoWKB Blood Bounty Declared]|r Blood Bounty of %s declared on |cffff3333%s|r!", KB.Utils.FormatMoney(copper), targetName))
+    print(string.format("|cffffd700[WoWKB Mark Declared]|r Mark of Spite of %s declared on |cffff3333%s|r!", KB.Utils.FormatMoney(copper), targetName))
 
     -- Broadcast to P2P peers
     if KB.Sync and KB.Sync.BroadcastBounty then
@@ -87,7 +95,7 @@ function BE:AcceptBounty(bountyId)
     if not WoWKillboardBounties or not WoWKillboardBounties[bountyId] then return false end
     WoWKillboardAcceptedBounties[bountyId] = time()
     local b = WoWKillboardBounties[bountyId]
-    print(string.format("|cff00ff00[WoWKB Contract Accepted]|r Tracking blood bounty on |cffff3333%s|r! Deliver the final killing blow to claim %s.",
+    print(string.format("|cff00ff00[WoWKB Contract Accepted]|r Tracking Mark of Spite on |cffff3333%s|r! Deliver the final killing blow to claim %s.",
         b.targetName, KB.Utils.FormatMoney(b.amountCopper)))
     if KB.UI and KB.UI.RefreshIfVisible then KB.UI:RefreshIfVisible() end
     return true

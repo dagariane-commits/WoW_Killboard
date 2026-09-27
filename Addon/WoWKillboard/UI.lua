@@ -165,10 +165,13 @@ function UI:ApplyTheme()
                 UI.TitleText:ClearAllPoints()
                 UI.TitleText:SetPoint("TOP", UI.HeaderPlate, "TOP", 0, -10)
                 UI.TitleText:SetFontObject("GameFontNormalLarge")
+                UI.TitleText:SetText("|cffffd100WoW Killboard|r")
             end
             if UI.SubtitleText and UI.TitleText then
                 UI.SubtitleText:ClearAllPoints()
                 UI.SubtitleText:SetPoint("TOP", UI.TitleText, "BOTTOM", 0, -2)
+                local realm = (GetRealmName and GetRealmName()) or "PvP"
+                UI.SubtitleText:SetText(string.format("|cff00e5ffWoW Forever|r • |cffc7b28c%s|r • |cff888888v%s|r", realm, KB.Version))
             end
         else
             UI.HeaderPlate:Hide()
@@ -176,21 +179,15 @@ function UI:ApplyTheme()
                 UI.TitleText:ClearAllPoints()
                 UI.TitleText:SetPoint("LEFT", UI.Medallion, "RIGHT", 14, 6)
                 UI.TitleText:SetFontObject("GameFontNormalLarge")
+                UI.TitleText:SetText(theme.titleText or "|cffffd100WoW Killboard|r")
             end
             if UI.SubtitleText and UI.TitleText then
                 UI.SubtitleText:ClearAllPoints()
                 UI.SubtitleText:SetPoint("TOPLEFT", UI.TitleText, "BOTTOMLEFT", 0, -3)
+                local realm = (GetRealmName and GetRealmName()) or "PvP"
+                UI.SubtitleText:SetText(string.format("|cff94a3b8%s • v%s|r", realm, KB.Version))
             end
         end
-    end
-
-    if UI.TitleText and KB.Utils and KB.Utils.GetClientFlavorTitle then
-        UI.TitleText:SetText(KB.Utils.GetClientFlavorTitle())
-    elseif UI.TitleText then
-        UI.TitleText:SetText(theme.titleText)
-    end
-    if UI.SubtitleText then
-        UI.SubtitleText:SetText(string.format("|cffc7b28cv%s|r", KB.Version))
     end
     if UI.ThemeButton then
         UI:ApplyButtonStyle(UI.ThemeButton, theme)
@@ -616,11 +613,8 @@ function UI:CreateMainWindow()
 
     local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     subtitle:SetPoint("TOP", title, "BOTTOM", 0, -2)
-    if KB.Utils and KB.Utils.GetClientFlavorTitle then
-        subtitle:SetText(KB.Utils.GetClientFlavorTitle())
-    else
-        subtitle:SetText("|cff67e8f9WoW Forever|r |cff94a3b8• PvP Realm|r |cffc7b28cv" .. KB.Version .. "|r")
-    end
+    local realm = (GetRealmName and GetRealmName()) or "PvP"
+    subtitle:SetText(string.format("|cff00e5ffWoW Forever|r • |cffc7b28c%s|r • |cff888888v%s|r", realm, KB.Version))
     subtitle:SetShadowOffset(1, -1)
     subtitle:SetShadowColor(0, 0, 0, 1)
     UI.SubtitleText = subtitle
@@ -1299,7 +1293,7 @@ function UI:RenderLeaderboard()
 
     local subtitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
-    subtitle:SetText("|cffb8a080Most lethal combatants, cohort percentile efficiency, and certified executions across Azeroth.|r")
+    subtitle:SetText("|cffb8a080Most lethal combatants, rank efficiency, and certified executions across Azeroth.|r")
     subtitle:SetShadowOffset(1, -1)
     subtitle:SetShadowColor(0, 0, 0, 1)
 
@@ -1655,7 +1649,7 @@ function UI:RenderBounties()
     local pMarksTxt = pCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     pMarksTxt:SetPoint("LEFT", 12, 0)
     pMarksTxt:SetText(string.format(
-        "|cffffd100YOUR MARK DOSSIER:|r   |cff38bdf8%d Contracts Issued by You|r   |cff64748b•|r   |cff%s%d Active Bounties Placed on Your Head|r",
+        "|cffffd100YOUR MARK DOSSIER:|r   |cff38bdf8%d Contracts Issued by You|r   |cff64748b•|r   |cff%s%d Active Marks Placed on Your Head|r",
         pMarks.issued or 0,
         (pMarks.onHead and pMarks.onHead > 0) and "ef4444" or "10b981",
         pMarks.onHead or 0
@@ -1669,7 +1663,7 @@ function UI:RenderBounties()
         -- 1. Active Marks List
         local activeHeader = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         activeHeader:SetPoint("TOPLEFT", 10, yOffset)
-        activeHeader:SetText("|cffffd100ACTIVE HUNT CONTRACTS|r — High Command Bounty Targets")
+        activeHeader:SetText("|cffffd100ACTIVE HUNT CONTRACTS|r — High Command Marked Targets")
         activeHeader:SetShadowOffset(1, -1)
         activeHeader:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 24
@@ -2588,24 +2582,25 @@ end
 -- Isolated, Taint-Free Bounty Dialog Frame (Anonymous, 100% Template-Free)
 function UI:ShowBountyPrompt()
     if InCombatLockdown() then
-        print("|cffff9900[WoWKB]|r Cannot open bounty dialog during combat.")
+        print("|cffff9900[WoWKB]|r Cannot open Mark of Spite dialog during combat.")
         return
     end
 
     if IsInInstance then
         local inInst, instType = IsInInstance()
         if inInst or (instType and instType ~= "none") then
-            print("|cffff0000[WoWKB Error]|r Blood bounties can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
+            print("|cffff0000[WoWKB Error]|r Marks of Spite can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
             return
         end
     end
 
     if not UI.BountyDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(400, 160)
+        dlg:SetSize(420, 205)
         dlg:SetPoint("CENTER")
         dlg:SetFrameStrata("DIALOG")
         dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
         dlg:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -2615,52 +2610,149 @@ function UI:ShowBountyPrompt()
         dlg:SetBackdropBorderColor(1.0, 0.84, 0.0, 0.8)
 
         local t = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        t:SetPoint("TOP", 0, -16)
-        t:SetText("|cffff3333Issue Mark of Spite|r")
+        t:SetPoint("TOP", 0, -14)
+        t:SetText("|cffff3333Declare Mark of Spite|r")
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        desc:SetPoint("TOP", 0, -42)
-        desc:SetText("Enter: <TargetName> <RewardGold> (e.g. 'Thrall 500')")
+        desc:SetPoint("TOP", 0, -36)
+        desc:SetText("Sanction an open-world hunt on a hostile adversary.")
 
-        local eb = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
-        eb:SetSize(260, 26)
-        eb:SetPoint("TOP", 0, -70)
-        eb:SetAutoFocus(false)
-        eb:SetFontObject("GameFontHighlight")
-        eb:SetBackdrop({
+        -- Target Name Row
+        local targetLabel = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        targetLabel:SetPoint("TOPLEFT", 28, -66)
+        targetLabel:SetText("Target Name:")
+
+        local ebName = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebName:SetSize(220, 24)
+        ebName:SetPoint("LEFT", targetLabel, "RIGHT", 14, 0)
+        ebName:SetAutoFocus(false)
+        ebName:SetFontObject("GameFontHighlight")
+        ebName:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
         })
-        eb:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
-        eb:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
-        eb:SetTextInsets(6, 6, 0, 0)
-        dlg.editBox = eb
+        ebName:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebName:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebName:SetTextInsets(6, 6, 0, 0)
+        dlg.targetBox = ebName
 
-        local okBtn = UI:CreateButton(dlg, 120, 24, "Declare Bounty")
-        okBtn:SetPoint("BOTTOMLEFT", 40, 18)
+        -- Mark Amount Row (Gold, Silver, Copper)
+        local amtLabel = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        amtLabel:SetPoint("TOPLEFT", 28, -104)
+        amtLabel:SetText("Mark Amount:")
+
+        -- Gold Box
+        local ebGold = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebGold:SetSize(54, 24)
+        ebGold:SetPoint("LEFT", amtLabel, "RIGHT", 14, 0)
+        ebGold:SetAutoFocus(false)
+        ebGold:SetNumeric(true)
+        ebGold:SetNumber(10)
+        ebGold:SetFontObject("GameFontHighlight")
+        ebGold:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebGold:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebGold:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebGold:SetTextInsets(4, 4, 0, 0)
+        dlg.goldBox = ebGold
+
+        local gIcon = dlg:CreateTexture(nil, "ARTWORK")
+        gIcon:SetSize(14, 14)
+        gIcon:SetPoint("LEFT", ebGold, "RIGHT", 4, 0)
+        gIcon:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
+
+        -- Silver Box
+        local ebSilver = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebSilver:SetSize(40, 24)
+        ebSilver:SetPoint("LEFT", gIcon, "RIGHT", 8, 0)
+        ebSilver:SetAutoFocus(false)
+        ebSilver:SetNumeric(true)
+        ebSilver:SetNumber(0)
+        ebSilver:SetFontObject("GameFontHighlight")
+        ebSilver:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebSilver:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebSilver:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebSilver:SetTextInsets(4, 4, 0, 0)
+        dlg.silverBox = ebSilver
+
+        local sIcon = dlg:CreateTexture(nil, "ARTWORK")
+        sIcon:SetSize(14, 14)
+        sIcon:SetPoint("LEFT", ebSilver, "RIGHT", 4, 0)
+        sIcon:SetTexture("Interface\\MoneyFrame\\UI-SilverIcon")
+
+        -- Copper Box
+        local ebCopper = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebCopper:SetSize(40, 24)
+        ebCopper:SetPoint("LEFT", sIcon, "RIGHT", 8, 0)
+        ebCopper:SetAutoFocus(false)
+        ebCopper:SetNumeric(true)
+        ebCopper:SetNumber(0)
+        ebCopper:SetFontObject("GameFontHighlight")
+        ebCopper:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebCopper:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebCopper:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebCopper:SetTextInsets(4, 4, 0, 0)
+        dlg.copperBox = ebCopper
+
+        local cIcon = dlg:CreateTexture(nil, "ARTWORK")
+        cIcon:SetSize(14, 14)
+        cIcon:SetPoint("LEFT", ebCopper, "RIGHT", 4, 0)
+        cIcon:SetTexture("Interface\\MoneyFrame\\UI-CopperIcon")
+
+        local note = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        note:SetPoint("TOP", 0, -140)
+        note:SetText("|cff888888Awarded to the hunter who delivers the final killing blow (Open World only).|r")
+
+        -- Buttons: Declare Mark and Cancel
+        local okBtn = UI:CreateButton(dlg, 130, 26, "Declare Mark")
+        okBtn:SetPoint("BOTTOMLEFT", 45, 16)
         okBtn:SetScript("OnClick", function()
-            local text = eb:GetText()
-            local name, gold = text:match("^(%S+)%s+(%d+)$")
-            if name and gold then
-                KB.BountyEngine:PlaceBounty(name, "UNKNOWN", "Unknown", tonumber(gold))
+            local targetName = (ebName:GetText() or ""):match("^%s*(.-)%s*$")
+            if not targetName or targetName == "" then
+                print("|cffff0000[WoWKB Error]|r Target Name cannot be empty.")
+                return
+            end
+            local gold = tonumber(ebGold:GetText()) or 0
+            local silver = tonumber(ebSilver:GetText()) or 0
+            local copper = tonumber(ebCopper:GetText()) or 0
+            local totalCopper = (gold * 10000) + (silver * 100) + copper
+            if totalCopper <= 0 then
+                print("|cffff0000[WoWKB Error]|r Mark amount must be greater than 0.")
+                return
+            end
+
+            local success = KB.BountyEngine:PlaceBounty(targetName, "UNKNOWN", "Unknown", totalCopper, nil, true)
+            if success then
                 dlg:Hide()
-                UI:RefreshIfVisible()
-            else
-                print("|cffff0000[WoWKB Error]|r Format: <PlayerName> <GoldAmount> (e.g. 'Thrallkiller 500')")
+                if UI.RefreshIfVisible then UI:RefreshIfVisible() end
             end
         end)
 
-        local cancelBtn = UI:CreateButton(dlg, 110, 24, "Cancel")
-        cancelBtn:SetPoint("BOTTOMRIGHT", -40, 18)
+        local cancelBtn = UI:CreateButton(dlg, 110, 26, "Cancel")
+        cancelBtn:SetPoint("BOTTOMRIGHT", -45, 16)
         cancelBtn:SetScript("OnClick", function() dlg:Hide() end)
 
         UI.BountyDialog = dlg
     end
 
-    UI.BountyDialog.editBox:SetText("")
+    UI.BountyDialog.targetBox:SetText("")
+    UI.BountyDialog.goldBox:SetText("10")
+    UI.BountyDialog.silverBox:SetText("0")
+    UI.BountyDialog.copperBox:SetText("0")
     UI.BountyDialog:Show()
-    UI.BountyDialog.editBox:SetFocus()
+    UI.BountyDialog.targetBox:SetFocus()
 end
 
 -- Death Bounty Prompt Dialog: Triggered when player is slain in PvP (Open World Only)
@@ -2687,7 +2779,7 @@ function UI:ShowDeathBountyPrompt(killerData)
 
     if not UI.DeathBountyDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(440, 210)
+        dlg:SetSize(440, 220)
         dlg:SetPoint("CENTER", 0, 80)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(100)
@@ -2705,51 +2797,108 @@ function UI:ShowDeathBountyPrompt(killerData)
 
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffff2222FALLEN IN BATTLE — DECLARE BLOOD BOUNTY|r")
+        title:SetText("|cffff2222FALLEN IN BATTLE — DECLARE MARK OF SPITE|r")
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         desc:SetPoint("TOP", 0, -46)
         desc:SetJustifyH("CENTER")
         dlg.DescText = desc
 
-        local goldLabel = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        goldLabel:SetPoint("TOPLEFT", 60, -96)
-        goldLabel:SetText("Bounty Gold Amount:")
+        local amtLabel = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        amtLabel:SetPoint("TOPLEFT", 48, -96)
+        amtLabel:SetText("Mark Amount:")
 
-        local eb = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
-        eb:SetSize(140, 26)
-        eb:SetPoint("LEFT", goldLabel, "RIGHT", 12, 0)
-        eb:SetAutoFocus(false)
-        eb:SetNumeric(true)
-        eb:SetNumber(50)
-        eb:SetFontObject("GameFontHighlight")
-        eb:SetBackdrop({
+        -- Gold Box
+        local ebGold = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebGold:SetSize(54, 24)
+        ebGold:SetPoint("LEFT", amtLabel, "RIGHT", 14, 0)
+        ebGold:SetAutoFocus(false)
+        ebGold:SetNumeric(true)
+        ebGold:SetNumber(50)
+        ebGold:SetFontObject("GameFontHighlight")
+        ebGold:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
         })
-        eb:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
-        eb:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
-        eb:SetTextInsets(6, 6, 0, 0)
-        dlg.editBox = eb
+        ebGold:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebGold:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebGold:SetTextInsets(4, 4, 0, 0)
+        dlg.goldBox = ebGold
+
+        local gIcon = dlg:CreateTexture(nil, "ARTWORK")
+        gIcon:SetSize(14, 14)
+        gIcon:SetPoint("LEFT", ebGold, "RIGHT", 4, 0)
+        gIcon:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
+
+        -- Silver Box
+        local ebSilver = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebSilver:SetSize(40, 24)
+        ebSilver:SetPoint("LEFT", gIcon, "RIGHT", 8, 0)
+        ebSilver:SetAutoFocus(false)
+        ebSilver:SetNumeric(true)
+        ebSilver:SetNumber(0)
+        ebSilver:SetFontObject("GameFontHighlight")
+        ebSilver:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebSilver:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebSilver:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebSilver:SetTextInsets(4, 4, 0, 0)
+        dlg.silverBox = ebSilver
+
+        local sIcon = dlg:CreateTexture(nil, "ARTWORK")
+        sIcon:SetSize(14, 14)
+        sIcon:SetPoint("LEFT", ebSilver, "RIGHT", 4, 0)
+        sIcon:SetTexture("Interface\\MoneyFrame\\UI-SilverIcon")
+
+        -- Copper Box
+        local ebCopper = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebCopper:SetSize(40, 24)
+        ebCopper:SetPoint("LEFT", sIcon, "RIGHT", 8, 0)
+        ebCopper:SetAutoFocus(false)
+        ebCopper:SetNumeric(true)
+        ebCopper:SetNumber(0)
+        ebCopper:SetFontObject("GameFontHighlight")
+        ebCopper:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebCopper:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebCopper:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebCopper:SetTextInsets(4, 4, 0, 0)
+        dlg.copperBox = ebCopper
+
+        local cIcon = dlg:CreateTexture(nil, "ARTWORK")
+        cIcon:SetSize(14, 14)
+        cIcon:SetPoint("LEFT", ebCopper, "RIGHT", 4, 0)
+        cIcon:SetTexture("Interface\\MoneyFrame\\UI-CopperIcon")
 
         local note = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        note:SetPoint("TOP", 0, -132)
+        note:SetPoint("TOP", 0, -136)
         note:SetText("|cff888888Execution contract awarded only to the hunter who lands the final blow (Open World only).|r")
 
-        local okBtn = UI:CreateButton(dlg, 140, 26, "⚔️ Declare Bounty")
+        local okBtn = UI:CreateButton(dlg, 140, 26, "Declare Mark")
         okBtn:SetPoint("BOTTOMLEFT", 45, 16)
         okBtn:SetScript("OnClick", function()
-            local gold = tonumber(eb:GetText()) or 50
-            if gold > 0 and dlg.CurrentKiller then
+            local gold = tonumber(ebGold:GetText()) or 0
+            local silver = tonumber(ebSilver:GetText()) or 0
+            local copper = tonumber(ebCopper:GetText()) or 0
+            local totalCopper = (gold * 10000) + (silver * 100) + copper
+            if totalCopper > 0 and dlg.CurrentKiller then
                 local k = dlg.CurrentKiller
-                KB.BountyEngine:PlaceBounty(k.name, k.class or "UNKNOWN", k.faction or "Unknown", gold, k.guid)
-                dlg:Hide()
-                if UI.RefreshIfVisible then UI:RefreshIfVisible() end
+                local success = KB.BountyEngine:PlaceBounty(k.name, k.class or "UNKNOWN", k.faction or "Unknown", totalCopper, k.guid, true)
+                if success then
+                    dlg:Hide()
+                    if UI.RefreshIfVisible then UI:RefreshIfVisible() end
+                end
             end
         end)
 
-        local cancelBtn = UI:CreateButton(dlg, 130, 26, "Decline")
+        local cancelBtn = UI:CreateButton(dlg, 130, 26, "Cancel")
         cancelBtn:SetPoint("BOTTOMRIGHT", -45, 16)
         cancelBtn:SetScript("OnClick", function()
             dlg:Hide()
@@ -2759,8 +2908,10 @@ function UI:ShowDeathBountyPrompt(killerData)
     end
 
     UI.DeathBountyDialog.CurrentKiller = killerData
-    UI.DeathBountyDialog.DescText:SetText(string.format("The soil drinks your blood! |cffff3333%s|r has slain you in open combat.\nDeclare a blood bounty for their head upon a pike!", killerData.name))
-    UI.DeathBountyDialog.editBox:SetText("50")
+    UI.DeathBountyDialog.DescText:SetText(string.format("The soil drinks your blood! |cffff3333%s|r has slain you in open combat.\nDeclare a Mark of Spite for their head upon a pike!", killerData.name))
+    UI.DeathBountyDialog.goldBox:SetText("50")
+    UI.DeathBountyDialog.silverBox:SetText("0")
+    UI.DeathBountyDialog.copperBox:SetText("0")
     UI.DeathBountyDialog:Show()
     if UI.DeathBountyDialog.Raise then UI.DeathBountyDialog:Raise() end
 end
@@ -3105,8 +3256,8 @@ function UI:InitializeKillBanner()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 },
     })
-    killBanner:SetBackdropColor(0.035, 0.045, 0.07, 0.96)
-    killBanner:SetBackdropBorderColor(0.85, 0.65, 0.20, 1.0)
+    killBanner:SetBackdropColor(0.04, 0.06, 0.09, 0.60)
+    killBanner:SetBackdropBorderColor(0, 0, 0, 0)
     killBanner:Hide()
 
     -- 2px Top Accent Rule (Dynamic engagement colored)
@@ -3247,27 +3398,27 @@ function UI:ShowKillBanner(killmail, isTest)
             banner.CenterAction:SetText("|cffffd100DUEL VICTORY|r")
             banner.ModeTag:SetText("|cffffd7001v1 CERTIFIED DUEL|r")
             banner.TopAccent:SetColorTexture(1.0, 0.84, 0.0, 1.0)
-            banner:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
+            banner:SetBackdropBorderColor(0, 0, 0, 0)
         elseif killmail.isArena then
             banner.CenterAction:SetText("|cffa335eeARENA EXECUTION|r")
             banner.ModeTag:SetText("|cffa335eeRATED ARENA MATCH|r")
             banner.TopAccent:SetColorTexture(0.64, 0.21, 0.93, 1.0)
-            banner:SetBackdropBorderColor(0.64, 0.21, 0.93, 1.0)
+            banner:SetBackdropBorderColor(0, 0, 0, 0)
         elseif killmail.isBattleground then
             banner.CenterAction:SetText("|cff00ccffWARFRONT EXECUTION|r")
             banner.ModeTag:SetText(string.format("|cff00ccff%s (x%d)|r", killmail.battlegroundName or "Battleground", killmail.attackersCount or 1))
             banner.TopAccent:SetColorTexture(0.0, 0.8, 1.0, 1.0)
-            banner:SetBackdropBorderColor(0.0, 0.8, 1.0, 1.0)
+            banner:SetBackdropBorderColor(0, 0, 0, 0)
         elseif killmail.isSolo then
             banner.CenterAction:SetText("|cff00ff00SOLO DESTROYED|r")
             banner.ModeTag:SetText("|cff00ff00CERTIFIED 1v1 OPEN WORLD|r")
             banner.TopAccent:SetColorTexture(0.0, 1.0, 0.4, 1.0)
-            banner:SetBackdropBorderColor(0.0, 1.0, 0.4, 1.0)
+            banner:SetBackdropBorderColor(0, 0, 0, 0)
         else
             banner.CenterAction:SetText("|cffff9900TARGET ELIMINATED|r")
             banner.ModeTag:SetText(string.format("|cffff9900GANG COMBAT (x%d Attackers)|r", killmail.attackersCount or 2))
             banner.TopAccent:SetColorTexture(1.0, 0.6, 0.0, 1.0)
-            banner:SetBackdropBorderColor(1.0, 0.6, 0.0, 1.0)
+            banner:SetBackdropBorderColor(0, 0, 0, 0)
         end
 
         -- Location Subtitle
@@ -3324,8 +3475,9 @@ function UI:ToggleBannerLock(explicitState)
         banner.ModeTag:SetText("|cffffffffClick 'Lock Position' or type /wowkb move to save|r")
         local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
         banner.LocText:SetText(string.format("|cff00e5ffCurrent Anchor: %s (X: %d, Y: %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -135))
-        banner.TopAccent:SetColorTexture(1.0, 0.84, 0.0, 1.0)
-        banner:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
+        banner.TopAccent:SetColorTexture(0, 0, 0, 0)
+        banner:SetBackdropColor(0.04, 0.06, 0.09, 0.60)
+        banner:SetBackdropBorderColor(0, 0, 0, 0)
         banner:Show()
 
         UI:ShowRaidNotice("|cffff3333[WoWKB RAID WARNING PREVIEW]|r Enemy Target Destroyed", "Raid Warning Style Text will display here", 1.0, 0.28, 0.0)
