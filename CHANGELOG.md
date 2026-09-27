@@ -5,6 +5,18 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.30] - 2026-09-26
+
+### Fixed
+- **Authentic Blizzard QuestBG Parchment & Frame Visibility Overhaul (`UI.lua`, `Config.lua`)**:
+  - Eliminated the solid pitch-black `UI.SolidBg` overlay in Classic theme (`UI.SolidBg:Hide()`), exposing Blizzard's canonical tiled granite/stone dialog backdrop (`Interface\DialogFrame\UI-DialogBox-Background`) and beveled ornamental border (`Interface\DialogFrame\UI-DialogBox-Border`).
+  - Switched the main content parchment texture from un-indexed local assets to Blizzard's native in-RAM quest parchment: `Interface\QuestFrame\QuestBG`.
+  - Mapped canonical parchment texCoords `(0, 0.586, 0.02, 0.655)` at 100% alpha and removed the dark vignette in Classic theme, rendering the authentic warm aged paper with organic fibers and natural borders.
+  - Set `UI.ContentInset` backdrop background color to transparent (`alpha = 0.0`) so the parchment is crisp and unobstructed.
+  - Re-architected 3 KPI Stat Cards to authentic sunken dark slate backing (`0.10, 0.08, 0.06, 0.85`) with gold beveled border (`0.72, 0.58, 0.28, 0.95`) and antique brass header strip.
+  - Calibrated typography across live feed rows, empty state text, and bounty dossiers with high-contrast warm sepia and gold inks (`|cff5a3205`, `|cff3d2817`, `|cff4a3520`) for authentic quest log readability.
+  - Upgraded close button to the iconic Blizzard red-gem minimize button (`Interface\Buttons\UI-Panel-MinimizeButton-Up`) and panel buttons to height 22.
+
 ## [1.4.29] - 2026-09-26
 
 ### Added
