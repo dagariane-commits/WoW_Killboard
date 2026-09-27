@@ -5,6 +5,29 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.40] - 2026-09-27
+
+### Fixed
+- **Proximity HK & Ally Buffing Attribution Engine Fix (`CombatTracker.lua`)**:
+  - **Player Ally Buff & Heal Telemetry (`CT.PlayerAssistedAllies`)**: Implemented explicit tracking when the local player casts buffs, auras, or heals on friendly allies (`sourceGUID == playerGUID` and `destGUID ~= playerGUID`). Automatically indexes assisted allies into `CT.FriendlyCluster` and `CT.PlayerAssistedAllies`.
+  - **Strict Positive Damage Requirement for Solo Certification**: A kill can NEVER be certified as solo if `playerDamage <= 0`. Zero-damage engagements resulting from proximity honor gain or buffing a teammate are strictly marked as assists (`Support Assist`), `isSolo = false`, and `attackersCount = math.max(attackersCount, 2)`.
+  - **Dynamic Killer Resolution in Proximity HKs**: In `OnPlayerHonorableKill`, when the local player dealt 0 damage and an ally dealt damage, the killmail attributes the kill to the highest-damage ally, listing the local player as an assisting support combatant rather than erroneously granting them personal solo kill credit.
+  - **Mark of Spite Prompt Gating**: Integrated `promptMarkOnDeath` checks directly into `CombatTracker.lua` (`CheckPendingDeathBounty`, `ProcessDeath`) and `UI.lua` (`ShowDeathBountyPrompt`), completely preventing unwanted popups when muted.
+
+### Added
+- **Mark of Spite Death Popup Configuration & Toggle (`Config.lua`, `UI.lua`, `Core.lua`)**:
+  - Added `promptMarkOnDeath = true` to default settings.
+  - Added Section 5 to the Combat Alerts & Radar Configuration dialog (`/kb alerts`): `5. MARK OF SPITE DEATH POPUP` with segmented `[Prompt on Death (Default)]` and `[Never Prompt / Muted]` controls.
+  - Added `/kb markprompt [on|off]` slash command to toggle popup behavior instantly.
+  - Added `/kb claim <code>` slash command to record in-game character verification tokens into `WoWKillboardDB.claimTokens`.
+- **Standardized Client Header Subtitle Across Themes (`Utils.lua`, `UI.lua`)**:
+  - Implemented `KB.Utils.GetClientFlavorSubtitle()` generating the unified format:
+    `WoW / Game Version (Forever) / Realm (PVP) / Status (Live / Beta) / Version`.
+  - Applied uniformly across both Classic and ElvUI themes in `UI:ApplyTheme()`, resolving missing `WoW Forever` in ElvUI.
+- **Master War Archivist Public Protection (`web/static/app.js`)**:
+  - Gated the red "Master War Archivist • Database Administration" reset panel in `loadUploadView()`.
+  - Completely hidden from regular public view by default; revealed only via secret key unlock or administrative URL parameter (`?admin=valor2026`).
+
 ## [1.4.39] - 2026-09-27
 
 ### Fixed

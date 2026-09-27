@@ -271,6 +271,53 @@ function U.GetClientFlavorTitle()
     return string.format("|cffffffffWoW Killboard|r |cff%s[%s • %s]|r", flavorColor, flavorName, realm)
 end
 
+-- Retrieve standardized client flavor subtitle for UI Header (Cross-Client Parity)
+-- Format: WoW / Game Version (Forever) / Realm (PVP) / Status (Live / Beta) / Version
+function U.GetClientFlavorSubtitle()
+    local realm = (GetRealmName and GetRealmName()) or "PvP"
+    local version, build, date, tocversion
+    if GetBuildInfo then
+        version, build, date, tocversion = GetBuildInfo()
+    end
+    tocversion = tonumber(tocversion) or 11500
+
+    local isBeta = (type(IsTestBuild) == "function" and IsTestBuild())
+    local isClassicBeta = (version and (version:lower():find("beta") or version:lower():find("ptr")))
+
+    local gameVersion = "Forever"
+    local status = "Beta"
+    local gameColor = "00e5ff" -- Tactical Cyan
+    local statusColor = "00ff88" -- Tactical Green
+
+    if isBeta or isClassicBeta or (tocversion >= 11500 and tocversion < 11600) then
+        gameVersion = "Forever"
+        status = "Beta"
+        gameColor = "00e5ff"
+        statusColor = "00ff88"
+    elseif tocversion >= 110000 then
+        gameVersion = "Retail"
+        status = isBeta and "Beta" or "Live"
+        gameColor = "a855f7"
+        statusColor = isBeta and "00ff88" or "60a5fa"
+    elseif tocversion >= 20000 then
+        gameVersion = "Progression"
+        status = isBeta and "Beta" or "Live"
+        gameColor = "eab308"
+        statusColor = isBeta and "00ff88" or "60a5fa"
+    else
+        gameVersion = "Classic Era"
+        status = isBeta and "Beta" or "Live"
+        gameColor = "d97706"
+        statusColor = isBeta and "00ff88" or "60a5fa"
+    end
+
+    local verStr = KB.Version or "1.0.0"
+    return string.format(
+        "|cffffd100WoW|r / |cff%s%s|r / |cffc7b28c%s|r / |cff%s%s|r / |cff888888v%s|r",
+        gameColor, gameVersion, realm, statusColor, status, verStr
+    )
+end
+
 -- Retrieve active player specialization (Cross-Client Parity)
 function U.GetPlayerSpec()
     if type(GetSpecialization) == "function" and type(GetSpecializationInfo) == "function" then
