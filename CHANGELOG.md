@@ -5,6 +5,30 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.32] - 2026-09-27
+
+### Fixed
+- **Parchment Typography & Decipherability Overhaul (`Config.lua`, `UI.lua`)**:
+  - Resolved low-contrast text washout on Blizzard's `QuestBG` parchment by darkening row background cards to deep dark slate (`{ 0.08, 0.06, 0.05, 0.88 }` / `{ 0.05, 0.04, 0.03, 0.92 }`) with antique gold trim (`{ 0.45, 0.35, 0.18, 0.85 }`).
+  - Added subtle warm dark wash overlay (`vignette:SetColorTexture(0.02, 0.015, 0.01, 0.32)`) in `UI.ContentInset` to eliminate blinding parchment paper glare while preserving organic fibers and natural borders.
+  - Enforced high-contrast drop shadows (`SetShadowOffset(1, -1)` and `SetShadowColor(0, 0, 0, 1)`) across all font strings in `Intel`, `Hall of Legends`, `Marks of Spite`, and `Zone Intel`.
+
+### Added
+- **Hall of Legends Sub-Navigation & Standing Parity (`Leaderboard.lua`, `UI.lua`)**:
+  - Implemented sub-navigation toggle buttons: `[Player Ranks]` and `[Guild Ranks]` mimicking the web platform layout.
+  - Added Top 10 leaderboards for both Players and Guilds with gold/silver/bronze rank badges and class icons.
+  - Added glowing gold highlight (`{0.24, 0.17, 0.06, 0.95}` + gold border) when the local player (or their guild) ranks within the Top 10.
+  - Implemented pinned bottom standing card (`— YOUR STANDING —` / `— YOUR GUILD STANDING —`) below a divider rule whenever the player or guild is outside the Top 10 or unranked (`#--`), displaying total kills, 1v1 solo kills, deaths, and K/D ratio.
+  - Added `GetPlayerRankAndStats` and `GetGuildRankAndStats` methods to `Leaderboard.lua`.
+- **Marks of Spite Web Layout Parity (`BountyEngine.lua`, `UI.lua`)**:
+  - Added sub-navigation toggle buttons: `[Active Marks]`, `[Hall of Fame]`, and `[Wall of Shame]`.
+  - Added Personal Marks dossier banner card displaying contracts issued by the player and active bounties on their head via `BE:GetPersonalMarks()`.
+  - Integrated `[Hall of Fame]` displaying Top Mark Hunters (most executions claimed), Richest Bounty Pursuits (highest stakes placed), and Most Elusive Outlaws (longest time evading pursuit) via `BE:GetBountyRecords()`.
+  - Upgraded `[Active Marks]` with class icons, colorized target names, bounty gold, contractor names, last sighted zones/times, and `[Accept Contract]` / `[Tracking]` buttons, plus archived cold cases (>30 days).
+  - Maintained `[Wall of Shame]` debt ledger with Traitor's Gibbet and debt settlement buttons.
+- **Intel Tactical Live Feed KPI Bar (`Leaderboard.lua`, `UI.lua`)**:
+  - Added Realm Telemetry KPI summary bar (`REALM CARNAGE: %d • 1V1 SOLO RATIO: %d%% • FACTION WAR: A %d%% / H %d%% • FILTER: [%s]`) powered by `LB:GetModeSummary`.
+
 ## [1.4.31] - 2026-09-27
 
 ### Fixed
