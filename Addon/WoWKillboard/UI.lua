@@ -117,7 +117,12 @@ function UI:ApplyTheme()
     if not theme or not theme.mainBackdrop then return end
 
     if UI.SolidBg then
-        UI.SolidBg:SetColorTexture(unpack(theme.solidBg or theme.mainBg))
+        if theme.id == "classic" then
+            UI.SolidBg:Hide()
+        else
+            UI.SolidBg:Show()
+            UI.SolidBg:SetColorTexture(unpack(theme.solidBg or theme.mainBg))
+        end
     end
 
     mainFrame:SetBackdrop(theme.mainBackdrop)
@@ -130,13 +135,18 @@ function UI:ApplyTheme()
         UI.ContentInset:SetBackdropBorderColor(unpack(theme.insetBorder or theme.cardBorder))
         if UI.ContentInset.BgArt then
             if theme.id == "classic" then
-                UI.ContentInset.BgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\classic_parchment_bg.tga")
-                UI.ContentInset.BgArt:SetAlpha(0.95)
-                if UI.ContentInset.Vignette then UI.ContentInset.Vignette:SetAlpha(0.12) end
+                UI.ContentInset.BgArt:SetTexture("Interface\\QuestFrame\\QuestBG")
+                UI.ContentInset.BgArt:SetTexCoord(0, 0.586, 0.02, 0.655)
+                UI.ContentInset.BgArt:SetAlpha(1.0)
+                if UI.ContentInset.Vignette then UI.ContentInset.Vignette:Hide() end
             else
                 UI.ContentInset.BgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\dark_war_bg.tga")
+                UI.ContentInset.BgArt:SetTexCoord(0, 1, 0, 1)
                 UI.ContentInset.BgArt:SetAlpha(0.65)
-                if UI.ContentInset.Vignette then UI.ContentInset.Vignette:SetAlpha(0.40) end
+                if UI.ContentInset.Vignette then
+                    UI.ContentInset.Vignette:Show()
+                    UI.ContentInset.Vignette:SetAlpha(0.40)
+                end
             end
             UI.ContentInset.BgArt:Show()
         end
@@ -148,7 +158,7 @@ function UI:ApplyTheme()
             if UI.TitleText then
                 UI.TitleText:ClearAllPoints()
                 UI.TitleText:SetPoint("TOP", mainFrame, "TOP", 0, -2)
-                UI.TitleText:SetFontObject("GameFontNormal")
+                UI.TitleText:SetFontObject("GameFontNormalLarge")
             end
             if UI.SubtitleText and UI.TitleText then
                 UI.SubtitleText:ClearAllPoints()
@@ -179,12 +189,15 @@ function UI:ApplyTheme()
     if UI.ThemeButton then
         UI:ApplyButtonStyle(UI.ThemeButton, theme)
         if UI.ThemeButton.Label then UI.ThemeButton.Label:SetText(theme.themeBtnText) end
+        if theme.id == "classic" then UI.ThemeButton:SetHeight(22) else UI.ThemeButton:SetHeight(20) end
     end
     if UI.AlertsButton then
         UI:ApplyButtonStyle(UI.AlertsButton, theme)
+        if theme.id == "classic" then UI.AlertsButton:SetHeight(22) else UI.AlertsButton:SetHeight(20) end
     end
     if UI.CallBackupButton then
         UI:ApplyButtonStyle(UI.CallBackupButton, theme)
+        if theme.id == "classic" then UI.CallBackupButton:SetHeight(22) else UI.CallBackupButton:SetHeight(20) end
     end
     if UI.RegisteredButtons then
         for _, b in ipairs(UI.RegisteredButtons) do
@@ -193,7 +206,7 @@ function UI:ApplyTheme()
     end
     if UI.CloseButton then
         if theme.id == "classic" then
-            UI.CloseButton:SetSize(28, 28)
+            UI.CloseButton:SetSize(32, 32)
             UI.CloseButton:ClearAllPoints()
             UI.CloseButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -4, -4)
             UI.CloseButton:SetBackdrop(nil)
@@ -206,6 +219,7 @@ function UI:ApplyTheme()
             UI.CloseButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
             UI.CloseButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
             UI.CloseButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
+            UI.CloseButton:SetDisabledTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Disabled")
             if UI.CloseButton.Label then UI.CloseButton.Label:SetText("") end
         else
             UI.CloseButton:SetSize(18, 18)
@@ -472,21 +486,22 @@ function UI:CreateMainWindow()
         end
     end)
 
-    -- 100% Solid Opaque Base (Guarantees zero world geometry/candle bleeding through)
+    -- Opaque Base Layer (Active in ElvUI, Hidden in Classic to expose Blizzard Stone)
+    local initTheme = UI:GetTheme()
     local solidBg = mainFrame:CreateTexture(nil, "BACKGROUND", nil, -8)
     solidBg:SetAllPoints(mainFrame)
-    solidBg:SetColorTexture(0.045, 0.055, 0.08, 1.0)
+    if initTheme.id == "classic" then
+        solidBg:Hide()
+    else
+        solidBg:SetColorTexture(unpack(initTheme.solidBg or initTheme.mainBg or {0.045, 0.055, 0.08, 1.0}))
+        solidBg:Show()
+    end
     UI.SolidBg = solidBg
 
-    -- Modern Dark Gunmetal Framing (1px razor border default)
-    mainFrame:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    local initTheme = UI:GetTheme()
-    mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {0.035, 0.045, 0.07, 1.0}))
-    mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {0.45, 0.35, 0.18, 0.95}))
+    -- Frame Backdrop from Active Theme (Blizzard Stone Dialog or ElvUI Minimalist)
+    mainFrame:SetBackdrop(initTheme.mainBackdrop)
+    mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {1.0, 1.0, 1.0, 1.0}))
+    mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
     -- Iconic Blizzard Circular Medallion Frame (Concentric & Grand in Header)
     local medallion = CreateFrame("Frame", nil, mainFrame)
@@ -1064,15 +1079,28 @@ function UI:RenderLiveFeed()
             UI.EmptyFeedText:SetSpacing(4)
         end
         local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Azeroth"
-        UI.EmptyFeedText:SetText(string.format(
-            "|cffffd100● FRONTLINE COMBAT RADAR ONLINE|r\n\n" ..
-            "|cff94a3b8Sector Surveillance:|r |cffffffff%s|r   |cff64748b•|r   |cff94a3b8Filter Mode:|r |cffffd100[%s]|r\n" ..
-            "|cff94a3b8Combat Engine Status:|r |cff00ff00ARMED & LISTENING|r |cff64748b(Zero confirmed combat deaths yet)|r\n\n" ..
-            "|cff888888Killmails are automatically recorded upon confirming an open-world player kill,\n" ..
-            "battleground victory, or sanctioned 1v1 duel.|r\n\n" ..
-            "|cff00e5ffQuick Verification:|r |cffccccccType |cffffd100/wowkb testkill|r to simulate a live killmail and preview the feed.|r",
-            currentZone, currentMode
-        ))
+        local theme = UI:GetTheme()
+        if theme and theme.id == "classic" then
+            UI.EmptyFeedText:SetText(string.format(
+                "|cff5a3205● FRONTLINE COMBAT RADAR ACTIVE|r\n\n" ..
+                "|cff3d2817Sector Surveillance:|r |cff1a0f00%s|r   |cff7a5530•|r   |cff3d2817Filter Mode:|r |cff5a3205[%s]|r\n" ..
+                "|cff3d2817Combat Engine Status:|r |cff006622RECORDING COMBAT|r |cff5c4028(No confirmed kills logged yet)|r\n\n" ..
+                "|cff4a3520Killmails are automatically recorded upon confirming an open-world player kill,\n" ..
+                "battleground victory, or sanctioned 1v1 duel.|r\n\n" ..
+                "|cff5a3205Quick Test:|r |cff3d2817Type |cff804000/wowkb testkill|r to simulate a live combat encounter.|r",
+                currentZone, currentMode
+            ))
+        else
+            UI.EmptyFeedText:SetText(string.format(
+                "|cffffd100● FRONTLINE COMBAT RADAR ONLINE|r\n\n" ..
+                "|cff94a3b8Sector Surveillance:|r |cffffffff%s|r   |cff64748b•|r   |cff94a3b8Filter Mode:|r |cffffd100[%s]|r\n" ..
+                "|cff94a3b8Combat Engine Status:|r |cff00ff00ARMED & LISTENING|r |cff64748b(Zero confirmed combat deaths yet)|r\n\n" ..
+                "|cff888888Killmails are automatically recorded upon confirming an open-world player kill,\n" ..
+                "battleground victory, or sanctioned 1v1 duel.|r\n\n" ..
+                "|cff00e5ffQuick Verification:|r |cffccccccType |cffffd100/wowkb testkill|r to simulate a live killmail and preview the feed.|r",
+                currentZone, currentMode
+            ))
+        end
         UI.EmptyFeedText:Show()
         return
     elseif UI.EmptyFeedText then
@@ -1124,19 +1152,22 @@ function UI:RenderLiveFeed()
         local kLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         kLvl:SetPoint("LEFT", kIcon, "RIGHT", 4, 0)
         local kLvlVal = km.killer.level or 0
-        kLvl:SetText((kLvlVal > 0) and string.format("|cff94a3b8%d|r", kLvlVal) or "|cff64748b??|r")
+        local lvlColor = (theme.id == "classic") and "4a3520" or "94a3b8"
+        kLvl:SetText((kLvlVal > 0) and string.format("|cff%s%d|r", lvlColor, kLvlVal) or "|cff64748b??|r")
 
         -- Killer Name & Guild
         local killerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         killerStr:SetPoint("LEFT", kLvl, "RIGHT", 5, 0)
-        local kGuildStr = (km.killer.guild and km.killer.guild ~= "None") and string.format(" |cff64748b<%s>|r", km.killer.guild) or ""
+        local kGuildColor = (theme.id == "classic") and "5c4028" or "64748b"
+        local kGuildStr = (km.killer.guild and km.killer.guild ~= "None") and string.format(" |cff%s<%s>|r", kGuildColor, km.killer.guild) or ""
         killerStr:SetText(KB.Utils.ColorizeByClass(km.killer.name, km.killer.class) .. kGuildStr)
 
         -- Action Verb Separator (Center)
         local actionVerb = km.isDuel and "defeated" or "destroyed"
         local sep = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         sep:SetPoint("LEFT", 330, 0)
-        sep:SetText(string.format("|cff64748b%s|r", actionVerb))
+        local verbColor = (theme.id == "classic") and "4a3520" or "64748b"
+        sep:SetText(string.format("|cff%s%s|r", verbColor, actionVerb))
 
         -- Victim Class Icon
         local vIcon = UI:CreateClassIcon(row, km.victim.class, 20)
@@ -1146,19 +1177,22 @@ function UI:RenderLiveFeed()
         local vLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         vLvl:SetPoint("LEFT", vIcon, "RIGHT", 4, 0)
         local vLvlVal = km.victim.level or 0
-        vLvl:SetText((vLvlVal > 0) and string.format("|cff94a3b8%d|r", vLvlVal) or "|cff64748b??|r")
+        vLvl:SetText((vLvlVal > 0) and string.format("|cff%s%d|r", lvlColor, vLvlVal) or "|cff64748b??|r")
 
         -- Victim Name & Guild
         local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         victimStr:SetPoint("LEFT", vLvl, "RIGHT", 5, 0)
-        local vGuildStr = (km.victim.guild and km.victim.guild ~= "None") and string.format(" |cff64748b<%s>|r", km.victim.guild) or ""
+        local vGuildColor = (theme.id == "classic") and "5c4028" or "64748b"
+        local vGuildStr = (km.victim.guild and km.victim.guild ~= "None") and string.format(" |cff%s<%s>|r", vGuildColor, km.victim.guild) or ""
         victimStr:SetText(KB.Utils.ColorizeByClass(km.victim.name, km.victim.class) .. vGuildStr)
 
         -- Location & Timestamp (Right-Aligned)
         local infoStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         infoStr:SetPoint("RIGHT", -12, 0)
         local locName = km.isBattleground and (km.battlegroundName or "Battleground") or km.location.zone
-        infoStr:SetText(string.format("|cffcbd5e1%s|r  |cff64748b• %s|r", locName, KB.Utils.FormatTimeAgo(km.timestamp)))
+        local locColor = (theme.id == "classic") and "1a0f00" or "cbd5e1"
+        local timeColor = (theme.id == "classic") and "5c4028" or "64748b"
+        infoStr:SetText(string.format("|cff%s%s|r  |cff%s• %s|r", locColor, locName, timeColor, KB.Utils.FormatTimeAgo(km.timestamp)))
 
         -- Interactive Hover
         row:SetScript("OnEnter", function(self)
@@ -1303,8 +1337,13 @@ function UI:RenderBounties()
             row:SetPoint("TOPLEFT", 0, yOffset)
             local theme = UI:GetTheme()
             row:SetBackdrop(theme.rowBackdrop)
-            row:SetBackdropColor(0.18, 0.08, 0.08, 0.9)
-            row:SetBackdropBorderColor(0.50, 0.18, 0.18, 0.8)
+            if theme.id == "classic" then
+                row:SetBackdropColor(0.35, 0.15, 0.12, 0.35)
+                row:SetBackdropBorderColor(0.70, 0.30, 0.20, 0.65)
+            else
+                row:SetBackdropColor(0.18, 0.08, 0.08, 0.9)
+                row:SetBackdropBorderColor(0.50, 0.18, 0.18, 0.8)
+            end
 
             local icon = UI:CreateClassIcon(row, b.targetClass, 20)
             icon:SetPoint("LEFT", 12, 0)
@@ -1372,8 +1411,13 @@ function UI:RenderBounties()
             row:SetPoint("TOPLEFT", 0, yOffset)
             local theme = UI:GetTheme()
             row:SetBackdrop(theme.rowBackdrop)
-            row:SetBackdropColor(0.08, 0.08, 0.10, 0.85)
-            row:SetBackdropBorderColor(0.25, 0.25, 0.30, 0.7)
+            if theme.id == "classic" then
+                row:SetBackdropColor(0.20, 0.16, 0.12, 0.30)
+                row:SetBackdropBorderColor(0.55, 0.45, 0.22, 0.60)
+            else
+                row:SetBackdropColor(0.08, 0.08, 0.10, 0.85)
+                row:SetBackdropBorderColor(0.25, 0.25, 0.30, 0.7)
+            end
 
             local icon = UI:CreateClassIcon(row, b.targetClass, 20)
             icon:SetPoint("LEFT", 12, 0)
@@ -1412,8 +1456,13 @@ function UI:RenderBounties()
             row:SetPoint("TOPLEFT", 0, yOffset)
             local theme = UI:GetTheme()
             row:SetBackdrop(theme.rowBackdrop)
-            row:SetBackdropColor(0.24, 0.06, 0.06, 0.92)
-            row:SetBackdropBorderColor(0.60, 0.15, 0.15, 0.9)
+            if theme.id == "classic" then
+                row:SetBackdropColor(0.40, 0.12, 0.12, 0.40)
+                row:SetBackdropBorderColor(0.75, 0.25, 0.25, 0.70)
+            else
+                row:SetBackdropColor(0.24, 0.06, 0.06, 0.92)
+                row:SetBackdropBorderColor(0.60, 0.15, 0.15, 0.9)
+            end
 
             local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             txt:SetPoint("LEFT", 14, 0)
@@ -2865,7 +2914,12 @@ function UI:ShowAlertsConfig()
         solid:SetAllPoints(UI.AlertsDialog)
         UI.AlertsDialog.SolidBg = solid
     end
-    UI.AlertsDialog.SolidBg:SetColorTexture(unpack(theme.solidBg or theme.modalBg or {0.04, 0.05, 0.07, 1.0}))
+    if theme.id == "classic" then
+        UI.AlertsDialog.SolidBg:Hide()
+    else
+        UI.AlertsDialog.SolidBg:Show()
+        UI.AlertsDialog.SolidBg:SetColorTexture(unpack(theme.solidBg or theme.modalBg or {0.04, 0.05, 0.07, 1.0}))
+    end
 
     UI.AlertsDialog:SetBackdrop(theme.modalBackdrop or {
         bgFile = "Interface\\Buttons\\WHITE8X8",

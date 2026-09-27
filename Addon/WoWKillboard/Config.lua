@@ -166,27 +166,27 @@ KB.Themes = {
         },
         mainBg = { 1.0, 1.0, 1.0, 1.0 }, -- Authentic Blizzard Dialog stone texture
         mainBorder = { 1.0, 1.0, 1.0, 1.0 }, -- UI-DialogBox-Border native stone & gold trim
-        solidBg = { 0.08, 0.08, 0.08, 1.0 },
+        solidBg = nil, -- Hidden in classic theme to reveal true Blizzard stone
         titleText = "|cffffd100WoW Killboard|r |cffffffff[Classic WoW]|r",
         subtitleText = "v%s",
         insetBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            edgeSize = 14,
-            insets = { left = 3, right = 3, top = 3, bottom = 3 },
+            edgeSize = 16,
+            insets = { left = 4, right = 4, top = 4, bottom = 4 },
         },
-        insetBg = { 0.12, 0.10, 0.08, 0.90 }, -- Warm dark parchment underlay
-        insetBorder = { 0.65, 0.50, 0.22, 1.0 }, -- Antique brass/gold border
+        insetBg = { 1.0, 1.0, 1.0, 0.0 }, -- 100% Transparent fill so QuestBG parchment shines through
+        insetBorder = { 0.75, 0.60, 0.28, 1.0 }, -- Antique brass/gold border framing parchment
         cardBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
             edgeSize = 12,
             insets = { left = 2, right = 2, top = 2, bottom = 2 },
         },
-        cardBg = { 0.15, 0.12, 0.09, 0.90 }, -- Aged parchment card fill
-        cardBorder = { 0.70, 0.55, 0.25, 0.95 },
-        cardHeaderBg = { 0.20, 0.16, 0.12, 1.0 },
-        cardHeaderBorder = { 0.55, 0.44, 0.22, 0.90 },
+        cardBg = { 0.10, 0.08, 0.06, 0.85 }, -- Sunken dark slate matching dialog stone
+        cardBorder = { 0.72, 0.58, 0.28, 0.95 },
+        cardHeaderBg = { 0.22, 0.17, 0.10, 0.85 },
+        cardHeaderBorder = { 0.60, 0.48, 0.22, 0.85 },
         btnBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -197,18 +197,18 @@ KB.Themes = {
         btnBorder = { 0.65, 0.50, 0.22, 0.95 },
         btnActiveBg = { 0.38, 0.28, 0.15, 1.0 },
         btnActiveBorder = { 1.0, 0.85, 0.30, 1.0 },
-        btnHoverBg = { 0.28, 0.22, 0.15, 1.0 },
-        btnHoverBorder = { 1.0, 0.82, 0.25, 1.0 },
-        dividerColor = { 0.60, 0.50, 0.25, 0.8 },
+        btnHoverBg = { 0.40, 0.30, 0.15, 0.45 },
+        btnHoverBorder = { 0.90, 0.75, 0.25, 0.85 },
+        dividerColor = { 0.65, 0.52, 0.25, 0.85 },
         rowBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
             edgeSize = 10,
             insets = { left = 2, right = 2, top = 2, bottom = 2 },
         },
-        rowBg = { 0.16, 0.13, 0.10, 0.75 },
-        rowBgAlt = { 0.13, 0.10, 0.08, 0.75 },
-        rowBorder = { 0.45, 0.35, 0.18, 0.70 },
+        rowBg = { 0.22, 0.16, 0.10, 0.20 }, -- Translucent warm sepia tint showing parchment
+        rowBgAlt = { 0.28, 0.20, 0.12, 0.30 },
+        rowBorder = { 0.62, 0.48, 0.25, 0.45 },
         modalBackdrop = {
             bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
             edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
