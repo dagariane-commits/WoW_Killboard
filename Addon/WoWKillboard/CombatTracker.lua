@@ -11,13 +11,16 @@ local CT = KB.CombatTracker
 
 -- Active combat states
 CT.RecentDamage = {}            -- keyed by victimGUID: { [attackerGUID] = { totalDamage, lastTime, class, name } }
+CT.RecentDamageByName = {}      -- keyed by normVictim: { [attackerGUID] = { totalDamage, lastTime, class, name } }
 CT.HostileCluster = {}          -- active hostile GUIDs in proximity combat: [hostileGUID] = timestamp
 CT.FriendlyCluster = {}         -- active friendly GUIDs assisting in proximity combat: [friendlyGUID] = timestamp
 CT.RecentVictimNames = {}       -- map victimGUID -> victimName
 CT.RecentVictimGUIDs = {}       -- map lower(victimName) -> victimGUID
 CT.RecentVictimAssists = {}     -- map victimGUID -> { [assisterGUID] = { name, spell, time, type } }
+CT.RecentVictimAssistsByName = {} -- map normVictim -> { [assisterGUID] = { name, spell, time, type } }
 CT.ExternalAssistsOnPlayer = {} -- map assisterGUID -> { name, spell, time, type }
 CT.LastPlayerDeathTime = 0
+CT.LastKillGUID = nil
 CT.SessionStats = {
     damageDone = 0,
     healingDone = 0,
@@ -135,6 +138,22 @@ function CT:PruneCombatInteractions()
         end
     end
 
+    for vName, attackers in pairs(CT.RecentDamageByName) do
+        local hasRecent = false
+        for attackerGUID, data in pairs(attackers) do
+            if data.lastTime < cutoff then
+                attackers[attackerGUID] = nil
+            else
+                hasRecent = true
+            end
+        end
+        if not hasRecent then
+            CT.RecentDamageByName[vName] = nil
+            CT.RecentVictimAssistsByName[vName] = nil
+            CT.RecentVictimGUIDs[vName] = nil
+        end
+    end
+
     for hostileGUID, timestamp in pairs(CT.HostileCluster) do
         if timestamp < cutoff then
             CT.HostileCluster[hostileGUID] = nil
@@ -175,11 +194,19 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
 
     amount = (amount and KB.Utils.CanAccess(amount)) and amount or 0
     local playerGUID = UnitGUID("player")
+    local playerName = UnitName("player")
     local now = time()
+
+    local cleanDest = KB.Utils.CleanCombatantName(destName)
+    local normDest = KB.Utils.NormalizeCombatantName(destName)
+    local cleanSource = KB.Utils.CleanCombatantName(sourceName)
 
     -- Cache victim name <-> GUID mappings for fast resolution
     if destName and destName ~= "" and destGUID then
-        CT.RecentVictimNames[destGUID] = destName
+        CT.RecentVictimNames[destGUID] = cleanDest or destName
+        if normDest and normDest ~= "" then
+            CT.RecentVictimGUIDs[normDest] = destGUID
+        end
         CT.RecentVictimGUIDs[destName:lower()] = destGUID
     end
 
@@ -195,18 +222,24 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
     end
 
     -- If source is friendly to player (or in player's faction), track in FriendlyCluster
-    local isFriendly = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY)
+    local isFriendly = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) or (not isHostile)
     if isFriendly and isSourcePlayer and playerGUID and sourceGUID ~= playerGUID then
         CT.FriendlyCluster[sourceGUID] = now
         -- If an external ally dealt damage to our target, record external contribution
         if destGUID ~= playerGUID then
-            CT.RecentVictimAssists[destGUID] = CT.RecentVictimAssists[destGUID] or {}
-            CT.RecentVictimAssists[destGUID][sourceGUID] = {
-                name = KB.Utils.SafeString(sourceName, "Ally"),
+            local assistData = {
+                name = cleanSource or KB.Utils.SafeString(sourceName, "Ally"),
+                guid = sourceGUID,
                 time = now,
                 spell = spellName or "Damage Assist",
                 type = "damage",
             }
+            CT.RecentVictimAssists[destGUID] = CT.RecentVictimAssists[destGUID] or {}
+            CT.RecentVictimAssists[destGUID][sourceGUID] = assistData
+            if normDest and normDest ~= "" then
+                CT.RecentVictimAssistsByName[normDest] = CT.RecentVictimAssistsByName[normDest] or {}
+                CT.RecentVictimAssistsByName[normDest][sourceGUID] = assistData
+            end
         end
     end
 
@@ -215,7 +248,7 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
     local vData = CT.RecentDamage[destGUID][sourceGUID] or {
         totalDamage = 0,
         lastTime = now,
-        name = KB.Utils.SafeString(sourceName, "Unknown"),
+        name = cleanSource or KB.Utils.SafeString(sourceName, "Unknown"),
         guid = sourceGUID,
         spellName = spellName or "Swing",
         isPlayer = isSourcePlayer,
@@ -225,6 +258,11 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
     vData.spellName = spellName or vData.spellName
     vData.isPlayer = isSourcePlayer
     CT.RecentDamage[destGUID][sourceGUID] = vData
+
+    if normDest and normDest ~= "" then
+        CT.RecentDamageByName[normDest] = CT.RecentDamageByName[normDest] or {}
+        CT.RecentDamageByName[normDest][sourceGUID] = vData
+    end
 end
 
 -- Record healing telemetry
@@ -239,8 +277,10 @@ function CT:RecordHeal(sourceGUID, destGUID, amount)
             -- External player healed us: record external assist (revokes 100% solo purity)
             CT.FriendlyCluster[sourceGUID] = now
             local srcName = (KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(sourceGUID) and KB.UnitScanner:GetUnitInfo(sourceGUID).name) or "Ally"
+            local cleanSrc = KB.Utils.CleanCombatantName(srcName) or srcName
             CT.ExternalAssistsOnPlayer[sourceGUID] = {
-                name = srcName,
+                name = cleanSrc,
+                guid = sourceGUID,
                 time = now,
                 spell = "Heal",
                 type = "heal",
@@ -272,8 +312,10 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         end
     end
 
-    -- Gather all attackers who damaged this victim recently
-    local attackers = CT.RecentDamage[victimGUID] or {}
+    local cleanVictim = KB.Utils.CleanCombatantName(victimName)
+    local normVictim = KB.Utils.NormalizeCombatantName(victimName)
+
+    -- Gather all attackers who damaged this victim recently (from BOTH GUID and normalized name)
     local attackersList = {}
     local totalDamage = 0
     local finalBlowKillerGUID = killerGUID
@@ -281,8 +323,25 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     local hasPlayerAttacker = false
     local topNpcAttacker = nil
     local maxNpcDamage = -1
+    local recordedAttackersMap = {}
 
-    for attGUID, attData in pairs(attackers) do
+    local damageSources = {}
+    if victimGUID and CT.RecentDamage[victimGUID] then
+        for attGUID, attData in pairs(CT.RecentDamage[victimGUID]) do
+            damageSources[attGUID] = attData
+        end
+    end
+    if normVictim and CT.RecentDamageByName and CT.RecentDamageByName[normVictim] then
+        for attGUID, attData in pairs(CT.RecentDamageByName[normVictim]) do
+            if not damageSources[attGUID] then
+                damageSources[attGUID] = attData
+            else
+                damageSources[attGUID].totalDamage = math.max(damageSources[attGUID].totalDamage or 0, attData.totalDamage or 0)
+            end
+        end
+    end
+
+    for attGUID, attData in pairs(damageSources) do
         local isAttPlayer = attData.isPlayer
         if isAttPlayer == nil then
             isAttPlayer = (attGUID:match("^Player%-") ~= nil)
@@ -329,6 +388,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             isPlayer = isAttPlayer,
         })
         totalDamage = totalDamage + (attData.totalDamage or 0)
+        recordedAttackersMap[attGUID] = true
         if not finalBlowKillerGUID then
             finalBlowKillerGUID = attGUID
             finalBlowKillerName = attData.name
@@ -526,6 +586,41 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         end
     end
 
+    -- Merge assists from BOTH RecentVictimAssists[victimGUID] and RecentVictimAssistsByName[normVictim]
+    local assistSources = {}
+    if victimGUID and CT.RecentVictimAssists[victimGUID] then
+        for aGUID, aData in pairs(CT.RecentVictimAssists[victimGUID]) do
+            if (now - (aData.time or 0)) <= 30 then
+                assistSources[aGUID] = aData
+            end
+        end
+    end
+    if normVictim and CT.RecentVictimAssistsByName and CT.RecentVictimAssistsByName[normVictim] then
+        for aGUID, aData in pairs(CT.RecentVictimAssistsByName[normVictim]) do
+            if (now - (aData.time or 0)) <= 30 and not assistSources[aGUID] then
+                assistSources[aGUID] = aData
+            end
+        end
+    end
+
+    for aGUID, aData in pairs(assistSources) do
+        if not recordedAttackersMap[aGUID] and aGUID ~= playerGUID then
+            local aInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(aGUID)
+            table.insert(attackersList, {
+                guid = aGUID,
+                name = (aInfo and aInfo.name) or aData.name or "Friendly Ally",
+                damage = 0,
+                spell = aData.spell or "Assist",
+                class = (aInfo and aInfo.class) or "UNKNOWN",
+                level = (aInfo and aInfo.level) or 0,
+                guild = (aInfo and aInfo.guild) or "None",
+                faction = (aInfo and aInfo.faction) or (UnitFactionGroup("player") or "Unknown"),
+                isPlayer = true,
+            })
+            recordedAttackersMap[aGUID] = true
+        end
+    end
+
     -- Strict 100% Certified Solo Kill Criteria:
     -- 1. Attacker list contains ONLY 1 player
     -- 2. Zero other friendly players debuffed, slowed, stunned or assisted against victim within 30s
@@ -535,19 +630,17 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     -- 6. Zero active friendly cluster participants within 30s
     local hasExternalAttacker = false
     for _, att in ipairs(attackersList) do
-        if att.guid ~= playerGUID and att.isPlayer then
+        if att.guid ~= playerGUID and (att.name ~= UnitName("player")) then
             hasExternalAttacker = true
             break
         end
     end
 
     local hasExternalAssistOnVictim = false
-    if victimGUID and CT.RecentVictimAssists[victimGUID] then
-        for aGUID, aData in pairs(CT.RecentVictimAssists[victimGUID]) do
-            if aGUID ~= playerGUID and (now - (aData.time or 0)) <= 30 then
-                hasExternalAssistOnVictim = true
-                break
-            end
+    for aGUID, aData in pairs(assistSources) do
+        if aGUID ~= playerGUID and aData.name ~= UnitName("player") then
+            hasExternalAssistOnVictim = true
+            break
         end
     end
 
@@ -559,16 +652,26 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         end
     end
 
+    local inGroup = (CT:GetFriendlyPartySize() > 1)
+    local hasNearbyFriendly = (friendlyAssists > 0)
+
     local isSolo = false
     if finalBlowKillerGUID == playerGUID then
-        isSolo = (not hasExternalAttacker) and (not hasExternalAssistOnVictim) and (not hasExternalAssistOnPlayer) and (CT:GetFriendlyPartySize() <= 1) and (friendlyAssists == 0)
+        isSolo = (not hasExternalAttacker)
+             and (not hasExternalAssistOnVictim)
+             and (not hasExternalAssistOnPlayer)
+             and (not inGroup)
+             and (not hasNearbyFriendly)
     else
-        isSolo = (#attackersList == 1) and (CT:GetFriendlyPartySize() <= 1)
+        isSolo = (#attackersList == 1) and (not inGroup)
     end
 
     local friendlyPartySize = math.max(CT:GetFriendlyPartySize(), #attackersList)
     if friendlyAssists > 0 then
         friendlyPartySize = friendlyPartySize + friendlyAssists
+    end
+    if not isSolo and friendlyPartySize < 2 then
+        friendlyPartySize = 2
     end
     local hostilePartySize = CT:GetInferredHostilePartySize()
 
@@ -641,7 +744,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         isArena = context.isArena,
         battlegroundName = context.battlegroundName,
         isSolo = isSolo,
-        attackersCount = #attackersList,
+        attackersCount = math.max(#attackersList, friendlyPartySize),
         attackers = attackersList,
         totalDamage = totalDamage,
         killer = {
@@ -667,11 +770,9 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         location = location,
     })
 
-    CT.LastKillVictim = victimInfo.name
+    CT.LastKillVictim = cleanVictim or victimInfo.name
+    CT.LastKillGUID = victimGUID
     CT.LastKillTime = now
-
-    -- Clean up victim recent damage
-    CT.RecentDamage[victimGUID] = nil
 end
 
 local PVP_RANK_PREFIXES = {
@@ -764,38 +865,56 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
 
     if not KB.Utils.CanAccess(victimName) then return end
 
-    if CT.LastKillVictim and (CT.LastKillVictim:lower() == victimName:lower()) and (now - (CT.LastKillTime or 0)) < 5 then
+    local cleanVictim = KB.Utils.CleanCombatantName(victimName)
+    local normVictim = KB.Utils.NormalizeCombatantName(victimName)
+
+    if CT.LastKillVictim and ((cleanVictim and CT.LastKillVictim:lower() == cleanVictim:lower()) or (victimName and CT.LastKillVictim:lower() == victimName:lower())) and (now - (CT.LastKillTime or 0)) < 5 then
         return
     end
-    CT.LastKillVictim = victimName
+    if explicitGuid and CT.LastKillGUID and CT.LastKillGUID == explicitGuid and (now - (CT.LastKillTime or 0)) < 5 then
+        return
+    end
+    CT.LastKillVictim = cleanVictim or victimName
     CT.LastKillTime = now
+    if explicitGuid then CT.LastKillGUID = explicitGuid end
 
     local victimGUID = explicitGuid or (victimInfo and victimInfo.guid)
+    if (not victimGUID or victimGUID == "UNKNOWN") and normVictim and CT.RecentVictimGUIDs[normVictim] then
+        victimGUID = CT.RecentVictimGUIDs[normVictim]
+    end
     if (not victimGUID or victimGUID == "UNKNOWN") and victimName and CT.RecentVictimGUIDs[victimName:lower()] then
         victimGUID = CT.RecentVictimGUIDs[victimName:lower()]
     end
-    if (not victimGUID or victimGUID == "UNKNOWN") and UnitExists("target") and UnitName("target") == victimName then
-        victimGUID = UnitGUID("target")
+    if (not victimGUID or victimGUID == "UNKNOWN") and UnitExists("target") then
+        local tName = UnitName("target")
+        if (cleanVictim and tName and tName:lower() == cleanVictim:lower()) or (victimName and tName and tName:lower() == victimName:lower()) then
+            victimGUID = UnitGUID("target")
+        end
     end
-    if (not victimGUID or victimGUID == "UNKNOWN") and activeEnemyTarget and activeEnemyTarget.name == victimName then
-        victimGUID = activeEnemyTarget.guid
+    if (not victimGUID or victimGUID == "UNKNOWN") and activeEnemyTarget then
+        if (cleanVictim and activeEnemyTarget.name and activeEnemyTarget.name:lower() == cleanVictim:lower()) or (victimName and activeEnemyTarget.name and activeEnemyTarget.name:lower() == victimName:lower()) then
+            victimGUID = activeEnemyTarget.guid
+        end
     end
     if (not victimGUID or victimGUID == "UNKNOWN") then
         for guid, e in pairs(CT.RecentEngagedEnemies) do
-            if e.name == victimName then
+            local eNorm = KB.Utils.NormalizeCombatantName(e.name)
+            if (normVictim and eNorm == normVictim) or (e.name == victimName) or (cleanVictim and e.name == cleanVictim) then
                 victimGUID = guid
                 break
             end
         end
     end
     if (not victimGUID or victimGUID == "UNKNOWN") then
-        for guid, attackers in pairs(CT.RecentDamage) do
-            if CT.RecentVictimNames[guid] and CT.RecentVictimNames[guid]:lower() == victimName:lower() then
+        for guid, _ in pairs(CT.RecentDamage) do
+            local vName = CT.RecentVictimNames[guid]
+            local vNorm = KB.Utils.NormalizeCombatantName(vName)
+            if (normVictim and vNorm == normVictim) or (vName and victimName and vName:lower() == victimName:lower()) then
                 victimGUID = guid
                 break
             end
             local uInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(guid)
-            if uInfo and uInfo.name == victimName then
+            if uInfo and uInfo.name and ((cleanVictim and uInfo.name:lower() == cleanVictim:lower()) or (victimName and uInfo.name:lower() == victimName:lower())) then
                 victimGUID = guid
                 break
             end
@@ -803,9 +922,9 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     end
 
     if not victimInfo then
-        victimInfo = (victimGUID and KB.UnitScanner:GetUnitInfo(victimGUID)) or KB.UnitScanner:GetUnitInfoByName(victimName) or {
+        victimInfo = (victimGUID and KB.UnitScanner:GetUnitInfo(victimGUID)) or KB.UnitScanner:GetUnitInfoByName(victimName) or (cleanVictim and KB.UnitScanner:GetUnitInfoByName(cleanVictim)) or {
             guid = victimGUID or "UNKNOWN",
-            name = victimName,
+            name = cleanVictim or victimName,
             level = 0,
             class = "UNKNOWN",
             guild = "None",
@@ -836,47 +955,61 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         end
     end
 
-    -- Gather all attackers from RecentDamage for this victim
+    -- Gather all attackers from RecentDamage and RecentDamageByName for this victim
     local attackersList = {}
     local totalDamage = 0
     local recordedAttackersMap = {}
 
+    local damageSources = {}
     if victimGUID and CT.RecentDamage[victimGUID] then
         for attGUID, attData in pairs(CT.RecentDamage[victimGUID]) do
-            local isAttPlayer = attData.isPlayer
-            if isAttPlayer == nil then
-                isAttPlayer = (attGUID:match("^Player%-") ~= nil)
-            end
-            local unitInfo = KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(attGUID)
-            local attClass = "UNKNOWN"
-            local attLevel = 0
-            local attGuild = "None"
-            local attFaction = "Unknown"
-            if playerGUID and attGUID == playerGUID then
-                attClass = pClass or "UNKNOWN"
-                attLevel = UnitLevel("player") or 0
-                attGuild = pGuild or "None"
-                attFaction = pFaction or "Unknown"
-            elseif unitInfo then
-                attClass = unitInfo.class or "UNKNOWN"
-                attLevel = unitInfo.level or 0
-                attGuild = unitInfo.guild or "None"
-                attFaction = unitInfo.faction or "Unknown"
-            end
-            table.insert(attackersList, {
-                guid = attGUID,
-                name = attData.name or "Unknown",
-                damage = attData.totalDamage or 0,
-                spell = attData.spellName or "Combat",
-                class = attClass,
-                level = attLevel,
-                guild = attGuild,
-                faction = attFaction,
-                isPlayer = isAttPlayer,
-            })
-            totalDamage = totalDamage + (attData.totalDamage or 0)
-            recordedAttackersMap[attGUID] = true
+            damageSources[attGUID] = attData
         end
+    end
+    if normVictim and CT.RecentDamageByName and CT.RecentDamageByName[normVictim] then
+        for attGUID, attData in pairs(CT.RecentDamageByName[normVictim]) do
+            if not damageSources[attGUID] then
+                damageSources[attGUID] = attData
+            else
+                damageSources[attGUID].totalDamage = math.max(damageSources[attGUID].totalDamage or 0, attData.totalDamage or 0)
+            end
+        end
+    end
+
+    for attGUID, attData in pairs(damageSources) do
+        local isAttPlayer = attData.isPlayer
+        if isAttPlayer == nil then
+            isAttPlayer = (attGUID:match("^Player%-") ~= nil)
+        end
+        local unitInfo = KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(attGUID)
+        local attClass = "UNKNOWN"
+        local attLevel = 0
+        local attGuild = "None"
+        local attFaction = "Unknown"
+        if playerGUID and attGUID == playerGUID then
+            attClass = pClass or "UNKNOWN"
+            attLevel = UnitLevel("player") or 0
+            attGuild = pGuild or "None"
+            attFaction = pFaction or "Unknown"
+        elseif unitInfo then
+            attClass = unitInfo.class or "UNKNOWN"
+            attLevel = unitInfo.level or 0
+            attGuild = unitInfo.guild or "None"
+            attFaction = unitInfo.faction or "Unknown"
+        end
+        table.insert(attackersList, {
+            guid = attGUID,
+            name = attData.name or "Unknown",
+            damage = attData.totalDamage or 0,
+            spell = attData.spellName or "Combat",
+            class = attClass,
+            level = attLevel,
+            guild = attGuild,
+            faction = attFaction,
+            isPlayer = isAttPlayer,
+        })
+        totalDamage = totalDamage + (attData.totalDamage or 0)
+        recordedAttackersMap[attGUID] = true
     end
 
     -- If player was not in RecentDamage, insert player
@@ -914,23 +1047,37 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     end
 
     -- Append external allies who contributed assists or debuffs against this victim
+    local assistSources = {}
     if victimGUID and CT.RecentVictimAssists[victimGUID] then
         for aGUID, aData in pairs(CT.RecentVictimAssists[victimGUID]) do
-            if not recordedAttackersMap[aGUID] and aGUID ~= playerGUID and (now - (aData.time or 0)) <= 30 then
-                local aInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(aGUID)
-                table.insert(attackersList, {
-                    guid = aGUID,
-                    name = (aInfo and aInfo.name) or aData.name or "Friendly Ally",
-                    damage = 0,
-                    spell = aData.spell or "Assist",
-                    class = (aInfo and aInfo.class) or "UNKNOWN",
-                    level = (aInfo and aInfo.level) or 0,
-                    guild = (aInfo and aInfo.guild) or "None",
-                    faction = (aInfo and aInfo.faction) or (pFaction or "Unknown"),
-                    isPlayer = true,
-                })
-                recordedAttackersMap[aGUID] = true
+            if (now - (aData.time or 0)) <= 30 then
+                assistSources[aGUID] = aData
             end
+        end
+    end
+    if normVictim and CT.RecentVictimAssistsByName and CT.RecentVictimAssistsByName[normVictim] then
+        for aGUID, aData in pairs(CT.RecentVictimAssistsByName[normVictim]) do
+            if (now - (aData.time or 0)) <= 30 and not assistSources[aGUID] then
+                assistSources[aGUID] = aData
+            end
+        end
+    end
+
+    for aGUID, aData in pairs(assistSources) do
+        if not recordedAttackersMap[aGUID] and aGUID ~= playerGUID then
+            local aInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(aGUID)
+            table.insert(attackersList, {
+                guid = aGUID,
+                name = (aInfo and aInfo.name) or aData.name or "Friendly Ally",
+                damage = 0,
+                spell = aData.spell or "Assist",
+                class = (aInfo and aInfo.class) or "UNKNOWN",
+                level = (aInfo and aInfo.level) or 0,
+                guild = (aInfo and aInfo.guild) or "None",
+                faction = (aInfo and aInfo.faction) or (pFaction or "Unknown"),
+                isPlayer = true,
+            })
+            recordedAttackersMap[aGUID] = true
         end
     end
 
@@ -943,19 +1090,17 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     -- 6. Zero active friendly cluster participants within 30s
     local hasExternalAttacker = false
     for _, att in ipairs(attackersList) do
-        if att.guid ~= playerGUID and att.isPlayer then
+        if att.guid ~= playerGUID and (att.name ~= playerName) then
             hasExternalAttacker = true
             break
         end
     end
 
     local hasExternalAssistOnVictim = false
-    if victimGUID and CT.RecentVictimAssists[victimGUID] then
-        for aGUID, aData in pairs(CT.RecentVictimAssists[victimGUID]) do
-            if aGUID ~= playerGUID and (now - (aData.time or 0)) <= 30 then
-                hasExternalAssistOnVictim = true
-                break
-            end
+    for aGUID, aData in pairs(assistSources) do
+        if aGUID ~= playerGUID and aData.name ~= playerName then
+            hasExternalAssistOnVictim = true
+            break
         end
     end
 
@@ -967,8 +1112,19 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         end
     end
 
-    local isSolo = (not hasExternalAttacker) and (not hasExternalAssistOnVictim) and (not hasExternalAssistOnPlayer) and (partySize <= 1) and (friendlyAssists == 0)
+    local inGroup = (partySize > 1)
+    local hasNearbyFriendly = (friendlyAssists > 0)
+
+    local isSolo = (not hasExternalAttacker)
+               and (not hasExternalAssistOnVictim)
+               and (not hasExternalAssistOnPlayer)
+               and (not inGroup)
+               and (not hasNearbyFriendly)
+
     local attackersCount = math.max(#attackersList, partySize, 1 + friendlyAssists)
+    if not isSolo and attackersCount < 2 then
+        attackersCount = 2
+    end
 
     CT.SessionStats.kills = CT.SessionStats.kills + 1
 
@@ -997,7 +1153,7 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         },
         victim = {
             guid = (victimInfo and victimInfo.guid) or victimGUID or "UNKNOWN",
-            name = (victimInfo and victimInfo.name) or victimName,
+            name = (victimInfo and victimInfo.name) or cleanVictim or victimName,
             level = (victimInfo and victimInfo.level) or 0,
             class = (victimInfo and victimInfo.class) or "UNKNOWN",
             guild = (victimInfo and victimInfo.guild) or "None",
@@ -1006,10 +1162,6 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         },
         location = location,
     })
-
-    if victimGUID and CT.RecentDamage[victimGUID] then
-        CT.RecentDamage[victimGUID] = nil
-    end
 end
 
 -- Manual kill registration for in-game testing (/kb testkill)
@@ -1291,17 +1443,17 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
         local playerGUID = UnitGUID("player")
         if sourceGUID and playerGUID and sourceGUID ~= playerGUID and IsPlayerUnit(sourceGUID, sourceFlags, sourceName) then
-            if HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) then
-                CT.FriendlyCluster[sourceGUID] = time()
-            elseif HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) then
+            if HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) then
                 CT.HostileCluster[sourceGUID] = time()
+            else
+                CT.FriendlyCluster[sourceGUID] = time()
             end
         end
 
         if subevent == "SWING_DAMAGE" then
             local amount = select(12, GetCombatLogPayload(...))
             CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount or 0, "Melee Swing")
-        elseif subevent == "SPELL_DAMAGE" or subevent == "SPELL_PERIODIC_DAMAGE" or subevent == "RANGE_DAMAGE" then
+        elseif subevent == "SPELL_DAMAGE" or subevent == "SPELL_PERIODIC_DAMAGE" or subevent == "RANGE_DAMAGE" or subevent == "DAMAGE_SHIELD" then
             local spellId, spellName, _, amount = select(12, GetCombatLogPayload(...))
             if KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
                 KB.UnitScanner:InferClassFromSpell(sourceGUID, sourceName, spellName)
@@ -1313,7 +1465,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 KB.UnitScanner:InferClassFromSpell(sourceGUID, sourceName, spellName)
             end
             CT:RecordHeal(sourceGUID, destGUID, amount or 0)
-        elseif subevent == "SPELL_CAST_SUCCESS" or subevent == "SPELL_AURA_APPLIED" or subevent == "SPELL_AURA_REFRESH" then
+        elseif subevent == "SPELL_CAST_SUCCESS" or subevent == "SPELL_AURA_APPLIED" or subevent == "SPELL_AURA_REFRESH" or subevent == "SPELL_AURA_APPLIED_DOSE" then
             local spellId, spellName = select(12, GetCombatLogPayload(...))
             if KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
                 KB.UnitScanner:InferClassFromSpell(sourceGUID, sourceName, spellName)
@@ -1322,25 +1474,40 @@ frame:SetScript("OnEvent", function(self, event, ...)
             local now = time()
             if playerGUID and destGUID == playerGUID and sourceGUID ~= playerGUID then
                 CT.FriendlyCluster[sourceGUID] = now
-                local srcName = KB.Utils.SafeString(sourceName, "Ally")
+                local srcName = KB.Utils.CleanCombatantName(sourceName) or KB.Utils.SafeString(sourceName, "Ally")
                 CT.ExternalAssistsOnPlayer[sourceGUID] = {
                     name = srcName,
+                    guid = sourceGUID,
                     time = now,
                     spell = spellName or "Buff",
                     type = "buff",
                 }
             elseif playerGUID and destGUID ~= playerGUID and sourceGUID ~= playerGUID then
-                local isFriendly = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY)
+                local isHostile = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE)
+                local isFriendly = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) or (not isHostile)
                 if isFriendly and destGUID then
-                    CT.RecentVictimAssists[destGUID] = CT.RecentVictimAssists[destGUID] or {}
-                    CT.RecentVictimAssists[destGUID][sourceGUID] = {
-                        name = KB.Utils.SafeString(sourceName, "Ally"),
+                    local cleanSrc = KB.Utils.CleanCombatantName(sourceName) or KB.Utils.SafeString(sourceName, "Ally")
+                    local cleanDst = KB.Utils.CleanCombatantName(destName)
+                    local normDst = KB.Utils.NormalizeCombatantName(destName)
+                    local assistData = {
+                        name = cleanSrc,
+                        guid = sourceGUID,
                         time = now,
                         spell = spellName or "Assist",
                         type = "debuff",
                     }
+                    CT.FriendlyCluster[sourceGUID] = now
+                    CT.RecentVictimAssists[destGUID] = CT.RecentVictimAssists[destGUID] or {}
+                    CT.RecentVictimAssists[destGUID][sourceGUID] = assistData
+                    if normDst and normDst ~= "" then
+                        CT.RecentVictimAssistsByName[normDst] = CT.RecentVictimAssistsByName[normDst] or {}
+                        CT.RecentVictimAssistsByName[normDst][sourceGUID] = assistData
+                    end
                     if destName and destName ~= "" then
-                        CT.RecentVictimNames[destGUID] = destName
+                        CT.RecentVictimNames[destGUID] = cleanDst or destName
+                        if normDst and normDst ~= "" then
+                            CT.RecentVictimGUIDs[normDst] = destGUID
+                        end
                         CT.RecentVictimGUIDs[destName:lower()] = destGUID
                     end
                 end
@@ -1515,18 +1682,8 @@ frame:SetScript("OnEvent", function(self, event, ...)
 end)
 
 -- Universal Event Registration across all 4 WoW client flavors (Guardrail 2 Compliant)
-local isCLEUForbidden = false
-if GetBuildInfo then
-    local _, _, _, tocversion = GetBuildInfo()
-    tocversion = tonumber(tocversion) or 11500
-    if tocversion >= 16000 or tocversion >= 120000 then
-        isCLEUForbidden = true
-    end
-end
-
-if not isCLEUForbidden then
-    pcall(frame.RegisterEvent, frame, "COMBAT_LOG_EVENT_UNFILTERED")
-end
+-- CLEU is registered cleanly across WoW Forever Beta (1.16/16001), Classic Era (11500), Anniversary (11500), and Modern Retail
+pcall(frame.RegisterEvent, frame, "COMBAT_LOG_EVENT_UNFILTERED")
 
 frame:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
 frame:RegisterEvent("CHAT_MSG_SYSTEM")
