@@ -341,6 +341,10 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         if KB.UI and KB.UI.ToggleRadarHUD then
             KB.UI:ToggleRadarHUD()
         end
+    elseif cmd == "wire" or cmd == "feed" then
+        if KB.UI and KB.UI.ToggleCombatWire then
+            KB.UI:ToggleCombatWire()
+        end
     elseif cmd == "alerts" or cmd == "alert" or cmd == "config" then
         if KB.UI and KB.UI.ShowAlertsConfig then
             KB.UI:ShowAlertsConfig()
@@ -399,6 +403,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     else
         SafePrint("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
         SafePrint("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
+        SafePrint("  |cffffd100/kb wire|r or |cffffd100/kb feed|r - Toggle floating Combat Wire pop-out live feed window")
         SafePrint("  |cffffd100/kb radar|r or |cffffd100/kbradar|r - Toggle the Tactical Radar HUD floating window")
         SafePrint("  |cffffd100/kb alerts|r - Open Combat Alerts & Radar Configuration")
         SafePrint("  |cffffd100/kb markprompt [on|off]|r - Toggle Mark of Spite revenge prompt on PvP death")

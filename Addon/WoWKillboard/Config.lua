@@ -37,6 +37,9 @@ KB.DefaultSettings = {
     radarPos = nil,              -- saved position for radar HUD: { point, relPoint, x, y }
     promptMarkOnDeath = true,    -- prompt to declare a Mark of Spite on death in open world PvP
     promptBountyOnDeath = true,  -- backward compatibility alias for promptMarkOnDeath
+    combatFeedMode = "POPOUT",   -- "POPOUT" (Dedicated floating Combat Wire window), "CHAT" (Main chat window), "OFF"
+    showCombatWire = true,       -- show floating moveable Combat Wire pop-out window
+    combatWirePos = nil,         -- saved position for Combat Wire window: { point, relPoint, x, y }
 }
 
 -- Fallback Class Colors (ARGB Hex)

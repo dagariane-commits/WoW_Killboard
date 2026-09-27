@@ -98,9 +98,17 @@ function KM:RecordKill(data)
 
         local actionVerb = killmail.isDuel and "defeated" or "destroyed"
         local chatMsg = string.format("|cff00ccff[WoWKB]|r %s %s %s %s in %s", badge, killerStr, actionVerb, victimStr, locStr)
-        KB.Utils.SafePrint(chatMsg)
-        if not killmail.isDuel and isPlayerInvolved then
-            KB.Utils.SafePrint("|cff888888[WoWKB]|r Tip: Type |cffffff00/reload|r or |cffffff00/kb sync|r to sync combat data to the website.")
+
+        -- Route to Combat Wire floating pop-out window
+        if KB.UI and KB.UI.AddCombatWireEntry then
+            KB.UI:AddCombatWireEntry(killmail, chatMsg)
+        end
+
+        -- Only print to main chat window if user explicitly selected "CHAT" feed mode
+        local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+        local feedMode = s.combatFeedMode or "POPOUT"
+        if feedMode == "CHAT" then
+            KB.Utils.SafePrint(chatMsg)
         end
     end
 
