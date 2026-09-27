@@ -327,6 +327,10 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             KB.UI:ShowDeathBountyPrompt(testDeath.killer)
         end
         print(string.format("|cffff3333[WoWKB]|r Simulated PvP death against |cffffd100%s|r! Death bounty prompt engaged.", enemyName))
+    elseif cmd == "radar" or cmd == "hud" then
+        if KB.UI and KB.UI.ToggleRadarHUD then
+            KB.UI:ToggleRadarHUD()
+        end
     elseif cmd == "alerts" or cmd == "alert" or cmd == "config" then
         if KB.UI and KB.UI.ShowAlertsConfig then
             KB.UI:ShowAlertsConfig()
@@ -345,6 +349,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     else
         print("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
         print("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
+        print("  |cffffd100/kb radar|r or |cffffd100/kbradar|r - Toggle the Tactical Radar HUD floating window")
         print("  |cffffd100/kb alerts|r - Open Combat Alerts & Radar Configuration")
         print("  |cffffd100/kb move|r - Unlock or lock Kill Banner to reposition on screen")
         print("  |cffffd100/kb test|r - Preview Kill Alert Banner with sound and raid warning")
@@ -369,6 +374,13 @@ SLASH_WOWKB_ARMORY1 = "/armory"
 SLASH_WOWKB_ARMORY2 = "/kbarmory"
 SlashCmdList["WOWKB_ARMORY"] = function(msg)
     KB:PrintArmoryDossier(msg)
+end
+
+SLASH_WOWKB_RADAR1 = "/kbradar"
+SlashCmdList["WOWKB_RADAR"] = function()
+    if KB.UI and KB.UI.ToggleRadarHUD then
+        KB.UI:ToggleRadarHUD()
+    end
 end
 
 function KB:PrintArmoryDossier(targetName)

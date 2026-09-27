@@ -202,18 +202,26 @@ function US:CheckHostileRadar(info)
 
     local name = info.name
     local now = time()
-    if (now - (US.LastRadarAlert[name] or 0)) < 30 then
+    if (now - (US.LastRadarAlert[name] or 0)) < 15 then
         return
     end
     US.LastRadarAlert[name] = now
 
-    local guildTag = (info.guild and info.guild ~= "None" and info.guild ~= "") and (" <" .. info.guild .. ">") or ""
-    local classStr = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(info.class or "HOSTILE", info.class) or (info.class or "HOSTILE")
-    local levelStr = (info.level and info.level > 0) and tostring(info.level) or "??"
-    local zoneStr = GetZoneText() or "Wilderness"
+    -- Pass spotted hostile to the floating moveable Radar HUD
+    if KB.UI and KB.UI.UpdateRadarHUD then
+        KB.UI:UpdateRadarHUD(info)
+    end
 
-    print(string.format("|cff00ccff[WoWKB Radar]|r Detected Hostile: |cffff3333%s|r%s (Lvl %s %s) in |cffffffff%s|r!",
-        name, guildTag, levelStr, classStr, zoneStr))
+    -- Mute chat spam by default; only print if radarChatAlerts is explicitly enabled
+    if s and s.radarChatAlerts then
+        local guildTag = (info.guild and info.guild ~= "None" and info.guild ~= "") and (" <" .. info.guild .. ">") or ""
+        local classStr = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(info.class or "HOSTILE", info.class) or (info.class or "HOSTILE")
+        local levelStr = (info.level and info.level > 0) and tostring(info.level) or "??"
+        local zoneStr = GetZoneText() or "Wilderness"
+
+        print(string.format("|cff00ccff[WoWKB Radar]|r Detected Hostile: |cffff3333%s|r%s (Lvl %s %s) in |cffffffff%s|r!",
+            name, guildTag, levelStr, classStr, zoneStr))
+    end
 end
 
 

@@ -1,0 +1,26 @@
+[Unit]
+Description=WoW Killboard — Frontline Combat & Marks of Spite Platform
+After=network.target
+
+[Service]
+Type=simple
+User=wowkillboard
+Group=wowkillboard
+WorkingDirectory=/opt/wowkillboard
+Environment="PYTHONUNBUFFERED=1"
+Environment="WOWKB_DB_PATH=/opt/wowkillboard/data/killboard.db"
+ExecStart=/opt/wowkillboard/venv/bin/python web/server.py --port 8080
+Restart=always
+RestartSec=5s
+
+# Security Sandbox
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Standard Logging to systemd journal
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,35 @@
+# WoW Killboard — Production Caddyfile
+# Replaces Render Free-Tier with instant HTTP/2 & HTTP/3 + Automated SSL
+
+your-domain.com {
+    # Automatic Let's Encrypt / ZeroSSL HTTPS certificate management
+    encode zstd gzip
+
+    # Production Hardened Security Headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+
+    # Static asset caching (24 hours)
+    @static {
+        path /static/*
+    }
+    header @static Cache-Control "public, max-age=86400"
+
+    # API Request Body Limit (25MB for large SavedVariables table uploads)
+    request_body {
+        max_size 25MB
+    }
+
+    # Reverse proxy to FastAPI / Uvicorn backend
+    reverse_proxy 127.0.0.1:8080 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
