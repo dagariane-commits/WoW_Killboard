@@ -7,6 +7,16 @@
 WoWKillboard = WoWKillboard or {}
 local KB = WoWKillboard
 
+local function SafePrint(...)
+    if KB and KB.Utils and KB.Utils.SafePrint then
+        KB.Utils.SafePrint(...)
+    elseif not InCombatLockdown() and DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        local pieces = {}
+        for i = 1, select("#", ...) do table.insert(pieces, tostring(select(i, ...))) end
+        DEFAULT_CHAT_FRAME:AddMessage(table.concat(pieces, " "))
+    end
+end
+
 local coreFrame = CreateFrame("Frame")
 
 -- Initialize Databases and settings on load
@@ -43,7 +53,7 @@ function KB:Initialize()
     -- Create Minimap Button
     KB:CreateMinimapButton()
 
-    print(string.format("|cff00ccffWoW Killboard v%s|r loaded. Type |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r to open dashboard.", KB.Version))
+    SafePrint(string.format("|cff00ccffWoW Killboard v%s|r loaded. Type |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r to open dashboard.", KB.Version))
 end
 
 -- Slash Commands (Support /killboard, /wowkb, and /kb)
@@ -61,7 +71,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         WoWKillboardDB = { kills = {}, stats = {} }
         if KB.Leaderboard then KB.Leaderboard:Rebuild() end
         if KB.UI then KB.UI:RefreshIfVisible() end
-        print("|cff00ccff[WoWKB]|r Database has been reset.")
+        SafePrint("|cff00ccff[WoWKB]|r Database has been reset.")
     elseif cmd == "stats" then
         local s = KB.CombatTracker.SessionStats
         local st = WoWKillboardDB and WoWKillboardDB.stats or {}
@@ -72,15 +82,15 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         local aW = st.arenas and st.arenas.wins or 0
         local aL = st.arenas and st.arenas.losses or 0
         local kd = (s.deaths > 0) and string.format("%.2f", s.kills / s.deaths) or tostring(s.kills)
-        print(string.format("|cff00ccff[WoWKB Stats]|r Kills: |cff00ff00%d|r | Deaths: |cffff3333%d|r | K/D: |cffffd100%s|r | Dmg: |cffff7700%s|r | Heal: |cff00ff66%s|r",
+        SafePrint(string.format("|cff00ccff[WoWKB Stats]|r Kills: |cff00ff00%d|r | Deaths: |cffff3333%d|r | K/D: |cffffd100%s|r | Dmg: |cffff7700%s|r | Heal: |cff00ff66%s|r",
             s.kills, s.deaths, kd, KB.Utils.FormatNumber(s.damageDone), KB.Utils.FormatNumber(s.healingDone)))
-        print(string.format("  |cffffd700Duels (1v1):|r %dW - %dL | |cff00ccffBattlegrounds:|r %dW - %dL | |cffa335eeArenas:|r %dW - %dL", dW, dL, bgW, bgL, aW, aL))
+        SafePrint(string.format("  |cffffd700Duels (1v1):|r %dW - %dL | |cff00ccffBattlegrounds:|r %dW - %dL | |cffa335eeArenas:|r %dW - %dL", dW, dL, bgW, bgL, aW, aL))
     elseif cmd == "bounty" then
         local target, gold = arg:match("^(%S+)%s+(%d+)$")
         if target and gold then
             KB.BountyEngine:PlaceBounty(target, "UNKNOWN", "Unknown", tonumber(gold))
         else
-            print("|cffff9900Usage:|r /killboard bounty <TargetName> <GoldAmount> (e.g. /killboard bounty Thrall 250)")
+            SafePrint("|cffff9900Usage:|r /killboard bounty <TargetName> <GoldAmount> (e.g. /killboard bounty Thrall 250)")
         end
     elseif cmd == "backup" or cmd == "sos" or cmd == "warhorn" or cmd == "calltoarms" then
         if arg == "stop" or arg == "resolve" or arg == "clear" or arg == "off" then
@@ -111,9 +121,9 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
                 SendChatMessage(string.format("[WoWKillboard Event] ⚔️ %s in %s! Announced by %s. Time: %s.",
                     evt.title, evt.zone, myName, evt.time_str), "GUILD")
             end
-            print(string.format("|cff00ccff[WoWKB Event]|r Created Guild Rally: |cffffd100%s|r in |cffffffff%s|r!", evt.title, evt.zone))
+            SafePrint(string.format("|cff00ccff[WoWKB Event]|r Created Guild Rally: |cffffd100%s|r in |cffffffff%s|r!", evt.title, evt.zone))
         else
-            print("|cffff9900Usage:|r /killboard event <Title> | <Zone> | <Time> (e.g. /killboard event STV Defense | Stranglethorn Vale | 8:00 PM EST)")
+            SafePrint("|cffff9900Usage:|r /killboard event <Title> | <Zone> | <Time> (e.g. /killboard event STV Defense | Stranglethorn Vale | 8:00 PM EST)")
         end
     elseif cmd == "spot" or cmd == "scout" then
         if KB.IntelScanner then
@@ -129,27 +139,27 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
 
         if action == "add" and entity ~= "" then
             WoWKillboardDB.kosGuilds[entity] = { reason = "Manual KOS Branding", time = time() }
-            print(string.format("|cffff0000[WoWKB KOS]|r Added |cffffd100%s|r to KOS Blacklist.", entity))
+            SafePrint(string.format("|cffff0000[WoWKB KOS]|r Added |cffffd100%s|r to KOS Blacklist.", entity))
         elseif action == "remove" and entity ~= "" then
             WoWKillboardDB.kosGuilds[entity] = nil
             WoWKillboardDB.kosPlayers[entity] = nil
             WoWKillboardDB.kosDeserters[entity] = nil
-            print(string.format("|cff00ff00[WoWKB KOS]|r Removed |cffffd100%s|r from KOS Blacklist.", entity))
+            SafePrint(string.format("|cff00ff00[WoWKB KOS]|r Removed |cffffd100%s|r from KOS Blacklist.", entity))
         else
-            print("|cffff0000[WoWKB Realm KOS Blacklist & Deserters]:|r")
+            SafePrint("|cffff0000[WoWKB Realm KOS Blacklist & Deserters]:|r")
             local count = 0
             for g, d in pairs(WoWKillboardDB.kosGuilds) do
-                print(string.format("  - Guild: |cffff5555<%s>|r (%s)", g, d.reason or "KOS"))
+                SafePrint(string.format("  - Guild: |cffff5555<%s>|r (%s)", g, d.reason or "KOS"))
                 count = count + 1
             end
             for dName, dInfo in pairs(WoWKillboardDB.kosDeserters) do
-                print(string.format("  - Deserter: |cffff5555%s|r (Ex-<%s>)", dName, dInfo.former_guild or "None"))
+                SafePrint(string.format("  - Deserter: |cffff5555%s|r (Ex-<%s>)", dName, dInfo.former_guild or "None"))
                 count = count + 1
             end
-            if count == 0 then print("  (No active KOS blacklist targets)") end
+            if count == 0 then SafePrint("  (No active KOS blacklist targets)") end
         end
     elseif cmd == "sync" or cmd == "reload" then
-        print("|cff00ccff[WoWKB]|r Flushed combat SavedVariables to disk. Reloading UI to sync with live web platform...")
+        SafePrint("|cff00ccff[WoWKB]|r Flushed combat SavedVariables to disk. Reloading UI to sync with live web platform...")
         ReloadUI()
     elseif cmd == "move" or cmd == "unlock" then
         if KB.UI and KB.UI.ToggleBannerLock then
@@ -158,7 +168,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     elseif cmd == "test" then
         if KB.UI and KB.UI.TestKillBanner then
             KB.UI:TestKillBanner()
-            print("|cff00ff00[WoWKB]|r Frontline Kill Banner test preview triggered!")
+            SafePrint("|cff00ff00[WoWKB]|r Frontline Kill Banner test preview triggered!")
         end
     elseif cmd == "testkill" or cmd == "mockkill" or cmd == "recordkill" or cmd == "demo" then
         local pName = UnitName("player") or "Hero"
@@ -253,7 +263,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         if KB.UI and KB.UI.ShowKillBanner then
             KB.UI:ShowKillBanner(testKill, true)
         end
-        print(string.format("|cff00ff00[WoWKB]|r Generated synthetic Open-World PvP Kill against |cffff3333%s|r in %s!", enemyName, loc.zone))
+        SafePrint(string.format("|cff00ff00[WoWKB]|r Generated synthetic Open-World PvP Kill against |cffff3333%s|r in %s!", enemyName, loc.zone))
 
     elseif cmd == "testdeath" then
         local pName = UnitName("player") or "Hero"
@@ -326,7 +336,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         if KB.UI and KB.UI.ShowDeathBountyPrompt then
             KB.UI:ShowDeathBountyPrompt(testDeath.killer)
         end
-        print(string.format("|cffff3333[WoWKB]|r Simulated PvP death against |cffffd100%s|r! Death bounty prompt engaged.", enemyName))
+        SafePrint(string.format("|cffff3333[WoWKB]|r Simulated PvP death against |cffffd100%s|r! Death bounty prompt engaged.", enemyName))
     elseif cmd == "radar" or cmd == "hud" then
         if KB.UI and KB.UI.ToggleRadarHUD then
             KB.UI:ToggleRadarHUD()
@@ -337,24 +347,28 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         end
     elseif cmd == "armory" then
         KB:PrintArmoryDossier(arg)
+    elseif cmd == "export" then
+        if KB.UI and KB.UI.ShowExportDialog then
+            KB.UI:ShowExportDialog()
+        end
     elseif cmd == "markprompt" or cmd == "bountyprompt" then
         local mArg = arg and arg:lower():match("^%s*(.-)%s*$") or ""
         WoWKillboardSettings = WoWKillboardSettings or {}
         if mArg == "off" or mArg == "disable" or mArg == "0" then
             WoWKillboardSettings.promptMarkOnDeath = false
             WoWKillboardSettings.promptBountyOnDeath = false
-            print("|cffff3333[WoWKB]|r Mark of Spite death popup: |cffff3333Disabled|r.")
+            SafePrint("|cffff3333[WoWKB]|r Mark of Spite death popup: |cffff3333Disabled|r.")
         elseif mArg == "on" or mArg == "enable" or mArg == "1" then
             WoWKillboardSettings.promptMarkOnDeath = true
             WoWKillboardSettings.promptBountyOnDeath = true
-            print("|cff00ff00[WoWKB]|r Mark of Spite death popup: |cff00ff00Enabled|r.")
+            SafePrint("|cff00ff00[WoWKB]|r Mark of Spite death popup: |cff00ff00Enabled|r.")
         else
             local cur = (WoWKillboardSettings.promptMarkOnDeath ~= false and WoWKillboardSettings.promptBountyOnDeath ~= false)
             local nxt = not cur
             WoWKillboardSettings.promptMarkOnDeath = nxt
             WoWKillboardSettings.promptBountyOnDeath = nxt
             local st = nxt and "|cff00ff00Enabled|r" or "|cffff3333Disabled|r"
-            print(string.format("|cff00ccff[WoWKB]|r Mark of Spite death popup toggled to: %s", st))
+            SafePrint(string.format("|cff00ccff[WoWKB]|r Mark of Spite death popup toggled to: %s", st))
         end
     elseif cmd == "claim" then
         local code = arg and arg:match("^%s*(.-)%s*$") or ""
@@ -368,10 +382,10 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
                 guid = UnitGUID("player") or "UNKNOWN",
                 realm = (GetRealmName and GetRealmName()) or "PvP",
             }
-            print(string.format("|cff00ff00[WoWKB]|r Claim verification token registered for |cffffd100%s|r: |cffffff00%s|r.", pName, code))
-            print("|cff00ccff[WoWKB]|r Run sync client or upload SavedVariables to complete character ownership claim.")
+            SafePrint(string.format("|cff00ff00[WoWKB]|r Claim verification token registered for |cffffd100%s|r: |cffffff00%s|r.", pName, code))
+            SafePrint("|cff00ccff[WoWKB]|r Run sync client or upload SavedVariables to complete character ownership claim.")
         else
-            print("|cffff9900Usage:|r /kb claim <code> (e.g. /kb claim KB-7842)")
+            SafePrint("|cffff9900Usage:|r /kb claim <code> (e.g. /kb claim KB-7842)")
         end
     elseif cmd == "theme" then
         local tArg = arg and arg:lower():match("^%s*(.-)%s*$") or ""
@@ -383,27 +397,28 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             if KB.UI then KB.UI:SetTheme(nextTheme) end
         end
     else
-        print("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
-        print("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
-        print("  |cffffd100/kb radar|r or |cffffd100/kbradar|r - Toggle the Tactical Radar HUD floating window")
-        print("  |cffffd100/kb alerts|r - Open Combat Alerts & Radar Configuration")
-        print("  |cffffd100/kb markprompt [on|off]|r - Toggle Mark of Spite revenge prompt on PvP death")
-        print("  |cffffd100/kb claim <code>|r - Register web character ownership verification code")
-        print("  |cffffd100/kb move|r - Unlock or lock Kill Banner to reposition on screen")
-        print("  |cffffd100/kb test|r - Preview Kill Alert Banner with sound and raid warning")
-        print("  |cffffd100/kb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
-        print("  |cffffd100/kb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
-        print("  |cffffd100/kb armory [Name]|r or |cffffd100/armory [Name]|r - Inspect Character Combat Dossier")
-        print("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
-        print("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
-        print("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
-        print("  |cffffd100/kb kos [add|remove|list]|r - View or manage realm KOS Blacklist")
-        print("  |cffffd100/kb event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
-        print("  |cffffd100/kb theme [classic|elvui]|r - Switch between Classic WoW and ElvUI aesthetics")
-        print("  |cffffd100/kb sync|r or |cffffd100/kb reload|r - Flush combat SavedVariables to disk to sync with website")
-        print("  |cffffd100/kb stats|r - Review current combat session battle statistics")
-        print("  |cffffd100/kb bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
-        print("  |cffffd100/kb reset|r - Clear local battle records")
+        SafePrint("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
+        SafePrint("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
+        SafePrint("  |cffffd100/kb radar|r or |cffffd100/kbradar|r - Toggle the Tactical Radar HUD floating window")
+        SafePrint("  |cffffd100/kb alerts|r - Open Combat Alerts & Radar Configuration")
+        SafePrint("  |cffffd100/kb markprompt [on|off]|r - Toggle Mark of Spite revenge prompt on PvP death")
+        SafePrint("  |cffffd100/kb claim <code>|r - Register web character ownership verification code")
+        SafePrint("  |cffffd100/kb export|r - Open in-game combat export window")
+        SafePrint("  |cffffd100/kb move|r - Unlock or lock Kill Banner to reposition on screen")
+        SafePrint("  |cffffd100/kb test|r - Preview Kill Alert Banner with sound and raid warning")
+        SafePrint("  |cffffd100/kb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
+        SafePrint("  |cffffd100/kb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
+        SafePrint("  |cffffd100/kb armory [Name]|r or |cffffd100/armory [Name]|r - Inspect Character Combat Dossier")
+        SafePrint("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
+        SafePrint("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
+        SafePrint("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
+        SafePrint("  |cffffd100/kb kos [add|remove|list]|r - View or manage realm KOS Blacklist")
+        SafePrint("  |cffffd100/kb event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
+        SafePrint("  |cffffd100/kb theme [classic|elvui]|r - Switch between Classic WoW and ElvUI aesthetics")
+        SafePrint("  |cffffd100/kb sync|r or |cffffd100/kb reload|r - Flush combat SavedVariables to disk to sync with website")
+        SafePrint("  |cffffd100/kb stats|r - Review current combat session battle statistics")
+        SafePrint("  |cffffd100/kb bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
+        SafePrint("  |cffffd100/kb reset|r - Clear local battle records")
     end
 end
 
@@ -432,7 +447,7 @@ function KB:PrintArmoryDossier(targetName)
     end
 
     if not name or name == "" then
-        print("|cffff9900Usage:|r /killboard armory <CharacterName> (or target a player and type /armory)")
+        SafePrint("|cffff9900Usage:|r /killboard armory <CharacterName> (or target a player and type /armory)")
         return
     end
 
@@ -536,18 +551,18 @@ function KB:PrintArmoryDossier(targetName)
     local guildPart = (charGuild and charGuild ~= "None" and charGuild ~= "") and string.format(" <%s>", charGuild) or ""
     local factionColor = (charFaction == "Alliance") and "|cff3b82f6Alliance|r" or ((charFaction == "Horde") and "|cffef4444Horde|r" or "|cff94a3b8Neutral|r")
 
-    print(string.format("|cff00e5ff[WoWKB Player Armory]|r |c%s%s|r (Lvl %d %s)%s - %s", colorHex, name, charLevel, charClass, guildPart, factionColor))
-    print(string.format("  |cffffd700🎖️ Honor Rank:|r |cffffffff%s|r | |cff00ff00K/D:|r |cffffffff%s|r (|cff00ff00%d|r Kills / |cffff3333%d|r Deaths)",
+    SafePrint(string.format("|cff00e5ff[WoWKB Player Armory]|r |c%s%s|r (Lvl %d %s)%s - %s", colorHex, name, charLevel, charClass, guildPart, factionColor))
+    SafePrint(string.format("  |cffffd700🎖️ Honor Rank:|r |cffffffff%s|r | |cff00ff00K/D:|r |cffffffff%s|r (|cff00ff00%d|r Kills / |cffff3333%d|r Deaths)",
         rankTitle, kd, killsCount, deathsCount))
-    print(string.format("  |cff00e5ffSolo Kills:|r %d | |cffffd700Duels (1v1):|r %d | |cff3b82f6BGs:|r %d", soloCount, duelCount, bgCount))
+    SafePrint(string.format("  |cff00e5ffSolo Kills:|r %d | |cffffd700Duels (1v1):|r %d | |cff3b82f6BGs:|r %d", soloCount, duelCount, bgCount))
 
     -- Check KOS Blacklist or Deserter status
     if WoWKillboardDB then
         if (WoWKillboardDB.kosGuilds and charGuild and WoWKillboardDB.kosGuilds[charGuild]) or (WoWKillboardDB.kosPlayers and WoWKillboardDB.kosPlayers[name]) then
-            print("  |cffff0000🚨 TARGET IS ON REALM KOS BLACKLIST! Execute on sight!|r")
+            SafePrint("  |cffff0000🚨 TARGET IS ON REALM KOS BLACKLIST! Execute on sight!|r")
         end
         if WoWKillboardDB.kosDeserters and WoWKillboardDB.kosDeserters[name] then
-            print("  |cffffaa00⚡ TARGET IS A MARKED GUILD-HOP DESERTER!|r")
+            SafePrint("  |cffffaa00⚡ TARGET IS A MARKED GUILD-HOP DESERTER!|r")
         end
     end
 
@@ -555,7 +570,7 @@ function KB:PrintArmoryDossier(targetName)
     if WoWKillboardBounties then
         for _, b in pairs(WoWKillboardBounties) do
             if b.target_name and b.target_name:lower() == name:lower() and b.status == "ACTIVE" then
-                print(string.format("  |cffffd100💰 ACTIVE BLOOD BOUNTY:|r %d Gold! Deliver the killing blow to collect!", b.amount_gold or 0))
+                SafePrint(string.format("  |cffffd100💰 ACTIVE BLOOD BOUNTY:|r %d Gold! Deliver the killing blow to collect!", b.amount_gold or 0))
                 break
             end
         end

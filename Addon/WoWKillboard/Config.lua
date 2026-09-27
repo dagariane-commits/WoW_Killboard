@@ -8,16 +8,6 @@ local KB = WoWKillboard
 
 
 
--- Purge any residual AddonCompartment registration from memory (prevents Leatrix Plus HideMiniAddonMenu collision)
-if AddonCompartmentFrame and AddonCompartmentFrame.registeredAddons then
-    for i = #AddonCompartmentFrame.registeredAddons, 1, -1 do
-        local entry = AddonCompartmentFrame.registeredAddons[i]
-        if type(entry) == "table" and (entry.text == "WoWKillboard" or entry.addonName == "WoWKillboard") then
-            table.remove(AddonCompartmentFrame.registeredAddons, i)
-        end
-    end
-end
-
 KB.Version = "1.0.0"
 KB.Prefix = "WOWKB"
 
@@ -105,7 +95,7 @@ KB.Themes = {
         mainBg = { 0.05, 0.05, 0.05, 1.0 }, -- True matte charcoal/black (100% OPAQUE)
         mainBorder = { 0.0, 0.0, 0.0, 1.0 },  -- 1px solid black razor outline
         solidBg = { 0.05, 0.05, 0.05, 1.0 },
-        titleText = "|cffffffffWoW Killboard|r |cffffd100[zKillboard]|r",
+        titleText = "|cffffd100WoW Killboard|r",
         subtitleText = "v%s",
         insetBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -172,7 +162,7 @@ KB.Themes = {
         mainBg = { 1.0, 1.0, 1.0, 1.0 }, -- Authentic Blizzard Dialog stone texture
         mainBorder = { 1.0, 1.0, 1.0, 1.0 }, -- UI-DialogBox-Border native stone & gold trim
         solidBg = nil, -- Hidden in classic theme to reveal true Blizzard stone
-        titleText = "|cffffd100WoW Killboard|r |cffffffff[Classic WoW]|r",
+        titleText = "|cffffd100WoW Killboard|r",
         subtitleText = "v%s",
         insetBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",

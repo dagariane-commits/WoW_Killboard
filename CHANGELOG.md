@@ -5,6 +5,30 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.41] - 2026-09-27
+
+### Fixed
+- **Eradication of In-Combat Action Blocked Execution Taint (Guardrail 1: Zero Blizzard UI Taint)**:
+  - **100% Global `print()` Purge**: Completely eliminated all calls to global `print()` across all 12 addon files. In WoW 10.x / Classic Beta (TOC 16001), calling `print()` routes through `Blizzard_PrintHandler` -> `ScrollingMessageFrame:AddMessage` -> `CircularBuffer.lua` -> `SecureTypes.lua:279`, contaminating the secure execution buffer and triggering `ADDON_ACTION_BLOCKED` when action buttons or unit frames are clicked.
+  - **Taint-Safe Print Queue (`KB.Utils.SafePrint`)**: Replaced all outputs with `SafePrint(...)`, buffering all combat notifications in `KB.PrintQueue` and flushing cleanly via `DEFAULT_CHAT_FRAME:AddMessage` upon `PLAYER_REGEN_ENABLED`.
+  - **Recursive In-Combat Timer Purge**: Removed polling `C_Timer.After` calls during combat from `CombatTracker:CheckPendingDeathBounty()` and `UI:ShowDeathBountyPrompt()`, deferring pending Mark of Spite prompt dispatch cleanly to `PLAYER_REGEN_ENABLED`.
+  - **Unit Event Deregistration**: Removed `UNIT_HEALTH` and `UNIT_FLAGS` unit event registrations on secure unit tokens (`target`, `focus`, `targettarget`) that fired during combat.
+  - **AddonCompartment Table Isolation**: Purged `AddonCompartmentFrame` table mutation logic in `Config.lua` to avoid touching Blizzard internal frame structures.
+  - **Anonymous Private Tooltip**: Replaced all usages of Blizzard's global `GameTooltip` with a dedicated, isolated anonymous frame tooltip (`UI:GetOrCreatePrivateTooltip()`).
+
+- **Strict Solo Purity & Ingestion Sanitization (`watcher.py`, `server.py`, `CombatTracker.lua`)**:
+  - **Zero-Damage Solo Disqualification**: A kill is strictly never certified as solo if `killer.damageDone <= 0` or if the player was an assist/buff proxy (`killer.name == "Allied Vanguard"`).
+  - **Sync Watcher Fallback Fix (`sync/watcher.py`)**: Fixed `isSolo` extraction logic to default to `False` unless explicitly flagged with `attackersCount <= 1`.
+  - **Server Ingestion Gatekeeper (`web/server.py`)**: Enforced server-side validation rejecting solo flags on any kill with `attackers_count > 1`, `len(attackers) > 1`, or zero killer damage.
+  - **Database Retroactive Sanitization**: Cleaned existing SQLite records in `web/killboard.db` to remove erroneous solo designations from zero-damage encounters.
+
+### Added
+- **In-Game Combat Data Export (`/kb export`, `UI.lua`, `Core.lua`)**:
+  - Added `/kb export` slash command and header `[Export]` button next to `[Web Profile]`.
+  - Opens a pure Lua modal with `BackdropTemplate` containing serialized `WoWKillboardDB` records ready for one-click copy (`Ctrl+A` / `Ctrl+C`) and browser drag/paste into `/upload`.
+- **Hall of Legends Open World PvP Consolidation (`web/static/app.js`)**:
+  - Removed mode toggles from the Hall of Legends view, replacing them with a fixed `Open World PvP` badge to strictly isolate open world combat telemetry.
+
 ## [1.4.40] - 2026-09-27
 
 ### Fixed

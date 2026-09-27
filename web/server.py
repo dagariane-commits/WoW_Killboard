@@ -806,11 +806,20 @@ def ingest_kill_data(data, conn):
     is_bg = 1 if data.get("isBattleground") else 0
     is_arena = 1 if data.get("isArena") else 0
     bg_name = data.get("battlegroundName", "")
-    is_solo = 1 if data.get("isSolo") else 0
-    attackers_count = data.get("attackersCount", 1)
+    attackers = data.get("attackers", [])
+    raw_attackers_count = data.get("attackersCount", 1)
+    attackers_count = max(raw_attackers_count, len(attackers) if isinstance(attackers, list) else 1)
     total_damage = data.get("totalDamage", 0)
 
     k = data.get("killer", {})
+    k_damage = k.get("damageDone") or 0
+    is_solo = 1 if data.get("isSolo") else 0
+    if attackers_count > 1 or (isinstance(attackers, list) and len(attackers) > 1):
+        is_solo = 0
+    if not is_duel and k_damage <= 0:
+        is_solo = 0
+    if k.get("name") == "Allied Vanguard":
+        is_solo = 0
     v = data.get("victim", {})
     loc = data.get("location", {})
     k_spec = resolve_character_spec(k.get("class", "WARRIOR"), k.get("spec"))

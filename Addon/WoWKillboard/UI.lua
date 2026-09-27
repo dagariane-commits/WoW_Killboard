@@ -18,6 +18,16 @@ local KB = WoWKillboard
 KB.UI = {}
 local UI = KB.UI
 
+local SafePrint = function(...)
+    if KB.Utils and KB.Utils.SafePrint then
+        KB.Utils.SafePrint(...)
+    elseif not InCombatLockdown() and DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        local pieces = {}
+        for i = 1, select("#", ...) do table.insert(pieces, tostring(select(i, ...))) end
+        DEFAULT_CHAT_FRAME:AddMessage(table.concat(pieces, " "))
+    end
+end
+
 local mainFrame = nil
 local activeTab = "FEED"   -- "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES"
 local currentMode = "WORLD"  -- "WORLD", "BG", "DUEL", "ARENA"
@@ -74,7 +84,7 @@ function UI:SetTheme(themeName)
     end
 
     local th = KB.Themes[themeName]
-    print(string.format("|cff00ccff[WoWKB]|r Theme switched to: |cffffd100%s|r", th.name))
+    SafePrint(string.format("|cff00ccff[WoWKB]|r Theme switched to: |cffffd100%s|r", th.name))
 end
 
 function UI:ApplyButtonStyle(btn, theme)
@@ -403,7 +413,7 @@ end
 -- Create or show main window
 function UI:Toggle()
     if InCombatLockdown() then
-        print("|cffff9900[WoWKB]|r Cannot toggle Killboard during combat.")
+        SafePrint("|cffff9900[WoWKB]|r Cannot toggle Killboard during combat.")
         return
     end
 
@@ -423,6 +433,128 @@ end
 function UI:RefreshIfVisible()
     if mainFrame and mainFrame:IsShown() and not InCombatLockdown() then
         UI:Refresh()
+    end
+end
+
+-- Pending frames to hide once combat lockdown lifts
+UI.PendingHides = UI.PendingHides or {}
+
+function UI:OnPlayerRegenDisabled()
+    -- Guardrail 1: Safely hide any open interactive frames before lockdown takes hold
+    if mainFrame and mainFrame:IsShown() then
+        mainFrame:Hide()
+    end
+    if UI.AlertsDialog and UI.AlertsDialog:IsShown() then
+        UI.AlertsDialog:Hide()
+    end
+    if UI.KOSDialog and UI.KOSDialog:IsShown() then
+        UI.KOSDialog:Hide()
+    end
+    if UI.DeathBountyDialog and UI.DeathBountyDialog:IsShown() then
+        UI.DeathBountyDialog:Hide()
+    end
+    if UI.BountyDialog and UI.BountyDialog:IsShown() then
+        UI.BountyDialog:Hide()
+    end
+    if UI.WebProfileDialog and UI.WebProfileDialog:IsShown() then
+        UI.WebProfileDialog:Hide()
+    end
+    if UI.ReinforcementDialog and UI.ReinforcementDialog:IsShown() then
+        UI.ReinforcementDialog:Hide()
+    end
+    if UI.ExportDialog and UI.ExportDialog:IsShown() then
+        UI.ExportDialog:Hide()
+    end
+    if UI.PrivateTooltipFrame and UI.PrivateTooltipFrame:IsShown() then
+        UI.PrivateTooltipFrame:Hide()
+    end
+    -- Make HUD click-through during active combat so targeting is never obstructed
+    if UI.RadarHUD then
+        UI.RadarHUD:EnableMouse(false)
+        if UI.RadarHUD.header then UI.RadarHUD.header:EnableMouse(false) end
+    end
+    if UI.KillBanner then
+        UI.KillBanner:EnableMouse(false)
+    end
+end
+
+function UI:OnPlayerRegenEnabled()
+    -- Guardrail 1: Process deferred hides for frames whose timers expired during combat
+    if UI.PendingHides and #UI.PendingHides > 0 then
+        for _, f in ipairs(UI.PendingHides) do
+            if f then
+                if f.Hide then pcall(f.Hide, f) end
+                if f.SetAlpha then pcall(f.SetAlpha, f, 1.0) end
+            end
+        end
+        UI.PendingHides = {}
+    end
+    -- Restore mouse interaction on HUD out of combat
+    if UI.RadarHUD and not InCombatLockdown() then
+        UI.RadarHUD:EnableMouse(true)
+        if UI.RadarHUD.header then UI.RadarHUD.header:EnableMouse(true) end
+    end
+    if UI.KillBanner and not InCombatLockdown() then
+        UI.KillBanner:EnableMouse(UI.bannerUnlocked or false)
+    end
+    -- Deliver pending death bounty prompt outside combat lockdown
+    if UI.PendingDeathBountyKiller and not InCombatLockdown() then
+        local k = UI.PendingDeathBountyKiller
+        UI.PendingDeathBountyKiller = nil
+        UI:ShowDeathBountyPrompt(k)
+    end
+end
+
+-- Dedicated Private Tooltip (100% Taint-Free, Zero GameTooltip Touching, Anonymous Frame)
+function UI:GetOrCreatePrivateTooltip()
+    if UI.PrivateTooltipFrame then return UI.PrivateTooltipFrame end
+    local tip = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    tip:SetSize(280, 60)
+    tip:SetFrameStrata("TOOLTIP")
+    tip:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+    tip:SetBackdropColor(0.04, 0.05, 0.08, 0.96)
+    tip:SetBackdropBorderColor(0.85, 0.65, 0.20, 0.90)
+    tip:EnableMouse(false)
+    tip:Hide()
+
+    local title = tip:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    title:SetPoint("TOPLEFT", 8, -6)
+    title:SetPoint("TOPRIGHT", -8, -6)
+    title:SetJustifyH("LEFT")
+    tip.Title = title
+
+    local desc = tip:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
+    desc:SetPoint("RIGHT", -8, 0)
+    desc:SetJustifyH("LEFT")
+    desc:SetWordWrap(true)
+    tip.Desc = desc
+
+    UI.PrivateTooltipFrame = tip
+    return tip
+end
+
+function UI:ShowPrivateTooltip(owner, point, relPoint, x, y, titleText, descText)
+    if InCombatLockdown() then return end
+    local tip = UI:GetOrCreatePrivateTooltip()
+    if not tip then return end
+    tip:ClearAllPoints()
+    tip:SetPoint(point or "BOTTOM", owner, relPoint or "TOP", x or 0, y or 4)
+    tip.Title:SetText(titleText or "")
+    tip.Desc:SetText(descText or "")
+    local descH = tip.Desc:GetStringHeight() or 14
+    tip:SetHeight(math.max(48, 22 + descH))
+    tip:Show()
+end
+
+function UI:HidePrivateTooltip()
+    if UI.PrivateTooltipFrame then
+        UI.PrivateTooltipFrame:Hide()
     end
 end
 
@@ -547,18 +679,16 @@ function UI:CreateMainWindow()
     -- Clickable Character Medallion for Web Profile Link
     medallion:EnableMouse(true)
     medallion:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
         local pName = UnitName("player") or "Player"
         local knownCount = KB.UnitScanner and KB.UnitScanner.GetKnownCharactersCount and KB.UnitScanner:GetKnownCharactersCount() or 0
-        GameTooltip:AddLine(string.format("|cffffd100%s — Web Profile|r", pName), 1, 1, 1)
-        GameTooltip:AddLine("Click to copy your character's public web profile link.", 0.8, 0.8, 0.8)
+        local title = string.format("|cffffd100%s — Web Profile|r", pName)
+        local desc = "Click to copy your character's public web profile link.\nView detailed combat dossier, kill timeline, and charts outside the game."
         if knownCount > 0 then
-            GameTooltip:AddLine(string.format("Known Realm Characters Tracked: |cff00e5ff%d|r", knownCount), 0.7, 0.9, 1.0)
+            desc = desc .. string.format("\n|cff94a3b8Known Realm Characters Tracked:|r |cff00e5ff%d|r", knownCount)
         end
-        GameTooltip:AddLine("View detailed combat dossier, kill timeline, and charts outside the game.", 0.6, 0.8, 1.0)
-        GameTooltip:Show()
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, title, desc)
     end)
-    medallion:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    medallion:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
     medallion:SetScript("OnMouseDown", function()
         UI:ShowCharacterWebLink(UnitName("player"))
     end)
@@ -580,11 +710,7 @@ function UI:CreateMainWindow()
             self:SetBackdropColor(unpack(t.btnHoverBg))
             self:SetBackdropBorderColor(0.0, 0.85, 1.0, 1.0)
         end
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:AddLine("|cff00e5ffCharacter Web Profile|r", 1, 1, 1)
-        GameTooltip:AddLine("Click to copy your character's public web profile link.", 0.8, 0.8, 0.8)
-        GameTooltip:AddLine("View detailed combat dossier, kill timeline, and charts outside the game.", 0.6, 0.8, 1.0)
-        GameTooltip:Show()
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff00e5ffCharacter Web Profile|r", "Click to copy your character's public web profile link.\nView detailed combat dossier, kill timeline, and charts outside the game.")
     end)
     webBtn:SetScript("OnLeave", function(self)
         local t = UI:GetTheme()
@@ -592,9 +718,39 @@ function UI:CreateMainWindow()
             self:SetBackdropColor(unpack(t.btnBg))
             self:SetBackdropBorderColor(unpack(t.btnBorder))
         end
-        GameTooltip:Hide()
+        UI:HidePrivateTooltip()
     end)
     UI.WebProfileButton = webBtn
+
+    -- Template-Free In-Game Combat Export Button
+    local exportBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    exportBtn:SetSize(64, 20)
+    exportBtn:SetPoint("LEFT", webBtn, "RIGHT", 6, 0)
+    exportBtn:EnableMouse(true)
+    local exportLabel = exportBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    exportLabel:SetPoint("CENTER", 0, 0)
+    exportLabel:SetText("|cffffd100Export|r")
+    exportBtn.Label = exportLabel
+    exportBtn:SetScript("OnClick", function()
+        UI:ShowExportDialog()
+    end)
+    exportBtn:SetScript("OnEnter", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
+        end
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Combat Data Export|r", "Click to open the in-game combat export window.\nCopy your combat records to paste directly into the website uploader.")
+    end)
+    exportBtn:SetScript("OnLeave", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
+        end
+        UI:HidePrivateTooltip()
+    end)
+    UI.ExportButton = exportBtn
 
     -- Authentic Classic Dialog Arched Header Crest (Centered at top)
     local headerPlate = mainFrame:CreateTexture(nil, "ARTWORK", nil, 1)
@@ -614,7 +770,9 @@ function UI:CreateMainWindow()
     local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     subtitle:SetPoint("TOP", title, "BOTTOM", 0, -2)
     local realm = (GetRealmName and GetRealmName()) or "PvP"
-    subtitle:SetText(string.format("|cff00e5ffWoW Forever|r • |cffc7b28c%s|r • |cff888888v%s|r", realm, KB.Version))
+    local sub = (KB.Utils and KB.Utils.GetClientFlavorSubtitle and KB.Utils.GetClientFlavorSubtitle())
+             or string.format("|cffffd100WoW|r / |cff00e5ffForever|r / |cffc7b28c%s|r / |cff00ff88Beta|r / |cff888888v%s|r", realm, KB.Version)
+    subtitle:SetText(sub)
     subtitle:SetShadowOffset(1, -1)
     subtitle:SetShadowColor(0, 0, 0, 1)
     UI.SubtitleText = subtitle
@@ -680,10 +838,7 @@ function UI:CreateMainWindow()
             self:SetBackdropColor(unpack(t.btnHoverBg))
             self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
         end
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:AddLine("|cffffd100Combat Alert Settings|r", 1, 1, 1)
-        GameTooltip:AddLine("Configure Kill Banner, Sound Alerts, Raid Warnings & Position.", 0.8, 0.8, 0.8)
-        GameTooltip:Show()
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Combat Alert Settings|r", "Configure Kill Banner, Sound Alerts, Raid Warnings & Position.")
     end)
     alertsBtn:SetScript("OnLeave", function(self)
         local t = UI:GetTheme()
@@ -691,7 +846,7 @@ function UI:CreateMainWindow()
             self:SetBackdropColor(unpack(t.btnBg))
             self:SetBackdropBorderColor(unpack(t.btnBorder))
         end
-        GameTooltip:Hide()
+        UI:HidePrivateTooltip()
     end)
     UI.AlertsButton = alertsBtn
 
@@ -742,21 +897,21 @@ function UI:CreateMainWindow()
         card:EnableMouse(true)
         local cardId = cfg.id
         card:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            local title, desc
             if cardId == "KD" then
-                GameTooltip:AddLine("|cffffd100Session Combat K/D|r", 1, 1, 1)
-                GameTooltip:AddLine("Personal session combat record (You) and total open-world PvP kills logged.", 0.8, 0.8, 0.8)
+                title = "|cffffd100Session Combat K/D|r"
+                desc = "Personal session combat record (You) and total open-world PvP kills logged."
             elseif cardId == "DUELS" then
-                GameTooltip:AddLine("|cffffb82e1v1 Duels Record|r", 1, 1, 1)
-                GameTooltip:AddLine("Personal duel record (You) and total witnessed realm duels logged on board.", 0.8, 0.8, 0.8)
+                title = "|cffffb82e1v1 Duels Record|r"
+                desc = "Personal duel record (You) and total witnessed realm duels logged on board."
             elseif cardId == "BGS" then
-                GameTooltip:AddLine("|cff00e5ffBattlegrounds Record|r", 1, 1, 1)
-                GameTooltip:AddLine("Personal battleground record (You) and total battleground matches logged.", 0.8, 0.8, 0.8)
+                title = "|cff00e5ffBattlegrounds Record|r"
+                desc = "Personal battleground record (You) and total battleground matches logged."
             end
-            GameTooltip:Show()
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, title, desc)
         end)
         card:SetScript("OnLeave", function(self)
-            GameTooltip:Hide()
+            UI:HidePrivateTooltip()
         end)
 
         UI.StatCards[cfg.id] = card
@@ -822,12 +977,9 @@ function UI:CreateMainWindow()
             pill:EnableMouse(true)
             pill:SetScript("OnClick", function() end)
             pill:SetScript("OnEnter", function(self)
-                GameTooltip:SetOwner(self, "ANCHOR_TOP")
-                GameTooltip:AddLine("|cff888888" .. f.text .. "|r", 1, 1, 1)
-                GameTooltip:AddLine(f.tooltip or "Not available in this client flavor.", 0.8, 0.8, 0.8)
-                GameTooltip:Show()
+                UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff888888" .. f.text .. "|r", f.tooltip or "Not available in this client flavor.")
             end)
-            pill:SetScript("OnLeave", function() GameTooltip:Hide() end)
+            pill:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
         else
             local modeId = f.id
             pill:SetScript("OnClick", function()
@@ -2143,7 +2295,7 @@ function UI:RenderRallies()
             if IsInInstance then
                 local inInst, instType = IsInInstance()
                 if inInst or (instType and instType ~= "none") then
-                    print("|cffff0000[WoWKB Error]|r The War Horn can only be sounded upon the open battlefields of Azeroth (Open World PvP only).")
+                    SafePrint("|cffff0000[WoWKB Error]|r The War Horn can only be sounded upon the open battlefields of Azeroth (Open World PvP only).")
                     return
                 end
             end
@@ -2470,7 +2622,7 @@ end
 -- Template-Free External Web Profile Link Dialog (Anonymous, 100% Zero Blizzard Taint)
 function UI:ShowCharacterWebLink(charName)
     if InCombatLockdown and InCombatLockdown() then
-        print("|cffff9900[WoWKB]|r Cannot open web profile link dialog during combat.")
+        SafePrint("|cffff9900[WoWKB]|r Cannot open web profile link dialog during combat.")
         return
     end
 
@@ -2579,17 +2731,151 @@ function UI:ShowCharacterWebLink(charName)
     if dlg.Raise then dlg:Raise() end
 end
 
+-- Template-Free In-Game Combat Export Dialog (Anonymous, 100% Zero Blizzard Taint)
+function UI:ShowExportDialog()
+    if InCombatLockdown and InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot open combat export dialog during combat.")
+        return
+    end
+
+    if not UI.ExportDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(520, 340)
+        dlg:SetPoint("CENTER")
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(100)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+
+        dlg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        dlg:SetBackdropColor(0.06, 0.07, 0.10, 0.98)
+        dlg:SetBackdropBorderColor(0.85, 0.65, 0.15, 1.0)
+
+        local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", 0, -16)
+        title:SetText("|cffffd100WoW Killboard — Combat Data Export|r")
+        dlg.Title = title
+
+        local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        desc:SetPoint("TOP", 0, -40)
+        desc:SetText("Press |cffffd100Ctrl+A|r then |cffffd100Ctrl+C|r to copy. Paste into the web uploader at |cff00e5ff/upload|r:")
+        dlg.Desc = desc
+
+        local inset = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        inset:SetPoint("TOPLEFT", dlg, "TOPLEFT", 18, -62)
+        inset:SetPoint("BOTTOMRIGHT", dlg, "BOTTOMRIGHT", -18, 52)
+        inset:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        inset:SetBackdropColor(0.02, 0.03, 0.05, 0.95)
+        inset:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.9)
+
+        local scrollFrame = CreateFrame("ScrollFrame", nil, inset)
+        scrollFrame:SetPoint("TOPLEFT", inset, "TOPLEFT", 8, -8)
+        scrollFrame:SetPoint("BOTTOMRIGHT", inset, "BOTTOMRIGHT", -8, 8)
+        scrollFrame:EnableMouseWheel(true)
+
+        local eb = CreateFrame("EditBox", nil, scrollFrame)
+        eb:SetMultiLine(true)
+        eb:SetMaxLetters(999999)
+        eb:EnableMouse(true)
+        eb:SetAutoFocus(false)
+        eb:SetFontObject("ChatFontNormal")
+        eb:SetWidth(460)
+        eb:SetScript("OnEscapePressed", function() dlg:Hide() end)
+        scrollFrame:SetScrollChild(eb)
+        scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+            local current = self:GetVerticalScroll()
+            local maxScroll = math.max(0, eb:GetHeight() - self:GetHeight())
+            local newScroll = math.max(0, math.min(maxScroll, current - (delta * 30)))
+            self:SetVerticalScroll(newScroll)
+        end)
+        dlg.EditBox = eb
+
+        -- Safe ESC key listener without UISpecialFrames (Zero Taint Standard)
+        dlg:EnableKeyboard(true)
+        dlg:SetPropagateKeyboardInput(true)
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                self:SetPropagateKeyboardInput(false)
+                self:Hide()
+            else
+                self:SetPropagateKeyboardInput(true)
+            end
+        end)
+
+        local selectBtn = UI:CreateButton(dlg, 110, 24, "Select All")
+        selectBtn:SetPoint("BOTTOMLEFT", 24, 16)
+        selectBtn:SetScript("OnClick", function()
+            dlg.EditBox:SetFocus()
+            dlg.EditBox:HighlightText()
+        end)
+
+        local doneBtn = UI:CreateButton(dlg, 90, 24, "Close")
+        doneBtn:SetPoint("BOTTOMRIGHT", -24, 16)
+        doneBtn:SetScript("OnClick", function() dlg:Hide() end)
+
+        UI.ExportDialog = dlg
+    end
+
+    local dlg = UI.ExportDialog
+    -- Serialize WoWKillboardDB combat records
+    local lines = {}
+    table.insert(lines, "WoWKillboardDB = {")
+    table.insert(lines, "  [\"kills\"] = {")
+    if WoWKillboardDB and WoWKillboardDB.kills then
+        for kId, kData in pairs(WoWKillboardDB.kills) do
+            table.insert(lines, string.format("    [%q] = {", tostring(kId)))
+            table.insert(lines, string.format("      [\"killId\"] = %q,", tostring(kData.killId or kId)))
+            table.insert(lines, string.format("      [\"timestamp\"] = %s,", tostring(kData.timestamp or 0)))
+            table.insert(lines, string.format("      [\"isSolo\"] = %s,", tostring(kData.isSolo and true or false)))
+            table.insert(lines, string.format("      [\"attackersCount\"] = %s,", tostring(kData.attackersCount or 1)))
+            table.insert(lines, string.format("      [\"totalDamage\"] = %s,", tostring(kData.totalDamage or 0)))
+            if kData.killer then
+                table.insert(lines, string.format("      [\"killer\"] = { [\"name\"] = %q, [\"guid\"] = %q, [\"class\"] = %q, [\"level\"] = %s, [\"guild\"] = %q, [\"faction\"] = %q, [\"damageDone\"] = %s },",
+                    kData.killer.name or "Unknown", kData.killer.guid or "UNKNOWN", kData.killer.class or "UNKNOWN", tostring(kData.killer.level or 0), kData.killer.guild or "None", kData.killer.faction or "Unknown", tostring(kData.killer.damageDone or 0)))
+            end
+            if kData.victim then
+                table.insert(lines, string.format("      [\"victim\"] = { [\"name\"] = %q, [\"guid\"] = %q, [\"class\"] = %q, [\"level\"] = %s, [\"guild\"] = %q, [\"faction\"] = %q },",
+                    kData.victim.name or "Unknown", kData.victim.guid or "UNKNOWN", kData.victim.class or "UNKNOWN", tostring(kData.victim.level or 0), kData.victim.guild or "None", kData.victim.faction or "Unknown"))
+            end
+            if kData.location then
+                table.insert(lines, string.format("      [\"location\"] = { [\"zone\"] = %q, [\"subZone\"] = %q, [\"x\"] = %s, [\"y\"] = %s, [\"mapId\"] = %s },",
+                    kData.location.zone or "Wilderness", kData.location.subZone or "", tostring(kData.location.x or 0), tostring(kData.location.y or 0), tostring(kData.location.mapId or 0)))
+            end
+            table.insert(lines, "    },")
+        end
+    end
+    table.insert(lines, "  },")
+    table.insert(lines, "}")
+
+    local exportStr = table.concat(lines, "\n")
+    dlg.EditBox:SetText(exportStr)
+    dlg:Show()
+    dlg.EditBox:SetFocus()
+    dlg.EditBox:HighlightText()
+    if dlg.Raise then dlg:Raise() end
+end
+
 -- Isolated, Taint-Free Bounty Dialog Frame (Anonymous, 100% Template-Free)
 function UI:ShowBountyPrompt()
     if InCombatLockdown() then
-        print("|cffff9900[WoWKB]|r Cannot open Mark of Spite dialog during combat.")
+        SafePrint("|cffff9900[WoWKB]|r Cannot open Mark of Spite dialog during combat.")
         return
     end
 
     if IsInInstance then
         local inInst, instType = IsInInstance()
         if inInst or (instType and instType ~= "none") then
-            print("|cffff0000[WoWKB Error]|r Marks of Spite can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
+            SafePrint("|cffff0000[WoWKB Error]|r Marks of Spite can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
             return
         end
     end
@@ -2721,7 +3007,7 @@ function UI:ShowBountyPrompt()
         okBtn:SetScript("OnClick", function()
             local targetName = (ebName:GetText() or ""):match("^%s*(.-)%s*$")
             if not targetName or targetName == "" then
-                print("|cffff0000[WoWKB Error]|r Target Name cannot be empty.")
+                SafePrint("|cffff0000[WoWKB Error]|r Target Name cannot be empty.")
                 return
             end
             local gold = tonumber(ebGold:GetText()) or 0
@@ -2729,7 +3015,7 @@ function UI:ShowBountyPrompt()
             local copper = tonumber(ebCopper:GetText()) or 0
             local totalCopper = (gold * 10000) + (silver * 100) + copper
             if totalCopper <= 0 then
-                print("|cffff0000[WoWKB Error]|r Mark amount must be greater than 0.")
+                SafePrint("|cffff0000[WoWKB Error]|r Mark amount must be greater than 0.")
                 return
             end
 
@@ -2764,15 +3050,6 @@ function UI:ShowDeathBountyPrompt(killerData)
     end
     if InCombatLockdown() then
         UI.PendingDeathBountyKiller = killerData
-        if C_Timer and C_Timer.After then
-            C_Timer.After(0.5, function()
-                if not InCombatLockdown() and UI.PendingDeathBountyKiller then
-                    local k = UI.PendingDeathBountyKiller
-                    UI.PendingDeathBountyKiller = nil
-                    UI:ShowDeathBountyPrompt(k)
-                end
-            end)
-        end
         return
     end
 
@@ -2989,7 +3266,7 @@ function UI:ShowReinforcementAlert(beaconData)
             if dlg.CurrentBeacon and dlg.CurrentBeacon.character_name then
                 local target = dlg.CurrentBeacon.character_name
                 SendChatMessage("rally", "WHISPER", nil, target)
-                print(string.format("|cff00ff00[WoWKB]|r Answering the call for |cffffd100%s|r! Marching to reinforce in %s!", target, dlg.CurrentBeacon.zone or "Wilderness"))
+                SafePrint(string.format("|cff00ff00[WoWKB]|r Answering the call for |cffffd100%s|r! Marching to reinforce in %s!", target, dlg.CurrentBeacon.zone or "Wilderness"))
                 dlg:Hide()
             end
         end)
@@ -3203,7 +3480,13 @@ function UI:ShowRaidNotice(mainMsg, subMsg, r, g, b)
     if raidNoticeTimer then raidNoticeTimer:Cancel() end
     raidNoticeTimer = C_Timer.NewTimer(4.5, function()
         if raidNoticeFrame and raidNoticeFrame:IsShown() then
-            raidNoticeFrame:Hide()
+            if InCombatLockdown() then
+                raidNoticeFrame:SetAlpha(0)
+                UI.PendingHides = UI.PendingHides or {}
+                table.insert(UI.PendingHides, raidNoticeFrame)
+            else
+                raidNoticeFrame:Hide()
+            end
         end
     end)
 end
@@ -3433,12 +3716,19 @@ function UI:ShowKillBanner(killmail, isTest)
         end
         banner.LocText:SetText(string.format("|cff888888%s  |  %.1f, %.1f|r", zoneStr, loc.x or 0, loc.y or 0))
 
+        banner:SetAlpha(1.0)
         banner:Show()
         if not UI.bannerUnlocked then
             if killBannerTimer then killBannerTimer:Cancel() end
             killBannerTimer = C_Timer.NewTimer(4.5, function()
-                if banner and banner:IsShown() and not UI.bannerUnlocked then
-                    banner:Hide()
+                if banner and not UI.bannerUnlocked then
+                    if InCombatLockdown() then
+                        banner:SetAlpha(0)
+                        UI.PendingHides = UI.PendingHides or {}
+                        table.insert(UI.PendingHides, banner)
+                    else
+                        banner:Hide()
+                    end
                 end
             end)
         end
@@ -3448,7 +3738,7 @@ end
 -- Toggle Banner Drag / Positioning Mode
 function UI:ToggleBannerLock(explicitState)
     if InCombatLockdown() then
-        print("|cffff9900[WoWKB]|r Cannot move alert banner during combat.")
+        SafePrint("|cffff9900[WoWKB]|r Cannot move alert banner during combat.")
         return
     end
     if not UI.KillBanner then
@@ -3486,13 +3776,13 @@ function UI:ToggleBannerLock(explicitState)
 
         UI:ShowRaidNotice("|cffff3333[WoWKB RAID WARNING PREVIEW]|r Enemy Target Destroyed", "Raid Warning Style Text will display here", 1.0, 0.28, 0.0)
 
-        print("|cff00ccff[WoWKB Alert]|r Alert Anchor unlocked! Click and drag with |cffffd100Left-Click|r anywhere on your screen. Type |cffffd100/wowkb move|r again or click Lock to save.")
+        SafePrint("|cff00ccff[WoWKB Alert]|r Alert Anchor unlocked! Click and drag with |cffffd100Left-Click|r anywhere on your screen. Type |cffffd100/wowkb move|r again or click Lock to save.")
     else
         banner:EnableMouse(false) -- Revert to click-through immediately
         banner:Hide()
         if raidNoticeFrame then raidNoticeFrame:Hide() end
         local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
-        print(string.format("|cff00ccff[WoWKB Alert]|r Alert Anchor locked at %s (X: %d, Y: %d). Saved across reloads!", pos.point or "TOP", pos.x or 0, pos.y or -135))
+        SafePrint(string.format("|cff00ccff[WoWKB Alert]|r Alert Anchor locked at %s (X: %d, Y: %d). Saved across reloads!", pos.point or "TOP", pos.x or 0, pos.y or -135))
     end
 
     if UI.AlertsDialog and UI.AlertsDialog.UpdateControls then
@@ -3517,7 +3807,7 @@ function UI:ResetBannerPosition()
         UI.RaidNoticeFrame:ClearAllPoints()
         UI.RaidNoticeFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
     end
-    print("|cff00ccff[WoWKB Alert]|r Alert position reset to default screen coordinates (Center-Top).")
+    SafePrint("|cff00ccff[WoWKB Alert]|r Alert position reset to default screen coordinates (Center-Top).")
     if UI.AlertsDialog and UI.AlertsDialog.UpdateControls then
         UI.AlertsDialog:UpdateControls()
     end
@@ -3559,7 +3849,7 @@ end
 -- Alerts & Radar Configuration Modal Dialog (100% Template-Free, Zero-Taint)
 function UI:ShowAlertsConfig()
     if InCombatLockdown() then
-        print("|cffff9900[WoWKB]|r Cannot open configuration during combat.")
+        SafePrint("|cffff9900[WoWKB]|r Cannot open configuration during combat.")
         return
     end
 
@@ -4044,7 +4334,7 @@ function UI:InitializeRadarHUD()
     closeText:SetText("|cffff4444X|r")
     close:SetScript("OnClick", function()
         hud:Hide()
-        print("|cff00ccff[WoWKB]|r Tactical Radar HUD hidden. Type |cffffff00/kb radar|r to show.")
+        SafePrint("|cff00ccff[WoWKB]|r Tactical Radar HUD hidden. Type |cffffff00/kb radar|r to show.")
     end)
 
     -- Hostile Entry Rows (Up to 3 hostiles displayed cleanly)
@@ -4164,6 +4454,7 @@ function UI:UpdateRadarHUD(info)
     end
 
     UI:RefreshRadarHUD()
+    radarHUD:SetAlpha(1.0)
     radarHUD:Show()
 
     -- Auto-dismiss timer after 15 seconds of inactivity if not hovered
@@ -4173,22 +4464,33 @@ function UI:UpdateRadarHUD(info)
     if C_Timer and C_Timer.NewTimer then
         radarHUD.fadeTimer = C_Timer.NewTimer(15, function()
             if radarHUD and not radarHUD:IsMouseOver() then
-                radarHUD:Hide()
+                if InCombatLockdown() then
+                    radarHUD:SetAlpha(0)
+                    UI.PendingHides = UI.PendingHides or {}
+                    table.insert(UI.PendingHides, radarHUD)
+                else
+                    radarHUD:Hide()
+                end
             end
         end)
     end
 end
 
 function UI:ToggleRadarHUD()
+    if InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot toggle Tactical Radar HUD during combat.")
+        return
+    end
     if not radarHUD then UI:InitializeRadarHUD() end
     if not radarHUD then return end
     if radarHUD:IsShown() then
         radarHUD:Hide()
-        print("|cff00ccff[WoWKB]|r Tactical Radar HUD: |cffff4444Hidden|r.")
+        SafePrint("|cff00ccff[WoWKB]|r Tactical Radar HUD: |cffff4444Hidden|r.")
     else
         UI:RefreshRadarHUD()
+        radarHUD:SetAlpha(1.0)
         radarHUD:Show()
-        print("|cff00ccff[WoWKB]|r Tactical Radar HUD: |cff00ff00Shown|r (Click & drag header to reposition).")
+        SafePrint("|cff00ccff[WoWKB]|r Tactical Radar HUD: |cff00ff00Shown|r (Click & drag header to reposition).")
     end
 end
 

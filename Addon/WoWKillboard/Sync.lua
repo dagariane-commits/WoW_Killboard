@@ -276,9 +276,15 @@ function S:OnAddonMessage(prefix, message, channel, sender)
                 end
             end
         end
-        if KB.UI and KB.UI.ReinforcementAlert and KB.UI.ReinforcementAlert.CurrentBeacon then
-            if KB.UI.ReinforcementAlert.CurrentBeacon.character_name == charName then
-                KB.UI.ReinforcementAlert:Hide()
+        if KB.UI and KB.UI.ReinforcementDialog and KB.UI.ReinforcementDialog.CurrentBeacon then
+            if KB.UI.ReinforcementDialog.CurrentBeacon.character_name == charName then
+                if InCombatLockdown() then
+                    KB.UI.ReinforcementDialog:SetAlpha(0)
+                    KB.UI.PendingHides = KB.UI.PendingHides or {}
+                    table.insert(KB.UI.PendingHides, KB.UI.ReinforcementDialog)
+                else
+                    KB.UI.ReinforcementDialog:Hide()
+                end
             end
         end
 
@@ -288,8 +294,13 @@ function S:OnAddonMessage(prefix, message, channel, sender)
         local creator = parts[5]
         local zone = parts[6]
         local timeStr = parts[7] or "NOW"
-        print(string.format("|cff00ccff[GUILD EVENT]|r |cffffd100%s|r in |cffffffff%s|r announced by |cff00ff00%s|r (<%s>)! Time: %s.",
-            title, zone, creator, guild, timeStr))
+        if KB.Utils and KB.Utils.SafePrint then
+            KB.Utils.SafePrint(string.format("|cff00ccff[GUILD EVENT]|r |cffffd100%s|r in |cffffffff%s|r announced by |cff00ff00%s|r (<%s>)! Time: %s.",
+                title, zone, creator, guild, timeStr))
+        elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+            DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ccff[GUILD EVENT]|r |cffffd100%s|r in |cffffffff%s|r announced by |cff00ff00%s|r (<%s>)! Time: %s.",
+                title, zone, creator, guild, timeStr))
+        end
 
     elseif msgType == "SPT" and #parts >= 14 then
         local sighting = {
