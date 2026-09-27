@@ -79,14 +79,13 @@ mkdir -p "${APP_DIR}/web"
 mkdir -p "${APP_DIR}/data"
 mkdir -p "${APP_DIR}/backups"
 
-# If repository cloned here, copy files, else fetch from git
+# If repository cloned elsewhere, copy files, else fetch from git
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-if [ -f "${SCRIPT_DIR}/web/server.py" ]; then
+if [ "${SCRIPT_DIR}" != "${APP_DIR}" ] && [ -f "${SCRIPT_DIR}/web/server.py" ]; then
     echo -e "${CYAN}[INFO] Deploying from local repository checkout at ${SCRIPT_DIR}...${NC}"
-    cp -ru "${SCRIPT_DIR}/web" "${APP_DIR}/"
-    cp -ru "${SCRIPT_DIR}/requirements.txt" "${APP_DIR}/"
-else
-    echo -e "${YELLOW}[INFO] Copying web application files to ${APP_DIR}...${NC}"
+    cp -r "${SCRIPT_DIR}/web" "${APP_DIR}/"
+    cp -r "${SCRIPT_DIR}/sync" "${APP_DIR}/" 2>/dev/null || true
+    cp -f "${SCRIPT_DIR}/requirements.txt" "${APP_DIR}/" 2>/dev/null || true
 fi
 
 echo -e "${GREEN}[5/7] Provisioning Python virtual environment and dependencies...${NC}"
@@ -94,9 +93,8 @@ python3 -m venv "${APP_DIR}/venv"
 "${APP_DIR}/venv/bin/pip" install --upgrade pip setuptools wheel
 if [ -f "${APP_DIR}/requirements.txt" ]; then
     "${APP_DIR}/venv/bin/pip" install -r "${APP_DIR}/requirements.txt"
-else
-    "${APP_DIR}/venv/bin/pip" install fastapi uvicorn requests python-multipart
 fi
+"${APP_DIR}/venv/bin/pip" install Flask flask-cors gunicorn requests
 
 # Link persistent database to data directory
 chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
@@ -113,8 +111,9 @@ User=${APP_USER}
 Group=${APP_USER}
 WorkingDirectory=${APP_DIR}
 Environment="PYTHONUNBUFFERED=1"
-Environment="WOWKB_DB_PATH=${APP_DIR}/data/killboard.db"
-ExecStart=${APP_DIR}/venv/bin/python web/server.py --port 8080
+Environment="PORT=8080"
+Environment="DB_PATH=${APP_DIR}/data/killboard.db"
+ExecStart=${APP_DIR}/venv/bin/python web/server.py
 Restart=always
 RestartSec=5s
 
