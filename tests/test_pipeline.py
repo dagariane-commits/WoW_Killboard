@@ -979,6 +979,111 @@ class TestKillboardPipeline(unittest.TestCase):
 
         print("[PASS] Verified Client Flavor API and LuaTableParser pveDeaths extraction.")
 
+    def test_14_upload_and_admin_reset(self):
+        """Verify Web Drag-and-Drop /api/upload ingestion and /api/admin/reset lifecycle."""
+        lua_upload_payload = """
+        WoWKillboardDB = {
+            ["kills"] = {
+                ["KB-UPLOAD-01"] = {
+                    ["killId"] = "KB-UPLOAD-01",
+                    ["timestamp"] = 1774720000,
+                    ["isDuel"] = false,
+                    ["isBattleground"] = false,
+                    ["isSolo"] = true,
+                    ["attackersCount"] = 1,
+                    ["totalDamage"] = 4500,
+                    ["killer"] = {
+                        ["name"] = "VanguardA",
+                        ["level"] = 60,
+                        ["class"] = "WARRIOR",
+                        ["guild"] = "StormwindGuard",
+                        ["faction"] = "Alliance"
+                    },
+                    ["victim"] = {
+                        ["name"] = "ShadowB",
+                        ["level"] = 60,
+                        ["class"] = "ROGUE",
+                        ["guild"] = "DefiasBrotherhood",
+                        ["faction"] = "Horde"
+                    },
+                    ["location"] = {
+                        ["mapId"] = 1434,
+                        ["zone"] = "Stranglethorn Vale",
+                        ["x"] = 32.5,
+                        ["y"] = 65.4
+                    }
+                },
+                ["KB-UPLOAD-02"] = {
+                    ["killId"] = "KB-UPLOAD-02",
+                    ["timestamp"] = 1774720100,
+                    ["isDuel"] = true,
+                    ["isBattleground"] = false,
+                    ["isSolo"] = true,
+                    ["attackersCount"] = 1,
+                    ["totalDamage"] = 3800,
+                    ["killer"] = {
+                        ["name"] = "ShadowB",
+                        ["level"] = 60,
+                        ["class"] = "ROGUE",
+                        ["guild"] = "DefiasBrotherhood",
+                        ["faction"] = "Horde"
+                    },
+                    ["victim"] = {
+                        ["name"] = "VanguardA",
+                        ["level"] = 60,
+                        ["class"] = "WARRIOR",
+                        ["guild"] = "StormwindGuard",
+                        ["faction"] = "Alliance"
+                    },
+                    ["location"] = {
+                        ["mapId"] = 1434,
+                        ["zone"] = "Stranglethorn Vale",
+                        ["x"] = 32.7,
+                        ["y"] = 65.8
+                    }
+                }
+            }
+        }
+        """
+
+        # 1. Test POST /api/upload with raw Lua text
+        res_upload = self.client.post("/api/upload", data=lua_upload_payload, content_type="text/plain")
+        self.assertEqual(res_upload.status_code, 200)
+        up_data = res_upload.get_json()
+        self.assertTrue(up_data["success"])
+        self.assertEqual(up_data["kills_processed"], 2)
+
+        # 2. Verify kills are queryable in ledger
+        res_kills = self.client.get("/api/kills")
+        self.assertEqual(res_kills.status_code, 200)
+        kill_ids = [k["killId"] for k in res_kills.get_json()["kills"]]
+        self.assertIn("KB-UPLOAD-01", kill_ids)
+        self.assertIn("KB-UPLOAD-02", kill_ids)
+
+        # 3. Test Idempotency: Re-uploading does not create duplicates
+        res_reupload = self.client.post("/api/upload", data=lua_upload_payload, content_type="text/plain")
+        self.assertEqual(res_reupload.status_code, 200)
+        res_kills2 = self.client.get("/api/kills")
+        kill_ids2 = [k["killId"] for k in res_kills2.get_json()["kills"]]
+        self.assertEqual(kill_ids2.count("KB-UPLOAD-01"), 1)
+
+        # 4. Test Admin Reset with Invalid Key -> 403 Forbidden
+        res_bad_reset = self.client.post("/api/admin/reset", json={"secret": "wrong_key_123"})
+        self.assertEqual(res_bad_reset.status_code, 403)
+
+        # 5. Test Admin Reset with Valid Key -> 200 OK
+        res_good_reset = self.client.post("/api/admin/reset", json={"secret": "valor2026"})
+        self.assertEqual(res_good_reset.status_code, 200)
+        self.assertTrue(res_good_reset.get_json()["success"])
+
+        # 6. Verify ledger is completely zeroed
+        res_after = self.client.get("/api/kills")
+        self.assertEqual(res_after.status_code, 200)
+        self.assertEqual(len(res_after.get_json()["kills"]), 0)
+
+        print("[PASS] Verified Web Drag-and-Drop /api/upload ingestion and /api/admin/reset lifecycle.")
+
 if __name__ == "__main__":
     unittest.main()
+
 

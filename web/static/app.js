@@ -3855,10 +3855,10 @@ function switchTab(tab) {
     mainContainer.classList.toggle("portal-mode", isPortal);
   }
 
-  // Hide sidebar on PORTAL and THEATER for clean presentation
+  // Hide sidebar on PORTAL, THEATER, and UPLOAD for clean presentation
   const sidebarEl = document.querySelector(".sidebar-column");
   if (sidebarEl) {
-    sidebarEl.style.display = (tab === "PORTAL" || tab === "THEATER") ? "none" : "";
+    sidebarEl.style.display = (tab === "PORTAL" || tab === "THEATER" || tab === "UPLOAD") ? "none" : "";
   }
 
   const mwSection = document.getElementById("most-wanted-section");
@@ -3872,6 +3872,9 @@ function switchTab(tab) {
   }
   else if (tab === "THEATER") {
     loadTheaterSelectorView();
+  }
+  else if (tab === "UPLOAD") {
+    loadUploadView();
   }
   else if (tab === "INTEL") {
     const container = document.getElementById("main-content-area");
@@ -3898,6 +3901,293 @@ function switchTab(tab) {
   else if (tab === "WARROOM") {
     loadWarroomView();
   }
+}
+
+// ----------------- Web Drag-and-Drop Uploader & Admin Reset -----------------
+
+function loadUploadView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:24px; max-width:960px; margin:0 auto; padding:10px 0 40px 0;">
+      <!-- Masthead Header -->
+      <div style="background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.12) 0%, rgba(10, 13, 20, 0.95) 75%); border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 28px 24px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.7);">
+        <h2 style="font-family: var(--font-tactical); font-size: 1.6rem; color: #fff; margin: 0 0 6px 0; letter-spacing: 0.5px;">
+          Combat Log Ingestion & Telemetry Sync
+        </h2>
+        <div style="font-size: 0.85rem; color: #94a3b8; max-width: 680px; margin: 0 auto;">
+          Upload your World of Warcraft combat data to the global Master Ledger. Choose between hands-free real-time background sync or direct browser upload with zero installation required.
+        </div>
+      </div>
+
+      <!-- Ingestion Channels Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;">
+        <!-- Option 1: Desktop Companion Binary -->
+        <div style="background: #0a0e16; border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 20px; display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <span style="font-size:0.68rem; font-weight:800; color:var(--wow-gold); background:rgba(212, 163, 41, 0.12); border:1px solid var(--wow-gold); padding:2px 8px; border-radius:4px;">
+                AUTOMATIC &bull; REAL-TIME
+              </span>
+              <span style="font-size:0.75rem; color:#10b981; font-weight:700;">Zero-Touch</span>
+            </div>
+            <h3 style="font-size:1.15rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">WoWKillboardSync.exe</h3>
+            <p style="font-size:0.8rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
+              Standalone desktop companion (like Warcraft Logs or Raider.IO). Runs quietly in your system tray, auto-detects all WoW clients across drives C:, D:, and E:, and streams killmails to Render Cloud in real-time.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
+              &bull; Zero Python or setup required<br>
+              &bull; Deterministic 32-bit FNV-1a deduplication<br>
+              &bull; Dual-sync to local & cloud servers
+            </div>
+          </div>
+          <div style="padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#cbd5e1;">
+            Located in: <code style="color:var(--wow-gold); font-size:0.72rem; word-break:break-all;">WoW_Killboard/dist/WoWKillboardSync.exe</code>
+          </div>
+        </div>
+
+        <!-- Option 2: Pure Browser Drag & Drop -->
+        <div style="background: #0a0e16; border: 2px solid var(--wow-gold); border-radius: 8px; padding: 20px; display:flex; flex-direction:column; justify-content:space-between; box-shadow: 0 0 18px rgba(212, 163, 41, 0.15);">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <span style="font-size:0.68rem; font-weight:800; color:#10b981; background:rgba(16, 185, 129, 0.15); border:1px solid #10b981; padding:2px 8px; border-radius:4px;">
+                ZERO DOWNLOAD &bull; BROWSER UPLOAD
+              </span>
+              <span style="font-size:0.75rem; color:var(--wow-gold); font-weight:700;">Manual Upload</span>
+            </div>
+            <h3 style="font-size:1.15rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">Drag & Drop Uploader</h3>
+            <p style="font-size:0.8rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
+              No .exe or background processes needed. Whenever you finish a play session, simply drag your SavedVariables file into the dropzone below. Safe against out-of-order uploads.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
+              &bull; 100% Client-side file reading<br>
+              &bull; Anti-tamper FNV-1a validation<br>
+              &bull; Instant leaderboard & bounty recalculation
+            </div>
+          </div>
+          <div style="padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#cbd5e1;">
+            Supported formats: <strong style="color:#fff;">.lua</strong> (WoWKillboard.lua), <strong style="color:#fff;">.json</strong>, <strong style="color:#fff;">.txt</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drag & Drop Interactive Dropzone -->
+      <div id="upload-dropzone" 
+           style="background: rgba(15, 23, 42, 0.6); border: 2px dashed var(--wow-gold); border-radius: 8px; padding: 48px 20px; text-align: center; cursor: pointer; transition: all 0.2s ease;"
+           ondragover="handleUploadDragOver(event)" 
+           ondragleave="handleUploadDragLeave(event)" 
+           ondrop="handleUploadDrop(event)"
+           onclick="document.getElementById('upload-file-input').click()">
+        
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.75" style="margin-bottom: 12px;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+
+        <h3 style="color:#fff; font-family:var(--font-tactical); font-size:1.25rem; margin:0 0 6px 0;">
+          Drag & Drop <span style="color:var(--wow-gold);">WoWKillboard.lua</span> Here
+        </h3>
+        <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:14px;">
+          or <span style="color:var(--wow-gold); text-decoration:underline; font-weight:700;">Click to Browse Local Files</span>
+        </div>
+
+        <div style="display:inline-block; background:rgba(0,0,0,0.5); border:1px solid #334155; border-radius:4px; padding:6px 14px; font-size:0.75rem; color:#cbd5e1; font-family:monospace; max-width:90%;">
+          World of Warcraft\\_classic_beta_\\WTF\\Account\\&lt;Account#&gt;\\SavedVariables\\WoWKillboard.lua
+        </div>
+
+        <input type="file" id="upload-file-input" style="display:none;" accept=".lua,.json,.txt" onchange="handleUploadFileSelect(event)">
+      </div>
+
+      <!-- Live Upload Status Banner -->
+      <div id="upload-status-banner" style="display:none; padding:16px 20px; border-radius:6px; font-size:0.85rem;"></div>
+
+      <!-- Collapsible: Direct Text Paste -->
+      <details style="background:#0a0e16; border:1px solid #1e293b; border-radius:8px; padding:14px 18px;">
+        <summary style="font-size:0.85rem; color:var(--wow-gold); font-weight:700; cursor:pointer;">
+          &rarr; Or Paste SavedVariables Lua Text Directly
+        </summary>
+        <div style="margin-top:14px;">
+          <textarea id="upload-paste-text" 
+                    placeholder="Paste the contents of WoWKillboard.lua here..." 
+                    style="width:100%; height:180px; background:#020617; border:1px solid #334155; border-radius:4px; color:#e2e8f0; font-family:monospace; font-size:0.75rem; padding:12px; resize:vertical; box-sizing:border-box;"></textarea>
+          <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+            <button class="nav-btn" style="background:var(--wow-gold); color:#000; font-weight:800; padding:8px 20px;" onclick="handleUploadPasteSubmit()">
+              Upload & Synchronize Text
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <!-- Admin Reset Panel -->
+      <div style="background: rgba(185, 28, 28, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 style="font-family:var(--font-tactical); font-size:1.05rem; color:#f87171; margin:0;">
+            Master War Archivist &bull; Database Administration
+          </h4>
+          <span style="font-size:0.7rem; color:#fca5a5; background:rgba(239, 68, 68, 0.2); padding:2px 8px; border-radius:4px; font-weight:700;">
+            RESTRICTED
+          </span>
+        </div>
+        <p style="font-size:0.78rem; color:#cbd5e1; margin:0 0 12px 0;">
+          Completely reset all combat telemetry, kills, bounties, and leaderboards back to zero. Protected by the administrative secret key.
+        </p>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <input type="password" id="admin-reset-key" placeholder="Enter Administrative Secret Key" style="background:#020617; border:1px solid #475569; color:#fff; padding:7px 12px; border-radius:4px; font-size:0.8rem; width:260px;">
+          <button style="background:#dc2626; color:#fff; border:none; border-radius:4px; padding:8px 18px; font-weight:800; font-size:0.78rem; cursor:pointer;" onclick="handleAdminResetSubmit()">
+            Reset Master Database
+          </button>
+        </div>
+        <div id="admin-reset-status" style="margin-top:10px; font-size:0.78rem; display:none;"></div>
+      </div>
+    </div>
+  `;
+}
+
+function handleUploadDragOver(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const el = document.getElementById("upload-dropzone");
+  if (el) {
+    el.style.background = "rgba(212, 163, 41, 0.15)";
+    el.style.borderColor = "#facc15";
+  }
+}
+
+function handleUploadDragLeave(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const el = document.getElementById("upload-dropzone");
+  if (el) {
+    el.style.background = "rgba(15, 23, 42, 0.6)";
+    el.style.borderColor = "var(--wow-gold)";
+  }
+}
+
+function handleUploadDrop(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  handleUploadDragLeave(event);
+  const files = event.dataTransfer.files;
+  if (files && files.length > 0) {
+    processUploadFile(files[0]);
+  }
+}
+
+function handleUploadFileSelect(event) {
+  const files = event.target.files;
+  if (files && files.length > 0) {
+    processUploadFile(files[0]);
+  }
+}
+
+function processUploadFile(file) {
+  showUploadStatus("Reading " + file.name + " from disk...", "info");
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const content = e.target.result;
+    submitUploadContent(content, file.name);
+  };
+  reader.onerror = function() {
+    showUploadStatus("Failed to read file from local disk.", "error");
+  };
+  reader.readAsText(file);
+}
+
+function handleUploadPasteSubmit() {
+  const textEl = document.getElementById("upload-paste-text");
+  if (!textEl || !textEl.value.trim()) {
+    alert("Please paste valid SavedVariables Lua or JSON text first.");
+    return;
+  }
+  submitUploadContent(textEl.value, "Pasted Text");
+}
+
+function submitUploadContent(rawContent, sourceName) {
+  showUploadStatus("Synchronizing combat data from " + sourceName + " with Master Ledger...", "info");
+  fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: rawContent
+  })
+  .then(res => res.json().then(data => ({ status: res.status, body: data })))
+  .then(({ status, body }) => {
+    if (status === 200 && body.success) {
+      showUploadStatus("⚔️ SUCCESS: " + (body.kills_processed || 0) + " kills ingested and synchronized into Master Ledger!", "success");
+      cachedKills = null;
+    } else {
+      showUploadStatus("❌ Ingestion Error: " + (body.error || "Unknown server error"), "error");
+    }
+  })
+  .catch(err => {
+    showUploadStatus("❌ Network Connection Error: " + err.message, "error");
+  });
+}
+
+function showUploadStatus(msg, type) {
+  const banner = document.getElementById("upload-status-banner");
+  if (!banner) return;
+  banner.style.display = "block";
+  if (type === "success") {
+    banner.style.background = "rgba(16, 185, 129, 0.15)";
+    banner.style.border = "1px solid #10b981";
+    banner.style.color = "#34d399";
+  } else if (type === "error") {
+    banner.style.background = "rgba(239, 68, 68, 0.15)";
+    banner.style.border = "1px solid #ef4444";
+    banner.style.color = "#f87171";
+  } else {
+    banner.style.background = "rgba(59, 130, 246, 0.15)";
+    banner.style.border = "1px solid #3b82f6";
+    banner.style.color = "#93c5fd";
+  }
+  banner.innerText = msg;
+}
+
+function handleAdminResetSubmit() {
+  const keyInput = document.getElementById("admin-reset-key");
+  const key = keyInput ? keyInput.value.trim() : "";
+  if (!key) {
+    alert("Please enter the Administrative Secret Key.");
+    return;
+  }
+  if (!confirm("⚠️ WARNING: This will permanently reset all combat records, leaderboards, bounties, and war statistics. Proceed?")) {
+    return;
+  }
+  const statusEl = document.getElementById("admin-reset-status");
+  if (statusEl) {
+    statusEl.style.display = "block";
+    statusEl.style.color = "#93c5fd";
+    statusEl.innerText = "Executing database wipe...";
+  }
+  fetch("/api/admin/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secret: key })
+  })
+  .then(res => res.json().then(data => ({ status: res.status, body: data })))
+  .then(({ status, body }) => {
+    if (status === 200 && body.success) {
+      if (statusEl) {
+        statusEl.style.color = "#34d399";
+        statusEl.innerText = "✅ " + body.message;
+      }
+      cachedKills = null;
+      if (keyInput) keyInput.value = "";
+    } else {
+      if (statusEl) {
+        statusEl.style.color = "#f87171";
+        statusEl.innerText = "❌ " + (body.error || "Invalid secret key.");
+      }
+    }
+  })
+  .catch(err => {
+    if (statusEl) {
+      statusEl.style.color = "#f87171";
+      statusEl.innerText = "❌ Network Error: " + err.message;
+    }
+  });
 }
 
 // ----------------- Header Auth & Theater State -----------------

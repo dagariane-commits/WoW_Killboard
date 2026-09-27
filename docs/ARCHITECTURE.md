@@ -61,23 +61,22 @@ This hash acts as the primary key across the addon's internal database, the P2P 
 
 ---
 
-### Tier 2: Desktop Ingestion Agent (`sync/`)
+### Tier 2: Ingestion & Telemetry Pipeline (`sync/` & Web Uploader)
 
-WoW flushes its Lua `SavedVariables` cache to disk when the player reloads the UI (`/reload`), logs out, or exits the game. The Desktop Ingestion Agent bridges the file system to the web tier.
+WoW flushes its Lua `SavedVariables` cache to disk when the player reloads the UI (`/reload`), logs out, or exits the game. WoW Killboard supports two parallel, idempotent ingestion pathways:
 
-1. **Auto-Discovery Engine**:
-   - Automatically iterates common root paths on `C:\`, `D:\`, and `E:\`:
-     - `World of Warcraft\_classic_beta_\WTF\Account\`
-     - `World of Warcraft\_classic_era_\WTF\Account\`
-     - `World of Warcraft\_anniversary_\WTF\Account\`
-     - `World of Warcraft\_retail_\WTF\Account\`
-   - Locates all `SavedVariables/WoWKillboard.lua` files dynamically.
-2. **Streaming Lua Tokenizer**:
-   - Custom lexer/parser parses multi-megabyte Lua table dumps without requiring a native Lua runtime.
-   - Evaluates nested dictionaries, string escapes, arrays, booleans, and timestamps.
-3. **Standalone Distribution**:
-   - Compiled with PyInstaller into a self-contained executable (`WoWKillboardSync.exe`).
-   - Requires zero Python environment on the player's gaming rig.
+1. **Option A: Desktop Ingestion Agent (`WoWKillboardSync.exe`)**:
+   - Automated Multi-Drive Discovery: Scans `C:`, `D:`, and `E:` for active WoW client roots (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+   - Real-time file system watcher streams updates automatically to both local and cloud endpoints (`https://wow-killboard.onrender.com`).
+   - Self-contained, zero-Python binary distributed in `dist/WoWKillboardSync.exe`.
+2. **Option B: Web Drag-and-Drop Uploader (`/api/upload`)**:
+   - Zero-download, browser-native alternative for players who do not want a desktop background process.
+   - Accepts raw `WoWKillboard.lua` files or JSON payloads directly via web interface (`/upload`).
+   - Pure-Python streaming `LuaTableParser` parses SavedVariables directly on the server.
+3. **Idempotent Out-of-Order Reconciliation**:
+   - Because every combat engagement generates an identical 32-bit FNV-1a Kill ID across all combatants, asynchronous uploads at arbitrary times (e.g. Killer at 2 PM, Victim at 11 PM) merge into SQLite via `INSERT OR REPLACE INTO kills` with zero duplication.
+4. **Master Administrative Reset**:
+   - Provides `POST /api/admin/reset` (secret-gated) and `--reset-db` server startup flag to safely wipe and rebuild tables during administrative maintenance.
 
 ---
 
