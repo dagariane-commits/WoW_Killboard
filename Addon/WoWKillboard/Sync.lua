@@ -268,6 +268,13 @@ function S:OnAddonMessage(prefix, message, channel, sender)
 
     elseif msgType == "SOS_RES" and #parts >= 2 then
         local charName = parts[2]
+        if WoWKillboardDistress then
+            for _, b in pairs(WoWKillboardDistress) do
+                if b.character_name == charName and b.status == "ACTIVE" then
+                    b.status = "RESOLVED"
+                end
+            end
+        end
         if KB.UI and KB.UI.ReinforcementAlert and KB.UI.ReinforcementAlert.CurrentBeacon then
             if KB.UI.ReinforcementAlert.CurrentBeacon.character_name == charName then
                 KB.UI.ReinforcementAlert:Hide()

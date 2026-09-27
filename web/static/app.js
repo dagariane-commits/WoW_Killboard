@@ -3877,10 +3877,10 @@ function switchTab(tab) {
     mainContainer.classList.toggle("portal-mode", isPortal);
   }
 
-  // Hide sidebar on PORTAL, THEATER, and UPLOAD for clean presentation
+  // Hide sidebar on PORTAL, THEATER, UPLOAD, and RALLIES for clean presentation
   const sidebarEl = document.querySelector(".sidebar-column");
   if (sidebarEl) {
-    sidebarEl.style.display = (tab === "PORTAL" || tab === "THEATER" || tab === "UPLOAD") ? "none" : "";
+    sidebarEl.style.display = (tab === "PORTAL" || tab === "THEATER" || tab === "UPLOAD" || tab === "RALLIES") ? "none" : "";
   }
 
   const mwSection = document.getElementById("most-wanted-section");
@@ -3919,6 +3919,9 @@ function switchTab(tab) {
   }
   else if (tab === "BOUNTIES") {
     loadBounties();
+  }
+  else if (tab === "RALLIES") {
+    loadRalliesView();
   }
   else if (tab === "WARROOM") {
     loadWarroomView();
@@ -4234,6 +4237,118 @@ function renderHeaderAuthBadge() {
       <button class="header-signin-btn" onclick="openLoginModal()">Sign In</button>
     `;
   }
+}
+
+// ----------------- Web War Rallies Telemetry View -----------------
+
+function loadRalliesView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:20px; max-width:960px; margin:0 auto; padding:10px 0 40px 0;">
+      <!-- Header Banner -->
+      <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(245, 158, 11, 0.4); border-radius:10px; padding:20px 24px; position:relative; overflow:hidden;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+          <div>
+            <div style="font-size:12px; font-weight:700; color:#f59e0b; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Frontline Telemetry Wire</div>
+            <h2 style="font-size:24px; font-weight:800; color:#f8fafc; margin:0; display:flex; align-items:center; gap:10px;">
+              <span>📯 Realm War Rallies & Call to Arms</span>
+            </h2>
+            <div style="font-size:14px; color:#94a3b8; margin-top:6px; max-width:700px;">
+              Real-time frontline distress beacons and active squad recruitment across Azeroth. Monitor live engagements and territorial clashes across all zones.
+            </div>
+          </div>
+          <div style="background:rgba(30, 41, 59, 0.8); border:1px solid rgba(148, 163, 184, 0.2); border-radius:6px; padding:8px 14px; font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; animation:pulse 2s infinite;"></span>
+            <span>Live Realm Recon</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Information Callout -->
+      <div style="background:rgba(14, 165, 233, 0.08); border-left:4px solid #00e5ff; border-radius:6px; padding:12px 18px; font-size:13px; color:#cbd5e1; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+        <div>
+          <strong style="color:#00e5ff;">⚔️ In-Game Auto-Invite Notice:</strong>
+          <span>Rallies can be joined directly inside World of Warcraft. Whisper <code>/w CommanderName rally</code> to any active rally commander for instant automatic squad invite into the Vanguard raid.</span>
+        </div>
+        <span style="font-size:11px; color:#64748b; font-family:monospace;">Addon Feed Relay</span>
+      </div>
+
+      <!-- Live Rallies List Container -->
+      <div id="rallies-list-container" style="display:flex; flex-direction:column; gap:14px;">
+        <div style="text-align:center; padding:40px; color:#64748b;">
+          Scanning frontline frequencies for active distress beacons...
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Fetch active beacons from /api/backup/distress
+  fetch("/api/backup/distress")
+    .then(r => r.json())
+    .then(beacons => {
+      const listEl = document.getElementById("rallies-list-container");
+      if (!listEl) return;
+
+      if (!beacons || beacons.length === 0) {
+        listEl.innerHTML = `
+          <div style="background:rgba(15, 23, 42, 0.5); border:1px dashed rgba(148, 163, 184, 0.2); border-radius:10px; padding:48px 24px; text-align:center;">
+            <div style="font-size:32px; margin-bottom:12px;">🛡️</div>
+            <h3 style="font-size:18px; font-weight:700; color:#e2e8f0; margin:0 0 6px 0;">No Active Faction Rallies</h3>
+            <p style="font-size:14px; color:#94a3b8; max-width:520px; margin:0 auto;">
+              The frontier is quiet. No distress beacons or call-to-arms signals are currently broadcasting. Frontline squads will appear here in real-time when the War Horn sounds!
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = beacons.map(b => {
+        const isAlliance = (b.faction === "Alliance");
+        const factionColor = isAlliance ? "#38bdf8" : "#ef4444";
+        const factionName = isAlliance ? "Alliance" : "Horde";
+        const ago = (typeof timeAgo === "function") ? timeAgo(b.timestamp) : "Recent";
+        const coords = (b.coord_x && b.coord_y) ? `(${Number(b.coord_x).toFixed(1)}, ${Number(b.coord_y).toFixed(1)})` : "";
+        const hostiles = b.hostile_names ? `${b.hostile_count || 1} Hostile(s) (${b.hostile_names})` : `${b.hostile_count || 1} Hostile(s)`;
+
+        return `
+          <div style="background:rgba(15, 23, 42, 0.8); border:1px solid rgba(148, 163, 184, 0.15); border-left:4px solid ${factionColor}; border-radius:8px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:44px; height:44px; border-radius:8px; background:rgba(30, 41, 59, 0.8); border:1px solid rgba(148, 163, 184, 0.3); display:flex; align-items:center; justify-content:center; font-size:20px;">
+                📯
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <span style="font-size:16px; font-weight:700; color:#f8fafc;">${escapeHtml(b.character_name)}</span>
+                  <span style="font-size:12px; font-weight:600; color:#ffd100; background:rgba(255, 209, 0, 0.1); border:1px solid rgba(255, 209, 0, 0.25); border-radius:4px; padding:1px 6px;">Lvl ${b.character_level || 60} ${escapeHtml(b.character_class || "Warrior")}</span>
+                  ${b.guild_name && b.guild_name !== "None" ? `<span style="font-size:13px; color:#94a3b8;">&lt;${escapeHtml(b.guild_name)}&gt;</span>` : ""}
+                  <span style="font-size:11px; font-weight:700; color:${factionColor}; background:${factionColor}18; border:1px solid ${factionColor}40; border-radius:4px; padding:1px 6px; text-transform:uppercase;">${factionName}</span>
+                </div>
+                <div style="font-size:13px; color:#cbd5e1; margin-top:6px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                  <span>📍 <strong>${escapeHtml(b.zone || "Wilderness")}</strong> ${coords}</span>
+                  <span style="color:#64748b;">•</span>
+                  <span style="color:#ef4444;">⚔️ ${escapeHtml(hostiles)}</span>
+                </div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12px; color:#94a3b8;">Active since <strong>${ago}</strong></div>
+              <div style="font-size:12px; color:#00e5ff; margin-top:4px; font-family:monospace; background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.2); border-radius:4px; padding:3px 8px;">
+                /w ${escapeHtml(b.character_name)} rally
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    })
+    .catch(err => {
+      console.error("Error loading rallies:", err);
+      const listEl = document.getElementById("rallies-list-container");
+      if (listEl) {
+        listEl.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Failed to load live rallies telemetry.</div>`;
+      }
+    });
 }
 
 function handleHeaderSignOut() {

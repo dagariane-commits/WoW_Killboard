@@ -36,6 +36,7 @@
         <button id="nav-hazards" class="nav-btn in-development" disabled title="World Hazards — In Development">World Hazards <span class="in-dev-pill">In Dev</span></button>
         <button id="nav-armory" class="nav-btn in-development" disabled title="Player Armory — In Development">Armory <span class="in-dev-pill">In Dev</span></button>
         <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Marks</button>
+        <button id="nav-rallies" class="nav-btn" onclick="switchTab('RALLIES')">Rallies</button>
         <button id="nav-upload" class="nav-btn" onclick="switchTab('UPLOAD')">Upload</button>
         <button id="nav-warroom" class="nav-btn in-development" disabled title="War Room — In Development">War Room <span class="in-dev-pill">In Dev</span></button>
       </nav>
@@ -97,6 +98,10 @@
         </button>
         <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
           <span>Marks</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-rallies" onclick="switchTab('RALLIES'); toggleMobileDrawer(false);">
+          <span>War Rallies</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-upload" onclick="switchTab('UPLOAD'); toggleMobileDrawer(false);">

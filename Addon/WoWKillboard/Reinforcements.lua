@@ -247,6 +247,9 @@ function RF:ResolveBeacon(silent)
         if WoWKillboardDB and WoWKillboardDB.distressBeacon then
             WoWKillboardDB.distressBeacon.status = "RESOLVED"
         end
+        if WoWKillboardDistress and RF.ActiveBeacon.id and WoWKillboardDistress[RF.ActiveBeacon.id] then
+            WoWKillboardDistress[RF.ActiveBeacon.id].status = "RESOLVED"
+        end
     end
 
     RF.ActiveBeacon = nil
@@ -285,6 +288,13 @@ function RF:OnIncomingDistress(beaconData)
     local myName = UnitName("player")
     if beaconData.character_name == myName then return end
 
+    -- Persist into SavedVariables for Rallies tab display
+    WoWKillboardDistress = WoWKillboardDistress or {}
+    local bId = beaconData.id or string.format("SOS-%d-%s", beaconData.timestamp or time(), beaconData.character_name)
+    beaconData.id = bId
+    beaconData.status = "ACTIVE"
+    WoWKillboardDistress[bId] = beaconData
+
     -- Play warning siren
     PlaySound(8959)
 
@@ -308,6 +318,79 @@ function RF:OnIncomingDistress(beaconData)
             KB.UI:ShowReinforcementAlert(beaconData)
         end
     end
+end
+
+-- Fetch all open rallies for player's faction (sorted by newest)
+function RF:GetOpenRallies()
+    RF:Init()
+    local myFaction = UnitFactionGroup("player") or "Unknown"
+    local myName = UnitName("player")
+    local openRallies = {}
+    local now = time()
+
+    -- 1. Local Player's own beacon (if active)
+    if RF:IsBeaconActive() and RF.ActiveBeacon then
+        local b = RF.ActiveBeacon
+        table.insert(openRallies, {
+            id = b.id or ("SOS-" .. (b.timestamp or now)),
+            character_name = b.character_name or myName,
+            character_class = b.character_class or "WARRIOR",
+            character_level = b.character_level or 60,
+            guild_name = b.guild_name or "None",
+            faction = b.faction or myFaction,
+            zone = b.zone or "Wilderness",
+            subzone = b.subzone or "",
+            coord_x = b.coord_x or 0,
+            coord_y = b.coord_y or 0,
+            hostile_count = b.hostile_count or 1,
+            hostile_names = b.hostile_names or "Hostiles",
+            timestamp = b.timestamp or now,
+            status = "ACTIVE",
+            isSelf = true,
+        })
+    end
+
+    -- 2. Peer beacons in WoWKillboardDistress
+    if WoWKillboardDistress then
+        for bId, b in pairs(WoWKillboardDistress) do
+            if b.status == "ACTIVE" and (now - (b.timestamp or now)) < 1800 then -- 30 min window
+                if b.character_name and b.character_name ~= myName then
+                    -- Filter by same faction
+                    if not b.faction or b.faction == "Unknown" or b.faction == myFaction then
+                        table.insert(openRallies, {
+                            id = b.id or bId,
+                            character_name = b.character_name,
+                            character_class = b.character_class or "WARRIOR",
+                            character_level = b.character_level or 60,
+                            guild_name = b.guild_name or "None",
+                            faction = b.faction or myFaction,
+                            zone = b.zone or "Wilderness",
+                            subzone = b.subzone or "",
+                            coord_x = b.coord_x or 0,
+                            coord_y = b.coord_y or 0,
+                            hostile_count = b.hostile_count or 1,
+                            hostile_names = b.hostile_names or "Hostiles",
+                            timestamp = b.timestamp or now,
+                            status = "ACTIVE",
+                            isSelf = false,
+                        })
+                    end
+                end
+            end
+        end
+    end
+
+    -- Sort by newest first
+    table.sort(openRallies, function(a, b) return (a.timestamp or 0) > (b.timestamp or 0) end)
+    return openRallies
+end
+
+-- Request to join an active rally via auto-invite whisper
+function RF:RequestJoinRally(leaderName)
+    if not leaderName or leaderName == "" then return false end
+    SendChatMessage("rally", "WHISPER", nil, leaderName)
+    print(string.format("|cff00ff00[WoWKB Rally]|r Sent join request to Vanguard commander |cffffd100%s|r! Awaiting squad invite...", leaderName))
+    return true
 end
 
 -- Frame event dispatcher

@@ -49,8 +49,8 @@ The in-game addon is a modular Lua package designed to run without third-party l
 | **`BountyEngine.lua`** | Blood bounties, execution contracts, open-world gating (`IsInInstance()`), anti-win-trade, debtor sirens | `GetMoney`, `SendMail`, proximity nameplate hooks |
 | **`Leaderboard.lua`** | In-memory aggregation engine supporting `ALL`, `WORLD`, `BG`, and `DUEL` | Internal Aggregation Tables |
 | **`Sync.lua`** | Peer-to-peer gossip protocol over party, raid, and guild channels | `C_ChatInfo.SendAddonMessage`, `CHAT_MSG_ADDON` |
-| **`Reinforcements.lua`** | War Horn: Call to Arms (open-world emergency distress), open auto-invite engine (`rally`/`war`/`backup`), guild alerts | `C_PartyInfo.InviteUnit`, `InviteUnit`, `ConvertToRaid`, `SendChatMessage` |
-| **`UI.lua`** | Dual-theme dashboard (Classic Stone & Gold vs ElvUI Charcoal/Black) with 3 KPI cards, 5 tabs, 4 filter pills, and strata-isolated Detail Modal | `CreateFrame("Frame", nil, UIParent, "BackdropTemplate")` |
+| **`Reinforcements.lua`** | War Horn: Call to Arms (open-world emergency distress), Vanguard Rallies coordination, open auto-invite engine (`rally`/`war`/`backup`), guild alerts | `C_PartyInfo.InviteUnit`, `InviteUnit`, `ConvertToRaid`, `SendChatMessage` |
+| **`UI.lua`** | Dual-theme dashboard (Classic Stone & Gold vs ElvUI Charcoal/Black) with 5 tabs (`Intel`, `Hall of Legends`, `Marks of Spite`, `Rallies`, `Zone Intel`), 4 filter pills, and strata-isolated Detail Modal | `CreateFrame("Frame", nil, UIParent, "BackdropTemplate")` |
 
 #### Data Integrity & Cryptographic Hashing
 To prevent duplicate records from inflating rankings when multiple group members record the same engagement, each kill is assigned a deterministic 32-bit FNV-1a hash:
