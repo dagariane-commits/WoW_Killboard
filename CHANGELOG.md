@@ -5,6 +5,29 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.38] - 2026-09-27
+
+### Added
+- **Mark of Spite Gold / Silver / Copper Currency Overhaul (`BountyEngine.lua`, `UI.lua`)**:
+  - Overhauled Mark of Spite declaration dialogs with discrete numeric editboxes for Gold, Silver, and Copper, paired with authentic coin icon textures.
+  - Implemented standalone Target Name input and Mark Amount inputs with explicit `[Declare Mark]` and `[Cancel]` buttons.
+  - Updated `PlaceBounty` in `BountyEngine.lua` to accept exact copper calculations (`totalCopper = (gold * 10000) + (silver * 100) + copper`).
+  - Systematically renamed all references from "Blood Bounty" / "Bounty" to "Mark of Spite" / "Mark" across the addon and dialogs.
+
+### Fixed
+- **Classic Theme Title Header Plate Alignment (`UI.lua`)**:
+  - Resolved title text overflow in `UI.lua` where `ApplyTheme()` injected the 45-character `GetClientFlavorTitle()` into `UI.TitleText`, causing it to spill outside the 320px arched header plate.
+  - Set `UI.TitleText` strictly to centered `WoW Killboard` and placed client flavor and realm info cleanly in `UI.SubtitleText`.
+- **Alert Anchor Transparency & Border Removal (`UI.lua`)**:
+  - Made the alert anchor draggable banner semi-transparent (`alpha 0.60`) instead of solid black.
+  - Removed the thick yellow border (`SetBackdropBorderColor(0, 0, 0, 0)`) for a sleek, unobtrusive repositioning interface.
+- **Hall of Legends Terminology Cleansing (`UI.lua`, `web/static/app.js`)**:
+  - Removed awkward "cohorts percentile" wording in both the addon and web interface.
+  - Replaced with clean "rank efficiency", "Class Standing", and "active combatants".
+- **Website PvP Mode Filter Consolidation (`web/static/app.js`, `web/server.py`)**:
+  - Removed "All PvP" filter button from web feed and leaderboards so only `World`, `BGs`, `Duels`, and greyed-out `Arenas` are presented.
+  - Set default active combat filter strictly to `World PvP`.
+
 ## [1.4.37] - 2026-09-27
 
 ### Added

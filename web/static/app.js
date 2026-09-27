@@ -398,7 +398,7 @@ function updateFlavorUi() {
       };
     }
     if (currentMode === "ARENA") {
-      setFilterMode("ALL");
+      setFilterMode("WORLD");
     }
   } else {
     if (arenaPill) {
@@ -1335,7 +1335,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             Hall of Legends
           </h2>
           <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">
-            ${isGuilds ? 'Premier guild war standings, total kills, and combat effectiveness across Azeroth.' : 'Most lethal combatants, cohort percentile efficiency, and certified executions across Azeroth.'}
+            ${isGuilds ? 'Premier guild war standings, total kills, and combat effectiveness across Azeroth.' : 'Most lethal combatants, rank efficiency, and certified executions across Azeroth.'}
           </div>
         </div>
 
@@ -2243,7 +2243,7 @@ function buildCharacterDossierHtml(data) {
           <div style="font-size:1.4rem; font-weight:800;">${colorizeClass(data.name, data.class)}</div>
           ${data.rankTitle ? `<span class="armory-rank-pill">${data.rankTitle}</span>` : ''}
           ${data.percentile ? `
-            <span class="armory-percentile-pill" title="${data.percentile.cohortLabel} (${data.percentile.totalInCohort} combatants in cohort)">
+            <span class="armory-percentile-pill" title="${data.percentile.cohortLabel} (${data.percentile.totalInCohort} active combatants)">
               ⭐ Top ${data.percentile.topPct}% (${data.percentile.percentile}th Percentile)
             </span>
           ` : ''}
@@ -2253,7 +2253,7 @@ function buildCharacterDossierHtml(data) {
         </div>
         ${data.percentile ? `
           <div style="font-size:0.75rem; color:#cbd5e1; margin-top:4px;">
-            Cohort Standing: <strong style="color:var(--wow-gold);">${data.percentile.cohortLabel}</strong> &bull; Ranked <strong style="color:#10b981;">#${data.percentile.rank}</strong> of ${data.percentile.totalInCohort} active combatants
+            Class Standing: <strong style="color:var(--wow-gold);">${data.percentile.cohortLabel}</strong> &bull; Ranked <strong style="color:#10b981;">#${data.percentile.rank}</strong> of ${data.percentile.totalInCohort} active combatants
           </div>
         ` : ''}
         ${data.bloodDebtor ? `
@@ -2744,7 +2744,7 @@ async function fetchArmoryDataAndRender() {
 
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
               ${c.rankTitle ? `<div class="armory-rank-pill" style="margin-top:0;">${c.rankTitle}</div>` : ''}
-              ${c.percentile ? `<div class="armory-percentile-pill" title="${c.percentile.cohortLabel} (${c.percentile.totalInCohort} in cohort)">⭐ Top ${c.percentile.topPct}% (${c.percentile.percentile}th Pct)</div>` : ''}
+              ${c.percentile ? `<div class="armory-percentile-pill" title="${c.percentile.cohortLabel} (${c.percentile.totalInCohort} active combatants)">⭐ Top ${c.percentile.topPct}% (${c.percentile.percentile}th Pct)</div>` : ''}
             </div>
 
             <div class="armory-tags-row">
