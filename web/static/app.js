@@ -604,7 +604,7 @@ function colorizeClass(name, cls) {
 // Data Fetching
 async function loadKills() {
   try {
-    const res = await fetch(`/api/kills?mode=${currentMode}&search=${encodeURIComponent(searchQuery)}`);
+    const res = await fetch(`/api/kills?mode=WORLD&search=${encodeURIComponent(searchQuery)}`);
     const data = await res.json();
     cachedKills = data.kills || [];
     renderStats(cachedKills);
@@ -1174,31 +1174,27 @@ function getWowLogsPercentileBadge(pct) {
 
 function renderFeed(kills) {
   const container = document.getElementById("main-content-area");
-  if (!kills || kills.length === 0) {
+  const worldKills = (kills || []).filter(km => !km.isBattleground && !km.isArena && !km.isDuel);
+  if (worldKills.length === 0) {
     container.innerHTML = `
       <div style="text-align: center; padding: 40px; color: #64748b;">
-        <h3>No PvP records found for mode: [${currentMode}].</h3>
-        <p style="margin-top: 8px;">Engage in combat, duels, or battlegrounds to populate the feed.</p>
+        <h3>No Open World PvP records found yet.</h3>
+        <p style="margin-top: 8px;">Engage in open-world combat across Azeroth to populate the feed.</p>
       </div>
     `;
     return;
   }
 
-  const visibleKills = kills.slice(0, feedDisplayLimit);
+  const visibleKills = worldKills.slice(0, feedDisplayLimit);
 
   let html = `
     <div style="display: flex; flex-direction: column; gap: 6px;">
       <div class="feed-header-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); gap:10px; flex-wrap:wrap;">
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
-          <span class="feed-count-pill">${kills.length}</span>
+          <span class="feed-count-pill">${worldKills.length}</span>
+          <span style="font-size:0.75rem; color:#10b981; font-weight:700; background:rgba(16,185,129,0.12); padding:2px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.25);">Open World</span>
           <button class="pill-btn" onclick="loadKills(); loadSidebar();" title="Refresh Live Combat Feed" style="padding:2px 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Refresh</button>
-        </div>
-        <div class="filter-pills" id="feed-mode-pills" style="display:flex; align-items:center; gap:6px;">
-          <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
-          <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
-          <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
-          <button class="pill-btn disabled" disabled title="Arenas (Unavailable in Classic Era/Beta)" style="opacity:0.5; cursor:not-allowed;">Arenas</button>
         </div>
         <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Feed &bull; Type <code style="color:var(--wow-gold);">/reload</code> in WoW to sync</span>
       </div>
