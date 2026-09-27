@@ -5,6 +5,24 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.35] - 2026-09-27
+
+### Fixed
+- **Classic Theme Container & Button Geometry Overhaul (`Config.lua`, `UI.lua`)**:
+  - Eliminated distorted `UI-Panel-Button-Up` Blizzard button textures and `SetButtonState("PUSHED", true)` calls in favor of pure Lua `BackdropTemplate` widgets, matching the clean container geometry of the ElvUI theme that user praised.
+  - Implemented rich Classic Warcraft aesthetics: dark bronze/slate background (`{0.14, 0.10, 0.07, 0.95}`), antique gold borders (`{0.55, 0.44, 0.22, 0.95}`), glowing gold active states (`{1.0, 0.84, 0.0, 1.0}`), and drop-shadowed gold text (`#ffd100`).
+  - Widened header buttons (`ThemeButton` to 105px, `AlertsButton` to 76px) and standardized `CloseButton` to a sleek 22x22px frame, completely eliminating text squishing and clipping.
+  - Anchored `TitleText` and `SubtitleText` directly into the center of the arched `HeaderPlate` at `(0, 11)` and `(0, -5)`, eliminating overlap with the top dialog border.
+  - Switched Classic theme inset backdrop from bright yellow `QuestBG` parchment to `dark_war_bg.tga` with a warm dark wash (`alpha 0.40`), ensuring crystal-clear text readability across all rows.
+- **Website Duel Isolation & Deadliest Zones Cleansing (`server.py`, `app.js`, `index.html`)**:
+  - Excluded duels from `Deadliest Zones (24 Hours)` query, preventing friendly duel hot spots (e.g. Goldshire/Elwynn Forest) from polluting open-world conflict zones.
+  - Defaulted website feed and API to `WORLD` mode (`currentMode = "WORLD"`), removing the confusing "All PvP" filter pill and isolating duels strictly to the `[Duels]` filter tab.
+  - Added combat mode filter pills (`[World]`, `[BGs]`, `[Duels]`, `[Arenas (Disabled)]`) directly into the Recent Kills / Intel feed header.
+- **Level 60 Default Bug Resolution (`watcher.py`, `server.py`, `app.js`, `killboard.db`)**:
+  - Resolved Python falsy evaluation bug where unobserved level `0` evaluated as `0 or 60 -> 60` across `watcher.py:297` and `server.py:812`.
+  - Added safe level sanitization preserving `0` for unobserved or skull combatants, and formatted level `0` as `??` on website feed, modals, and profile lists.
+  - Sanitized historical database records in `web/killboard.db`.
+
 ## [1.4.34] - 2026-09-27
 
 ### Fixed

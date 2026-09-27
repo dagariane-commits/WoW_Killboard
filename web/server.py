@@ -684,11 +684,15 @@ def get_kills():
     if mode == "WORLD":
         query += " AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)"
     elif mode == "BG":
-        query += " AND is_battleground = 1"
+        query += " AND is_battleground = 1 AND (is_duel = 0 OR is_duel IS NULL)"
     elif mode == "ARENA":
-        query += " AND is_arena = 1"
+        query += " AND is_arena = 1 AND (is_duel = 0 OR is_duel IS NULL)"
     elif mode == "DUEL":
         query += " AND is_duel = 1"
+    elif mode == "ALL":
+        pass
+    else:
+        query += " AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)"
 
     if search:
         query += " AND (killer_name LIKE ? OR victim_name LIKE ? OR zone LIKE ? OR killer_guild LIKE ?)"
@@ -796,6 +800,19 @@ def ingest_kill_data(data, conn):
     k_spec = resolve_character_spec(k.get("class", "WARRIOR"), k.get("spec"))
     v_spec = resolve_character_spec(v.get("class", "ROGUE"), v.get("spec"))
 
+    def _parse_lvl(val):
+        if val is not None:
+            try:
+                iv = int(val)
+                if 0 <= iv <= 85:
+                    return iv
+            except (ValueError, TypeError):
+                pass
+        return 0
+
+    k_level = _parse_lvl(k.get("level"))
+    v_level = _parse_lvl(v.get("level"))
+
     conn.execute("""
         INSERT OR REPLACE INTO kills (
             kill_id, timestamp, is_duel, is_battleground, is_arena, bg_name,
@@ -809,9 +826,9 @@ def ingest_kill_data(data, conn):
     """, (
         kill_id, timestamp, is_duel, is_bg, is_arena, bg_name,
         is_solo, attackers_count, total_damage,
-        k.get("name", "Unknown"), k.get("level", 60), k.get("class", "WARRIOR"), k.get("guild", "None"), k.get("faction", "Alliance"),
+        k.get("name", "Unknown"), k_level, k.get("class", "WARRIOR"), k.get("guild", "None"), k.get("faction", "Alliance"),
         k.get("partySize", 1), k.get("damageDone", 0), k.get("healingDone", 0),
-        v.get("name", "Unknown"), v.get("level", 60), v.get("class", "ROGUE"), v.get("guild", "None"), v.get("faction", "Horde"),
+        v.get("name", "Unknown"), v_level, v.get("class", "ROGUE"), v.get("guild", "None"), v.get("faction", "Horde"),
         v.get("partySize", 1), loc.get("mapId", 0), loc.get("zone", "Unknown"), loc.get("subZone", ""),
         loc.get("x", 0.0), loc.get("y", 0.0), k_spec, v_spec, json.dumps(data)
     ))
@@ -893,7 +910,7 @@ def ingest_kill_data(data, conn):
             t_guild = feud["target_guild"]
             f_type = feud["feud_type"]
             roe_min_lvl = feud["roe_min_level"] or 0
-            v_lvl = v.get("level", 60)
+            v_lvl = v_level
             zone_name = loc.get("zone", "")
             roe_zone = feud["roe_zone"]
 
@@ -1080,7 +1097,7 @@ def upload_saved_variables():
                         pd.get("npc", {}).get("damage", 0),
                         pd.get("player", {}).get("name") or pd.get("victim", {}).get("name", "Unknown"),
                         pd.get("player", {}).get("guid") or pd.get("victim", {}).get("guid", "Player-0"),
-                        pd.get("player", {}).get("level") or pd.get("victim", {}).get("level", 60),
+                        int(pd.get("player", {}).get("level") or pd.get("victim", {}).get("level") or 0),
                         pd.get("player", {}).get("class") or pd.get("victim", {}).get("class", "WARRIOR"),
                         pd.get("player", {}).get("guild") or pd.get("victim", {}).get("guild", "None"),
                         pd.get("player", {}).get("faction") or pd.get("victim", {}).get("faction", "Alliance"),
@@ -1179,7 +1196,7 @@ def stats_endpoint():
             horde_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde'").fetchone()[0]
             active_bounties = conn.execute("SELECT COUNT(*) FROM bounties WHERE status = 'ACTIVE'").fetchone()[0]
             bounty_gold = conn.execute("SELECT COALESCE(SUM(amount_gold), 0) FROM bounties WHERE status = 'ACTIVE'").fetchone()[0]
-            top_zone_row = conn.execute("SELECT zone, COUNT(*) as cnt FROM kills WHERE zone IS NOT NULL GROUP BY zone ORDER BY cnt DESC LIMIT 1").fetchone()
+            top_zone_row = conn.execute("SELECT zone, COUNT(*) as cnt FROM kills WHERE zone IS NOT NULL AND (is_duel = 0 OR is_duel IS NULL) GROUP BY zone ORDER BY cnt DESC LIMIT 1").fetchone()
             top_zone = top_zone_row["zone"] if top_zone_row else "Hillsbrad Foothills"
 
             stats["counts"] = {
@@ -1201,16 +1218,18 @@ def stats_endpoint():
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
-    mode = request.args.get("mode", "ALL").upper()
+    mode = request.args.get("mode", "WORLD").upper()
     where = "WHERE 1=1"
     if mode == "WORLD":
         where += " AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)"
     elif mode == "BG":
-        where += " AND is_battleground = 1"
+        where += " AND is_battleground = 1 AND (is_duel = 0 OR is_duel IS NULL)"
     elif mode == "ARENA":
-        where += " AND is_arena = 1"
+        where += " AND is_arena = 1 AND (is_duel = 0 OR is_duel IS NULL)"
     elif mode == "DUEL":
         where += " AND is_duel = 1"
+    else:
+        where += " AND (is_duel = 0 OR is_duel IS NULL)"
 
     with get_db() as conn:
         # Top Killers
@@ -2208,8 +2227,8 @@ def get_activity_7d():
     now = int(time.time())
     one_day_ago = now - 86400
     with get_db() as conn:
-        # Lifetime total kills
-        total_kills = conn.execute("SELECT COUNT(*) FROM kills").fetchone()[0]
+        # Lifetime total kills (Open World & BGs, Duels isolated)
+        total_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
 
         # Lifetime active characters (includes combatants and scanner-indexed characters)
         char_count = conn.execute("""
@@ -2231,12 +2250,12 @@ def get_activity_7d():
             )
         """).fetchone()[0]
 
-        # Lifetime faction breakdown
+        # Lifetime faction breakdown (excluding duels)
         alliance_kills = conn.execute(
-            "SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance'"
+            "SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance' AND (is_duel = 0 OR is_duel IS NULL)"
         ).fetchone()[0]
         horde_kills = conn.execute(
-            "SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde'"
+            "SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde' AND (is_duel = 0 OR is_duel IS NULL)"
         ).fetchone()[0]
 
         # 1. Deadliest Zones (Last 24 Hours - Open World / Battlegrounds, Duels Excluded)
