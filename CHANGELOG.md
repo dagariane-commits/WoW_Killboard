@@ -5,6 +5,33 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.31] - 2026-09-27
+
+### Fixed
+- **Secret Number Value Lua Error (`CombatTracker.lua`)**:
+  - Eliminated `attempt to compare a secret number value (execution tainted by 'WoWKillboard')` occurring when clicking or targeting enemy combatants.
+  - Replaced arithmetic comparisons on `UnitHealth(unit) <= 0` and `UnitReaction(player, unit) <= 4` with safe boolean Blizzard APIs: `UnitIsDead(unit) or UnitIsDeadOrGhost(unit)`, `UnitIsEnemy("player", unit)`, and `UnitCanAttack("player", unit)`.
+- **Duel Combatant Level Resolution (`CombatTracker.lua`, `Killmail.lua`, `UI.lua`)**:
+  - Engineered `ResolveDuelCombatant(name, cleanName, defaultGuid)` scanning 5 cascading data sources: `UnitScanner` cache, active unit tokens (`target`, `mouseover`, `focus`, `targettarget`), 40 visible nameplates (`nameplate1..40`), party/raid tokens, and past historical database records in `WoWKillboardDB.kills`.
+  - Replaced unobserved `[0]` level fallback with standard Classic `[??]` notation across console announcements (`Killmail.lua`), feed rows, and detail dossiers (`UI.lua`).
+
+### Changed
+- **Filter Mode Refactor & "All PvP" Removal (`UI.lua`, `Config.lua`, `Leaderboard.lua`)**:
+  - Removed "All PvP" filter mode to prevent duels from contaminating general PvP telemetry.
+  - Replaced filter pills with 4 distinct modes: `World` (default), `BGs`, `Duels`, and `Arenas` (greyed out and disabled with tooltip `Arenas (Coming Soon - Season Telemetry Pending)`).
+  - Updated default filter mode in `Config.lua` and `UI.lua` to `WORLD`.
+  - Updated `LB:MatchesMode` to default to `WORLD` and explicitly filter out duels from any legacy aggregates.
+
+### Added
+- **External Web Profile Integration (`UI.lua`, `web/static/app.js`)**:
+  - Added template-free, zero-taint popup dialog `UI:ShowCharacterWebLink(charName)` featuring an auto-focused, Ctrl+C copyable EditBox pre-filled with `https://wow-killboard.onrender.com/?character=PlayerName`.
+  - Intercepted `ESCAPE` key via pure Lua `SetPropagateKeyboardInput` with zero `UISpecialFrames` pollution (Guardrail 1).
+  - Made the circular character medallion clickable with rich hover tooltip to copy the player's web profile link.
+  - Added dedicated `[Web Profile]` button in the main window header bar.
+  - Added `[Web Profile]` buttons to both Killer and Victim cards in the Killmail Intelligence Dossier modal (`UI.DetailModal`).
+  - Added URL parameter detection in `web/static/app.js` (`?character=Name`, `?char=Name`, `?player=Name`) to automatically activate `FEED` and open the character's detailed web dossier upon page load.
+  - Added a `📋 Copy Link` button in the web character dossier modal header for direct link sharing.
+
 ## [1.4.30] - 2026-09-26
 
 ### Fixed

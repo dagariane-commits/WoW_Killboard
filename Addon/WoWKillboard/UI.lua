@@ -20,7 +20,7 @@ local UI = KB.UI
 
 local mainFrame = nil
 local activeTab = "FEED"   -- "FEED", "LEADERBOARD", "BOUNTIES", "ZONES"
-local currentMode = "ALL"  -- "ALL", "WORLD", "BG", "ARENA", "DUEL"
+local currentMode = "WORLD"  -- "WORLD", "BG", "DUEL", "ARENA"
 
 local tabButtons = {}
 local filterButtons = {}
@@ -198,6 +198,10 @@ function UI:ApplyTheme()
     if UI.CallBackupButton then
         UI:ApplyButtonStyle(UI.CallBackupButton, theme)
         if theme.id == "classic" then UI.CallBackupButton:SetHeight(22) else UI.CallBackupButton:SetHeight(20) end
+    end
+    if UI.WebProfileButton then
+        UI:ApplyButtonStyle(UI.WebProfileButton, theme)
+        if theme.id == "classic" then UI.WebProfileButton:SetHeight(22) else UI.WebProfileButton:SetHeight(20) end
     end
     if UI.RegisteredButtons then
         for _, b in ipairs(UI.RegisteredButtons) do
@@ -553,6 +557,21 @@ function UI:CreateMainWindow()
         end
     end
     medallion.LevelBadge = lvlBadge
+
+    -- Clickable Character Medallion for Web Profile Link
+    medallion:EnableMouse(true)
+    medallion:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        local pName = UnitName("player") or "Player"
+        GameTooltip:AddLine(string.format("|cffffd100%s — Web Profile|r", pName), 1, 1, 1)
+        GameTooltip:AddLine("Click to copy your character's public web profile link.", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine("View detailed combat dossier, kill timeline, and charts outside the game.", 0.6, 0.8, 1.0)
+        GameTooltip:Show()
+    end)
+    medallion:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    medallion:SetScript("OnMouseDown", function()
+        UI:ShowCharacterWebLink(UnitName("player"))
+    end)
     -- Authentic Classic Dialog Arched Header Crest
     local headerPlate = mainFrame:CreateTexture(nil, "ARTWORK", nil, 1)
     headerPlate:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
@@ -708,6 +727,40 @@ function UI:CreateMainWindow()
     end)
     UI.CallBackupButton = backupBtn
 
+    -- Template-Free Character Web Profile Link Button
+    local webBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    webBtn:SetSize(90, 20)
+    webBtn:SetPoint("RIGHT", backupBtn, "LEFT", -6, 0)
+    webBtn:EnableMouse(true)
+    local webLabel = webBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    webLabel:SetPoint("CENTER", 0, 0)
+    webLabel:SetText("|cff00e5ffWeb Profile|r")
+    webBtn.Label = webLabel
+    webBtn:SetScript("OnClick", function()
+        UI:ShowCharacterWebLink(UnitName("player"))
+    end)
+    webBtn:SetScript("OnEnter", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(0.0, 0.85, 1.0, 1.0)
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine("|cff00e5ffCharacter Web Profile|r", 1, 1, 1)
+        GameTooltip:AddLine("Click to copy your character's public web profile link.", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine("View detailed combat dossier, kill timeline, and charts outside the game.", 0.6, 0.8, 1.0)
+        GameTooltip:Show()
+    end)
+    webBtn:SetScript("OnLeave", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
+        end
+        GameTooltip:Hide()
+    end)
+    UI.WebProfileButton = webBtn
+
     -- 3 KPI Stat Cards (Authentic Warcraft Attribute Plate Style - Clean Vertical Separation)
     local cardConfigs = {
         { id = "KD",    title = "SESSION COMBAT K/D",   color = "ffd100", w = 268 },
@@ -810,12 +863,12 @@ function UI:CreateMainWindow()
         prevTab = btn
     end
 
-    -- 4-Way Mode Filter Pills (Duels | BGs | World | All PvP - Arenas Removed for Vanilla/Forever)
+    -- 4-Way Mode Filter Pills (World | BGs | Duels | Arenas [Disabled / Greyed Out])
     local filterConfigs = {
-        { id = "DUEL",  text = "Duels",   w = 54, color = {1.0, 0.84, 0.0} },
-        { id = "BG",    text = "BGs",     w = 50, color = {0.3, 0.65, 1.0} },
-        { id = "WORLD", text = "World",   w = 56, color = {0.2, 0.85, 0.3} },
-        { id = "ALL",   text = "All PvP", w = 62, color = {1.0, 0.82, 0.0} },
+        { id = "ARENA", text = "Arenas", w = 58, disabled = true, color = {0.5, 0.5, 0.5}, tooltip = "Arenas (Coming Soon - Season Telemetry Pending)" },
+        { id = "DUEL",  text = "Duels",  w = 54, color = {1.0, 0.84, 0.0} },
+        { id = "BG",    text = "BGs",    w = 50, color = {0.3, 0.65, 1.0} },
+        { id = "WORLD", text = "World",  w = 58, color = {0.2, 0.85, 0.3} },
     }
 
     filterButtons = {}
@@ -827,12 +880,26 @@ function UI:CreateMainWindow()
         else
             pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
         end
-        local modeId = f.id
-        pill:SetScript("OnClick", function()
-            currentMode = modeId
-            UI:Refresh()
-        end)
         pill.BaseColor = f.color
+        if f.disabled then
+            pill.isDisabled = true
+            pill.tooltipText = f.tooltip
+            pill:EnableMouse(true)
+            pill:SetScript("OnClick", function() end)
+            pill:SetScript("OnEnter", function(self)
+                GameTooltip:SetOwner(self, "ANCHOR_TOP")
+                GameTooltip:AddLine("|cff888888" .. f.text .. "|r", 1, 1, 1)
+                GameTooltip:AddLine(f.tooltip or "Not available in this client flavor.", 0.8, 0.8, 0.8)
+                GameTooltip:Show()
+            end)
+            pill:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        else
+            local modeId = f.id
+            pill:SetScript("OnClick", function()
+                currentMode = modeId
+                UI:Refresh()
+            end)
+        end
         filterButtons[f.id] = pill
         prevPill = pill
     end
@@ -1007,7 +1074,18 @@ function UI:Refresh()
     -- Update Filter Pill Active Glow
     for fid, pill in pairs(filterButtons) do
         local c = pill.BaseColor or {1.0, 0.82, 0.0}
-        if fid == currentMode then
+        if pill.isDisabled then
+            pill.isActive = false
+            if theme.id == "classic" then
+                pill:SetButtonState("NORMAL", false)
+                pill.Label:SetTextColor(0.42, 0.40, 0.38)
+            else
+                if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
+                pill:SetBackdropColor(0.08, 0.08, 0.08, 0.6)
+                pill:SetBackdropBorderColor(0.20, 0.20, 0.20, 0.5)
+                pill.Label:SetTextColor(0.40, 0.40, 0.40)
+            end
+        elseif fid == currentMode then
             pill.isActive = true
             if theme.id == "classic" then
                 pill:SetButtonState("PUSHED", true)
@@ -1659,6 +1737,15 @@ function UI:CreateDetailModal()
     local kInfo = killerCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     kInfo:SetPoint("TOPLEFT", kName, "BOTTOMLEFT", 0, -3)
     killerCard.Info = kInfo
+
+    local kWebBtn = UI:CreateButton(killerCard, 76, 18, "Web Profile", "GameFontHighlightSmall")
+    kWebBtn:SetPoint("BOTTOMRIGHT", -6, 6)
+    kWebBtn:SetScript("OnClick", function()
+        if modal.currentKillmail and modal.currentKillmail.killer and modal.currentKillmail.killer.name then
+            UI:ShowCharacterWebLink(modal.currentKillmail.killer.name)
+        end
+    end)
+    killerCard.WebBtn = kWebBtn
     modal.KillerCard = killerCard
 
     -- Right Card: Victim Dossier
@@ -1690,6 +1777,15 @@ function UI:CreateDetailModal()
     local vInfo = victimCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     vInfo:SetPoint("TOPLEFT", vName, "BOTTOMLEFT", 0, -3)
     victimCard.Info = vInfo
+
+    local vWebBtn = UI:CreateButton(victimCard, 76, 18, "Web Profile", "GameFontHighlightSmall")
+    vWebBtn:SetPoint("BOTTOMRIGHT", -6, 6)
+    vWebBtn:SetScript("OnClick", function()
+        if modal.currentKillmail and modal.currentKillmail.victim and modal.currentKillmail.victim.name then
+            UI:ShowCharacterWebLink(modal.currentKillmail.victim.name)
+        end
+    end)
+    victimCard.WebBtn = vWebBtn
     modal.VictimCard = victimCard
 
     -- Context & GPS Info Bar
@@ -1732,22 +1828,25 @@ end
 function UI:ShowKillDetail(km)
     if not UI.DetailModal or not km then return end
     local m = UI.DetailModal
+    m.currentKillmail = km
 
     -- Update Killer Card
     local kCoords = CLASS_COORDS[(km.killer.class or ""):upper()] or {0, 0.25, 0, 0.25}
     m.KillerCard.Icon:SetTexCoord(kCoords[1], kCoords[2], kCoords[3], kCoords[4])
     m.KillerCard.Name:SetText(KB.Utils.ColorizeByClass(km.killer.name, km.killer.class))
+    local kLvlStr = (km.killer.level and km.killer.level > 0) and tostring(km.killer.level) or "??"
     local kGuildStr = (km.killer.guild and km.killer.guild ~= "None") and ("<" .. km.killer.guild .. ">") or "Guildless"
-    m.KillerCard.Info:SetText(string.format("Level %d %s\n%s\nParty Size: %d\nDamage: %s",
-        km.killer.level or 0, km.killer.class or "UNKNOWN", kGuildStr, km.killer.partySize or 1, KB.Utils.FormatNumber(km.killer.damageDone or 0)))
+    m.KillerCard.Info:SetText(string.format("Level %s %s\n%s\nParty Size: %d\nDamage: %s",
+        kLvlStr, km.killer.class or "UNKNOWN", kGuildStr, km.killer.partySize or 1, KB.Utils.FormatNumber(km.killer.damageDone or 0)))
 
     -- Update Victim Card
     local vCoords = CLASS_COORDS[(km.victim.class or ""):upper()] or {0, 0.25, 0, 0.25}
     m.VictimCard.Icon:SetTexCoord(vCoords[1], vCoords[2], vCoords[3], vCoords[4])
     m.VictimCard.Name:SetText(KB.Utils.ColorizeByClass(km.victim.name, km.victim.class))
+    local vLvlStr = (km.victim.level and km.victim.level > 0) and tostring(km.victim.level) or "??"
     local vGuildStr = (km.victim.guild and km.victim.guild ~= "None") and ("<" .. km.victim.guild .. ">") or "Guildless"
-    m.VictimCard.Info:SetText(string.format("Level %d %s\n%s\nHostile Gang: %d\nVictim Faction: %s",
-        km.victim.level or 0, km.victim.class or "UNKNOWN", vGuildStr, km.victim.partySize or 1, km.victim.faction or "Unknown"))
+    m.VictimCard.Info:SetText(string.format("Level %s %s\n%s\nHostile Gang: %d\nVictim Faction: %s",
+        vLvlStr, km.victim.class or "UNKNOWN", vGuildStr, km.victim.partySize or 1, km.victim.faction or "Unknown"))
 
     -- Engagement and GPS Info
     local modeStr
@@ -1771,6 +1870,118 @@ function UI:ShowKillDetail(km)
     UI:ApplyTheme()
     m:Show()
     if m.Raise then m:Raise() end
+end
+
+-- Template-Free External Web Profile Link Dialog (Anonymous, 100% Zero Blizzard Taint)
+function UI:ShowCharacterWebLink(charName)
+    if InCombatLockdown and InCombatLockdown() then
+        print("|cffff9900[WoWKB]|r Cannot open web profile link dialog during combat.")
+        return
+    end
+
+    charName = charName or UnitName("player") or "Player"
+    local rawUrl = string.format("https://wow-killboard.onrender.com/?character=%s", charName)
+
+    if not UI.WebLinkDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(480, 160)
+        dlg:SetPoint("CENTER")
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(UIParent:GetFrameLevel() + 60)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+
+        -- Theme-aware backdrop
+        local theme = UI:GetTheme()
+        if theme.id == "classic" then
+            dlg:SetBackdrop({
+                bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+                edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+                tile = true, tileSize = 32, edgeSize = 24,
+                insets = { left = 6, right = 6, top = 6, bottom = 6 }
+            })
+            dlg:SetBackdropColor(1.0, 1.0, 1.0, 1.0)
+            dlg:SetBackdropBorderColor(1.0, 1.0, 1.0, 1.0)
+        else
+            dlg:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+            })
+            dlg:SetBackdropColor(0.06, 0.07, 0.10, 0.98)
+            dlg:SetBackdropBorderColor(0.0, 0.85, 1.0, 0.8)
+        end
+
+        local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", 0, -18)
+        title:SetText("|cff00e5ffExternal Web Profile Link|r")
+        dlg.Title = title
+
+        local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        desc:SetPoint("TOP", 0, -44)
+        desc:SetText("Press |cffffd100Ctrl+C|r to copy your public dossier URL to view or share online:")
+        dlg.Desc = desc
+
+        -- EditBox container plate
+        local ebPlate = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        ebPlate:SetSize(430, 30)
+        ebPlate:SetPoint("TOP", 0, -68)
+        ebPlate:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebPlate:SetBackdropColor(0.02, 0.03, 0.05, 0.95)
+        ebPlate:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.9)
+
+        local eb = CreateFrame("EditBox", nil, ebPlate)
+        eb:SetPoint("LEFT", ebPlate, "LEFT", 10, 0)
+        eb:SetPoint("RIGHT", ebPlate, "RIGHT", -10, 0)
+        eb:SetHeight(24)
+        eb:SetAutoFocus(false)
+        eb:SetFontObject("GameFontHighlight")
+        eb:SetScript("OnEscapePressed", function() dlg:Hide() end)
+        eb:SetScript("OnEnterPressed", function() dlg:Hide() end)
+        eb:SetScript("OnEditFocusLost", function(self) self:HighlightText(0, 0) end)
+        eb:SetScript("OnChar", function(self)
+            if dlg.currentUrl then
+                self:SetText(dlg.currentUrl)
+                self:HighlightText()
+            end
+        end)
+        dlg.EditBox = eb
+
+        -- Bottom Done Button
+        local doneBtn = UI:CreateButton(dlg, 90, 24, "Done")
+        doneBtn:SetPoint("BOTTOM", 0, 16)
+        doneBtn:SetScript("OnClick", function()
+            dlg:Hide()
+        end)
+        dlg.DoneBtn = doneBtn
+
+        -- Safe ESC key listener without UISpecialFrames (Zero Taint Standard)
+        dlg:EnableKeyboard(true)
+        dlg:SetPropagateKeyboardInput(true)
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                self:SetPropagateKeyboardInput(false)
+                self:Hide()
+            else
+                self:SetPropagateKeyboardInput(true)
+            end
+        end)
+
+        UI.WebLinkDialog = dlg
+    end
+
+    local dlg = UI.WebLinkDialog
+    dlg.currentUrl = rawUrl
+    dlg.Title:SetText(string.format("|cff00e5ffWeb Profile — %s|r", charName))
+    dlg.EditBox:SetText(rawUrl)
+    dlg:Show()
+    dlg.EditBox:SetFocus()
+    dlg.EditBox:HighlightText()
+    if dlg.Raise then dlg:Raise() end
 end
 
 -- Isolated, Taint-Free Bounty Dialog Frame (Anonymous, 100% Template-Free)

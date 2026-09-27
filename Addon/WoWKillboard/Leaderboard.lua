@@ -19,10 +19,8 @@ LB.Aggregates = {
 
 -- Check if a kill matches the requested filter mode
 function LB:MatchesMode(km, mode)
-    mode = mode or "ALL"
-    if mode == "ALL" then
-        return true
-    elseif mode == "WORLD" then
+    mode = mode or "WORLD"
+    if mode == "WORLD" then
         return (not km.isBattleground and not km.isArena and not km.isDuel)
     elseif mode == "BG" then
         return (km.isBattleground == true)
@@ -30,8 +28,10 @@ function LB:MatchesMode(km, mode)
         return (km.isArena == true)
     elseif mode == "DUEL" then
         return (km.isDuel == true)
+    elseif mode == "ALL" then
+        return (not km.isDuel)
     end
-    return true
+    return (not km.isDuel)
 end
 
 -- Rebuild all aggregate statistics from WoWKillboardDB
@@ -47,7 +47,9 @@ function LB:Rebuild()
     if not WoWKillboardDB or not WoWKillboardDB.kills then return end
 
     for _, km in pairs(WoWKillboardDB.kills) do
-        LB:IndexKillmail(km, "ALL")
+        if not km.isDuel then
+            LB:IndexKillmail(km, "ALL")
+        end
         if km.isDuel then
             LB:IndexKillmail(km, "DUEL")
         elseif km.isArena then
