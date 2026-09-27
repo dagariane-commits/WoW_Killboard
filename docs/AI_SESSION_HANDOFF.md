@@ -96,8 +96,9 @@ This automatically installs Python 3, venv, Caddy web server, registers `wowkill
 
 ### F. Character Claiming & Ownership Protection (`web/server.py`, `web/static/app.js`)
 - Protects characters from being claimed by unauthorized users.
-- Tier 1: Official Battle.net OAuth 2.0 (`/api/auth/bnet`) verifying owned character GUIDs.
-- Tier 2: In-game secret token challenge (`/kb claim <code>`) where only the active in-game character can execute the command.
+- In-game secret token challenge (`/kb claim <code>`) where only the active in-game character can execute the command, with automated verification via `WoWKillboardSync.exe`.
+- In-game character web profile links (`http://13.216.102.148/?character=Name`) automatically authenticate the active player session seamlessly.
+- Single-owner locking rejects unauthorized claims with HTTP 403 Forbidden.
 
 ---
 

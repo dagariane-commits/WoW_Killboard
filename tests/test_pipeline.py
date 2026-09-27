@@ -1083,6 +1083,91 @@ class TestKillboardPipeline(unittest.TestCase):
 
         print("[PASS] Verified Web Drag-and-Drop /api/upload ingestion and /api/admin/reset lifecycle.")
 
+    def test_15_character_ownership_and_rally_muster(self):
+        """Verify cryptographic character ownership locking, in-game verification, and rich War Rally muster."""
+        owner_tok_1 = "tok_user_quick_alpha"
+        owner_tok_2 = "tok_impersonator_beta"
+
+        # 1. Owner 1 claims Dagariane
+        res_claim = self.client.post("/api/auth/claim-character", json={
+            "name": "Dagariane",
+            "realm": "WoW Forever",
+            "class": "PALADIN",
+            "level": 60,
+            "faction": "Alliance",
+            "owner_token": owner_tok_1
+        })
+        self.assertEqual(res_claim.status_code, 200)
+        claim_data = res_claim.get_json()
+        self.assertTrue(claim_data["success"])
+        self.assertEqual(claim_data["owner_token"], owner_tok_1)
+        claim_code = claim_data["claim_code"]
+        self.assertTrue(claim_code.startswith("KB-"))
+
+        # 2. Impersonator attempts to claim or select Dagariane -> 403 Forbidden
+        res_impersonate = self.client.post("/api/auth/claim-character", json={
+            "name": "Dagariane",
+            "owner_token": owner_tok_2
+        })
+        self.assertEqual(res_impersonate.status_code, 403)
+        self.assertIn("already claimed", res_impersonate.get_json()["error"])
+
+        # 3. Verify in-game claim token via /api/auth/verify-claim
+        res_verify = self.client.post("/api/auth/verify-claim", json={
+            "name": "Dagariane",
+            "code": claim_code
+        })
+        self.assertEqual(res_verify.status_code, 200)
+        self.assertTrue(res_verify.get_json()["success"])
+
+        # 4. Verify /api/characters reflects ownership lock correctly for both users
+        res_chars_owner = self.client.get("/api/characters?search=Dagariane", headers={"X-Owner-Token": owner_tok_1})
+        self.assertEqual(res_chars_owner.status_code, 200)
+        owner_char = res_chars_owner.get_json()[0]
+        self.assertTrue(owner_char["is_claimed"])
+        self.assertTrue(owner_char["is_owner"])
+        self.assertTrue(owner_char["is_verified"])
+
+        res_chars_impersonator = self.client.get("/api/characters?search=Dagariane", headers={"X-Owner-Token": owner_tok_2})
+        self.assertEqual(res_chars_impersonator.status_code, 200)
+        other_char = res_chars_impersonator.get_json()[0]
+        self.assertTrue(other_char["is_claimed"])
+        self.assertFalse(other_char["is_owner"])
+
+        # 5. Test Rich War Rally Muster (Group Size, Content Type, Location, Levels, Roles, Message)
+        res_rally = self.client.post("/api/backup/distress", json={
+            "character_name": "Dagariane",
+            "character_class": "PALADIN",
+            "character_level": 60,
+            "guild_name": "Vanguard",
+            "faction": "Alliance",
+            "group_type": "RAID",
+            "content_type": "BG",
+            "zone": "Warsong Gulch",
+            "min_level": 50,
+            "max_level": 60,
+            "roles": {"tank": True, "heal": True, "dps": False},
+            "message": "Assault the Silverwing Hold! Need 2 healers and 1 flag carrier tank."
+        })
+        self.assertEqual(res_rally.status_code, 201)
+
+        # 6. Verify Rally Telemetry Wire Query
+        res_rallies = self.client.get("/api/backup/distress")
+        self.assertEqual(res_rallies.status_code, 200)
+        rallies = res_rallies.get_json()
+        target_rally = next((r for r in rallies if r["character_name"] == "Dagariane"), None)
+        self.assertIsNotNone(target_rally)
+        self.assertEqual(target_rally["group_type"], "RAID")
+        self.assertEqual(target_rally["content_type"], "BG")
+        self.assertEqual(target_rally["zone"], "Warsong Gulch")
+        self.assertEqual(target_rally["min_level"], 50)
+        self.assertEqual(target_rally["max_level"], 60)
+        self.assertIn("TANK", target_rally["roles"])
+        self.assertIn("HEAL", target_rally["roles"])
+        self.assertIn("Silverwing Hold", target_rally["message"])
+
+        print("[PASS] Verified Character Claim Ownership Lock, In-Game Verification, and Rich Rally Muster.")
+
 if __name__ == "__main__":
     unittest.main()
 

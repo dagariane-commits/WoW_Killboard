@@ -168,6 +168,7 @@ class KillboardWatcher:
         self.known_kills = set()
         self.known_pve_deaths = set()
         self.known_events = set()
+        self.known_claims = set()
         self.last_distress_time = 0
         self.warned_missing = False
 
@@ -243,10 +244,17 @@ class KillboardWatcher:
         if not events and isinstance(parsed.get("WoWKillboardDB"), dict):
             events = parsed.get("WoWKillboardDB", {}).get("guildEvents", {})
 
-        for evt_id, evt_data in events.items():
-            if evt_id not in self.known_events and isinstance(evt_data, dict):
-                if self.upload_event(evt_data):
-                    self.known_events.add(evt_id)
+        # Ingest character claim verification tokens
+        claim_tokens = parsed.get("WoWKillboardDB", {}).get("claimTokens", {}) if isinstance(parsed.get("WoWKillboardDB"), dict) else {}
+        if not claim_tokens and isinstance(parsed.get("claimTokens"), dict):
+            claim_tokens = parsed.get("claimTokens")
+        for char_name, c_data in claim_tokens.items():
+            if isinstance(c_data, dict):
+                code = c_data.get("code")
+                claim_key = f"{char_name}:{code}"
+                if code and claim_key not in self.known_claims:
+                    if self.upload_claim_token(char_name, code):
+                        self.known_claims.add(claim_key)
 
         print(f"[Watcher] Synced {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debt records.")
         return new_count
@@ -449,6 +457,29 @@ class KillboardWatcher:
                         any_success = True
             except Exception as e:
                 print(f"[Watcher] Event upload notice for {endpoint}: {e}")
+        return any_success
+
+    def upload_claim_token(self, character_name: str, code: str) -> bool:
+        payload = {
+            "name": character_name,
+            "code": code
+        }
+        any_success = False
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/auth/verify-claim"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    if resp.status in (200, 201):
+                        print(f"[Watcher] [CLAIM] Verified ownership for '{character_name}' on {endpoint} via in-game token {code}!")
+                        any_success = True
+            except Exception as e:
+                pass
         return any_success
 
     def run_daemon(self, poll_interval: float = 3.0):

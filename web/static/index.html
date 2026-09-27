@@ -631,7 +631,7 @@
     </div>
   </div>
 
-  <!-- Champion Recognition & Battle.net Account Linking Modal -->
+  <!-- Champion Recognition & Operative Identity Claim Modal -->
   <div id="character-link-modal" class="modal-overlay" onclick="handleCharacterModalBackdrop(event)">
     <div class="modal-card modal-card-lg" style="max-width: 780px;">
       <div class="modal-header">
@@ -640,7 +640,7 @@
             Azeroth Identity &amp; Clearance
           </div>
           <h3 style="margin:2px 0 0 0; color:#fff; font-family:var(--font-tactical); font-size:1.35rem; display:flex; align-items:center; gap:8px;">
-            <span>⚔️ Select Combatant or Link Battle.net</span>
+            <span>⚔️ Select &amp; Claim Operative Identity</span>
           </h3>
         </div>
         <button class="modal-close" onclick="closeCharacterLinkModal()">&times;</button>
@@ -649,13 +649,10 @@
       <!-- Tab Buttons -->
       <div class="char-modal-tabs" style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px;">
         <button id="char-tab-btn-known" class="pill-btn active" onclick="switchCharModalTab('known')">
-          📋 Active Combatants (<span id="char-known-count">0</span>)
-        </button>
-        <button id="char-tab-btn-bnet" class="pill-btn" onclick="switchCharModalTab('bnet')">
-          ⚡ Battle.net Account
+          📋 Realm Combatants (<span id="char-known-count">0</span>)
         </button>
         <button id="char-tab-btn-custom" class="pill-btn" onclick="switchCharModalTab('custom')">
-          ✏️ Custom / Claim Call
+          ✏️ Register New Callsign
         </button>
       </div>
 
@@ -674,36 +671,7 @@
         </div>
       </div>
 
-      <!-- Tab 2: Battle.net OAuth -->
-      <div id="char-panel-bnet" class="char-modal-panel" style="display:none;">
-        <div style="background:rgba(0, 168, 255, 0.08); border:1px solid rgba(0, 168, 255, 0.25); border-radius:6px; padding:18px; display:flex; flex-direction:column; gap:12px;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div style="background:rgba(0, 168, 255, 0.2); border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:center;">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            </div>
-            <div>
-              <h4 style="margin:0; color:#fff; font-size:1.1rem; font-family:var(--font-tactical);">Official Blizzard Battle.net OAuth</h4>
-              <p style="margin:2px 0 0 0; color:#94a3b8; font-size:0.8rem;">
-                Connect directly with your Battle.net account to import verified characters, guilds, and realms automatically.
-              </p>
-            </div>
-          </div>
-          <p style="color:#cbd5e1; font-size:0.82rem; line-height:1.5; margin:0;">
-            Requires <code>BLIZZARD_CLIENT_ID</code> and <code>BLIZZARD_CLIENT_SECRET</code> configured on your server. If running in local/standalone mode, you can immediately claim any character in the <strong>Active Combatants</strong> tab with a single click!
-          </p>
-          <div style="display:flex; gap:10px; margin-top:6px;">
-            <a href="/api/auth/bnet" class="normal-auth-submit-btn" style="text-decoration:none; text-align:center; background:linear-gradient(135deg, #0070ba 0%, #004d80 100%);">
-              <span>Connect with Battle.net</span>
-              <span>&rarr;</span>
-            </a>
-            <button type="button" class="normal-auth-submit-btn" style="background:#1e293b; color:#cbd5e1; border:1px solid #334155;" onclick="switchCharModalTab('known')">
-              <span>Pick From Active Characters Instead</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 3: Custom Claim -->
+      <!-- Tab 2: Custom Claim -->
       <div id="char-panel-custom" class="char-modal-panel" style="display:none;">
         <form onsubmit="handleCustomCharacterClaim(event)" style="display:flex; flex-direction:column; gap:12px;">
           <div class="auth-input-group">
@@ -754,6 +722,172 @@
           </button>
         </form>
       </div>
+    </div>
+  </div>
+
+  <!-- Character In-Game Ownership Claim Verification Modal -->
+  <div id="claim-code-modal" class="modal-overlay" style="display:none;" onclick="if(event.target.id==='claim-code-modal') closeClaimCodeModal()">
+    <div class="modal-card" style="max-width: 520px; border:1px solid rgba(0, 229, 255, 0.4); background:rgba(15, 23, 42, 0.96); box-shadow:0 12px 40px rgba(0,0,0,0.8);">
+      <div class="modal-header">
+        <div>
+          <div style="font-size:0.75rem; font-weight:800; color:var(--accent-cyan); letter-spacing:1px; text-transform:uppercase;">
+            Cryptographic Ownership Lock
+          </div>
+          <h3 style="margin:2px 0 0 0; color:#fff; font-family:var(--font-tactical); font-size:1.25rem;">
+            🛡️ Character Claim Registered
+          </h3>
+        </div>
+        <button class="modal-close" onclick="closeClaimCodeModal()">&times;</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px; padding:12px 0;">
+        <p style="margin:0; font-size:0.9rem; color:#cbd5e1; line-height:1.5;">
+          Operative callsign <strong id="claim-modal-char-name" style="color:var(--accent-cyan);"></strong> is now claimed and bound to your browser session.
+        </p>
+        <div style="background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.3); border-radius:8px; padding:14px; text-align:center;">
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#94a3b8; margin-bottom:4px;">In-Game Claim Verification Code</div>
+          <div id="claim-modal-code" style="font-size:1.8rem; font-weight:800; color:#ffd100; letter-spacing:3px; font-family:monospace;">KB-XXXX</div>
+          <div style="font-size:0.8rem; color:#94a3b8; margin-top:6px;">Type this command inside World of Warcraft:</div>
+          <div id="claim-modal-command" style="font-size:0.95rem; font-weight:700; color:#00e5ff; font-family:monospace; background:rgba(0,0,0,0.4); padding:6px 12px; border-radius:4px; margin-top:6px; user-select:all; display:inline-block;">/kb claim KB-XXXX</div>
+        </div>
+        <ol style="margin:0; padding-left:20px; font-size:0.82rem; color:#94a3b8; line-height:1.6;">
+          <li>Log into World of Warcraft on your character.</li>
+          <li>Enter the <code>/kb claim</code> command shown above into chat.</li>
+          <li>Run <code>WoWKillboardSync.exe</code> or reload UI to lock ownership permanently.</li>
+        </ol>
+        <button type="button" class="normal-auth-submit-btn" style="margin-top:6px;" onclick="closeClaimCodeModal()">
+          <span>Understood &amp; Continue</span>
+          <span>&rarr;</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Faction Vanguard War Rally / Call to Arms Muster Modal -->
+  <div id="rally-muster-modal" class="modal-overlay" style="display:none;" onclick="if(event.target.id==='rally-muster-modal') closeRallyMusterModal()">
+    <div class="modal-card modal-card-lg" style="max-width: 640px; border:1px solid rgba(245, 158, 11, 0.4); background:rgba(15, 23, 42, 0.96);">
+      <div class="modal-header">
+        <div>
+          <div style="font-size:0.75rem; font-weight:800; color:#f59e0b; letter-spacing:1px; text-transform:uppercase;">
+            Frontline Vanguard Muster
+          </div>
+          <h3 style="margin:2px 0 0 0; color:#fff; font-family:var(--font-tactical); font-size:1.35rem; display:flex; align-items:center; gap:8px;">
+            <span>📯 Muster Vanguard War Rally &amp; Call to Arms</span>
+          </h3>
+        </div>
+        <button class="modal-close" onclick="closeRallyMusterModal()">&times;</button>
+      </div>
+
+      <form onsubmit="handleCreateRallySubmit(event)" style="display:flex; flex-direction:column; gap:16px; padding-top:8px;">
+        <!-- 1. Squad Capacity / Group Size -->
+        <div>
+          <label class="auth-label" style="margin-bottom:6px;">1. Squad Capacity / Group Size</label>
+          <div style="display:flex; gap:10px;">
+            <button type="button" id="rally-grp-party" class="pill-btn active" style="flex:1; padding:8px 12px; font-weight:700;" onclick="selectRallyGroupType('PARTY')">
+              👥 5-Man Squad (Party)
+            </button>
+            <button type="button" id="rally-grp-raid" class="pill-btn" style="flex:1; padding:8px 12px; font-weight:700;" onclick="selectRallyGroupType('RAID')">
+              ⚔️ 40-Man Strike Team (Raid)
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Content / Theatre -->
+        <div>
+          <label class="auth-label" style="margin-bottom:6px;">2. Combat Theatre / Content Type</label>
+          <div style="display:flex; gap:10px;">
+            <button type="button" id="rally-cnt-world" class="pill-btn active" style="flex:1; padding:8px 12px; font-weight:700;" onclick="selectRallyContentType('WORLD')">
+              🌲 Open World PvP
+            </button>
+            <button type="button" id="rally-cnt-bg" class="pill-btn" style="flex:1; padding:8px 12px; font-weight:700;" onclick="selectRallyContentType('BG')">
+              🚩 Battleground Operation
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Target Location / Zone / BG Specific -->
+        <div>
+          <label class="auth-label" for="rally-input-zone" style="margin-bottom:6px;">3. Target Location / Zone / Specific BG</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <select id="rally-select-preset-zone" class="normal-auth-input" style="height:38px;" onchange="handleRallyPresetZoneChange(this.value)">
+              <option value="">-- Choose Common Frontline --</option>
+              <optgroup label="Open World PvP Hotspots">
+                <option value="Stranglethorn Vale">Stranglethorn Vale (Gurubashi Arena)</option>
+                <option value="Hillsbrad Foothills">Hillsbrad Foothills (Southshore / Tarren Mill)</option>
+                <option value="Blackrock Mountain">Blackrock Mountain</option>
+                <option value="Ashenvale">Ashenvale</option>
+                <option value="Silithus">Silithus</option>
+                <option value="Redridge Mountains">Redridge Mountains</option>
+                <option value="Duskwood">Duskwood</option>
+                <option value="Winterspring">Winterspring</option>
+                <option value="Tanaris">Tanaris (Gadgetzan)</option>
+              </optgroup>
+              <optgroup label="Battlegrounds">
+                <option value="Warsong Gulch">Warsong Gulch (10v10 CTF)</option>
+                <option value="Arathi Basin">Arathi Basin (15v15 Domination)</option>
+                <option value="Alterac Valley">Alterac Valley (40v40 War)</option>
+                <option value="Eye of the Storm">Eye of the Storm</option>
+              </optgroup>
+            </select>
+            <input type="text" id="rally-input-zone" class="normal-auth-input" placeholder="Or enter specific zone/area..." value="Stranglethorn Vale" required>
+          </div>
+        </div>
+
+        <!-- 4. Preferred Level Range -->
+        <div>
+          <label class="auth-label" style="margin-bottom:6px;">4. Preferred Level Bracket</label>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:0.8rem; color:#94a3b8;">Min Lvl:</span>
+              <input type="number" id="rally-input-min-level" class="normal-auth-input" style="width:70px; text-align:center;" min="1" max="85" value="1">
+            </div>
+            <span style="color:#64748b;">to</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:0.8rem; color:#94a3b8;">Max Lvl:</span>
+              <input type="number" id="rally-input-max-level" class="normal-auth-input" style="width:70px; text-align:center;" min="1" max="85" value="60">
+            </div>
+            <!-- Quick Level Presets -->
+            <div style="display:flex; gap:6px; margin-left:auto;">
+              <button type="button" class="pill-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="setRallyLevelPreset(1, 60)">All (1-60)</button>
+              <button type="button" class="pill-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="setRallyLevelPreset(10, 19)">Twink 19</button>
+              <button type="button" class="pill-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="setRallyLevelPreset(20, 29)">Twink 29</button>
+              <button type="button" class="pill-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="setRallyLevelPreset(50, 60)">Endgame (50-60)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Requested Combat Roles / Specs -->
+        <div>
+          <label class="auth-label" style="margin-bottom:6px;">5. Requested Combat Roles</label>
+          <div style="display:flex; gap:10px;">
+            <button type="button" id="rally-role-tank" class="pill-btn active" style="flex:1; padding:6px 12px; font-weight:700;" onclick="toggleRallyRole('tank')">
+              🛡️ Tanks Needed
+            </button>
+            <button type="button" id="rally-role-heal" class="pill-btn active" style="flex:1; padding:6px 12px; font-weight:700;" onclick="toggleRallyRole('heal')">
+              💚 Healers Needed
+            </button>
+            <button type="button" id="rally-role-dps" class="pill-btn active" style="flex:1; padding:6px 12px; font-weight:700;" onclick="toggleRallyRole('dps')">
+              ⚔️ DPS Needed
+            </button>
+          </div>
+        </div>
+
+        <!-- 6. Message / Battle Cry -->
+        <div>
+          <label class="auth-label" for="rally-input-msg" style="margin-bottom:6px;">6. Battle Cry / Mission Directive</label>
+          <input type="text" id="rally-input-msg" class="normal-auth-input" placeholder="e.g. Assembling frontline squad for STV hunting & defense! Auto-invite active." value="Muster Vanguard Strike Team!">
+        </div>
+
+        <!-- Submit & Cancel -->
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button type="submit" class="normal-auth-submit-btn" style="flex:2; background:linear-gradient(135deg, #d97706 0%, #b45309 100%); font-weight:800;">
+            <span>📯 Broadcast Call to Arms</span>
+            <span>&rarr;</span>
+          </button>
+          <button type="button" class="normal-auth-submit-btn" style="flex:1; background:#1e293b; color:#cbd5e1; border:1px solid #334155;" onclick="closeRallyMusterModal()">
+            <span>Cancel</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
