@@ -5,6 +5,32 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.42] - 2026-09-27
+
+### Added
+- **Tactical Combat Wire Pop-Out Window (`UI.lua`, `Core.lua`, `Config.lua`)**:
+  - **Zero Chat Spam Pop-Out Feed**: Added a dedicated, moveable, draggable floating Combat Wire window (`WoWKillboardCombatWire`) built from pure Lua with `"BackdropTemplate"`. All live combat events, gang gank warnings, and solo killmails stream directly to the Combat Wire window, keeping the player's General chat frame 100% clean.
+  - **Scrollable Live Stream**: Integrated native `ScrollingMessageFrame` with mousewheel scrolling support (`OnMouseWheel`), allowing players to review up to 100 recent combat engagements with timestamped entries (`[HH:MM:SS]`).
+  - **Quick Controls & Position Persistence**: Includes `[Clear]` button, `[X]` close button, and automatic position saving to `WoWKillboardSettings.combatWirePos`.
+  - **Header Toggle Button**: Added template-free `[Wire]` button in the main War Room dashboard header next to `[Export]`.
+  - **Slash Command Integration**: Added `/kb wire` and `/kb feed` commands to toggle Combat Wire visibility instantly.
+  - **Section 6 in Alerts Configuration (`/kb alerts`)**: Added `6. COMBAT FEED DESTINATION` segmented controls: `[Pop-Out Wire (Default)]`, `[Main Chat Frame]`, and `[Muted / Off]`.
+  - **Strict Combat Lockdown Click-Through**: In accordance with Guardrail 1, `UI.CombatWireHUD` automatically sets `EnableMouse(false)` during `PLAYER_REGEN_DISABLED` to ensure 100% click-through targeting during combat with zero Blizzard UI taint.
+
+- **War Council Rally Muster Dialog (`UI.lua`, `Reinforcements.lua`)**:
+  - **Interactive Squad Creation Panel**: Sounding the War Horn now opens `UI:ShowRallyDialog()`, a pure Lua modal dialog allowing commanders to configure comprehensive squad parameters:
+    1. **Group Size**: Segmented `[ 5-Man Squad (Party) ]` vs `[ 40-Man Strike Team (Raid) ]` with automatic raid conversion.
+    2. **Theatre / Content Type**: Segmented `[ Open World PvP ]` vs `[ Battleground ]`.
+    3. **Target Location**: Pre-filled with current zone (`GetZoneText()`) or custom battleground selector.
+    4. **Level Bracket**: Numeric Min and Max level inputs with smart twink bracket defaults.
+    5. **Role / Spec Requests**: Toggleable combat role chips (`[ 🛡️ Tank ]`, `[ 💚 Healer ]`, `[ ⚔️ DPS ]`).
+    6. **Battle Cry / Mission Directive**: Custom battle cry message dispatched to guild and P2P addon network.
+  - **Two-Line Rich Rally Cards**: Redesigned the open rallies list with 46px tactical cards displaying group type badges (`[5-PARTY]` / `[40-RAID]`), content badges (`[WORLD]` / `[BG]`), commander name colorized by class, guild tags, zone coordinates, level brackets, requested roles, commander battle cry, and age telemetry.
+
+### Fixed
+- **Web Profile URL Parity (`UI.lua:2630`)**: Repointed character web dossier links from legacy Render URL to the active AWS Lightsail production platform (`http://13.216.102.148/?character=%s`).
+- **Sync Desktop Client Binary Rebuild (`WoWKillboardSync.exe`)**: Recompiled the standalone zero-Python executable via PyInstaller to include server-verified solo purity logic and multi-drive discovery.
+
 ## [1.4.41] - 2026-09-27
 
 ### Fixed

@@ -278,6 +278,93 @@ function RF:ResolveBeacon(silent)
     end
 end
 
+-- Create a custom Vanguard War Council Rally with rich metadata
+function RF:CreateCustomRally(params)
+    params = params or {}
+    local now = time()
+    local myName = UnitName("player") or "Player"
+    local _, myClass = UnitClass("player")
+    myClass = myClass or "WARRIOR"
+    local myLevel = UnitLevel("player") or 60
+    local myGuild = GetGuildInfo("player") or "None"
+    local myFaction = UnitFactionGroup("player") or "Alliance"
+
+    local groupType = params.groupType or "PARTY" -- "PARTY" (5-Man) or "RAID" (40-Man)
+    local contentType = params.contentType or "WORLD" -- "WORLD" (Open World PvP) or "BG" (Battleground)
+    local zone = params.zone or GetZoneText() or "Azeroth"
+    local subzone = params.subzone or GetSubZoneText() or ""
+    local minLevel = tonumber(params.minLevel) or 1
+    local maxLevel = tonumber(params.maxLevel) or 60
+    local roles = params.roles or { tank = true, heal = true, dps = true }
+    local message = params.message or "Muster Vanguard Strike Team!"
+
+    local loc = KB.Utils and KB.Utils.GetPlayerLocation and KB.Utils.GetPlayerLocation()
+    local coordX = (loc and loc.x) or 0
+    local coordY = (loc and loc.y) or 0
+
+    local rallyId = string.format("RALLY-%d-%s", now, myName)
+    local rally = {
+        id = rallyId,
+        character_name = myName,
+        character_class = myClass,
+        character_level = myLevel,
+        guild_name = myGuild,
+        faction = myFaction,
+        group_type = groupType,
+        content_type = contentType,
+        zone = zone,
+        subzone = subzone,
+        coord_x = coordX,
+        coord_y = coordY,
+        min_level = minLevel,
+        max_level = maxLevel,
+        roles = roles,
+        message = message,
+        hostile_count = 1,
+        hostile_names = (contentType == "BG") and "Enemy Vanguard" or "Hostile Combatants",
+        timestamp = now,
+        status = "ACTIVE",
+    }
+
+    RF.ActiveBeacon = rally
+    RF.AutoInviteActive = true
+    RF.AutoInviteExpiry = now + 900 -- 15 minutes active rally window
+    if groupType == "RAID" then
+        EnsureRaidConversion()
+    end
+
+    WoWKillboardDB = WoWKillboardDB or {}
+    WoWKillboardDB.distressBeacon = rally
+    WoWKillboardDB.rallies = WoWKillboardDB.rallies or {}
+    WoWKillboardDB.rallies[rallyId] = rally
+
+    PlaySound(8959)
+
+    -- Broadcast via P2P Addon Network
+    if KB.Sync and KB.Sync.BroadcastDistress then
+        KB.Sync:BroadcastDistress(rally)
+    end
+
+    local roleList = {}
+    if roles.tank then table.insert(roleList, "Tank") end
+    if roles.heal then table.insert(roleList, "Healer") end
+    if roles.dps then table.insert(roleList, "DPS") end
+    local roleStr = #roleList > 0 and table.concat(roleList, "/") or "Any"
+
+    local typeStr = (groupType == "RAID") and "40-Man Raid" or "5-Man Squad"
+    local contentStr = (contentType == "BG") and "Battleground" or "Open World"
+
+    SafePrint(string.format("|cff00ff00[WoWKB Rally]|r Mustered |cffffd100%s|r (%s) in |cffffffff%s|r! Lvl %d-%d [%s]. Allies can whisper '|cffffff00rally|r' to join.",
+        typeStr, contentStr, zone, minLevel, maxLevel, roleStr))
+
+    if IsInGuild() then
+        SendChatMessage(string.format("[WoWKillboard] 📯 RALLY MUSTER: %s (%s) in %s! Lvl %d-%d [%s] - %s! Whisper 'rally' to join!",
+            typeStr, contentStr, zone, minLevel, maxLevel, roleStr, message), "GUILD")
+    end
+
+    return true, rally
+end
+
 -- Handle incoming whisper for auto-invite
 function RF:OnWhisper(msg, sender)
     if not RF:IsBeaconActive() then return end
@@ -348,10 +435,16 @@ function RF:GetOpenRallies()
             character_level = b.character_level or 60,
             guild_name = b.guild_name or "None",
             faction = b.faction or myFaction,
+            group_type = b.group_type or "PARTY",
+            content_type = b.content_type or "WORLD",
             zone = b.zone or "Wilderness",
             subzone = b.subzone or "",
             coord_x = b.coord_x or 0,
             coord_y = b.coord_y or 0,
+            min_level = b.min_level or 1,
+            max_level = b.max_level or 60,
+            roles = b.roles or { tank = true, heal = true, dps = true },
+            message = b.message or b.hostile_names or "Call to Arms",
             hostile_count = b.hostile_count or 1,
             hostile_names = b.hostile_names or "Hostiles",
             timestamp = b.timestamp or now,
@@ -360,31 +453,49 @@ function RF:GetOpenRallies()
         })
     end
 
-    -- 2. Peer beacons in WoWKillboardDistress
+    -- 2. Peer beacons in WoWKillboardDistress and WoWKillboardDB.rallies
+    local peerRallies = {}
     if WoWKillboardDistress then
         for bId, b in pairs(WoWKillboardDistress) do
-            if b.status == "ACTIVE" and (now - (b.timestamp or now)) < 1800 then -- 30 min window
-                if b.character_name and b.character_name ~= myName then
-                    -- Filter by same faction
-                    if not b.faction or b.faction == "Unknown" or b.faction == myFaction then
-                        table.insert(openRallies, {
-                            id = b.id or bId,
-                            character_name = b.character_name,
-                            character_class = b.character_class or "WARRIOR",
-                            character_level = b.character_level or 60,
-                            guild_name = b.guild_name or "None",
-                            faction = b.faction or myFaction,
-                            zone = b.zone or "Wilderness",
-                            subzone = b.subzone or "",
-                            coord_x = b.coord_x or 0,
-                            coord_y = b.coord_y or 0,
-                            hostile_count = b.hostile_count or 1,
-                            hostile_names = b.hostile_names or "Hostiles",
-                            timestamp = b.timestamp or now,
-                            status = "ACTIVE",
-                            isSelf = false,
-                        })
-                    end
+            peerRallies[bId] = b
+        end
+    end
+    if WoWKillboardDB and WoWKillboardDB.rallies then
+        for bId, b in pairs(WoWKillboardDB.rallies) do
+            if not peerRallies[bId] then
+                peerRallies[bId] = b
+            end
+        end
+    end
+
+    for bId, b in pairs(peerRallies) do
+        if b.status == "ACTIVE" and (now - (b.timestamp or now)) < 1800 then -- 30 min window
+            if b.character_name and b.character_name ~= myName then
+                -- Filter by same faction
+                if not b.faction or b.faction == "Unknown" or b.faction == myFaction then
+                    table.insert(openRallies, {
+                        id = b.id or bId,
+                        character_name = b.character_name,
+                        character_class = b.character_class or "WARRIOR",
+                        character_level = b.character_level or 60,
+                        guild_name = b.guild_name or "None",
+                        faction = b.faction or myFaction,
+                        group_type = b.group_type or "PARTY",
+                        content_type = b.content_type or "WORLD",
+                        zone = b.zone or "Wilderness",
+                        subzone = b.subzone or "",
+                        coord_x = b.coord_x or 0,
+                        coord_y = b.coord_y or 0,
+                        min_level = b.min_level or 1,
+                        max_level = b.max_level or 60,
+                        roles = b.roles or { tank = true, heal = true, dps = true },
+                        message = b.message or b.hostile_names or "Call to Arms",
+                        hostile_count = b.hostile_count or 1,
+                        hostile_names = b.hostile_names or "Hostiles",
+                        timestamp = b.timestamp or now,
+                        status = "ACTIVE",
+                        isSelf = false,
+                    })
                 end
             end
         end

@@ -216,6 +216,14 @@ function UI:ApplyTheme()
         UI:ApplyButtonStyle(UI.WebProfileButton, theme)
         if theme.id == "classic" then UI.WebProfileButton:SetHeight(22) else UI.WebProfileButton:SetHeight(20) end
     end
+    if UI.ExportButton then
+        UI:ApplyButtonStyle(UI.ExportButton, theme)
+        if theme.id == "classic" then UI.ExportButton:SetHeight(22) else UI.ExportButton:SetHeight(20) end
+    end
+    if UI.WireButton then
+        UI:ApplyButtonStyle(UI.WireButton, theme)
+        if theme.id == "classic" then UI.WireButton:SetHeight(22) else UI.WireButton:SetHeight(20) end
+    end
     if UI.RegisteredButtons then
         for _, b in ipairs(UI.RegisteredButtons) do
             UI:ApplyButtonStyle(b, theme)
@@ -465,6 +473,9 @@ function UI:OnPlayerRegenDisabled()
     if UI.ExportDialog and UI.ExportDialog:IsShown() then
         UI.ExportDialog:Hide()
     end
+    if UI.RallyDialog and UI.RallyDialog:IsShown() then
+        UI.RallyDialog:Hide()
+    end
     if UI.PrivateTooltipFrame and UI.PrivateTooltipFrame:IsShown() then
         UI.PrivateTooltipFrame:Hide()
     end
@@ -472,6 +483,10 @@ function UI:OnPlayerRegenDisabled()
     if UI.RadarHUD then
         UI.RadarHUD:EnableMouse(false)
         if UI.RadarHUD.header then UI.RadarHUD.header:EnableMouse(false) end
+    end
+    if UI.CombatWireHUD then
+        UI.CombatWireHUD:EnableMouse(false)
+        if UI.CombatWireHUD.header then UI.CombatWireHUD.header:EnableMouse(false) end
     end
     if UI.KillBanner then
         UI.KillBanner:EnableMouse(false)
@@ -493,6 +508,10 @@ function UI:OnPlayerRegenEnabled()
     if UI.RadarHUD and not InCombatLockdown() then
         UI.RadarHUD:EnableMouse(true)
         if UI.RadarHUD.header then UI.RadarHUD.header:EnableMouse(true) end
+    end
+    if UI.CombatWireHUD and not InCombatLockdown() then
+        UI.CombatWireHUD:EnableMouse(true)
+        if UI.CombatWireHUD.header then UI.CombatWireHUD.header:EnableMouse(true) end
     end
     if UI.KillBanner and not InCombatLockdown() then
         UI.KillBanner:EnableMouse(UI.bannerUnlocked or false)
@@ -751,6 +770,36 @@ function UI:CreateMainWindow()
         UI:HidePrivateTooltip()
     end)
     UI.ExportButton = exportBtn
+
+    -- Template-Free Combat Wire Pop-Out Toggle Button
+    local wireBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    wireBtn:SetSize(54, 20)
+    wireBtn:SetPoint("LEFT", exportBtn, "RIGHT", 6, 0)
+    wireBtn:EnableMouse(true)
+    local wireLabel = wireBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    wireLabel:SetPoint("CENTER", 0, 0)
+    wireLabel:SetText("|cff00e5ffWire|r")
+    wireBtn.Label = wireLabel
+    wireBtn:SetScript("OnClick", function()
+        UI:ToggleCombatWire()
+    end)
+    wireBtn:SetScript("OnEnter", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(0.0, 0.85, 1.0, 1.0)
+        end
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff00e5ffCombat Wire Pop-Out|r", "Click to toggle the floating Combat Wire pop-out window.\nLive combat notifications stream here instead of cluttering your main chat.")
+    end)
+    wireBtn:SetScript("OnLeave", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
+        end
+        UI:HidePrivateTooltip()
+    end)
+    UI.WireButton = wireBtn
 
     -- Authentic Classic Dialog Arched Header Crest (Centered at top)
     local headerPlate = mainFrame:CreateTexture(nil, "ARTWORK", nil, 1)
@@ -2291,19 +2340,10 @@ function UI:RenderRallies()
             if KB.Reinforcements and KB.Reinforcements.ResolveBeacon then
                 KB.Reinforcements:ResolveBeacon(false)
             end
+            UI:Refresh()
         else
-            if IsInInstance then
-                local inInst, instType = IsInInstance()
-                if inInst or (instType and instType ~= "none") then
-                    SafePrint("|cffff0000[WoWKB Error]|r The War Horn can only be sounded upon the open battlefields of Azeroth (Open World PvP only).")
-                    return
-                end
-            end
-            if KB.Reinforcements and KB.Reinforcements.TriggerCallForBackup then
-                KB.Reinforcements:TriggerCallForBackup()
-            end
+            UI:ShowRallyDialog()
         end
-        UI:Refresh()
     end)
 
     yOffset = yOffset - 50
@@ -2322,14 +2362,14 @@ function UI:RenderRallies()
     if #rallies == 0 then
         local empty = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
         empty:SetPoint("TOPLEFT", 14, yOffset)
-        empty:SetText("No active faction rallies currently underway on your realm.\nSound your War Horn above if engaged in combat to muster Vanguard allies!")
+        empty:SetText("No active faction rallies currently underway on your realm.\nSound your War Horn above to muster a Vanguard Strike Team or Raid!")
         empty:SetShadowOffset(1, -1)
         empty:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 40
     else
         for rIdx, r in ipairs(rallies) do
             local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-            row:SetSize(820, 38)
+            row:SetSize(820, 46)
             row:SetPoint("TOPLEFT", 0, yOffset)
             row:SetBackdrop(theme.rowBackdrop)
 
@@ -2343,9 +2383,9 @@ function UI:RenderRallies()
                 row:SetBackdropBorderColor(unpack(theme.rowBorder))
             end
 
-            -- Commander Icon & Level
-            local cIcon = UI:CreateClassIcon(row, r.character_class, 22)
-            cIcon:SetPoint("LEFT", 12, 0)
+            -- Commander Icon & Level (Top Line)
+            local cIcon = UI:CreateClassIcon(row, r.character_class, 20)
+            cIcon:SetPoint("TOPLEFT", 10, -6)
 
             local cLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
             cLvl:SetPoint("LEFT", cIcon, "RIGHT", 4, 0)
@@ -2353,10 +2393,10 @@ function UI:RenderRallies()
             cLvl:SetShadowOffset(1, -1)
             cLvl:SetShadowColor(0, 0, 0, 1)
 
-            -- Action Button (Created first for text bounding)
+            -- Action Button (Right side, centered vertically)
             local joinBtn
             if isSelf then
-                joinBtn = UI:CreateButton(row, 110, 22, "|cffff4444Close Rally|r")
+                joinBtn = UI:CreateButton(row, 110, 24, "|cffff4444Close Rally|r")
                 joinBtn:SetPoint("RIGHT", -10, 0)
                 joinBtn:SetScript("OnClick", function()
                     if KB.Reinforcements and KB.Reinforcements.ResolveBeacon then
@@ -2366,7 +2406,7 @@ function UI:RenderRallies()
                 end)
             else
                 local targetLeader = r.character_name
-                joinBtn = UI:CreateButton(row, 115, 22, "⚔️ Join Rally")
+                joinBtn = UI:CreateButton(row, 115, 24, "⚔️ Join Rally")
                 joinBtn:SetPoint("RIGHT", -10, 0)
                 joinBtn:SetScript("OnClick", function(self)
                     if KB.Reinforcements and KB.Reinforcements.RequestJoinRally then
@@ -2379,28 +2419,50 @@ function UI:RenderRallies()
                 end)
             end
 
-            -- Location & Danger Telemetry (Center-Right)
-            local diffMin = math.max(1, math.floor((time() - (r.timestamp or time())) / 60))
-            local locTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            locTxt:SetPoint("RIGHT", joinBtn, "LEFT", -12, 0)
-            locTxt:SetText(string.format("📍 |cffffffff%s|r (%.1f, %.1f)  •  |cffff4444%d Hostile(s)|r  •  |cff8899aa~%dm ago|r",
-                r.zone or "Wilderness", r.coord_x or 0, r.coord_y or 0, r.hostile_count or 1, diffMin))
-            locTxt:SetShadowOffset(1, -1)
-            locTxt:SetShadowColor(0, 0, 0, 1)
-
-            -- Commander Name & Guild (Bounded cleanly before location)
-            local cName = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            cName:SetPoint("LEFT", cLvl, "RIGHT", 6, 0)
-            cName:SetPoint("RIGHT", locTxt, "LEFT", -10, 0)
-            cName:SetJustifyH("LEFT")
-            cName:SetWordWrap(false)
+            -- Top Line Badges & Commander Info
+            local grpBadge = (r.group_type == "RAID") and "|cffa855f7[40-RAID]|r " or "|cff10b981[5-PARTY]|r "
+            local cntBadge = (r.content_type == "BG") and "|cffff4444[BG]|r " or "|cffffd100[WORLD]|r "
             local gStr = (r.guild_name and r.guild_name ~= "None" and r.guild_name ~= "") and string.format(" |cff8899aa<%s>|r", r.guild_name) or ""
             local selfTag = isSelf and " |cffffd100[YOU]|r" or ""
-            cName:SetText(KB.Utils.ColorizeByClass(r.character_name or "Commander", r.character_class) .. selfTag .. gStr)
-            cName:SetShadowOffset(1, -1)
-            cName:SetShadowColor(0, 0, 0, 1)
+            local nameStr = KB.Utils.ColorizeByClass(r.character_name or "Commander", r.character_class) .. selfTag .. gStr
 
-            yOffset = yOffset - 42
+            local topTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            topTxt:SetPoint("LEFT", cLvl, "RIGHT", 8, 0)
+            topTxt:SetPoint("RIGHT", joinBtn, "LEFT", -10, 0)
+            topTxt:SetJustifyH("LEFT")
+            topTxt:SetWordWrap(false)
+            topTxt:SetText(grpBadge .. cntBadge .. nameStr)
+            topTxt:SetShadowOffset(1, -1)
+            topTxt:SetShadowColor(0, 0, 0, 1)
+
+            -- Bottom Line: Location, Level Bracket, Roles Needed, Message & Age
+            local diffMin = math.max(1, math.floor((time() - (r.timestamp or time())) / 60))
+            local locStr = string.format("📍 |cffffffff%s|r", r.zone or "Wilderness")
+            local lvlBracket = string.format("• |cffffd100Lvl %d-%d|r", r.min_level or 1, r.max_level or 60)
+
+            local roleParts = {}
+            local roles = r.roles or { tank = true, heal = true, dps = true }
+            if roles.tank then table.insert(roleParts, "Tank") end
+            if roles.heal then table.insert(roleParts, "Heal") end
+            if roles.dps then table.insert(roleParts, "DPS") end
+            local roleStr = #roleParts > 0 and table.concat(roleParts, "/") or "Any"
+            local rolesNeeded = string.format("• |cff67e8f9Roles: %s|r", roleStr)
+
+            local msg = r.message or "Muster Vanguard!"
+            if #msg > 36 then msg = msg:sub(1, 34) .. ".." end
+            local msgStr = string.format("• |cffffffff\"%s\"|r", msg)
+            local timeStr = string.format("• |cff8899aa~%dm ago|r", diffMin)
+
+            local botTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            botTxt:SetPoint("BOTTOMLEFT", 12, 6)
+            botTxt:SetPoint("RIGHT", joinBtn, "LEFT", -10, 0)
+            botTxt:SetJustifyH("LEFT")
+            botTxt:SetWordWrap(false)
+            botTxt:SetText(string.format("%s  %s  %s  %s  %s", locStr, lvlBracket, rolesNeeded, msgStr, timeStr))
+            botTxt:SetShadowOffset(1, -1)
+            botTxt:SetShadowColor(0, 0, 0, 1)
+
+            yOffset = yOffset - 50
         end
     end
 
@@ -2627,7 +2689,7 @@ function UI:ShowCharacterWebLink(charName)
     end
 
     charName = charName or UnitName("player") or "Player"
-    local rawUrl = string.format("https://wow-killboard.onrender.com/?character=%s", charName)
+    local rawUrl = string.format("http://13.216.102.148/?character=%s", charName)
 
     if not UI.WebLinkDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
@@ -3855,7 +3917,7 @@ function UI:ShowAlertsConfig()
 
     if not UI.AlertsDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(520, 560)
+        dlg:SetSize(520, 630)
         dlg:SetPoint("CENTER", 0, 20)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(120)
@@ -4030,11 +4092,35 @@ function UI:ShowAlertsConfig()
         markHint:SetPoint("TOPLEFT", 24, -422)
         dlg.MarkHint = markHint
 
+        -- Section 6: Combat Feed Destination (Pop-Out Wire vs Main Chat)
+        local sec6Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sec6Title:SetPoint("TOPLEFT", 24, -446)
+        sec6Title:SetText("|cffffffff6. COMBAT FEED DESTINATION|r")
+
+        local btnFeedWire = UI:CreateButton(dlg, 150, 24, "Pop-Out Wire", "GameFontHighlightSmall")
+        btnFeedWire:SetPoint("TOPLEFT", 24, -466)
+        StyleSegmentButton(btnFeedWire, "Pop-Out Wire")
+        dlg.BtnFeedWire = btnFeedWire
+
+        local btnFeedChat = UI:CreateButton(dlg, 150, 24, "Main Chat Frame", "GameFontHighlightSmall")
+        btnFeedChat:SetPoint("LEFT", btnFeedWire, "RIGHT", 11, 0)
+        StyleSegmentButton(btnFeedChat, "Main Chat Frame")
+        dlg.BtnFeedChat = btnFeedChat
+
+        local btnFeedOff = UI:CreateButton(dlg, 150, 24, "Muted / Off", "GameFontHighlightSmall")
+        btnFeedOff:SetPoint("LEFT", btnFeedChat, "RIGHT", 11, 0)
+        StyleSegmentButton(btnFeedOff, "Muted / Off")
+        dlg.BtnFeedOff = btnFeedOff
+
+        local feedHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        feedHint:SetPoint("TOPLEFT", 24, -494)
+        dlg.FeedHint = feedHint
+
         -- Bottom Divider
         local bDiv = dlg:CreateTexture(nil, "ARTWORK")
         bDiv:SetHeight(1)
-        bDiv:SetPoint("TOPLEFT", 18, -446)
-        bDiv:SetPoint("TOPRIGHT", -18, -446)
+        bDiv:SetPoint("TOPLEFT", 18, -522)
+        bDiv:SetPoint("TOPRIGHT", -18, -522)
         dlg.BottomDivider = bDiv
 
         -- Footer Action Buttons
@@ -4127,6 +4213,20 @@ function UI:ShowAlertsConfig()
             else
                 dlg.MarkHint:SetText("|cffff3333● Disabled:|r |cff94a3b8Suppresses popup upon PvP death. Mark contracts can still be set in War Room.|r")
             end
+
+            -- Section 6: Combat Feed Destination
+            local feedMode = s.combatFeedMode or "POPOUT"
+            ApplySegmentState(dlg.BtnFeedWire, feedMode == "POPOUT")
+            ApplySegmentState(dlg.BtnFeedChat, feedMode == "CHAT")
+            ApplySegmentState(dlg.BtnFeedOff, feedMode == "OFF")
+
+            if feedMode == "POPOUT" then
+                dlg.FeedHint:SetText("|cff00e5ff● Pop-Out Wire:|r |cff94a3b8Routes combat events to floating Combat Wire window. Zero chat spam.|r")
+            elseif feedMode == "CHAT" then
+                dlg.FeedHint:SetText("|cffffd100● Main Chat:|r |cff94a3b8Prints combat records directly to your standard General chat frame.|r")
+            else
+                dlg.FeedHint:SetText("|cffff3333● Muted:|r |cff94a3b8Suppresses both chat and wire feed. Combat is recorded silently.|r")
+            end
         end
         dlg.UpdateControls = UpdateControls
 
@@ -4207,6 +4307,26 @@ function UI:ShowAlertsConfig()
             local s = WoWKillboardSettings or KB.DefaultSettings
             s.promptMarkOnDeath = false
             s.promptBountyOnDeath = false
+            UpdateControls()
+        end)
+
+        -- Section 6 Event Handlers
+        btnFeedWire:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.combatFeedMode = "POPOUT"
+            s.showCombatWire = true
+            if not InCombatLockdown() then UI:InitializeCombatWire() end
+            if UI.CombatWireHUD then UI.CombatWireHUD:Show() end
+            UpdateControls()
+        end)
+        btnFeedChat:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.combatFeedMode = "CHAT"
+            UpdateControls()
+        end)
+        btnFeedOff:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.combatFeedMode = "OFF"
             UpdateControls()
         end)
 
@@ -4491,6 +4611,536 @@ function UI:ToggleRadarHUD()
         radarHUD:SetAlpha(1.0)
         radarHUD:Show()
         SafePrint("|cff00ccff[WoWKB]|r Tactical Radar HUD: |cff00ff00Shown|r (Click & drag header to reposition).")
+    end
+end
+
+--------------------------------------------------------------------------------
+-- War Council Rally Muster Dialog (Vanguard Squad & Raid Recruitment Panel)
+--------------------------------------------------------------------------------
+function UI:ShowRallyDialog()
+    if InCombatLockdown() then
+        SafePrint("|cffff0000[WoWKB]|r Cannot muster war rally during combat lockdown.")
+        return
+    end
+
+    if not UI.RallyDialog then
+        local dlg = CreateFrame("Frame", "WoWKillboardRallyDialog", UIParent, "BackdropTemplate")
+        dlg:SetSize(480, 480)
+        dlg:SetPoint("CENTER", 0, 20)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(120)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+        dlg:SetMovable(true)
+        dlg:RegisterForDrag("LeftButton")
+        dlg:SetScript("OnDragStart", function(self)
+            if not InCombatLockdown() then self:StartMoving() end
+        end)
+        dlg:SetScript("OnDragStop", function(self)
+            self:StopMovingOrSizing()
+        end)
+
+        -- ESC Key Handling
+        dlg:EnableKeyboard(false)
+        dlg:SetScript("OnShow", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(true) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
+        dlg:SetScript("OnHide", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(false) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if not self:IsShown() then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+                return
+            end
+            if key == "ESCAPE" then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
+                self:Hide()
+            else
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+            end
+        end)
+
+        -- Header
+        local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", 0, -16)
+        title:SetText("📯 |cffffd100MUSTER FACTION VANGUARD RALLY|r")
+        dlg.TitleText = title
+
+        local subtitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        subtitle:SetPoint("TOP", 0, -38)
+        subtitle:SetText("|cff94a3b8Sound the War Horn to assemble allies for coordinated PvP engagements.|r")
+        dlg.SubtitleText = subtitle
+
+        local div = dlg:CreateTexture(nil, "ARTWORK")
+        div:SetHeight(1)
+        div:SetPoint("TOPLEFT", 18, -56)
+        div:SetPoint("TOPRIGHT", -18, -56)
+        dlg.Divider = div
+
+        -- Helper to style segment buttons
+        local function StyleChip(btn, text)
+            btn.baseText = text
+            btn.Label:SetText(text)
+        end
+        local function SetChipActive(btn, isActive)
+            btn.isActive = isActive
+            local theme = UI:GetTheme()
+            if isActive then
+                btn:SetBackdropColor(unpack(theme.btnActiveBg or { 0.25, 0.18, 0.07, 1.0 }))
+                btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder or { 1.0, 0.82, 0.0, 1.0 }))
+                btn.Label:SetText(string.format("|cff00ff00●|r |cffffd100%s|r", btn.baseText or ""))
+            else
+                btn:SetBackdropColor(unpack(theme.btnBg or { 0.08, 0.10, 0.15, 1.0 }))
+                btn:SetBackdropBorderColor(unpack(theme.btnBorder or { 0.45, 0.35, 0.18, 0.95 }))
+                btn.Label:SetText(string.format("|cff888888%s|r", btn.baseText or ""))
+            end
+        end
+
+        -- State variables
+        dlg.selectedGroupType = "PARTY"
+        dlg.selectedContentType = "WORLD"
+        dlg.selectedRoles = { tank = true, heal = true, dps = true }
+
+        -- 1. Group Size
+        local sec1Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sec1Title:SetPoint("TOPLEFT", 24, -68)
+        sec1Title:SetText("|cffffffff1. SQUAD CAPACITY / GROUP SIZE|r")
+
+        local btnParty = UI:CreateButton(dlg, 210, 24, "5-Man Squad (Party)", "GameFontHighlightSmall")
+        btnParty:SetPoint("TOPLEFT", 24, -88)
+        StyleChip(btnParty, "5-Man Squad (Party)")
+        dlg.BtnParty = btnParty
+
+        local btnRaid = UI:CreateButton(dlg, 210, 24, "40-Man Strike Team (Raid)", "GameFontHighlightSmall")
+        btnRaid:SetPoint("LEFT", btnParty, "RIGHT", 12, 0)
+        StyleChip(btnRaid, "40-Man Strike Team (Raid)")
+        dlg.BtnRaid = btnRaid
+
+        btnParty:SetScript("OnClick", function()
+            dlg.selectedGroupType = "PARTY"
+            SetChipActive(dlg.BtnParty, true)
+            SetChipActive(dlg.BtnRaid, false)
+        end)
+        btnRaid:SetScript("OnClick", function()
+            dlg.selectedGroupType = "RAID"
+            SetChipActive(dlg.BtnParty, false)
+            SetChipActive(dlg.BtnRaid, true)
+        end)
+
+        -- 2. Content Type
+        local sec2Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sec2Title:SetPoint("TOPLEFT", 24, -122)
+        sec2Title:SetText("|cffffffff2. THEATRE / CONTENT TYPE|r")
+
+        local btnWorld = UI:CreateButton(dlg, 210, 24, "Open World PvP", "GameFontHighlightSmall")
+        btnWorld:SetPoint("TOPLEFT", 24, -142)
+        StyleChip(btnWorld, "Open World PvP")
+        dlg.BtnWorld = btnWorld
+
+        local btnBG = UI:CreateButton(dlg, 210, 24, "Battleground", "GameFontHighlightSmall")
+        btnBG:SetPoint("LEFT", btnWorld, "RIGHT", 12, 0)
+        StyleChip(btnBG, "Battleground")
+        dlg.BtnBG = btnBG
+
+        btnWorld:SetScript("OnClick", function()
+            dlg.selectedContentType = "WORLD"
+            SetChipActive(dlg.BtnWorld, true)
+            SetChipActive(dlg.BtnBG, false)
+            if dlg.ebLocation and (dlg.ebLocation:GetText() == "" or dlg.ebLocation:GetText():find("Warsong") or dlg.ebLocation:GetText():find("Arathi") or dlg.ebLocation:GetText():find("Alterac")) then
+                dlg.ebLocation:SetText(GetZoneText() or "Azeroth")
+            end
+        end)
+        btnBG:SetScript("OnClick", function()
+            dlg.selectedContentType = "BG"
+            SetChipActive(dlg.BtnWorld, false)
+            SetChipActive(dlg.BtnBG, true)
+            if dlg.ebLocation and (dlg.ebLocation:GetText() == "" or dlg.ebLocation:GetText() == GetZoneText()) then
+                dlg.ebLocation:SetText("Warsong Gulch")
+            end
+        end)
+
+        -- 3. Location / Zone
+        local sec3Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sec3Title:SetPoint("TOPLEFT", 24, -176)
+        sec3Title:SetText("|cffffffff3. TARGET LOCATION / ZONE / BATTLEGROUND|r")
+
+        local ebLocation = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebLocation:SetSize(432, 24)
+        ebLocation:SetPoint("TOPLEFT", 24, -196)
+        ebLocation:SetAutoFocus(false)
+        ebLocation:SetFontObject("GameFontHighlightSmall")
+        ebLocation:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebLocation:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebLocation:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebLocation:SetTextInsets(8, 8, 0, 0)
+        dlg.ebLocation = ebLocation
+
+        -- 4. Preferred Level Range
+        local sec4Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sec4Title:SetPoint("TOPLEFT", 24, -230)
+        sec4Title:SetText("|cffffffff4. PREFERRED LEVEL BRACKET (MIN / MAX)|r")
+
+        local ebMinLevel = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebMinLevel:SetSize(80, 24)
+        ebMinLevel:SetPoint("TOPLEFT", 24, -250)
+        ebMinLevel:SetAutoFocus(false)
+        ebMinLevel:SetNumeric(true)
+        ebMinLevel:SetFontObject("GameFontHighlightSmall")
+        ebMinLevel:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebMinLevel:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebMinLevel:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebMinLevel:SetTextInsets(8, 8, 0, 0)
+        dlg.ebMinLevel = ebMinLevel
+
+        local toLabel = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        toLabel:SetPoint("LEFT", ebMinLevel, "RIGHT", 10, 0)
+        toLabel:SetText("to")
+
+        local ebMaxLevel = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebMaxLevel:SetSize(80, 24)
+        ebMaxLevel:SetPoint("LEFT", toLabel, "RIGHT", 10, 0)
+        ebMaxLevel:SetAutoFocus(false)
+        ebMaxLevel:SetNumeric(true)
+        ebMaxLevel:SetFontObject("GameFontHighlightSmall")
+        ebMaxLevel:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebMaxLevel:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebMaxLevel:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebMaxLevel:SetTextInsets(8, 8, 0, 0)
+        dlg.ebMaxLevel = ebMaxLevel
+
+        local lvlHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        lvlHint:SetPoint("LEFT", ebMaxLevel, "RIGHT", 14, 0)
+        lvlHint:SetText("|cff64748b(e.g., 20 to 29 for Twink bracket or 1 to 60)|r")
+
+        -- 5. Requested Roles
+        local sec5Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sec5Title:SetPoint("TOPLEFT", 24, -284)
+        sec5Title:SetText("|cffffffff5. REQUESTED COMBAT ROLES / SPECS|r")
+
+        local btnTank = UI:CreateButton(dlg, 136, 24, "🛡️ Tank", "GameFontHighlightSmall")
+        btnTank:SetPoint("TOPLEFT", 24, -304)
+        StyleChip(btnTank, "🛡️ Tank")
+        dlg.BtnTank = btnTank
+
+        local btnHeal = UI:CreateButton(dlg, 136, 24, "💚 Healer", "GameFontHighlightSmall")
+        btnHeal:SetPoint("LEFT", btnTank, "RIGHT", 12, 0)
+        StyleChip(btnHeal, "💚 Healer")
+        dlg.BtnHeal = btnHeal
+
+        local btnDPS = UI:CreateButton(dlg, 136, 24, "⚔️ DPS", "GameFontHighlightSmall")
+        btnDPS:SetPoint("LEFT", btnHeal, "RIGHT", 12, 0)
+        StyleChip(btnDPS, "⚔️ DPS")
+        dlg.BtnDPS = btnDPS
+
+        btnTank:SetScript("OnClick", function()
+            dlg.selectedRoles.tank = not dlg.selectedRoles.tank
+            SetChipActive(dlg.BtnTank, dlg.selectedRoles.tank)
+        end)
+        btnHeal:SetScript("OnClick", function()
+            dlg.selectedRoles.heal = not dlg.selectedRoles.heal
+            SetChipActive(dlg.BtnHeal, dlg.selectedRoles.heal)
+        end)
+        btnDPS:SetScript("OnClick", function()
+            dlg.selectedRoles.dps = not dlg.selectedRoles.dps
+            SetChipActive(dlg.BtnDPS, dlg.selectedRoles.dps)
+        end)
+
+        -- 6. Rally Message / Battle Cry
+        local sec6Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sec6Title:SetPoint("TOPLEFT", 24, -338)
+        sec6Title:SetText("|cffffffff6. BATTLE CRY / MISSION DIRECTIVE|r")
+
+        local ebMsg = CreateFrame("EditBox", nil, dlg, "BackdropTemplate")
+        ebMsg:SetSize(432, 24)
+        ebMsg:SetPoint("TOPLEFT", 24, -358)
+        ebMsg:SetAutoFocus(false)
+        ebMsg:SetFontObject("GameFontHighlightSmall")
+        ebMsg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebMsg:SetBackdropColor(0.05, 0.05, 0.07, 0.9)
+        ebMsg:SetBackdropBorderColor(0.3, 0.35, 0.45, 1)
+        ebMsg:SetTextInsets(8, 8, 0, 0)
+        dlg.ebMsg = ebMsg
+
+        -- Bottom Divider
+        local bDiv = dlg:CreateTexture(nil, "ARTWORK")
+        bDiv:SetHeight(1)
+        bDiv:SetPoint("TOPLEFT", 18, -394)
+        bDiv:SetPoint("TOPRIGHT", -18, -394)
+        dlg.BottomDivider = bDiv
+
+        -- Submit Button
+        local submitBtn = UI:CreateButton(dlg, 240, 30, "📯 Muster Vanguard Rally", "GameFontNormal")
+        submitBtn:SetPoint("BOTTOMLEFT", 24, 20)
+        submitBtn:SetScript("OnClick", function()
+            local groupType = dlg.selectedGroupType or "PARTY"
+            local contentType = dlg.selectedContentType or "WORLD"
+            local locText = dlg.ebLocation:GetText() or GetZoneText() or "Azeroth"
+            local minLvl = tonumber(dlg.ebMinLevel:GetText()) or 1
+            local maxLvl = tonumber(dlg.ebMaxLevel:GetText()) or 60
+            local msgText = dlg.ebMsg:GetText() or "Muster Vanguard Strike Team!"
+            local roles = {
+                tank = dlg.selectedRoles.tank,
+                heal = dlg.selectedRoles.heal,
+                dps = dlg.selectedRoles.dps,
+            }
+
+            if KB.Reinforcements and KB.Reinforcements.CreateCustomRally then
+                KB.Reinforcements:CreateCustomRally({
+                    groupType = groupType,
+                    contentType = contentType,
+                    zone = locText,
+                    minLevel = minLvl,
+                    maxLevel = maxLvl,
+                    roles = roles,
+                    message = msgText,
+                })
+            end
+
+            dlg:Hide()
+            UI:Refresh()
+        end)
+        dlg.SubmitBtn = submitBtn
+
+        local cancelBtn = UI:CreateButton(dlg, 120, 30, "Cancel", "GameFontHighlight")
+        cancelBtn:SetPoint("BOTTOMRIGHT", -24, 20)
+        cancelBtn:SetScript("OnClick", function()
+            dlg:Hide()
+        end)
+        dlg.CancelBtn = cancelBtn
+
+        dlg.SetChipActive = SetChipActive
+        UI.RallyDialog = dlg
+    end
+
+    -- Update active theme and reset fields to sensible defaults
+    local theme = UI:GetTheme()
+    UI.RallyDialog:SetBackdrop(theme.modalBackdrop or {
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+    })
+    UI.RallyDialog:SetBackdropColor(unpack(theme.modalBg or { 0.035, 0.045, 0.07, 1.0 }))
+    UI.RallyDialog:SetBackdropBorderColor(unpack(theme.modalBorder or { 0.45, 0.35, 0.18, 0.95 }))
+    if UI.RallyDialog.Divider and theme.dividerColor then
+        UI.RallyDialog.Divider:SetColorTexture(unpack(theme.dividerColor))
+    end
+    if UI.RallyDialog.BottomDivider and theme.dividerColor then
+        UI.RallyDialog.BottomDivider:SetColorTexture(unpack(theme.dividerColor))
+    end
+
+    -- Pre-populate defaults
+    local pLevel = UnitLevel("player") or 20
+    local pZone = GetZoneText() or "Azeroth"
+    UI.RallyDialog.selectedGroupType = "PARTY"
+    UI.RallyDialog.selectedContentType = "WORLD"
+    UI.RallyDialog.selectedRoles = { tank = true, heal = true, dps = true }
+
+    UI.RallyDialog.SetChipActive(UI.RallyDialog.BtnParty, true)
+    UI.RallyDialog.SetChipActive(UI.RallyDialog.BtnRaid, false)
+    UI.RallyDialog.SetChipActive(UI.RallyDialog.BtnWorld, true)
+    UI.RallyDialog.SetChipActive(UI.RallyDialog.BtnBG, false)
+    UI.RallyDialog.SetChipActive(UI.RallyDialog.BtnTank, true)
+    UI.RallyDialog.SetChipActive(UI.RallyDialog.BtnHeal, true)
+    UI.RallyDialog.SetChipActive(UI.RallyDialog.BtnDPS, true)
+
+    UI.RallyDialog.ebLocation:SetText(pZone)
+    local minL = math.max(1, pLevel - 5)
+    local maxL = math.min(60, pLevel + 5)
+    UI.RallyDialog.ebMinLevel:SetNumber(minL)
+    UI.RallyDialog.ebMaxLevel:SetNumber(maxL)
+    UI.RallyDialog.ebMsg:SetText(string.format("Muster Vanguard in %s! Whisper 'rally' to join.", pZone))
+
+    UI.RallyDialog:Show()
+    if UI.RallyDialog.Raise then UI.RallyDialog:Raise() end
+end
+
+--------------------------------------------------------------------------------
+-- Tactical Combat Wire (Floating, Moveable Live Combat Pop-Out Window)
+--------------------------------------------------------------------------------
+local combatWireHUD = nil
+
+function UI:InitializeCombatWire()
+    if combatWireHUD or InCombatLockdown() then return end
+
+    local hud = CreateFrame("Frame", "WoWKillboardCombatWire", UIParent, "BackdropTemplate")
+    hud:SetSize(440, 180)
+    hud:SetFrameStrata("MEDIUM")
+    hud:SetClampedToScreen(true)
+    hud:SetMovable(true)
+    hud:EnableMouse(true)
+    hud:RegisterForDrag("LeftButton")
+
+    -- Restore saved position or default to TOPLEFT, 24, -180
+    local pos = WoWKillboardSettings and WoWKillboardSettings.combatWirePos
+    if pos and pos.point and pos.relPoint and pos.x and pos.y then
+        hud:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+    else
+        hud:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 24, -180)
+    end
+
+    hud:SetScript("OnDragStart", function(self)
+        if not InCombatLockdown() then
+            self:StartMoving()
+        end
+    end)
+    hud:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local p, _, rp, x, y = self:GetPoint()
+        WoWKillboardSettings = WoWKillboardSettings or {}
+        WoWKillboardSettings.combatWirePos = { point = p, relPoint = rp, x = math.floor(x), y = math.floor(y) }
+    end)
+
+    -- Sleek dark tactical gunmetal backdrop
+    hud:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+    })
+    hud:SetBackdropColor(0.03, 0.04, 0.05, 0.94)
+    hud:SetBackdropBorderColor(0.0, 0.85, 1.0, 0.75)
+
+    -- Header Drag Bar
+    local header = CreateFrame("Frame", nil, hud, "BackdropTemplate")
+    header:SetPoint("TOPLEFT", 1, -1)
+    header:SetPoint("TOPRIGHT", -1, -1)
+    header:SetHeight(22)
+    header:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+    })
+    header:SetBackdropColor(0.06, 0.09, 0.14, 0.98)
+    header:EnableMouse(true)
+    header:RegisterForDrag("LeftButton")
+    header:SetScript("OnDragStart", function() if not InCombatLockdown() then hud:StartMoving() end end)
+    header:SetScript("OnDragStop", function()
+        hud:StopMovingOrSizing()
+        local p, _, rp, x, y = hud:GetPoint()
+        WoWKillboardSettings = WoWKillboardSettings or {}
+        WoWKillboardSettings.combatWirePos = { point = p, relPoint = rp, x = math.floor(x), y = math.floor(y) }
+    end)
+    hud.header = header
+
+    local title = header:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    title:SetPoint("LEFT", 8, 0)
+    title:SetText("|cff00e5ffKB COMBAT WIRE|r  |cff64748b(Pop-Out Live Feed)|r")
+
+    -- Close Button [X]
+    local close = CreateFrame("Button", nil, header)
+    close:SetSize(18, 18)
+    close:SetPoint("RIGHT", -3, 0)
+    local closeText = close:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    closeText:SetPoint("CENTER", 0, 0)
+    closeText:SetText("|cffff4444X|r")
+    close:SetScript("OnClick", function()
+        hud:Hide()
+        WoWKillboardSettings = WoWKillboardSettings or {}
+        WoWKillboardSettings.showCombatWire = false
+        SafePrint("|cff00ccff[WoWKB]|r Combat Wire hidden. Click |cffffd100[Wire]|r in header or type |cffffff00/kb wire|r to restore.")
+    end)
+
+    -- Clear Button [Clear]
+    local clearBtn = CreateFrame("Button", nil, header)
+    clearBtn:SetSize(42, 18)
+    clearBtn:SetPoint("RIGHT", close, "LEFT", -4, 0)
+    local clearText = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    clearText:SetPoint("CENTER", 0, 0)
+    clearText:SetText("|cff94a3b8Clear|r")
+    clearBtn:SetScript("OnClick", function()
+        if hud.msgFrame and hud.msgFrame.Clear then
+            hud.msgFrame:Clear()
+            hud.msgFrame:AddMessage("|cff64748b[Combat Wire cleared — listening for live combat records...]|r")
+        end
+    end)
+
+    -- Scrolling Combat Message Frame
+    local msgFrame = CreateFrame("ScrollingMessageFrame", nil, hud)
+    msgFrame:SetPoint("TOPLEFT", 8, -26)
+    msgFrame:SetPoint("BOTTOMRIGHT", -8, 8)
+    msgFrame:SetFontObject("GameFontHighlightSmall")
+    msgFrame:SetJustifyH("LEFT")
+    msgFrame:SetMaxLines(100)
+    msgFrame:SetFading(false)
+    msgFrame:EnableMouseWheel(true)
+    msgFrame:SetScript("OnMouseWheel", function(self, delta)
+        if delta > 0 then
+            self:ScrollUp()
+        else
+            self:ScrollDown()
+        end
+    end)
+
+    msgFrame:AddMessage("|cff00e5ff[WoWKB Wire Initialized]|r |cff64748bCombat events stream here. Chat is clean.|r")
+
+    hud.msgFrame = msgFrame
+    combatWireHUD = hud
+    UI.CombatWireHUD = hud
+
+    -- Honor saved show setting
+    local s = WoWKillboardSettings or KB.DefaultSettings
+    if s and s.showCombatWire == false then
+        hud:Hide()
+    else
+        hud:Show()
+    end
+end
+
+function UI:AddCombatWireEntry(killmail, chatMsg)
+    if not combatWireHUD and not InCombatLockdown() then
+        UI:InitializeCombatWire()
+    end
+    if not combatWireHUD then return end
+
+    local s = WoWKillboardSettings or KB.DefaultSettings
+    local feedMode = (s and s.combatFeedMode) or "POPOUT"
+    if feedMode == "OFF" then return end
+
+    local tStr = date("%H:%M:%S", (killmail and killmail.timestamp) or time())
+    local line = string.format("|cff64748b[%s]|r %s", tStr, chatMsg or "")
+
+    if combatWireHUD.msgFrame then
+        combatWireHUD.msgFrame:AddMessage(line)
+    end
+
+    if (not s or s.showCombatWire ~= false) and not combatWireHUD:IsShown() and not InCombatLockdown() then
+        combatWireHUD:Show()
+    end
+end
+
+function UI:ToggleCombatWire()
+    if InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot toggle Combat Wire during combat.")
+        return
+    end
+    if not combatWireHUD then UI:InitializeCombatWire() end
+    if not combatWireHUD then return end
+
+    WoWKillboardSettings = WoWKillboardSettings or {}
+    if combatWireHUD:IsShown() then
+        combatWireHUD:Hide()
+        WoWKillboardSettings.showCombatWire = false
+        SafePrint("|cff00ccff[WoWKB]|r Combat Wire: |cffff4444Hidden|r.")
+    else
+        combatWireHUD:Show()
+        WoWKillboardSettings.showCombatWire = true
+        SafePrint("|cff00ccff[WoWKB]|r Combat Wire: |cff00ff00Shown|r (Click & drag header to reposition).")
     end
 end
 
