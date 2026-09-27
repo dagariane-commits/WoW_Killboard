@@ -5,6 +5,34 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.37] - 2026-09-27
+
+### Added
+- **Dedicated Linux VPS Deployment Provisioning Kit (`deploy/setup_vps.sh`, `deploy/Caddyfile`, `deploy/wowkillboard.service`, `docs/DEPLOYMENT_VPS.md`)**:
+  - Created automated 1-command installer script for Ubuntu 22.04 / 24.04 and Debian 12 running on $3.50–$4.00/mo VPS instances (AWS Lightsail, DigitalOcean Droplet, Hetzner Cloud).
+  - Configured modern Caddy web server with native HTTP/2 and HTTP/3, automatic Let's Encrypt / ZeroSSL TLS certificates, security headers, and static caching.
+  - Packaged systemd daemon `wowkillboard.service` running the FastAPI application with auto-restart, sandboxing, and persistent SSD storage in `/opt/wowkillboard/data/killboard.db`.
+  - Added automated daily SQLite backup cron job (`/usr/local/bin/wowkillboard-backup.sh`) with 14-day retention.
+  - Authored comprehensive operations runbook (`docs/DEPLOYMENT_VPS.md`) for zero-downtime deployment, DNS mapping, and sync configuration.
+- **Tactical Radar HUD Floating Window (`UnitScanner.lua`, `UI.lua`, `Core.lua`, `Config.lua`)**:
+  - Replaced chat console radar announcements with a sleek, moveable, and togglable floating HUD widget (`WoWKillboardRadarHUD`).
+  - Displays up to 3 hostiles spotted in immediate proximity with circular class crests, class-colored names, levels, guilds, zones, and elapsed time.
+  - Frame is 100% pure Lua with `BackdropTemplate` (zero Blizzard XML taint), draggable with left-click, clamped to screen, and auto-dismisses after 15 seconds of inactivity.
+  - Position saved persistently in `WoWKillboardSettings.radarPos`.
+  - Added `/kb radar` and `/kbradar` slash commands to toggle visibility on and off at will.
+
+### Fixed
+- **Strict 100% Solo Purity Enforcement (`CombatTracker.lua`, `Config.lua`)**:
+  - Implemented 100% zero external contribution requirement for a kill to receive the `[SOLO]` badge: verified zero external player damage, zero external friendly buffs, zero external friendly heals received, zero external CC/debuffs on the victim, and party size strictly 1.
+  - Added reverse lookup caches `RecentVictimNames` and `RecentVictimGUIDs` so honorable kill events map directly to all attacker contributions in `RecentDamage`.
+  - Added 30-second tracking for `ExternalAssistsOnPlayer` and `RecentVictimAssists`.
+- **Player Death Attribution & Revenge Blood Bounty Trigger (`CombatTracker.lua`, `UI.lua`)**:
+  - Resolved bug where player death failed to record in the Intel feed and stats. When the player is slain, `ProcessDeath` now falls back to `activeEnemyTarget`, `CT.RecentEngagedEnemies`, and `CT.HostileCluster` to attribute the enemy killer, records the death killmail to `WoWKillboardDB.kills`, and debounces death increments.
+  - Resolved timing bug where `ShowDeathBountyPrompt` failed when dying during combat lockdown: implemented `CheckPendingDeathBounty()` with `C_Timer.After` retry on `PLAYER_DEAD`, `PLAYER_ALIVE`, `PLAYER_UNGHOST`, and `PLAYER_REGEN_ENABLED`.
+- **Classic Theme Header Geometry & Lifetime Stat Card Fixes (`UI.lua`)**:
+  - Repositioned arched `HeaderPlate` to `(0, -2)` with gold title `WoW Killboard` and subtitle `WoW Forever • Classic Beta PvP`, eliminating frame border clipping.
+  - Reconciled `SESSION COMBAT K/D (You)` card with `WoWKillboardDB.kills` so lifetime kills and deaths persist across `/reload`.
+
 ## [1.4.36] - 2026-09-27
 
 ### Added

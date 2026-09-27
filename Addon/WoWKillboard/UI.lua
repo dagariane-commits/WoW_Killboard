@@ -163,12 +163,12 @@ function UI:ApplyTheme()
             UI.HeaderPlate:Show()
             if UI.TitleText then
                 UI.TitleText:ClearAllPoints()
-                UI.TitleText:SetPoint("CENTER", UI.HeaderPlate, "CENTER", 0, 11)
+                UI.TitleText:SetPoint("TOP", UI.HeaderPlate, "TOP", 0, -10)
                 UI.TitleText:SetFontObject("GameFontNormalLarge")
             end
-            if UI.SubtitleText and UI.HeaderPlate then
+            if UI.SubtitleText and UI.TitleText then
                 UI.SubtitleText:ClearAllPoints()
-                UI.SubtitleText:SetPoint("CENTER", UI.HeaderPlate, "CENTER", 0, -5)
+                UI.SubtitleText:SetPoint("TOP", UI.TitleText, "BOTTOM", 0, -2)
             end
         else
             UI.HeaderPlate:Hide()
@@ -602,24 +602,24 @@ function UI:CreateMainWindow()
     -- Authentic Classic Dialog Arched Header Crest (Centered at top)
     local headerPlate = mainFrame:CreateTexture(nil, "ARTWORK", nil, 1)
     headerPlate:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
-    headerPlate:SetSize(340, 68)
-    headerPlate:SetPoint("TOP", mainFrame, "TOP", 0, 14)
+    headerPlate:SetSize(320, 56)
+    headerPlate:SetPoint("TOP", mainFrame, "TOP", 0, -2)
     UI.HeaderPlate = headerPlate
 
-    -- Window Title Header (Centered precisely inside the Arched Header Plate)
+    -- Window Title Header (Centered cleanly inside the Arched Header Plate)
     local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("CENTER", headerPlate, "CENTER", 0, 11)
-    title:SetText("|cffffffffWoW Killboard|r")
+    title:SetPoint("TOP", headerPlate, "TOP", 0, -10)
+    title:SetText("|cffffd100WoW Killboard|r")
     title:SetShadowOffset(1, -1)
     title:SetShadowColor(0, 0, 0, 1)
     UI.TitleText = title
 
     local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    subtitle:SetPoint("CENTER", headerPlate, "CENTER", 0, -5)
+    subtitle:SetPoint("TOP", title, "BOTTOM", 0, -2)
     if KB.Utils and KB.Utils.GetClientFlavorTitle then
         subtitle:SetText(KB.Utils.GetClientFlavorTitle())
     else
-        subtitle:SetText("|cff00e5ffWoW Forever • PvP Realm|r |cffc7b28cv" .. KB.Version .. "|r")
+        subtitle:SetText("|cff67e8f9WoW Forever|r |cff94a3b8• PvP Realm|r |cffc7b28cv" .. KB.Version .. "|r")
     end
     subtitle:SetShadowOffset(1, -1)
     subtitle:SetShadowColor(0, 0, 0, 1)
@@ -890,6 +890,9 @@ function UI:CreateMainWindow()
     -- Frontline Kill Banner
     UI:InitializeKillBanner()
 
+    -- Tactical Radar HUD Frame
+    UI:InitializeRadarHUD()
+
     UI:ApplyTheme()
     mainFrame:Hide()
 end
@@ -907,6 +910,7 @@ function UI:Refresh()
     local totalKillsCount = 0
     local totalDuelsCount = (st.duels and st.duels.total) or 0
     local totalBgsCount = (st.bgs and st.bgs.total) or 0
+    local histKills, histDeaths = 0, 0
     if WoWKillboardDB and WoWKillboardDB.kills then
         local pName = UnitName("player")
         local histWins, histLosses = 0, 0
@@ -922,8 +926,20 @@ function UI:Refresh()
                 end
             elseif km.isBattleground then
                 bgKills = bgKills + 1
+                if pName then
+                    local isK = (km.killer and km.killer.name and (km.killer.name:lower() == pName:lower() or km.killer.name:lower():find(pName:lower(), 1, true) ~= nil))
+                    local isV = (km.victim and km.victim.name and (km.victim.name:lower() == pName:lower() or km.victim.name:lower():find(pName:lower(), 1, true) ~= nil))
+                    if isK then histKills = histKills + 1 end
+                    if isV then histDeaths = histDeaths + 1 end
+                end
             else
                 worldKills = worldKills + 1
+                if pName then
+                    local isK = (km.killer and km.killer.name and (km.killer.name:lower() == pName:lower() or km.killer.name:lower():find(pName:lower(), 1, true) ~= nil))
+                    local isV = (km.victim and km.victim.name and (km.victim.name:lower() == pName:lower() or km.victim.name:lower():find(pName:lower(), 1, true) ~= nil))
+                    if isK then histKills = histKills + 1 end
+                    if isV then histDeaths = histDeaths + 1 end
+                end
             end
         end
         if st.duels then
@@ -936,6 +952,9 @@ function UI:Refresh()
         totalKillsCount = worldKills
     end
 
+    local myKills = math.max(s.kills or 0, histKills)
+    local myDeaths = math.max(s.deaths or 0, histDeaths)
+
     local dW = st.duels and st.duels.wins or 0
     local dL = st.duels and st.duels.losses or 0
     local dTot = dW + dL
@@ -946,13 +965,13 @@ function UI:Refresh()
     local bgTot = bgW + bgL
     local bgRate = bgTot > 0 and math.floor((bgW / bgTot) * 100) or 0
 
-    local kd = (s.deaths > 0) and string.format("%.2f", s.kills / s.deaths) or tostring(s.kills)
+    local kd = (myDeaths > 0) and string.format("%.2f", myKills / myDeaths) or tostring(myKills)
 
     if UI.StatCards then
         if UI.StatCards.KD and UI.StatCards.KD.ValueLabel then
             UI.StatCards.KD.ValueLabel:SetText(string.format(
                 "|cffffffff%d|rK / |cffff4444%d|rD |cff64748b(You)|r  |cff64748b•|r  |cffffd100%d|r |cff94a3b8Logged|r",
-                s.kills, s.deaths, totalKillsCount
+                myKills, myDeaths, totalKillsCount
             ))
         end
         if UI.StatCards.DUELS and UI.StatCards.DUELS.ValueLabel then
@@ -2647,7 +2666,19 @@ end
 -- Death Bounty Prompt Dialog: Triggered when player is slain in PvP (Open World Only)
 function UI:ShowDeathBountyPrompt(killerData)
     if not killerData or not killerData.name then return end
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        UI.PendingDeathBountyKiller = killerData
+        if C_Timer and C_Timer.After then
+            C_Timer.After(0.5, function()
+                if not InCombatLockdown() and UI.PendingDeathBountyKiller then
+                    local k = UI.PendingDeathBountyKiller
+                    UI.PendingDeathBountyKiller = nil
+                    UI:ShowDeathBountyPrompt(k)
+                end
+            end)
+        end
+        return
+    end
 
     if IsInInstance then
         local inInst, instType = IsInInstance()
@@ -3733,6 +3764,232 @@ function UI:ShowAlertsConfig()
     UI.AlertsDialog.UpdateControls()
     UI.AlertsDialog:Show()
     if UI.AlertsDialog.Raise then UI.AlertsDialog:Raise() end
+end
+
+--------------------------------------------------------------------------------
+-- Tactical Radar HUD (Moveable, Togglable Floating Hostile Scanner Window)
+--------------------------------------------------------------------------------
+local radarHUD = nil
+local radarEntries = {}
+
+function UI:InitializeRadarHUD()
+    if radarHUD or InCombatLockdown() then return end
+
+    local hud = CreateFrame("Frame", "WoWKillboardRadarHUD", UIParent, "BackdropTemplate")
+    hud:SetSize(270, 114)
+    hud:SetFrameStrata("MEDIUM")
+    hud:SetClampedToScreen(true)
+    hud:SetMovable(true)
+    hud:EnableMouse(true)
+    hud:RegisterForDrag("LeftButton")
+
+    -- Restore saved position or default to TOPRIGHT, -220, -160
+    local pos = WoWKillboardSettings and WoWKillboardSettings.radarPos
+    if pos and pos.point and pos.relPoint and pos.x and pos.y then
+        hud:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+    else
+        hud:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -220, -160)
+    end
+
+    hud:SetScript("OnDragStart", function(self)
+        if not InCombatLockdown() then
+            self:StartMoving()
+        end
+    end)
+    hud:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local p, _, rp, x, y = self:GetPoint()
+        WoWKillboardSettings = WoWKillboardSettings or {}
+        WoWKillboardSettings.radarPos = { point = p, relPoint = rp, x = math.floor(x), y = math.floor(y) }
+    end)
+
+    -- Sleek dark tactical gunmetal backdrop
+    hud:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+    })
+    hud:SetBackdropColor(0.035, 0.045, 0.065, 0.94)
+    hud:SetBackdropBorderColor(0.0, 0.85, 1.0, 0.75)
+
+    -- Header Drag Bar
+    local header = CreateFrame("Frame", nil, hud, "BackdropTemplate")
+    header:SetPoint("TOPLEFT", 1, -1)
+    header:SetPoint("TOPRIGHT", -1, -1)
+    header:SetHeight(20)
+    header:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+    })
+    header:SetBackdropColor(0.07, 0.10, 0.15, 0.98)
+    header:EnableMouse(true)
+    header:RegisterForDrag("LeftButton")
+    header:SetScript("OnDragStart", function() if not InCombatLockdown() then hud:StartMoving() end end)
+    header:SetScript("OnDragStop", function()
+        hud:StopMovingOrSizing()
+        local p, _, rp, x, y = hud:GetPoint()
+        WoWKillboardSettings = WoWKillboardSettings or {}
+        WoWKillboardSettings.radarPos = { point = p, relPoint = rp, x = math.floor(x), y = math.floor(y) }
+    end)
+
+    local title = header:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    title:SetPoint("LEFT", 6, 0)
+    title:SetText("|cff00e5ffKB RADAR|r  |cff64748b(Tactical HUD)|r")
+
+    -- Close Button
+    local close = CreateFrame("Button", nil, header)
+    close:SetSize(16, 16)
+    close:SetPoint("RIGHT", -2, 0)
+    local closeText = close:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    closeText:SetPoint("CENTER", 0, 0)
+    closeText:SetText("|cffff4444X|r")
+    close:SetScript("OnClick", function()
+        hud:Hide()
+        print("|cff00ccff[WoWKB]|r Tactical Radar HUD hidden. Type |cffffff00/kb radar|r to show.")
+    end)
+
+    -- Hostile Entry Rows (Up to 3 hostiles displayed cleanly)
+    hud.rows = {}
+    for i = 1, 3 do
+        local row = CreateFrame("Frame", nil, hud)
+        row:SetSize(262, 28)
+        row:SetPoint("TOPLEFT", 4, -22 - (i - 1) * 30)
+
+        local icon = row:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(20, 20)
+        icon:SetPoint("LEFT", 4, 0)
+        row.icon = icon
+
+        local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        nameText:SetPoint("LEFT", icon, "RIGHT", 6, 4)
+        nameText:SetJustifyH("LEFT")
+        row.nameText = nameText
+
+        local subText = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        subText:SetPoint("LEFT", icon, "RIGHT", 6, -8)
+        subText:SetJustifyH("LEFT")
+        row.subText = subText
+
+        local timeText = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        timeText:SetPoint("RIGHT", -6, 4)
+        timeText:SetJustifyH("RIGHT")
+        row.timeText = timeText
+
+        row:Hide()
+        table.insert(hud.rows, row)
+    end
+
+    local emptyText = hud:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    emptyText:SetPoint("CENTER", 0, -8)
+    emptyText:SetText("|cff64748bNo hostiles in immediate proximity|r")
+    hud.emptyText = emptyText
+
+    radarHUD = hud
+    UI.RadarHUD = hud
+    hud:Hide()
+end
+
+function UI:RefreshRadarHUD()
+    if not radarHUD then return end
+    local count = #radarEntries
+    if count == 0 then
+        radarHUD.emptyText:Show()
+        for _, row in ipairs(radarHUD.rows) do row:Hide() end
+        radarHUD:SetHeight(54)
+    else
+        radarHUD.emptyText:Hide()
+        for i = 1, 3 do
+            local row = radarHUD.rows[i]
+            local entry = radarEntries[i]
+            if entry then
+                local col = (KB.ClassColors and KB.ClassColors[entry.class]) or "FFFFFF"
+                local lvlStr = (entry.level and entry.level > 0 and entry.level <= 85) and string.format("[%d] ", entry.level) or ""
+                row.nameText:SetText(string.format("|cff%s%s%s|r", col, lvlStr, entry.name))
+
+                local guildStr = (entry.guild and entry.guild ~= "None" and entry.guild ~= "") and (" <" .. entry.guild .. ">") or ""
+                local zoneShort = entry.zone or "Wilderness"
+                if #zoneShort > 22 then zoneShort = zoneShort:sub(1, 20) .. ".." end
+                row.subText:SetText(string.format("|cff94a3b8%s%s|r", zoneShort, guildStr))
+
+                local diff = math.max(0, time() - (entry.time or time()))
+                local timeStr = (diff < 60) and string.format("%ds ago", diff) or string.format("%dm ago", math.floor(diff / 60))
+                row.timeText:SetText(string.format("|cff64748b%s|r", timeStr))
+
+                local coords = CLASS_COORDS and CLASS_COORDS[entry.class]
+                if coords then
+                    row.icon:SetTexture(CLASS_ICON_TEXTURE or "Interface\\TargetingFrame\\UI-Classes-Circles")
+                    row.icon:SetTexCoord(unpack(coords))
+                    row.icon:Show()
+                else
+                    row.icon:Hide()
+                end
+
+                row:Show()
+            else
+                row:Hide()
+            end
+        end
+        radarHUD:SetHeight(24 + count * 30)
+    end
+end
+
+function UI:UpdateRadarHUD(info)
+    if InCombatLockdown() then return end
+    if not radarHUD then UI:InitializeRadarHUD() end
+    if not radarHUD then return end
+
+    local s = WoWKillboardSettings or KB.DefaultSettings
+    if s and s.showRadarHUD == false then return end
+
+    -- Check if hostile already in radarEntries and update
+    local found = nil
+    for idx, e in ipairs(radarEntries) do
+        if e.name == info.name then
+            found = idx
+            break
+        end
+    end
+    if found then
+        table.remove(radarEntries, found)
+    end
+    table.insert(radarEntries, 1, {
+        name = info.name,
+        class = (info.class or "UNKNOWN"):upper(),
+        level = info.level or 0,
+        guild = info.guild,
+        zone = GetZoneText() or "Wilderness",
+        time = time(),
+    })
+    while #radarEntries > 3 do
+        table.remove(radarEntries)
+    end
+
+    UI:RefreshRadarHUD()
+    radarHUD:Show()
+
+    -- Auto-dismiss timer after 15 seconds of inactivity if not hovered
+    if radarHUD.fadeTimer then
+        radarHUD.fadeTimer:Cancel()
+    end
+    if C_Timer and C_Timer.NewTimer then
+        radarHUD.fadeTimer = C_Timer.NewTimer(15, function()
+            if radarHUD and not radarHUD:IsMouseOver() then
+                radarHUD:Hide()
+            end
+        end)
+    end
+end
+
+function UI:ToggleRadarHUD()
+    if not radarHUD then UI:InitializeRadarHUD() end
+    if not radarHUD then return end
+    if radarHUD:IsShown() then
+        radarHUD:Hide()
+        print("|cff00ccff[WoWKB]|r Tactical Radar HUD: |cffff4444Hidden|r.")
+    else
+        UI:RefreshRadarHUD()
+        radarHUD:Show()
+        print("|cff00ccff[WoWKB]|r Tactical Radar HUD: |cff00ff00Shown|r (Click & drag header to reposition).")
+    end
 end
 
 

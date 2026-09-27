@@ -40,8 +40,11 @@ KB.DefaultSettings = {
     showMinimapButton = true,
     bountyAlertRadius = 60,       -- alerts when wanted debtor is within proximity
     redemptionTaxPercent = 10,   -- 10% fee when redeeming Oathbreaker status
-    combatWindowSeconds = 15,    -- temporal window for grouping/gang inference
-    enableRadarAlerts = true,    -- announce detected enemy players in chat on target
+    combatWindowSeconds = 30,    -- temporal window for grouping/gang inference and solo purity
+    enableRadarAlerts = true,    -- detect and display hostile players on radar
+    showRadarHUD = true,         -- show floating moveable Radar HUD window
+    radarChatAlerts = false,     -- mute radar spam in chat (HUD only)
+    radarPos = nil,              -- saved position for radar HUD: { point, relPoint, x, y }
 }
 
 -- Fallback Class Colors (ARGB Hex)
