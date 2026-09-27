@@ -15,6 +15,16 @@ local KB = WoWKillboard
 KB.IntelScanner = {}
 local IS = KB.IntelScanner
 
+local function SafePrint(...)
+    if KB and KB.Utils and KB.Utils.SafePrint then
+        KB.Utils.SafePrint(...)
+    elseif not InCombatLockdown() and DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        local pieces = {}
+        for i = 1, select("#", ...) do table.insert(pieces, tostring(select(i, ...))) end
+        DEFAULT_CHAT_FRAME:AddMessage(table.concat(pieces, " "))
+    end
+end
+
 IS.LastSpotTime = 0
 IS.RecentSightings = {}
 
@@ -35,26 +45,26 @@ function IS:SpotTarget(notes)
     if IsInInstance then
         local inInstance, instanceType = IsInInstance()
         if inInstance or (instanceType and instanceType ~= "none") then
-            print("|cffff0000[WoWKB Error]|r Tactical Intel spotting is restricted to open world battlefields! Dungeons and BGs are excluded.")
+            SafePrint("|cffff0000[WoWKB Error]|r Tactical Intel spotting is restricted to open world battlefields! Dungeons and BGs are excluded.")
             return
         end
     end
 
     -- Guard: Target validation
     if not UnitExists("target") or not UnitIsPlayer("target") then
-        print("|cffff9900[WoWKB Intel]|r No enemy player targeted! Target an enemy hostile first to spot them.")
+        SafePrint("|cffff9900[WoWKB Intel]|r No enemy player targeted! Target an enemy hostile first to spot them.")
         return
     end
 
     if not UnitCanAttack("player", "target") then
-        print("|cffff9900[WoWKB Intel]|r Target is friendly! Tactical spotting is reserved for enemy hostiles.")
+        SafePrint("|cffff9900[WoWKB Intel]|r Target is friendly! Tactical spotting is reserved for enemy hostiles.")
         return
     end
 
     -- Throttle rapid double-spotting
     local now = time()
     if now - IS.LastSpotTime < 2 then
-        print("|cffff9900[WoWKB Intel]|r Scout telemetry transmitting... please wait a moment.")
+        SafePrint("|cffff9900[WoWKB Intel]|r Scout telemetry transmitting... please wait a moment.")
         return
     end
     IS.LastSpotTime = now
@@ -113,7 +123,7 @@ function IS:SpotTarget(notes)
         targetName, targetLevel, targetClass, guildTag, zone, subzoneTag, x, y, noteText)
 
     -- Local feedback
-    print(string.format("|cffff8000[WoWKB Intel]|r Reported hostile: |cffff3333%s|r%s in |cffffffff%s|r at (%.1f, %.1f)!",
+    SafePrint(string.format("|cffff8000[WoWKB Intel]|r Reported hostile: |cffff3333%s|r%s in |cffffffff%s|r at (%.1f, %.1f)!",
         targetName, guildTag, zone, x, y))
 
     -- Channel broadcasts
@@ -139,7 +149,7 @@ function IS:OnIncomingSighting(sighting)
     local guildTag = (sighting.target_guild and sighting.target_guild ~= "" and " <" .. sighting.target_guild .. ">" or "")
     local repGuild = (sighting.reporter_guild and sighting.reporter_guild ~= "" and " <" .. sighting.reporter_guild .. ">" or "")
     
-    print(string.format("|cffff8000[WoWKB Intel Wire]|r Scout |cff00ff00%s|r%s spotted hostile |cffff3333%s|r%s in |cffffffff%s|r (%.1f, %.1f)! *%s*",
+    SafePrint(string.format("|cffff8000[WoWKB Intel Wire]|r Scout |cff00ff00%s|r%s spotted hostile |cffff3333%s|r%s in |cffffffff%s|r (%.1f, %.1f)! *%s*",
         sighting.reporter_name or "Ally", repGuild,
         sighting.target_name, guildTag,
         sighting.zone or "Wilderness",

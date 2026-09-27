@@ -15,6 +15,16 @@ local KB = WoWKillboard
 KB.Reinforcements = {}
 local RF = KB.Reinforcements
 
+local function SafePrint(...)
+    if KB and KB.Utils and KB.Utils.SafePrint then
+        KB.Utils.SafePrint(...)
+    elseif not InCombatLockdown() and DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        local pieces = {}
+        for i = 1, select("#", ...) do table.insert(pieces, tostring(select(i, ...))) end
+        DEFAULT_CHAT_FRAME:AddMessage(table.concat(pieces, " "))
+    end
+end
+
 -- Active state tracking
 RF.ActiveBeacon = nil
 RF.AutoInviteActive = false
@@ -97,14 +107,14 @@ function RF:TriggerCallForBackup()
     if IsInInstance then
         local inInstance, instanceType = IsInInstance()
         if inInstance or (instanceType and instanceType ~= "none") then
-            print("|cffff0000[WoWKB Error]|r The War Horn cannot be sounded within dungeons, raids, or battlegrounds! Open world PvP only.")
+            SafePrint("|cffff0000[WoWKB Error]|r The War Horn cannot be sounded within dungeons, raids, or battlegrounds! Open world PvP only.")
             return false, "Instances prohibited"
         end
     end
 
     local now = time()
     if (now - RF.LastDistressTime) < 15 then
-        print("|cffff9900[WoWKB War Horn]|r War Horn on cooldown. Please wait a few seconds before sounding the horn again.")
+        SafePrint("|cffff9900[WoWKB War Horn]|r War Horn on cooldown. Please wait a few seconds before sounding the horn again.")
         return false, "Cooldown active"
     end
     RF.LastDistressTime = now
@@ -208,8 +218,8 @@ function RF:TriggerCallForBackup()
     PlaySound(8959)
 
     -- Local system notice
-    print(string.format("|cffff0000[WoWKB WAR HORN]|r |cffffffffTHE WAR HORN SOUNDS!|r Broadcasting frontline coordinates |cff00ffcc(%s)|r in |cffffd100%s|r.", coordsFormatted, zone))
-    print("|cff00ccff[WoWKB WAR HORN]|r War Party Muster is |cff00ff00ACTIVE|r. Anyone whispering |cffffd100'rally'|r, |cffffd100'backup'|r, or |cffffd100'invite'|r will automatically join your unit.")
+    SafePrint(string.format("|cffff0000[WoWKB WAR HORN]|r |cffffffffTHE WAR HORN SOUNDS!|r Broadcasting frontline coordinates |cff00ffcc(%s)|r in |cffffd100%s|r.", coordsFormatted, zone))
+    SafePrint("|cff00ccff[WoWKB WAR HORN]|r War Party Muster is |cff00ff00ACTIVE|r. Anyone whispering |cffffd100'rally'|r, |cffffd100'backup'|r, or |cffffd100'invite'|r will automatically join your unit.")
 
     -- Broadcast to Guild Chat
     if IsInGuild() then
@@ -257,7 +267,7 @@ function RF:ResolveBeacon(silent)
     RF.AutoInviteExpiry = 0
 
     if not silent then
-        print("|cff00ff00[WoWKB WAR HORN]|r The front is secured. War Horn dismissed and recruitment closed.")
+        SafePrint("|cff00ff00[WoWKB WAR HORN]|r The front is secured. War Horn dismissed and recruitment closed.")
         if IsInGuild() then
             SendChatMessage("[WoWKillboard] ⚔️ The front is secured. The enemy has fallen or retreated. War Horn dismissed. Blood and Honor!", "GUILD")
         end
@@ -300,7 +310,7 @@ function RF:OnIncomingDistress(beaconData)
 
     -- Print tactical notification to chat frame
     local coordsStr = string.format("%.1f, %.1f", beaconData.coord_x or 0, beaconData.coord_y or 0)
-    print(string.format("|cffff2222[WoWKB WAR HORN ALERT]|r |cffffd100%s|r (%s) is engaged in mortal combat in |cff00ccff%s|r at |cff00ffcc(%s)|r! Swarmed by |cffff4444%d|r hostiles (%s). Whisper |cffffd100'/w %s rally'|r to join the war party!",
+    SafePrint(string.format("|cffff2222[WoWKB WAR HORN ALERT]|r |cffffd100%s|r (%s) is engaged in mortal combat in |cff00ccff%s|r at |cff00ffcc(%s)|r! Swarmed by |cffff4444%d|r hostiles (%s). Whisper |cffffd100'/w %s rally'|r to join the war party!",
         beaconData.character_name,
         beaconData.character_class or "WARRIOR",
         beaconData.zone or "Wilderness",
@@ -389,7 +399,7 @@ end
 function RF:RequestJoinRally(leaderName)
     if not leaderName or leaderName == "" then return false end
     SendChatMessage("rally", "WHISPER", nil, leaderName)
-    print(string.format("|cff00ff00[WoWKB Rally]|r Sent join request to Vanguard commander |cffffd100%s|r! Awaiting squad invite...", leaderName))
+    SafePrint(string.format("|cff00ff00[WoWKB Rally]|r Sent join request to Vanguard commander |cffffd100%s|r! Awaiting squad invite...", leaderName))
     return true
 end
 

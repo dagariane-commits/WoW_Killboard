@@ -98,9 +98,9 @@ function KM:RecordKill(data)
 
         local actionVerb = killmail.isDuel and "defeated" or "destroyed"
         local chatMsg = string.format("|cff00ccff[WoWKB]|r %s %s %s %s in %s", badge, killerStr, actionVerb, victimStr, locStr)
-        print(chatMsg)
+        KB.Utils.SafePrint(chatMsg)
         if not killmail.isDuel and isPlayerInvolved then
-            print("|cff888888[WoWKB]|r Tip: Type |cffffff00/reload|r or |cffffff00/kb sync|r to sync combat data to the website.")
+            KB.Utils.SafePrint("|cff888888[WoWKB]|r Tip: Type |cffffff00/reload|r or |cffffff00/kb sync|r to sync combat data to the website.")
         end
     end
 
@@ -179,7 +179,7 @@ function KM:RecordPveDeath(data)
     -- Console chat feedback
     local victimStr = KB.Utils.ColorizeByClass(string.format("[%d] %s", pveRecord.victim.level, pveRecord.victim.name), pveRecord.victim.class)
     local chatMsg = string.format("|cffff2020[WoWKB PvE]|r %s was executed by |cffffd700[%s]|r (%s) in %s!", victimStr, pveRecord.npc.name, pveRecord.npc.spell or "Combat", pveRecord.location.zone)
-    print(chatMsg)
+    KB.Utils.SafePrint(chatMsg)
 
     return pveRecord
 end

@@ -1342,12 +1342,10 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             <button class="pill-btn ${isGuilds ? 'active' : ''}" onclick="setLegendsTabType('GUILDS')">Guild Ranks</button>
           </div>
 
-          <!-- Combat Mode Filter Pills (Active for both Player and Guild Ranks) -->
-          <div class="filter-pills" id="legends-mode-pills">
-            <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
-            <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
-            <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
-            <button class="pill-btn disabled" disabled title="Arenas (Unavailable in Classic Era/Beta)" style="opacity:0.5; cursor:not-allowed;">Arenas</button>
+          <div style="display:flex; align-items:center;">
+            <span style="font-size:0.75rem; color:#10b981; font-weight:700; background:rgba(16,185,129,0.12); padding:4px 10px; border-radius:4px; border:1px solid rgba(16,185,129,0.25); letter-spacing:0.3px;">
+              Open World PvP
+            </span>
           </div>
         </div>
       </div>

@@ -460,7 +460,58 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         local pGUID = UnitGUID("player")
         local isTargetVictim = (UnitExists("target") and (UnitGUID("target") == victimGUID or UnitName("target") == victimName)) or
                                (activeEnemyTarget and (activeEnemyTarget.guid == victimGUID or activeEnemyTarget.name == victimName))
-        if isTargetVictim and pGUID then
+
+        -- Check if an ally was buffed/assisted recently or is in FriendlyCluster
+        local assistedAlly = nil
+        if CT.PlayerAssistedAllies then
+            for aGUID, aData in pairs(CT.PlayerAssistedAllies) do
+                if aGUID ~= pGUID and (now - (aData.time or 0)) <= 30 then
+                    assistedAlly = aData
+                    break
+                end
+            end
+        end
+        if not assistedAlly and CT.FriendlyCluster then
+            for fGUID, fTime in pairs(CT.FriendlyCluster) do
+                if fGUID ~= pGUID and (now - fTime) <= 30 then
+                    local fInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(fGUID)
+                    assistedAlly = { guid = fGUID, name = (fInfo and fInfo.name) or "Friendly Ally", class = (fInfo and fInfo.class) or "UNKNOWN" }
+                    break
+                end
+            end
+        end
+
+        if assistedAlly and isTargetVictim then
+            -- Player assisted an ally who engaged the target: attribute killing blow to the ally!
+            finalBlowKillerGUID = assistedAlly.guid
+            finalBlowKillerName = assistedAlly.name
+            local aInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(assistedAlly.guid)
+            table.insert(attackersList, {
+                guid = assistedAlly.guid,
+                name = assistedAlly.name or "Friendly Ally",
+                damage = 0,
+                spell = "Killing Blow",
+                class = (aInfo and aInfo.class) or assistedAlly.class or "UNKNOWN",
+                level = (aInfo and aInfo.level) or 0,
+                guild = (aInfo and aInfo.guild) or "None",
+                faction = (aInfo and aInfo.faction) or UnitFactionGroup("player") or "Unknown",
+                isPlayer = true,
+            })
+            -- Also insert player as support assist
+            local _, pClass = UnitClass("player")
+            table.insert(attackersList, {
+                guid = pGUID,
+                name = UnitName("player") or "Player",
+                damage = 0,
+                spell = "Support Assist",
+                class = pClass or "UNKNOWN",
+                level = UnitLevel("player") or 0,
+                guild = GetGuildInfo("player") or "None",
+                faction = UnitFactionGroup("player") or "Unknown",
+                isPlayer = true,
+            })
+            hasPlayerAttacker = true
+        elseif isTargetVictim and pGUID then
             finalBlowKillerGUID = pGUID
             finalBlowKillerName = UnitName("player")
             local _, pClass = UnitClass("player")
@@ -469,7 +520,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             table.insert(attackersList, {
                 guid = pGUID,
                 name = finalBlowKillerName or "Player",
-                damage = CT.SessionStats.damageDone or 0,
+                damage = 0,
                 spell = "Killing Blow",
                 class = pClass or "UNKNOWN",
                 level = UnitLevel("player") or 0,
@@ -790,7 +841,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             guild = killerInfo.guild,
             faction = killerInfo.faction,
             partySize = (finalBlowKillerGUID == playerGUID) and friendlyPartySize or math.max(1, #attackersList),
-            damageDone = (finalBlowKillerGUID == playerGUID) and (totalDamage > 0 and totalDamage or CT.SessionStats.damageDone) or totalDamage,
+            damageDone = totalDamage,
             healingDone = (finalBlowKillerGUID == playerGUID) and CT.SessionStats.healingDone or 0,
         },
         victim = {
@@ -1227,6 +1278,33 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             damageDone = totalDamage,
             healingDone = 0,
         }
+    elseif CT.PlayerAssistedAllies and next(CT.PlayerAssistedAllies) then
+        local firstAllyGUID, aData = next(CT.PlayerAssistedAllies)
+        local aInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(firstAllyGUID)
+        killerData = {
+            guid = firstAllyGUID,
+            name = (aInfo and aInfo.name) or (aData and aData.name) or "Friendly Ally",
+            level = (aInfo and aInfo.level) or 0,
+            class = (aInfo and aInfo.class) or "UNKNOWN",
+            guild = (aInfo and aInfo.guild) or "None",
+            faction = (aInfo and aInfo.faction) or (pFaction or "Unknown"),
+            partySize = attackersCount,
+            damageDone = totalDamage,
+            healingDone = 0,
+        }
+    elseif not hasPlayerDamage then
+        -- Player dealt 0 damage: player was an assist/bystander who received honor credit from nearby faction kill
+        killerData = {
+            guid = "ALLIED_VANGUARD",
+            name = "Allied Vanguard",
+            level = UnitLevel("player") or 0,
+            class = "UNKNOWN",
+            guild = "None",
+            faction = pFaction or "Unknown",
+            partySize = attackersCount,
+            damageDone = totalDamage,
+            healingDone = 0,
+        }
     else
         killerData = {
             guid = playerGUID or "PLAYER",
@@ -1288,7 +1366,7 @@ function CT:RecordManualKill(customTargetName)
     end
 
     self:OnPlayerHonorableKill(targetName, targetGuid, "target")
-    print(string.format("|cff00ff00[WoWKB]|r Manual killmail registered for |cffffff00%s|r.", targetName))
+    KB.Utils.SafePrint(string.format("|cff00ff00[WoWKB]|r Manual killmail registered for |cffffff00%s|r.", targetName))
 end
 
 -- Process a 1v1 Duel result (Knockout or Forfeit)
@@ -1534,17 +1612,14 @@ function CT:CheckPendingDeathBounty()
         return
     end
 
-    if not InCombatLockdown() then
-        local killer = CT.PendingDeathBounty
-        CT.PendingDeathBounty = nil
-        if KB.UI and KB.UI.ShowDeathBountyPrompt then
-            KB.UI:ShowDeathBountyPrompt(killer)
-        end
-    else
-        if C_Timer and C_Timer.After then
-            C_Timer.After(0.5, function() CT:CheckPendingDeathBounty() end)
-            C_Timer.After(1.5, function() CT:CheckPendingDeathBounty() end)
-        end
+    if InCombatLockdown() then
+        return
+    end
+
+    local killer = CT.PendingDeathBounty
+    CT.PendingDeathBounty = nil
+    if KB.UI and KB.UI.ShowDeathBountyPrompt then
+        KB.UI:ShowDeathBountyPrompt(killer)
     end
 end
 
@@ -1672,7 +1747,18 @@ frame:SetScript("OnEvent", function(self, event, ...)
         end
         CT:CheckPendingDeathBounty()
 
+    elseif event == "PLAYER_REGEN_DISABLED" then
+        if KB.UI and KB.UI.OnPlayerRegenDisabled then
+            KB.UI:OnPlayerRegenDisabled()
+        end
+
     elseif event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" or event == "PLAYER_REGEN_ENABLED" then
+        if KB.Utils and KB.Utils.FlushPrintQueue then
+            KB.Utils.FlushPrintQueue()
+        end
+        if KB.UI and KB.UI.OnPlayerRegenEnabled then
+            KB.UI:OnPlayerRegenEnabled()
+        end
         CT:CheckPendingDeathBounty()
 
     elseif event == "PLAYER_TARGET_CHANGED" then
@@ -1699,24 +1785,6 @@ frame:SetScript("OnEvent", function(self, event, ...)
                     }
                     if tGuid then
                         CT.RecentEngagedEnemies[tGuid] = activeEnemyTarget
-                    end
-                end
-            end
-        end
-
-    elseif event == "UNIT_HEALTH" or event == "UNIT_FLAGS" then
-        local unit = ...
-        if unit == "target" or unit == "focus" or unit == "targettarget" or (unit and unit:match("^nameplate%d+$")) then
-            if UnitExists(unit) and UnitIsPlayer(unit) then
-                local isDead = (UnitIsDead(unit) or UnitIsDeadOrGhost(unit)) and true or false
-                if isDead then
-                    local isEnemy = UnitIsEnemy("player", unit) or (UnitCanAttack and UnitCanAttack("player", unit)) or (not UnitIsFriend("player", unit))
-                    if isEnemy or (activeEnemyTarget and activeEnemyTarget.guid == UnitGUID(unit)) then
-                        local deadName = UnitName(unit)
-                        local deadGuid = UnitGUID(unit)
-                        if deadName and deadName ~= "" then
-                            CT:OnPlayerHonorableKill(deadName, deadGuid, unit)
-                        end
                     end
                 end
             end
@@ -1788,18 +1856,18 @@ frame:SetScript("OnEvent", function(self, event, ...)
             if context.isArena then
                 if isWin then
                     WoWKillboardDB.stats.arenas.wins = WoWKillboardDB.stats.arenas.wins + 1
-                    print("|cff00ff00[WoWKB]|r Arena Victory recorded!")
+                    KB.Utils.SafePrint("|cff00ff00[WoWKB]|r Arena Victory recorded!")
                 else
                     WoWKillboardDB.stats.arenas.losses = WoWKillboardDB.stats.arenas.losses + 1
-                    print("|cffff3333[WoWKB]|r Arena Defeat recorded.")
+                    KB.Utils.SafePrint("|cffff3333[WoWKB]|r Arena Defeat recorded.")
                 end
             elseif context.isBattleground then
                 if isWin then
                     WoWKillboardDB.stats.bgs.wins = WoWKillboardDB.stats.bgs.wins + 1
-                    print("|cff00ff00[WoWKB]|r Battleground Victory recorded!")
+                    KB.Utils.SafePrint("|cff00ff00[WoWKB]|r Battleground Victory recorded!")
                 else
                     WoWKillboardDB.stats.bgs.losses = WoWKillboardDB.stats.bgs.losses + 1
-                    print("|cffff3333[WoWKB]|r Battleground Defeat recorded.")
+                    KB.Utils.SafePrint("|cffff3333[WoWKB]|r Battleground Defeat recorded.")
                 end
             end
             if KB.UI and KB.UI.RefreshIfVisible then KB.UI:RefreshIfVisible() end
@@ -1818,6 +1886,7 @@ frame:RegisterEvent("CHAT_MSG_SYSTEM")
 frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("PLAYER_ALIVE")
 frame:RegisterEvent("PLAYER_UNGHOST")
+frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("PLAYER_TARGET_CHANGED")
 frame:RegisterEvent("PLAYER_PVP_KILLS_CHANGED")
@@ -1826,10 +1895,3 @@ frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 
-if frame.RegisterUnitEvent then
-    pcall(frame.RegisterUnitEvent, frame, "UNIT_FLAGS", "target", "focus", "targettarget")
-    pcall(frame.RegisterUnitEvent, frame, "UNIT_HEALTH", "target", "focus", "targettarget")
-else
-    pcall(frame.RegisterEvent, frame, "UNIT_FLAGS")
-    pcall(frame.RegisterEvent, frame, "UNIT_HEALTH")
-end

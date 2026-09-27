@@ -9,6 +9,16 @@ local KB = WoWKillboard
 KB.BountyEngine = {}
 local BE = KB.BountyEngine
 
+local SafePrint = function(...)
+    if KB.Utils and KB.Utils.SafePrint then
+        KB.Utils.SafePrint(...)
+    elseif not InCombatLockdown() and DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        local pieces = {}
+        for i = 1, select("#", ...) do table.insert(pieces, tostring(select(i, ...))) end
+        DEFAULT_CHAT_FRAME:AddMessage(table.concat(pieces, " "))
+    end
+end
+
 local frame = CreateFrame("Frame")
 
 -- Initialize database tables
@@ -24,13 +34,13 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, amountInput, tar
     if IsInInstance then
         local inInstance, instanceType = IsInInstance()
         if inInstance or (instanceType and instanceType ~= "none") then
-            print("|cffff0000[WoWKB Error]|r Marks of Spite can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
+            SafePrint("|cffff0000[WoWKB Error]|r Marks of Spite can only be declared upon the open battlefields of Azeroth (Open World PvP only).")
             return false, "Instances prohibited"
         end
     end
 
     if not targetName or targetName == "" then
-        print("|cffff0000[WoWKB Error]|r Target name cannot be empty.")
+        SafePrint("|cffff0000[WoWKB Error]|r Target name cannot be empty.")
         return false, "Target name empty"
     end
 
@@ -45,13 +55,13 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, amountInput, tar
     end
 
     if copper <= 0 then
-        print("|cffff0000[WoWKB Error]|r Mark amount must be greater than 0.")
+        SafePrint("|cffff0000[WoWKB Error]|r Mark amount must be greater than 0.")
         return false, "Invalid amount"
     end
 
     local playerGold = GetMoney()
     if playerGold < copper then
-        print(string.format("|cffff0000[WoWKB Error]|r Insufficient funds! You have %s, but need %s.", KB.Utils.FormatMoney(playerGold), KB.Utils.FormatMoney(copper)))
+        SafePrint(string.format("|cffff0000[WoWKB Error]|r Insufficient funds! You have %s, but need %s.", KB.Utils.FormatMoney(playerGold), KB.Utils.FormatMoney(copper)))
         return false, "Insufficient funds"
     end
 
@@ -79,7 +89,7 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, amountInput, tar
     BE:InitDB()
     WoWKillboardBounties[bountyId] = bounty
 
-    print(string.format("|cffffd700[WoWKB Mark Declared]|r Mark of Spite of %s declared on |cffff3333%s|r!", KB.Utils.FormatMoney(copper), targetName))
+    SafePrint(string.format("|cffffd700[WoWKB Mark Declared]|r Mark of Spite of %s declared on |cffff3333%s|r!", KB.Utils.FormatMoney(copper), targetName))
 
     -- Broadcast to P2P peers
     if KB.Sync and KB.Sync.BroadcastBounty then
@@ -95,7 +105,7 @@ function BE:AcceptBounty(bountyId)
     if not WoWKillboardBounties or not WoWKillboardBounties[bountyId] then return false end
     WoWKillboardAcceptedBounties[bountyId] = time()
     local b = WoWKillboardBounties[bountyId]
-    print(string.format("|cff00ff00[WoWKB Contract Accepted]|r Tracking Mark of Spite on |cffff3333%s|r! Deliver the final killing blow to claim %s.",
+    SafePrint(string.format("|cff00ff00[WoWKB Contract Accepted]|r Tracking Mark of Spite on |cffff3333%s|r! Deliver the final killing blow to claim %s.",
         b.targetName, KB.Utils.FormatMoney(b.amountCopper)))
     if KB.UI and KB.UI.RefreshIfVisible then KB.UI:RefreshIfVisible() end
     return true
@@ -136,9 +146,22 @@ function BE:ShowAlert(msg, r, g, b)
     if not alertFrame then return end
     alertText:SetText(msg)
     alertText:SetTextColor(r or 1, g or 0.8, b or 0.2)
+    alertFrame:SetAlpha(1.0)
     alertFrame:Show()
     if alertTimer then alertTimer:Cancel() end
-    alertTimer = C_Timer.NewTimer(4.5, function() if alertFrame then alertFrame:Hide() end end)
+    alertTimer = C_Timer.NewTimer(4.5, function()
+        if alertFrame then
+            if InCombatLockdown() then
+                alertFrame:SetAlpha(0)
+                if KB.UI then
+                    KB.UI.PendingHides = KB.UI.PendingHides or {}
+                    table.insert(KB.UI.PendingHides, alertFrame)
+                end
+            else
+                alertFrame:Hide()
+            end
+        end
+    end)
 end
 
 -- Anti-Win-Trade Verification Rule Engine
@@ -178,7 +201,7 @@ function BE:CheckKillForBounty(killmail)
             targetMatches = true
             bounty.aliasHistory = bounty.aliasHistory or {}
             table.insert(bounty.aliasHistory, bounty.targetName)
-            print(string.format("|cffff9900[WoWKB Retribution Tracked]|r Outlaw %s renamed to %s! Blood contract locked to permanent character GUID.",
+            SafePrint(string.format("|cffff9900[WoWKB Retribution Tracked]|r Outlaw %s renamed to %s! Blood contract locked to permanent character GUID.",
                 bounty.targetName, killmail.victim.name))
             bounty.targetName = killmail.victim.name
         end
@@ -187,7 +210,7 @@ function BE:CheckKillForBounty(killmail)
             -- Killing Blow Eligibility: Hunter must have accepted the contract
             local isPlayerKiller = (killmail.killer.name == UnitName("player"))
             if isPlayerKiller and not BE:IsBountyAccepted(bountyId) then
-                print(string.format("|cffff9900[WoWKB Blood Debt Unclaimed]|r Slain enemy %s had an active execution contract of %s, but you had not accepted the contract!",
+                SafePrint(string.format("|cffff9900[WoWKB Blood Debt Unclaimed]|r Slain enemy %s had an active execution contract of %s, but you had not accepted the contract!",
                     bounty.targetName, KB.Utils.FormatMoney(bounty.amountCopper)))
             else
                 local verified, reason = BE:VerifyBountyKill(bounty, killmail)
@@ -198,7 +221,7 @@ function BE:CheckKillForBounty(killmail)
                     bounty.paymentDeadline = time() + (86400 * 2) -- 48 hours to pay
 
                     local goldStr = KB.Utils.FormatMoney(bounty.amountCopper)
-                    print(string.format("|cffffd700[WoWKB CONTRACT EXECUTED]|r Vanguard Hunter |cff00ff00%s|r executed |cffff3333%s|r! Reward: %s. Contractor |cff00ccff%s|r has 48h to honor the blood debt.",
+                    SafePrint(string.format("|cffffd700[WoWKB CONTRACT EXECUTED]|r Vanguard Hunter |cff00ff00%s|r executed |cffff3333%s|r! Reward: %s. Contractor |cff00ccff%s|r has 48h to honor the blood debt.",
                         bounty.hunterName, bounty.targetName, goldStr, bounty.placerName))
 
                     local s = WoWKillboardSettings or KB.DefaultSettings
@@ -211,7 +234,7 @@ function BE:CheckKillForBounty(killmail)
                         BE:ShowAlert(string.format("BLOOD DEBT DUE: Contract on %s executed by %s!", bounty.targetName, bounty.hunterName), 1, 0.8, 0)
                     end
                 else
-                    print(string.format("|cffff9900[WoWKB Bounty Unverified]|r Kill on %s rejected: %s", bounty.targetName, reason))
+                    SafePrint(string.format("|cffff9900[WoWKB Bounty Unverified]|r Kill on %s rejected: %s", bounty.targetName, reason))
                 end
             end
         end
@@ -252,7 +275,7 @@ function BE:AuditDebtLedger()
 
             bounty.status = KB.STATUS.OATHBREAKER
 
-            print(string.format("|cffff0000[WoWKB TRAITOR'S GIBBET ALERT]|r %s defaulted on blood debt of %s! Now condemned to the Traitor's Gibbet on the realm killboard.",
+            SafePrint(string.format("|cffff0000[WoWKB TRAITOR'S GIBBET ALERT]|r %s defaulted on blood debt of %s! Now condemned to the Traitor's Gibbet on the realm killboard.",
                 placer, KB.Utils.FormatMoney(totalOwed)))
         end
     end
@@ -282,20 +305,20 @@ end
 function BE:PayOffDebt(debtorName)
     local debt = WoWKillboardDebtLedger[debtorName]
     if not debt then
-        print("|cff00ff00[WoWKB]|r No outstanding debt found for " .. debtorName)
+        SafePrint("|cff00ff00[WoWKB]|r No outstanding debt found for " .. debtorName)
         return
     end
 
     local totalCopper = debt.amountOwedCopper
     if GetMoney() < totalCopper then
-        print(string.format("|cffff0000[WoWKB Error]|r You have %s, but need %s to clear your name.", KB.Utils.FormatMoney(GetMoney()), KB.Utils.FormatMoney(totalCopper)))
+        SafePrint(string.format("|cffff0000[WoWKB Error]|r You have %s, but need %s to clear your name.", KB.Utils.FormatMoney(GetMoney()), KB.Utils.FormatMoney(totalCopper)))
         return
     end
 
     -- Clear debt status
     debt.status = KB.STATUS.REDEEMED
     debt.redeemedDate = time()
-    print(string.format("|cff00ff00[WoWKB Redeemed]|r Debt of %s cleared! %s is in good standing.", KB.Utils.FormatMoney(totalCopper), debtorName))
+    SafePrint(string.format("|cff00ff00[WoWKB Redeemed]|r Debt of %s cleared! %s is in good standing.", KB.Utils.FormatMoney(totalCopper), debtorName))
 
     -- Trigger UI refresh
     if KB.UI and KB.UI.RefreshIfVisible then
@@ -367,7 +390,9 @@ end
 -- Frame Event routing for Debt Proximity Alerts (Target-only, zero mouseover taint)
 frame:SetScript("OnEvent", function(self, event, unit)
     if event == "PLAYER_TARGET_CHANGED" then
-        BE:CheckUnitForDebt("target")
+        if not InCombatLockdown() then
+            BE:CheckUnitForDebt("target")
+        end
     elseif event == "PLAYER_ENTERING_WORLD" then
         BE:InitDB()
         BE:AuditDebtLedger()

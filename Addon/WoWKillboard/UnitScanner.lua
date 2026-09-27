@@ -102,8 +102,8 @@ function US:ScanUnit(unit)
     charEntry.lastSeen = time()
     WoWKillboardDB.characters[name] = charEntry
 
-    -- KOS Blacklist & Hostile Radar Check (Hostile player units only)
-    if UnitCanAttack and UnitCanAttack("player", unit) and UnitIsPlayer(unit) then
+    -- KOS Blacklist & Hostile Radar Check (Hostile player units only, gated against InCombatLockdown)
+    if not InCombatLockdown() and UnitCanAttack and UnitCanAttack("player", unit) and UnitIsPlayer(unit) then
         local isKos = US:CheckKOS(info)
         if not isKos then
             US:CheckHostileRadar(info)
@@ -169,19 +169,19 @@ function US:CheckKOS(info)
 
         if isDeserter then
             local former = deserterInfo and deserterInfo.former_guild or guild or "Enemy Guild"
-            print(string.format("|cffff0000[🚨 KOS DESERTER DETECTED]|r |cffffd100%s|r (Ex-Guild: |cffff5555<%s>|r) - SERVING 30-DAY DESERTER PENANCE! KILL ON SIGHT!",
+            KB.Utils.SafePrint(string.format("|cffff0000[🚨 KOS DESERTER DETECTED]|r |cffffd100%s|r (Ex-Guild: |cffff5555<%s>|r) - SERVING 30-DAY DESERTER PENANCE! KILL ON SIGHT!",
                 name, former))
             if KB.UI and KB.UI.ShowKOSAlert then
                 KB.UI:ShowKOSAlert(name, former, "DESERTER", "Serving 30-Day Deserter Penance")
             end
         elseif isKosGuild then
-            print(string.format("|cffff0000[🚨 GUILD KOS BLACKLIST]|r |cffffd100%s|r (<%s>) - CONSIGNED TO THE REALM BLACKLIST (%s)! DESTROY ON SIGHT!",
+            KB.Utils.SafePrint(string.format("|cffff0000[🚨 GUILD KOS BLACKLIST]|r |cffffd100%s|r (<%s>) - CONSIGNED TO THE REALM BLACKLIST (%s)! DESTROY ON SIGHT!",
                 name, guild, kosGuildReason))
             if KB.UI and KB.UI.ShowKOSAlert then
                 KB.UI:ShowKOSAlert(name, guild, "GUILD_KOS", kosGuildReason)
             end
         elseif isKosPlayer then
-            print(string.format("|cffff0000[🚨 ENEMY KOS TARGET]|r |cffffd100%s|r is BRANDED KOS (%s)! ENGAGE IMMEDIATELY!",
+            KB.Utils.SafePrint(string.format("|cffff0000[🚨 ENEMY KOS TARGET]|r |cffffd100%s|r is BRANDED KOS (%s)! ENGAGE IMMEDIATELY!",
                 name, kosPlayerReason))
             if KB.UI and KB.UI.ShowKOSAlert then
                 KB.UI:ShowKOSAlert(name, guild, "PLAYER_KOS", kosPlayerReason)
@@ -219,7 +219,7 @@ function US:CheckHostileRadar(info)
         local levelStr = (info.level and info.level > 0) and tostring(info.level) or "??"
         local zoneStr = GetZoneText() or "Wilderness"
 
-        print(string.format("|cff00ccff[WoWKB Radar]|r Detected Hostile: |cffff3333%s|r%s (Lvl %s %s) in |cffffffff%s|r!",
+        KB.Utils.SafePrint(string.format("|cff00ccff[WoWKB Radar]|r Detected Hostile: |cffff3333%s|r%s (Lvl %s %s) in |cffffffff%s|r!",
             name, guildTag, levelStr, classStr, zoneStr))
     end
 end

@@ -301,7 +301,7 @@ class KillboardWatcher:
             "isBattleground": bool(data.get("isBattleground", False)),
             "isArena": bool(data.get("isArena", False)),
             "battlegroundName": data.get("battlegroundName", ""),
-            "isSolo": bool(data.get("isSolo", True)),
+            "isSolo": bool(data.get("isSolo", False) and data.get("attackersCount", 1) <= 1),
             "attackersCount": data.get("attackersCount", 1),
             "attackers": data.get("attackers", []),
             "totalDamage": data.get("totalDamage", 0),

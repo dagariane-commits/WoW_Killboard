@@ -345,3 +345,41 @@ function U.GetPlayerSpec()
     end
     return nil
 end
+
+-- Taint-Safe Chat Output Layer (Guardrail 1: Zero Blizzard UI Taint)
+-- Circumvents Blizzard_PrintHandler / SecureTypes.lua taint by queuing combat prints until out of combat
+KB.PrintQueue = KB.PrintQueue or {}
+
+function U.SafePrint(...)
+    local n = select("#", ...)
+    if n == 0 then return end
+    local pieces = {}
+    for i = 1, n do
+        local v = select(i, ...)
+        table.insert(pieces, tostring(v))
+    end
+    local msg = table.concat(pieces, " ")
+    if not U.CanAccess(msg) then return end
+
+    if InCombatLockdown() then
+        table.insert(KB.PrintQueue, msg)
+        return
+    end
+
+    if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        DEFAULT_CHAT_FRAME:AddMessage(msg)
+    end
+end
+
+function U.FlushPrintQueue()
+    if InCombatLockdown() then return end
+    if not KB.PrintQueue or #KB.PrintQueue == 0 then return end
+    local queue = KB.PrintQueue
+    KB.PrintQueue = {}
+    for _, msg in ipairs(queue) do
+        if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+            DEFAULT_CHAT_FRAME:AddMessage(msg)
+        end
+    end
+end
+
