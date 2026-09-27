@@ -295,6 +295,67 @@ function BE:PayOffDebt(debtorName)
     end
 end
 
+-- Get Marks of Spite Records (Hall of Fame)
+function BE:GetBountyRecords()
+    BE:InitDB()
+    local topHunters = {}
+    local highestRewards = {}
+    local longestSurviving = {}
+
+    -- Hunter tallies from claimed bounties
+    local hunterCounts = {}
+    for _, b in pairs(WoWKillboardBounties) do
+        if b.status == KB.STATUS.CLAIMED and b.hunterName then
+            hunterCounts[b.hunterName] = (hunterCounts[b.hunterName] or 0) + 1
+        end
+    end
+    for hName, count in pairs(hunterCounts) do
+        table.insert(topHunters, { name = hName, count = count })
+    end
+    table.sort(topHunters, function(a, b) return a.count > b.count end)
+
+    -- Highest Rewards
+    for _, b in pairs(WoWKillboardBounties) do
+        table.insert(highestRewards, b)
+    end
+    table.sort(highestRewards, function(a, b) return (a.amountCopper or 0) > (b.amountCopper or 0) end)
+
+    -- Longest Surviving Active Outlaws
+    local now = time()
+    for _, b in pairs(WoWKillboardBounties) do
+        if b.status == KB.STATUS.ACTIVE then
+            local age = now - (b.timestamp or now)
+            table.insert(longestSurviving, { target = b.targetName, class = b.targetClass, days = math.max(1, math.floor(age / 86400)), copper = b.amountCopper })
+        end
+    end
+    table.sort(longestSurviving, function(a, b) return a.days > b.days end)
+
+    return {
+        topHunters = topHunters,
+        highestRewards = highestRewards,
+        longestSurviving = longestSurviving,
+    }
+end
+
+-- Get Personal Marks (Issued by player, or active on player's head)
+function BE:GetPersonalMarks()
+    BE:InitDB()
+    local playerName = UnitName("player")
+    local issuedCount = 0
+    local onHeadCount = 0
+    for _, b in pairs(WoWKillboardBounties) do
+        if b.status == KB.STATUS.ACTIVE then
+            if b.placerName == playerName then
+                issuedCount = issuedCount + 1
+            end
+            if b.targetName == playerName then
+                onHeadCount = onHeadCount + 1
+            end
+        end
+    end
+    return { issued = issuedCount, onHead = onHeadCount }
+end
+
 -- Frame Event routing for Debt Proximity Alerts (Target-only, zero mouseover taint)
 frame:SetScript("OnEvent", function(self, event, unit)
     if event == "PLAYER_TARGET_CHANGED" then

@@ -284,3 +284,90 @@ function LB:GetRecentKills(mode, limit)
     end
     return res
 end
+
+-- Get a player's rank and full stats in a given mode
+function LB:GetPlayerRankAndStats(playerName, mode)
+    mode = mode or "WORLD"
+    local bucket = LB.Aggregates[mode]
+    if not bucket then return nil, nil, 0 end
+
+    local list = {}
+    for _, p in pairs(bucket.players) do
+        table.insert(list, p)
+    end
+
+    table.sort(list, function(a, b)
+        if a.kills == b.kills then
+            return (a.soloKills or 0) > (b.soloKills or 0)
+        end
+        return (a.kills or 0) > (b.kills or 0)
+    end)
+
+    for rank, p in ipairs(list) do
+        if p.name == playerName then
+            return rank, p, #list
+        end
+    end
+
+    return nil, nil, #list
+end
+
+-- Get a guild's rank and stats in a given mode
+function LB:GetGuildRankAndStats(guildName, mode)
+    if not guildName or guildName == "" or guildName == "None" then return nil, nil, 0 end
+    mode = mode or "WORLD"
+    local bucket = LB.Aggregates[mode]
+    if not bucket then return nil, nil, 0 end
+
+    local list = {}
+    for gName, count in pairs(bucket.guilds) do
+        table.insert(list, { guild = gName, kills = count })
+    end
+
+    table.sort(list, function(a, b) return a.kills > b.kills end)
+
+    for rank, g in ipairs(list) do
+        if g.guild == guildName then
+            return rank, g, #list
+        end
+    end
+
+    return nil, nil, #list
+end
+
+-- Get Mode Telemetry Summary (Total Kills, Solo Kill %, Faction Split)
+function LB:GetModeSummary(mode)
+    mode = mode or "WORLD"
+    local totalKills = 0
+    local soloKills = 0
+    local allianceKills = 0
+    local hordeKills = 0
+
+    if WoWKillboardDB and WoWKillboardDB.kills then
+        for _, km in pairs(WoWKillboardDB.kills) do
+            if LB:MatchesMode(km, mode) then
+                totalKills = totalKills + 1
+                if km.isSolo then soloKills = soloKills + 1 end
+                local f = km.killer and km.killer.faction
+                if f == "Alliance" then
+                    allianceKills = allianceKills + 1
+                elseif f == "Horde" then
+                    hordeKills = hordeKills + 1
+                end
+            end
+        end
+    end
+
+    local soloPct = (totalKills > 0) and math.floor((soloKills / totalKills) * 100) or 0
+    local factionTot = allianceKills + hordeKills
+    local aPct = (factionTot > 0) and math.floor((allianceKills / factionTot) * 100) or 50
+    local hPct = 100 - aPct
+
+    return {
+        totalKills = totalKills,
+        soloKills = soloKills,
+        soloPct = soloPct,
+        alliancePct = aPct,
+        hordePct = hPct,
+    }
+end

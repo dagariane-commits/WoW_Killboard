@@ -206,9 +206,9 @@ KB.Themes = {
             edgeSize = 10,
             insets = { left = 2, right = 2, top = 2, bottom = 2 },
         },
-        rowBg = { 0.22, 0.16, 0.10, 0.20 }, -- Translucent warm sepia tint showing parchment
-        rowBgAlt = { 0.28, 0.20, 0.12, 0.30 },
-        rowBorder = { 0.62, 0.48, 0.25, 0.45 },
+        rowBg = { 0.08, 0.06, 0.05, 0.88 }, -- Deep dark slate backing (maximum contrast against QuestBG parchment)
+        rowBgAlt = { 0.05, 0.04, 0.03, 0.92 }, -- Charcoal slate backing
+        rowBorder = { 0.45, 0.35, 0.18, 0.85 }, -- Antique gold beveled border
         modalBackdrop = {
             bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
             edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",

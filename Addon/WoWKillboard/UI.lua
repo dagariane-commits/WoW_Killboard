@@ -21,6 +21,8 @@ local UI = KB.UI
 local mainFrame = nil
 local activeTab = "FEED"   -- "FEED", "LEADERBOARD", "BOUNTIES", "ZONES"
 local currentMode = "WORLD"  -- "WORLD", "BG", "DUEL", "ARENA"
+local hlSubTab = "PLAYERS"   -- "PLAYERS" (Player Ranks), "GUILDS" (Guild Ranks)
+local marksSubTab = "ACTIVE" -- "ACTIVE" (Execution List), "RECORDS" (Hall of Fame), "DEBTORS" (Wall of Shame)
 
 local tabButtons = {}
 local filterButtons = {}
@@ -137,15 +139,20 @@ function UI:ApplyTheme()
             if theme.id == "classic" then
                 UI.ContentInset.BgArt:SetTexture("Interface\\QuestFrame\\QuestBG")
                 UI.ContentInset.BgArt:SetTexCoord(0, 0.586, 0.02, 0.655)
-                UI.ContentInset.BgArt:SetAlpha(1.0)
-                if UI.ContentInset.Vignette then UI.ContentInset.Vignette:Hide() end
+                UI.ContentInset.BgArt:SetAlpha(0.95)
+                if UI.ContentInset.Vignette then
+                    UI.ContentInset.Vignette:SetColorTexture(0.02, 0.015, 0.01, 0.32)
+                    UI.ContentInset.Vignette:SetAlpha(1.0)
+                    UI.ContentInset.Vignette:Show()
+                end
             else
                 UI.ContentInset.BgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\dark_war_bg.tga")
                 UI.ContentInset.BgArt:SetTexCoord(0, 1, 0, 1)
                 UI.ContentInset.BgArt:SetAlpha(0.65)
                 if UI.ContentInset.Vignette then
-                    UI.ContentInset.Vignette:Show()
+                    UI.ContentInset.Vignette:SetColorTexture(0.015, 0.02, 0.035, 0.40)
                     UI.ContentInset.Vignette:SetAlpha(0.40)
+                    UI.ContentInset.Vignette:Show()
                 end
             end
             UI.ContentInset.BgArt:Show()
@@ -1144,42 +1151,65 @@ function UI:Refresh()
     end
 end
 
--- 1. Render Live Killmail Feed
+-- 1. Render Live Killmail Feed (Tactical Intel)
 function UI:RenderLiveFeed()
     local kills = KB.Leaderboard:GetRecentKills(currentMode, 40)
-    local yOffset = 0
+    local theme = UI:GetTheme()
+
+    -- Top Section Header
+    local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("|cff00e5ffREALM TELEMETRY & TACTICAL INTEL|r")
+    title:SetShadowOffset(1, -1)
+    title:SetShadowColor(0, 0, 0, 1)
+
+    local subtitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+    subtitle:SetText("|cffb8a080Live battlefield killfeed, spatial GPS coordinates, and threat alerts.|r")
+    subtitle:SetShadowOffset(1, -1)
+    subtitle:SetShadowColor(0, 0, 0, 1)
+
+    -- Realm Telemetry KPI Summary Bar (matching website image 3)
+    local sum = KB.Leaderboard and KB.Leaderboard.GetModeSummary and KB.Leaderboard:GetModeSummary(currentMode) or { totalKills = 0, soloPct = 0, alliancePct = 50, hordePct = 50 }
+    local kpiPlate = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    kpiPlate:SetSize(820, 26)
+    kpiPlate:SetPoint("TOPLEFT", 0, -46)
+    kpiPlate:SetBackdrop(theme.rowBackdrop)
+    kpiPlate:SetBackdropColor(0.04, 0.04, 0.05, 0.95)
+    kpiPlate:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.85)
+
+    local kpiText = kpiPlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    kpiText:SetPoint("CENTER", 0, 0)
+    kpiText:SetText(string.format(
+        "REALM CARNAGE: |cffffffff%d|r   |cff64748b•|r   1V1 SOLO RATIO: |cff00e5ff%d%%|r   |cff64748b•|r   FACTION WAR: |cff3b82f6A %d%%|r / |cffef4444H %d%%|r   |cff64748b•|r   FILTER: |cffffd100[%s]|r",
+        sum.totalKills, sum.soloPct, sum.alliancePct, sum.hordePct, currentMode
+    ))
+    kpiText:SetShadowOffset(1, -1)
+    kpiText:SetShadowColor(0, 0, 0, 1)
+
+    local yOffset = -78
 
     if #kills == 0 then
         if not UI.EmptyFeedText then
             UI.EmptyFeedText = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            UI.EmptyFeedText:SetPoint("TOP", UI.ContentFrame, "TOP", 0, -50)
+            UI.EmptyFeedText:SetPoint("TOP", UI.ContentFrame, "TOP", 0, -110)
             UI.EmptyFeedText:SetJustifyH("CENTER")
             UI.EmptyFeedText:SetSpacing(4)
         end
         local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Azeroth"
-        local theme = UI:GetTheme()
-        if theme and theme.id == "classic" then
-            UI.EmptyFeedText:SetText(string.format(
-                "|cff5a3205● FRONTLINE COMBAT RADAR ACTIVE|r\n\n" ..
-                "|cff3d2817Sector Surveillance:|r |cff1a0f00%s|r   |cff7a5530•|r   |cff3d2817Filter Mode:|r |cff5a3205[%s]|r\n" ..
-                "|cff3d2817Combat Engine Status:|r |cff006622RECORDING COMBAT|r |cff5c4028(No confirmed kills logged yet)|r\n\n" ..
-                "|cff4a3520Killmails are automatically recorded upon confirming an open-world player kill,\n" ..
-                "battleground victory, or sanctioned 1v1 duel.|r\n\n" ..
-                "|cff5a3205Quick Test:|r |cff3d2817Type |cff804000/wowkb testkill|r to simulate a live combat encounter.|r",
-                currentZone, currentMode
-            ))
-        else
-            UI.EmptyFeedText:SetText(string.format(
-                "|cffffd100● FRONTLINE COMBAT RADAR ONLINE|r\n\n" ..
-                "|cff94a3b8Sector Surveillance:|r |cffffffff%s|r   |cff64748b•|r   |cff94a3b8Filter Mode:|r |cffffd100[%s]|r\n" ..
-                "|cff94a3b8Combat Engine Status:|r |cff00ff00ARMED & LISTENING|r |cff64748b(Zero confirmed combat deaths yet)|r\n\n" ..
-                "|cff888888Killmails are automatically recorded upon confirming an open-world player kill,\n" ..
-                "battleground victory, or sanctioned 1v1 duel.|r\n\n" ..
-                "|cff00e5ffQuick Verification:|r |cffccccccType |cffffd100/wowkb testkill|r to simulate a live killmail and preview the feed.|r",
-                currentZone, currentMode
-            ))
-        end
+        UI.EmptyFeedText:SetText(string.format(
+            "|cffffd100● FRONTLINE COMBAT RADAR ONLINE|r\n\n" ..
+            "|cffcbd5e1Sector Surveillance:|r |cffffffff%s|r   |cff64748b•|r   |cffcbd5e1Filter Mode:|r |cffffd100[%s]|r\n" ..
+            "|cffcbd5e1Combat Engine Status:|r |cff10b981ARMED & RECORDING COMBAT|r |cff94a3b8(Zero confirmed deaths in this filter)|r\n\n" ..
+            "|cff94a3b8Killmails are automatically recorded upon confirming an open-world player kill,\n" ..
+            "battleground victory, or sanctioned 1v1 duel.|r\n\n" ..
+            "|cff00e5ffQuick Verification:|r |cffccccccType |cffffd100/wowkb testkill|r to simulate a live killmail and preview the feed.|r",
+            currentZone, currentMode
+        ))
+        UI.EmptyFeedText:SetShadowOffset(1, -1)
+        UI.EmptyFeedText:SetShadowColor(0, 0, 0, 1)
         UI.EmptyFeedText:Show()
+        UI.ContentFrame:SetHeight(280)
         return
     elseif UI.EmptyFeedText then
         UI.EmptyFeedText:Hide()
@@ -1189,7 +1219,6 @@ function UI:RenderLiveFeed()
         local row = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
         row:SetSize(820, 36)
         row:SetPoint("TOPLEFT", 0, yOffset)
-        local theme = UI:GetTheme()
         local isEven = (idx % 2 == 0)
         local baseBg = isEven and theme.rowBgAlt or theme.rowBg
         row:SetBackdrop(theme.rowBackdrop)
@@ -1221,56 +1250,64 @@ function UI:RenderLiveFeed()
         local badgeText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         badgeText:SetPoint("LEFT", 12, 0)
         badgeText:SetText(badgeStr)
+        badgeText:SetShadowOffset(1, -1)
+        badgeText:SetShadowColor(0, 0, 0, 1)
 
         -- Killer Class Icon
-        local kIcon = UI:CreateClassIcon(row, km.killer.class, 20)
+        local kIcon = UI:CreateClassIcon(row, km.killer.class, 22)
         kIcon:SetPoint("LEFT", 78, 0)
 
         -- Killer Level Pill
         local kLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         kLvl:SetPoint("LEFT", kIcon, "RIGHT", 4, 0)
         local kLvlVal = km.killer.level or 0
-        local lvlColor = (theme.id == "classic") and "4a3520" or "94a3b8"
-        kLvl:SetText((kLvlVal > 0) and string.format("|cff%s%d|r", lvlColor, kLvlVal) or "|cff64748b??|r")
+        kLvl:SetText((kLvlVal > 0) and string.format("|cffffd100%d|r", kLvlVal) or "|cff8899aa??|r")
+        kLvl:SetShadowOffset(1, -1)
+        kLvl:SetShadowColor(0, 0, 0, 1)
 
         -- Killer Name & Guild
         local killerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         killerStr:SetPoint("LEFT", kLvl, "RIGHT", 5, 0)
-        local kGuildColor = (theme.id == "classic") and "5c4028" or "64748b"
-        local kGuildStr = (km.killer.guild and km.killer.guild ~= "None") and string.format(" |cff%s<%s>|r", kGuildColor, km.killer.guild) or ""
+        local kGuildStr = (km.killer.guild and km.killer.guild ~= "None" and km.killer.guild ~= "") and string.format(" |cffc0a080<%s>|r", km.killer.guild) or ""
         killerStr:SetText(KB.Utils.ColorizeByClass(km.killer.name, km.killer.class) .. kGuildStr)
+        killerStr:SetShadowOffset(1, -1)
+        killerStr:SetShadowColor(0, 0, 0, 1)
 
         -- Action Verb Separator (Center)
         local actionVerb = km.isDuel and "defeated" or "destroyed"
         local sep = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         sep:SetPoint("LEFT", 330, 0)
-        local verbColor = (theme.id == "classic") and "4a3520" or "64748b"
-        sep:SetText(string.format("|cff%s%s|r", verbColor, actionVerb))
+        sep:SetText(string.format("|cffe2d4c0%s|r", actionVerb))
+        sep:SetShadowOffset(1, -1)
+        sep:SetShadowColor(0, 0, 0, 1)
 
         -- Victim Class Icon
-        local vIcon = UI:CreateClassIcon(row, km.victim.class, 20)
+        local vIcon = UI:CreateClassIcon(row, km.victim.class, 22)
         vIcon:SetPoint("LEFT", 390, 0)
 
         -- Victim Level Pill
         local vLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         vLvl:SetPoint("LEFT", vIcon, "RIGHT", 4, 0)
         local vLvlVal = km.victim.level or 0
-        vLvl:SetText((vLvlVal > 0) and string.format("|cff%s%d|r", lvlColor, vLvlVal) or "|cff64748b??|r")
+        vLvl:SetText((vLvlVal > 0) and string.format("|cffffd100%d|r", vLvlVal) or "|cff8899aa??|r")
+        vLvl:SetShadowOffset(1, -1)
+        vLvl:SetShadowColor(0, 0, 0, 1)
 
         -- Victim Name & Guild
         local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         victimStr:SetPoint("LEFT", vLvl, "RIGHT", 5, 0)
-        local vGuildColor = (theme.id == "classic") and "5c4028" or "64748b"
-        local vGuildStr = (km.victim.guild and km.victim.guild ~= "None") and string.format(" |cff%s<%s>|r", vGuildColor, km.victim.guild) or ""
+        local vGuildStr = (km.victim.guild and km.victim.guild ~= "None" and km.victim.guild ~= "") and string.format(" |cffc0a080<%s>|r", km.victim.guild) or ""
         victimStr:SetText(KB.Utils.ColorizeByClass(km.victim.name, km.victim.class) .. vGuildStr)
+        victimStr:SetShadowOffset(1, -1)
+        victimStr:SetShadowColor(0, 0, 0, 1)
 
         -- Location & Timestamp (Right-Aligned)
         local infoStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         infoStr:SetPoint("RIGHT", -12, 0)
         local locName = km.isBattleground and (km.battlegroundName or "Battleground") or km.location.zone
-        local locColor = (theme.id == "classic") and "1a0f00" or "cbd5e1"
-        local timeColor = (theme.id == "classic") and "5c4028" or "64748b"
-        infoStr:SetText(string.format("|cff%s%s|r  |cff%s• %s|r", locColor, locName, timeColor, KB.Utils.FormatTimeAgo(km.timestamp)))
+        infoStr:SetText(string.format("|cffcbd5e1%s|r  |cff64748b•|r  |cffa0aab8%s|r", locName, KB.Utils.FormatTimeAgo(km.timestamp)))
+        infoStr:SetShadowOffset(1, -1)
+        infoStr:SetShadowColor(0, 0, 0, 1)
 
         -- Interactive Hover
         row:SetScript("OnEnter", function(self)
@@ -1300,88 +1337,286 @@ function UI:RenderLiveFeed()
     UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
 end
 
--- 2. Render Leaderboard Tab
+-- 2. Render Leaderboard Tab (Hall of Legends)
 function UI:RenderLeaderboard()
-    local topKillers = KB.Leaderboard:GetTopKillers(currentMode, 15)
+    local theme = UI:GetTheme()
 
-    local header = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    header:SetPoint("TOPLEFT", 10, -10)
-    header:SetText(string.format("Top PvP Assassins & Solo Kings — Mode: |cffffd100[%s]|r", currentMode))
+    -- Top Section Header (Website style)
+    local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("|cffffd100HALL OF LEGENDS|r")
+    title:SetShadowOffset(1, -1)
+    title:SetShadowColor(0, 0, 0, 1)
 
-    local yOffset = -40
-    for rank, p in ipairs(topKillers) do
-        local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-        row:SetSize(820, 30)
-        row:SetPoint("TOPLEFT", 0, yOffset)
-        local theme = UI:GetTheme()
-        local isEven = (rank % 2 == 0)
-        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
-        row:SetBackdrop(theme.rowBackdrop)
-        row:SetBackdropColor(unpack(baseBg))
-        row:SetBackdropBorderColor(unpack(theme.rowBorder))
+    local subtitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+    subtitle:SetText("|cffb8a080Most lethal combatants, cohort percentile efficiency, and certified executions across Azeroth.|r")
+    subtitle:SetShadowOffset(1, -1)
+    subtitle:SetShadowColor(0, 0, 0, 1)
 
-        -- Rank Medal Color
-        local rankColor = (rank == 1 and "ffd700") or (rank == 2 and "c0c0c0") or (rank == 3 and "cd7f32") or "8899aa"
-        local rankText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        rankText:SetPoint("LEFT", 12, 0)
-        rankText:SetText(string.format("|cff%s#%d|r", rankColor, rank))
-
-        local pIcon = UI:CreateClassIcon(row, p.class, 20)
-        pIcon:SetPoint("LEFT", rankText, "RIGHT", 10, 0)
-
-        local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        nameText:SetPoint("LEFT", pIcon, "RIGHT", 8, 0)
-        local guildStr = (p.guild and p.guild ~= "None") and string.format("  |cff64748b<%s>|r", p.guild) or ""
-        nameText:SetText(KB.Utils.ColorizeByClass(p.name, p.class) .. guildStr)
-
-        local statsText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        statsText:SetPoint("RIGHT", -15, 0)
-        local kd = (p.deaths > 0) and string.format("%.2f", p.kills / p.deaths) or tostring(p.kills)
-        statsText:SetText(string.format("|cff00ff66%d Kills|r  |  |cffffd100%d Solo|r  |  |cffff4444%d Deaths|r  |  K/D: |cffffd100%s|r",
-            p.kills, p.soloKills, p.deaths, kd))
-
-        yOffset = yOffset - 34
-    end
-
-    -- Top War Guilds Section
-    yOffset = yOffset - 15
-    local guildHeader = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    guildHeader:SetPoint("TOPLEFT", 10, yOffset)
-    guildHeader:SetText(string.format("Top War Guilds — Mode: |cffffd100[%s]|r", currentMode))
-
-    yOffset = yOffset - 30
-    local topGuilds = KB.Leaderboard:GetTopGuilds(currentMode, 8)
-    if #topGuilds == 0 then
-        local emptyGuildText = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-        emptyGuildText:SetPoint("TOPLEFT", 15, yOffset)
-        emptyGuildText:SetText("No guild PvP telemetry recorded for this filter mode.")
-        yOffset = yOffset - 25
+    -- Sub-navigation Toggle Bar: [Player Ranks] | [Guild Ranks] (matching website image 2)
+    local btnPlayers = UI:CreateButton(UI.ContentFrame, 114, 22, "Player Ranks")
+    btnPlayers:SetPoint("TOPLEFT", 10, -46)
+    if hlSubTab == "PLAYERS" then
+        btnPlayers:SetButtonState("PUSHED", true)
+        if btnPlayers.Label then btnPlayers.Label:SetTextColor(1.0, 0.84, 0.0) end
     else
-        for gRank, g in ipairs(topGuilds) do
+        btnPlayers:SetButtonState("NORMAL", false)
+        if btnPlayers.Label then btnPlayers.Label:SetTextColor(0.80, 0.70, 0.55) end
+    end
+    btnPlayers:SetScript("OnClick", function()
+        hlSubTab = "PLAYERS"
+        UI:Refresh()
+    end)
+
+    local btnGuilds = UI:CreateButton(UI.ContentFrame, 104, 22, "Guild Ranks")
+    btnGuilds:SetPoint("LEFT", btnPlayers, "RIGHT", 6, 0)
+    if hlSubTab == "GUILDS" then
+        btnGuilds:SetButtonState("PUSHED", true)
+        if btnGuilds.Label then btnGuilds.Label:SetTextColor(1.0, 0.84, 0.0) end
+    else
+        btnGuilds:SetButtonState("NORMAL", false)
+        if btnGuilds.Label then btnGuilds.Label:SetTextColor(0.80, 0.70, 0.55) end
+    end
+    btnGuilds:SetScript("OnClick", function()
+        hlSubTab = "GUILDS"
+        UI:Refresh()
+    end)
+
+    local yOffset = -76
+
+    if hlSubTab == "PLAYERS" then
+        local topKillers = KB.Leaderboard:GetTopKillers(currentMode, 10)
+        local pName = UnitName("player")
+        local pRank, pStats, totalPlayers = KB.Leaderboard:GetPlayerRankAndStats(pName, currentMode)
+        local playerInTop10 = (pRank and pRank <= 10)
+
+        if #topKillers == 0 then
+            local empty = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+            empty:SetPoint("TOPLEFT", 14, yOffset)
+            empty:SetText("No player combat telemetry recorded for this filter mode yet.")
+            empty:SetShadowOffset(1, -1)
+            empty:SetShadowColor(0, 0, 0, 1)
+            yOffset = yOffset - 30
+        else
+            for rank, p in ipairs(topKillers) do
+                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+                row:SetSize(820, 32)
+                row:SetPoint("TOPLEFT", 0, yOffset)
+                local isEven = (rank % 2 == 0)
+                local isPlayer = (pName and p.name == pName)
+
+                row:SetBackdrop(theme.rowBackdrop)
+                if isPlayer then
+                    row:SetBackdropColor(0.24, 0.17, 0.06, 0.95)
+                    row:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
+                else
+                    row:SetBackdropColor(unpack(isEven and theme.rowBgAlt or theme.rowBg))
+                    row:SetBackdropBorderColor(unpack(theme.rowBorder))
+                end
+
+                -- Rank Medal / Badge
+                local rankColor = (rank == 1 and "ffd700") or (rank == 2 and "c0c0c0") or (rank == 3 and "cd7f32") or "94a3b8"
+                local rankText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                rankText:SetPoint("LEFT", 12, 0)
+                rankText:SetText(string.format("|cff%s#%d|r", rankColor, rank))
+                rankText:SetShadowOffset(1, -1)
+                rankText:SetShadowColor(0, 0, 0, 1)
+
+                local pIcon = UI:CreateClassIcon(row, p.class, 22)
+                pIcon:SetPoint("LEFT", rankText, "RIGHT", 10, 0)
+
+                local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                nameText:SetPoint("LEFT", pIcon, "RIGHT", 8, 0)
+                local guildStr = (p.guild and p.guild ~= "None" and p.guild ~= "") and string.format("  |cff8899aa<%s>|r", p.guild) or ""
+                local youBadge = isPlayer and " |cffffd100[YOU]|r" or ""
+                nameText:SetText(KB.Utils.ColorizeByClass(p.name, p.class) .. youBadge .. guildStr)
+                nameText:SetShadowOffset(1, -1)
+                nameText:SetShadowColor(0, 0, 0, 1)
+
+                local statsText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                statsText:SetPoint("RIGHT", -15, 0)
+                local kd = (p.deaths and p.deaths > 0) and string.format("%.2f", p.kills / p.deaths) or tostring(p.kills or 0)
+                statsText:SetText(string.format(
+                    "|cff10b981%d Kills|r   |cff64748b•|r   |cff00e5ff%d Solo|r   |cff64748b•|r   |cffef4444%d Deaths|r   |cff64748b•|r   K/D: |cffffd100%s|r",
+                    p.kills or 0, p.soloKills or 0, p.deaths or 0, kd
+                ))
+                statsText:SetShadowOffset(1, -1)
+                statsText:SetShadowColor(0, 0, 0, 1)
+
+                yOffset = yOffset - 36
+            end
+        end
+
+        -- Bottom Pinned Player Row (Always show your position)
+        if not playerInTop10 then
+            yOffset = yOffset - 10
+
+            -- Elegant Divider
+            local div = UI.ContentFrame:CreateTexture(nil, "ARTWORK")
+            div:SetPoint("TOPLEFT", 14, yOffset)
+            div:SetPoint("TOPRIGHT", -14, yOffset)
+            div:SetHeight(1)
+            div:SetColorTexture(0.55, 0.42, 0.18, 0.8)
+
+            local divLabel = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            divLabel:SetPoint("CENTER", div, "CENTER", 0, 0)
+            divLabel:SetText("|cffffd100— YOUR STANDING —|r")
+            divLabel:SetShadowOffset(1, -1)
+            divLabel:SetShadowColor(0, 0, 0, 1)
+
+            yOffset = yOffset - 22
+
+            local pRow = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+            pRow:SetSize(820, 34)
+            pRow:SetPoint("TOPLEFT", 0, yOffset)
+            pRow:SetBackdrop(theme.rowBackdrop)
+            pRow:SetBackdropColor(0.20, 0.15, 0.05, 0.95)
+            pRow:SetBackdropBorderColor(1.0, 0.84, 0.0, 0.95)
+
+            local rankStr = (pRank and pRank > 0) and string.format("|cffffd100#%d|r", pRank) or "|cff888888#--|r"
+            local pRankText = pRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            pRankText:SetPoint("LEFT", 12, 0)
+            pRankText:SetText(rankStr)
+            pRankText:SetShadowOffset(1, -1)
+            pRankText:SetShadowColor(0, 0, 0, 1)
+
+            local myClass = select(2, UnitClass("player")) or "WARRIOR"
+            local pIcon = UI:CreateClassIcon(pRow, myClass, 22)
+            pIcon:SetPoint("LEFT", pRankText, "RIGHT", 10, 0)
+
+            local myGuild = GetGuildInfo("player")
+            local myGuildStr = (myGuild and myGuild ~= "") and string.format("  |cff8899aa<%s>|r", myGuild) or ""
+            local pNameText = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            pNameText:SetPoint("LEFT", pIcon, "RIGHT", 8, 0)
+            pNameText:SetText(KB.Utils.ColorizeByClass(pName or "Player", myClass) .. " |cffffd100[YOU]|r" .. myGuildStr)
+            pNameText:SetShadowOffset(1, -1)
+            pNameText:SetShadowColor(0, 0, 0, 1)
+
+            local pStatsText = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            pStatsText:SetPoint("RIGHT", -15, 0)
+            if pStats then
+                local kd = (pStats.deaths and pStats.deaths > 0) and string.format("%.2f", pStats.kills / pStats.deaths) or tostring(pStats.kills or 0)
+                pStatsText:SetText(string.format(
+                    "|cff10b981%d Kills|r   |cff64748b•|r   |cff00e5ff%d Solo|r   |cff64748b•|r   |cffef4444%d Deaths|r   |cff64748b•|r   K/D: |cffffd100%s|r",
+                    pStats.kills or 0, pStats.soloKills or 0, pStats.deaths or 0, kd
+                ))
+            else
+                pStatsText:SetText("|cff94a3b80 Kills  •  0 Solo  •  0 Deaths  •  Unranked in this filter mode|r")
+            end
+            pStatsText:SetShadowOffset(1, -1)
+            pStatsText:SetShadowColor(0, 0, 0, 1)
+
+            yOffset = yOffset - 38
+        end
+
+    elseif hlSubTab == "GUILDS" then
+        local topGuilds = KB.Leaderboard:GetTopGuilds(currentMode, 10)
+        local myGuild = GetGuildInfo("player")
+        local gRank, gStats, totalGuilds = KB.Leaderboard:GetGuildRankAndStats(myGuild, currentMode)
+        local guildInTop10 = (gRank and gRank <= 10)
+
+        if #topGuilds == 0 then
+            local empty = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+            empty:SetPoint("TOPLEFT", 14, yOffset)
+            empty:SetText("No guild PvP telemetry recorded for this filter mode yet.")
+            empty:SetShadowOffset(1, -1)
+            empty:SetShadowColor(0, 0, 0, 1)
+            yOffset = yOffset - 30
+        else
+            for gIdx, g in ipairs(topGuilds) do
+                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+                row:SetSize(820, 32)
+                row:SetPoint("TOPLEFT", 0, yOffset)
+                local isEven = (gIdx % 2 == 0)
+                local isMyGuild = (myGuild and myGuild ~= "" and g.guild == myGuild)
+
+                row:SetBackdrop(theme.rowBackdrop)
+                if isMyGuild then
+                    row:SetBackdropColor(0.24, 0.17, 0.06, 0.95)
+                    row:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
+                else
+                    row:SetBackdropColor(unpack(isEven and theme.rowBgAlt or theme.rowBg))
+                    row:SetBackdropBorderColor(unpack(theme.rowBorder))
+                end
+
+                local rankColor = (gIdx == 1 and "ffd700") or (gIdx == 2 and "c0c0c0") or (gIdx == 3 and "cd7f32") or "94a3b8"
+                local gRankText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                gRankText:SetPoint("LEFT", 12, 0)
+                gRankText:SetText(string.format("|cff%s#%d|r", rankColor, gIdx))
+                gRankText:SetShadowOffset(1, -1)
+                gRankText:SetShadowColor(0, 0, 0, 1)
+
+                local gNameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                gNameText:SetPoint("LEFT", 50, 0)
+                local guildBadge = isMyGuild and " |cffffd100[YOUR GUILD]|r" or ""
+                gNameText:SetText(string.format("|cffffd700<%s>|r%s", g.guild, guildBadge))
+                gNameText:SetShadowOffset(1, -1)
+                gNameText:SetShadowColor(0, 0, 0, 1)
+
+                local gKills = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                gKills:SetPoint("RIGHT", -15, 0)
+                gKills:SetText(string.format("|cff10b981%d Kills Logged|r", g.kills or 0))
+                gKills:SetShadowOffset(1, -1)
+                gKills:SetShadowColor(0, 0, 0, 1)
+
+                yOffset = yOffset - 36
+            end
+        end
+
+        -- Bottom Pinned Guild Standing
+        if not guildInTop10 then
+            yOffset = yOffset - 10
+
+            local div = UI.ContentFrame:CreateTexture(nil, "ARTWORK")
+            div:SetPoint("TOPLEFT", 14, yOffset)
+            div:SetPoint("TOPRIGHT", -14, yOffset)
+            div:SetHeight(1)
+            div:SetColorTexture(0.55, 0.42, 0.18, 0.8)
+
+            local divLabel = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            divLabel:SetPoint("CENTER", div, "CENTER", 0, 0)
+            divLabel:SetText("|cffffd100— YOUR GUILD STANDING —|r")
+            divLabel:SetShadowOffset(1, -1)
+            divLabel:SetShadowColor(0, 0, 0, 1)
+
+            yOffset = yOffset - 22
+
             local gRow = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-            gRow:SetSize(820, 28)
+            gRow:SetSize(820, 34)
             gRow:SetPoint("TOPLEFT", 0, yOffset)
-            local theme = UI:GetTheme()
-            local isEven = (gRank % 2 == 0)
-            local baseBg = isEven and theme.rowBgAlt or theme.rowBg
             gRow:SetBackdrop(theme.rowBackdrop)
-            gRow:SetBackdropColor(unpack(baseBg))
-            gRow:SetBackdropBorderColor(unpack(theme.rowBorder))
+            gRow:SetBackdropColor(0.20, 0.15, 0.05, 0.95)
+            gRow:SetBackdropBorderColor(1.0, 0.84, 0.0, 0.95)
 
-            local gRankColor = (gRank == 1 and "ffd700") or (gRank == 2 and "c0c0c0") or (gRank == 3 and "cd7f32") or "8899aa"
-            local gRankText = gRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-            gRankText:SetPoint("LEFT", 12, 0)
-            gRankText:SetText(string.format("|cff%s#%d|r", gRankColor, gRank))
+            if myGuild and myGuild ~= "" and myGuild ~= "None" then
+                local rankStr = (gRank and gRank > 0) and string.format("|cffffd100#%d|r", gRank) or "|cff888888#--|r"
+                local gRankText = gRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                gRankText:SetPoint("LEFT", 12, 0)
+                gRankText:SetText(rankStr)
+                gRankText:SetShadowOffset(1, -1)
+                gRankText:SetShadowColor(0, 0, 0, 1)
 
-            local gName = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            gName:SetPoint("LEFT", 45, 0)
-            gName:SetText(string.format("|cffffd700<%s>|r", g.guild))
+                local gNameText = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                gNameText:SetPoint("LEFT", 50, 0)
+                gNameText:SetText(string.format("|cffffd700<%s>|r |cffffd100[YOUR GUILD]|r", myGuild))
+                gNameText:SetShadowOffset(1, -1)
+                gNameText:SetShadowColor(0, 0, 0, 1)
 
-            local gKills = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            gKills:SetPoint("RIGHT", -15, 0)
-            gKills:SetText(string.format("|cff00ff66%d Kills Logged|r", g.kills))
+                local gKillsText = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                gKillsText:SetPoint("RIGHT", -15, 0)
+                gKillsText:SetText(gStats and string.format("|cff10b981%d Kills Logged|r", gStats.kills) or "|cff8888880 Kills Logged (Unranked)|r")
+                gKillsText:SetShadowOffset(1, -1)
+                gKillsText:SetShadowColor(0, 0, 0, 1)
+            else
+                local unguilded = gRow:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+                unguilded:SetPoint("CENTER", 0, 0)
+                unguilded:SetText("|cff94a3b8<Guildless Operative> — Join a guild to compete on the War Guild Leaderboard|r")
+                unguilded:SetShadowOffset(1, -1)
+                unguilded:SetShadowColor(0, 0, 0, 1)
+            end
 
-            yOffset = yOffset - 32
+            yOffset = yOffset - 38
         end
     end
 
@@ -1390,185 +1625,422 @@ end
 
 -- 3. Render Bounties & Debt Ledger (Wall of Shame)
 function UI:RenderBounties()
-    local yOffset = -10
+    local theme = UI:GetTheme()
+    local yOffset = -8
 
+    -- Header Title
     local bntTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bntTitle:SetPoint("TOPLEFT", 10, yOffset)
-    bntTitle:SetText("⚔️ Active Marks of Spite & Execution Contracts")
+    bntTitle:SetText("⚔️ |cffffd100MARKS OF SPITE & EXECUTION CONTRACTS|r")
+    bntTitle:SetShadowOffset(1, -1)
+    bntTitle:SetShadowColor(0, 0, 0, 1)
 
     -- Place Bounty Button
-    local placeBtn = UI:CreateButton(UI.ContentFrame, 150, 24, "+ Issue Mark of Spite")
-    placeBtn:SetPoint("TOPRIGHT", -20, yOffset)
+    local placeBtn = UI:CreateButton(UI.ContentFrame, 158, 22, "+ Issue Mark of Spite")
+    placeBtn:SetPoint("TOPRIGHT", -14, yOffset)
     placeBtn:SetScript("OnClick", function()
         UI:ShowBountyPrompt()
     end)
 
-    yOffset = yOffset - 36
+    -- Subtitle
+    local subtitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    subtitle:SetPoint("TOPLEFT", bntTitle, "BOTTOMLEFT", 0, -2)
+    subtitle:SetText("|cffb8a080Sanctioned execution contracts, outlaw manhunts, and debt ledgers across Azeroth.|r")
+    subtitle:SetShadowOffset(1, -1)
+    subtitle:SetShadowColor(0, 0, 0, 1)
 
-    WoWKillboardBounties = WoWKillboardBounties or {}
-    local hasBounties = false
-    for _, b in pairs(WoWKillboardBounties) do
-        if b.status == KB.STATUS.ACTIVE then
-            hasBounties = true
-            local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-            row:SetSize(820, 32)
-            row:SetPoint("TOPLEFT", 0, yOffset)
-            local theme = UI:GetTheme()
-            row:SetBackdrop(theme.rowBackdrop)
-            if theme.id == "classic" then
-                row:SetBackdropColor(0.35, 0.15, 0.12, 0.35)
-                row:SetBackdropBorderColor(0.70, 0.30, 0.20, 0.65)
-            else
-                row:SetBackdropColor(0.18, 0.08, 0.08, 0.9)
-                row:SetBackdropBorderColor(0.50, 0.18, 0.18, 0.8)
-            end
+    -- Sub-navigation Toggle Bar: [Active Marks] | [Hall of Fame] | [Wall of Shame]
+    local btnActive = UI:CreateButton(UI.ContentFrame, 106, 22, "Active Marks")
+    btnActive:SetPoint("TOPLEFT", 10, -46)
+    if marksSubTab == "ACTIVE" then
+        btnActive:SetButtonState("PUSHED", true)
+        if btnActive.Label then btnActive.Label:SetTextColor(1.0, 0.84, 0.0) end
+    else
+        btnActive:SetButtonState("NORMAL", false)
+        if btnActive.Label then btnActive.Label:SetTextColor(0.80, 0.70, 0.55) end
+    end
+    btnActive:SetScript("OnClick", function()
+        marksSubTab = "ACTIVE"
+        UI:Refresh()
+    end)
 
-            local icon = UI:CreateClassIcon(row, b.targetClass, 20)
-            icon:SetPoint("LEFT", 12, 0)
+    local btnRecords = UI:CreateButton(UI.ContentFrame, 106, 22, "Hall of Fame")
+    btnRecords:SetPoint("LEFT", btnActive, "RIGHT", 6, 0)
+    if marksSubTab == "RECORDS" then
+        btnRecords:SetButtonState("PUSHED", true)
+        if btnRecords.Label then btnRecords.Label:SetTextColor(1.0, 0.84, 0.0) end
+    else
+        btnRecords:SetButtonState("NORMAL", false)
+        if btnRecords.Label then btnRecords.Label:SetTextColor(0.80, 0.70, 0.55) end
+    end
+    btnRecords:SetScript("OnClick", function()
+        marksSubTab = "RECORDS"
+        UI:Refresh()
+    end)
 
-            -- Lookup last known sighting in SavedVariables
-            local lastSeenStr = ""
-            if WoWKillboardDB and WoWKillboardDB.kills then
-                local latestTime = 0
-                local latestZone = nil
-                for _, km in pairs(WoWKillboardDB.kills) do
-                    if km.killer and km.victim and (km.killer.name == b.targetName or km.victim.name == b.targetName) then
-                        if (km.timestamp or 0) > latestTime then
-                            latestTime = km.timestamp
-                            latestZone = km.location and km.location.zone
+    local btnDebtors = UI:CreateButton(UI.ContentFrame, 114, 22, "Wall of Shame")
+    btnDebtors:SetPoint("LEFT", btnRecords, "RIGHT", 6, 0)
+    if marksSubTab == "DEBTORS" then
+        btnDebtors:SetButtonState("PUSHED", true)
+        if btnDebtors.Label then btnDebtors.Label:SetTextColor(1.0, 0.84, 0.0) end
+    else
+        btnDebtors:SetButtonState("NORMAL", false)
+        if btnDebtors.Label then btnDebtors.Label:SetTextColor(0.80, 0.70, 0.55) end
+    end
+    btnDebtors:SetScript("OnClick", function()
+        marksSubTab = "DEBTORS"
+        UI:Refresh()
+    end)
+
+    -- Personal Marks Dossier Banner Card (mimicking website layout)
+    local pCard = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    pCard:SetSize(820, 26)
+    pCard:SetPoint("TOPLEFT", 0, -74)
+    pCard:SetBackdrop(theme.rowBackdrop)
+    pCard:SetBackdropColor(0.12, 0.09, 0.06, 0.95)
+    pCard:SetBackdropBorderColor(0.55, 0.42, 0.18, 0.9)
+
+    local pMarks = (KB.BountyEngine and KB.BountyEngine.GetPersonalMarks) and KB.BountyEngine:GetPersonalMarks() or { issued = 0, onHead = 0 }
+    local pMarksTxt = pCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    pMarksTxt:SetPoint("LEFT", 12, 0)
+    pMarksTxt:SetText(string.format(
+        "|cffffd100YOUR MARK DOSSIER:|r   |cff38bdf8%d Contracts Issued by You|r   |cff64748b•|r   |cff%s%d Active Bounties Placed on Your Head|r",
+        pMarks.issued or 0,
+        (pMarks.onHead and pMarks.onHead > 0) and "ef4444" or "10b981",
+        pMarks.onHead or 0
+    ))
+    pMarksTxt:SetShadowOffset(1, -1)
+    pMarksTxt:SetShadowColor(0, 0, 0, 1)
+
+    local yOffset = -108
+
+    if marksSubTab == "ACTIVE" then
+        -- 1. Active Marks List
+        local activeHeader = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        activeHeader:SetPoint("TOPLEFT", 10, yOffset)
+        activeHeader:SetText("|cffffd100ACTIVE HUNT CONTRACTS|r — High Command Bounty Targets")
+        activeHeader:SetShadowOffset(1, -1)
+        activeHeader:SetShadowColor(0, 0, 0, 1)
+        yOffset = yOffset - 24
+
+        WoWKillboardBounties = WoWKillboardBounties or {}
+        local hasBounties = false
+        for _, b in pairs(WoWKillboardBounties) do
+            if b.status == KB.STATUS.ACTIVE then
+                hasBounties = true
+                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+                row:SetSize(820, 32)
+                row:SetPoint("TOPLEFT", 0, yOffset)
+                row:SetBackdrop(theme.rowBackdrop)
+                row:SetBackdropColor(0.14, 0.08, 0.07, 0.92)
+                row:SetBackdropBorderColor(0.65, 0.28, 0.20, 0.85)
+
+                local icon = UI:CreateClassIcon(row, b.targetClass, 20)
+                icon:SetPoint("LEFT", 12, 0)
+
+                -- Lookup last known sighting in SavedVariables
+                local lastSeenStr = ""
+                if WoWKillboardDB and WoWKillboardDB.kills then
+                    local latestTime = 0
+                    local latestZone = nil
+                    for _, km in pairs(WoWKillboardDB.kills) do
+                        if km.killer and km.victim and (km.killer.name == b.targetName or km.victim.name == b.targetName) then
+                            if (km.timestamp or 0) > latestTime then
+                                latestTime = km.timestamp
+                                latestZone = km.location and km.location.zone
+                            end
                         end
                     end
-                end
-                if latestZone and latestTime > 0 then
-                    local diffMin = math.max(1, math.floor((time() - latestTime) / 60))
-                    lastSeenStr = string.format("  |  |cff38bdf8Last Sighted: %s (~%dm ago)|r", latestZone, diffMin)
-                end
-            end
-
-            local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-            txt:SetText(string.format("MARK OF SPITE: |cffff3333%s|r (%s)  |  Reward: |cffffd700%s|r  |  Issued by: |cffcbd5e1%s|r%s",
-                b.targetName, b.targetClass, KB.Utils.FormatMoney(b.amountCopper), b.placerName, lastSeenStr))
-
-            local bId = b.id
-            local isAccepted = KB.BountyEngine and KB.BountyEngine:IsBountyAccepted(bId)
-            local acceptBtn = UI:CreateButton(row, 115, 22, isAccepted and "|cff00ff66Tracking|r" or "Accept Contract")
-            acceptBtn:SetPoint("RIGHT", -8, 0)
-            if not isAccepted then
-                acceptBtn:SetScript("OnClick", function()
-                    if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
-                        KB.BountyEngine:AcceptBounty(bId)
+                    if latestZone and latestTime > 0 then
+                        local diffMin = math.max(1, math.floor((time() - latestTime) / 60))
+                        lastSeenStr = string.format("  |  |cff38bdf8Last Sighted: %s (~%dm ago)|r", latestZone, diffMin)
                     end
-                end)
-            end
+                end
 
-            yOffset = yOffset - 36
+                local targetColored = KB.Utils and KB.Utils.ColorizeByClass and KB.Utils.ColorizeByClass(b.targetName, b.targetClass) or ("|cffff3333" .. (b.targetName or "Target") .. "|r")
+                local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+                txt:SetText(string.format("MARK: %s  |  Reward: |cffffd700%s|r  |  Issued by: |cffcbd5e1%s|r%s",
+                    targetColored, KB.Utils.FormatMoney(b.amountCopper), b.placerName or "Unknown", lastSeenStr))
+                txt:SetShadowOffset(1, -1)
+                txt:SetShadowColor(0, 0, 0, 1)
+
+                local bId = b.id
+                local isAccepted = KB.BountyEngine and KB.BountyEngine.IsBountyAccepted and KB.BountyEngine:IsBountyAccepted(bId)
+                local acceptBtn = UI:CreateButton(row, 115, 22, isAccepted and "|cff00ff66Tracking|r" or "Accept Contract")
+                acceptBtn:SetPoint("RIGHT", -8, 0)
+                if not isAccepted then
+                    acceptBtn:SetScript("OnClick", function()
+                        if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
+                            KB.BountyEngine:AcceptBounty(bId)
+                        end
+                    end)
+                end
+
+                yOffset = yOffset - 36
+            end
+        end
+
+        if not hasBounties then
+            local emptyB = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+            emptyB:SetPoint("TOPLEFT", 14, yOffset)
+            emptyB:SetText("No active blood bounties. Declare one upon an enemy to ignite the manhunt!")
+            emptyB:SetShadowOffset(1, -1)
+            emptyB:SetShadowColor(0, 0, 0, 1)
+            yOffset = yOffset - 25
+        end
+
+        -- Archived Cold Cases Section (>30 Days Uncollected)
+        yOffset = yOffset - 16
+        local coldTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        coldTitle:SetPoint("TOPLEFT", 10, yOffset)
+        coldTitle:SetText("📜 |cff94a3b8ARCHIVED COLD CASES|r — Escaped Targets (>30 Days Unclaimed)")
+        coldTitle:SetShadowOffset(1, -1)
+        coldTitle:SetShadowColor(0, 0, 0, 1)
+        yOffset = yOffset - 24
+
+        local hasCold = false
+        for _, b in pairs(WoWKillboardBounties) do
+            if b.status == "COLD_CASE" then
+                hasCold = true
+                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+                row:SetSize(820, 30)
+                row:SetPoint("TOPLEFT", 0, yOffset)
+                row:SetBackdrop(theme.rowBackdrop)
+                row:SetBackdropColor(0.09, 0.08, 0.07, 0.90)
+                row:SetBackdropBorderColor(0.40, 0.35, 0.22, 0.70)
+
+                local icon = UI:CreateClassIcon(row, b.targetClass, 20)
+                icon:SetPoint("LEFT", 12, 0)
+
+                local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+                txt:SetText(string.format("|cff888888[ESCAPED]|r |cffffffff%s|r (%s)  |  Unclaimed Reward: |cffffd700%s|r  |  Contractor: %s",
+                    b.targetName or "Target", b.targetClass or "Unknown", KB.Utils.FormatMoney(b.amountCopper), b.placerName or "Unknown"))
+                txt:SetShadowOffset(1, -1)
+                txt:SetShadowColor(0, 0, 0, 1)
+
+                yOffset = yOffset - 34
+            end
+        end
+
+        if not hasCold then
+            local emptyC = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+            emptyC:SetPoint("TOPLEFT", 14, yOffset)
+            emptyC:SetText("No archived bounties. All execution contracts remain actively pursued.")
+            emptyC:SetShadowOffset(1, -1)
+            emptyC:SetShadowColor(0, 0, 0, 1)
+            yOffset = yOffset - 25
+        end
+
+    elseif marksSubTab == "RECORDS" then
+        local records = (KB.BountyEngine and KB.BountyEngine.GetBountyRecords) and KB.BountyEngine:GetBountyRecords() or { topHunters = {}, highestRewards = {}, longestSurviving = {} }
+
+        -- Section A: Top Mark Hunters
+        local hTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        hTitle:SetPoint("TOPLEFT", 10, yOffset)
+        hTitle:SetText("🏆 |cffffd100TOP MARK HUNTERS|r — Sanctioned Contract Executions")
+        hTitle:SetShadowOffset(1, -1)
+        hTitle:SetShadowColor(0, 0, 0, 1)
+        yOffset = yOffset - 24
+
+        if not records.topHunters or #records.topHunters == 0 then
+            local emptyH = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+            emptyH:SetPoint("TOPLEFT", 14, yOffset)
+            emptyH:SetText("No mark executions claimed yet in realm history.")
+            emptyH:SetShadowOffset(1, -1)
+            emptyH:SetShadowColor(0, 0, 0, 1)
+            yOffset = yOffset - 25
+        else
+            for hIdx = 1, math.min(#records.topHunters, 5) do
+                local h = records.topHunters[hIdx]
+                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+                row:SetSize(820, 28)
+                row:SetPoint("TOPLEFT", 0, yOffset)
+                row:SetBackdrop(theme.rowBackdrop)
+                row:SetBackdropColor(unpack(hIdx % 2 == 0 and theme.rowBgAlt or theme.rowBg))
+                row:SetBackdropBorderColor(unpack(theme.rowBorder))
+
+                local rankColor = (hIdx == 1 and "ffd700") or (hIdx == 2 and "c0c0c0") or (hIdx == 3 and "cd7f32") or "94a3b8"
+                local rankText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                rankText:SetPoint("LEFT", 12, 0)
+                rankText:SetText(string.format("|cff%s#%d|r", rankColor, hIdx))
+                rankText:SetShadowOffset(1, -1)
+                rankText:SetShadowColor(0, 0, 0, 1)
+
+                local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                nameText:SetPoint("LEFT", rankText, "RIGHT", 14, 0)
+                nameText:SetText(string.format("|cffffffff%s|r", h.name or "Hunter"))
+                nameText:SetShadowOffset(1, -1)
+                nameText:SetShadowColor(0, 0, 0, 1)
+
+                local countText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                countText:SetPoint("RIGHT", -14, 0)
+                countText:SetText(string.format("|cff10b981%d Sanctioned Executions Claimed|r", h.count or 0))
+                countText:SetShadowOffset(1, -1)
+                countText:SetShadowColor(0, 0, 0, 1)
+
+                yOffset = yOffset - 32
+            end
+        end
+
+        -- Section B: Highest Mark Rewards
+        yOffset = yOffset - 12
+        local rTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        rTitle:SetPoint("TOPLEFT", 10, yOffset)
+        rTitle:SetText("💰 |cffffd100RICHEST BOUNTY PURSUITS|r — Highest Placed Stakes")
+        rTitle:SetShadowOffset(1, -1)
+        rTitle:SetShadowColor(0, 0, 0, 1)
+        yOffset = yOffset - 24
+
+        if not records.highestRewards or #records.highestRewards == 0 then
+            local emptyR = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+            emptyR:SetPoint("TOPLEFT", 14, yOffset)
+            emptyR:SetText("No bounties recorded in realm history.")
+            emptyR:SetShadowOffset(1, -1)
+            emptyR:SetShadowColor(0, 0, 0, 1)
+            yOffset = yOffset - 25
+        else
+            for rIdx = 1, math.min(#records.highestRewards, 5) do
+                local r = records.highestRewards[rIdx]
+                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+                row:SetSize(820, 28)
+                row:SetPoint("TOPLEFT", 0, yOffset)
+                row:SetBackdrop(theme.rowBackdrop)
+                row:SetBackdropColor(unpack(rIdx % 2 == 0 and theme.rowBgAlt or theme.rowBg))
+                row:SetBackdropBorderColor(unpack(theme.rowBorder))
+
+                local icon = UI:CreateClassIcon(row, r.targetClass, 20)
+                icon:SetPoint("LEFT", 12, 0)
+
+                local targetText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                targetText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+                targetText:SetText(string.format("TARGET: %s  |  Contractor: |cffcbd5e1%s|r",
+                    KB.Utils and KB.Utils.ColorizeByClass and KB.Utils.ColorizeByClass(r.targetName, r.targetClass) or (r.targetName or "Target"),
+                    r.placerName or "Unknown"
+                ))
+                targetText:SetShadowOffset(1, -1)
+                targetText:SetShadowColor(0, 0, 0, 1)
+
+                local statusColor = (r.status == KB.STATUS.ACTIVE and "38bdf8") or (r.status == KB.STATUS.CLAIMED and "10b981") or (r.status == KB.STATUS.OATHBREAKER and "ef4444") or "94a3b8"
+                local rewardText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                rewardText:SetPoint("RIGHT", -14, 0)
+                rewardText:SetText(string.format("Reward: |cffffd700%s|r  |  |cff%s[%s]|r", KB.Utils.FormatMoney(r.amountCopper), statusColor, r.status or "UNKNOWN"))
+                rewardText:SetShadowOffset(1, -1)
+                rewardText:SetShadowColor(0, 0, 0, 1)
+
+                yOffset = yOffset - 32
+            end
+        end
+
+        -- Section C: Most Elusive Outlaws
+        yOffset = yOffset - 12
+        local eTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        eTitle:SetPoint("TOPLEFT", 10, yOffset)
+        eTitle:SetText("⏳ |cffffd100MOST ELUSIVE OUTLAWS|r — Evading Active Pursuit")
+        eTitle:SetShadowOffset(1, -1)
+        eTitle:SetShadowColor(0, 0, 0, 1)
+        yOffset = yOffset - 24
+
+        if not records.longestSurviving or #records.longestSurviving == 0 then
+            local emptyE = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+            emptyE:SetPoint("TOPLEFT", 14, yOffset)
+            emptyE:SetText("No active outlaws evading capture.")
+            emptyE:SetShadowOffset(1, -1)
+            emptyE:SetShadowColor(0, 0, 0, 1)
+            yOffset = yOffset - 25
+        else
+            for eIdx = 1, math.min(#records.longestSurviving, 5) do
+                local e = records.longestSurviving[eIdx]
+                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+                row:SetSize(820, 28)
+                row:SetPoint("TOPLEFT", 0, yOffset)
+                row:SetBackdrop(theme.rowBackdrop)
+                row:SetBackdropColor(unpack(eIdx % 2 == 0 and theme.rowBgAlt or theme.rowBg))
+                row:SetBackdropBorderColor(unpack(theme.rowBorder))
+
+                local icon = UI:CreateClassIcon(row, e.class, 20)
+                icon:SetPoint("LEFT", 12, 0)
+
+                local targetText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                targetText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+                targetText:SetText(string.format("OUTLAW: %s",
+                    KB.Utils and KB.Utils.ColorizeByClass and KB.Utils.ColorizeByClass(e.target, e.class) or (e.target or "Target")
+                ))
+                targetText:SetShadowOffset(1, -1)
+                targetText:SetShadowColor(0, 0, 0, 1)
+
+                local timeText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                timeText:SetPoint("RIGHT", -14, 0)
+                timeText:SetText(string.format("|cffef4444%d Days on the Run|r  |  Bounty: |cffffd700%s|r", e.days or 1, KB.Utils.FormatMoney(e.copper)))
+                timeText:SetShadowOffset(1, -1)
+                timeText:SetShadowColor(0, 0, 0, 1)
+
+                yOffset = yOffset - 32
+            end
+        end
+
+    elseif marksSubTab == "DEBTORS" then
+        local debtTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        debtTitle:SetPoint("TOPLEFT", 10, yOffset)
+        debtTitle:SetText("⛓️ |cffff2222THE TRAITOR'S GIBBET|r — Oathbreakers & Defaulted Debts")
+        debtTitle:SetShadowOffset(1, -1)
+        debtTitle:SetShadowColor(0, 0, 0, 1)
+
+        local debtSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        debtSub:SetPoint("TOPLEFT", debtTitle, "BOTTOMLEFT", 0, -2)
+        debtSub:SetText("|cffb8a080Combatants who defaulted on sanctioned gold stakes or dishonored wagers.|r")
+        debtSub:SetShadowOffset(1, -1)
+        debtSub:SetShadowColor(0, 0, 0, 1)
+        yOffset = yOffset - 36
+
+        WoWKillboardDebtLedger = WoWKillboardDebtLedger or {}
+        local hasDebts = false
+
+        for playerName, debt in pairs(WoWKillboardDebtLedger) do
+            if debt.status == KB.STATUS.OATHBREAKER then
+                hasDebts = true
+                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+                row:SetSize(820, 36)
+                row:SetPoint("TOPLEFT", 0, yOffset)
+                row:SetBackdrop(theme.rowBackdrop)
+                row:SetBackdropColor(0.20, 0.05, 0.05, 0.94)
+                row:SetBackdropBorderColor(0.75, 0.25, 0.25, 0.85)
+
+                local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                txt:SetPoint("LEFT", 14, 0)
+                txt:SetText(string.format("|cffff2222[TRAITOR]|r |cffffffff%s|r defaulted on |cffffd700%s|r owed to %s (%d days in default)",
+                    playerName, KB.Utils.FormatMoney(debt.amountOwedCopper), debt.creditor or "Creditor", debt.daysInDefault or 1))
+                txt:SetShadowOffset(1, -1)
+                txt:SetShadowColor(0, 0, 0, 1)
+
+                -- If player is the debtor, show redemption button
+                if playerName == UnitName("player") then
+                    local payBtn = UI:CreateButton(row, 130, 24, "⚔️ Settle Debt")
+                    payBtn:SetPoint("RIGHT", -10, 0)
+                    local pName = playerName
+                    payBtn:SetScript("OnClick", function()
+                        if KB.BountyEngine and KB.BountyEngine.PayOffDebt then
+                            KB.BountyEngine:PayOffDebt(pName)
+                        end
+                    end)
+                end
+
+                yOffset = yOffset - 40
+            end
+        end
+
+        if not hasDebts then
+            local emptyD = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+            emptyD:SetPoint("TOPLEFT", 14, yOffset)
+            emptyD:SetText("No players currently in default. The realm's honor is intact.")
+            emptyD:SetShadowOffset(1, -1)
+            emptyD:SetShadowColor(0, 0, 0, 1)
+            yOffset = yOffset - 25
         end
     end
 
-    if not hasBounties then
-        local emptyB = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-        emptyB:SetPoint("TOPLEFT", 10, yOffset)
-        emptyB:SetText("No active blood bounties. Declare one upon an enemy to ignite the manhunt!")
-        yOffset = yOffset - 25
-    end
-
-    -- Archived Cold Cases Section (>30 Days Uncollected)
-    yOffset = yOffset - 20
-    local coldTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    coldTitle:SetPoint("TOPLEFT", 10, yOffset)
-    coldTitle:SetText("📜 Archive of Unclaimed Bounties — Escaped Targets (>30 Days)")
-
-    yOffset = yOffset - 32
-    local hasCold = false
-    for _, b in pairs(WoWKillboardBounties) do
-        if b.status == "COLD_CASE" then
-            hasCold = true
-            local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-            row:SetSize(820, 30)
-            row:SetPoint("TOPLEFT", 0, yOffset)
-            local theme = UI:GetTheme()
-            row:SetBackdrop(theme.rowBackdrop)
-            if theme.id == "classic" then
-                row:SetBackdropColor(0.20, 0.16, 0.12, 0.30)
-                row:SetBackdropBorderColor(0.55, 0.45, 0.22, 0.60)
-            else
-                row:SetBackdropColor(0.08, 0.08, 0.10, 0.85)
-                row:SetBackdropBorderColor(0.25, 0.25, 0.30, 0.7)
-            end
-
-            local icon = UI:CreateClassIcon(row, b.targetClass, 20)
-            icon:SetPoint("LEFT", 12, 0)
-
-            local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-            txt:SetText(string.format("|cff888888[ESCAPED]|r |cffffffff%s|r (%s)  |  Unclaimed Reward: |cffffd700%s|r  |  Contractor: %s",
-                b.targetName, b.targetClass, KB.Utils.FormatMoney(b.amountCopper), b.placerName))
-
-            yOffset = yOffset - 34
-        end
-    end
-
-    if not hasCold then
-        local emptyC = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-        emptyC:SetPoint("TOPLEFT", 10, yOffset)
-        emptyC:SetText("No archived bounties. All execution contracts remain actively pursued.")
-        yOffset = yOffset - 25
-    end
-
-    -- The Traitor's Gibbet (Oathbreaker Debt Ledger)
-    yOffset = yOffset - 24
-    local debtTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    debtTitle:SetPoint("TOPLEFT", 10, yOffset)
-    debtTitle:SetText("⛓️ The Traitor's Gibbet — Oathbreakers & Defaulted Debts")
-
-    yOffset = yOffset - 36
-    WoWKillboardDebtLedger = WoWKillboardDebtLedger or {}
-    local hasDebts = false
-
-    for playerName, debt in pairs(WoWKillboardDebtLedger) do
-        if debt.status == KB.STATUS.OATHBREAKER then
-            hasDebts = true
-            local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-            row:SetSize(820, 36)
-            row:SetPoint("TOPLEFT", 0, yOffset)
-            local theme = UI:GetTheme()
-            row:SetBackdrop(theme.rowBackdrop)
-            if theme.id == "classic" then
-                row:SetBackdropColor(0.40, 0.12, 0.12, 0.40)
-                row:SetBackdropBorderColor(0.75, 0.25, 0.25, 0.70)
-            else
-                row:SetBackdropColor(0.24, 0.06, 0.06, 0.92)
-                row:SetBackdropBorderColor(0.60, 0.15, 0.15, 0.9)
-            end
-
-            local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            txt:SetPoint("LEFT", 14, 0)
-            txt:SetText(string.format("|cffff2222[TRAITOR]|r |cffffffff%s|r defaulted on |cffffd700%s|r owed to %s (%d days in default)",
-                playerName, KB.Utils.FormatMoney(debt.amountOwedCopper), debt.creditor, debt.daysInDefault or 1))
-
-            -- If player is the debtor, show redemption button
-            if playerName == UnitName("player") then
-                local payBtn = UI:CreateButton(row, 130, 24, "⚔️ Settle Debt")
-                payBtn:SetPoint("RIGHT", -10, 0)
-                local pName = playerName
-                payBtn:SetScript("OnClick", function()
-                    KB.BountyEngine:PayOffDebt(pName)
-                end)
-            end
-
-            yOffset = yOffset - 40
-        end
-    end
-
-    if not hasDebts then
-        local emptyD = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-        emptyD:SetPoint("TOPLEFT", 10, yOffset)
-        emptyD:SetText("No players currently in default. The realm's honor is intact.")
-        yOffset = yOffset - 25
-    end
-
-    UI.ContentFrame:SetHeight(math.abs(yOffset) + 30)
+    UI.ContentFrame:SetHeight(math.abs(yOffset) + 40)
 end
 
 -- 4. Render Battleground Gladiator Telemetry
@@ -1625,6 +2097,8 @@ function UI:RenderZones()
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, yOffset)
     title:SetText(string.format("Hotspot Conflict Zones & Bloodshed Rankings — [%s]", currentMode))
+    title:SetShadowOffset(1, -1)
+    title:SetShadowColor(0, 0, 0, 1)
 
     yOffset = yOffset - 40
     for rank, z in ipairs(zones) do
@@ -1642,10 +2116,14 @@ function UI:RenderZones()
         local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         txt:SetPoint("LEFT", 14, 0)
         txt:SetText(string.format("|cff%s#%d|r  |cffffffff%s|r", rankColor, rank, z.zone or "Unknown"))
+        txt:SetShadowOffset(1, -1)
+        txt:SetShadowColor(0, 0, 0, 1)
 
         local countTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         countTxt:SetPoint("RIGHT", -15, 0)
         countTxt:SetText(string.format("|cffff4444%d Confirmed Kills|r", z.kills or 0))
+        countTxt:SetShadowOffset(1, -1)
+        countTxt:SetShadowColor(0, 0, 0, 1)
 
         yOffset = yOffset - 34
     end
@@ -1654,6 +2132,8 @@ function UI:RenderZones()
         local emptyZ = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
         emptyZ:SetPoint("TOPLEFT", 10, yOffset)
         emptyZ:SetText("No zone casualty telemetry recorded yet. Engage in combat to populate!")
+        emptyZ:SetShadowOffset(1, -1)
+        emptyZ:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 30
     end
 
