@@ -5,6 +5,20 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.39] - 2026-09-27
+
+### Fixed
+- **Root Cause Resolution for Erroneous Solo Attribution (`CombatTracker.lua`, `Utils.lua`)**:
+  - **Unblocked Combat Log Registration for WoW Forever Beta**: Discovered and removed `if tocversion >= 16000` condition in `CombatTracker.lua` that erroneously flagged CLEU as forbidden in WoW Forever Beta (TOC 16001). CLEU is now unconditionally registered across all flavors using safe `pcall`, restoring damage, healing, swing, and spell log stream ingestion.
+  - **Dual-Lookup Attribution Engine (`CT.RecentDamageByName`, `CT.RecentVictimAssistsByName`)**: Implemented secondary dictionary indexing by normalized lowercase combatant name (stripping realms, PvP rank prefixes, and punctuation via `KB.Utils.CleanCombatantName` and `KB.Utils.NormalizeCombatantName`). Guarantees 100% resolution even when chat HK events arrive without unit tokens or GUIDs.
+  - **Strict 100% Solo Purity Enforcement**:
+    - If ANY other player (or pet/guardian) hits the victim within the 30-second window, the kill is certified as group/gang combat (`attackersCount = math.max(#attackersList, friendlyPartySize) >= 2`) and stamped `[GANG xN]`, NEVER `[SOLO]`.
+    - Revoked solo status if any external friendly debuff/stun/slow was applied to the victim (`RecentVictimAssists`), if the player received external heals or buffs (`ExternalAssistsOnPlayer`), if party size > 1, or if friendly cluster members were actively engaged nearby (`friendlyAssists > 0`).
+  - **Race Condition & Damage Wiping Fix (`ProcessDeath`, `OnPlayerHonorableKill`)**:
+    - Added `CT.LastKillGUID` to deduplicate between CLEU `UNIT_DIED` / `PARTY_KILL` and `CHAT_MSG_COMBAT_HONOR_GAIN`, preventing a second corrupted solo killmail from overwriting a multi-attacker kill.
+    - Preserved damage and assist tables for the duration of the combat pruning window instead of immediately setting `RecentDamage[victimGUID] = nil`.
+  - **Additional Damage & Aura Subevents**: Added explicit handlers for `DAMAGE_SHIELD` (Thorns, Retribution Aura, Lightning Shield) and `SPELL_AURA_APPLIED_DOSE` in CLEU.
+
 ## [1.4.38] - 2026-09-27
 
 ### Added

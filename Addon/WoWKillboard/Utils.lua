@@ -23,6 +23,38 @@ function U.SafeString(val, fallback)
     return str
 end
 
+local PVP_RANK_PREFIXES = {
+    "Grand Marshal%s+", "Field Marshal%s+", "Marshal%s+", "Commander%s+",
+    "Lieutenant Commander%s+", "Knight%-Champion%s+", "Knight%-Lieutenant%s+",
+    "Knight%s+", "Sergeant Major%s+", "Master Sergeant%s+", "Sergeant%s+",
+    "Corporal%s+", "Private%s+",
+    "High Warlord%s+", "Warlord%s+", "General%s+", "Lieutenant General%s+",
+    "Champion%s+", "Centurion%s+", "Legionnaire%s+", "Blood Guard%s+",
+    "Stone Guard%s+", "First Sergeant%s+", "Senior Sergeant%s+", "Grunt%s+",
+    "Scout%s+",
+}
+
+-- Clean combatant name: strip realm, rank prefixes, punctuation, and trim
+function U.CleanCombatantName(name)
+    if not name or not U.CanAccess(name) or type(name) ~= "string" then return name end
+    local clean = name:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1")
+    local base = clean:match("^([^-]+)") or clean
+    for _, prefix in ipairs(PVP_RANK_PREFIXES) do
+        base = base:gsub("^" .. prefix, "")
+    end
+    base = base:gsub("[%.,!%?:;]", "")
+    return base:match("^%s*(.-)%s*$") or name
+end
+
+-- Normalize combatant name for canonical dictionary lookup
+function U.NormalizeCombatantName(name)
+    local clean = U.CleanCombatantName(name)
+    if clean and clean ~= "" then
+        return clean:lower()
+    end
+    return nil
+end
+
 -- Count entries in a hash table
 function U.TableLength(t)
     if not t or type(t) ~= "table" then return 0 end
