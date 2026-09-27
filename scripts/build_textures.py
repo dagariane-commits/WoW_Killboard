@@ -28,50 +28,41 @@ def generate_medallion_border():
     dst = os.path.join(TEX_DIR, "medallion_border.tga")
     size = 128
     im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(im)
 
     cx, cy = size / 2.0, size / 2.0
-    r_outer = 60.0
-    r_inner = 46.0
+    r_outer = 58.0
+    r_inner = 52.0
 
-    # Draw smooth anti-aliased concentric metallic gold ring
+    # Draw smooth anti-aliased concentric sleek metallic gold ring
     for y in range(size):
         for x in range(size):
             dx = x - cx
             dy = y - cy
             dist = math.sqrt(dx * dx + dy * dy)
 
-            if r_inner - 1.5 <= dist <= r_outer + 1.5:
+            if r_inner - 1.2 <= dist <= r_outer + 1.2:
                 # Anti-aliasing alpha
                 alpha = 1.0
                 if dist > r_outer:
-                    alpha = max(0.0, 1.0 - (dist - r_outer) / 1.5)
+                    alpha = max(0.0, 1.0 - (dist - r_outer) / 1.2)
                 elif dist < r_inner:
-                    alpha = max(0.0, (dist - (r_inner - 1.5)) / 1.5)
+                    alpha = max(0.0, (dist - (r_inner - 1.2)) / 1.2)
 
                 # Shading angle (light source at top-left: -45 deg)
                 angle = math.atan2(dy, dx)
                 light = math.cos(angle - (-math.pi * 0.75)) # light from top-left
 
-                # Base metallic gold: R: 212, G: 163, B: 41 (#d4a329)
-                # Outer bevel and inner bevel
-                t = (dist - r_inner) / (r_outer - r_inner) # 0.0 at inner, 1.0 at outer
-                bevel = math.sin(t * math.pi) # 1.0 at ridge center
+                # Base metallic gold: R: 212, G: 168, B: 52 (#d4a834)
+                t = (dist - r_inner) / (r_outer - r_inner)
+                bevel = math.sin(t * math.pi)
 
-                base_r = 185 + int(50 * light + 20 * bevel)
-                base_g = 140 + int(45 * light + 15 * bevel)
-                base_b = 35 + int(30 * light + 10 * bevel)
+                base_r = 195 + int(45 * light + 15 * bevel)
+                base_g = 150 + int(40 * light + 12 * bevel)
+                base_b = 45 + int(25 * light + 8 * bevel)
 
-                base_r = min(255, max(40, base_r))
-                base_g = min(230, max(30, base_g))
-                base_b = min(180, max(10, base_b))
-
-                # Rivets / notches at 4 cardinal and 4 ordinal points
-                for rot in [0, math.pi/4, math.pi/2, 3*math.pi/4, math.pi, -math.pi/4, -math.pi/2, -3*math.pi/4]:
-                    diff = abs(angle - rot)
-                    if diff < 0.06 and 51 <= dist <= 55:
-                        base_r = min(255, base_r + 40)
-                        base_g = min(255, base_g + 30)
+                base_r = min(255, max(50, base_r))
+                base_g = min(235, max(40, base_g))
+                base_b = min(180, max(15, base_b))
 
                 im.putpixel((x, y), (base_r, base_g, base_b, int(alpha * 255)))
 

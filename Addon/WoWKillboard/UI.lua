@@ -516,17 +516,17 @@ function UI:CreateMainWindow()
 
     -- Iconic Blizzard Circular Medallion Frame (Concentric & Grand in Header)
     local medallion = CreateFrame("Frame", nil, mainFrame)
-    medallion:SetSize(60, 60)
-    medallion:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 12, -6)
+    medallion:SetSize(46, 46)
+    medallion:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -8)
     medallion:SetFrameLevel(mainFrame:GetFrameLevel() + 5)
 
     local portBg = medallion:CreateTexture(nil, "BACKGROUND")
-    portBg:SetSize(48, 48)
+    portBg:SetSize(40, 40)
     portBg:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     portBg:SetColorTexture(0.02, 0.02, 0.03, 1.0)
 
     local portrait = medallion:CreateTexture(nil, "ARTWORK")
-    portrait:SetSize(48, 48)
+    portrait:SetSize(40, 40)
     portrait:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     if SetPortraitTexture then
         pcall(SetPortraitTexture, portrait, "player")
@@ -534,18 +534,18 @@ function UI:CreateMainWindow()
     if not portrait:GetTexture() then
         portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
     end
-    portrait:SetTexCoord(0.12, 0.88, 0.12, 0.88) -- Concentric circular crop to prevent square corner bleed
+    portrait:SetTexCoord(0, 1, 0, 1) -- Blizzard SetPortraitTexture already handles exact headshot framing
     medallion.Portrait = portrait
 
     local ring = medallion:CreateTexture(nil, "OVERLAY")
-    ring:SetSize(60, 60)
+    ring:SetSize(46, 46)
     ring:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     ring:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\medallion_border.tga")
     medallion.Ring = ring
 
     -- Circular Level Plate Backing
     local lvlFrame = CreateFrame("Frame", nil, medallion, "BackdropTemplate")
-    lvlFrame:SetSize(20, 20)
+    lvlFrame:SetSize(18, 16)
     lvlFrame:SetPoint("BOTTOMRIGHT", medallion, "BOTTOMRIGHT", 2, -2)
     lvlFrame:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -570,8 +570,12 @@ function UI:CreateMainWindow()
     medallion:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         local pName = UnitName("player") or "Player"
+        local knownCount = KB.UnitScanner and KB.UnitScanner.GetKnownCharactersCount and KB.UnitScanner:GetKnownCharactersCount() or 0
         GameTooltip:AddLine(string.format("|cffffd100%s — Web Profile|r", pName), 1, 1, 1)
         GameTooltip:AddLine("Click to copy your character's public web profile link.", 0.8, 0.8, 0.8)
+        if knownCount > 0 then
+            GameTooltip:AddLine(string.format("Known Realm Characters Tracked: |cff00e5ff%d|r", knownCount), 0.7, 0.9, 1.0)
+        end
         GameTooltip:AddLine("View detailed combat dossier, kill timeline, and charts outside the game.", 0.6, 0.8, 1.0)
         GameTooltip:Show()
     end)
@@ -582,7 +586,7 @@ function UI:CreateMainWindow()
     -- Template-Free Character Web Profile Link Button (Positioned cleanly on Left next to Medallion)
     local webBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
     webBtn:SetSize(86, 20)
-    webBtn:SetPoint("LEFT", medallion, "RIGHT", 10, 2)
+    webBtn:SetPoint("LEFT", medallion, "RIGHT", 10, 0)
     webBtn:EnableMouse(true)
     local webLabel = webBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     webLabel:SetPoint("CENTER", 0, 0)
@@ -3171,7 +3175,8 @@ function UI:ShowKillBanner(killmail, isTest)
     local alertScope = settings.alertScope or "ZONE"
     local alertStyle = settings.alertStyle or "BOTH"
 
-    -- 1. If alerts are completely disabled, exit immediately (unless explicit test)
+    -- 1. If killmail is a 1v1 duel or alerts are completely disabled, exit immediately (unless explicit test)
+    if not isTest and killmail.isDuel then return end
     if alertMode == "OFF" and not isTest then return end
 
     -- 2. Scope & Proximity Filter (bypassed if explicit test)

@@ -43,9 +43,20 @@ function US:ScanUnit(unit)
     local guildName, _, _, _ = GetGuildInfo(unit)
     guildName = KB.Utils.CanAccess(guildName) and guildName or "None"
 
-    -- If level is -1, it's a boss/skull level player (>10 lvls higher)
+    -- If level is -1 (skull level / >10 lvls higher), check C_PlayerInfo or format as ?? (level 0)
     if level == -1 then
-        level = 99
+        if C_PlayerInfo and C_PlayerInfo.GetPlayerLevelByGUID then
+            local pLvl = C_PlayerInfo.GetPlayerLevelByGUID(guid)
+            if pLvl and pLvl > 0 and pLvl <= 85 then
+                level = pLvl
+            else
+                level = 0
+            end
+        else
+            level = 0
+        end
+    elseif level > 85 then
+        level = 0
     end
 
     local existing = US.Cache[guid]
@@ -65,6 +76,31 @@ function US:ScanUnit(unit)
     US.Cache[guid] = info
     US.NameCache[fullName] = guid
     US.NameCache[name] = guid
+
+    -- Persist to Known Characters Directory in WoWKillboardDB
+    WoWKillboardDB = WoWKillboardDB or {}
+    WoWKillboardDB.characters = WoWKillboardDB.characters or {}
+    local charEntry = WoWKillboardDB.characters[name] or {}
+    charEntry.name = name
+    charEntry.realm = realm
+    charEntry.guid = guid
+    if classFilename and classFilename ~= "UNKNOWN" then
+        charEntry.class = classFilename
+    end
+    if race and race ~= "Unknown" then
+        charEntry.race = race
+    end
+    if info.level > 0 then
+        charEntry.level = info.level
+    end
+    if englishFaction and englishFaction ~= "Unknown" then
+        charEntry.faction = englishFaction
+    end
+    if guildName and guildName ~= "None" then
+        charEntry.guild = guildName
+    end
+    charEntry.lastSeen = time()
+    WoWKillboardDB.characters[name] = charEntry
 
     -- KOS Blacklist & Hostile Radar Check (Hostile player units only)
     if UnitCanAttack and UnitCanAttack("player", unit) and UnitIsPlayer(unit) then
@@ -364,10 +400,23 @@ end
 function US:GetUnitInfoByName(name)
     if not name or not KB.Utils.CanAccess(name) then return nil end
     local guid = US.NameCache[name]
-    if guid and KB.Utils.CanAccess(guid) then
+    if guid and KB.Utils.CanAccess(guid) and US.Cache[guid] then
         return US.Cache[guid]
     end
+    if WoWKillboardDB and WoWKillboardDB.characters and WoWKillboardDB.characters[name] then
+        return WoWKillboardDB.characters[name]
+    end
     return nil
+end
+
+-- Get total number of unique characters indexed by the scanner directory
+function US:GetKnownCharactersCount()
+    if not WoWKillboardDB or not WoWKillboardDB.characters then return 0 end
+    local count = 0
+    for _ in pairs(WoWKillboardDB.characters) do
+        count = count + 1
+    end
+    return count
 end
 
 -- Event handler for unit scanner (100% taint-free, no secure nameplate hooks)

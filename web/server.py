@@ -161,6 +161,19 @@ def init_db():
             )
         """)
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS characters (
+                name TEXT PRIMARY KEY,
+                realm TEXT,
+                guid TEXT,
+                class TEXT,
+                race TEXT,
+                level INTEGER,
+                faction TEXT,
+                guild TEXT,
+                last_seen INTEGER
+            )
+        """)
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS distress_beacons (
                 id TEXT PRIMARY KEY,
                 character_name TEXT,
@@ -1078,6 +1091,40 @@ def upload_saved_variables():
                 except Exception:
                     pass
 
+        # Also extract characters directory if present
+        char_list = []
+        if isinstance(parsed, dict):
+            if "characters" in parsed and isinstance(parsed["characters"], dict):
+                char_list.extend(parsed["characters"].values())
+            elif "WoWKillboardDB" in parsed and isinstance(parsed["WoWKillboardDB"], dict) and "characters" in parsed["WoWKillboardDB"]:
+                chars_obj = parsed["WoWKillboardDB"]["characters"]
+                if isinstance(chars_obj, dict):
+                    char_list.extend(chars_obj.values())
+        for c in char_list:
+            if isinstance(c, dict) and c.get("name"):
+                c_name = c.get("name")
+                if c_name and c_name != "Unknown":
+                    try:
+                        conn.execute("""
+                            INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ON CONFLICT(name) DO UPDATE SET
+                                realm = COALESCE(excluded.realm, characters.realm),
+                                guid = COALESCE(excluded.guid, characters.guid),
+                                class = CASE WHEN excluded.class != 'UNKNOWN' THEN excluded.class ELSE characters.class END,
+                                race = CASE WHEN excluded.race != 'Unknown' THEN excluded.race ELSE characters.race END,
+                                level = CASE WHEN excluded.level > 0 AND excluded.level <= 85 THEN excluded.level ELSE characters.level END,
+                                faction = CASE WHEN excluded.faction != 'Unknown' THEN excluded.faction ELSE characters.faction END,
+                                guild = CASE WHEN excluded.guild != 'None' THEN excluded.guild ELSE characters.guild END,
+                                last_seen = MAX(characters.last_seen, excluded.last_seen)
+                        """, (
+                            c_name, c.get("realm"), c.get("guid"), c.get("class", "UNKNOWN"),
+                            c.get("race", "Unknown"), c.get("level", 0), c.get("faction", "Unknown"),
+                            c.get("guild", "None"), c.get("lastSeen", int(time.time()))
+                        ))
+                    except Exception:
+                        pass
+
         conn.commit()
 
     return jsonify({
@@ -1645,10 +1692,15 @@ def get_character_profile(name):
         """, (name, name)).fetchone()
 
         if not char_row:
-            # Check if character exists in debt_ledger, bounties, or kos_blacklist
-            debt_fallback = conn.execute("SELECT * FROM debt_ledger WHERE player_name = ?", (name,)).fetchone()
-            bnt_fallback = conn.execute("SELECT * FROM bounties WHERE target_name = ?", (name,)).fetchone()
-            kos_fallback = conn.execute("SELECT * FROM kos_blacklist WHERE entity_name = ?", (name,)).fetchone()
+            # Check if character exists in characters directory table
+            dir_row = conn.execute("SELECT name, class, level, guild, faction FROM characters WHERE name = ?", (name,)).fetchone()
+            if dir_row:
+                char_data = dict(dir_row)
+            else:
+                # Check if character exists in debt_ledger, bounties, or kos_blacklist
+                debt_fallback = conn.execute("SELECT * FROM debt_ledger WHERE player_name = ?", (name,)).fetchone()
+                bnt_fallback = conn.execute("SELECT * FROM bounties WHERE target_name = ?", (name,)).fetchone()
+                kos_fallback = conn.execute("SELECT * FROM kos_blacklist WHERE entity_name = ?", (name,)).fetchone()
             if debt_fallback:
                 char_data = {"name": name, "class": "WARRIOR", "level": 60, "guild": "None", "faction": "Unknown"}
             elif bnt_fallback:
@@ -2159,12 +2211,14 @@ def get_activity_7d():
         # Lifetime total kills
         total_kills = conn.execute("SELECT COUNT(*) FROM kills").fetchone()[0]
 
-        # Lifetime active characters
+        # Lifetime active characters (includes combatants and scanner-indexed characters)
         char_count = conn.execute("""
             SELECT COUNT(DISTINCT name) FROM (
                 SELECT killer_name AS name FROM kills WHERE killer_name != 'Unknown'
                 UNION
                 SELECT victim_name AS name FROM kills WHERE victim_name != 'Unknown'
+                UNION
+                SELECT name FROM characters WHERE name IS NOT NULL AND name != 'Unknown'
             )
         """).fetchone()[0]
 
@@ -2185,11 +2239,11 @@ def get_activity_7d():
             "SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde'"
         ).fetchone()[0]
 
-        # 1. Deadliest Zones (Last 24 Hours)
+        # 1. Deadliest Zones (Last 24 Hours - Open World / Battlegrounds, Duels Excluded)
         deadliest_zones_rows = conn.execute("""
             SELECT zone, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown'
+            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
             GROUP BY zone
             ORDER BY kills DESC
             LIMIT 5
@@ -2198,18 +2252,18 @@ def get_activity_7d():
             deadliest_zones_rows = conn.execute("""
                 SELECT zone, COUNT(*) AS kills
                 FROM kills
-                WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown'
+                WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
                 GROUP BY zone
                 ORDER BY kills DESC
                 LIMIT 5
             """).fetchall()
         top_zones_24h = [dict(r) for r in deadliest_zones_rows]
 
-        # 2. Top Active Gankers (Last 24 Hours)
+        # 2. Top Active Gankers (Last 24 Hours - Duels Excluded from Ganks)
         top_gankers_rows = conn.execute("""
             SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND killer_name != 'Unknown'
+            WHERE timestamp >= ? AND killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
             GROUP BY killer_name
             ORDER BY kills DESC
             LIMIT 5
@@ -2218,18 +2272,18 @@ def get_activity_7d():
             top_gankers_rows = conn.execute("""
                 SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
                 FROM kills
-                WHERE killer_name != 'Unknown'
+                WHERE killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
                 GROUP BY killer_name
                 ORDER BY kills DESC
                 LIMIT 5
             """).fetchall()
         top_chars_24h = [dict(r) for r in top_gankers_rows]
 
-        # 3. Top Active Guilds (Last 24 Hours)
+        # 3. Top Active Guilds (Last 24 Hours - Duels Excluded)
         top_guilds_rows = conn.execute("""
             SELECT killer_guild AS guild, killer_faction AS faction, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''
+            WHERE timestamp >= ? AND killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != '' AND (is_duel = 0 OR is_duel IS NULL)
             GROUP BY killer_guild
             ORDER BY kills DESC
             LIMIT 5
@@ -2238,7 +2292,7 @@ def get_activity_7d():
             top_guilds_rows = conn.execute("""
                 SELECT killer_guild AS guild, killer_faction AS faction, COUNT(*) AS kills
                 FROM kills
-                WHERE killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''
+                WHERE killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != '' AND (is_duel = 0 OR is_duel IS NULL)
                 GROUP BY killer_guild
                 ORDER BY kills DESC
                 LIMIT 5

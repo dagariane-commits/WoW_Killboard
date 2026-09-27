@@ -5,6 +5,29 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.34] - 2026-09-27
+
+### Fixed
+- **Duel Gank & Intel Contamination Removal (`CombatTracker.lua`, `Killmail.lua`, `Sync.lua`, `UI.lua`, `web/server.py`)**:
+  - Disconnected 1v1 duels from world gank statistics: explicitly marked duels with `isSolo = false` and `attackersCount = 1`, and excluded `is_duel = 1` from "Top Active Gankers (24 Hours)", "Deadliest Zones", and "Top Active Guilds" queries in `web/server.py`.
+  - Blocked duels from broadcasting over P2P sync (`Sync.lua:BroadcastKillmail`), preventing private duels from leaking into other players' feeds across the guild or group.
+  - Suppressed combat sirens, sound effects, and raid warning kill banners on duels in `Killmail.lua` and `UI.lua`.
+  - Eliminated chat spam for bystander duels: console announcements only print for duel combatants themselves.
+- **Duelist Level Resolution & Max Level Bounds (`CombatTracker.lua`, `UnitScanner.lua`)**:
+  - Eliminated invalid `level = 99` fallback across `UnitScanner.lua` and `CombatTracker.lua`, clamping levels to valid realm bounds (`<= 85`) and leveraging `C_PlayerInfo.GetPlayerLevelByGUID` when available.
+  - Added persistent character directory lookup so that duelists who were previously targeted or scanned resolve with their exact level and class.
+- **Character Portrait Medallion Polish (`UI.lua`, `build_textures.py`)**:
+  - Resolved distorted character headshot by removing double-cropping `SetTexCoord(0.12, 0.88, 0.12, 0.88)` and using natural `(0, 1, 0, 1)` framing provided by `SetPortraitTexture`.
+  - Resized medallion to a compact, elegant 46x46 and anchored it cleanly inside the top-left header bar at `("TOPLEFT", 14, -8)` rather than protruding over the window edge.
+  - Re-engineered `medallion_border.tga` to replace the 14px thick bronze ring and bulky rivets with a sleek 2.5px-3px antique metallic gold bezel.
+
+### Added
+- **Persistent Characters Directory & Active Characters Telemetry (`UnitScanner.lua`, `web/server.py`, `UI.lua`)**:
+  - Added `WoWKillboardDB.characters` persistent storage in the addon, automatically caching every scanned character's name, realm, class, race, level, guild, faction, and timestamp.
+  - Created `characters` table in SQLite (`web/server.py`), ingesting observed character directories from upload and sync payloads.
+  - Updated "Active Characters" in the web's Lifetime Combat Activity box to compute the union of combatants from `kills` and indexed players from `characters`.
+  - Added `US:GetKnownCharactersCount()` displaying total tracked characters in the character medallion hover tooltip.
+
 ## [1.4.33] - 2026-09-27
 
 ### Added

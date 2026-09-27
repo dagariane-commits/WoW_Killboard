@@ -765,13 +765,13 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
     end
 
     local function ResolveDuelCombatant(charName, cleanName, defaultGuid)
-        -- 1. Check UnitScanner Cache
+        -- 1. Check UnitScanner Cache & Known Characters Directory
         local info = KB.UnitScanner and (KB.UnitScanner:GetUnitInfoByName(charName) or KB.UnitScanner:GetUnitInfoByName(cleanName))
-        if info and info.level and info.level > 0 and info.class and info.class ~= "UNKNOWN" then
+        if info and info.level and info.level > 0 and info.level <= 85 and info.class and info.class ~= "UNKNOWN" then
             return {
                 guid = info.guid or defaultGuid,
                 name = charName,
-                level = info.level or 0,
+                level = info.level,
                 class = info.class or "UNKNOWN",
                 guild = info.guild or "None",
                 faction = info.faction or "Unknown",
@@ -779,13 +779,21 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
             }
         end
 
-        -- 2. Check active candidate units (target, mouseover, focus, targettarget)
-        local candidateUnits = { "target", "mouseover", "focus", "targettarget" }
+        -- 2. Check active candidate units (target, mouseover, focus, targettarget, party/raid)
+        local candidateUnits = { "target", "mouseover", "focus", "targettarget", "party1", "party2", "party3", "party4" }
         for _, u in ipairs(candidateUnits) do
             if UnitExists(u) and (UnitName(u) == charName or UnitName(u) == cleanName) then
                 local scanned = KB.UnitScanner and KB.UnitScanner:ScanUnit(u)
-                local uLvl = (scanned and scanned.level and scanned.level > 0) and scanned.level or (UnitLevel and UnitLevel(u) or 0)
-                if uLvl > 0 then
+                local uLvl = (scanned and scanned.level and scanned.level > 0 and scanned.level <= 85) and scanned.level or (UnitLevel and UnitLevel(u) or 0)
+                if uLvl == -1 or uLvl > 85 then
+                    local pGuid = UnitGUID(u)
+                    if pGuid and C_PlayerInfo and C_PlayerInfo.GetPlayerLevelByGUID then
+                        uLvl = C_PlayerInfo.GetPlayerLevelByGUID(pGuid) or 0
+                    else
+                        uLvl = 0
+                    end
+                end
+                if uLvl > 0 and uLvl <= 85 then
                     return {
                         guid = (scanned and scanned.guid) or UnitGUID(u) or defaultGuid,
                         name = charName,
@@ -804,8 +812,16 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
             local np = "nameplate" .. i
             if UnitExists(np) and (UnitName(np) == charName or UnitName(np) == cleanName) then
                 local scanned = KB.UnitScanner and KB.UnitScanner:ScanUnit(np)
-                local npLvl = (scanned and scanned.level and scanned.level > 0) and scanned.level or (UnitLevel and UnitLevel(np) or 0)
-                if npLvl > 0 then
+                local npLvl = (scanned and scanned.level and scanned.level > 0 and scanned.level <= 85) and scanned.level or (UnitLevel and UnitLevel(np) or 0)
+                if npLvl == -1 or npLvl > 85 then
+                    local npGuid = UnitGUID(np)
+                    if npGuid and C_PlayerInfo and C_PlayerInfo.GetPlayerLevelByGUID then
+                        npLvl = C_PlayerInfo.GetPlayerLevelByGUID(npGuid) or 0
+                    else
+                        npLvl = 0
+                    end
+                end
+                if npLvl > 0 and npLvl <= 85 then
                     return {
                         guid = (scanned and scanned.guid) or UnitGUID(np) or defaultGuid,
                         name = charName,
@@ -822,7 +838,7 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
         -- 4. Check historical kill records in database
         if WoWKillboardDB and WoWKillboardDB.kills then
             for _, km in pairs(WoWKillboardDB.kills) do
-                if km.killer and (km.killer.name == charName or km.killer.name == cleanName) and km.killer.level and km.killer.level > 0 then
+                if km.killer and (km.killer.name == charName or km.killer.name == cleanName) and km.killer.level and km.killer.level > 0 and km.killer.level <= 85 then
                     return {
                         guid = km.killer.guid or defaultGuid,
                         name = charName,
@@ -832,7 +848,7 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
                         faction = (info and info.faction ~= "Unknown") and info.faction or (km.killer.faction or "Unknown"),
                         partySize = 1,
                     }
-                elseif km.victim and (km.victim.name == charName or km.victim.name == cleanName) and km.victim.level and km.victim.level > 0 then
+                elseif km.victim and (km.victim.name == charName or km.victim.name == cleanName) and km.victim.level and km.victim.level > 0 and km.victim.level <= 85 then
                     return {
                         guid = km.victim.guid or defaultGuid,
                         name = charName,
@@ -865,10 +881,13 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
             end
         end
 
+        local fallbackLvl = (info and info.level) or 0
+        if fallbackLvl > 85 then fallbackLvl = 0 end
+
         return {
             guid = (info and info.guid) or defaultGuid,
             name = charName,
-            level = (info and info.level) or 0,
+            level = fallbackLvl,
             class = cClass,
             guild = (info and info.guild) or "None",
             faction = (info and info.faction) or "Unknown",
@@ -918,7 +937,7 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
         isBattleground = false,
         isArena = false,
         battlegroundName = isFlee and "Duel (Forfeit)" or "Duel (Knockout)",
-        isSolo = true,
+        isSolo = false,
         attackersCount = 1,
         attackers = {
             {
