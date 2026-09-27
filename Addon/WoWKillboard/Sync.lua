@@ -17,7 +17,7 @@ end
 
 -- Broadcast a killmail to group and guild
 function S:BroadcastKillmail(killmail)
-    if not KB.DefaultSettings.p2pSyncEnabled or not killmail then return end
+    if not KB.DefaultSettings.p2pSyncEnabled or not killmail or killmail.isDuel then return end
 
     -- Serialize compact payload: "KM:killId:timestamp:isSolo:isBG:kName:kClass:kLvl:vName:vClass:vLvl:zone"
     local payload = string.format("KM:%s:%d:%d:%d:%s:%s:%d:%s:%s:%d:%s",
@@ -176,6 +176,7 @@ function S:OnAddonMessage(prefix, message, channel, sender)
             local syncedKM = {
                 killId = killId,
                 timestamp = tonumber(parts[3]) or time(),
+                isDuel = false,
                 isSolo = (parts[4] == "1"),
                 isBattleground = (parts[5] == "1"),
                 isArena = false,
