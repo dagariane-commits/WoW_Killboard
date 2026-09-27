@@ -1795,12 +1795,12 @@ frame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "PLAYER_PVP_KILLS_CHANGED" then
         local currentHK = nil
         if type(GetPVPLifetimeStats) == "function" then
-            local ok, hk = pcall(GetPVPLifetimeStats)
-            if ok and hk then currentHK = tonumber(hk) end
+            local hk = GetPVPLifetimeStats()
+            if hk then currentHK = tonumber(hk) end
         end
         if not currentHK and type(GetPVPSessionStats) == "function" then
-            local ok, hk = pcall(GetPVPSessionStats)
-            if ok and hk then currentHK = tonumber(hk) end
+            local hk = GetPVPSessionStats()
+            if hk then currentHK = tonumber(hk) end
         end
 
         if currentHK and CT.LastLifetimeHK and currentHK > CT.LastLifetimeHK then
@@ -1812,12 +1812,12 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
         if type(GetPVPLifetimeStats) == "function" then
-            local ok, hk = pcall(GetPVPLifetimeStats)
-            if ok and hk then CT.LastLifetimeHK = tonumber(hk) end
+            local hk = GetPVPLifetimeStats()
+            if hk then CT.LastLifetimeHK = tonumber(hk) end
         end
         if not CT.LastLifetimeHK and type(GetPVPSessionStats) == "function" then
-            local ok, hk = pcall(GetPVPSessionStats)
-            if ok and hk then CT.LastLifetimeHK = tonumber(hk) end
+            local hk = GetPVPSessionStats()
+            if hk then CT.LastLifetimeHK = tonumber(hk) end
         end
 
     elseif event == "UPDATE_BATTLEFIELD_SCORE" then
@@ -1827,8 +1827,8 @@ frame:SetScript("OnEvent", function(self, event, ...)
         local playerName = UnitName("player")
         if not playerName or not KB.Utils.CanAccess(playerName) then return end
         for i = 1, numScores do
-            local success, name, killingBlows, honorableKills, deaths, honorGained, faction, race, class, classToken, damageDone, healingDone = pcall(GetBattlefieldScore, i)
-            if success and name and KB.Utils.CanAccess(name) and (name == playerName or (type(name) == "string" and name:find(playerName, 1, true))) then
+            local name, killingBlows, honorableKills, deaths, honorGained, faction, race, class, classToken, damageDone, healingDone = GetBattlefieldScore(i)
+            if name and KB.Utils.CanAccess(name) and (name == playerName or (type(name) == "string" and name:find(playerName, 1, true))) then
                 local dmg = tonumber(damageDone) or 0
                 local heal = tonumber(healingDone) or 0
                 if dmg > 0 then CT.SessionStats.damageDone = dmg end
@@ -1840,8 +1840,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "PVP_MATCH_COMPLETE" or event == "UPDATE_BATTLEFIELD_STATUS" then
         local winner = nil
         if type(GetBattlefieldWinner) == "function" then
-            local ok, w = pcall(GetBattlefieldWinner)
-            if ok then winner = w end
+            winner = GetBattlefieldWinner()
         end
         if winner ~= nil and not CT.RecordedMatchWinner then
             CT.RecordedMatchWinner = true
@@ -1881,7 +1880,7 @@ end)
 
 -- Universal Event Registration across all 4 WoW client flavors (Guardrail 2 Compliant)
 -- CLEU is registered cleanly across WoW Forever Beta (1.16/16001), Classic Era (11500), Anniversary (11500), and Modern Retail
-pcall(frame.RegisterEvent, frame, "COMBAT_LOG_EVENT_UNFILTERED")
+frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 
 frame:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
 frame:RegisterEvent("CHAT_MSG_SYSTEM")

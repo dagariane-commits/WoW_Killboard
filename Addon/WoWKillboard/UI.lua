@@ -405,7 +405,7 @@ end
 function UI:UpdatePortrait()
     if not UI.Medallion then return end
     if UI.Medallion.Portrait and SetPortraitTexture then
-        pcall(SetPortraitTexture, UI.Medallion.Portrait, "player")
+        SetPortraitTexture(UI.Medallion.Portrait, "player")
         if not UI.Medallion.Portrait:GetTexture() then
             UI.Medallion.Portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
         end
@@ -498,8 +498,8 @@ function UI:OnPlayerRegenEnabled()
     if UI.PendingHides and #UI.PendingHides > 0 then
         for _, f in ipairs(UI.PendingHides) do
             if f then
-                if f.Hide then pcall(f.Hide, f) end
-                if f.SetAlpha then pcall(f.SetAlpha, f, 1.0) end
+                if f.Hide then f:Hide() end
+                if f.SetAlpha then f:SetAlpha(1.0) end
             end
         end
         UI.PendingHides = {}
@@ -673,7 +673,7 @@ function UI:CreateMainWindow()
     portrait:SetSize(40, 40)
     portrait:SetPoint("CENTER", medallion, "CENTER", 0, 0)
     if SetPortraitTexture then
-        pcall(SetPortraitTexture, portrait, "player")
+        SetPortraitTexture(portrait, "player")
     end
     if not portrait:GetTexture() then
         portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
@@ -3703,7 +3703,7 @@ function UI:ShowKillBanner(killmail, isTest)
     if alertMode == "SOUND_AND_BANNER" then
         if PlaySound then
             local soundId = (KB.SoundAlerts and KB.SoundAlerts.SOLO_KILL) or 8959
-            pcall(PlaySound, soundId, "Master")
+            PlaySound(soundId, "Master")
         end
     end
 

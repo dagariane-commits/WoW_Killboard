@@ -707,3 +707,25 @@ end)
 
 coreFrame:RegisterEvent("ADDON_LOADED")
 
+-- Diagnostic Taint & Action Block Interceptor (Telemetry-First Diagnostics)
+local diagFrame = CreateFrame("Frame")
+diagFrame:RegisterEvent("ADDON_ACTION_BLOCKED")
+diagFrame:RegisterEvent("ADDON_ACTION_FORBIDDEN")
+diagFrame:SetScript("OnEvent", function(self, event, addon, func)
+    local aStr = tostring(addon or "UnknownAddon")
+    local fStr = tostring(func or "UnknownFunc")
+    local inCombat = InCombatLockdown() and "YES" or "NO"
+    local alert = string.format("|cffff0000[WoWKB Diagnostic]|r %s: Blocked |cffffd100%s|r by |cffffff00%s|r (InCombat: %s)", event, fStr, aStr, inCombat)
+    if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        DEFAULT_CHAT_FRAME:AddMessage(alert)
+    end
+    WoWKillboardDB = WoWKillboardDB or {}
+    WoWKillboardDB.lastBlockedAction = {
+        timestamp = date("%Y-%m-%d %H:%M:%S"),
+        event = event,
+        addon = aStr,
+        func = fStr,
+        inCombat = InCombatLockdown(),
+    }
+end)
+
