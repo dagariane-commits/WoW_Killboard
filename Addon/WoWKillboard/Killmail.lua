@@ -76,8 +76,10 @@ function KM:RecordKill(data)
     WoWKillboardDB.kills[killId] = killmail
 
     -- Console chat announcement
-    local killerStr = KB.Utils.ColorizeByClass(string.format("[%d] %s", killmail.killer.level, killmail.killer.name), killmail.killer.class)
-    local victimStr = KB.Utils.ColorizeByClass(string.format("[%d] %s", killmail.victim.level, killmail.victim.name), killmail.victim.class)
+    local kLvlStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
+    local vLvlStr = (killmail.victim.level and killmail.victim.level > 0) and tostring(killmail.victim.level) or "??"
+    local killerStr = KB.Utils.ColorizeByClass(string.format("[%s] %s", kLvlStr, killmail.killer.name), killmail.killer.class)
+    local victimStr = KB.Utils.ColorizeByClass(string.format("[%s] %s", vLvlStr, killmail.victim.name), killmail.victim.class)
     local badge
     if killmail.isDuel then
         badge = "|cffffd700[DUEL]|r"

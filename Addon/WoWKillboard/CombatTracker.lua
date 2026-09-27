@@ -764,40 +764,125 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
         CT.SessionStats.deaths = CT.SessionStats.deaths + 1
     end
 
-    local killerInfo = KB.UnitScanner:GetUnitInfoByName(winnerName) or KB.UnitScanner:GetUnitInfoByName(cleanWinner)
-    if not killerInfo then
-        if UnitExists("target") and (UnitName("target") == winnerName or UnitName("target") == cleanWinner) then
-            killerInfo = KB.UnitScanner:ScanUnit("target")
-        elseif UnitExists("mouseover") and (UnitName("mouseover") == winnerName or UnitName("mouseover") == cleanWinner) then
-            killerInfo = KB.UnitScanner:ScanUnit("mouseover")
+    local function ResolveDuelCombatant(charName, cleanName, defaultGuid)
+        -- 1. Check UnitScanner Cache
+        local info = KB.UnitScanner and (KB.UnitScanner:GetUnitInfoByName(charName) or KB.UnitScanner:GetUnitInfoByName(cleanName))
+        if info and info.level and info.level > 0 and info.class and info.class ~= "UNKNOWN" then
+            return {
+                guid = info.guid or defaultGuid,
+                name = charName,
+                level = info.level or 0,
+                class = info.class or "UNKNOWN",
+                guild = info.guild or "None",
+                faction = info.faction or "Unknown",
+                partySize = 1,
+            }
         end
-    end
 
-    local kClass = isPlayerWinner and (select(2, UnitClass("player")) or "UNKNOWN") or (killerInfo and killerInfo.class or "UNKNOWN")
-    if kClass == "UNKNOWN" then
-        for _, victimAtts in pairs(CT.RecentDamage) do
-            for _, att in pairs(victimAtts) do
-                if att.name == winnerName or att.name == cleanWinner then
-                    if att.class and att.class ~= "UNKNOWN" then
-                        kClass = att.class
-                        break
-                    elseif att.spellName and KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
-                        local inferred = KB.UnitScanner:InferClassFromSpell(att.guid, att.name, att.spellName)
-                        if inferred then kClass = inferred; break end
-                    end
+        -- 2. Check active candidate units (target, mouseover, focus, targettarget)
+        local candidateUnits = { "target", "mouseover", "focus", "targettarget" }
+        for _, u in ipairs(candidateUnits) do
+            if UnitExists(u) and (UnitName(u) == charName or UnitName(u) == cleanName) then
+                local scanned = KB.UnitScanner and KB.UnitScanner:ScanUnit(u)
+                local uLvl = (scanned and scanned.level and scanned.level > 0) and scanned.level or (UnitLevel and UnitLevel(u) or 0)
+                if uLvl > 0 then
+                    return {
+                        guid = (scanned and scanned.guid) or UnitGUID(u) or defaultGuid,
+                        name = charName,
+                        level = uLvl,
+                        class = (scanned and scanned.class ~= "UNKNOWN") and scanned.class or (select(2, UnitClass(u)) or "UNKNOWN"),
+                        guild = (scanned and scanned.guild ~= "None") and scanned.guild or (GetGuildInfo and GetGuildInfo(u) or "None"),
+                        faction = (scanned and scanned.faction ~= "Unknown") and scanned.faction or (UnitFactionGroup and UnitFactionGroup(u) or "Unknown"),
+                        partySize = 1,
+                    }
                 end
             end
-            if kClass ~= "UNKNOWN" then break end
         end
+
+        -- 3. Check visible nameplates (nameplate1 through nameplate40)
+        for i = 1, 40 do
+            local np = "nameplate" .. i
+            if UnitExists(np) and (UnitName(np) == charName or UnitName(np) == cleanName) then
+                local scanned = KB.UnitScanner and KB.UnitScanner:ScanUnit(np)
+                local npLvl = (scanned and scanned.level and scanned.level > 0) and scanned.level or (UnitLevel and UnitLevel(np) or 0)
+                if npLvl > 0 then
+                    return {
+                        guid = (scanned and scanned.guid) or UnitGUID(np) or defaultGuid,
+                        name = charName,
+                        level = npLvl,
+                        class = (scanned and scanned.class ~= "UNKNOWN") and scanned.class or (select(2, UnitClass(np)) or "UNKNOWN"),
+                        guild = (scanned and scanned.guild ~= "None") and scanned.guild or (GetGuildInfo and GetGuildInfo(np) or "None"),
+                        faction = (scanned and scanned.faction ~= "Unknown") and scanned.faction or (UnitFactionGroup and UnitFactionGroup(np) or "Unknown"),
+                        partySize = 1,
+                    }
+                end
+            end
+        end
+
+        -- 4. Check historical kill records in database
+        if WoWKillboardDB and WoWKillboardDB.kills then
+            for _, km in pairs(WoWKillboardDB.kills) do
+                if km.killer and (km.killer.name == charName or km.killer.name == cleanName) and km.killer.level and km.killer.level > 0 then
+                    return {
+                        guid = km.killer.guid or defaultGuid,
+                        name = charName,
+                        level = km.killer.level,
+                        class = (info and info.class ~= "UNKNOWN") and info.class or (km.killer.class or "UNKNOWN"),
+                        guild = (info and info.guild ~= "None") and info.guild or (km.killer.guild or "None"),
+                        faction = (info and info.faction ~= "Unknown") and info.faction or (km.killer.faction or "Unknown"),
+                        partySize = 1,
+                    }
+                elseif km.victim and (km.victim.name == charName or km.victim.name == cleanName) and km.victim.level and km.victim.level > 0 then
+                    return {
+                        guid = km.victim.guid or defaultGuid,
+                        name = charName,
+                        level = km.victim.level,
+                        class = (info and info.class ~= "UNKNOWN") and info.class or (km.victim.class or "UNKNOWN"),
+                        guild = (info and info.guild ~= "None") and info.guild or (km.victim.guild or "None"),
+                        faction = (info and info.faction ~= "Unknown") and info.faction or (km.victim.faction or "Unknown"),
+                        partySize = 1,
+                    }
+                end
+            end
+        end
+
+        -- 5. Fallback with damage inference if class still unknown
+        local cClass = info and info.class or "UNKNOWN"
+        if cClass == "UNKNOWN" then
+            for _, victimAtts in pairs(CT.RecentDamage) do
+                for _, att in pairs(victimAtts) do
+                    if att.name == charName or att.name == cleanName then
+                        if att.class and att.class ~= "UNKNOWN" then
+                            cClass = att.class
+                            break
+                        elseif att.spellName and KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
+                            local inferred = KB.UnitScanner:InferClassFromSpell(att.guid, att.name, att.spellName)
+                            if inferred then cClass = inferred; break end
+                        end
+                    end
+                end
+                if cClass ~= "UNKNOWN" then break end
+            end
+        end
+
+        return {
+            guid = (info and info.guid) or defaultGuid,
+            name = charName,
+            level = (info and info.level) or 0,
+            class = cClass,
+            guild = (info and info.guild) or "None",
+            faction = (info and info.faction) or "Unknown",
+            partySize = 1,
+        }
     end
 
+    local killerInfo = nil
     if isPlayerWinner then
-        kClass = select(2, UnitClass("player")) or "UNKNOWN"
         killerInfo = {
             guid = UnitGUID("player") or "PLAYER",
             name = winnerName,
             level = UnitLevel("player") or 0,
-            class = kClass,
+            class = select(2, UnitClass("player")) or "UNKNOWN",
             guild = GetGuildInfo("player") or "None",
             faction = UnitFactionGroup("player") or "Unknown",
             partySize = 1,
@@ -805,70 +890,24 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
             healingDone = CT.SessionStats.healingDone or 0,
         }
     else
-        killerInfo = killerInfo or {
-            guid = "DUEL_WINNER",
-            name = winnerName,
-            level = 0,
-            class = kClass,
-            guild = "None",
-            faction = "Unknown",
-            partySize = 1,
-            damageDone = 0,
-            healingDone = 0,
-        }
-        killerInfo.class = kClass
+        killerInfo = ResolveDuelCombatant(winnerName, cleanWinner, "DUEL_WINNER")
+        killerInfo.damageDone = 0
+        killerInfo.healingDone = 0
     end
 
     local victimInfo = nil
     if isPlayerLoser then
-        vClass = select(2, UnitClass("player")) or "UNKNOWN"
         victimInfo = {
             guid = UnitGUID("player") or "PLAYER",
             name = loserName,
             level = UnitLevel("player") or 0,
-            class = vClass,
+            class = select(2, UnitClass("player")) or "UNKNOWN",
             guild = GetGuildInfo("player") or "None",
             faction = UnitFactionGroup("player") or "Unknown",
             partySize = 1,
         }
     else
-        victimInfo = KB.UnitScanner:GetUnitInfoByName(loserName) or KB.UnitScanner:GetUnitInfoByName(cleanLoser)
-        if not victimInfo then
-            if UnitExists("target") and (UnitName("target") == loserName or UnitName("target") == cleanLoser) then
-                victimInfo = KB.UnitScanner:ScanUnit("target")
-            elseif UnitExists("mouseover") and (UnitName("mouseover") == loserName or UnitName("mouseover") == cleanLoser) then
-                victimInfo = KB.UnitScanner:ScanUnit("mouseover")
-            end
-        end
-
-        local vClass = victimInfo and victimInfo.class or "UNKNOWN"
-        if vClass == "UNKNOWN" then
-            for _, victimAtts in pairs(CT.RecentDamage) do
-                for _, att in pairs(victimAtts) do
-                    if att.name == loserName or att.name == cleanLoser then
-                        if att.class and att.class ~= "UNKNOWN" then
-                            vClass = att.class
-                            break
-                        elseif att.spellName and KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
-                            local inferred = KB.UnitScanner:InferClassFromSpell(att.guid, att.name, att.spellName)
-                            if inferred then vClass = inferred; break end
-                        end
-                    end
-                end
-                if vClass ~= "UNKNOWN" then break end
-            end
-        end
-
-        victimInfo = victimInfo or {
-            guid = "DUEL_LOSER",
-            name = loserName,
-            level = 0,
-            class = vClass,
-            guild = "None",
-            faction = "Unknown",
-            partySize = 1,
-        }
-        victimInfo.class = vClass
+        victimInfo = ResolveDuelCombatant(loserName, cleanLoser, "DUEL_LOSER")
     end
 
     local location = KB.Utils.GetPlayerLocation()
@@ -998,9 +1037,9 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "PLAYER_TARGET_CHANGED" then
         if UnitExists("target") and UnitIsPlayer("target") then
-            local isEnemy = UnitIsEnemy("player", "target") or (UnitReaction("player", "target") and UnitReaction("player", "target") <= 4) or (not UnitIsFriend("player", "target")) or (UnitCanAttack and UnitCanAttack("player", "target"))
+            local isEnemy = UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or (not UnitIsFriend("player", "target"))
             if isEnemy then
-                local isDead = UnitIsDead("target") or UnitIsDeadOrGhost("target") or (UnitHealth("target") and UnitHealth("target") <= 0)
+                local isDead = (UnitIsDead("target") or UnitIsDeadOrGhost("target")) and true or false
                 local tGuid = UnitGUID("target")
                 local tName = UnitName("target")
                 if isDead and tName and tName ~= "" then
@@ -1029,9 +1068,9 @@ frame:SetScript("OnEvent", function(self, event, ...)
         local unit = ...
         if unit == "target" or unit == "focus" or unit == "targettarget" or (unit and unit:match("^nameplate%d+$")) then
             if UnitExists(unit) and UnitIsPlayer(unit) then
-                local isDead = UnitIsDead(unit) or UnitIsDeadOrGhost(unit) or (UnitHealth(unit) and UnitHealth(unit) <= 0)
+                local isDead = (UnitIsDead(unit) or UnitIsDeadOrGhost(unit)) and true or false
                 if isDead then
-                    local isEnemy = UnitIsEnemy("player", unit) or (UnitReaction("player", unit) and UnitReaction("player", unit) <= 4) or (not UnitIsFriend("player", unit))
+                    local isEnemy = UnitIsEnemy("player", unit) or (UnitCanAttack and UnitCanAttack("player", unit)) or (not UnitIsFriend("player", unit))
                     if isEnemy or (activeEnemyTarget and activeEnemyTarget.guid == UnitGUID(unit)) then
                         local deadName = UnitName(unit)
                         local deadGuid = UnitGUID(unit)

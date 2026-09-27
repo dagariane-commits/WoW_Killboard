@@ -2272,6 +2272,7 @@ function buildCharacterDossierHtml(data) {
         ` : ''}
       </div>
       <div class="armory-group">
+        <button class="armory-btn" style="cursor:pointer; background:#1e293b; color:#38bdf8;" onclick="copyCharacterProfileLink('${escapeHtml(data.name)}', this)">📋 Copy Link</button>
         <a class="armory-btn" href="${data.armoryUrls.official}" target="_blank" rel="noopener">Blizzard Armory</a>
         <a class="armory-btn" href="${data.armoryUrls.ironforge}" target="_blank" rel="noopener">Classic Armory</a>
         <a class="armory-btn" href="${data.armoryUrls.warcraftlogs}" target="_blank" rel="noopener">Warcraft Logs</a>
@@ -2345,6 +2346,27 @@ async function openCharacterProfile(charName) {
 
 function closeCharacterModal() {
   document.getElementById("character-modal").style.display = "none";
+}
+
+function copyCharacterProfileLink(charName, btn) {
+  const url = `${window.location.origin}/?character=${encodeURIComponent(charName)}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      if (btn) {
+        const origText = btn.innerHTML;
+        btn.innerHTML = "✓ Link Copied!";
+        btn.style.color = "#10b981";
+        setTimeout(() => {
+          btn.innerHTML = origText;
+          btn.style.color = "#38bdf8";
+        }, 2000);
+      }
+    }).catch(() => {
+      prompt("Copy character dossier URL:", url);
+    });
+  } else {
+    prompt("Copy character dossier URL:", url);
+  }
 }
 
 // Personal Armory View (When Signed-In Operative clicks Armory)
@@ -5056,8 +5078,18 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSidebar();
   checkGlobalSosBeacons();
 
-  // Landing page is always the War Room Sign-In / Entry Portal
-  switchTab("PORTAL");
+  // Handle external character web links (?character=Name or ?char=Name or ?player=Name)
+  const urlParams = new URLSearchParams(window.location.search);
+  const charParam = urlParams.get("character") || urlParams.get("char") || urlParams.get("player");
+  if (charParam) {
+    switchTab("FEED");
+    setTimeout(() => {
+      openCharacterProfile(charParam);
+    }, 350);
+  } else {
+    // Landing page is always the War Room Sign-In / Entry Portal
+    switchTab("PORTAL");
+  }
 
   // Polling update every 6 seconds
   setInterval(() => {
