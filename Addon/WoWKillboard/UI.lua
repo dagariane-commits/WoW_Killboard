@@ -516,6 +516,20 @@ function UI:OnPlayerRegenEnabled()
     if UI.KillBanner and not InCombatLockdown() then
         UI.KillBanner:EnableMouse(UI.bannerUnlocked or false)
     end
+    -- Flush pending combat wire entries outside combat lockdown
+    if UI.PendingWireEntries and #UI.PendingWireEntries > 0 and not InCombatLockdown() then
+        if not combatWireHUD then UI:InitializeCombatWire() end
+        if combatWireHUD and combatWireHUD.msgFrame then
+            for _, line in ipairs(UI.PendingWireEntries) do
+                combatWireHUD.msgFrame:AddMessage(line)
+            end
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            if (not s or s.showCombatWire ~= false) and not combatWireHUD:IsShown() then
+                combatWireHUD:Show()
+            end
+        end
+        UI.PendingWireEntries = {}
+    end
     -- Deliver pending death bounty prompt outside combat lockdown
     if UI.PendingDeathBountyKiller and not InCombatLockdown() then
         local k = UI.PendingDeathBountyKiller
@@ -3562,7 +3576,6 @@ function UI:InitializeKillBanner()
     killBanner:SetClampedToScreen(true)
     killBanner:SetMovable(true)
     killBanner:EnableMouse(false) -- Guardrail 1: Click-through during combat to prevent taint
-    killBanner:RegisterForDrag("LeftButton")
 
     -- Restore saved position or default to TOP, 0, -135
     local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition
@@ -3821,6 +3834,7 @@ function UI:ToggleBannerLock(explicitState)
     if UI.bannerUnlocked then
         if killBannerTimer then killBannerTimer:Cancel() end
         banner:EnableMouse(true) -- Enable mouse interaction only while repositioning
+        banner:RegisterForDrag("LeftButton")
         banner.KillerIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
         banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
         banner.KillerText:SetText("|cff00ff00[60] Killer (You)|r")
@@ -3841,6 +3855,7 @@ function UI:ToggleBannerLock(explicitState)
         SafePrint("|cff00ccff[WoWKB Alert]|r Alert Anchor unlocked! Click and drag with |cffffd100Left-Click|r anywhere on your screen. Type |cffffd100/wowkb move|r again or click Lock to save.")
     else
         banner:EnableMouse(false) -- Revert to click-through immediately
+        banner:RegisterForDrag()  -- Unregister drag listeners
         banner:Hide()
         if raidNoticeFrame then raidNoticeFrame:Hide() end
         local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
@@ -4385,7 +4400,7 @@ local radarEntries = {}
 function UI:InitializeRadarHUD()
     if radarHUD or InCombatLockdown() then return end
 
-    local hud = CreateFrame("Frame", "WoWKillboardRadarHUD", UIParent, "BackdropTemplate")
+    local hud = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     hud:SetSize(270, 114)
     hud:SetFrameStrata("MEDIUM")
     hud:SetClampedToScreen(true)
@@ -4624,7 +4639,7 @@ function UI:ShowRallyDialog()
     end
 
     if not UI.RallyDialog then
-        local dlg = CreateFrame("Frame", "WoWKillboardRallyDialog", UIParent, "BackdropTemplate")
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
         dlg:SetSize(480, 480)
         dlg:SetPoint("CENTER", 0, 20)
         dlg:SetFrameStrata("DIALOG")
@@ -4981,7 +4996,7 @@ local combatWireHUD = nil
 function UI:InitializeCombatWire()
     if combatWireHUD or InCombatLockdown() then return end
 
-    local hud = CreateFrame("Frame", "WoWKillboardCombatWire", UIParent, "BackdropTemplate")
+    local hud = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     hud:SetSize(440, 180)
     hud:SetFrameStrata("MEDIUM")
     hud:SetClampedToScreen(true)
@@ -5103,11 +5118,6 @@ function UI:InitializeCombatWire()
 end
 
 function UI:AddCombatWireEntry(killmail, chatMsg)
-    if not combatWireHUD and not InCombatLockdown() then
-        UI:InitializeCombatWire()
-    end
-    if not combatWireHUD then return end
-
     local s = WoWKillboardSettings or KB.DefaultSettings
     local feedMode = (s and s.combatFeedMode) or "POPOUT"
     if feedMode == "OFF" then return end
@@ -5115,11 +5125,22 @@ function UI:AddCombatWireEntry(killmail, chatMsg)
     local tStr = date("%H:%M:%S", (killmail and killmail.timestamp) or time())
     local line = string.format("|cff64748b[%s]|r %s", tStr, chatMsg or "")
 
+    if InCombatLockdown() then
+        UI.PendingWireEntries = UI.PendingWireEntries or {}
+        table.insert(UI.PendingWireEntries, line)
+        return
+    end
+
+    if not combatWireHUD then
+        UI:InitializeCombatWire()
+    end
+    if not combatWireHUD then return end
+
     if combatWireHUD.msgFrame then
         combatWireHUD.msgFrame:AddMessage(line)
     end
 
-    if (not s or s.showCombatWire ~= false) and not combatWireHUD:IsShown() and not InCombatLockdown() then
+    if (not s or s.showCombatWire ~= false) and not combatWireHUD:IsShown() then
         combatWireHUD:Show()
     end
 end

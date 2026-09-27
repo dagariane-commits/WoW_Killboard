@@ -131,6 +131,45 @@ Main dashboard frames (`UI:CreateMainWindow()`) are completely lazy. Zero main U
 
 ---
 
+### Vector 9: `ScrollingMessageFrame` / `CircularBuffer.lua` Taint in Combat
+```lua
+-- INSECURE (Causes Blizzard_SharedXMLBase/SecureTypes.lua:279 Taint)
+myScrollingMessageFrame:AddMessage(combatText)
+```
+**Why this fails:** In modern WoW (Classic Beta 16001 / Classic Era 1.15+ / Retail 11.x), `ScrollingMessageFrame` is a wrapper around `CircularBuffer.lua` which accesses `SecureTypes.lua:279 GetValue()`. Calling `:AddMessage()` on any `ScrollingMessageFrame` (or `DEFAULT_CHAT_FRAME`) during active combat contaminates the secure buffer, causing Blizzard to block combat action buttons with `ADDON_ACTION_BLOCKED`.
+
+**Our Surgical Solution:**
+- All combat chat prints are buffered in `KB.PrintQueue` via `KB.Utils.SafePrint(...)` during `InCombatLockdown()`, flushing cleanly upon `PLAYER_REGEN_ENABLED`.
+- All Combat Wire entries are buffered in `UI.PendingWireEntries` during `InCombatLockdown()`, deferring all `:AddMessage()` invocations until combat lockdown lifts.
+
+---
+
+### Vector 10: Secure Nameplate Inspection & Mouseover Scanning
+```lua
+-- INSECURE (Pollutes Blizzard NamePlateDriverFrame)
+frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+```
+**Why this fails:** When nameplates are created, Blizzard's secure `NamePlateDriverFrame` binds protected button templates. An unsecure addon executing unit inspections (`GetGuildInfo(unit)`, `UnitName(unit)`) or writing to SavedVariables inside `NAME_PLATE_UNIT_ADDED` or `UPDATE_MOUSEOVER_UNIT` in combat directly contaminates the secure unit token pipeline, blocking targeting and spellcasts.
+
+**Our Surgical Solution:**
+- Completely purged `NAME_PLATE_UNIT_ADDED` from `UnitScanner.lua`.
+- Gated `UPDATE_MOUSEOVER_UNIT`, `PLAYER_TARGET_CHANGED`, and `US:ScanUnit(unit)` strictly behind `if InCombatLockdown() and unit ~= "player" then return end`.
+- Unit scanning relies purely on combat log events, spell signatures (`InferClassFromSpell`), and out-of-combat target caching.
+
+---
+
+### Vector 11: Global Frame Names & `_G` Namespace Pollution
+```lua
+-- INSECURE (Blizzard UI scans named frames in _G)
+local hud = CreateFrame("Frame", "WoWKillboardRadarHUD", UIParent, "BackdropTemplate")
+```
+**Why this fails:** Assigning global string identifiers to frames registers them into the global environment `_G`, where Blizzard's `UIParentPanelManager` and secure layout drivers scan them on state changes.
+
+**Our Surgical Solution:**
+All HUDs, modals, and overlays are created anonymously (`CreateFrame("Frame", nil, UIParent, "BackdropTemplate")`).
+
+---
+
 ## 3. Cross-Client Compatibility Matrix
 
 WoW Killboard maintains a single unified codebase supporting all active client flavors:

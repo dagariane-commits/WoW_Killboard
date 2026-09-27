@@ -59,6 +59,7 @@ end
 
 -- Convert group to raid when group size reaches 5
 local function EnsureRaidConversion()
+    if InCombatLockdown() then return end
     if IsInGroup() and not IsInRaid() and (GetNumGroupMembers() >= 5) and UnitIsGroupLeader("player") then
         if C_PartyInfo and C_PartyInfo.ConvertToRaid then
             C_PartyInfo.ConvertToRaid()

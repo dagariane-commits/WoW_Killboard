@@ -64,9 +64,11 @@ local function IsPlayerUnit(guid, flags, name)
     end
     local pGUID = UnitGUID("player")
     if guid and pGUID and guid == pGUID then return true end
-    if guid and UnitExists("target") and UnitGUID("target") == guid and UnitIsPlayer("target") then return true end
-    if name and UnitExists("target") and UnitName("target") == name and UnitIsPlayer("target") then return true end
-    if guid and UnitExists("mouseover") and UnitGUID("mouseover") == guid and UnitIsPlayer("mouseover") then return true end
+    if not InCombatLockdown() then
+        if guid and UnitExists("target") and UnitGUID("target") == guid and UnitIsPlayer("target") then return true end
+        if name and UnitExists("target") and UnitName("target") == name and UnitIsPlayer("target") then return true end
+        if guid and UnitExists("mouseover") and UnitGUID("mouseover") == guid and UnitIsPlayer("mouseover") then return true end
+    end
     return false
 end
 
@@ -1773,13 +1775,13 @@ frame:SetScript("OnEvent", function(self, event, ...)
                         CT:OnPlayerHonorableKill(tName, tGuid, "target")
                     end
                 elseif not isDead then
-                    local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+                    local tInfo = (not InCombatLockdown() and KB.UnitScanner) and KB.UnitScanner:ScanUnit("target") or (KB.UnitScanner and KB.UnitScanner:GetUnitInfo(tGuid))
                     activeEnemyTarget = {
                         name = tName,
                         guid = tGuid,
                         level = UnitLevel("target") or (tInfo and tInfo.level or 0),
                         class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
-                        guild = GetGuildInfo("target") or (tInfo and tInfo.guild or "None"),
+                        guild = (not InCombatLockdown() and GetGuildInfo("target")) or (tInfo and tInfo.guild or "None"),
                         faction = UnitFactionGroup("target") or (tInfo and tInfo.faction or "Unknown"),
                         lastSeen = time(),
                     }

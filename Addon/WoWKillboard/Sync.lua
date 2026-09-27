@@ -297,7 +297,7 @@ function S:OnAddonMessage(prefix, message, channel, sender)
         if KB.Utils and KB.Utils.SafePrint then
             KB.Utils.SafePrint(string.format("|cff00ccff[GUILD EVENT]|r |cffffd100%s|r in |cffffffff%s|r announced by |cff00ff00%s|r (<%s>)! Time: %s.",
                 title, zone, creator, guild, timeStr))
-        elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        elseif not InCombatLockdown() and DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
             DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff00ccff[GUILD EVENT]|r |cffffd100%s|r in |cffffffff%s|r announced by |cff00ff00%s|r (<%s>)! Time: %s.",
                 title, zone, creator, guild, timeStr))
         end
