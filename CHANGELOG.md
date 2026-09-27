@@ -5,6 +5,34 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.36] - 2026-09-27
+
+### Added
+- **Battle.net OAuth 2.0 Account Linking (`web/server.py`, `web/static/app.js`, `web/static/index.html`)**:
+  - Implemented `/api/auth/bnet` and `/api/auth/bnet/callback` endpoints supporting Blizzard's official OAuth 2.0 flow with `wow.profile` scope.
+  - Automatically fetches BattleTag, user profile characters across WoW accounts, and ingests them into the persistent `characters` table.
+  - Added graceful fallback and instructional configuration guide when `BLIZZARD_CLIENT_ID` / `BLIZZARD_CLIENT_SECRET` are not yet set in the server environment.
+- **Interactive Character Selector & Claim Modal (`web/static/app.js`, `web/static/index.html`, `web/server.py`)**:
+  - Replaced the random `Champion_XXXX` placeholder on sign-in with an interactive character selector modal (`openCharacterLinkModal()`).
+  - Added `/api/characters` directory endpoint providing all indexed combatants sorted by last seen and level (including `Dagariane` and all discovered players).
+  - Provided 3 tab options: Active Combatants list (1-click claim), Battle.net Account Link, and Custom Character Claim (`/api/auth/claim-character`).
+  - Upgraded header auth badge to display the claimed character's faction crest, class badge, class-colored name, level, and a `[Switch]` button for easy switching.
+- **In-Game Combat Sync Commands & Tips (`CombatTracker.lua`, `Core.lua`, `Killmail.lua`)**:
+  - Added `/kb sync` and `/kb reload` commands in-game that flush in-memory combat SavedVariables to disk via `ReloadUI()` for instant desktop watcher syncing.
+  - Added subtle in-game chat tip after honorable kills reminding players that `/reload` or `/kb sync` pushes combat data to the live website immediately.
+  - Added manual `🔄 Refresh` button in the web feed header and informative sync tooltip (`Auto-syncs on /reload in WoW`).
+
+### Fixed
+- **False 1v1 Solo Attribution on World Group Kills (`CombatTracker.lua`)**:
+  - Resolved bug in `CT:OnPlayerHonorableKill` where honorable kills (`CHAT_MSG_COMBAT_HONOR_GAIN`, unit death, and target change events) hardcoded `isSolo = (partySize <= 1)` and single-attacker attribution, ignoring other friendly combatants when fighting outside a formal party.
+  - Enforced full `RecentDamage[victimGUID]` lookup to extract all participating attackers who dealt damage.
+  - Added 15-second sliding window assist verification with `CT.FriendlyCluster`, ensuring that any nearby friendly combatants who dealt damage or cast spells are credited as assists.
+  - Enforced strict certified 1v1 solo criteria: `isSolo = (#attackersList <= 1) and (partySize <= 1) and (friendlyAssists == 0)`.
+  - Expanded deduplication window between CLEU `ProcessDeath` and Chat Honor Gain from 2 to 5 seconds to prevent double-counting or overwriting.
+- **Persistent Characters Directory Auto-Backfill (`web/server.py`)**:
+  - Backfilled `characters` table directly from all historical `kills` records in `web/killboard.db` upon database initialization.
+  - Added automatic upsert of killer and victim into `characters` table during live kill ingestion.
+
 ## [1.4.35] - 2026-09-27
 
 ### Fixed

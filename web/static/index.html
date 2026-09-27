@@ -631,6 +631,132 @@
     </div>
   </div>
 
+  <!-- Champion Recognition & Battle.net Account Linking Modal -->
+  <div id="character-link-modal" class="modal-overlay" onclick="handleCharacterModalBackdrop(event)">
+    <div class="modal-card modal-card-lg" style="max-width: 780px;">
+      <div class="modal-header">
+        <div>
+          <div style="font-size:0.75rem; font-weight:800; color:var(--wow-gold); letter-spacing:1px; text-transform:uppercase;">
+            Azeroth Identity &amp; Clearance
+          </div>
+          <h3 style="margin:2px 0 0 0; color:#fff; font-family:var(--font-tactical); font-size:1.35rem; display:flex; align-items:center; gap:8px;">
+            <span>⚔️ Select Combatant or Link Battle.net</span>
+          </h3>
+        </div>
+        <button class="modal-close" onclick="closeCharacterLinkModal()">&times;</button>
+      </div>
+
+      <!-- Tab Buttons -->
+      <div class="char-modal-tabs" style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px;">
+        <button id="char-tab-btn-known" class="pill-btn active" onclick="switchCharModalTab('known')">
+          📋 Active Combatants (<span id="char-known-count">0</span>)
+        </button>
+        <button id="char-tab-btn-bnet" class="pill-btn" onclick="switchCharModalTab('bnet')">
+          ⚡ Battle.net Account
+        </button>
+        <button id="char-tab-btn-custom" class="pill-btn" onclick="switchCharModalTab('custom')">
+          ✏️ Custom / Claim Call
+        </button>
+      </div>
+
+      <!-- Tab 1: Known Combatants List -->
+      <div id="char-panel-known" class="char-modal-panel">
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <input type="text" id="char-search-input" class="search-input" style="flex:1;" placeholder="Search your character by name or guild..." oninput="filterKnownCharacters(this.value)">
+          <select id="char-faction-filter" class="search-input" style="width:130px;" onchange="filterKnownCharacters()">
+            <option value="">All Factions</option>
+            <option value="alliance">Alliance</option>
+            <option value="horde">Horde</option>
+          </select>
+        </div>
+        <div id="char-known-list" style="display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto; padding-right:4px;">
+          <div style="text-align:center; padding:30px; color:#64748b;">Loading indexed champions...</div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Battle.net OAuth -->
+      <div id="char-panel-bnet" class="char-modal-panel" style="display:none;">
+        <div style="background:rgba(0, 168, 255, 0.08); border:1px solid rgba(0, 168, 255, 0.25); border-radius:6px; padding:18px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="background:rgba(0, 168, 255, 0.2); border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:center;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div>
+              <h4 style="margin:0; color:#fff; font-size:1.1rem; font-family:var(--font-tactical);">Official Blizzard Battle.net OAuth</h4>
+              <p style="margin:2px 0 0 0; color:#94a3b8; font-size:0.8rem;">
+                Connect directly with your Battle.net account to import verified characters, guilds, and realms automatically.
+              </p>
+            </div>
+          </div>
+          <p style="color:#cbd5e1; font-size:0.82rem; line-height:1.5; margin:0;">
+            Requires <code>BLIZZARD_CLIENT_ID</code> and <code>BLIZZARD_CLIENT_SECRET</code> configured on your server. If running in local/standalone mode, you can immediately claim any character in the <strong>Active Combatants</strong> tab with a single click!
+          </p>
+          <div style="display:flex; gap:10px; margin-top:6px;">
+            <a href="/api/auth/bnet" class="normal-auth-submit-btn" style="text-decoration:none; text-align:center; background:linear-gradient(135deg, #0070ba 0%, #004d80 100%);">
+              <span>Connect with Battle.net</span>
+              <span>&rarr;</span>
+            </a>
+            <button type="button" class="normal-auth-submit-btn" style="background:#1e293b; color:#cbd5e1; border:1px solid #334155;" onclick="switchCharModalTab('known')">
+              <span>Pick From Active Characters Instead</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Custom Claim -->
+      <div id="char-panel-custom" class="char-modal-panel" style="display:none;">
+        <form onsubmit="handleCustomCharacterClaim(event)" style="display:flex; flex-direction:column; gap:12px;">
+          <div class="auth-input-group">
+            <label class="auth-label" for="custom-char-name">Character Name</label>
+            <input type="text" id="custom-char-name" class="normal-auth-input" placeholder="e.g. Dagariane" required>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="auth-input-group">
+              <label class="auth-label" for="custom-char-realm">Realm</label>
+              <input type="text" id="custom-char-realm" class="normal-auth-input" value="WoW Forever" required>
+            </div>
+            <div class="auth-input-group">
+              <label class="auth-label" for="custom-char-level">Level</label>
+              <input type="number" id="custom-char-level" class="normal-auth-input" min="1" max="85" value="60" required>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="auth-input-group">
+              <label class="auth-label" for="custom-char-class">Class</label>
+              <select id="custom-char-class" class="normal-auth-input" style="height:38px;">
+                <option value="PALADIN">Paladin</option>
+                <option value="WARRIOR">Warrior</option>
+                <option value="ROGUE">Rogue</option>
+                <option value="HUNTER">Hunter</option>
+                <option value="MAGE">Mage</option>
+                <option value="PRIEST">Priest</option>
+                <option value="WARLOCK">Warlock</option>
+                <option value="SHAMAN">Shaman</option>
+                <option value="DRUID">Druid</option>
+                <option value="DEATHKNIGHT">Death Knight</option>
+              </select>
+            </div>
+            <div class="auth-input-group">
+              <label class="auth-label" for="custom-char-faction">Faction</label>
+              <select id="custom-char-faction" class="normal-auth-input" style="height:38px;">
+                <option value="Alliance">Alliance</option>
+                <option value="Horde">Horde</option>
+              </select>
+            </div>
+          </div>
+          <div class="auth-input-group">
+            <label class="auth-label" for="custom-char-guild">Guild (Optional)</label>
+            <input type="text" id="custom-char-guild" class="normal-auth-input" placeholder="e.g. Ironforge Vanguard">
+          </div>
+          <button type="submit" class="normal-auth-submit-btn">
+            <span>Claim &amp; Set as Active Character</span>
+            <span>&rarr;</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- The War Archivist AI Intelligence Console Window -->
   <div id="oracle-chat-modal" class="oracle-chat-window" style="display: none;">
     <div class="oracle-chat-header">

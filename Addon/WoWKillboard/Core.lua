@@ -148,6 +148,9 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             end
             if count == 0 then print("  (No active KOS blacklist targets)") end
         end
+    elseif cmd == "sync" or cmd == "reload" then
+        print("|cff00ccff[WoWKB]|r Flushed combat SavedVariables to disk. Reloading UI to sync with live web platform...")
+        ReloadUI()
     elseif cmd == "move" or cmd == "unlock" then
         if KB.UI and KB.UI.ToggleBannerLock then
             KB.UI:ToggleBannerLock()
@@ -354,6 +357,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         print("  |cffffd100/kb kos [add|remove|list]|r - View or manage realm KOS Blacklist")
         print("  |cffffd100/kb event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
         print("  |cffffd100/kb theme [classic|elvui]|r - Switch between Classic WoW and ElvUI aesthetics")
+        print("  |cffffd100/kb sync|r or |cffffd100/kb reload|r - Flush combat SavedVariables to disk to sync with website")
         print("  |cffffd100/kb stats|r - Review current combat session battle statistics")
         print("  |cffffd100/kb bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
         print("  |cffffd100/kb reset|r - Clear local battle records")
