@@ -80,35 +80,34 @@ end
 function UI:ApplyButtonStyle(btn, theme)
     if not btn then return end
     theme = theme or UI:GetTheme()
-    if theme.id == "classic" then
-        btn:SetBackdrop(nil)
-        btn:SetNormalTexture("Interface\\Buttons\\UI-Panel-Button-Up")
-        btn:SetPushedTexture("Interface\\Buttons\\UI-Panel-Button-Down")
-        btn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-Button-Highlight", "ADD")
-        btn:SetDisabledTexture("Interface\\Buttons\\UI-Panel-Button-Disabled")
-        local nt = btn:GetNormalTexture()
-        if nt then nt:Show() end
-        local pt = btn:GetPushedTexture()
-        if pt then pt:Show() end
-        local ht = btn:GetHighlightTexture()
-        if ht then ht:Show() end
-        if btn.Label then
-            btn.Label:SetTextColor(1.0, 0.82, 0.0)
-        end
-    else
-        local nt = btn:GetNormalTexture()
-        if nt then nt:SetTexture(nil) nt:Hide() end
-        local pt = btn:GetPushedTexture()
-        if pt then pt:SetTexture(nil) pt:Hide() end
-        local ht = btn:GetHighlightTexture()
-        if ht then ht:SetTexture(nil) ht:Hide() end
-        if theme.btnBackdrop then
-            btn:SetBackdrop(theme.btnBackdrop)
+
+    local nt = btn:GetNormalTexture()
+    if nt then nt:SetTexture(nil) nt:Hide() end
+    local pt = btn:GetPushedTexture()
+    if pt then pt:SetTexture(nil) pt:Hide() end
+    local ht = btn:GetHighlightTexture()
+    if ht then ht:SetTexture(nil) ht:Hide() end
+
+    if theme.btnBackdrop then
+        btn:SetBackdrop(theme.btnBackdrop)
+        if btn.isActive then
+            btn:SetBackdropColor(unpack(theme.btnActiveBg or {0.32, 0.22, 0.10, 1.0}))
+            btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder or {1.0, 0.84, 0.0, 1.0}))
+        else
             btn:SetBackdropColor(unpack(theme.btnBg))
             btn:SetBackdropBorderColor(unpack(theme.btnBorder))
         end
-        if btn.Label then
+    end
+
+    if btn.Label then
+        if theme.id == "classic" then
+            btn.Label:SetTextColor(1.0, 0.82, 0.0)
+            btn.Label:SetShadowOffset(1, -1)
+            btn.Label:SetShadowColor(0, 0, 0, 1)
+        else
             btn.Label:SetTextColor(1.0, 1.0, 1.0)
+            btn.Label:SetShadowOffset(1, -1)
+            btn.Label:SetShadowColor(0, 0, 0, 1)
         end
     end
 end
@@ -137,12 +136,12 @@ function UI:ApplyTheme()
         UI.ContentInset:SetBackdropBorderColor(unpack(theme.insetBorder or theme.cardBorder))
         if UI.ContentInset.BgArt then
             if theme.id == "classic" then
-                UI.ContentInset.BgArt:SetTexture("Interface\\QuestFrame\\QuestBG")
-                UI.ContentInset.BgArt:SetTexCoord(0, 0.586, 0.02, 0.655)
-                UI.ContentInset.BgArt:SetAlpha(0.95)
+                UI.ContentInset.BgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\dark_war_bg.tga")
+                UI.ContentInset.BgArt:SetTexCoord(0, 1, 0, 1)
+                UI.ContentInset.BgArt:SetAlpha(0.40)
                 if UI.ContentInset.Vignette then
-                    UI.ContentInset.Vignette:SetColorTexture(0.02, 0.015, 0.01, 0.32)
-                    UI.ContentInset.Vignette:SetAlpha(1.0)
+                    UI.ContentInset.Vignette:SetColorTexture(0.06, 0.05, 0.04, 0.65)
+                    UI.ContentInset.Vignette:SetAlpha(0.65)
                     UI.ContentInset.Vignette:Show()
                 end
             else
@@ -164,12 +163,12 @@ function UI:ApplyTheme()
             UI.HeaderPlate:Show()
             if UI.TitleText then
                 UI.TitleText:ClearAllPoints()
-                UI.TitleText:SetPoint("TOP", mainFrame, "TOP", 0, -2)
+                UI.TitleText:SetPoint("CENTER", UI.HeaderPlate, "CENTER", 0, 11)
                 UI.TitleText:SetFontObject("GameFontNormalLarge")
             end
-            if UI.SubtitleText and UI.TitleText then
+            if UI.SubtitleText and UI.HeaderPlate then
                 UI.SubtitleText:ClearAllPoints()
-                UI.SubtitleText:SetPoint("TOP", UI.TitleText, "BOTTOM", 0, -2)
+                UI.SubtitleText:SetPoint("CENTER", UI.HeaderPlate, "CENTER", 0, -5)
             end
         else
             UI.HeaderPlate:Hide()
@@ -216,43 +215,30 @@ function UI:ApplyTheme()
         end
     end
     if UI.CloseButton then
+        UI.CloseButton:SetSize(22, 22)
+        UI.CloseButton:ClearAllPoints()
+        UI.CloseButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -8, -8)
+        local nt = UI.CloseButton:GetNormalTexture()
+        if nt then nt:SetTexture(nil) nt:Hide() end
+        local pt = UI.CloseButton:GetPushedTexture()
+        if pt then pt:SetTexture(nil) pt:Hide() end
+        local ht = UI.CloseButton:GetHighlightTexture()
+        if ht then ht:SetTexture(nil) ht:Hide() end
+        UI.CloseButton:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
         if theme.id == "classic" then
-            UI.CloseButton:SetSize(32, 32)
-            UI.CloseButton:ClearAllPoints()
-            UI.CloseButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -4, -4)
-            UI.CloseButton:SetBackdrop(nil)
-            local nt = UI.CloseButton:GetNormalTexture()
-            if nt then nt:Show() end
-            local pt = UI.CloseButton:GetPushedTexture()
-            if pt then pt:Show() end
-            local ht = UI.CloseButton:GetHighlightTexture()
-            if ht then ht:Show() end
-            UI.CloseButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-            UI.CloseButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
-            UI.CloseButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
-            UI.CloseButton:SetDisabledTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Disabled")
-            if UI.CloseButton.Label then UI.CloseButton.Label:SetText("") end
+            UI.CloseButton:SetBackdropColor(0.14, 0.10, 0.07, 1.0)
+            UI.CloseButton:SetBackdropBorderColor(0.60, 0.48, 0.22, 1.0)
         else
-            UI.CloseButton:SetSize(18, 18)
-            UI.CloseButton:ClearAllPoints()
-            UI.CloseButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -8, -8)
-            local nt = UI.CloseButton:GetNormalTexture()
-            if nt then nt:SetTexture(nil) nt:Hide() end
-            local pt = UI.CloseButton:GetPushedTexture()
-            if pt then pt:SetTexture(nil) pt:Hide() end
-            local ht = UI.CloseButton:GetHighlightTexture()
-            if ht then ht:SetTexture(nil) ht:Hide() end
-            UI.CloseButton:SetBackdrop({
-                bgFile = "Interface\\Buttons\\WHITE8X8",
-                edgeFile = "Interface\\Buttons\\WHITE8X8",
-                edgeSize = 1,
-            })
             UI.CloseButton:SetBackdropColor(0.10, 0.10, 0.12, 1.0)
             UI.CloseButton:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
-            if UI.CloseButton.Label then
-                UI.CloseButton.Label:SetFontObject("GameFontHighlightSmall")
-                UI.CloseButton.Label:SetText("|cffff3333X|r")
-            end
+        end
+        if UI.CloseButton.Label then
+            UI.CloseButton.Label:SetFontObject("GameFontHighlightSmall")
+            UI.CloseButton.Label:SetText("|cffff3333X|r")
         end
     end
     if UI.Divider then
@@ -374,20 +360,16 @@ function UI:CreateButton(parent, w, h, text, fontSize)
 
     btn:SetScript("OnEnter", function(self)
         local t = UI:GetTheme()
-        if t.id ~= "classic" then
-            if not self.isActive and t.btnHoverBg then
-                self:SetBackdropColor(unpack(t.btnHoverBg))
-                self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
-            end
+        if not self.isActive and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(unpack(t.btnHoverBorder or {1.0, 0.85, 0.3, 1.0}))
         end
     end)
     btn:SetScript("OnLeave", function(self)
         local t = UI:GetTheme()
-        if t.id ~= "classic" then
-            if not self.isActive and t.btnBg then
-                self:SetBackdropColor(unpack(t.btnBg))
-                self:SetBackdropBorderColor(unpack(t.btnBorder))
-            end
+        if not self.isActive and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
         end
     end)
 
@@ -659,7 +641,7 @@ function UI:CreateMainWindow()
 
     -- Template-Free Theme Switcher Button
     local themeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    themeBtn:SetSize(90, 20)
+    themeBtn:SetSize(105, 20)
     themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -6, 0)
     themeBtn:EnableMouse(true)
     local themeLabel = themeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -688,7 +670,7 @@ function UI:CreateMainWindow()
 
     -- Template-Free Alerts Configuration Button
     local alertsBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    alertsBtn:SetSize(66, 20)
+    alertsBtn:SetSize(76, 20)
     alertsBtn:SetPoint("RIGHT", themeBtn, "LEFT", -6, 0)
     alertsBtn:EnableMouse(true)
     local alertsLabel = alertsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -1007,24 +989,18 @@ function UI:Refresh()
     for tid, btn in pairs(tabButtons) do
         if tid == activeTab then
             btn.isActive = true
-            if theme.id == "classic" then
-                btn:SetButtonState("PUSHED", true)
-                btn.Label:SetTextColor(1.0, 0.82, 0.0)
-            else
-                if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
-                btn:SetBackdropColor(unpack(theme.btnActiveBg))
-                btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder))
-                btn.Label:SetTextColor(1.0, 0.82, 0.0)
-            end
+            if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
+            btn:SetBackdropColor(unpack(theme.btnActiveBg or {0.32, 0.22, 0.10, 1.0}))
+            btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder or {1.0, 0.84, 0.0, 1.0}))
+            btn.Label:SetTextColor(1.0, 0.85, 0.0)
         else
             btn.isActive = false
+            if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
+            btn:SetBackdropColor(unpack(theme.btnBg))
+            btn:SetBackdropBorderColor(unpack(theme.btnBorder))
             if theme.id == "classic" then
-                btn:SetButtonState("NORMAL", false)
                 btn.Label:SetTextColor(0.85, 0.75, 0.60)
             else
-                if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
-                btn:SetBackdropColor(unpack(theme.btnBg))
-                btn:SetBackdropBorderColor(unpack(theme.btnBorder))
                 btn.Label:SetTextColor(0.65, 0.65, 0.65)
             end
         end
@@ -1035,40 +1011,34 @@ function UI:Refresh()
         local c = pill.BaseColor or {1.0, 0.82, 0.0}
         if pill.isDisabled then
             pill.isActive = false
-            if theme.id == "classic" then
-                pill:SetButtonState("NORMAL", false)
-                pill.Label:SetTextColor(0.42, 0.40, 0.38)
-            else
-                if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
-                pill:SetBackdropColor(0.08, 0.08, 0.08, 0.6)
-                pill:SetBackdropBorderColor(0.20, 0.20, 0.20, 0.5)
-                pill.Label:SetTextColor(0.40, 0.40, 0.40)
-            end
+            if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
+            pill:SetBackdropColor(0.08, 0.08, 0.08, 0.6)
+            pill:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.5)
+            pill.Label:SetTextColor(0.45, 0.45, 0.45)
         elseif fid == currentMode then
             pill.isActive = true
+            if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
             if theme.id == "classic" then
-                pill:SetButtonState("PUSHED", true)
-                pill.Label:SetTextColor(c[1], c[2], c[3])
+                pill:SetBackdropColor(0.30, 0.22, 0.10, 1.0)
+                pill:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
+                pill.Label:SetTextColor(1.0, 0.85, 0.0)
             elseif theme.id == "elvui" then
-                if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
                 pill:SetBackdropColor(0.20, 0.20, 0.20, 1.0)
                 pill:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
                 pill.Label:SetTextColor(1.0, 0.82, 0.0)
             else
-                if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
                 pill:SetBackdropColor(c[1] * 0.35, c[2] * 0.35, c[3] * 0.35, 1.0)
                 pill:SetBackdropBorderColor(c[1], c[2], c[3], 1.0)
                 pill.Label:SetTextColor(c[1], c[2], c[3])
             end
         else
             pill.isActive = false
+            if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
+            pill:SetBackdropColor(unpack(theme.btnBg))
+            pill:SetBackdropBorderColor(unpack(theme.btnBorder))
             if theme.id == "classic" then
-                pill:SetButtonState("NORMAL", false)
                 pill.Label:SetTextColor(0.80, 0.70, 0.55)
             else
-                if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
-                pill:SetBackdropColor(unpack(theme.btnBg))
-                pill:SetBackdropBorderColor(unpack(theme.btnBorder))
                 pill.Label:SetTextColor(0.65, 0.65, 0.65)
             end
         end
@@ -1317,12 +1287,10 @@ function UI:RenderLeaderboard()
     -- Sub-navigation Toggle Bar: [Player Ranks] | [Guild Ranks] (matching website image 2)
     local btnPlayers = UI:CreateButton(UI.ContentFrame, 114, 22, "Player Ranks")
     btnPlayers:SetPoint("TOPLEFT", 10, -46)
-    if hlSubTab == "PLAYERS" then
-        btnPlayers:SetButtonState("PUSHED", true)
-        if btnPlayers.Label then btnPlayers.Label:SetTextColor(1.0, 0.84, 0.0) end
-    else
-        btnPlayers:SetButtonState("NORMAL", false)
-        if btnPlayers.Label then btnPlayers.Label:SetTextColor(0.80, 0.70, 0.55) end
+    btnPlayers.isActive = (hlSubTab == "PLAYERS")
+    UI:ApplyButtonStyle(btnPlayers, theme)
+    if btnPlayers.Label then
+        btnPlayers.Label:SetTextColor(btnPlayers.isActive and 1.0 or 0.80, btnPlayers.isActive and 0.84 or 0.70, btnPlayers.isActive and 0.0 or 0.55)
     end
     btnPlayers:SetScript("OnClick", function()
         hlSubTab = "PLAYERS"
@@ -1331,12 +1299,10 @@ function UI:RenderLeaderboard()
 
     local btnGuilds = UI:CreateButton(UI.ContentFrame, 104, 22, "Guild Ranks")
     btnGuilds:SetPoint("LEFT", btnPlayers, "RIGHT", 6, 0)
-    if hlSubTab == "GUILDS" then
-        btnGuilds:SetButtonState("PUSHED", true)
-        if btnGuilds.Label then btnGuilds.Label:SetTextColor(1.0, 0.84, 0.0) end
-    else
-        btnGuilds:SetButtonState("NORMAL", false)
-        if btnGuilds.Label then btnGuilds.Label:SetTextColor(0.80, 0.70, 0.55) end
+    btnGuilds.isActive = (hlSubTab == "GUILDS")
+    UI:ApplyButtonStyle(btnGuilds, theme)
+    if btnGuilds.Label then
+        btnGuilds.Label:SetTextColor(btnGuilds.isActive and 1.0 or 0.80, btnGuilds.isActive and 0.84 or 0.70, btnGuilds.isActive and 0.0 or 0.55)
     end
     btnGuilds:SetScript("OnClick", function()
         hlSubTab = "GUILDS"
@@ -1624,12 +1590,10 @@ function UI:RenderBounties()
     -- Sub-navigation Toggle Bar: [Active Marks] | [Hall of Fame] | [Wall of Shame]
     local btnActive = UI:CreateButton(UI.ContentFrame, 106, 22, "Active Marks")
     btnActive:SetPoint("TOPLEFT", 10, -46)
-    if marksSubTab == "ACTIVE" then
-        btnActive:SetButtonState("PUSHED", true)
-        if btnActive.Label then btnActive.Label:SetTextColor(1.0, 0.84, 0.0) end
-    else
-        btnActive:SetButtonState("NORMAL", false)
-        if btnActive.Label then btnActive.Label:SetTextColor(0.80, 0.70, 0.55) end
+    btnActive.isActive = (marksSubTab == "ACTIVE")
+    UI:ApplyButtonStyle(btnActive, theme)
+    if btnActive.Label then
+        btnActive.Label:SetTextColor(btnActive.isActive and 1.0 or 0.80, btnActive.isActive and 0.84 or 0.70, btnActive.isActive and 0.0 or 0.55)
     end
     btnActive:SetScript("OnClick", function()
         marksSubTab = "ACTIVE"
@@ -1638,12 +1602,10 @@ function UI:RenderBounties()
 
     local btnRecords = UI:CreateButton(UI.ContentFrame, 106, 22, "Hall of Fame")
     btnRecords:SetPoint("LEFT", btnActive, "RIGHT", 6, 0)
-    if marksSubTab == "RECORDS" then
-        btnRecords:SetButtonState("PUSHED", true)
-        if btnRecords.Label then btnRecords.Label:SetTextColor(1.0, 0.84, 0.0) end
-    else
-        btnRecords:SetButtonState("NORMAL", false)
-        if btnRecords.Label then btnRecords.Label:SetTextColor(0.80, 0.70, 0.55) end
+    btnRecords.isActive = (marksSubTab == "RECORDS")
+    UI:ApplyButtonStyle(btnRecords, theme)
+    if btnRecords.Label then
+        btnRecords.Label:SetTextColor(btnRecords.isActive and 1.0 or 0.80, btnRecords.isActive and 0.84 or 0.70, btnRecords.isActive and 0.0 or 0.55)
     end
     btnRecords:SetScript("OnClick", function()
         marksSubTab = "RECORDS"
@@ -1652,12 +1614,10 @@ function UI:RenderBounties()
 
     local btnDebtors = UI:CreateButton(UI.ContentFrame, 114, 22, "Wall of Shame")
     btnDebtors:SetPoint("LEFT", btnRecords, "RIGHT", 6, 0)
-    if marksSubTab == "DEBTORS" then
-        btnDebtors:SetButtonState("PUSHED", true)
-        if btnDebtors.Label then btnDebtors.Label:SetTextColor(1.0, 0.84, 0.0) end
-    else
-        btnDebtors:SetButtonState("NORMAL", false)
-        if btnDebtors.Label then btnDebtors.Label:SetTextColor(0.80, 0.70, 0.55) end
+    btnDebtors.isActive = (marksSubTab == "DEBTORS")
+    UI:ApplyButtonStyle(btnDebtors, theme)
+    if btnDebtors.Label then
+        btnDebtors.Label:SetTextColor(btnDebtors.isActive and 1.0 or 0.80, btnDebtors.isActive and 0.84 or 0.70, btnDebtors.isActive and 0.0 or 0.55)
     end
     btnDebtors:SetScript("OnClick", function()
         marksSubTab = "DEBTORS"

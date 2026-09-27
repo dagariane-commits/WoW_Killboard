@@ -281,6 +281,19 @@ class KillboardWatcher:
         loc_data = data.get("location", {}) if isinstance(data.get("location"), dict) else {}
 
         # Format payload structure
+        def _clean_lvl(val):
+            if val is not None:
+                try:
+                    iv = int(val)
+                    if 0 <= iv <= 85:
+                        return iv
+                except (ValueError, TypeError):
+                    pass
+            return 0
+
+        k_raw_lvl = killer_data.get("level") if killer_data.get("level") is not None else (data.get("killer_level") if data.get("killer_level") is not None else data.get("level"))
+        v_raw_lvl = victim_data.get("level") if victim_data.get("level") is not None else data.get("victim_level")
+
         payload = {
             "killId": kill_id,
             "timestamp": data.get("timestamp", int(time.time())),
@@ -294,7 +307,7 @@ class KillboardWatcher:
             "totalDamage": data.get("totalDamage", 0),
             "killer": {
                 "name": killer_data.get("name") or data.get("killer_name") or data.get("name") or "Unknown",
-                "level": killer_data.get("level") or data.get("killer_level") or data.get("level") or 60,
+                "level": _clean_lvl(k_raw_lvl),
                 "class": killer_data.get("class") or data.get("killer_class") or data.get("class") or "WARRIOR",
                 "guild": killer_data.get("guild") or data.get("killer_guild") or data.get("guild") or "None",
                 "faction": killer_data.get("faction") or data.get("killer_faction") or data.get("faction") or "Alliance",
@@ -304,7 +317,7 @@ class KillboardWatcher:
             },
             "victim": {
                 "name": victim_data.get("name") or data.get("victim_name") or "Unknown",
-                "level": victim_data.get("level") or data.get("victim_level") or 60,
+                "level": _clean_lvl(v_raw_lvl),
                 "class": victim_data.get("class") or data.get("victim_class") or "ROGUE",
                 "guild": victim_data.get("guild") or data.get("victim_guild") or "None",
                 "faction": victim_data.get("faction") or data.get("victim_faction") or "Horde",

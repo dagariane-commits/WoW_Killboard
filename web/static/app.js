@@ -180,7 +180,7 @@ function renderSpecBadge(specId, specName, size = 18) {
 }
 
 let currentTab = "FEED";
-let currentMode = "ALL";
+let currentMode = "WORLD";
 let searchQuery = "";
 let cachedKills = [];
 
@@ -931,8 +931,7 @@ async function renderStats(kills) {
   const hPct = facTotal > 0 ? 100 - aPct : 50;
 
   const modeNames = {
-    ALL: "All PvP",
-    WORLD: "World",
+    WORLD: "World PvP",
     BG: "Battlegrounds",
     ARENA: "Arenas",
     DUEL: "Duels"
@@ -1194,6 +1193,12 @@ function renderFeed(kills) {
           <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
           <span class="feed-count-pill">${kills.length}</span>
         </div>
+        <div class="filter-pills" id="feed-mode-pills" style="display:flex; align-items:center; gap:6px;">
+          <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
+          <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
+          <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
+          <button class="pill-btn disabled" disabled title="Arenas (Unavailable in Classic Era/Beta)" style="opacity:0.5; cursor:not-allowed;">Arenas</button>
+        </div>
         <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Feed &bull; Live Telemetry</span>
       </div>
   `;
@@ -1253,6 +1258,9 @@ function renderFeed(kills) {
     const subzoneOrCoords = km.location.subZone ? km.location.subZone : `${(km.location.x || 0).toFixed(1)}, ${(km.location.y || 0).toFixed(1)}`;
     const rowTooltip = `${km.killer.name} defeated ${km.victim.name} • ${modeLabel} • ${km.location.zone} • Click for Battle Report`;
 
+    const killerLvlStr = (km.killer && km.killer.level && km.killer.level > 0) ? `(${km.killer.level})` : '??';
+    const victimLvlStr = (km.victim && km.victim.level && km.victim.level > 0) ? `(${km.victim.level})` : '??';
+
     html += `
       <div class="killmail-row ${modeClass} ${victorClass}" onclick="openKillModal('${km.killId}')" title="${rowTooltip}">
         <div class="km-left-meta">
@@ -1264,7 +1272,7 @@ function renderFeed(kills) {
           <div class="km-combatant-col killer">
             <div class="km-player-row">
               <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.killer.name}')">${killerSpan}</span>
-              <span class="km-lvl">(${km.killer.level})</span>
+              <span class="km-lvl">${killerLvlStr}</span>
               ${killerBadge}
             </div>
             <div class="km-guild-sub">
@@ -1280,7 +1288,7 @@ function renderFeed(kills) {
             <div class="km-player-row">
               ${victimBadge}
               <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.victim.name}')">${victimSpan}</span>
-              <span class="km-lvl">(${km.victim.level})</span>
+              <span class="km-lvl">${victimLvlStr}</span>
             </div>
             <div class="km-guild-sub">
               ${victimGuildHtml}
@@ -1339,11 +1347,10 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
           <!-- Combat Mode Filter Pills (Active for both Player and Guild Ranks) -->
           <div class="filter-pills" id="legends-mode-pills">
-            <button class="pill-btn ${currentMode === 'ALL' ? 'active' : ''}" onclick="setFilterMode('ALL')">All PvP</button>
             <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
             <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
-            <button class="pill-btn ${currentMode === 'ARENA' ? 'active' : ''}" onclick="setFilterMode('ARENA')">Arenas</button>
             <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
+            <button class="pill-btn disabled" disabled title="Arenas (Unavailable in Classic Era/Beta)" style="opacity:0.5; cursor:not-allowed;">Arenas</button>
           </div>
         </div>
       </div>
@@ -2027,7 +2034,7 @@ function openKillModal(killId) {
             <span class="clickable-player" onclick="openCharacterProfile('${km.killer.name}')">${colorizeClass(km.killer.name, km.killer.class)}</span>
           </div>
           <div style="font-size:0.8rem; color:#94a3b8;">
-            Level ${km.killer.level} ${killerSpec.name} ${km.killer.class}
+            Level ${km.killer.level && km.killer.level > 0 ? km.killer.level : '??'} ${killerSpec.name} ${km.killer.class}
           </div>
           <div style="font-size:0.75rem; color:#64748b;">${killerGuild}</div>
           <div style="font-size:0.72rem; color:${km.killer.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700; margin-top:2px;">
@@ -2050,7 +2057,7 @@ function openKillModal(killId) {
             <span class="clickable-player" onclick="openCharacterProfile('${km.victim.name}')">${colorizeClass(km.victim.name, km.victim.class)}</span>
           </div>
           <div style="font-size:0.8rem; color:#94a3b8;">
-            Level ${km.victim.level} ${km.victim.class}
+            Level ${km.victim.level && km.victim.level > 0 ? km.victim.level : '??'} ${km.victim.class}
           </div>
           <div style="font-size:0.75rem; color:#64748b;">${victimGuild}</div>
           <div style="font-size:0.72rem; color:${km.victim.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700; margin-top:2px;">
@@ -2190,7 +2197,7 @@ function buildCharacterDossierHtml(data) {
             <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
               <div>
                 <span class="clickable-player" onclick="openCharacterProfile('${k.victim_name}')">${colorizeClass(k.victim_name, k.victim_class)}</span>
-                <small style="color:#64748b;">(Lvl ${k.victim_level})</small>
+                <small style="color:#64748b;">(Lvl ${k.victim_level && k.victim_level > 0 ? k.victim_level : '??'})</small>
                 ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile('${k.victim_guild}')">&lt;${k.victim_guild}&gt;</span>` : ''}
               </div>
               <div style="text-align:right; color:#94a3b8;">
@@ -2213,7 +2220,7 @@ function buildCharacterDossierHtml(data) {
             <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
               <div>
                 Killed by: <span class="clickable-player" onclick="openCharacterProfile('${d.killer_name}')">${colorizeClass(d.killer_name, d.killer_class)}</span>
-                <small style="color:#64748b;">(Lvl ${d.killer_level})</small>
+                <small style="color:#64748b;">(Lvl ${d.killer_level && d.killer_level > 0 ? d.killer_level : '??'})</small>
                 ${d.killer_guild && d.killer_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile('${d.killer_guild}')">&lt;${d.killer_guild}&gt;</span>` : ''}
               </div>
               <div style="text-align:right; color:#94a3b8;">
@@ -5044,6 +5051,12 @@ function setFilterMode(mode) {
   if (activePill) activePill.classList.add("active");
   const activeMobilePill = document.getElementById(`m-pill-${mode.toLowerCase()}`);
   if (activeMobilePill) activeMobilePill.classList.add("active");
+
+  const statModeEl = document.getElementById("stat-active-mode");
+  if (statModeEl) {
+    const modeNames = { WORLD: "World PvP", BG: "Battlegrounds", ARENA: "Arenas", DUEL: "Duels" };
+    statModeEl.innerText = modeNames[mode] || mode;
+  }
 
   loadKills();
   loadSidebar();
