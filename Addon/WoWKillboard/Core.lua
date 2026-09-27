@@ -337,6 +337,42 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         end
     elseif cmd == "armory" then
         KB:PrintArmoryDossier(arg)
+    elseif cmd == "markprompt" or cmd == "bountyprompt" then
+        local mArg = arg and arg:lower():match("^%s*(.-)%s*$") or ""
+        WoWKillboardSettings = WoWKillboardSettings or {}
+        if mArg == "off" or mArg == "disable" or mArg == "0" then
+            WoWKillboardSettings.promptMarkOnDeath = false
+            WoWKillboardSettings.promptBountyOnDeath = false
+            print("|cffff3333[WoWKB]|r Mark of Spite death popup: |cffff3333Disabled|r.")
+        elseif mArg == "on" or mArg == "enable" or mArg == "1" then
+            WoWKillboardSettings.promptMarkOnDeath = true
+            WoWKillboardSettings.promptBountyOnDeath = true
+            print("|cff00ff00[WoWKB]|r Mark of Spite death popup: |cff00ff00Enabled|r.")
+        else
+            local cur = (WoWKillboardSettings.promptMarkOnDeath ~= false and WoWKillboardSettings.promptBountyOnDeath ~= false)
+            local nxt = not cur
+            WoWKillboardSettings.promptMarkOnDeath = nxt
+            WoWKillboardSettings.promptBountyOnDeath = nxt
+            local st = nxt and "|cff00ff00Enabled|r" or "|cffff3333Disabled|r"
+            print(string.format("|cff00ccff[WoWKB]|r Mark of Spite death popup toggled to: %s", st))
+        end
+    elseif cmd == "claim" then
+        local code = arg and arg:match("^%s*(.-)%s*$") or ""
+        if code and code ~= "" then
+            WoWKillboardDB = WoWKillboardDB or {}
+            WoWKillboardDB.claimTokens = WoWKillboardDB.claimTokens or {}
+            local pName = UnitName("player") or "Player"
+            WoWKillboardDB.claimTokens[pName] = {
+                code = code,
+                time = time(),
+                guid = UnitGUID("player") or "UNKNOWN",
+                realm = (GetRealmName and GetRealmName()) or "PvP",
+            }
+            print(string.format("|cff00ff00[WoWKB]|r Claim verification token registered for |cffffd100%s|r: |cffffff00%s|r.", pName, code))
+            print("|cff00ccff[WoWKB]|r Run sync client or upload SavedVariables to complete character ownership claim.")
+        else
+            print("|cffff9900Usage:|r /kb claim <code> (e.g. /kb claim KB-7842)")
+        end
     elseif cmd == "theme" then
         local tArg = arg and arg:lower():match("^%s*(.-)%s*$") or ""
         if tArg == "classic" or tArg == "elvui" then
@@ -351,6 +387,8 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         print("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
         print("  |cffffd100/kb radar|r or |cffffd100/kbradar|r - Toggle the Tactical Radar HUD floating window")
         print("  |cffffd100/kb alerts|r - Open Combat Alerts & Radar Configuration")
+        print("  |cffffd100/kb markprompt [on|off]|r - Toggle Mark of Spite revenge prompt on PvP death")
+        print("  |cffffd100/kb claim <code>|r - Register web character ownership verification code")
         print("  |cffffd100/kb move|r - Unlock or lock Kill Banner to reposition on screen")
         print("  |cffffd100/kb test|r - Preview Kill Alert Banner with sound and raid warning")
         print("  |cffffd100/kb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")

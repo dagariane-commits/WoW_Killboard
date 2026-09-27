@@ -170,8 +170,8 @@ function UI:ApplyTheme()
             if UI.SubtitleText and UI.TitleText then
                 UI.SubtitleText:ClearAllPoints()
                 UI.SubtitleText:SetPoint("TOP", UI.TitleText, "BOTTOM", 0, -2)
-                local realm = (GetRealmName and GetRealmName()) or "PvP"
-                UI.SubtitleText:SetText(string.format("|cff00e5ffWoW Forever|r • |cffc7b28c%s|r • |cff888888v%s|r", realm, KB.Version))
+                local sub = KB.Utils and KB.Utils.GetClientFlavorSubtitle and KB.Utils.GetClientFlavorSubtitle()
+                UI.SubtitleText:SetText(sub or string.format("|cff00e5ffWoW Forever|r • |cffc7b28c%s|r • |cff888888v%s|r", (GetRealmName and GetRealmName()) or "PvP", KB.Version))
             end
         else
             UI.HeaderPlate:Hide()
@@ -184,8 +184,8 @@ function UI:ApplyTheme()
             if UI.SubtitleText and UI.TitleText then
                 UI.SubtitleText:ClearAllPoints()
                 UI.SubtitleText:SetPoint("TOPLEFT", UI.TitleText, "BOTTOMLEFT", 0, -3)
-                local realm = (GetRealmName and GetRealmName()) or "PvP"
-                UI.SubtitleText:SetText(string.format("|cff94a3b8%s • v%s|r", realm, KB.Version))
+                local sub = KB.Utils and KB.Utils.GetClientFlavorSubtitle and KB.Utils.GetClientFlavorSubtitle()
+                UI.SubtitleText:SetText(sub or string.format("|cff00e5ffWoW Forever|r • |cffc7b28c%s|r • |cff888888v%s|r", (GetRealmName and GetRealmName()) or "PvP", KB.Version))
             end
         end
     end
@@ -2758,6 +2758,10 @@ end
 -- Death Bounty Prompt Dialog: Triggered when player is slain in PvP (Open World Only)
 function UI:ShowDeathBountyPrompt(killerData)
     if not killerData or not killerData.name then return end
+    local s = WoWKillboardSettings or KB.DefaultSettings or {}
+    if s.promptMarkOnDeath == false or s.promptBountyOnDeath == false then
+        return
+    end
     if InCombatLockdown() then
         UI.PendingDeathBountyKiller = killerData
         if C_Timer and C_Timer.After then
@@ -3561,7 +3565,7 @@ function UI:ShowAlertsConfig()
 
     if not UI.AlertsDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(520, 500)
+        dlg:SetSize(520, 560)
         dlg:SetPoint("CENTER", 0, 20)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(120)
@@ -3717,11 +3721,30 @@ function UI:ShowAlertsConfig()
         posCoords:SetPoint("TOPLEFT", 24, -348)
         dlg.PosCoords = posCoords
 
+        -- Section 5: Mark of Spite Death Popup
+        local sec5Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sec5Title:SetPoint("TOPLEFT", 24, -374)
+        sec5Title:SetText("|cffffffff5. MARK OF SPITE DEATH POPUP|r")
+
+        local btnMarkPromptOn = UI:CreateButton(dlg, 230, 24, "Prompt on Death", "GameFontHighlightSmall")
+        btnMarkPromptOn:SetPoint("TOPLEFT", 24, -394)
+        StyleSegmentButton(btnMarkPromptOn, "Prompt on Death")
+        dlg.BtnMarkPromptOn = btnMarkPromptOn
+
+        local btnMarkPromptOff = UI:CreateButton(dlg, 230, 24, "Never Prompt / Muted", "GameFontHighlightSmall")
+        btnMarkPromptOff:SetPoint("LEFT", btnMarkPromptOn, "RIGHT", 12, 0)
+        StyleSegmentButton(btnMarkPromptOff, "Never Prompt / Muted")
+        dlg.BtnMarkPromptOff = btnMarkPromptOff
+
+        local markHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        markHint:SetPoint("TOPLEFT", 24, -422)
+        dlg.MarkHint = markHint
+
         -- Bottom Divider
         local bDiv = dlg:CreateTexture(nil, "ARTWORK")
         bDiv:SetHeight(1)
-        bDiv:SetPoint("TOPLEFT", 18, -370)
-        bDiv:SetPoint("TOPRIGHT", -18, -370)
+        bDiv:SetPoint("TOPLEFT", 18, -446)
+        bDiv:SetPoint("TOPRIGHT", -18, -446)
         dlg.BottomDivider = bDiv
 
         -- Footer Action Buttons
@@ -3803,6 +3826,17 @@ function UI:ShowAlertsConfig()
             else
                 dlg.UnlockBtn.Label:SetText("|cffffd100Move / Unlock Alert Anchor|r")
             end
+
+            -- Section 5: Mark of Spite Death Popup
+            local promptEnabled = (s.promptMarkOnDeath ~= false and s.promptBountyOnDeath ~= false)
+            ApplySegmentState(dlg.BtnMarkPromptOn, promptEnabled)
+            ApplySegmentState(dlg.BtnMarkPromptOff, not promptEnabled)
+
+            if promptEnabled then
+                dlg.MarkHint:SetText("|cff00ff00● Enabled:|r |cff94a3b8Prompts revenge Mark of Spite contract upon dying in Open World.|r")
+            else
+                dlg.MarkHint:SetText("|cffff3333● Disabled:|r |cff94a3b8Suppresses popup upon PvP death. Mark contracts can still be set in War Room.|r")
+            end
         end
         dlg.UpdateControls = UpdateControls
 
@@ -3870,6 +3904,20 @@ function UI:ShowAlertsConfig()
         end)
         resetBtn:SetScript("OnClick", function()
             UI:ResetBannerPosition()
+        end)
+
+        -- Section 5 Event Handlers
+        btnMarkPromptOn:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.promptMarkOnDeath = true
+            s.promptBountyOnDeath = true
+            UpdateControls()
+        end)
+        btnMarkPromptOff:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.promptMarkOnDeath = false
+            s.promptBountyOnDeath = false
+            UpdateControls()
         end)
 
         -- Footer Event Handlers

@@ -45,6 +45,8 @@ KB.DefaultSettings = {
     showRadarHUD = true,         -- show floating moveable Radar HUD window
     radarChatAlerts = false,     -- mute radar spam in chat (HUD only)
     radarPos = nil,              -- saved position for radar HUD: { point, relPoint, x, y }
+    promptMarkOnDeath = true,    -- prompt to declare a Mark of Spite on death in open world PvP
+    promptBountyOnDeath = true,  -- backward compatibility alias for promptMarkOnDeath
 }
 
 -- Fallback Class Colors (ARGB Hex)

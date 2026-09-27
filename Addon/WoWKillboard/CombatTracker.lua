@@ -19,6 +19,7 @@ CT.RecentVictimGUIDs = {}       -- map lower(victimName) -> victimGUID
 CT.RecentVictimAssists = {}     -- map victimGUID -> { [assisterGUID] = { name, spell, time, type } }
 CT.RecentVictimAssistsByName = {} -- map normVictim -> { [assisterGUID] = { name, spell, time, type } }
 CT.ExternalAssistsOnPlayer = {} -- map assisterGUID -> { name, spell, time, type }
+CT.PlayerAssistedAllies = {}    -- map allyGUID -> { name, spell, time, type } (allies buffed or healed by player)
 CT.LastPlayerDeathTime = 0
 CT.LastKillGUID = nil
 CT.SessionStats = {
@@ -171,6 +172,14 @@ function CT:PruneCombatInteractions()
             CT.ExternalAssistsOnPlayer[assisterGUID] = nil
         end
     end
+
+    if CT.PlayerAssistedAllies then
+        for allyGUID, data in pairs(CT.PlayerAssistedAllies) do
+            if (data.time or 0) < cutoff then
+                CT.PlayerAssistedAllies[allyGUID] = nil
+            end
+        end
+    end
 end
 
 -- Calculate hostile party/gang size from active hostile cluster
@@ -273,6 +282,20 @@ function CT:RecordHeal(sourceGUID, destGUID, amount)
     if playerGUID and KB.Utils.CanAccess(playerGUID) then
         if sourceGUID == playerGUID then
             CT.SessionStats.healingDone = CT.SessionStats.healingDone + (amount or 0)
+            if destGUID and destGUID ~= playerGUID then
+                -- Player healed an ally: track ally in FriendlyCluster and PlayerAssistedAllies
+                CT.FriendlyCluster[destGUID] = now
+                CT.PlayerAssistedAllies = CT.PlayerAssistedAllies or {}
+                local dstName = (KB.UnitScanner and KB.UnitScanner.GetUnitInfo and KB.UnitScanner:GetUnitInfo(destGUID) and KB.UnitScanner:GetUnitInfo(destGUID).name) or "Ally"
+                local cleanDst = KB.Utils.CleanCombatantName(dstName) or dstName
+                CT.PlayerAssistedAllies[destGUID] = {
+                    name = cleanDst,
+                    guid = destGUID,
+                    time = now,
+                    spell = "Heal",
+                    type = "heal",
+                }
+            end
         elseif destGUID == playerGUID and sourceGUID ~= playerGUID then
             -- External player healed us: record external assist (revokes 100% solo purity)
             CT.FriendlyCluster[sourceGUID] = now
@@ -652,6 +675,16 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         end
     end
 
+    local hasRecentAssistedAlly = false
+    if CT.PlayerAssistedAllies then
+        for aGUID, aData in pairs(CT.PlayerAssistedAllies) do
+            if aGUID ~= playerGUID and (now - (aData.time or 0)) <= 30 then
+                hasRecentAssistedAlly = true
+                break
+            end
+        end
+    end
+
     local inGroup = (CT:GetFriendlyPartySize() > 1)
     local hasNearbyFriendly = (friendlyAssists > 0)
 
@@ -660,8 +693,10 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         isSolo = (not hasExternalAttacker)
              and (not hasExternalAssistOnVictim)
              and (not hasExternalAssistOnPlayer)
+             and (not hasRecentAssistedAlly)
              and (not inGroup)
              and (not hasNearbyFriendly)
+             and (totalDamage > 0)
     else
         isSolo = (#attackersList == 1) and (not inGroup)
     end
@@ -729,7 +764,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             faction = killerInfo.faction,
         }
         local settings = WoWKillboardSettings or {}
-        if settings.promptBountyOnDeath ~= false then
+        if settings.promptMarkOnDeath ~= false and settings.promptBountyOnDeath ~= false then
             CT.PendingDeathBounty = CT.LastPvpKiller
             CT:CheckPendingDeathBounty()
         end
@@ -976,6 +1011,10 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         end
     end
 
+    local playerDamage = 0
+    local topPlayerAttacker = nil
+    local topPlayerDmg = -1
+
     for attGUID, attData in pairs(damageSources) do
         local isAttPlayer = attData.isPlayer
         if isAttPlayer == nil then
@@ -991,13 +1030,14 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             attLevel = UnitLevel("player") or 0
             attGuild = pGuild or "None"
             attFaction = pFaction or "Unknown"
+            playerDamage = attData.totalDamage or 0
         elseif unitInfo then
             attClass = unitInfo.class or "UNKNOWN"
             attLevel = unitInfo.level or 0
             attGuild = unitInfo.guild or "None"
             attFaction = unitInfo.faction or "Unknown"
         end
-        table.insert(attackersList, {
+        local attEntry = {
             guid = attGUID,
             name = attData.name or "Unknown",
             damage = attData.totalDamage or 0,
@@ -1007,9 +1047,15 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             guild = attGuild,
             faction = attFaction,
             isPlayer = isAttPlayer,
-        })
+        }
+        table.insert(attackersList, attEntry)
         totalDamage = totalDamage + (attData.totalDamage or 0)
         recordedAttackersMap[attGUID] = true
+
+        if isAttPlayer and (attData.totalDamage or 0) > topPlayerDmg then
+            topPlayerDmg = attData.totalDamage or 0
+            topPlayerAttacker = attEntry
+        end
     end
 
     -- If player was not in RecentDamage, insert player
@@ -1018,7 +1064,7 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             guid = playerGUID,
             name = playerName or "Player",
             damage = 0,
-            spell = "Honorable Combat",
+            spell = "Support Assist",
             class = pClass or "UNKNOWN",
             level = UnitLevel("player") or 0,
             guild = pGuild or "None",
@@ -1086,8 +1132,10 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     -- 2. Zero other friendly players debuffed, slowed, stunned or assisted against victim within 30s
     -- 3. Zero external friendly heals received by the player within 30s
     -- 4. Zero external friendly buffs received by the player within 30s
-    -- 5. Friendly party/raid size is strictly 1
-    -- 6. Zero active friendly cluster participants within 30s
+    -- 5. Zero friendly allies assisted/healed/buffed by the player within 30s
+    -- 6. Friendly party/raid size is strictly 1
+    -- 7. Zero active friendly cluster participants within 30s
+    -- 8. Player MUST have dealt positive damage (> 0) to the victim
     local hasExternalAttacker = false
     for _, att in ipairs(attackersList) do
         if att.guid ~= playerGUID and (att.name ~= playerName) then
@@ -1112,21 +1160,90 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         end
     end
 
+    local hasRecentAssistedAlly = false
+    if CT.PlayerAssistedAllies then
+        for aGUID, aData in pairs(CT.PlayerAssistedAllies) do
+            if aGUID ~= playerGUID and (now - (aData.time or 0)) <= 30 then
+                hasRecentAssistedAlly = true
+                break
+            end
+        end
+    end
+
     local inGroup = (partySize > 1)
     local hasNearbyFriendly = (friendlyAssists > 0)
+    local hasPlayerDamage = (playerDamage > 0)
 
     local isSolo = (not hasExternalAttacker)
                and (not hasExternalAssistOnVictim)
                and (not hasExternalAssistOnPlayer)
+               and (not hasRecentAssistedAlly)
                and (not inGroup)
                and (not hasNearbyFriendly)
+               and hasPlayerDamage
 
     local attackersCount = math.max(#attackersList, partySize, 1 + friendlyAssists)
     if not isSolo and attackersCount < 2 then
         attackersCount = 2
     end
 
-    CT.SessionStats.kills = CT.SessionStats.kills + 1
+    -- Determine true killer: if player dealt 0 damage and an ally dealt damage, attribute kill to the ally
+    local killerData = nil
+    if hasPlayerDamage and (not topPlayerAttacker or topPlayerAttacker.guid == playerGUID) then
+        killerData = {
+            guid = playerGUID or "PLAYER",
+            name = playerName or "Player",
+            level = UnitLevel("player") or 0,
+            class = pClass or "UNKNOWN",
+            guild = pGuild or "None",
+            faction = pFaction or "Unknown",
+            partySize = attackersCount,
+            damageDone = playerDamage,
+            healingDone = CT.SessionStats.healingDone or 0,
+        }
+    elseif topPlayerAttacker and topPlayerAttacker.guid ~= playerGUID and (topPlayerAttacker.damage or 0) > 0 then
+        killerData = {
+            guid = topPlayerAttacker.guid,
+            name = topPlayerAttacker.name,
+            level = topPlayerAttacker.level or 0,
+            class = topPlayerAttacker.class or "UNKNOWN",
+            guild = topPlayerAttacker.guild or "None",
+            faction = topPlayerAttacker.faction or (pFaction or "Unknown"),
+            partySize = attackersCount,
+            damageDone = topPlayerAttacker.damage,
+            healingDone = 0,
+        }
+    elseif #clusterAssists > 0 then
+        local firstAllyGUID = clusterAssists[1]
+        local aInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(firstAllyGUID)
+        killerData = {
+            guid = firstAllyGUID,
+            name = (aInfo and aInfo.name) or "Friendly Ally",
+            level = (aInfo and aInfo.level) or 0,
+            class = (aInfo and aInfo.class) or "UNKNOWN",
+            guild = (aInfo and aInfo.guild) or "None",
+            faction = (aInfo and aInfo.faction) or (pFaction or "Unknown"),
+            partySize = attackersCount,
+            damageDone = totalDamage,
+            healingDone = 0,
+        }
+    else
+        killerData = {
+            guid = playerGUID or "PLAYER",
+            name = playerName or "Player",
+            level = UnitLevel("player") or 0,
+            class = pClass or "UNKNOWN",
+            guild = pGuild or "None",
+            faction = pFaction or "Unknown",
+            partySize = attackersCount,
+            damageDone = playerDamage,
+            healingDone = CT.SessionStats.healingDone or 0,
+        }
+    end
+
+    if killerData.guid == playerGUID then
+        CT.SessionStats.kills = CT.SessionStats.kills + 1
+    end
 
     local context = CT:GetCombatContext()
     local location = KB.Utils.GetPlayerLocation()
@@ -1140,17 +1257,7 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         attackersCount = attackersCount,
         attackers = attackersList,
         totalDamage = totalDamage,
-        killer = {
-            guid = playerGUID or "PLAYER",
-            name = playerName or "Player",
-            level = UnitLevel("player") or 0,
-            class = pClass or "UNKNOWN",
-            guild = pGuild or "None",
-            faction = pFaction or "Unknown",
-            partySize = attackersCount,
-            damageDone = totalDamage > 0 and totalDamage or CT.SessionStats.damageDone,
-            healingDone = CT.SessionStats.healingDone,
-        },
+        killer = killerData,
         victim = {
             guid = (victimInfo and victimInfo.guid) or victimGUID or "UNKNOWN",
             name = (victimInfo and victimInfo.name) or cleanVictim or victimName,
@@ -1415,6 +1522,11 @@ end
 -- Check and display pending revenge death bounty prompt when not in combat
 function CT:CheckPendingDeathBounty()
     if not CT.PendingDeathBounty then return end
+    local settings = WoWKillboardSettings or {}
+    if settings.promptMarkOnDeath == false or settings.promptBountyOnDeath == false then
+        CT.PendingDeathBounty = nil
+        return
+    end
     local inInst, instType = false, "none"
     if IsInInstance then inInst, instType = IsInInstance() end
     if inInst or (instType and instType ~= "none") then
@@ -1482,6 +1594,22 @@ frame:SetScript("OnEvent", function(self, event, ...)
                     spell = spellName or "Buff",
                     type = "buff",
                 }
+            elseif playerGUID and sourceGUID == playerGUID and destGUID and destGUID ~= playerGUID then
+                local isHostile = HasFlag(destFlags, COMBATLOG_OBJECT_REACTION_HOSTILE)
+                local isFriendly = HasFlag(destFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) or (not isHostile)
+                if isFriendly then
+                    -- Player cast a buff, aura, or assistance spell on a friendly ally!
+                    CT.FriendlyCluster[destGUID] = now
+                    CT.PlayerAssistedAllies = CT.PlayerAssistedAllies or {}
+                    local dstName = KB.Utils.CleanCombatantName(destName) or KB.Utils.SafeString(destName, "Ally")
+                    CT.PlayerAssistedAllies[destGUID] = {
+                        name = dstName,
+                        guid = destGUID,
+                        time = now,
+                        spell = spellName or "Buff",
+                        type = "buff",
+                    }
+                end
             elseif playerGUID and destGUID ~= playerGUID and sourceGUID ~= playerGUID then
                 local isHostile = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE)
                 local isFriendly = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) or (not isHostile)

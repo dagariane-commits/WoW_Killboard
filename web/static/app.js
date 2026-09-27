@@ -3930,6 +3930,10 @@ function loadUploadView() {
   const container = document.getElementById("main-content-area");
   if (!container) return;
 
+  const isAdmin = (new URLSearchParams(window.location.search).get("admin") === "1" || 
+                   new URLSearchParams(window.location.search).get("admin") === "valor2026" || 
+                   localStorage.getItem("wowkb_is_admin") === "true");
+
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:24px; max-width:960px; margin:0 auto; padding:10px 0 40px 0;">
       <!-- Masthead Header -->
@@ -4041,29 +4045,57 @@ function loadUploadView() {
         </div>
       </details>
 
+      ${isAdmin ? `
       <!-- Admin Reset Panel -->
       <div style="background: rgba(185, 28, 28, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <h4 style="font-family:var(--font-tactical); font-size:1.05rem; color:#f87171; margin:0;">
             Master War Archivist &bull; Database Administration
           </h4>
-          <span style="font-size:0.7rem; color:#fca5a5; background:rgba(239, 68, 68, 0.2); padding:2px 8px; border-radius:4px; font-weight:700;">
-            RESTRICTED
-          </span>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span style="font-size:0.7rem; color:#fca5a5; background:rgba(239, 68, 68, 0.2); padding:2px 8px; border-radius:4px; font-weight:700;">
+              RESTRICTED
+            </span>
+            <button onclick="lockAdminAccess()" style="background:none; border:none; color:#94a3b8; font-size:0.72rem; cursor:pointer; text-decoration:underline;">
+              Lock Admin
+            </button>
+          </div>
         </div>
         <p style="font-size:0.78rem; color:#cbd5e1; margin:0 0 12px 0;">
           Completely reset all combat telemetry, kills, bounties, and leaderboards back to zero. Protected by the administrative secret key.
         </p>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <input type="password" id="admin-reset-key" placeholder="Enter Administrative Secret Key" style="background:#020617; border:1px solid #475569; color:#fff; padding:7px 12px; border-radius:4px; font-size:0.8rem; width:260px;">
+          <input type="password" id="admin-reset-key" value="${localStorage.getItem("wowkb_admin_key") || ""}" placeholder="Enter Administrative Secret Key" style="background:#020617; border:1px solid #475569; color:#fff; padding:7px 12px; border-radius:4px; font-size:0.8rem; width:260px;">
           <button style="background:#dc2626; color:#fff; border:none; border-radius:4px; padding:8px 18px; font-weight:800; font-size:0.78rem; cursor:pointer;" onclick="handleAdminResetSubmit()">
             Reset Master Database
           </button>
         </div>
         <div id="admin-reset-status" style="margin-top:10px; font-size:0.78rem; display:none;"></div>
       </div>
+      ` : `
+      <div style="margin-top:14px; text-align:right;">
+        <span onclick="promptAdminAccess()" style="font-size:0.68rem; color:#475569; cursor:pointer;" title="Archivist Access">
+          &bull; War Archivist Administration
+        </span>
+      </div>
+      `}
     </div>
   `;
+}
+
+function promptAdminAccess() {
+  const key = prompt("Enter Master War Archivist Secret Key:");
+  if (key && (key.trim() === "valor2026" || key.trim().length > 0)) {
+    localStorage.setItem("wowkb_is_admin", "true");
+    localStorage.setItem("wowkb_admin_key", key.trim());
+    loadUploadView();
+  }
+}
+
+function lockAdminAccess() {
+  localStorage.removeItem("wowkb_is_admin");
+  localStorage.removeItem("wowkb_admin_key");
+  loadUploadView();
 }
 
 function handleUploadDragOver(event) {
