@@ -162,7 +162,7 @@ class KillboardWatcher:
         elif isinstance(api_urls, str) and api_urls:
             self.api_urls = [api_urls.rstrip("/")]
         else:
-            self.api_urls = ["https://wow-killboard.onrender.com", "http://127.0.0.1:8080"]
+            self.api_urls = ["http://13.216.102.148", "http://127.0.0.1:8080"]
         self.api_url = ", ".join(self.api_urls)
         self.last_mtime = 0
         self.known_kills = set()
@@ -491,8 +491,8 @@ def auto_detect_saved_variables() -> str:
 
     return ""
 
-SYNC_VERSION = "1.0.0-beta.2"
-DEFAULT_PROD_URL = "https://wow-killboard.onrender.com"
+SYNC_VERSION = "1.0.0-beta.3"
+DEFAULT_PROD_URL = "http://13.216.102.148"
 DEFAULT_LOCAL_URL = "http://127.0.0.1:8080"
 
 def resolve_api_endpoints(cli_arg: str = None, force_local: bool = False, force_cloud: bool = False) -> list:
@@ -543,7 +543,7 @@ if __name__ == "__main__":
     parser.add_argument("--file", "-f", default="", help="Path to WoWKillboard.lua (auto-detected if omitted)")
     parser.add_argument("--api", "-a", default="", help="Web Killboard API URL (defaults to dual sync)")
     parser.add_argument("--local", action="store_true", help="Force local development endpoint only (http://127.0.0.1:8080)")
-    parser.add_argument("--cloud", "--render", action="store_true", help="Force cloud production endpoint only (https://wow-killboard.onrender.com)")
+    parser.add_argument("--cloud", "--render", action="store_true", help="Force cloud production endpoint only (http://13.216.102.148)")
     parser.add_argument("--once", action="store_true", help="Run once and exit instead of continuous daemon")
     args = parser.parse_args()
 
