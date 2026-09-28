@@ -3074,7 +3074,8 @@ function portalSetScreen(screen) {
 function portalEnterAsGuest() {
   portalAccessMode = "guest";
   sessionStorage.setItem("wowkb_auth_type", "guest");
-  portalLaunchFront("FOREVER");
+  sessionStorage.setItem("wowkb_has_entered_feed", "1");
+  switchTab("INTEL");
 }
 
 function portalAdvanceToVersions(mode) {
@@ -3085,91 +3086,16 @@ function portalAdvanceToVersions(mode) {
 
 function portalSetAuthTab(tab) {
   portalAuthTab = tab;
-  const signinForm = document.getElementById("auth-form-signin");
-  const registerForm = document.getElementById("auth-form-register");
-  const tabSigninBtn = document.getElementById("auth-tab-btn-signin");
-  const tabRegBtn = document.getElementById("auth-tab-btn-register");
-
-  if (signinForm && registerForm) {
-    if (tab === "signin") {
-      signinForm.style.display = "flex";
-      registerForm.style.display = "none";
-      if (tabSigninBtn) tabSigninBtn.classList.add("active");
-      if (tabRegBtn) tabRegBtn.classList.remove("active");
-    } else {
-      signinForm.style.display = "none";
-      registerForm.style.display = "flex";
-      if (tabSigninBtn) tabSigninBtn.classList.remove("active");
-      if (tabRegBtn) tabRegBtn.classList.add("active");
-    }
-  }
 }
 
 function handleNormalSignIn(event) {
   if (event) event.preventDefault();
-  const userEl = document.getElementById("auth-input-username");
-  const passEl = document.getElementById("auth-input-password");
-  const username = userEl ? userEl.value.trim() : "";
-  const password = passEl ? passEl.value : "";
-
-  if (!username) {
-    alert("Please enter your account username or email.");
-    if (userEl) userEl.focus();
-    return;
-  }
-  if (!password) {
-    alert("Please enter your password.");
-    if (passEl) passEl.focus();
-    return;
-  }
-
-  localStorage.setItem("wowkb_account_username", username);
-  localStorage.setItem("wowkb_user_character", username);
-  localStorage.setItem("wow_killboard_hunter_name", username);
-  localStorage.setItem("wowkb_supporter_active", "1");
-  sessionStorage.setItem("wowkb_auth_type", "account");
-  portalAccessMode = "account";
-
-  updateSupporterButton();
-  portalLaunchFront("FOREVER");
+  openCharacterLinkModal();
 }
 
 function handleNormalRegister(event) {
   if (event) event.preventDefault();
-  const userEl = document.getElementById("reg-input-username");
-  const emailEl = document.getElementById("reg-input-email");
-  const passEl = document.getElementById("reg-input-password");
-  const username = userEl ? userEl.value.trim() : "";
-  const email = emailEl ? emailEl.value.trim() : "";
-  const password = passEl ? passEl.value : "";
-
-  if (!username) {
-    alert("Please choose a username for your account.");
-    if (userEl) userEl.focus();
-    return;
-  }
-  if (!email || !email.includes("@")) {
-    alert("Please enter a valid email address.");
-    if (emailEl) emailEl.focus();
-    return;
-  }
-  if (!password || password.length < 6) {
-    alert("Please create a password of at least 6 characters.");
-    if (passEl) passEl.focus();
-    return;
-  }
-
-  localStorage.setItem("wowkb_account_username", username);
-  localStorage.setItem("wowkb_account_email", email);
-  localStorage.setItem("wowkb_user_character", username);
-  localStorage.setItem("wow_killboard_hunter_name", username);
-  localStorage.setItem("wowkb_supporter_active", "1");
-  sessionStorage.setItem("wowkb_auth_type", "account");
-  portalAccessMode = "account";
-
-  updateSupporterButton();
-  alert(`Account created successfully for ${username}! Welcome to the War Room.`);
-  portalLaunchFront("FOREVER");
+  openCharacterLinkModal();
 }
 
 function handleGoogleSignIn() {
@@ -3177,15 +3103,8 @@ function handleGoogleSignIn() {
 }
 
 function portalDirectSignIn() {
-  let storedUser = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "Vanguard Champion";
-  localStorage.setItem("wow_killboard_hunter_name", storedUser);
-  localStorage.setItem("wowkb_user_character", storedUser);
-  localStorage.setItem("wowkb_account_username", storedUser);
-  localStorage.setItem("wowkb_supporter_active", "1");
-  sessionStorage.setItem("wowkb_auth_type", "account");
-  portalAccessMode = "account";
-  updateSupporterButton();
-  portalLaunchFront("FOREVER");
+  sessionStorage.setItem("wowkb_has_entered_feed", "1");
+  switchTab("INTEL");
 }
 
 function portalLaunchFront(flavorKey) {
@@ -3207,11 +3126,14 @@ function portalSignOut() {
   localStorage.removeItem("wowkb_user_guild");
   localStorage.removeItem("wowkb_user_realm");
   localStorage.removeItem("wowkb_user_faction");
+  localStorage.removeItem("wowkb_owner_token");
   sessionStorage.removeItem("wowkb_auth_type");
+  sessionStorage.removeItem("wowkb_character_name");
   sessionStorage.removeItem("wowkb_has_entered_feed");
   portalAccessMode = "guest";
   renderHeaderAuthBadge();
-  switchTab("PORTAL");
+  switchTab("INTEL");
+  loadKills();
 }
 
 function loadPortalView() {
@@ -3221,13 +3143,13 @@ function loadPortalView() {
   const currentAuth = sessionStorage.getItem("wowkb_auth_type");
   const storedAccount = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "";
 
-  if (storedAccount && (currentAuth === "account" || currentAuth === "officer") && portalAccessMode !== "guest") {
-    portalAccessMode = "account";
+  if (storedAccount && (currentAuth === "account" || currentAuth === "officer" || currentAuth === "character") && portalAccessMode !== "guest") {
+    portalAccessMode = "character";
   }
 
-  // Right card: Account Sign-In (or Active Session)
+  // Right card: Character Dossier & In-Game Claim
   let rightCardContent = "";
-  if (storedAccount && (currentAuth === "account" || currentAuth === "officer")) {
+  if (storedAccount) {
     const userCls = (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase();
     const userLvl = localStorage.getItem("wowkb_user_level") || 60;
     const userFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
@@ -3240,109 +3162,69 @@ function loadPortalView() {
           </div>
           <div>
             <div style="font-weight:800; font-size:1.0rem; color:#fff;">
-              Active: <span style="color:${userClsColor};">${escapeHtml(storedAccount)}</span>
+              Active Operative: <span style="color:${userClsColor};">${escapeHtml(storedAccount)}</span>
               <span style="font-size:0.75rem; color:#94a3b8;">(Lvl ${userLvl} ${userCls.charAt(0) + userCls.slice(1).toLowerCase()})</span>
             </div>
             <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
-              ${escapeHtml(userFaction)} Vanguard &bull; High Command Clearance
+              ${escapeHtml(userFaction)} Vanguard &bull; Certified Combatant
             </div>
           </div>
         </div>
-        <button class="dramatic-gate-btn officer" onclick="portalDirectSignIn()">
-          <span>Enter WoW Forever War Room</span>
-          <span>&rarr;</span>
-        </button>
-        <div style="display:flex; justify-content:center; gap:16px; margin-top:8px;">
-          <button class="gate-signout-link" onclick="openCharacterLinkModal()" style="color:var(--accent-cyan);">Switch / Link Character</button>
-          <button class="gate-signout-link" onclick="portalSignOut()">Sign Out</button>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px;">
+          <button class="dramatic-gate-btn officer" onclick="openCharacterProfile('${escapeHtml(storedAccount)}')">
+            <span>Inspect Combat Dossier</span>
+            <span>&rarr;</span>
+          </button>
+          <div style="display:flex; justify-content:center; gap:16px; margin-top:6px;">
+            <button class="gate-signout-link" onclick="openCharacterLinkModal()" style="color:var(--accent-cyan); background:none; border:none; cursor:pointer; font-size:0.8rem;">Switch / Claim Character</button>
+            <button class="gate-signout-link" onclick="portalSignOut()" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:0.8rem;">Clear Operative</button>
+          </div>
         </div>
       </div>
     `;
   } else {
     rightCardContent = `
-      <form id="auth-form-signin" class="normal-auth-form" style="display:flex; flex-direction:column; gap:10px; width:100%;" onsubmit="handleNormalSignIn(event)">
-        <div class="auth-input-group">
-          <label class="auth-label" for="auth-input-username">Username or Email</label>
-          <input type="text" id="auth-input-username" class="normal-auth-input" placeholder="e.g. AzerothKnight" autocomplete="username">
+      <div style="display:flex; flex-direction:column; gap:14px; width:100%; justify-content:space-between; flex:1;">
+        <div style="font-size:0.86rem; color:#94a3b8; line-height:1.5;">
+          Select your character directly from the live combat ledger or authenticate ownership using in-game cryptographic claim tokens. Zero email, password, or third-party accounts.
         </div>
-        <div class="auth-input-group">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <label class="auth-label" for="auth-input-password">Password</label>
-            <a href="javascript:void(0)" class="auth-forgot-link" onclick="alert('Password reset instructions will be sent to your email.')">Forgot?</a>
-          </div>
-          <input type="password" id="auth-input-password" class="normal-auth-input" placeholder="Enter your password" autocomplete="current-password">
+        <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,0,0.18); border-radius:6px; padding:12px 14px; font-size:0.8rem; color:#cbd5e1; display:flex; flex-direction:column; gap:6px;">
+          <div style="color:var(--wow-gold); font-weight:700;">In-Game Identity Claim:</div>
+          <div>1. Click below to select your character name.</div>
+          <div>2. Run <code style="color:var(--accent-cyan); background:rgba(0,229,255,0.1); padding:2px 6px; border-radius:3px;">/kb claim</code> in World of Warcraft.</div>
+          <div>3. Sync agent automatically secures your ownership token.</div>
         </div>
-        <div class="auth-options-row">
-          <label class="auth-checkbox-label">
-            <input type="checkbox" id="auth-remember" checked>
-            <span>Remember me</span>
-          </label>
-        </div>
-        <button type="submit" class="normal-auth-submit-btn">
-          <span>Sign In &amp; Enter War Room</span>
+        <button type="button" class="dramatic-gate-btn officer" onclick="openCharacterLinkModal()">
+          <span>⚔️ Select / Claim Character</span>
           <span>&rarr;</span>
         </button>
-
-        <div class="auth-or-divider">
-          <span>or connect your combat identity</span>
-        </div>
-
-        <button type="button" class="google-auth-btn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; border: 1px solid rgba(0, 229, 255, 0.4); display:flex; align-items:center; justify-content:center; gap:8px;" onclick="openCharacterLinkModal()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          <span>⚔️ Select / Claim Operative Identity</span>
-        </button>
-      </form>
+      </div>
     `;
   }
 
-  // Left card: Registration + Guest Pass (Zero empty space)
+  // Left card: Immediate Live Combat Feed
   const leftCardContent = `
-    <form id="auth-form-register" class="normal-auth-form" style="display:flex; flex-direction:column; gap:10px; width:100%;" onsubmit="handleNormalRegister(event)">
-      <div class="auth-input-group">
-        <label class="auth-label" for="reg-input-username">Operative Callsign (Username)</label>
-        <input type="text" id="reg-input-username" class="normal-auth-input" placeholder="Choose a username" autocomplete="username">
+    <div style="display:flex; flex-direction:column; gap:14px; width:100%; justify-content:space-between; flex:1;">
+      <div style="font-size:0.86rem; color:#94a3b8; line-height:1.5;">
+        Step immediately into the live frontline telemetry feed. Real-time killmail dispatches, verified 1v1 solo duels, bounty alerts, and battleground casualties.
       </div>
-      <div class="auth-input-group">
-        <label class="auth-label" for="reg-input-email">Email Address</label>
-        <input type="email" id="reg-input-email" class="normal-auth-input" placeholder="name@example.com" autocomplete="email">
+      <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(0,229,255,0.18); border-radius:6px; padding:12px 14px; font-size:0.8rem; color:#cbd5e1; display:flex; flex-direction:column; gap:6px;">
+        <div style="color:var(--accent-cyan); font-weight:700;">Zero-Barrier Frontline Intel:</div>
+        <div>✔ 100% Free &amp; Open Access — Zero signup required</div>
+        <div>✔ Certified 1v1 Solo Kills &amp; Gang Gank clustering</div>
+        <div>✔ Public Blood Bounty Hunting and Gold Ledgers</div>
+        <div>✔ Real-time Cross-Client PvP Radar &amp; War Rallies</div>
       </div>
-      <div class="auth-input-group">
-        <label class="auth-label" for="reg-input-password">Password</label>
-        <input type="password" id="reg-input-password" class="normal-auth-input" placeholder="Min. 6 characters" autocomplete="new-password">
-      </div>
-      <button type="submit" class="normal-auth-submit-btn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
-        <span>Create Free Account &amp; Enter</span>
+      <button type="button" class="dramatic-gate-btn guest" onclick="switchTab('INTEL')">
+        <span>⚔️ Enter Live Frontline Feed</span>
         <span>&rarr;</span>
       </button>
-
-      <div class="auth-or-divider">
-        <span>or sign up with</span>
-      </div>
-
-      <button type="button" class="google-auth-btn" onclick="handleGoogleSignIn()">
-        <svg class="google-g-logo" width="18" height="18" viewBox="0 0 24 24">
-          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
-          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
-          <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
-          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
-        </svg>
-        <span>Sign up with Google</span>
-      </button>
-
-      <div class="auth-or-divider" style="margin: 8px 0 4px 0;">
-        <span>or browse immediately without account</span>
-      </div>
-
-      <button type="button" class="dramatic-gate-btn guest" onclick="portalEnterAsGuest()" style="background:#0f172a; border:1px solid #334155; color:#94a3b8; padding:9px 14px; font-size:0.78rem;">
-        <span>Continue as Guest (Read-Only)</span>
-        <span>&rarr;</span>
-      </button>
-    </form>
+    </div>
   `;
 
   container.innerHTML = `
     <div class="portal-container dramatic-flow">
-      <!-- Dramatic Hero Masthead (Clean single action button) -->
+      <!-- Dramatic Hero Masthead -->
       <div class="portal-hero dramatic-hero">
         <div class="portal-crest-row">
           <img src="/static/icons/factions/alliance.jpg" class="portal-crest alliance" alt="Alliance" title="For the Alliance!">
@@ -3355,11 +3237,9 @@ function loadPortalView() {
           The Third War shattered the kingdoms; the frontier remains soaked in blood. Choose your clearance of entry to inspect certified combat casualties, issue blood bounties, or consult the war ledger.
         </p>
         <div class="portal-hero-actions">
-          ${sessionStorage.getItem("wowkb_has_entered_feed") ? `
-            <button class="portal-return-pill" onclick="switchTab('INTEL')">
-              <span>Return to Active War Room &rarr;</span>
-            </button>
-          ` : ''}
+          <button class="portal-return-pill" onclick="switchTab('INTEL')">
+            <span>⚔️ Enter Live Frontline Feed &rarr;</span>
+          </button>
           <button class="portal-fieldkit-pill" onclick="openAddonDossierModal()">
             <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             <span>War Room Operational Specification &amp; Download</span>
@@ -3369,31 +3249,31 @@ function loadPortalView() {
 
       <!-- 2-Card Selection Gate (Inline With Masthead Sides) -->
       <div class="dramatic-gate-grid">
-        <!-- Card 1: New Recruits & Guest Pass -->
+        <!-- Card 1: Live Frontline Intel -->
         <div class="dramatic-gate-card guest">
           <div>
-            <div class="gate-card-badge guest">NEW RECRUITS &amp; GUEST ACCESS</div>
+            <div class="gate-card-badge guest">LIVE FRONTLINE INTEL</div>
             <div class="gate-card-icon">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
             </div>
-            <h2 class="gate-card-title">Create Free Account</h2>
+            <h2 class="gate-card-title">Frontline Killboard Feed</h2>
             <p class="gate-card-desc">
-              Register your callsign to track personal kills, deaths, K/D ratios, and Classic military ranks across all your characters, or browse immediately as guest.
+              Direct access to live combat casualties, real-time killmails, solo duel certifications, and battleground reconnaissance.
             </p>
           </div>
           ${leftCardContent}
         </div>
 
-        <!-- Card 2: Account Access (Normal Sign-In / Google) -->
+        <!-- Card 2: Combat Identity & In-Game Claim -->
         <div class="dramatic-gate-card officer">
           <div>
-            <div class="gate-card-badge officer">ACCOUNT ACCESS</div>
+            <div class="gate-card-badge officer">COMBAT IDENTITY</div>
             <div class="gate-card-icon">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
-            <h2 class="gate-card-title">Sign In to War Room</h2>
+            <h2 class="gate-card-title">Character Dossier &amp; Claim</h2>
             <p class="gate-card-desc">
-              Sign in to display your personalized combat kills, deaths, K/D ratio, and military rank atop your war room feed, issue blood bounties in gold, and claim slain marks.
+              View your personalized combat record, Classic military rank, and placed bounties. Link or claim ownership directly from World of Warcraft.
             </p>
           </div>
           ${rightCardContent}
@@ -4818,27 +4698,11 @@ function loadRalliesView() {
 }
 
 function handleHeaderSignOut() {
-  sessionStorage.removeItem("wowkb_auth_type");
-  sessionStorage.removeItem("wowkb_character_name");
-  sessionStorage.removeItem("wowkb_has_entered_feed");
-  localStorage.removeItem("wowkb_account_username");
-  localStorage.removeItem("wowkb_user_character");
-  localStorage.removeItem("wowkb_user_class");
-  localStorage.removeItem("wowkb_user_faction");
-  localStorage.removeItem("wowkb_user_level");
-  localStorage.removeItem("wowkb_user_guild");
-  localStorage.removeItem("wowkb_user_realm");
-  localStorage.removeItem("wowkb_account_provider");
-  portalAccessMode = "guest";
-  renderHeaderAuthBadge();
-  switchTab("PORTAL");
+  portalSignOut();
 }
 
 function openLoginModal() {
-  switchTab("PORTAL");
-  if (typeof portalSetAuthTab === "function") {
-    portalSetAuthTab("signin");
-  }
+  openCharacterLinkModal();
 }
 
 const THEATER_NAMES = {
@@ -5681,15 +5545,14 @@ document.addEventListener("DOMContentLoaded", () => {
     sessionStorage.setItem("wowkb_has_entered_feed", "1");
     portalAccessMode = "character";
     renderHeaderAuthBadge();
-    switchTab("FEED");
+    switchTab("INTEL");
     setTimeout(() => {
       openCharacterProfile(charParam);
     }, 250);
-  } else if (sessionStorage.getItem("wowkb_has_entered_feed") === "1") {
-    switchTab("INTEL");
   } else {
-    // Landing page is the War Room Sign-In / Entry Portal
-    switchTab("PORTAL");
+    // Direct zero-barrier landing on the live combat feed
+    sessionStorage.setItem("wowkb_has_entered_feed", "1");
+    switchTab("INTEL");
   }
 
   // Polling update every 6 seconds

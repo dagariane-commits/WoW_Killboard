@@ -5,6 +5,18 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.45] - 2026-09-27
+
+### Changed
+- **Complete Elimination of SaaS Account Gates & "Sign up with Google" (`app.js`, `index.html`)**:
+  - **Direct Live Feed Default Landing**: `DOMContentLoaded` now routes all visitors directly to `switchTab("INTEL")`. First-time visitors, incognito windows, and returning players land immediately on the live frontline killboard feed with zero clicks, zero popups, and zero account creation prompts.
+  - **Zero-Gate War Room Operational Briefing Hub (`loadPortalView`)**: Replaced SaaS-style "Create Free Account" and "Sign In to War Room" email/password/Google form cards with direct tactical action modules:
+    1. *Frontline Killboard Feed*: Immediate direct entry (`[⚔️ Enter Live Frontline Feed &rarr;]`).
+    2. *Character Dossier & Claim*: Direct character lookup and cryptographic token claim (`[⚔️ Select / Claim Character &rarr;]`).
+    3. *Active Operative Status*: When an operative is linked, displays combatant rank, class color, and one-click dossier inspection or character unlinking.
+  - **Clean Operative Session Lifecycle**: Updated `portalSignOut()` and `handleHeaderSignOut()` to cleanly flush character credentials and owner tokens while keeping the player on the live intelligence feed rather than redirecting to a login wall.
+  - **Dossier Tier Modal Modernization (`index.html`)**: Updated `#supporter-tier-modal` Tier 1 button to `Enter Live Combat Feed` and Tier 2 button to `Select / Claim Operative`, removing legacy "Create Free Account" and "Continue as Guest" labels.
+
 ## [1.4.44] - 2026-09-27
 
 ### Added

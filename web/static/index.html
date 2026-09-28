@@ -488,22 +488,22 @@
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet cross">✕</span>
-                  <span class="tier-text muted">Web viewing only (register free to track personal character stats).</span>
+                  <span class="tier-text muted">Web viewing only (link your character to customize your combat banner).</span>
                 </li>
               </ul>
               <div class="tier-card-action">
-                <button class="tier-cta-btn guest" onclick="closeAddonDossierModal(); portalEnterAsGuest();">
-                  <span>Continue as Guest &rarr;</span>
+                <button class="tier-cta-btn guest" onclick="closeAddonDossierModal(); switchTab('INTEL');">
+                  <span>Enter Live Combat Feed &rarr;</span>
                 </button>
               </div>
             </div>
 
-            <!-- Tier 2: Free Member (Personal Account) -->
+            <!-- Tier 2: Operative Claim (Personal Character Identity) -->
             <div class="dossier-tier-card free-tier">
               <div class="tier-card-header">
-                <span class="tier-badge free">TIER 2 // FREE MEMBER</span>
-                <div class="tier-name">Free Member</div>
-                <div class="tier-sub">Personal Character &amp; Combat Tracking</div>
+                <span class="tier-badge free">TIER 2 // OPERATIVE IDENTITY</span>
+                <div class="tier-name">Combatant Claim</div>
+                <div class="tier-sub">In-Game Character &amp; Combat Tracking</div>
               </div>
               <ul class="tier-features-list">
                 <li class="tier-item">
@@ -528,7 +528,7 @@
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Multi-Character Support:</strong> Track all your characters under one personal account.</span>
+                  <span class="tier-text"><strong>Multi-Character Support:</strong> Track all your characters and combat dossiers.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet star">★</span>
@@ -536,8 +536,8 @@
                 </li>
               </ul>
               <div class="tier-card-action">
-                <button class="tier-cta-btn free" onclick="closeAddonDossierModal(); switchTab('PORTAL'); portalSetAuthTab('register');">
-                  <span>Create Free Account &rarr;</span>
+                <button class="tier-cta-btn free" onclick="closeAddonDossierModal(); openCharacterLinkModal();">
+                  <span>Select / Claim Operative &rarr;</span>
                 </button>
               </div>
             </div>
