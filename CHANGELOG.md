@@ -5,6 +5,26 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.47] - 2026-09-27
+
+### Added
+- **Website-Parity In-Game Champions Dashboard (`UI.lua`)**:
+  - Re-architected the in-game Leaderboard tab to faithfully mimic the web platform's Champions layout.
+  - **Operative Benchmark Comparison Banner**: Features dedicated benchmark card at the top displaying the player's callsign, class crest, live Rank, Kills, Solo Kills, Delta vs #1 (`★ #1 Apex Leader` or `-X Kills`), and Percentile (`Top 0.1% (99.9th)`).
+  - **Full Table Column Structure**: Clean 7-column tabular layout matching the website: `RANK`, `COMBATANT`, `GUILD`, `FACTION`, `KILLS`, `SOLO KILLS`, `PERCENTILE`.
+  - **In-Game Save & Sync Button**: Added `[⚡ Sync Kills]` header action button adjacent to Combat Alerts, allowing players to flush memory to `SavedVariables` on disk and instantly trigger `WoWKillboardSync.exe`.
+
+### Changed
+- **Hall of Legends Renamed to Champions (Web & Addon)**:
+  - Updated web navigation rail button and mobile drawer from "Hall of Legends" to "Champions".
+  - Updated section title header and error states in `app.js` to "Champions".
+  - Renamed in-game addon tab from "Hall of Legends" to "Champions".
+- **4-Way Mode Filter Toggle on Web Champions View (`app.js`)**:
+  - Replaced static `Open World PvP` pill with reactive 4-way filter pills: `World`, `BGs`, `Duels`, and `Arenas` (disabled/greyed out for Classic flavors).
+  - Seamlessly reloads rankings and benchmark statistics via `/api/leaderboard?mode=...` and `/api/guilds?mode=...`.
+- **Lexer Precision in Test Validation (`validate_lua.py`)**:
+  - Upgraded Lua comment lexing to tokenize strings and comments simultaneously, preventing false-positive paren mismatches on format strings containing hyphens.
+
 ## [1.4.46] - 2026-09-27
 
 ### Fixed

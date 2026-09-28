@@ -822,7 +822,7 @@ async function loadLeaderboards() {
       container.innerHTML = `
         <div style="background: linear-gradient(180deg, #1e1313 0%, #0a0505 100%); border: 1px solid #7f1d1d; border-radius: 8px; padding: 32px 24px; text-align: center; max-width: 640px; margin: 40px auto;">
           <div style="font-size: 2rem; margin-bottom: 12px;">⚔️</div>
-          <h2 style="color: #ef4444; font-family: var(--font-cinzel, Cinzel, serif); font-size: 1.25rem; margin-bottom: 8px;">Hall of Legends Offline</h2>
+          <h2 style="color: #ef4444; font-family: var(--font-cinzel, Cinzel, serif); font-size: 1.25rem; margin-bottom: 8px;">Champions Offline</h2>
           <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.6; margin-bottom: 16px;">
             The server was unable to retrieve combat records (${escapeHtml(err.message)}). If you are viewing on Render Cloud, click <strong>Manual Deploy &rarr; Deploy latest commit</strong> in your Render dashboard to complete database initialization, or view your local war room at <a href="http://localhost:8080" style="color: var(--wow-gold, #c69b3a); text-decoration: underline;">http://localhost:8080</a>.
           </p>
@@ -1324,11 +1324,11 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
   let html = `
     <div style="display: flex; flex-direction: column; gap: 16px;">
-      <!-- Hall of Legends Header Row with Type Toggle and Mode Pills -->
+      <!-- Champions Header Row with Type Toggle and Mode Pills -->
       <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); margin-bottom:4px;">
         <div>
           <h2 class="wow-gold-header" style="font-size: 1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
-            Hall of Legends
+            Champions
           </h2>
           <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">
             ${isGuilds ? 'Premier guild war standings, total kills, and combat effectiveness across Azeroth.' : 'Most lethal combatants, rank efficiency, and certified executions across Azeroth.'}
@@ -1342,10 +1342,12 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             <button class="pill-btn ${isGuilds ? 'active' : ''}" onclick="setLegendsTabType('GUILDS')">Guild Ranks</button>
           </div>
 
-          <div style="display:flex; align-items:center;">
-            <span style="font-size:0.75rem; color:#10b981; font-weight:700; background:rgba(16,185,129,0.12); padding:4px 10px; border-radius:4px; border:1px solid rgba(16,185,129,0.25); letter-spacing:0.3px;">
-              Open World PvP
-            </span>
+          <!-- Mode Toggle: World / BGs / Duels / Arenas (greyed out) -->
+          <div class="filter-pills" id="champions-mode-pills" style="display:flex; align-items:center; gap:4px;">
+            <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
+            <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
+            <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
+            <button class="pill-btn disabled" style="opacity:0.4; cursor:not-allowed;" title="Arenas unavailable in Classic Era and WoW Forever" onclick="alert('Arenas are unavailable in Classic Era and WoW Forever. Switch the flavor in the top bar to TBC, WotLK, or Retail to enable Arena ladders.')">Arenas</button>
           </div>
         </div>
       </div>
