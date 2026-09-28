@@ -26,6 +26,7 @@ CT.SessionStats = {
     damageDone = 0,
     healingDone = 0,
     kills = 0,
+    assists = 0,
     deaths = 0,
 }
 
@@ -105,15 +106,90 @@ function CT:GetCombatContext()
     }
 end
 
--- Get Friendly Group Size
+-- Get Friendly Group Size (Cross-Client Guardrail 2 Compliant)
 function CT:GetFriendlyPartySize()
-    if IsInRaid() then
-        return GetNumGroupMembers() or 1
-    elseif IsInGroup() then
-        return (GetNumGroupMembers() or 0)
+    if IsInRaid and IsInRaid() then
+        return (GetNumGroupMembers and GetNumGroupMembers()) or (GetNumRaidMembers and GetNumRaidMembers()) or 1
+    elseif (IsInGroup and IsInGroup()) or (GetNumPartyMembers and GetNumPartyMembers() > 0) then
+        return (GetNumGroupMembers and GetNumGroupMembers()) or ((GetNumPartyMembers and GetNumPartyMembers() or 0) + 1)
     else
         return 1  -- Solo
     end
+end
+
+-- Retrieve all friendly party or raid members with their combatant metadata (Cross-Client Guardrail 2 Compliant)
+function CT:GetPartyMembersList()
+    local list = {}
+    local pGUID = UnitGUID("player")
+    local pName = UnitName("player")
+    local _, pClass = UnitClass("player")
+    local pLvl = UnitLevel("player") or 0
+    local pGuild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
+    local pFaction = UnitFactionGroup("player") or "Unknown"
+
+    table.insert(list, {
+        guid = pGUID or "PLAYER",
+        name = pName or "Player",
+        class = pClass or "UNKNOWN",
+        level = pLvl,
+        guild = pGuild,
+        faction = pFaction,
+        isPlayer = true,
+        unit = "player",
+    })
+
+    if IsInRaid and IsInRaid() then
+        local num = (GetNumGroupMembers and GetNumGroupMembers()) or (GetNumRaidMembers and GetNumRaidMembers()) or 0
+        for i = 1, num do
+            local unit = "raid" .. i
+            if UnitExists(unit) and not UnitIsUnit(unit, "player") then
+                local uGUID = UnitGUID(unit)
+                local uName = UnitName(unit)
+                local _, uClass = UnitClass(unit)
+                local uLvl = UnitLevel(unit) or 0
+                local uGuild = (not InCombatLockdown() and GetGuildInfo(unit)) or "None"
+                local uFaction = UnitFactionGroup(unit) or pFaction
+                if uName and uName ~= "" then
+                    table.insert(list, {
+                        guid = uGUID or ("RAID_" .. i),
+                        name = uName,
+                        class = uClass or "UNKNOWN",
+                        level = uLvl,
+                        guild = uGuild,
+                        faction = uFaction,
+                        isPlayer = true,
+                        unit = unit,
+                    })
+                end
+            end
+        end
+    elseif (IsInGroup and IsInGroup()) or (GetNumPartyMembers and GetNumPartyMembers() > 0) then
+        for i = 1, 4 do
+            local unit = "party" .. i
+            if UnitExists(unit) then
+                local uGUID = UnitGUID(unit)
+                local uName = UnitName(unit)
+                local _, uClass = UnitClass(unit)
+                local uLvl = UnitLevel(unit) or 0
+                local uGuild = (not InCombatLockdown() and GetGuildInfo(unit)) or "None"
+                local uFaction = UnitFactionGroup(unit) or pFaction
+                if uName and uName ~= "" then
+                    table.insert(list, {
+                        guid = uGUID or ("PARTY_" .. i),
+                        name = uName,
+                        class = uClass or "UNKNOWN",
+                        level = uLvl,
+                        guild = uGuild,
+                        faction = uFaction,
+                        isPlayer = true,
+                        unit = unit,
+                    })
+                end
+            end
+        end
+    end
+
+    return list
 end
 
 -- Clean old combat interactions older than combat window
@@ -697,6 +773,26 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         end
     end
 
+    -- Pull in active party/raid members so group engagements track all squad members
+    local partyMembers = CT:GetPartyMembersList()
+    for _, m in ipairs(partyMembers) do
+        if m.guid and not recordedAttackersMap[m.guid] and not recordedAttackersMap[m.name] then
+            table.insert(attackersList, {
+                guid = m.guid,
+                name = m.name,
+                damage = 0,
+                spell = "Squad Assist",
+                class = m.class or "UNKNOWN",
+                level = m.level or 0,
+                guild = m.guild or "None",
+                faction = m.faction or (UnitFactionGroup("player") or "Unknown"),
+                isPlayer = true,
+            })
+            recordedAttackersMap[m.guid] = true
+            recordedAttackersMap[m.name] = true
+        end
+    end
+
     -- Strict 100% Certified Solo Kill Criteria:
     -- 1. Attacker list contains ONLY 1 player
     -- 2. Zero other friendly players debuffed, slowed, stunned or assisted against victim within 30s
@@ -800,8 +896,10 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         killerInfo.class = pClass
         local pFaction = UnitFactionGroup("player")
         killerInfo.faction = pFaction
-        local pGuild = GetGuildInfo("player")
+        local pGuild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
         killerInfo.guild = pGuild or "None"
+    elseif inGroup or (playerDamage and playerDamage > 0) then
+        CT.SessionStats.assists = (CT.SessionStats.assists or 0) + 1
     end
 
     -- Trigger Death Bounty Opportunity if player was killed by an enemy player in the open world
@@ -1024,12 +1122,13 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         victimInfo.guid = victimGUID
     end
 
-    local partySize = CT:GetFriendlyPartySize()
+    local partyMembers = CT:GetPartyMembersList()
+    local partySize = math.max(CT:GetFriendlyPartySize(), #partyMembers)
     local playerGUID = UnitGUID("player")
     local playerName = UnitName("player")
     local _, pClass = UnitClass("player")
     local pFaction = UnitFactionGroup("player")
-    local pGuild = GetGuildInfo("player")
+    local pGuild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
 
     CT:PruneCombatInteractions()
 
@@ -1124,6 +1223,25 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             faction = pFaction or "Unknown",
             isPlayer = true,
         })
+    end
+
+    -- Pull in all active party/raid members so group encounters accurately track squad participants
+    for _, m in ipairs(partyMembers) do
+        if m.guid and not recordedAttackersMap[m.guid] and not recordedAttackersMap[m.name] then
+            table.insert(attackersList, {
+                guid = m.guid,
+                name = m.name,
+                damage = 0,
+                spell = "Squad Assist",
+                class = m.class or "UNKNOWN",
+                level = m.level or 0,
+                guild = m.guild or "None",
+                faction = m.faction or pFaction or "Unknown",
+                isPlayer = true,
+            })
+            recordedAttackersMap[m.guid] = true
+            recordedAttackersMap[m.name] = true
+        end
     end
 
     -- Append friendly cluster participants who assisted recently
@@ -1240,7 +1358,26 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         attackersCount = 2
     end
 
-    -- Determine true killer: if player dealt 0 damage and an ally dealt damage, attribute kill to the ally
+    -- Check if any party teammate was in the squad
+    local partyTeammate = nil
+    if partyMembers and #partyMembers > 1 then
+        for _, m in ipairs(partyMembers) do
+            if m.guid ~= playerGUID and m.name ~= playerName then
+                partyTeammate = m
+                break
+            end
+        end
+    end
+
+    -- Bystander Protection (Scott Quick directive):
+    -- If the player dealt 0 damage, is not in a party (#partyMembers <= 1), and no recorded attacker belongs to the player:
+    -- The player is a passive bystander receiving an honor tick from a distant stranger's kill.
+    -- Discard the kill so we never record a dummy "Allied Vanguard" phantom killmail!
+    if not hasPlayerDamage and (not partyTeammate) and (not topPlayerAttacker or (topPlayerAttacker.damage or 0) <= 0) and (#clusterAssists == 0) then
+        return
+    end
+
+    -- Determine true killer:
     local killerData = nil
     if hasPlayerDamage and (not topPlayerAttacker or topPlayerAttacker.guid == playerGUID) then
         killerData = {
@@ -1264,6 +1401,19 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             faction = topPlayerAttacker.faction or (pFaction or "Unknown"),
             partySize = attackersCount,
             damageDone = topPlayerAttacker.damage,
+            healingDone = 0,
+        }
+    elseif partyTeammate then
+        -- Player was in a party and assisted: attribute kill to their party teammate!
+        killerData = {
+            guid = partyTeammate.guid,
+            name = partyTeammate.name,
+            level = partyTeammate.level or 0,
+            class = partyTeammate.class or "UNKNOWN",
+            guild = partyTeammate.guild or "None",
+            faction = partyTeammate.faction or (pFaction or "Unknown"),
+            partySize = attackersCount,
+            damageDone = totalDamage,
             healingDone = 0,
         }
     elseif #clusterAssists > 0 then
@@ -1294,19 +1444,6 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             damageDone = totalDamage,
             healingDone = 0,
         }
-    elseif not hasPlayerDamage then
-        -- Player dealt 0 damage: player was an assist/bystander who received honor credit from nearby faction kill
-        killerData = {
-            guid = "ALLIED_VANGUARD",
-            name = "Allied Vanguard",
-            level = UnitLevel("player") or 0,
-            class = "UNKNOWN",
-            guild = "None",
-            faction = pFaction or "Unknown",
-            partySize = attackersCount,
-            damageDone = totalDamage,
-            healingDone = 0,
-        }
     else
         killerData = {
             guid = playerGUID or "PLAYER",
@@ -1323,6 +1460,8 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
 
     if killerData.guid == playerGUID then
         CT.SessionStats.kills = CT.SessionStats.kills + 1
+    else
+        CT.SessionStats.assists = (CT.SessionStats.assists or 0) + 1
     end
 
     local context = CT:GetCombatContext()

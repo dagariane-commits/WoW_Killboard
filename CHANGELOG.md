@@ -5,6 +5,33 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.48] - 2026-09-28
+
+### Added
+- **Full Party Squad Telemetry & Kill/Assist Attribution (`CombatTracker.lua`)**:
+  - Implemented `CT:GetPartyMembersList()` querying all active party and raid members (`"player"`, `"party1"`-`"party4"`, `"raid1"`-`"raidN"`) across all 4 WoW client flavors.
+  - Automatically incorporates all squad members into the `attackersList` Assault Force breakdown with their real names, classes, levels, and guild tags.
+  - Accurately attributes Victorious Combatant to the party teammate who scored the killing blow / top damage when the player acts in support, incrementing `CT.SessionStats.assists` for the assisting player.
+
+### Fixed
+- **Gurubashi Arena Subzone Fallback Bug (`watcher.py`, `server.py`, `app.js`)**:
+  - Fixed logic in `watcher.py` where empty subzones in open wilderness fell back to `"Gurubashi Arena"` via Python `or`, causing Arathi Highlands kills to display as `Arathi Highlands (Gurubashi Arena)`.
+  - Added frontend and ingestion sanitization preventing non-Stranglethorn zones from inheriting Gurubashi Arena subzones.
+  - Cleaned all existing bogus subzone records in SQLite.
+- **Allied Vanguard Elimination & Bystander Honor Gating (`CombatTracker.lua`, `server.py`)**:
+  - Eliminated dummy `"Allied Vanguard"` placeholder records entirely.
+  - Implemented Scott Quick's bystander protection: solo players who dealt 0 damage, healed 0 attackers, and were not in a party discard passive bystander honor ticks without creating phantom killmails.
+  - Added fallback promotion in `server.py` ensuring incoming or legacy kills with "Allied Vanguard" automatically promote the highest-damage real player attacker.
+
+### Changed
+- **Killmail Intelligence Dossier Visual Overhaul (`app.js`, `index.html`, `style.css`)**:
+  - Expanded modal container to 820px (`modal-card-lg kill-dossier-card`) completely eliminating awkward text wrapping on combatant names.
+  - Added authentic WoW Gold Cinzel header with crossed swords crest.
+  - High-contrast glowing Victorious Combatant (Emerald) and Slain Combatant (Crimson) cards with large 52px class crests and role badges.
+  - Integrated SVG Combat Role icons: Tank (Shield), Healer (Medical Cross), and DPS (Crossed Swords).
+  - Explicit badge differentiation in Assault Force: `★ FINAL BLOW` (Crimson/Gold) vs `🛡️ SQUAD ASSIST` (Sapphire/Emerald).
+  - Refined two-box tactical readout at bottom with radar map pins and clean coordinates.
+
 ## [1.4.47] - 2026-09-27
 
 ### Added
