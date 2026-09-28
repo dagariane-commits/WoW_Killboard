@@ -845,10 +845,26 @@ def ingest_kill_data(data, conn):
         is_solo = 0
     if not is_duel and k_damage <= 0:
         is_solo = 0
-    if k.get("name") == "Allied Vanguard":
+    if k.get("name") in ("Allied Vanguard", "Unknown", ""):
         is_solo = 0
+        if isinstance(attackers, list):
+            for att in attackers:
+                att_name = att.get("name")
+                if att_name and att_name not in ("Allied Vanguard", "Unknown", ""):
+                    k["name"] = att_name
+                    if att.get("class"): k["class"] = att.get("class")
+                    if att.get("level"): k["level"] = att.get("level")
+                    if att.get("guild"): k["guild"] = att.get("guild")
+                    if att.get("faction"): k["faction"] = att.get("faction")
+                    break
+
     v = data.get("victim", {})
     loc = data.get("location", {})
+    loc_zone = loc.get("zone", "Unknown")
+    loc_subzone = loc.get("subZone", "")
+    if loc_subzone == "Gurubashi Arena" and "stranglethorn" not in loc_zone.lower():
+        loc_subzone = ""
+
     k_spec = resolve_character_spec(k.get("class", "WARRIOR"), k.get("spec"))
     v_spec = resolve_character_spec(v.get("class", "ROGUE"), v.get("spec"))
 
@@ -881,7 +897,7 @@ def ingest_kill_data(data, conn):
         k.get("name", "Unknown"), k_level, k.get("class", "WARRIOR"), k.get("guild", "None"), k.get("faction", "Alliance"),
         k.get("partySize", 1), k.get("damageDone", 0), k.get("healingDone", 0),
         v.get("name", "Unknown"), v_level, v.get("class", "ROGUE"), v.get("guild", "None"), v.get("faction", "Horde"),
-        v.get("partySize", 1), loc.get("mapId", 0), loc.get("zone", "Unknown"), loc.get("subZone", ""),
+        v.get("partySize", 1), loc.get("mapId", 0), loc_zone, loc_subzone,
         loc.get("x", 0.0), loc.get("y", 0.0), k_spec, v_spec, json.dumps(data)
     ))
 

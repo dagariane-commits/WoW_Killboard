@@ -333,8 +333,8 @@ class KillboardWatcher:
             },
             "location": {
                 "mapId": loc_data.get("mapId") or data.get("mapId") or 0,
-                "zone": loc_data.get("zone") or data.get("zone") or "Stranglethorn Vale",
-                "subZone": loc_data.get("subZone") or data.get("subZone") or "Gurubashi Arena",
+                "zone": loc_data.get("zone") or data.get("zone") or "Unknown Zone",
+                "subZone": loc_data.get("subZone") if loc_data.get("subZone") is not None else (data.get("subZone") or ""),
                 "x": loc_data.get("x") if loc_data.get("x") is not None else data.get("x", 50.0),
                 "y": loc_data.get("y") if loc_data.get("y") is not None else data.get("y", 50.0),
             }

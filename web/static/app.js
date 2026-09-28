@@ -1937,6 +1937,26 @@ function renderBountiesView(bounties, debts, leaderboards) {
   container.innerHTML = html;
 }
 
+// Combat Role Inference Helper
+function inferCombatRole(cls, specName, spellName) {
+  cls = (cls || "").toUpperCase();
+  const spec = (specName || "").toLowerCase();
+  const spell = (spellName || "").toLowerCase();
+  if (spec.includes("protect") || spec.includes("blood") || spec.includes("guardian") || spec.includes("brewmaster") || spec.includes("vengeance")) return "tank";
+  if (spec.includes("holy") || spec.includes("restor") || spec.includes("discipline") || spec.includes("mistweaver") || spec.includes("preservation") || spell.includes("heal") || spell.includes("flash") || spell.includes("rejuvenat")) return "heal";
+  return "dps";
+}
+
+function renderRoleBadge(role) {
+  if (role === "tank") {
+    return `<span class="combat-role-pill tank" title="Role: Tank"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Tank</span></span>`;
+  }
+  if (role === "heal") {
+    return `<span class="combat-role-pill heal" title="Role: Healer"><svg width="12" height="12" viewBox="0 0 24 24" fill="#10b981" stroke="none"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z"/></svg><span>Heal</span></span>`;
+  }
+  return `<span class="combat-role-pill dps" title="Role: DPS"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="4"/><line x1="14" y1="4" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="10" y1="20" x2="4" y2="20"/><line x1="4" y1="14" x2="4" y2="20"/></svg><span>DPS</span></span>`;
+}
+
 // Modal Handlers
 function openKillModal(killId) {
   const km = cachedKills.find(k => k.killId === killId);
@@ -1962,6 +1982,7 @@ function openKillModal(killId) {
     if (kAtt && kAtt.spell) killerSpell = kAtt.spell;
   }
   const killerSpec = inferSpec(km.killer.class, killerSpell);
+  const killerRole = inferCombatRole(km.killer.class, killerSpec.name, killerSpell);
   const killerSpecBadge = renderSpecBadge(killerSpec.id, killerSpec.name, 22);
 
   // If no attackers list recorded in older kills, synthesize sole attacker
@@ -1997,19 +2018,31 @@ function openKillModal(killId) {
   } else if (km.isDuel) {
     soloBanner = `
       <div class="battle-report-duel-banner">
-        <span>CERTIFIED 1v1 FORMAL DUEL</span>
+        <span>⚔️ CERTIFIED 1v1 FORMAL DUEL</span>
         <span style="font-size:0.75rem; color:#fde68a; font-weight:600;">Sanctioned Honor Duel Won</span>
       </div>
     `;
   }
 
+  // Sanitize subzone to purge legacy fallbacks (e.g. Gurubashi Arena in Arathi Highlands)
+  let zoneName = (km.location && km.location.zone) ? km.location.zone : "Wilderness";
+  let subZoneName = (km.location && km.location.subZone) ? km.location.subZone : "";
+  if (subZoneName === "Gurubashi Arena" && !zoneName.toLowerCase().includes("stranglethorn")) {
+    subZoneName = "";
+  }
+  if (subZoneName.toLowerCase() === zoneName.toLowerCase()) {
+    subZoneName = "";
+  }
+  const locationDisplay = subZoneName ? `${zoneName} (${subZoneName})` : zoneName;
+
   body.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e293b; padding-bottom:8px;">
+    <!-- Top Metadata Header -->
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e293b; padding-bottom:10px;">
       <div style="display:flex; align-items:center; gap:8px;">
-        <span style="font-weight:800; color:var(--accent-gold); font-size:1.05rem;">BATTLE REPORT</span>
-        <span style="font-size:0.75rem; color:#94a3b8;">${km.killId}</span>
+        <span style="font-weight:800; color:var(--accent-gold); font-size:1.1rem; letter-spacing:0.5px;">BATTLE REPORT</span>
+        <span style="font-size:0.75rem; color:#94a3b8; font-family:monospace; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">${km.killId}</span>
       </div>
-      <div style="display:flex; align-items:center; gap:8px;">
+      <div style="display:flex; align-items:center; gap:10px;">
         ${modeBadge}
         <span style="font-size:0.75rem; color:#94a3b8;">${new Date(km.timestamp * 1000).toLocaleString()}</span>
       </div>
@@ -2017,66 +2050,68 @@ function openKillModal(killId) {
 
     ${soloBanner}
 
-    <!-- Primary Encounter Cards -->
-    <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px; background:#07090e; padding:18px; border-radius:8px; border:1px solid #1e293b;">
+    <!-- Primary Combatant Faceoff Cards -->
+    <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:stretch; gap:16px;">
       <!-- Killer Column -->
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div style="position:relative;">
-          ${renderClassBadge(km.killer.class, 44)}
-          <span style="position:absolute; bottom:-4px; right:-4px;">${killerSpecBadge}</span>
+      <div class="battle-report-combatant-card victorious" style="display:flex; align-items:center; gap:14px;">
+        <div style="position:relative; flex-shrink:0;">
+          ${renderClassBadge(km.killer.class, 52)}
+          <span style="position:absolute; bottom:-6px; right:-6px;">${killerSpecBadge}</span>
         </div>
-        <div>
-          <div style="font-size:0.7rem; color:#10b981; font-weight:800; letter-spacing:0.5px;">VICTORIOUS COMBATANT</div>
-          <div style="font-size:1.25rem; font-weight:800;">
+        <div style="min-width:0; flex:1;">
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+            <span style="font-size:0.68rem; color:#10b981; font-weight:800; letter-spacing:0.5px;">VICTORIOUS COMBATANT</span>
+            ${renderRoleBadge(killerRole)}
+          </div>
+          <div style="font-size:1.35rem; font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:var(--font-cinzel, Cinzel, serif);">
             <span class="clickable-player" onclick="openCharacterProfile('${km.killer.name}')">${colorizeClass(km.killer.name, km.killer.class)}</span>
           </div>
-          <div style="font-size:0.8rem; color:#94a3b8;">
+          <div style="font-size:0.8rem; color:#e2e8f0; margin-top:2px;">
             Level ${km.killer.level && km.killer.level > 0 ? km.killer.level : '??'} ${killerSpec.name} ${km.killer.class}
           </div>
           <div style="font-size:0.75rem; color:#64748b;">${killerGuild}</div>
-          <div style="font-size:0.72rem; color:${km.killer.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700; margin-top:2px;">
-            ${km.killer.faction || 'Neutral'} &bull; Party Size: ${km.killer.partySize}
+          <div style="font-size:0.72rem; color:${km.killer.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700; margin-top:4px;">
+            ${km.killer.faction || 'Neutral'} &bull; Strike Team: ${km.killer.partySize || 1}
           </div>
         </div>
       </div>
 
       <!-- Center VS Divider -->
-      <div style="text-align:center;">
-        <div style="font-size:1.8rem; font-weight:900; color:#ef4444; text-shadow:0 0 10px rgba(239,68,68,0.4);">VS</div>
-        <span style="font-size:0.7rem; color:#94a3b8;">FATAL ENGAGEMENT</span>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 8px;">
+        <div style="font-size:2rem; font-weight:900; color:#ef4444; font-family:var(--font-cinzel, Cinzel, serif); text-shadow:0 0 14px rgba(239,68,68,0.5);">VS</div>
+        <span style="font-size:0.65rem; color:#94a3b8; letter-spacing:1px; font-weight:700; text-transform:uppercase;">Fatal Clash</span>
       </div>
 
       <!-- Victim Column -->
-      <div style="display:flex; align-items:center; gap:12px; justify-content:flex-end; text-align:right;">
-        <div>
-          <div style="font-size:0.7rem; color:#ef4444; font-weight:800; letter-spacing:0.5px;">SLAIN COMBATANT</div>
-          <div style="font-size:1.25rem; font-weight:800;">
+      <div class="battle-report-combatant-card slain" style="display:flex; align-items:center; gap:14px; justify-content:flex-end; text-align:right;">
+        <div style="min-width:0; flex:1;">
+          <div style="font-size:0.68rem; color:#ef4444; font-weight:800; letter-spacing:0.5px; margin-bottom:2px;">SLAIN COMBATANT</div>
+          <div style="font-size:1.35rem; font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:var(--font-cinzel, Cinzel, serif);">
             <span class="clickable-player" onclick="openCharacterProfile('${km.victim.name}')">${colorizeClass(km.victim.name, km.victim.class)}</span>
           </div>
-          <div style="font-size:0.8rem; color:#94a3b8;">
+          <div style="font-size:0.8rem; color:#e2e8f0; margin-top:2px;">
             Level ${km.victim.level && km.victim.level > 0 ? km.victim.level : '??'} ${km.victim.class}
           </div>
           <div style="font-size:0.75rem; color:#64748b;">${victimGuild}</div>
-          <div style="font-size:0.72rem; color:${km.victim.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700; margin-top:2px;">
-            ${km.victim.faction || 'Neutral'} &bull; Hostile Gang: ${km.victim.partySize}
+          <div style="font-size:0.72rem; color:${km.victim.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700; margin-top:4px;">
+            ${km.victim.faction || 'Neutral'} &bull; Hostile Squad: ${km.victim.partySize || 1}
           </div>
         </div>
-        <div>
-          ${renderClassBadge(km.victim.class, 44)}
+        <div style="position:relative; flex-shrink:0;">
+          ${renderClassBadge(km.victim.class, 52)}
         </div>
       </div>
     </div>
 
-    <!-- Attacking Party Telemetry & Breakdown -->
+    <!-- Attacking Squad Telemetry & Breakdown -->
     <div style="background:#0a0d14; border:1px solid #1e293b; border-radius:8px; padding:14px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
-        <div style="display:flex; align-items:center; gap:6px;">
-
-          <span style="color:var(--accent-gold); font-size:0.85rem; font-weight:800; letter-spacing:0.5px;">
-            ASSAULT FORCE &amp; SPEC TELEMETRY (${attackersList.length} Attacker${attackersList.length > 1 ? 's' : ''})
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="color:var(--accent-gold); font-size:0.9rem; font-weight:800; letter-spacing:0.5px;">
+            ASSAULT FORCE &amp; SQUAD ROSTER (${attackersList.length} Combatant${attackersList.length > 1 ? 's' : ''})
           </span>
         </div>
-        <span style="font-size:0.72rem; color:#94a3b8;">
+        <span style="font-size:0.75rem; color:#94a3b8;">
           Total Encounter Damage: <strong style="color:#f59e0b;">${formatNumber(totalAttackerDmg)}</strong>
         </span>
       </div>
@@ -2088,23 +2123,25 @@ function openKillModal(killId) {
           const attCls = att.class || "WARRIOR";
           const attSpell = att.spell || "Combat Strike";
           const attSpec = inferSpec(attCls, attSpell);
+          const attRole = inferCombatRole(attCls, attSpec.name, attSpell);
           const specBadge = renderSpecBadge(attSpec.id, attSpec.name, 20);
-          const clsBadge = renderClassBadge(attCls, 20);
+          const clsBadge = renderClassBadge(attCls, 22);
           const isKiller = (att.name === km.killer.name) || att.isFinalBlow;
           const attGuild = (att.guild && att.guild !== 'None') ? `&lt;${att.guild}&gt;` : '';
 
           return `
             <div class="battle-report-attacker-row">
               <div class="attacker-identity">
-                <div style="display:flex; align-items:center; gap:4px;">
+                <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
                   ${clsBadge}
                   ${specBadge}
                 </div>
-                <div style="display:flex; flex-direction:column; line-height:1.2;">
-                  <div style="display:flex; align-items:center; gap:6px;">
-                    <span class="clickable-player" onclick="openCharacterProfile('${att.name}')">${colorizeClass(att.name, attCls)}</span>
+                <div style="display:flex; flex-direction:column; line-height:1.2; min-width:0;">
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span class="clickable-player" style="font-weight:700;" onclick="openCharacterProfile('${att.name}')">${colorizeClass(att.name, attCls)}</span>
                     <span class="attacker-spec-tag">[${attSpec.name}]</span>
-                    ${isKiller ? '<span class="final-blow-badge">★ FINAL BLOW</span>' : ''}
+                    ${renderRoleBadge(attRole)}
+                    ${isKiller ? '<span class="final-blow-badge">★ FINAL BLOW</span>' : '<span class="squad-assist-badge">🛡️ SQUAD ASSIST</span>'}
                   </div>
                   <span style="font-size:0.68rem; color:#64748b;">${attGuild}</span>
                 </div>
@@ -2132,15 +2169,21 @@ function openKillModal(killId) {
 
     <!-- Location & Metadata Grid -->
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.85rem;">
-      <div style="background:#0e121a; padding:12px; border-radius:6px; border:1px solid #242b3d;">
-        <strong style="color:var(--accent-gold);">Engagement Telemetry</strong>
-        <div style="color:#cbd5e1; margin-top:4px;">${km.isDuel ? 'Sanctioned 1v1 Duel' : (km.isArena ? 'Ranked Arena Match' : (km.isBattleground ? `Battleground [${km.battlegroundName || 'BG'}]` : 'Open World PvP Encounter'))}</div>
-        <div style="color:#94a3b8; font-size:0.75rem; margin-top:2px;">Attacking Unit Count: <span style="color:#fff;">${km.attackersCount}</span> &bull; Hostile Unit Count: <span style="color:#fff;">${km.victim.partySize || 1}</span></div>
+      <div style="background:#0e121a; padding:12px 14px; border-radius:6px; border:1px solid #242b3d;">
+        <strong style="color:var(--accent-gold); display:flex; align-items:center; gap:6px;">
+          <span>🎯</span>
+          <span>Engagement Telemetry</span>
+        </strong>
+        <div style="color:#cbd5e1; margin-top:6px; font-weight:600;">${km.isDuel ? 'Sanctioned 1v1 Duel' : (km.isArena ? 'Ranked Arena Match' : (km.isBattleground ? `Battleground [${km.battlegroundName || 'BG'}]` : 'Open World PvP Encounter'))}</div>
+        <div style="color:#94a3b8; font-size:0.75rem; margin-top:3px;">Attacking Squad: <span style="color:#fff; font-weight:700;">${km.attackersCount}</span> &bull; Hostile Squad: <span style="color:#fff; font-weight:700;">${km.victim.partySize || 1}</span></div>
       </div>
-      <div style="background:#0e121a; padding:12px; border-radius:6px; border:1px solid #242b3d;">
-        <strong style="color:var(--accent-gold);">Spatial Coordinates</strong>
-        <div style="color:#cbd5e1; margin-top:4px;">${km.location.zone} ${km.location.subZone ? `(${km.location.subZone})` : ''}</div>
-        <div style="color:#94a3b8; font-size:0.75rem; margin-top:2px;">GPS Map ID: <span style="color:#38bdf8;">${km.location.mapId}</span> &bull; Coords: <span style="color:#38bdf8;">${(km.location.x || 0).toFixed(1)}, ${(km.location.y || 0).toFixed(1)}</span></div>
+      <div style="background:#0e121a; padding:12px 14px; border-radius:6px; border:1px solid #242b3d;">
+        <strong style="color:var(--accent-gold); display:flex; align-items:center; gap:6px;">
+          <span>📍</span>
+          <span>Spatial Coordinates</span>
+        </strong>
+        <div style="color:#cbd5e1; margin-top:6px; font-weight:600;">${locationDisplay}</div>
+        <div style="color:#94a3b8; font-size:0.75rem; margin-top:3px;">GPS Map ID: <span style="color:#38bdf8; font-weight:700;">${(km.location && km.location.mapId) || 0}</span> &bull; Coords: <span style="color:#38bdf8; font-weight:700;">${((km.location && km.location.x) || 0).toFixed(1)}, ${((km.location && km.location.y) || 0).toFixed(1)}</span></div>
       </div>
     </div>
   `;
