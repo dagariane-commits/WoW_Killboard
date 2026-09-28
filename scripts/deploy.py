@@ -51,6 +51,9 @@ def rebuild_zip():
                 rel_path = os.path.relpath(full_path, ADDON_SRC)
                 z.write(full_path, os.path.join("WoWKillboard", rel_path))
     print(f"[BUILD] Rebuilt distribution package: {zip_path} ({os.path.getsize(zip_path)} bytes)")
+    static_zip = os.path.join(BASE_DIR, "web", "static", "WoWKillboard-v1.0.0.zip")
+    shutil.copy2(zip_path, static_zip)
+    print(f"[BUILD] Mirrored distribution package to web/static: {static_zip}")
 
 if __name__ == "__main__":
     print("=== Starting Multi-Client Deployment & Package Build ===")
