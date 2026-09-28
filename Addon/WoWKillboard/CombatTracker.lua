@@ -1008,35 +1008,6 @@ local function ExtractVictimFromHonorMsg(msg)
     return nil
 end
 
--- Helper to parse self damage and spell from combat chat messages (CLEU fallback)
-local function ParseSelfCombatMessage(msg)
-    if not msg or not KB.Utils.CanAccess(msg) or type(msg) ~= "string" then return nil end
-    local clean = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1")
-
-    -- 1. "You hit/crit <victim> for <amount> ..."
-    local victim, amount = clean:match("^You %a+ (.-) for (%d+)")
-    if victim and amount then
-        return KB.Utils.CleanCombatantName(victim), tonumber(amount), "Melee Swing"
-    end
-
-    -- 2. "Your <spell> hits/crits <victim> for <amount> ..."
-    local spell, v2, a2 = clean:match("^Your (.-) %a+ (.-) for (%d+)")
-    if spell and v2 and a2 then
-        return KB.Utils.CleanCombatantName(v2), tonumber(a2), spell
-    end
-
-    -- 3. "<victim> suffers <amount> ... from your <spell>."
-    local v3, a3, s3 = clean:match("^(.-) suffers (%d+) .* from your (.-)%.?$")
-    if not v3 then
-        v3, a3, s3 = clean:match("^(.-) suffers (%d+) from your (.-)%.?$")
-    end
-    if v3 and a3 and s3 then
-        return KB.Utils.CleanCombatantName(v3), tonumber(a3), s3
-    end
-
-    return nil
-end
-
 -- Process an honorable kill across all clients (CLEU, UnitEvents, Chat, HK counter)
 function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     local now = time()
@@ -2006,32 +1977,6 @@ frame:SetScript("OnEvent", function(self, event, ...)
             end
         end
 
-    elseif event == "CHAT_MSG_COMBAT_SELF_HITS" or event == "CHAT_MSG_SPELL_SELF_DAMAGE" or event == "CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE" then
-        local msg = ...
-        if msg and KB.Utils.CanAccess(msg) then
-            local vName, amount, spell = ParseSelfCombatMessage(msg)
-            if vName and amount and amount > 0 then
-                local pGUID = UnitGUID("player")
-                local pName = UnitName("player")
-                local normV = KB.Utils.NormalizeCombatantName(vName)
-                CT.SessionStats.damageDone = (CT.SessionStats.damageDone or 0) + amount
-                if normV and normV ~= "" then
-                    CT.RecentDamageByName[normV] = CT.RecentDamageByName[normV] or {}
-                    local entry = CT.RecentDamageByName[normV][pGUID] or {
-                        guid = pGUID,
-                        name = pName,
-                        totalDamage = 0,
-                        spellName = spell or "Combat",
-                        isPlayer = true,
-                        class = select(2, UnitClass("player")),
-                    }
-                    entry.totalDamage = entry.totalDamage + amount
-                    entry.spellName = spell or entry.spellName
-                    CT.RecentDamageByName[normV][pGUID] = entry
-                end
-            end
-        end
-
     elseif event == "PLAYER_TARGET_CHANGED" then
         if UnitExists("target") and UnitIsPlayer("target") then
             local isEnemy = UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or (not UnitIsFriend("player", "target"))
@@ -2182,7 +2127,4 @@ pcall(function()
         frame:RegisterEvent("UNIT_HEALTH")
     end
 end)
-frame:RegisterEvent("CHAT_MSG_COMBAT_SELF_HITS")
-frame:RegisterEvent("CHAT_MSG_SPELL_SELF_DAMAGE")
-frame:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
 
