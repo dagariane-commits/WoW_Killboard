@@ -6,43 +6,36 @@ def check_file(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
         content = f.read()
 
-    lines = content.splitlines()
-    clean_lines = []
-    in_block_comment = False
-    for line in lines:
-        if in_block_comment:
-            if "]]" in line:
-                in_block_comment = False
-                line = line.split("]]", 1)[1]
-            else:
-                clean_lines.append("")
-                continue
-        while "--[[" in line:
-            parts = line.split("--[[", 1)
-            if "]]" in parts[1]:
-                line = parts[0] + parts[1].split("]]", 1)[1]
-            else:
-                line = parts[0]
-                in_block_comment = True
-                break
-        if "--" in line:
-            line = line.split("--")[0]
-        clean_lines.append(line)
-
-    text = "\n".join(clean_lines)
-
     clean_tokens = []
     in_str = None
+    in_block_comment = False
     i = 0
-    while i < len(text):
-        c = text[i]
+    while i < len(content):
+        c = content[i]
+        if in_block_comment:
+            if content[i:i+2] == "]]":
+                in_block_comment = False
+                i += 2
+                continue
+            i += 1
+            continue
         if in_str:
-            if c == "\\" and i + 1 < len(text):
+            if c == "\\" and i + 1 < len(content):
                 i += 2
                 continue
             if c == in_str:
                 in_str = None
             i += 1
+            continue
+        if content[i:i+4] == "--[[":
+            in_block_comment = True
+            i += 4
+            continue
+        if content[i:i+2] == "--":
+            nl_pos = content.find("\n", i)
+            if nl_pos == -1:
+                break
+            i = nl_pos
             continue
         if c in ('"', "'"):
             in_str = c

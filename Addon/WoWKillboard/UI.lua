@@ -220,6 +220,10 @@ function UI:ApplyTheme()
         UI:ApplyButtonStyle(UI.ExportButton, theme)
         if theme.id == "classic" then UI.ExportButton:SetHeight(22) else UI.ExportButton:SetHeight(20) end
     end
+    if UI.SyncButton then
+        UI:ApplyButtonStyle(UI.SyncButton, theme)
+        if theme.id == "classic" then UI.SyncButton:SetHeight(22) else UI.SyncButton:SetHeight(20) end
+    end
     if UI.WireButton then
         UI:ApplyButtonStyle(UI.WireButton, theme)
         if theme.id == "classic" then UI.WireButton:SetHeight(22) else UI.WireButton:SetHeight(20) end
@@ -913,6 +917,41 @@ function UI:CreateMainWindow()
     end)
     UI.AlertsButton = alertsBtn
 
+    -- Template-Free Desktop Sync / Reload Button
+    local syncBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    syncBtn:SetSize(74, 20)
+    syncBtn:SetPoint("RIGHT", alertsBtn, "LEFT", -6, 0)
+    syncBtn:EnableMouse(true)
+    local syncLabel = syncBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    syncLabel:SetPoint("CENTER", 0, 0)
+    syncLabel:SetText("|cff10b981Sync Kills|r")
+    syncBtn.Label = syncLabel
+    syncBtn:SetScript("OnClick", function()
+        if InCombatLockdown and InCombatLockdown() then
+            SafePrint("|cffff9900[WoWKB]|r Cannot reload UI during combat.")
+            return
+        end
+        SafePrint("|cff00ccff[WoWKB]|r Flushing combat records to disk... Reloading UI to trigger desktop sync.")
+        ReloadUI()
+    end)
+    syncBtn:SetScript("OnEnter", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(0.1, 0.85, 0.4, 1.0)
+        end
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Save & Sync Kills|r", "Flushes all in-memory combat records to SavedVariables on disk.\n\nTriggers WoWKillboardSync.exe to immediately upload your kills to the live web killboard.\n\n(Performs a quick /reload)")
+    end)
+    syncBtn:SetScript("OnLeave", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
+        end
+        UI:HidePrivateTooltip()
+    end)
+    UI.SyncButton = syncBtn
+
     -- 3 KPI Stat Cards (Authentic Warcraft Attribute Plate Style - Clean Vertical Separation)
     local cardConfigs = {
         { id = "KD",    title = "SESSION COMBAT K/D",   color = "ffd100", w = 268 },
@@ -992,7 +1031,7 @@ function UI:CreateMainWindow()
     -- Navigation Bar (Tabs on Left, Filter Pills on Right - Zero Overlap)
     local tabs = {
         { id = "FEED",        text = "Intel",           w = 72 },
-        { id = "LEADERBOARD", text = "Hall of Legends", w = 118 },
+        { id = "LEADERBOARD", text = "Champions",       w = 96 },
         { id = "BOUNTIES",    text = "Marks of Spite",  w = 114 },
         { id = "RALLIES",     text = "Rallies",         w = 80 },
         { id = "ZONES",       text = "Zone Intel",      w = 86 },
@@ -1495,14 +1534,14 @@ function UI:RenderLiveFeed()
     UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
 end
 
--- 2. Render Leaderboard Tab (Hall of Legends)
+-- 2. Render Leaderboard Tab (Champions)
 function UI:RenderLeaderboard()
     local theme = UI:GetTheme()
 
     -- Top Section Header (Website style)
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("|cffffd100HALL OF LEGENDS|r")
+    title:SetText("|cffffd100CHAMPIONS|r")
     title:SetShadowOffset(1, -1)
     title:SetShadowColor(0, 0, 0, 1)
 
@@ -1512,9 +1551,9 @@ function UI:RenderLeaderboard()
     subtitle:SetShadowOffset(1, -1)
     subtitle:SetShadowColor(0, 0, 0, 1)
 
-    -- Sub-navigation Toggle Bar: [Player Ranks] | [Guild Ranks] (matching website image 2)
+    -- Sub-navigation Toggle Bar: [Player Ranks] | [Guild Ranks] (matching website)
     local btnPlayers = UI:CreateButton(UI.ContentFrame, 114, 22, "Player Ranks")
-    btnPlayers:SetPoint("TOPLEFT", 10, -46)
+    btnPlayers:SetPoint("TOPLEFT", 10, -44)
     btnPlayers.isActive = (hlSubTab == "PLAYERS")
     UI:ApplyButtonStyle(btnPlayers, theme)
     if btnPlayers.Label then
@@ -1537,20 +1576,155 @@ function UI:RenderLeaderboard()
         UI:Refresh()
     end)
 
-    local yOffset = -76
+    local yOffset = -72
 
     if hlSubTab == "PLAYERS" then
-        local topKillers = KB.Leaderboard:GetTopKillers(currentMode, 10)
+        local topKillers = KB.Leaderboard:GetTopKillers(currentMode, 15)
         local pName = UnitName("player")
         local pRank, pStats, totalPlayers = KB.Leaderboard:GetPlayerRankAndStats(pName, currentMode)
-        local playerInTop10 = (pRank and pRank <= 10)
+        local playerInTop15 = (pRank and pRank <= 15)
+        local myClass = select(2, UnitClass("player")) or "WARRIOR"
 
+        -- 1. Operative Benchmark Comparison Banner (Mimicking website layout)
+        local bmCard = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        bmCard:SetSize(820, 48)
+        bmCard:SetPoint("TOPLEFT", 0, yOffset)
+        bmCard:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        local isApex = (pRank == 1)
+        if isApex then
+            bmCard:SetBackdropColor(0.18, 0.13, 0.04, 0.95)
+            bmCard:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
+        else
+            bmCard:SetBackdropColor(0.04, 0.05, 0.08, 0.95)
+            bmCard:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.9)
+        end
+
+        -- Left side: Benchmark Title and Player Identity
+        local bmTitle = bmCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        bmTitle:SetPoint("TOPLEFT", 10, -6)
+        bmTitle:SetText("|cffffd100OPERATIVE BENCHMARK COMPARISON|r")
+        bmTitle:SetShadowOffset(1, -1)
+        bmTitle:SetShadowColor(0, 0, 0, 1)
+
+        local pIcon = UI:CreateClassIcon(bmCard, myClass, 20)
+        pIcon:SetPoint("BOTTOMLEFT", 10, 6)
+
+        local pNameText = bmCard:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        pNameText:SetPoint("LEFT", pIcon, "RIGHT", 6, 0)
+        pNameText:SetText(KB.Utils.ColorizeByClass(pName or "Player", myClass) .. " |cffffd100[YOU]|r")
+        pNameText:SetShadowOffset(1, -1)
+        pNameText:SetShadowColor(0, 0, 0, 1)
+
+        -- Metrics on Right: RANK | KILLS | SOLO | DELTA VS #1 | PERCENTILE
+        -- RANK
+        local lblRank = bmCard:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        lblRank:SetPoint("TOPLEFT", 290, -6)
+        lblRank:SetText("RANK")
+        local valRank = bmCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        valRank:SetPoint("BOTTOMLEFT", 290, 6)
+        valRank:SetText((pRank and pRank > 0) and string.format("|cffffd100#%d|r", pRank) or "|cff888888#-|r")
+
+        -- KILLS
+        local lblKills = bmCard:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        lblKills:SetPoint("TOPLEFT", 355, -6)
+        lblKills:SetText("KILLS")
+        local valKills = bmCard:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        valKills:SetPoint("BOTTOMLEFT", 355, 6)
+        valKills:SetText(string.format("|cff10b981%d|r", (pStats and pStats.kills) or 0))
+
+        -- SOLO
+        local lblSolo = bmCard:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        lblSolo:SetPoint("TOPLEFT", 420, -6)
+        lblSolo:SetText("SOLO")
+        local valSolo = bmCard:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        valSolo:SetPoint("BOTTOMLEFT", 420, 6)
+        valSolo:SetText(string.format("|cff00e5ff%d|r", (pStats and pStats.soloKills) or 0))
+
+        -- DELTA VS #1
+        local top1 = topKillers[1]
+        local top1Kills = (top1 and top1.kills) or 0
+        local lblDelta = bmCard:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        lblDelta:SetPoint("TOPLEFT", 485, -6)
+        lblDelta:SetText("DELTA VS #1")
+        local valDelta = bmCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        valDelta:SetPoint("BOTTOMLEFT", 485, 8)
+        if isApex then
+            valDelta:SetText("|cffffd100★ #1 Apex Leader|r")
+        elseif not pRank or pRank == 0 then
+            valDelta:SetText("|cff888888Unranked|r")
+        else
+            local diff = top1Kills - ((pStats and pStats.kills) or 0)
+            valDelta:SetText(string.format("|cffff5555-%d Kills|r", math.max(0, diff)))
+        end
+
+        -- PERCENTILE
+        local lblPct = bmCard:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        lblPct:SetPoint("TOPLEFT", 670, -6)
+        lblPct:SetText("PERCENTILE")
+        local valPct = bmCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        valPct:SetPoint("BOTTOMLEFT", 670, 8)
+        if isApex or (totalPlayers and totalPlayers <= 1 and (pStats and pStats.kills and pStats.kills > 0)) then
+            valPct:SetText("|cffff77bbTop 0.1% (99.9th)|r")
+        elseif not pRank or pRank == 0 then
+            valPct:SetText("|cff888888Top 100%|r")
+        else
+            local pct = ((pRank - 0.5) / math.max(1, totalPlayers)) * 100
+            if pct <= 0.5 then
+                valPct:SetText("|cffff77bbTop 0.1% (99.9th)|r")
+            elseif pct <= 1.0 then
+                valPct:SetText("|cffff77bbTop 1% (99th)|r")
+            elseif pct <= 5.0 then
+                valPct:SetText("|cffff77bbTop 5% (95th)|r")
+            elseif pct <= 10.0 then
+                valPct:SetText("|cffffd100Top 10% (90th)|r")
+            else
+                valPct:SetText(string.format("|cff94a3b8Top %d%%|r", math.ceil(pct)))
+            end
+        end
+
+        yOffset = yOffset - 54
+
+        -- 2. Table Header Row (Matching website columns)
+        local thRow = CreateFrame("Frame", nil, UI.ContentFrame)
+        thRow:SetSize(820, 22)
+        thRow:SetPoint("TOPLEFT", 0, yOffset)
+
+        local thLine = thRow:CreateTexture(nil, "ARTWORK")
+        thLine:SetPoint("BOTTOMLEFT", 0, 0)
+        thLine:SetPoint("BOTTOMRIGHT", 0, 0)
+        thLine:SetHeight(1)
+        thLine:SetColorTexture(0.35, 0.28, 0.16, 0.8)
+
+        local function CreateThCol(text, x, w, justify)
+            local fs = thRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            fs:SetPoint("LEFT", x, 0)
+            if w then fs:SetWidth(w) end
+            fs:SetJustifyH(justify or "LEFT")
+            fs:SetText(string.format("|cffb8a080%s|r", text))
+            fs:SetShadowOffset(1, -1)
+            fs:SetShadowColor(0, 0, 0, 1)
+            return fs
+        end
+
+        CreateThCol("RANK", 12, 40)
+        CreateThCol("COMBATANT", 58, 195)
+        CreateThCol("GUILD", 260, 140)
+        CreateThCol("FACTION", 410, 80)
+        CreateThCol("KILLS", 500, 60, "RIGHT")
+        CreateThCol("SOLO KILLS", 580, 80, "RIGHT")
+        CreateThCol("PERCENTILE", 680, 130, "RIGHT")
+
+        yOffset = yOffset - 26
+
+        -- 3. Player Rows
         if #topKillers == 0 then
             local empty = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
             empty:SetPoint("TOPLEFT", 14, yOffset)
-            empty:SetText("No player combat telemetry recorded for this filter mode yet.")
-            empty:SetShadowOffset(1, -1)
-            empty:SetShadowColor(0, 0, 0, 1)
+            empty:SetText("No player combat records logged for this filter mode yet.")
             yOffset = yOffset - 30
         else
             for rank, p in ipairs(topKillers) do
@@ -1569,119 +1743,200 @@ function UI:RenderLeaderboard()
                     row:SetBackdropBorderColor(unpack(theme.rowBorder))
                 end
 
-                -- Rank Medal / Badge
+                -- Col 1: RANK
                 local rankColor = (rank == 1 and "ffd700") or (rank == 2 and "c0c0c0") or (rank == 3 and "cd7f32") or "94a3b8"
-                local rankText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-                rankText:SetPoint("LEFT", 12, 0)
-                rankText:SetText(string.format("|cff%s#%d|r", rankColor, rank))
-                rankText:SetShadowOffset(1, -1)
-                rankText:SetShadowColor(0, 0, 0, 1)
+                local rFs = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                rFs:SetPoint("LEFT", 12, 0)
+                rFs:SetText(string.format("|cff%s#%d|r", rankColor, rank))
+                rFs:SetShadowOffset(1, -1)
+                rFs:SetShadowColor(0, 0, 0, 1)
 
-                local pIcon = UI:CreateClassIcon(row, p.class, 22)
-                pIcon:SetPoint("LEFT", rankText, "RIGHT", 10, 0)
+                -- Col 2: COMBATANT (Icon + Name + [YOU])
+                local cIcon = UI:CreateClassIcon(row, p.class, 20)
+                cIcon:SetPoint("LEFT", 58, 0)
+                local cFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                cFs:SetPoint("LEFT", cIcon, "RIGHT", 6, 0)
+                cFs:SetWidth(190)
+                cFs:SetJustifyH("LEFT")
+                cFs:SetWordWrap(false)
+                local youTag = isPlayer and " |cffffd100[YOU]|r" or ""
+                cFs:SetText(KB.Utils.ColorizeByClass(p.name, p.class) .. youTag)
+                cFs:SetShadowOffset(1, -1)
+                cFs:SetShadowColor(0, 0, 0, 1)
 
-                local statsText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                statsText:SetPoint("RIGHT", -15, 0)
-                local kd = (p.deaths and p.deaths > 0) and string.format("%.2f", p.kills / p.deaths) or tostring(p.kills or 0)
-                statsText:SetText(string.format(
-                    "|cff10b981%d Kills|r   |cff64748b•|r   |cff00e5ff%d Solo|r   |cff64748b•|r   |cffef4444%d Deaths|r   |cff64748b•|r   K/D: |cffffd100%s|r",
-                    p.kills or 0, p.soloKills or 0, p.deaths or 0, kd
-                ))
-                statsText:SetShadowOffset(1, -1)
-                statsText:SetShadowColor(0, 0, 0, 1)
+                -- Col 3: GUILD
+                local gFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                gFs:SetPoint("LEFT", 260, 0)
+                gFs:SetWidth(140)
+                gFs:SetJustifyH("LEFT")
+                gFs:SetWordWrap(false)
+                local gText = (p.guild and p.guild ~= "None" and p.guild ~= "") and string.format("|cffffd700<%s>|r", p.guild) or "|cff64748b-|r"
+                gFs:SetText(gText)
 
-                local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-                nameText:SetPoint("LEFT", pIcon, "RIGHT", 8, 0)
-                nameText:SetPoint("RIGHT", statsText, "LEFT", -10, 0)
-                nameText:SetJustifyH("LEFT")
-                nameText:SetWordWrap(false)
-                local guildStr = (p.guild and p.guild ~= "None" and p.guild ~= "") and string.format("  |cff8899aa<%s>|r", p.guild) or ""
-                local youBadge = isPlayer and " |cffffd100[YOU]|r" or ""
-                nameText:SetText(KB.Utils.ColorizeByClass(p.name, p.class) .. youBadge .. guildStr)
-                nameText:SetShadowOffset(1, -1)
-                nameText:SetShadowColor(0, 0, 0, 1)
+                -- Col 4: FACTION
+                local fFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                fFs:SetPoint("LEFT", 410, 0)
+                fFs:SetWidth(80)
+                fFs:SetJustifyH("LEFT")
+                local fText = (p.faction == "Horde") and "|cffff4444Horde|r" or "|cff38bdf8Alliance|r"
+                fFs:SetText(fText)
+
+                -- Col 5: KILLS
+                local kFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                kFs:SetPoint("LEFT", 500, 0)
+                kFs:SetWidth(60)
+                kFs:SetJustifyH("RIGHT")
+                kFs:SetText(string.format("|cff10b981%d|r", p.kills or 0))
+
+                -- Col 6: SOLO KILLS
+                local sFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                sFs:SetPoint("LEFT", 580, 0)
+                sFs:SetWidth(80)
+                sFs:SetJustifyH("RIGHT")
+                sFs:SetText(string.format("|cff00e5ff%d|r", p.soloKills or 0))
+
+                -- Col 7: PERCENTILE
+                local pFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                pFs:SetPoint("LEFT", 680, 0)
+                pFs:SetWidth(130)
+                pFs:SetJustifyH("RIGHT")
+                local pctStr = "|cff94a3b8Top 50%|r"
+                if rank == 1 or totalPlayers <= 1 then
+                    pctStr = "|cffff77bbTop 0.1% (99.9th)|r"
+                else
+                    local pct = ((rank - 0.5) / math.max(1, totalPlayers)) * 100
+                    if pct <= 0.5 then
+                        pctStr = "|cffff77bbTop 0.1% (99.9th)|r"
+                    elseif pct <= 1.0 then
+                        pctStr = "|cffff77bbTop 1% (99th)|r"
+                    elseif pct <= 5.0 then
+                        pctStr = "|cffff77bbTop 5% (95th)|r"
+                    elseif pct <= 10.0 then
+                        pctStr = "|cffffd100Top 10% (90th)|r"
+                    else
+                        pctStr = string.format("|cff94a3b8Top %d%%|r", math.ceil(pct))
+                    end
+                end
+                pFs:SetText(pctStr)
 
                 yOffset = yOffset - 36
             end
         end
 
-        -- Bottom Pinned Player Row (Always show your position)
-        if not playerInTop10 then
-            yOffset = yOffset - 10
-
-            -- Elegant Divider
+        -- Bottom Pinned Player Row if not in Top 15
+        if not playerInTop15 then
+            yOffset = yOffset - 6
             local div = UI.ContentFrame:CreateTexture(nil, "ARTWORK")
-            div:SetPoint("TOPLEFT", 14, yOffset)
-            div:SetPoint("TOPRIGHT", -14, yOffset)
+            div:SetPoint("TOPLEFT", 10, yOffset)
+            div:SetPoint("TOPRIGHT", -10, yOffset)
             div:SetHeight(1)
             div:SetColorTexture(0.55, 0.42, 0.18, 0.8)
 
             local divLabel = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             divLabel:SetPoint("CENTER", div, "CENTER", 0, 0)
             divLabel:SetText("|cffffd100— YOUR STANDING —|r")
-            divLabel:SetShadowOffset(1, -1)
-            divLabel:SetShadowColor(0, 0, 0, 1)
 
-            yOffset = yOffset - 22
+            yOffset = yOffset - 20
 
             local pRow = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-            pRow:SetSize(820, 34)
+            pRow:SetSize(820, 32)
             pRow:SetPoint("TOPLEFT", 0, yOffset)
             pRow:SetBackdrop(theme.rowBackdrop)
-            pRow:SetBackdropColor(0.20, 0.15, 0.05, 0.95)
-            pRow:SetBackdropBorderColor(1.0, 0.84, 0.0, 0.95)
+            pRow:SetBackdropColor(0.24, 0.17, 0.06, 0.95)
+            pRow:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
 
-            local rankStr = (pRank and pRank > 0) and string.format("|cffffd100#%d|r", pRank) or "|cff888888#--|r"
-            local pRankText = pRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-            pRankText:SetPoint("LEFT", 12, 0)
-            pRankText:SetText(rankStr)
-            pRankText:SetShadowOffset(1, -1)
-            pRankText:SetShadowColor(0, 0, 0, 1)
+            local rFs = pRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            rFs:SetPoint("LEFT", 12, 0)
+            rFs:SetText((pRank and pRank > 0) and string.format("|cffffd100#%d|r", pRank) or "|cff888888#-|r")
 
-            local myClass = select(2, UnitClass("player")) or "WARRIOR"
-            local pIcon = UI:CreateClassIcon(pRow, myClass, 22)
-            pIcon:SetPoint("LEFT", pRankText, "RIGHT", 10, 0)
-
-            local pStatsText = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            pStatsText:SetPoint("RIGHT", -15, 0)
-            if pStats then
-                local kd = (pStats.deaths and pStats.deaths > 0) and string.format("%.2f", pStats.kills / pStats.deaths) or tostring(pStats.kills or 0)
-                pStatsText:SetText(string.format(
-                    "|cff10b981%d Kills|r   |cff64748b•|r   |cff00e5ff%d Solo|r   |cff64748b•|r   |cffef4444%d Deaths|r   |cff64748b•|r   K/D: |cffffd100%s|r",
-                    pStats.kills or 0, pStats.soloKills or 0, pStats.deaths or 0, kd
-                ))
-            else
-                pStatsText:SetText("|cff94a3b80 Kills  •  0 Solo  •  0 Deaths  •  Unranked in this filter mode|r")
-            end
-            pStatsText:SetShadowOffset(1, -1)
-            pStatsText:SetShadowColor(0, 0, 0, 1)
+            local cIcon = UI:CreateClassIcon(pRow, myClass, 20)
+            cIcon:SetPoint("LEFT", 58, 0)
+            local cFs = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            cFs:SetPoint("LEFT", cIcon, "RIGHT", 6, 0)
+            cFs:SetWidth(190)
+            cFs:SetJustifyH("LEFT")
+            cFs:SetWordWrap(false)
+            cFs:SetText(KB.Utils.ColorizeByClass(pName or "Player", myClass) .. " |cffffd100[YOU]|r")
 
             local myGuild = GetGuildInfo("player")
-            local myGuildStr = (myGuild and myGuild ~= "") and string.format("  |cff8899aa<%s>|r", myGuild) or ""
-            local pNameText = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            pNameText:SetPoint("LEFT", pIcon, "RIGHT", 8, 0)
-            pNameText:SetPoint("RIGHT", pStatsText, "LEFT", -10, 0)
-            pNameText:SetJustifyH("LEFT")
-            pNameText:SetWordWrap(false)
-            pNameText:SetText(KB.Utils.ColorizeByClass(pName or "Player", myClass) .. " |cffffd100[YOU]|r" .. myGuildStr)
-            pNameText:SetShadowOffset(1, -1)
-            pNameText:SetShadowColor(0, 0, 0, 1)
+            local gFs = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            gFs:SetPoint("LEFT", 260, 0)
+            gFs:SetWidth(140)
+            gFs:SetJustifyH("LEFT")
+            gFs:SetWordWrap(false)
+            local gText = (myGuild and myGuild ~= "") and string.format("|cffffd700<%s>|r", myGuild) or "|cff64748b-|r"
+            gFs:SetText(gText)
 
-            yOffset = yOffset - 38
+            local myFaction = UnitFactionGroup("player") or "Alliance"
+            local fFs = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            fFs:SetPoint("LEFT", 410, 0)
+            fFs:SetWidth(80)
+            fFs:SetJustifyH("LEFT")
+            fFs:SetText((myFaction == "Horde") and "|cffff4444Horde|r" or "|cff38bdf8Alliance|r")
+
+            local kFs = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            kFs:SetPoint("LEFT", 500, 0)
+            kFs:SetWidth(60)
+            kFs:SetJustifyH("RIGHT")
+            kFs:SetText(string.format("|cff10b981%d|r", (pStats and pStats.kills) or 0))
+
+            local sFs = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            sFs:SetPoint("LEFT", 580, 0)
+            sFs:SetWidth(80)
+            sFs:SetJustifyH("RIGHT")
+            sFs:SetText(string.format("|cff00e5ff%d|r", (pStats and pStats.soloKills) or 0))
+
+            local pFs = pRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            pFs:SetPoint("LEFT", 680, 0)
+            pFs:SetWidth(130)
+            pFs:SetJustifyH("RIGHT")
+            if not pRank or pRank == 0 then
+                pFs:SetText("|cff888888Unranked|r")
+            else
+                local pct = ((pRank - 0.5) / math.max(1, totalPlayers)) * 100
+                pFs:SetText(string.format("|cff94a3b8Top %d%%|r", math.ceil(pct)))
+            end
+
+            yOffset = yOffset - 36
         end
 
     elseif hlSubTab == "GUILDS" then
-        local topGuilds = KB.Leaderboard:GetTopGuilds(currentMode, 10)
+        local topGuilds = KB.Leaderboard:GetTopGuilds(currentMode, 15)
         local myGuild = GetGuildInfo("player")
         local gRank, gStats, totalGuilds = KB.Leaderboard:GetGuildRankAndStats(myGuild, currentMode)
-        local guildInTop10 = (gRank and gRank <= 10)
+        local guildInTop15 = (gRank and gRank <= 15)
+
+        -- Table Header Row
+        local thRow = CreateFrame("Frame", nil, UI.ContentFrame)
+        thRow:SetSize(820, 22)
+        thRow:SetPoint("TOPLEFT", 0, yOffset)
+
+        local thLine = thRow:CreateTexture(nil, "ARTWORK")
+        thLine:SetPoint("BOTTOMLEFT", 0, 0)
+        thLine:SetPoint("BOTTOMRIGHT", 0, 0)
+        thLine:SetHeight(1)
+        thLine:SetColorTexture(0.35, 0.28, 0.16, 0.8)
+
+        local function CreateThCol(text, x, w, justify)
+            local fs = thRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            fs:SetPoint("LEFT", x, 0)
+            if w then fs:SetWidth(w) end
+            fs:SetJustifyH(justify or "LEFT")
+            fs:SetText(string.format("|cffb8a080%s|r", text))
+            return fs
+        end
+
+        CreateThCol("RANK", 12, 40)
+        CreateThCol("GUILD", 58, 280)
+        CreateThCol("FACTION", 360, 100)
+        CreateThCol("KILLS LOGGED", 500, 120, "RIGHT")
+
+        yOffset = yOffset - 26
 
         if #topGuilds == 0 then
             local empty = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
             empty:SetPoint("TOPLEFT", 14, yOffset)
-            empty:SetText("No guild PvP telemetry recorded for this filter mode yet.")
-            empty:SetShadowOffset(1, -1)
-            empty:SetShadowColor(0, 0, 0, 1)
+            empty:SetText("No guild PvP records logged for this filter mode yet.")
             yOffset = yOffset - 30
         else
             for gIdx, g in ipairs(topGuilds) do
@@ -1701,88 +1956,82 @@ function UI:RenderLeaderboard()
                 end
 
                 local rankColor = (gIdx == 1 and "ffd700") or (gIdx == 2 and "c0c0c0") or (gIdx == 3 and "cd7f32") or "94a3b8"
-                local gRankText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-                gRankText:SetPoint("LEFT", 12, 0)
-                gRankText:SetText(string.format("|cff%s#%d|r", rankColor, gIdx))
-                gRankText:SetShadowOffset(1, -1)
-                gRankText:SetShadowColor(0, 0, 0, 1)
+                local rFs = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                rFs:SetPoint("LEFT", 12, 0)
+                rFs:SetText(string.format("|cff%s#%d|r", rankColor, gIdx))
 
-                local gKills = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                gKills:SetPoint("RIGHT", -15, 0)
-                gKills:SetText(string.format("|cff10b981%d Kills Logged|r", g.kills or 0))
-                gKills:SetShadowOffset(1, -1)
-                gKills:SetShadowColor(0, 0, 0, 1)
-
-                local gNameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-                gNameText:SetPoint("LEFT", 50, 0)
-                gNameText:SetPoint("RIGHT", gKills, "LEFT", -10, 0)
-                gNameText:SetJustifyH("LEFT")
-                gNameText:SetWordWrap(false)
+                local gFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                gFs:SetPoint("LEFT", 58, 0)
+                gFs:SetWidth(280)
+                gFs:SetJustifyH("LEFT")
+                gFs:SetWordWrap(false)
                 local guildBadge = isMyGuild and " |cffffd100[YOUR GUILD]|r" or ""
-                gNameText:SetText(string.format("|cffffd700<%s>|r%s", g.guild, guildBadge))
-                gNameText:SetShadowOffset(1, -1)
-                gNameText:SetShadowColor(0, 0, 0, 1)
+                gFs:SetText(string.format("|cffffd700<%s>|r%s", g.guild, guildBadge))
+
+                local fFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                fFs:SetPoint("LEFT", 360, 0)
+                fFs:SetWidth(100)
+                fFs:SetJustifyH("LEFT")
+                local fText = (g.faction == "Horde") and "|cffff4444Horde|r" or ((g.faction == "Alliance") and "|cff38bdf8Alliance|r" or "|cff94a3b8Contested|r")
+                fFs:SetText(fText)
+
+                local kFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                kFs:SetPoint("LEFT", 500, 0)
+                kFs:SetWidth(120)
+                kFs:SetJustifyH("RIGHT")
+                kFs:SetText(string.format("|cff10b981%d Kills|r", g.kills or 0))
 
                 yOffset = yOffset - 36
             end
         end
 
-        -- Bottom Pinned Guild Standing
-        if not guildInTop10 then
-            yOffset = yOffset - 10
-
+        -- Bottom Pinned Guild Standing if not in top 15
+        if not guildInTop15 and myGuild and myGuild ~= "" then
+            yOffset = yOffset - 6
             local div = UI.ContentFrame:CreateTexture(nil, "ARTWORK")
-            div:SetPoint("TOPLEFT", 14, yOffset)
-            div:SetPoint("TOPRIGHT", -14, yOffset)
+            div:SetPoint("TOPLEFT", 10, yOffset)
+            div:SetPoint("TOPRIGHT", -10, yOffset)
             div:SetHeight(1)
             div:SetColorTexture(0.55, 0.42, 0.18, 0.8)
 
             local divLabel = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             divLabel:SetPoint("CENTER", div, "CENTER", 0, 0)
             divLabel:SetText("|cffffd100— YOUR GUILD STANDING —|r")
-            divLabel:SetShadowOffset(1, -1)
-            divLabel:SetShadowColor(0, 0, 0, 1)
 
-            yOffset = yOffset - 22
+            yOffset = yOffset - 20
 
             local gRow = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-            gRow:SetSize(820, 34)
+            gRow:SetSize(820, 32)
             gRow:SetPoint("TOPLEFT", 0, yOffset)
             gRow:SetBackdrop(theme.rowBackdrop)
-            gRow:SetBackdropColor(0.20, 0.15, 0.05, 0.95)
-            gRow:SetBackdropBorderColor(1.0, 0.84, 0.0, 0.95)
+            gRow:SetBackdropColor(0.24, 0.17, 0.06, 0.95)
+            gRow:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
 
-            if myGuild and myGuild ~= "" and myGuild ~= "None" then
-                local rankStr = (gRank and gRank > 0) and string.format("|cffffd100#%d|r", gRank) or "|cff888888#--|r"
-                local gRankText = gRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-                gRankText:SetPoint("LEFT", 12, 0)
-                gRankText:SetText(rankStr)
-                gRankText:SetShadowOffset(1, -1)
-                gRankText:SetShadowColor(0, 0, 0, 1)
+            local rFs = gRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            rFs:SetPoint("LEFT", 12, 0)
+            rFs:SetText((gRank and gRank > 0) and string.format("|cffffd100#%d|r", gRank) or "|cff888888#-|r")
 
-                local gKillsText = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                gKillsText:SetPoint("RIGHT", -15, 0)
-                gKillsText:SetText(gStats and string.format("|cff10b981%d Kills Logged|r", gStats.kills) or "|cff8888880 Kills Logged (Unranked)|r")
-                gKillsText:SetShadowOffset(1, -1)
-                gKillsText:SetShadowColor(0, 0, 0, 1)
+            local gFs = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            gFs:SetPoint("LEFT", 58, 0)
+            gFs:SetWidth(280)
+            gFs:SetJustifyH("LEFT")
+            gFs:SetWordWrap(false)
+            gFs:SetText(string.format("|cffffd700<%s>|r |cffffd100[YOUR GUILD]|r", myGuild))
 
-                local gNameText = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-                gNameText:SetPoint("LEFT", 50, 0)
-                gNameText:SetPoint("RIGHT", gKillsText, "LEFT", -10, 0)
-                gNameText:SetJustifyH("LEFT")
-                gNameText:SetWordWrap(false)
-                gNameText:SetText(string.format("|cffffd700<%s>|r |cffffd100[YOUR GUILD]|r", myGuild))
-                gNameText:SetShadowOffset(1, -1)
-                gNameText:SetShadowColor(0, 0, 0, 1)
-            else
-                local unguilded = gRow:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-                unguilded:SetPoint("CENTER", 0, 0)
-                unguilded:SetText("|cff94a3b8<Guildless Operative> — Join a guild to compete on the War Guild Leaderboard|r")
-                unguilded:SetShadowOffset(1, -1)
-                unguilded:SetShadowColor(0, 0, 0, 1)
-            end
+            local myFaction = UnitFactionGroup("player") or "Alliance"
+            local fFs = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            fFs:SetPoint("LEFT", 360, 0)
+            fFs:SetWidth(100)
+            fFs:SetJustifyH("LEFT")
+            fFs:SetText((myFaction == "Horde") and "|cffff4444Horde|r" or "|cff38bdf8Alliance|r")
 
-            yOffset = yOffset - 38
+            local kFs = gRow:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            kFs:SetPoint("LEFT", 500, 0)
+            kFs:SetWidth(120)
+            kFs:SetJustifyH("RIGHT")
+            kFs:SetText(string.format("|cff10b981%d Kills|r", (gStats and gStats.kills) or 0))
+
+            yOffset = yOffset - 36
         end
     end
 
