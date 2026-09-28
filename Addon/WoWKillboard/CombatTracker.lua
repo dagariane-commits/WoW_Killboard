@@ -1008,6 +1008,35 @@ local function ExtractVictimFromHonorMsg(msg)
     return nil
 end
 
+-- Helper to parse self damage and spell from combat chat messages (CLEU fallback)
+local function ParseSelfCombatMessage(msg)
+    if not msg or not KB.Utils.CanAccess(msg) or type(msg) ~= "string" then return nil end
+    local clean = msg:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1")
+
+    -- 1. "You hit/crit <victim> for <amount> ..."
+    local victim, amount = clean:match("^You %a+ (.-) for (%d+)")
+    if victim and amount then
+        return KB.Utils.CleanCombatantName(victim), tonumber(amount), "Melee Swing"
+    end
+
+    -- 2. "Your <spell> hits/crits <victim> for <amount> ..."
+    local spell, v2, a2 = clean:match("^Your (.-) %a+ (.-) for (%d+)")
+    if spell and v2 and a2 then
+        return KB.Utils.CleanCombatantName(v2), tonumber(a2), spell
+    end
+
+    -- 3. "<victim> suffers <amount> ... from your <spell>."
+    local v3, a3, s3 = clean:match("^(.-) suffers (%d+) .* from your (.-)%.?$")
+    if not v3 then
+        v3, a3, s3 = clean:match("^(.-) suffers (%d+) from your (.-)%.?$")
+    end
+    if v3 and a3 and s3 then
+        return KB.Utils.CleanCombatantName(v3), tonumber(a3), s3
+    end
+
+    return nil
+end
+
 -- Process an honorable kill across all clients (CLEU, UnitEvents, Chat, HK counter)
 function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     local now = time()
@@ -1107,6 +1136,20 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         end
     end
 
+    if (not victimInfo or victimInfo.class == "UNKNOWN") and activeEnemyTarget then
+        if (cleanVictim and activeEnemyTarget.name and activeEnemyTarget.name:lower() == cleanVictim:lower()) or (victimName and activeEnemyTarget.name and activeEnemyTarget.name:lower() == victimName:lower()) then
+            victimInfo = {
+                guid = activeEnemyTarget.guid or victimGUID or "UNKNOWN",
+                name = activeEnemyTarget.name or cleanVictim or victimName,
+                level = activeEnemyTarget.level or 0,
+                class = activeEnemyTarget.class or "UNKNOWN",
+                guild = activeEnemyTarget.guild or "None",
+                faction = activeEnemyTarget.faction or "Unknown",
+                partySize = 1,
+            }
+        end
+    end
+
     if not victimInfo then
         victimInfo = (victimGUID and KB.UnitScanner:GetUnitInfo(victimGUID)) or KB.UnitScanner:GetUnitInfoByName(victimName) or (cleanVictim and KB.UnitScanner:GetUnitInfoByName(cleanVictim)) or {
             guid = victimGUID or "UNKNOWN",
@@ -1118,7 +1161,15 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             partySize = 1,
         }
     end
-    if victimGUID and victimGUID ~= "UNKNOWN" and victimInfo then
+
+    if not victimGUID or victimGUID == "UNKNOWN" then
+        if cleanVictim and cleanVictim ~= "" then
+            victimGUID = "Player-Named-" .. cleanVictim
+        else
+            victimGUID = "Player-Named-" .. (victimName or "Hostile")
+        end
+    end
+    if victimInfo then
         victimInfo.guid = victimGUID
     end
 
@@ -1345,17 +1396,30 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     local hasNearbyFriendly = (friendlyAssists > 0)
     local hasPlayerDamage = (playerDamage > 0)
 
+    -- Check if player is actively in combat or engaged
+    local isPlayerInCombat = InCombatLockdown() or (CT.LastCombatTime and (now - CT.LastCombatTime) <= 30)
+    local isTargetEngaged = (unitToken ~= nil)
+                         or (explicitGuid ~= nil and explicitGuid ~= "UNKNOWN")
+                         or (UnitExists("target") and UnitIsPlayer("target"))
+                         or (activeEnemyTarget and (now - (activeEnemyTarget.lastSeen or 0)) <= 30)
+                         or (victimGUID and CT.RecentEngagedEnemies and CT.RecentEngagedEnemies[victimGUID] ~= nil)
+                         or (cleanVictim and CT.RecentVictimGUIDs and CT.RecentVictimGUIDs[cleanVictim:lower()] ~= nil)
+                         or (normVictim and CT.RecentVictimGUIDs and CT.RecentVictimGUIDs[normVictim] ~= nil)
+
     local isSolo = (not hasExternalAttacker)
                and (not hasExternalAssistOnVictim)
                and (not hasExternalAssistOnPlayer)
                and (not hasRecentAssistedAlly)
                and (not inGroup)
                and (not hasNearbyFriendly)
-               and hasPlayerDamage
+               and (hasPlayerDamage or isCLEUForbidden or isTargetEngaged or isPlayerInCombat)
 
     local attackersCount = math.max(#attackersList, partySize, 1 + friendlyAssists)
     if not isSolo and attackersCount < 2 then
         attackersCount = 2
+    end
+    if isSolo then
+        attackersCount = 1
     end
 
     -- Check if any party teammate was in the squad
@@ -1370,10 +1434,24 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     end
 
     -- Bystander Protection (Scott Quick directive):
-    -- If the player dealt 0 damage, is not in a party (#partyMembers <= 1), and no recorded attacker belongs to the player:
-    -- The player is a passive bystander receiving an honor tick from a distant stranger's kill.
-    -- Discard the kill so we never record a dummy "Allied Vanguard" phantom killmail!
-    if not hasPlayerDamage and (not partyTeammate) and (not topPlayerAttacker or (topPlayerAttacker.damage or 0) <= 0) and (#clusterAssists == 0) then
+    -- A player is ONLY a passive bystander if:
+    -- 1. Not in combat
+    -- 2. No enemy targeted or engaged in the last 30s
+    -- 3. Zero recorded damage dealt
+    -- 4. Not in a party (solo)
+    -- 5. Zero friendly cluster assists or allied buffs
+    -- 6. No explicit target token or GUID
+    local isBystander = (not isPlayerInCombat)
+                    and (not isTargetEngaged)
+                    and (not hasPlayerDamage)
+                    and (not partyTeammate)
+                    and (not topPlayerAttacker or (topPlayerAttacker.damage or 0) <= 0)
+                    and (#clusterAssists == 0)
+                    and (not CT.PlayerAssistedAllies or not next(CT.PlayerAssistedAllies))
+                    and (not explicitGuid or explicitGuid == "UNKNOWN")
+                    and (not unitToken)
+
+    if isBystander then
         return
     end
 
@@ -1403,8 +1481,8 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             damageDone = topPlayerAttacker.damage,
             healingDone = 0,
         }
-    elseif partyTeammate then
-        -- Player was in a party and assisted: attribute kill to their party teammate!
+    elseif partyTeammate and not (isPlayerInCombat or isTargetEngaged or hasPlayerDamage) then
+        -- Player was purely healing/assisting a party teammate: attribute kill to their party teammate!
         killerData = {
             guid = partyTeammate.guid,
             name = partyTeammate.name,
@@ -1416,7 +1494,7 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             damageDone = totalDamage,
             healingDone = 0,
         }
-    elseif #clusterAssists > 0 then
+    elseif #clusterAssists > 0 and not (isPlayerInCombat or isTargetEngaged or hasPlayerDamage) then
         local firstAllyGUID = clusterAssists[1]
         local aInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(firstAllyGUID)
         killerData = {
@@ -1430,7 +1508,7 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             damageDone = totalDamage,
             healingDone = 0,
         }
-    elseif CT.PlayerAssistedAllies and next(CT.PlayerAssistedAllies) then
+    elseif CT.PlayerAssistedAllies and next(CT.PlayerAssistedAllies) and not (isPlayerInCombat or isTargetEngaged or hasPlayerDamage) then
         local firstAllyGUID, aData = next(CT.PlayerAssistedAllies)
         local aInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(firstAllyGUID)
         killerData = {
@@ -1445,6 +1523,7 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
             healingDone = 0,
         }
     else
+        -- Active player is the killer!
         killerData = {
             guid = playerGUID or "PLAYER",
             name = playerName or "Player",
@@ -1460,6 +1539,14 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
 
     if killerData.guid == playerGUID then
         CT.SessionStats.kills = CT.SessionStats.kills + 1
+        for _, att in ipairs(attackersList) do
+            if att.guid == playerGUID then
+                if att.spell == "Support Assist" or not att.spell then
+                    att.spell = "Killing Blow"
+                end
+                break
+            end
+        end
     else
         CT.SessionStats.assists = (CT.SessionStats.assists or 0) + 1
     end
@@ -1889,11 +1976,13 @@ frame:SetScript("OnEvent", function(self, event, ...)
         CT:CheckPendingDeathBounty()
 
     elseif event == "PLAYER_REGEN_DISABLED" then
+        CT.LastCombatTime = time()
         if KB.UI and KB.UI.OnPlayerRegenDisabled then
             KB.UI:OnPlayerRegenDisabled()
         end
 
     elseif event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" or event == "PLAYER_REGEN_ENABLED" then
+        CT.LastCombatTime = time()
         if KB.Utils and KB.Utils.FlushPrintQueue then
             KB.Utils.FlushPrintQueue()
         end
@@ -1901,6 +1990,47 @@ frame:SetScript("OnEvent", function(self, event, ...)
             KB.UI:OnPlayerRegenEnabled()
         end
         CT:CheckPendingDeathBounty()
+
+    elseif event == "UNIT_HEALTH" then
+        local unit = ...
+        if unit == "target" and UnitExists("target") and UnitIsPlayer("target") then
+            if UnitIsDead("target") or UnitIsDeadOrGhost("target") then
+                local isEnemy = UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or (not UnitIsFriend("player", "target"))
+                if isEnemy then
+                    local tName = UnitName("target")
+                    local tGuid = UnitGUID("target")
+                    if tName and tName ~= "" then
+                        CT:OnPlayerHonorableKill(tName, tGuid, "target")
+                    end
+                end
+            end
+        end
+
+    elseif event == "CHAT_MSG_COMBAT_SELF_HITS" or event == "CHAT_MSG_SPELL_SELF_DAMAGE" or event == "CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE" then
+        local msg = ...
+        if msg and KB.Utils.CanAccess(msg) then
+            local vName, amount, spell = ParseSelfCombatMessage(msg)
+            if vName and amount and amount > 0 then
+                local pGUID = UnitGUID("player")
+                local pName = UnitName("player")
+                local normV = KB.Utils.NormalizeCombatantName(vName)
+                CT.SessionStats.damageDone = (CT.SessionStats.damageDone or 0) + amount
+                if normV and normV ~= "" then
+                    CT.RecentDamageByName[normV] = CT.RecentDamageByName[normV] or {}
+                    local entry = CT.RecentDamageByName[normV][pGUID] or {
+                        guid = pGUID,
+                        name = pName,
+                        totalDamage = 0,
+                        spellName = spell or "Combat",
+                        isPlayer = true,
+                        class = select(2, UnitClass("player")),
+                    }
+                    entry.totalDamage = entry.totalDamage + amount
+                    entry.spellName = spell or entry.spellName
+                    CT.RecentDamageByName[normV][pGUID] = entry
+                end
+            end
+        end
 
     elseif event == "PLAYER_TARGET_CHANGED" then
         if UnitExists("target") and UnitIsPlayer("target") then
@@ -1910,11 +2040,9 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 local tGuid = UnitGUID("target")
                 local tName = UnitName("target")
                 if isDead and tName and tName ~= "" then
-                    if activeEnemyTarget and (activeEnemyTarget.guid == tGuid or activeEnemyTarget.name == tName) then
-                        CT:OnPlayerHonorableKill(tName, tGuid, "target")
-                    end
+                    CT:OnPlayerHonorableKill(tName, tGuid, "target")
                 elseif not isDead then
-                    local tInfo = (not InCombatLockdown() and KB.UnitScanner) and KB.UnitScanner:ScanUnit("target") or (KB.UnitScanner and KB.UnitScanner:GetUnitInfo(tGuid))
+                    local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
                     activeEnemyTarget = {
                         name = tName,
                         guid = tGuid,
@@ -2046,4 +2174,15 @@ frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
+
+pcall(function()
+    if frame.RegisterUnitEvent then
+        frame:RegisterUnitEvent("UNIT_HEALTH", "target")
+    else
+        frame:RegisterEvent("UNIT_HEALTH")
+    end
+end)
+frame:RegisterEvent("CHAT_MSG_COMBAT_SELF_HITS")
+frame:RegisterEvent("CHAT_MSG_SPELL_SELF_DAMAGE")
+frame:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
 
