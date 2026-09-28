@@ -5,6 +5,24 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.49] - 2026-09-28
+
+### Added
+- **Addon Intel Tab Overhaul with Top 10 Most Wanted (`UI.lua`)**:
+  - Re-architected the in-game Intel tab (`UI:RenderLiveFeed()`) to faithfully match the web platform's Intel feed and execution board.
+  - Added the **High Command Execution List — Realm's Most Notorious** header with a "See All Marks →" action button switching directly to the Marks of Spite tab.
+  - Integrated a 10-slot 2x5 grid of Most Wanted cards directly above the live combat feed:
+    - Active blood contracts display rank `#1`–`#10`, gold reward with coin icon, faction-tinted backdrops, class borders, character names colorized by class, guild/faction affiliation, last seen sector telemetry with elapsed minutes, and one-click `[⚔ Accept]` / `[✓ Tracking]` contract buttons.
+    - Unclaimed slots display `#X WANTED - OPEN - Pending Target - <Unclaimed> - No Active Contract` with a one-click `[+ Issue Mark]` button opening the in-game Mark of Spite dialog.
+  - Seamlessly anchored the Tactical Telemetry KPI summary bar and live killmail stream below the Most Wanted board with fluid mousewheel scrolling.
+
+### Changed
+- **Web War Rallies Restricted to Read-Only Telemetry (`app.js`, `index.html`, `server.py`)**:
+  - Removed rally creation / muster forms and modal dialogs from the web interface; rallies are now exclusively mustered in-game via the addon.
+  - Added in-game muster badge and directive across the banner and empty states: `📯 Muster In-Game: /kb rally`.
+  - Implemented real-time elapsed running duration badges on all active rally cards (`⏱️ Running for Xm` / `Xh Ym`) and clear active timing telemetry.
+  - Extended distress beacon API cutoff in `server.py` from 30 minutes to 2 hours (`cutoff = int(time.time()) - 7200`) ensuring active squads remain visible throughout sustained engagements.
+
 ## [1.4.48] - 2026-09-28
 
 ### Added
