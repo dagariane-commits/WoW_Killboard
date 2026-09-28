@@ -400,6 +400,14 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             local nextTheme = (cur == "classic") and "elvui" or "classic"
             if KB.UI then KB.UI:SetTheme(nextTheme) end
         end
+    elseif cmd == "profile" or cmd == "web" or cmd == "url" or cmd == "link" then
+        local pTarget = arg and arg:match("^%s*(.-)%s*$")
+        if not pTarget or pTarget == "" then
+            pTarget = (UnitExists("target") and UnitIsPlayer("target")) and UnitName("target") or UnitName("player")
+        end
+        if KB.UI and KB.UI.ShowCharacterWebLink then
+            KB.UI:ShowCharacterWebLink(pTarget)
+        end
     else
         SafePrint("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
         SafePrint("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
@@ -414,6 +422,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/kb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
         SafePrint("  |cffffd100/kb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
         SafePrint("  |cffffd100/kb armory [Name]|r or |cffffd100/armory [Name]|r - Inspect Character Combat Dossier")
+        SafePrint("  |cffffd100/kb profile [Name]|r or |cffffd100/kb web|r - Open public web profile dossier link dialog")
         SafePrint("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
         SafePrint("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
         SafePrint("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")

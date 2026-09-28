@@ -48,6 +48,8 @@ flowchart LR
 | `/killboard test` or `/wowkb test` | Fire preview Kill Banner with sound and raid warning |
 | `/killboard theme` | Cycle between Aegis Tactical, ElvUI, and Classic themes |
 | `/armory [Name]` | Inspect detailed combat dossier for any combatant |
+| `/kb profile [Name]` | Copy web profile dossier URL for yourself or target |
+| `/kb claim <code>` | Verify character ownership token from web platform |
 | `/spot` or `/scout` | Broadcast enemy sighting with coordinates to allies |
 | `/warhorn` or `/kbsos` | Trigger Call to Arms SOS emergency rally beacon |
 | `/warhorn stop` | Stand down active War Horn muster |

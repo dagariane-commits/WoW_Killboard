@@ -2275,9 +2275,6 @@ function buildCharacterDossierHtml(data) {
       </div>
       <div class="armory-group">
         <button class="armory-btn" style="cursor:pointer; background:#1e293b; color:#38bdf8;" onclick="copyCharacterProfileLink('${escapeHtml(data.name)}', this)">📋 Copy Link</button>
-        <a class="armory-btn" href="${data.armoryUrls.official}" target="_blank" rel="noopener">Blizzard Armory</a>
-        <a class="armory-btn" href="${data.armoryUrls.ironforge}" target="_blank" rel="noopener">Classic Armory</a>
-        <a class="armory-btn" href="${data.armoryUrls.warcraftlogs}" target="_blank" rel="noopener">Warcraft Logs</a>
       </div>
     </div>
 
@@ -2322,6 +2319,24 @@ function buildCharacterDossierHtml(data) {
   `;
 }
 
+// Standalone Active Operative Telemetry Sync
+async function syncActiveCharacterTelemetry(charName) {
+  const name = charName || localStorage.getItem("wowkb_user_character") || localStorage.getItem("wowkb_account_username");
+  if (!name || name.toLowerCase() === "unknown") return;
+  try {
+    const res = await fetch(`/api/character/${encodeURIComponent(name)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && data.class && data.class !== "UNKNOWN") {
+      localStorage.setItem("wowkb_user_class", data.class.toUpperCase());
+      if (data.level) localStorage.setItem("wowkb_user_level", data.level);
+      if (data.faction) localStorage.setItem("wowkb_user_faction", data.faction);
+      if (data.guild) localStorage.setItem("wowkb_user_guild", data.guild);
+      renderHeaderAuthBadge();
+    }
+  } catch (e) {}
+}
+
 // Character Profile Modal Handlers
 async function openCharacterProfile(charName) {
   const modal = document.getElementById("character-modal");
@@ -2341,6 +2356,16 @@ async function openCharacterProfile(charName) {
     }
     const data = await res.json();
     body.innerHTML = buildCharacterDossierHtml(data);
+
+    // Synchronize operative class and level if viewing active user
+    const currentActive = (localStorage.getItem("wowkb_user_character") || "").toLowerCase();
+    if (data && data.name && data.name.toLowerCase() === currentActive) {
+      if (data.class && data.class !== "UNKNOWN") localStorage.setItem("wowkb_user_class", data.class.toUpperCase());
+      if (data.level) localStorage.setItem("wowkb_user_level", data.level);
+      if (data.faction) localStorage.setItem("wowkb_user_faction", data.faction);
+      if (data.guild) localStorage.setItem("wowkb_user_guild", data.guild);
+      renderHeaderAuthBadge();
+    }
   } catch (err) {
     body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Error retrieving character profile: ${err.message}</div>`;
   }
@@ -4244,22 +4269,61 @@ function renderKnownCharactersList(chars) {
     let claimBadgeHtml = "";
 
     if (c.is_claimed) {
-      if (c.is_owner) {
-        claimBadgeHtml = `<span style="background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); font-size:0.65rem; font-weight:700; padding:1px 6px; border-radius:3px; margin-left:6px;">🛡️ Verified Owner</span>`;
-        if (isAct) {
-          actionBtnHtml = `<button class="pill-btn active" style="background:#10b981; color:#fff; font-size:0.75rem; padding:4px 12px;" disabled>✓ Selected</button>`;
+      if (c.is_verified) {
+        // Certified / Verified Owner
+        if (c.is_owner) {
+          claimBadgeHtml = `<span style="background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); font-size:0.65rem; font-weight:700; padding:1px 6px; border-radius:3px; margin-left:6px;">🛡️ Verified Owner</span>`;
+          if (isAct) {
+            actionBtnHtml = `
+              <div style="display:flex; gap:6px;">
+                <button class="pill-btn active" style="background:#10b981; color:#fff; font-size:0.75rem; padding:4px 10px;" disabled>✓ Selected</button>
+                <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.72rem; padding:4px 8px; cursor:pointer;" onclick="releaseClaim('${escapeHtml(c.name)}')">Unlink</button>
+              </div>
+            `;
+          } else {
+            actionBtnHtml = `
+              <div style="display:flex; gap:6px;">
+                <button class="pill-btn" style="background:#10b981; color:#fff; font-weight:700; font-size:0.75rem; padding:5px 12px; border:none; cursor:pointer;" onclick="selectKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Select &rarr;</button>
+                <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.72rem; padding:5px 8px; cursor:pointer;" onclick="releaseClaim('${escapeHtml(c.name)}')">Unlink</button>
+              </div>
+            `;
+          }
         } else {
-          actionBtnHtml = `<button class="pill-btn" style="background:#10b981; color:#fff; font-weight:700; font-size:0.75rem; padding:5px 14px; border:none; cursor:pointer;" onclick="selectKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Select &rarr;</button>`;
+          claimBadgeHtml = `<span style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); font-size:0.65rem; font-weight:700; padding:1px 6px; border-radius:3px; margin-left:6px;" title="This character has been claimed and locked by its verified owner.">🔒 Claimed (Protected)</span>`;
+          actionBtnHtml = `<button class="pill-btn" style="background:#334155; color:#64748b; font-size:0.75rem; padding:4px 12px; cursor:not-allowed;" title="Locked by verified owner" disabled>Locked</button>`;
         }
       } else {
-        claimBadgeHtml = `<span style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); font-size:0.65rem; font-weight:700; padding:1px 6px; border-radius:3px; margin-left:6px;" title="This character has been claimed and locked by its verified owner.">🔒 Claimed (Protected)</span>`;
-        actionBtnHtml = `<button class="pill-btn" style="background:#334155; color:#64748b; font-size:0.75rem; padding:4px 12px; cursor:not-allowed;" title="Locked by verified owner" disabled>Locked</button>`;
+        // Pending In-Game Verification (NOT Verified!)
+        if (c.is_owner) {
+          claimBadgeHtml = `<span style="background:rgba(234, 179, 8, 0.15); color:#eab308; border:1px solid rgba(234, 179, 8, 0.3); font-size:0.65rem; font-weight:700; padding:1px 6px; border-radius:3px; margin-left:6px;">⏳ Verification Pending</span>`;
+          const code = c.claim_code || "";
+          actionBtnHtml = `
+            <div style="display:flex; gap:6px;">
+              <button class="pill-btn" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#fff; font-weight:700; font-size:0.72rem; padding:5px 10px; border:none; cursor:pointer;" onclick="showClaimCodeModal('${escapeHtml(c.name)}', '${escapeHtml(code)}')">Verify Code</button>
+              <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.72rem; padding:5px 8px; cursor:pointer;" title="Cancel pending claim" onclick="releaseClaim('${escapeHtml(c.name)}')">Cancel</button>
+            </div>
+          `;
+        } else {
+          claimBadgeHtml = `<span style="background:rgba(148, 163, 184, 0.15); color:#94a3b8; border:1px solid rgba(148, 163, 184, 0.3); font-size:0.65rem; font-weight:700; padding:1px 6px; border-radius:3px; margin-left:6px;">🔒 Claim Pending</span>`;
+          actionBtnHtml = `<button class="pill-btn" style="background:#334155; color:#64748b; font-size:0.75rem; padding:4px 12px; cursor:not-allowed;" title="Pending verification by another player" disabled>Pending</button>`;
+        }
       }
     } else {
+      // Unclaimed Operative
       if (isAct) {
-        actionBtnHtml = `<button class="pill-btn active" style="background:#10b981; color:#fff; font-size:0.75rem; padding:4px 12px;" disabled>✓ Selected</button>`;
+        actionBtnHtml = `
+          <div style="display:flex; gap:6px;">
+            <button class="pill-btn active" style="background:#10b981; color:#fff; font-size:0.75rem; padding:4px 10px;" disabled>✓ Selected</button>
+            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.72rem; padding:5px 10px; border:none; cursor:pointer;" onclick="claimKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Claim Callsign &rarr;</button>
+          </div>
+        `;
       } else {
-        actionBtnHtml = `<button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.75rem; padding:5px 14px; border:none; cursor:pointer;" onclick="claimKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Claim Callsign &rarr;</button>`;
+        actionBtnHtml = `
+          <div style="display:flex; gap:6px;">
+            <button class="pill-btn" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.2); font-size:0.75rem; padding:5px 10px; cursor:pointer;" onclick="selectKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Select</button>
+            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.75rem; padding:5px 12px; border:none; cursor:pointer;" onclick="claimKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Claim Callsign &rarr;</button>
+          </div>
+        `;
       }
     }
 
@@ -4318,12 +4382,44 @@ async function claimKnownCharacter(name, cls, lvl, faction, guild, realm) {
     if (d.owner_token) {
       localStorage.setItem("wowkb_owner_token", d.owner_token);
     }
-    selectKnownCharacter(name, cls, lvl, faction, guild, realm);
+    // Refresh character list so it displays "⏳ Verification Pending"
+    loadKnownCharacters();
     if (d.claim_code) {
       showClaimCodeModal(name, d.claim_code);
     }
   } catch (err) {
     alert("Error claiming character: " + err.message);
+  }
+}
+
+async function releaseClaim(name) {
+  if (!confirm(`Are you sure you want to release the claim on "${name}"? This allows any player to claim or link it.`)) {
+    return;
+  }
+  try {
+    const res = await fetch("/api/auth/release-claim", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Owner-Token": getOwnerToken()
+      },
+      body: JSON.stringify({
+        name: name,
+        owner_token: getOwnerToken()
+      })
+    });
+    const d = await res.json();
+    if (!res.ok || d.error) {
+      alert("Error releasing claim: " + (d.error || "Unknown error"));
+      return;
+    }
+    const currentActive = (localStorage.getItem("wowkb_user_character") || "").toLowerCase();
+    if (name.toLowerCase() === currentActive) {
+      portalSignOut();
+    }
+    loadKnownCharacters();
+  } catch (err) {
+    alert("Network error: " + err.message);
   }
 }
 
@@ -4391,10 +4487,8 @@ async function handleCustomCharacterClaim(event) {
     });
     const d = await res.json();
     if (d.success) {
-      if (d.owner_token) {
-        localStorage.setItem("wowkb_owner_token", d.owner_token);
-      }
-      selectKnownCharacter(name, cls, level, faction, guild, realm);
+      switchCharModalTab("known");
+      loadKnownCharacters();
       if (d.claim_code) {
         showClaimCodeModal(name, d.claim_code);
       }
@@ -4450,12 +4544,86 @@ let currentRallyGroupType = "PARTY";
 let currentRallyContentType = "WORLD";
 let currentRallyRoles = { tank: true, heal: true, dps: true };
 
+const RALLY_OPEN_WORLD_ZONES = [
+  "Stranglethorn Vale",
+  "Hillsbrad Foothills",
+  "Arathi Highlands",
+  "Ashenvale",
+  "Blackrock Mountain",
+  "The Barrens",
+  "Redridge Mountains",
+  "Duskwood",
+  "Tanaris",
+  "Silithus",
+  "Winterspring",
+  "Western Plaguelands",
+  "Eastern Plaguelands",
+  "Felwood",
+  "Un'Goro Crater",
+  "Burning Steppes",
+  "Searing Gorge",
+  "Badlands",
+  "Blasted Lands",
+  "Feralas",
+  "Desolace",
+  "Dustwallow Marsh",
+  "Alterac Mountains",
+  "Thousand Needles",
+  "Stonetalon Mountains",
+  "Darkshore",
+  "Westfall",
+  "Loch Modan",
+  "Wetlands",
+  "Silverpine Forest",
+  "Swamp of Sorrows"
+];
+
+const RALLY_BATTLEGROUND_ZONES = [
+  "Warsong Gulch",
+  "Arathi Basin",
+  "Alterac Valley"
+];
+
+function populateRallyTargetDropdown() {
+  const selectEl = document.getElementById("rally-select-target");
+  const customWrap = document.getElementById("rally-custom-location-wrap");
+  if (!selectEl) return;
+
+  const isBG = (currentRallyContentType === "BG");
+  const list = isBG ? RALLY_BATTLEGROUND_ZONES : RALLY_OPEN_WORLD_ZONES;
+  const optLabel = isBG ? "WoW Forever Battlegrounds" : "Open World Zones";
+
+  let html = `<optgroup label="${optLabel}">`;
+  list.forEach(z => {
+    html += `<option value="${escapeHtml(z)}">${escapeHtml(z)}</option>`;
+  });
+  html += `</optgroup>`;
+  html += `<optgroup label="Custom Location">`;
+  html += `<option value="__CUSTOM__">Custom Location (Type your own)...</option>`;
+  html += `</optgroup>`;
+
+  selectEl.innerHTML = html;
+  if (customWrap) customWrap.style.display = "none";
+}
+
+function handleRallyTargetChange(val) {
+  const customWrap = document.getElementById("rally-custom-location-wrap");
+  const customInput = document.getElementById("rally-input-zone-custom");
+  if (val === "__CUSTOM__") {
+    if (customWrap) customWrap.style.display = "block";
+    if (customInput) customInput.focus();
+  } else {
+    if (customWrap) customWrap.style.display = "none";
+  }
+}
+
 function openRallyMusterModal() {
   const modal = document.getElementById("rally-muster-modal");
   if (!modal) return;
   modal.style.display = "flex";
   selectRallyGroupType("PARTY");
   selectRallyContentType("WORLD");
+  populateRallyTargetDropdown();
 }
 
 function closeRallyMusterModal() {
@@ -4477,25 +4645,7 @@ function selectRallyContentType(type) {
   const bBtn = document.getElementById("rally-cnt-bg");
   if (wBtn) wBtn.classList.toggle("active", type === "WORLD");
   if (bBtn) bBtn.classList.toggle("active", type === "BG");
-  const zoneInput = document.getElementById("rally-input-zone");
-  if (zoneInput) {
-    if (type === "BG" && (!zoneInput.value || zoneInput.value.includes("Vale") || zoneInput.value.includes("Hillsbrad"))) {
-      zoneInput.value = "Warsong Gulch";
-    } else if (type === "WORLD" && zoneInput.value.includes("Warsong")) {
-      zoneInput.value = "Stranglethorn Vale";
-    }
-  }
-}
-
-function handleRallyPresetZoneChange(val) {
-  if (!val) return;
-  const zoneInput = document.getElementById("rally-input-zone");
-  if (zoneInput) zoneInput.value = val;
-  if (val.includes("Warsong") || val.includes("Arathi") || val.includes("Alterac") || val.includes("Eye")) {
-    selectRallyContentType("BG");
-  } else {
-    selectRallyContentType("WORLD");
-  }
+  populateRallyTargetDropdown();
 }
 
 function setRallyLevelPreset(min, max) {
@@ -4508,17 +4658,50 @@ function setRallyLevelPreset(min, max) {
 function toggleRallyRole(role) {
   currentRallyRoles[role] = !currentRallyRoles[role];
   const btn = document.getElementById(`rally-role-${role}`);
-  if (btn) btn.classList.toggle("active", currentRallyRoles[role]);
+  if (btn) {
+    btn.classList.toggle("active", currentRallyRoles[role]);
+    if (currentRallyRoles[role]) {
+      if (role === "tank") {
+        btn.style.background = "rgba(56, 189, 248, 0.18)";
+        btn.style.color = "#38bdf8";
+        btn.style.borderColor = "rgba(56, 189, 248, 0.6)";
+      } else if (role === "heal") {
+        btn.style.background = "rgba(34, 197, 94, 0.18)";
+        btn.style.color = "#22c55e";
+        btn.style.borderColor = "rgba(34, 197, 94, 0.6)";
+      } else if (role === "dps") {
+        btn.style.background = "rgba(239, 68, 68, 0.18)";
+        btn.style.color = "#ef4444";
+        btn.style.borderColor = "rgba(239, 68, 68, 0.6)";
+      }
+    } else {
+      btn.style.background = "rgba(15, 23, 42, 0.6)";
+      btn.style.color = "#64748b";
+      btn.style.borderColor = "rgba(148, 163, 184, 0.2)";
+    }
+  }
 }
 
 async function handleCreateRallySubmit(event) {
   if (event) event.preventDefault();
-  const zoneInput = document.getElementById("rally-input-zone");
+  const selectTarget = document.getElementById("rally-select-target");
+  const customInput = document.getElementById("rally-input-zone-custom");
   const minLevelInput = document.getElementById("rally-input-min-level");
   const maxLevelInput = document.getElementById("rally-input-max-level");
   const msgInput = document.getElementById("rally-input-msg");
 
-  const zone = zoneInput ? zoneInput.value.trim() : "Stranglethorn Vale";
+  let zone = "Stranglethorn Vale";
+  if (selectTarget && selectTarget.value === "__CUSTOM__") {
+    zone = customInput ? customInput.value.trim() : "";
+    if (!zone) {
+      alert("Please type your custom location.");
+      if (customInput) customInput.focus();
+      return;
+    }
+  } else if (selectTarget && selectTarget.value) {
+    zone = selectTarget.value.trim();
+  }
+
   const minLevel = minLevelInput ? parseInt(minLevelInput.value) || 1 : 1;
   const maxLevel = maxLevelInput ? parseInt(maxLevelInput.value) || 60 : 60;
   const msg = msgInput ? msgInput.value.trim() : "Muster Vanguard Strike Team!";
@@ -4557,7 +4740,7 @@ async function handleCreateRallySubmit(event) {
     if (res.ok) {
       closeRallyMusterModal();
       loadRalliesView();
-      alert(`📯 Vanguard War Rally broadcasted for ${commanderName} in ${zone}!`);
+      alert(`Vanguard War Rally broadcasted for ${commanderName} in ${zone}!`);
     } else {
       alert("Failed to broadcast rally: " + (d.error || "Unknown error"));
     }
@@ -4578,15 +4761,15 @@ function loadRalliesView() {
           <div>
             <div style="font-size:12px; font-weight:700; color:#f59e0b; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Frontline Telemetry Wire</div>
             <h2 style="font-size:24px; font-weight:800; color:#f8fafc; margin:0; display:flex; align-items:center; gap:10px;">
-              <span>📯 Realm War Rallies &amp; Call to Arms</span>
+              <span>Realm War Rallies &amp; Call to Arms</span>
             </h2>
             <div style="font-size:14px; color:#94a3b8; margin-top:6px; max-width:640px;">
-              Real-time frontline distress beacons, battleground strike teams, and squad recruitment across Azeroth.
+              Active joinable squads, battleground strike teams, and faction recruitment across Azeroth.
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
             <button type="button" class="pill-btn" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#fff; font-weight:800; font-size:0.85rem; padding:8px 16px; border:none; cursor:pointer; display:flex; align-items:center; gap:8px;" onclick="openRallyMusterModal()">
-              <span>📯 Muster War Rally / Sound War Horn</span>
+              <span>+ Muster War Rally</span>
             </button>
             <div style="background:rgba(30, 41, 59, 0.8); border:1px solid rgba(148, 163, 184, 0.2); border-radius:6px; padding:8px 14px; font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:8px;">
               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; animation:pulse 2s infinite;"></span>
@@ -4599,8 +4782,8 @@ function loadRalliesView() {
       <!-- Information Callout -->
       <div style="background:rgba(14, 165, 233, 0.08); border-left:4px solid #00e5ff; border-radius:6px; padding:12px 18px; font-size:13px; color:#cbd5e1; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
         <div>
-          <strong style="color:#00e5ff;">⚔️ In-Game Auto-Invite Notice:</strong>
-          <span>Rallies can be joined directly inside World of Warcraft. Whisper <code>/w CommanderName rally</code> to any active rally commander for instant automatic squad invite into the Vanguard raid.</span>
+          <strong style="color:#00e5ff;">In-Game Squad Join Notice:</strong>
+          <span>Join any active squad inside World of Warcraft. Whisper <code>/w CommanderName rally</code> to any active rally commander for instant automatic squad invite.</span>
         </div>
         <span style="font-size:11px; color:#64748b; font-family:monospace;">Addon Feed Relay</span>
       </div>
@@ -4624,10 +4807,12 @@ function loadRalliesView() {
       if (!beacons || beacons.length === 0) {
         listEl.innerHTML = `
           <div style="background:rgba(15, 23, 42, 0.5); border:1px dashed rgba(148, 163, 184, 0.2); border-radius:10px; padding:48px 24px; text-align:center;">
-            <div style="font-size:32px; margin-bottom:12px;">🛡️</div>
+            <div style="margin-bottom:12px; display:flex; justify-content:center;">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
             <h3 style="font-size:18px; font-weight:700; color:#e2e8f0; margin:0 0 6px 0;">No Active Faction Rallies</h3>
             <p style="font-size:14px; color:#94a3b8; max-width:520px; margin:0 auto 16px auto;">
-              The frontier is quiet. No distress beacons or call-to-arms signals are currently broadcasting. Frontline squads will appear here in real-time when the War Horn sounds!
+              The frontier is quiet. No distress beacons or call-to-arms signals are currently broadcasting. Frontline squads will appear here in real-time when a rally is mustered!
             </p>
             <button type="button" class="pill-btn" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#fff; font-weight:800; font-size:0.85rem; padding:8px 18px;" onclick="openRallyMusterModal()">
               + Muster the First Strike Team
@@ -4648,16 +4833,16 @@ function loadRalliesView() {
         const isRaid = (b.group_type === "RAID");
         const isBG = (b.content_type === "BG");
         const groupBadge = isRaid ? `<span style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">40-MAN RAID</span>` : `<span style="background:rgba(59, 130, 246, 0.15); color:#38bdf8; border:1px solid rgba(59, 130, 246, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">5-MAN SQUAD</span>`;
-        const contentBadge = isBG ? `<span style="background:rgba(245, 158, 11, 0.15); color:#f59e0b; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">🚩 BATTLEGROUND</span>` : `<span style="background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">🌲 OPEN WORLD PVP</span>`;
+        const contentBadge = isBG ? `<span style="background:rgba(245, 158, 11, 0.15); color:#f59e0b; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">BATTLEGROUND</span>` : `<span style="background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">OPEN WORLD PVP</span>`;
         const lvlBracket = (b.min_level || b.max_level) ? `<span style="font-size:11px; color:#cbd5e1; background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:3px;">Lvl ${b.min_level || 1}–${b.max_level || 60}</span>` : "";
         const rolesStr = b.roles ? `<span style="font-size:11px; color:#94a3b8;">Roles: <strong style="color:#f8fafc;">${escapeHtml(b.roles)}</strong></span>` : "";
-        const messageHtml = b.message ? `<div style="font-size:12px; color:#cbd5e1; font-style:italic; margin-top:8px; background:rgba(0,0,0,0.25); padding:6px 12px; border-radius:4px; border-left:3px solid #f59e0b;">💬 "${escapeHtml(b.message)}"</div>` : "";
+        const messageHtml = b.message ? `<div style="font-size:12px; color:#cbd5e1; font-style:italic; margin-top:8px; background:rgba(0,0,0,0.25); padding:6px 12px; border-radius:4px; border-left:3px solid #f59e0b;">"${escapeHtml(b.message)}"</div>` : "";
 
         return `
           <div style="background:rgba(15, 23, 42, 0.85); border:1px solid rgba(148, 163, 184, 0.15); border-left:4px solid ${factionColor}; border-radius:8px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
             <div style="display:flex; align-items:flex-start; gap:14px; flex:1; min-width:280px;">
-              <div style="width:44px; height:44px; border-radius:8px; background:rgba(30, 41, 59, 0.8); border:1px solid rgba(148, 163, 184, 0.3); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
-                📯
+              <div style="width:44px; height:44px; border-radius:8px; background:rgba(30, 41, 59, 0.8); border:1px solid rgba(148, 163, 184, 0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
               </div>
               <div style="flex:1;">
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -4670,10 +4855,10 @@ function loadRalliesView() {
                   ${lvlBracket}
                 </div>
                 <div style="font-size:13px; color:#cbd5e1; margin-top:6px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                  <span>📍 <strong>${escapeHtml(b.zone || "Wilderness")}</strong> ${coords}</span>
+                  <span><strong>${escapeHtml(b.zone || "Wilderness")}</strong> ${coords}</span>
                   ${rolesStr ? `<span style="color:#64748b;">•</span> ${rolesStr}` : ""}
                   <span style="color:#64748b;">•</span>
-                  <span style="color:#ef4444;">⚔️ ${escapeHtml(hostiles)}</span>
+                  <span style="color:#ef4444;">${escapeHtml(hostiles)}</span>
                 </div>
                 ${messageHtml}
               </div>
@@ -5535,16 +5720,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // Handle external character web links (?character=Name or ?char=Name or ?player=Name)
   const urlParams = new URLSearchParams(window.location.search);
   const charParam = urlParams.get("character") || urlParams.get("char") || urlParams.get("player");
+  const classParam = urlParams.get("class");
+  const levelParam = urlParams.get("level");
+  const factionParam = urlParams.get("faction");
 
   if (charParam) {
     // Seamlessly authenticate operative from game link
     localStorage.setItem("wowkb_account_username", charParam);
     localStorage.setItem("wowkb_user_character", charParam);
     localStorage.setItem("wow_killboard_hunter_name", charParam);
+    if (classParam) localStorage.setItem("wowkb_user_class", classParam.toUpperCase());
+    if (levelParam) localStorage.setItem("wowkb_user_level", levelParam);
+    if (factionParam) localStorage.setItem("wowkb_user_faction", factionParam);
     sessionStorage.setItem("wowkb_auth_type", "character");
     sessionStorage.setItem("wowkb_has_entered_feed", "1");
     portalAccessMode = "character";
     renderHeaderAuthBadge();
+    syncActiveCharacterTelemetry(charParam);
     switchTab("INTEL");
     setTimeout(() => {
       openCharacterProfile(charParam);
@@ -5552,6 +5744,10 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     // Direct zero-barrier landing on the live combat feed
     sessionStorage.setItem("wowkb_has_entered_feed", "1");
+    const activeChar = localStorage.getItem("wowkb_user_character");
+    if (activeChar) {
+      syncActiveCharacterTelemetry(activeChar);
+    }
     switchTab("INTEL");
   }
 
