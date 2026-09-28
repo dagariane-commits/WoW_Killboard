@@ -4809,13 +4809,13 @@ function loadRalliesView() {
               <span>Realm War Rallies &amp; Call to Arms</span>
             </h2>
             <div style="font-size:14px; color:#94a3b8; margin-top:6px; max-width:640px;">
-              Active joinable squads, battleground strike teams, and faction recruitment across Azeroth.
+              Live joinable squads, battleground strike teams, and faction recruitment broadcast across Azeroth.
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
-            <button type="button" class="pill-btn" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#fff; font-weight:800; font-size:0.85rem; padding:8px 16px; border:none; cursor:pointer; display:flex; align-items:center; gap:8px;" onclick="openRallyMusterModal()">
-              <span>+ Muster War Rally</span>
-            </button>
+            <div style="background:rgba(217, 119, 6, 0.15); border:1px solid rgba(217, 119, 6, 0.45); border-radius:6px; padding:7px 14px; font-size:12px; color:#fbbf24; font-weight:700; display:flex; align-items:center; gap:8px;" title="Muster squads and war rallies in-game using the WoW Killboard addon (/kb rally)">
+              <span>📯 Muster In-Game: <code style="color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:3px; font-family:monospace;">/kb rally</code></span>
+            </div>
             <div style="background:rgba(30, 41, 59, 0.8); border:1px solid rgba(148, 163, 184, 0.2); border-radius:6px; padding:8px 14px; font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:8px;">
               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; animation:pulse 2s infinite;"></span>
               <span>Live Recon</span>
@@ -4856,12 +4856,12 @@ function loadRalliesView() {
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
             <h3 style="font-size:18px; font-weight:700; color:#e2e8f0; margin:0 0 6px 0;">No Active Faction Rallies</h3>
-            <p style="font-size:14px; color:#94a3b8; max-width:520px; margin:0 auto 16px auto;">
-              The frontier is quiet. No distress beacons or call-to-arms signals are currently broadcasting. Frontline squads will appear here in real-time when a rally is mustered!
+            <p style="font-size:14px; color:#94a3b8; max-width:540px; margin:0 auto 16px auto;">
+              The frontier is quiet. No distress beacons or call-to-arms signals are currently broadcasting. Frontline squads will appear here in real-time when mustered in-game with the WoW Killboard addon (/kb rally)!
             </p>
-            <button type="button" class="pill-btn" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#fff; font-weight:800; font-size:0.85rem; padding:8px 18px;" onclick="openRallyMusterModal()">
-              + Muster the First Strike Team
-            </button>
+            <div style="font-size:13px; color:#fbbf24; background:rgba(217, 119, 6, 0.12); border:1px solid rgba(217, 119, 6, 0.35); border-radius:6px; padding:8px 16px; display:inline-block;">
+              <span>Muster your squad in-game: <code style="color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:3px; font-family:monospace;">/kb rally</code></span>
+            </div>
           </div>
         `;
         return;
@@ -4875,10 +4875,25 @@ function loadRalliesView() {
         const coords = (b.coord_x && b.coord_y && (b.coord_x > 0 || b.coord_y > 0)) ? `(${Number(b.coord_x).toFixed(1)}, ${Number(b.coord_y).toFixed(1)})` : "";
         const hostiles = b.hostile_names ? `${b.hostile_count || 1} Hostile(s) (${b.hostile_names})` : `${b.hostile_count || 1} Hostile(s)`;
 
+        // Calculate exact duration rally has been running
+        const elapsedSec = Math.max(0, Math.floor(Date.now() / 1000) - Number(b.timestamp || 0));
+        let durationText = "";
+        if (elapsedSec < 60) {
+          durationText = `${elapsedSec}s`;
+        } else if (elapsedSec < 3600) {
+          const m = Math.floor(elapsedSec / 60);
+          durationText = `${m}m`;
+        } else {
+          const h = Math.floor(elapsedSec / 3600);
+          const remM = Math.floor((elapsedSec % 3600) / 60);
+          durationText = `${h}h ${remM}m`;
+        }
+
         const isRaid = (b.group_type === "RAID");
         const isBG = (b.content_type === "BG");
         const groupBadge = isRaid ? `<span style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">40-MAN RAID</span>` : `<span style="background:rgba(59, 130, 246, 0.15); color:#38bdf8; border:1px solid rgba(59, 130, 246, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">5-MAN SQUAD</span>`;
         const contentBadge = isBG ? `<span style="background:rgba(245, 158, 11, 0.15); color:#f59e0b; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">BATTLEGROUND</span>` : `<span style="background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; font-weight:700; padding:1px 6px; border-radius:4px;">OPEN WORLD PVP</span>`;
+        const durationBadge = `<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(245, 158, 11, 0.18); border:1px solid rgba(245, 158, 11, 0.5); border-radius:4px; padding:2px 8px; color:#fbbf24; font-weight:800; font-size:11px;">⏱️ Running for ${durationText}</span>`;
         const lvlBracket = (b.min_level || b.max_level) ? `<span style="font-size:11px; color:#cbd5e1; background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:3px;">Lvl ${b.min_level || 1}–${b.max_level || 60}</span>` : "";
         const rolesStr = b.roles ? `<span style="font-size:11px; color:#94a3b8;">Roles: <strong style="color:#f8fafc;">${escapeHtml(b.roles)}</strong></span>` : "";
         const messageHtml = b.message ? `<div style="font-size:12px; color:#cbd5e1; font-style:italic; margin-top:8px; background:rgba(0,0,0,0.25); padding:6px 12px; border-radius:4px; border-left:3px solid #f59e0b;">"${escapeHtml(b.message)}"</div>` : "";
@@ -4897,6 +4912,7 @@ function loadRalliesView() {
                   <span style="font-size:11px; font-weight:700; color:${factionColor}; background:${factionColor}18; border:1px solid ${factionColor}40; border-radius:4px; padding:1px 6px; text-transform:uppercase;">${factionName}</span>
                   ${groupBadge}
                   ${contentBadge}
+                  ${durationBadge}
                   ${lvlBracket}
                 </div>
                 <div style="font-size:13px; color:#cbd5e1; margin-top:6px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -4909,7 +4925,8 @@ function loadRalliesView() {
               </div>
             </div>
             <div style="text-align:right; flex-shrink:0;">
-              <div style="font-size:12px; color:#94a3b8;">Active since <strong>${ago}</strong></div>
+              <div style="font-size:12px; color:#fbbf24; font-weight:700;">Active for <strong>${durationText}</strong></div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">Mustered ${ago}</div>
               <div style="font-size:12px; color:#00e5ff; margin-top:6px; font-family:monospace; background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.2); border-radius:4px; padding:4px 10px; display:inline-block;">
                 /w ${escapeHtml(b.character_name)} rally
               </div>

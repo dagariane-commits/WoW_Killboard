@@ -2982,8 +2982,8 @@ def post_distress_beacon():
 
 @app.route("/api/backup/distress", methods=["GET"])
 def get_distress_beacons():
-    """Returns active distress beacons from the last 30 minutes."""
-    cutoff = int(time.time()) - 1800  # 30 minutes
+    """Returns active distress beacons from the last 2 hours."""
+    cutoff = int(time.time()) - 7200  # 2 hours
     with get_db() as conn:
         rows = conn.execute("""
             SELECT * FROM distress_beacons

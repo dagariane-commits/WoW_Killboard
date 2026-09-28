@@ -1347,24 +1347,221 @@ function UI:RenderLiveFeed()
     local kills = KB.Leaderboard:GetRecentKills(currentMode, 40)
     local theme = UI:GetTheme()
 
-    -- Top Section Header
-    local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("|cff00e5ffREALM TELEMETRY & TACTICAL INTEL|r")
-    title:SetShadowOffset(1, -1)
-    title:SetShadowColor(0, 0, 0, 1)
+    -- 1. High Command Execution List Header (Top 10 Most Wanted - Parity with Website)
+    local mwTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    mwTitle:SetPoint("TOPLEFT", 10, -8)
+    mwTitle:SetText("⚔️ |cffffd100HIGH COMMAND EXECUTION LIST — REALM'S MOST NOTORIOUS|r")
+    mwTitle:SetShadowOffset(1, -1)
+    mwTitle:SetShadowColor(0, 0, 0, 1)
 
-    local subtitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
-    subtitle:SetText("|cffb8a080Live battlefield killfeed, spatial GPS coordinates, and threat alerts.|r")
-    subtitle:SetShadowOffset(1, -1)
-    subtitle:SetShadowColor(0, 0, 0, 1)
+    local mwSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    mwSub:SetPoint("TOPLEFT", mwTitle, "BOTTOMLEFT", 0, -2)
+    mwSub:SetText("|cffb8a080Certified Marks of Spite across Azeroth • Deliver the final blow in open combat to claim the reward.|r")
+    mwSub:SetShadowOffset(1, -1)
+    mwSub:SetShadowColor(0, 0, 0, 1)
 
-    -- Realm Telemetry KPI Summary Bar (matching website image 3)
+    local seeAllBtn = UI:CreateButton(UI.ContentFrame, 126, 22, "See All Marks →")
+    seeAllBtn:SetPoint("TOPRIGHT", -10, -8)
+    seeAllBtn:SetScript("OnClick", function()
+        activeTab = "BOUNTIES"
+        UI:Refresh()
+    end)
+
+    -- Gather Active Outlaws sorted by highest Mark value
+    local activeOutlaws = {}
+    if WoWKillboardBounties then
+        for _, b in pairs(WoWKillboardBounties) do
+            if b.status == KB.STATUS.ACTIVE then
+                table.insert(activeOutlaws, b)
+            end
+        end
+        table.sort(activeOutlaws, function(a, b)
+            return (a.amountCopper or 0) > (b.amountCopper or 0)
+        end)
+    end
+
+    -- Render 10 Most Wanted Cards in a 2x5 Grid
+    for idx = 1, 10 do
+        local col = (idx - 1) % 5
+        local r = math.floor((idx - 1) / 5)
+        local cardX = 10 + (col * 164)
+        local cardY = -48 - (r * 118)
+
+        local b = activeOutlaws[idx]
+        local card = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        card:SetSize(154, 110)
+        card:SetPoint("TOPLEFT", cardX, cardY)
+        card:SetBackdrop(theme.rowBackdrop)
+
+        if b then
+            local bFaction = (b.targetFaction or ""):lower()
+            local borderColor = { 0.55, 0.45, 0.22, 0.95 }
+            local bgColor = { 0.07, 0.07, 0.09, 0.96 }
+            if bFaction == "alliance" or b.targetClass == "PALADIN" then
+                borderColor = { 0.22, 0.52, 0.88, 0.95 }
+                bgColor = { 0.04, 0.08, 0.16, 0.96 }
+            elseif bFaction == "horde" or b.targetClass == "SHAMAN" then
+                borderColor = { 0.85, 0.24, 0.20, 0.95 }
+                bgColor = { 0.16, 0.04, 0.04, 0.96 }
+            end
+            card:SetBackdropColor(unpack(bgColor))
+            card:SetBackdropBorderColor(unpack(borderColor))
+
+            local stamp = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            stamp:SetPoint("TOPLEFT", 6, -6)
+            stamp:SetText(string.format("|cffff4444#%d WANTED|r", idx))
+            stamp:SetShadowOffset(1, -1)
+            stamp:SetShadowColor(0, 0, 0, 1)
+
+            local reward = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            reward:SetPoint("TOPRIGHT", -6, -6)
+            local goldAmt = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
+            reward:SetText(string.format("|cffffd100%dg|r |TInterface\\MoneyFrame\\UI-GoldIcon:12:12:0:0|t", goldAmt))
+            reward:SetShadowOffset(1, -1)
+            reward:SetShadowColor(0, 0, 0, 1)
+
+            local icon = UI:CreateClassIcon(card, b.targetClass, 24)
+            icon:SetPoint("TOPLEFT", 6, -26)
+
+            local nameStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            nameStr:SetPoint("TOPLEFT", icon, "TOPRIGHT", 5, 0)
+            nameStr:SetPoint("RIGHT", card, "RIGHT", -6, 0)
+            nameStr:SetJustifyH("LEFT")
+            nameStr:SetWordWrap(false)
+            nameStr:SetText(KB.Utils and KB.Utils.ColorizeByClass and KB.Utils.ColorizeByClass(b.targetName, b.targetClass) or b.targetName)
+            nameStr:SetShadowOffset(1, -1)
+            nameStr:SetShadowColor(0, 0, 0, 1)
+
+            local gStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            gStr:SetPoint("TOPLEFT", nameStr, "BOTTOMLEFT", 0, -2)
+            gStr:SetPoint("RIGHT", card, "RIGHT", -6, 0)
+            gStr:SetJustifyH("LEFT")
+            gStr:SetWordWrap(false)
+            local fTitle = (b.targetFaction and b.targetFaction ~= "") and b.targetFaction or (b.guildName or "Hostile")
+            gStr:SetText(string.format("|cff94a3b8<%s>|r", fTitle))
+            gStr:SetShadowOffset(1, -1)
+            gStr:SetShadowColor(0, 0, 0, 1)
+
+            local lastSeenLoc = "Unknown Sector"
+            if WoWKillboardDB and WoWKillboardDB.kills then
+                local latestTime = 0
+                local latestZone = nil
+                for _, km in pairs(WoWKillboardDB.kills) do
+                    if km.killer and km.victim and (km.killer.name == b.targetName or km.victim.name == b.targetName) then
+                        if (km.timestamp or 0) > latestTime then
+                            latestTime = km.timestamp
+                            latestZone = km.location and km.location.zone
+                        end
+                    end
+                end
+                if latestZone and latestTime > 0 then
+                    local diffMin = math.max(1, math.floor((time() - latestTime) / 60))
+                    lastSeenLoc = string.format("%s (%dm ago)", latestZone, diffMin)
+                end
+            end
+
+            local seenStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            seenStr:SetPoint("TOPLEFT", 6, -58)
+            seenStr:SetPoint("RIGHT", -6, 0)
+            seenStr:SetJustifyH("LEFT")
+            seenStr:SetWordWrap(false)
+            seenStr:SetText(string.format("|cff38bdf8%s|r", lastSeenLoc))
+            seenStr:SetShadowOffset(1, -1)
+            seenStr:SetShadowColor(0, 0, 0, 1)
+
+            local bId = b.id
+            local isAccepted = KB.BountyEngine and KB.BountyEngine.IsBountyAccepted and KB.BountyEngine:IsBountyAccepted(bId)
+            local actBtn = UI:CreateButton(card, 142, 20, isAccepted and "|cff00ff66✓ Tracking|r" or "|cffffd100⚔ Accept|r")
+            actBtn:SetPoint("BOTTOM", 0, 6)
+            if not isAccepted then
+                actBtn:SetScript("OnClick", function(btnSelf)
+                    if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
+                        KB.BountyEngine:AcceptBounty(bId)
+                        if btnSelf.Label then btnSelf.Label:SetText("|cff00ff66✓ Tracking|r") end
+                    end
+                end)
+            end
+        else
+            card:SetBackdropColor(0.04, 0.05, 0.07, 0.85)
+            card:SetBackdropBorderColor(0.25, 0.28, 0.32, 0.55)
+
+            local stamp = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            stamp:SetPoint("TOPLEFT", 6, -6)
+            stamp:SetText(string.format("|cff64748b#%d WANTED|r", idx))
+            stamp:SetShadowOffset(1, -1)
+            stamp:SetShadowColor(0, 0, 0, 1)
+
+            local reward = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            reward:SetPoint("TOPRIGHT", -6, -6)
+            reward:SetText("|cff64748bOPEN|r")
+            reward:SetShadowOffset(1, -1)
+            reward:SetShadowColor(0, 0, 0, 1)
+
+            local blankIcon = card:CreateTexture(nil, "ARTWORK")
+            blankIcon:SetSize(22, 22)
+            blankIcon:SetPoint("TOPLEFT", 6, -26)
+            blankIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+            blankIcon:SetVertexColor(0.35, 0.40, 0.48, 0.6)
+
+            local nameStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            nameStr:SetPoint("TOPLEFT", blankIcon, "TOPRIGHT", 5, 0)
+            nameStr:SetPoint("RIGHT", -6, 0)
+            nameStr:SetJustifyH("LEFT")
+            nameStr:SetWordWrap(false)
+            nameStr:SetText("|cff64748bPending Target|r")
+            nameStr:SetShadowOffset(1, -1)
+            nameStr:SetShadowColor(0, 0, 0, 1)
+
+            local gStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            gStr:SetPoint("TOPLEFT", nameStr, "BOTTOMLEFT", 0, -2)
+            gStr:SetPoint("RIGHT", -6, 0)
+            gStr:SetJustifyH("LEFT")
+            gStr:SetWordWrap(false)
+            gStr:SetText("|cff475569<Unclaimed>|r")
+            gStr:SetShadowOffset(1, -1)
+            gStr:SetShadowColor(0, 0, 0, 1)
+
+            local seenStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            seenStr:SetPoint("TOPLEFT", 6, -58)
+            seenStr:SetPoint("RIGHT", -6, 0)
+            seenStr:SetJustifyH("LEFT")
+            seenStr:SetWordWrap(false)
+            seenStr:SetText("|cff475569No Active Contract|r")
+            seenStr:SetShadowOffset(1, -1)
+            seenStr:SetShadowColor(0, 0, 0, 1)
+
+            local issueBtn = UI:CreateButton(card, 142, 20, "|cff94a3b8+ Issue Mark|r")
+            issueBtn:SetPoint("BOTTOM", 0, 6)
+            issueBtn:SetScript("OnClick", function()
+                UI:ShowBountyPrompt()
+            end)
+        end
+    end
+
+    -- Divider Line separating Most Wanted from Live Combat Feed
+    local divLine = UI.ContentFrame:CreateTexture(nil, "BACKGROUND")
+    divLine:SetSize(820, 1)
+    divLine:SetPoint("TOPLEFT", 0, -288)
+    divLine:SetColorTexture(0.35, 0.28, 0.16, 0.8)
+
+    -- 2. Live Combat Recon Feed Header
+    local feedTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    feedTitle:SetPoint("TOPLEFT", 10, -298)
+    feedTitle:SetText("|cff00e5ffREALM TELEMETRY & TACTICAL INTEL|r")
+    feedTitle:SetShadowOffset(1, -1)
+    feedTitle:SetShadowColor(0, 0, 0, 1)
+
+    local feedSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    feedSub:SetPoint("TOPLEFT", feedTitle, "BOTTOMLEFT", 0, -2)
+    feedSub:SetText("|cffb8a080Live battlefield killfeed, spatial GPS coordinates, and threat alerts.|r")
+    feedSub:SetShadowOffset(1, -1)
+    feedSub:SetShadowColor(0, 0, 0, 1)
+
+    -- Realm Telemetry KPI Summary Bar (matching website layout)
     local sum = KB.Leaderboard and KB.Leaderboard.GetModeSummary and KB.Leaderboard:GetModeSummary(currentMode) or { totalKills = 0, soloPct = 0, alliancePct = 50, hordePct = 50 }
     local kpiPlate = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
     kpiPlate:SetSize(820, 26)
-    kpiPlate:SetPoint("TOPLEFT", 0, -46)
+    kpiPlate:SetPoint("TOPLEFT", 0, -336)
     kpiPlate:SetBackdrop(theme.rowBackdrop)
     kpiPlate:SetBackdropColor(0.04, 0.04, 0.05, 0.95)
     kpiPlate:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.85)
@@ -1378,15 +1575,15 @@ function UI:RenderLiveFeed()
     kpiText:SetShadowOffset(1, -1)
     kpiText:SetShadowColor(0, 0, 0, 1)
 
-    local yOffset = -78
+    local yOffset = -368
 
     if #kills == 0 then
         if not UI.EmptyFeedText then
             UI.EmptyFeedText = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            UI.EmptyFeedText:SetPoint("TOP", UI.ContentFrame, "TOP", 0, -110)
             UI.EmptyFeedText:SetJustifyH("CENTER")
             UI.EmptyFeedText:SetSpacing(4)
         end
+        UI.EmptyFeedText:SetPoint("TOP", UI.ContentFrame, "TOP", 0, yOffset - 16)
         local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Azeroth"
         UI.EmptyFeedText:SetText(string.format(
             "|cffffd100● FRONTLINE COMBAT RADAR ONLINE|r\n\n" ..
@@ -1400,7 +1597,7 @@ function UI:RenderLiveFeed()
         UI.EmptyFeedText:SetShadowOffset(1, -1)
         UI.EmptyFeedText:SetShadowColor(0, 0, 0, 1)
         UI.EmptyFeedText:Show()
-        UI.ContentFrame:SetHeight(280)
+        UI.ContentFrame:SetHeight(math.abs(yOffset) + 260)
         return
     elseif UI.EmptyFeedText then
         UI.EmptyFeedText:Hide()
