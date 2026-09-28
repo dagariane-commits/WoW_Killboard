@@ -5,6 +5,20 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.50] - 2026-09-28
+
+### Fixed
+- **Solo & In-Combat Kill Attribution on CLEU-Restricted Clients (`CombatTracker.lua`)**:
+  - Resolved critical issue where all player kills on WoW Forever Beta (`Interface: 16001`) and Retail were discarded due to `COMBAT_LOG_EVENT_UNFILTERED` being restricted to avoid Blizzard UI taint, which caused `playerDamage` to report as `0` and tripped the bystander early-exit gate.
+  - Refined bystander gating: an honor tick is now discarded ONLY if the player is out of combat, has no enemy targeted or engaged in the last 30 seconds, has no party members, has dealt zero damage, and received zero assists.
+  - Guaranteed that solo players fighting in combat (`InCombatLockdown()`) or targeting the victim are directly credited as the Victorious Combatant, incrementing `CT.SessionStats.kills` and updating K/D statistics.
+  - Corrected solo attacker list attribution so the player's spell is designated as `"Killing Blow"` instead of `"Support Assist"` and certified as `isSolo = true` (`attackersCount = 1`).
+  - Added fallback combat log chat parsing (`CHAT_MSG_COMBAT_SELF_HITS`, `CHAT_MSG_SPELL_SELF_DAMAGE`, `CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE`) to capture player damage amounts and spell names even when CLEU is disabled.
+  - Re-introduced targeted `UNIT_HEALTH` unit event listener on `"target"` to instantly detect 1v1 enemy deaths with robust 5-second deduplication.
+- **In-Combat Hostile Unit Scanning (`UnitScanner.lua`)**:
+  - Removed restrictive `InCombatLockdown()` early return in `US:ScanUnit(unit)`, allowing real-time caching of enemy names, classes, levels, and factions during combat.
+  - Gated `GetGuildInfo(unit)` safely against combat lockdown to guarantee zero Blizzard UI taint.
+
 ## [1.4.49] - 2026-09-28
 
 ### Added

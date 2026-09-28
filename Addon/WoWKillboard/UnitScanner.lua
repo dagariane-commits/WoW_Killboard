@@ -16,7 +16,6 @@ local frame = CreateFrame("Frame")
 
 -- Inspect a given unit token and update cache
 function US:ScanUnit(unit)
-    if InCombatLockdown() and unit ~= "player" then return end
     if not unit or not UnitExists(unit) or not UnitIsPlayer(unit) then
         return
     end
@@ -41,7 +40,7 @@ function US:ScanUnit(unit)
     race = KB.Utils.CanAccess(race) and race or "Unknown"
     local englishFaction, _ = UnitFactionGroup(unit)
     englishFaction = KB.Utils.CanAccess(englishFaction) and englishFaction or "Unknown"
-    local guildName, _, _, _ = GetGuildInfo(unit)
+    local guildName = (not InCombatLockdown() and GetGuildInfo and GetGuildInfo(unit)) or "None"
     guildName = KB.Utils.CanAccess(guildName) and guildName or "None"
 
     -- If level is -1 (skull level / >10 lvls higher), check C_PlayerInfo or format as ?? (level 0)
