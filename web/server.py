@@ -411,6 +411,18 @@ def index():
 def static_files(path):
     return send_from_directory(STATIC_DIR, path)
 
+@app.route("/WoWKillboard-v1.0.0.zip")
+@app.route("/download")
+@app.route("/addon.zip")
+def download_addon():
+    root_dir = os.path.dirname(APP_DIR)
+    zip_path = os.path.join(root_dir, "WoWKillboard-v1.0.0.zip")
+    if os.path.exists(zip_path):
+        return send_from_directory(root_dir, "WoWKillboard-v1.0.0.zip", as_attachment=True)
+    if os.path.exists(os.path.join(STATIC_DIR, "WoWKillboard-v1.0.0.zip")):
+        return send_from_directory(STATIC_DIR, "WoWKillboard-v1.0.0.zip", as_attachment=True)
+    return jsonify({"error": "Distribution package not found"}), 404
+
 # ----------------- StreamBox (OBS Overlay) -----------------
 
 STREAMBOX_HTML = """<!DOCTYPE html>
