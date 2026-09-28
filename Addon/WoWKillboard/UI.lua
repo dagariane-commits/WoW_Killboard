@@ -2565,7 +2565,8 @@ function UI:CreateDetailModal()
     kWebBtn:SetPoint("BOTTOMRIGHT", -6, 6)
     kWebBtn:SetScript("OnClick", function()
         if modal.currentKillmail and modal.currentKillmail.killer and modal.currentKillmail.killer.name then
-            UI:ShowCharacterWebLink(modal.currentKillmail.killer.name)
+            local k = modal.currentKillmail.killer
+            UI:ShowCharacterWebLink(k.name, k.class, k.level, k.faction)
         end
     end)
     killerCard.WebBtn = kWebBtn
@@ -2605,7 +2606,8 @@ function UI:CreateDetailModal()
     vWebBtn:SetPoint("BOTTOMRIGHT", -6, 6)
     vWebBtn:SetScript("OnClick", function()
         if modal.currentKillmail and modal.currentKillmail.victim and modal.currentKillmail.victim.name then
-            UI:ShowCharacterWebLink(modal.currentKillmail.victim.name)
+            local v = modal.currentKillmail.victim
+            UI:ShowCharacterWebLink(v.name, v.class, v.level, v.faction)
         end
     end)
     victimCard.WebBtn = vWebBtn
@@ -2696,14 +2698,32 @@ function UI:ShowKillDetail(km)
 end
 
 -- Template-Free External Web Profile Link Dialog (Anonymous, 100% Zero Blizzard Taint)
-function UI:ShowCharacterWebLink(charName)
+function UI:ShowCharacterWebLink(charName, className, level, faction)
     if InCombatLockdown and InCombatLockdown() then
         SafePrint("|cffff9900[WoWKB]|r Cannot open web profile link dialog during combat.")
         return
     end
 
+    local isPlayer = (not charName) or (charName == UnitName("player"))
     charName = charName or UnitName("player") or "Player"
-    local rawUrl = string.format("http://13.216.102.148/?character=%s", charName)
+
+    if isPlayer then
+        local _, classFilename = UnitClass("player")
+        className = className or classFilename or "WARRIOR"
+        level = level or UnitLevel("player") or 60
+        faction = faction or UnitFactionGroup("player") or "Alliance"
+    elseif UnitExists("target") and UnitName("target") == charName then
+        local _, classFilename = UnitClass("target")
+        className = className or classFilename or "WARRIOR"
+        level = level or UnitLevel("target") or 60
+        faction = faction or UnitFactionGroup("target") or "Alliance"
+    else
+        className = className or "WARRIOR"
+        level = level or 60
+        faction = faction or "Alliance"
+    end
+
+    local rawUrl = string.format("http://13.216.102.148/?character=%s&class=%s&level=%d&faction=%s", charName, className, level, faction)
 
     if not UI.WebLinkDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")

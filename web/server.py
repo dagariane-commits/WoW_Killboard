@@ -1805,6 +1805,7 @@ def get_characters_directory():
         for r in rows:
             claimed_token = r["owner_token"]
             is_claimed = bool(claimed_token)
+            is_verified = bool(r["verified"] and r["verified"] == 1)
             is_owner = bool(is_claimed and owner_token and claimed_token == owner_token)
             result.append({
                 "name": r["name"],
@@ -1816,8 +1817,9 @@ def get_characters_directory():
                 "guild": r["guild"] or "None",
                 "last_seen": r["last_seen"] or 0,
                 "is_claimed": is_claimed,
-                "is_verified": bool(r["verified"] and r["verified"] == 1),
+                "is_verified": is_verified,
                 "is_owner": is_owner,
+                "claim_code": r["claim_code"] if is_owner else None,
             })
         return jsonify(result)
 
@@ -1918,6 +1920,32 @@ def verify_claim():
             return jsonify({"success": True, "message": f"Character '{name}' ownership verified and locked to owner."})
         else:
             return jsonify({"error": "Invalid verification code"}), 400
+
+@app.route("/api/auth/release-claim", methods=["POST"])
+def release_claim():
+    """Allows an owner or claimant to release/cancel a pending or owned claim."""
+    data = request.json or {}
+    name = (data.get("name") or data.get("character_name") or data.get("characterName") or "").strip()
+    owner_token = (data.get("owner_token") or request.headers.get("X-Owner-Token") or "").strip()
+    if not name:
+        return jsonify({"error": "Character name required"}), 400
+
+    with get_db() as conn:
+        existing = conn.execute(
+            "SELECT owner_token, verified FROM character_claims WHERE LOWER(character_name) = LOWER(?)",
+            (name,)
+        ).fetchone()
+        if not existing:
+            return jsonify({"success": True, "message": "No claim found for this character"})
+
+        # If owner_token provided and matches or if unverified, allow releasing
+        if existing["owner_token"] and owner_token and existing["owner_token"] != owner_token:
+            return jsonify({"error": "Unauthorized: Owner token does not match"}), 403
+
+        conn.execute("DELETE FROM character_claims WHERE LOWER(character_name) = LOWER(?)", (name,))
+        conn.commit()
+
+    return jsonify({"success": True, "message": f"Claim on '{name}' released successfully"})
 
 @app.route("/api/auth/bnet", methods=["GET"])
 def auth_bnet():

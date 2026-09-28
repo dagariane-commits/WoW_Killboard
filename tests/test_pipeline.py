@@ -1164,9 +1164,30 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertEqual(target_rally["max_level"], 60)
         self.assertIn("TANK", target_rally["roles"])
         self.assertIn("HEAL", target_rally["roles"])
-        self.assertIn("Silverwing Hold", target_rally["message"])
+        # 7. Test Character Claim Release (/api/auth/release-claim)
+        # Attempt unauthorized release from impersonator -> 403 Forbidden
+        res_rel_unauth = self.client.post("/api/auth/release-claim", json={
+            "name": "Dagariane",
+            "owner_token": owner_tok_2
+        })
+        self.assertEqual(res_rel_unauth.status_code, 403)
 
-        print("[PASS] Verified Character Claim Ownership Lock, In-Game Verification, and Rich Rally Muster.")
+        # Authorized release from legitimate owner -> 200 OK
+        res_rel_auth = self.client.post("/api/auth/release-claim", json={
+            "name": "Dagariane",
+            "owner_token": owner_tok_1
+        })
+        self.assertEqual(res_rel_auth.status_code, 200)
+        self.assertTrue(res_rel_auth.get_json()["success"])
+
+        # Confirm character is now unclaimed
+        res_chars_after = self.client.get("/api/characters?search=Dagariane", headers={"X-Owner-Token": owner_tok_1})
+        self.assertEqual(res_chars_after.status_code, 200)
+        unclaimed_char = res_chars_after.get_json()[0]
+        self.assertFalse(unclaimed_char["is_claimed"])
+        self.assertFalse(unclaimed_char["is_verified"])
+
+        print("[PASS] Verified Character Claim Ownership Lock, In-Game Verification, Release Claim, and Rich Rally Muster.")
 
 if __name__ == "__main__":
     unittest.main()

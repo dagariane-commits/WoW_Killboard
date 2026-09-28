@@ -5,6 +5,38 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.46] - 2026-09-27
+
+### Fixed
+- **Character Claim Verification Logic & Multi-Character Bug (`server.py`, `app.js`)**:
+  - Fixed issue where selecting or claiming another character would incorrectly show them as `🛡️ Verified Owner` even when unverified.
+  - Enforced strict verification check `is_verified: bool(r["verified"] and r["verified"] == 1)` in `/api/characters`.
+  - Characters awaiting in-game `/kb claim <CODE>` now correctly display `⏳ Verification Pending` with `[Verify Code]` and `[Cancel Claim]` controls.
+  - Added `@app.route("/api/auth/release-claim", methods=["POST"])` allowing players to release unverified or verified claims and unlink characters cleanly.
+- **Accurate Character Telemetry Sync (`app.js`, `UI.lua`, `Core.lua`)**:
+  - Fixed bug where logged-in characters defaulted to Warrior instead of Paladin due to unpopulated class/level/faction attributes.
+  - Updated Addon `UI:ShowCharacterWebLink` to pass `class`, `level`, and `faction` in the URL query parameters (`/?character=Name&class=PALADIN&level=60&faction=Alliance`).
+  - Implemented `syncActiveCharacterTelemetry(charName)` in `app.js` to automatically fetch true operative class/level/faction from the server and synchronize `localStorage` and the header identity badge.
+  - Added `/kb profile [Name]` and `/kb web` slash command in `Core.lua`.
+
+### Removed
+- **External Armory Links Purged (`app.js`)**:
+  - Removed third-party external redirect buttons to Blizzard Armory, Classic Armory, and Warcraft Logs from character profile dossiers.
+  - Retained clean, zero-external-dependency `[📋 Copy Link]` clipboard utility for sharing operative dossier URLs.
+
+### Changed
+- **Dynamic Rally Target Location Selection (`app.js`, `index.html`)**:
+  - Replaced static text/dropdown with dynamic theatre-aware target dropdown:
+    - **Open World**: 31 classic frontline zones (Stranglethorn Vale, Hillsbrad Foothills, Arathi Highlands, Ashenvale, Blackrock Mountain, Silithus, etc.).
+    - **Battlegrounds**: Warsong Gulch, Arathi Basin, and Alterac Valley.
+    - **Custom**: Reveals free-form location text input field for specialized battle coordinates.
+- **Modern Tactical Role SVGs & Glyph Rectangle Elimination (`index.html`, `app.js`)**:
+  - Replaced unsupported Unicode emoji glyphs with crisp inline vector SVGs (Shield, Cross, Crossed Swords) for Tank, Healer, and DPS role buttons.
+  - Eliminated font-fallback missing glyph rectangles (`▯`) across headers, rally cards, and buttons.
+- **Multi-Client Addon Parity & Test Coverage (`deploy.py`, `test_pipeline.py`)**:
+  - Deployed updated addon files across all 4 local WoW clients (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+  - Added unit test coverage for the `/api/auth/release-claim` endpoint and verified 100% pass across all 15 automated test suites.
+
 ## [1.4.45] - 2026-09-27
 
 ### Changed

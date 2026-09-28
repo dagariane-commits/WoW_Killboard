@@ -771,7 +771,7 @@
             Frontline Vanguard Muster
           </div>
           <h3 style="margin:2px 0 0 0; color:#fff; font-family:var(--font-tactical); font-size:1.35rem; display:flex; align-items:center; gap:8px;">
-            <span>📯 Muster Vanguard War Rally &amp; Call to Arms</span>
+            <span>Muster Faction Vanguard War Rally</span>
           </h3>
         </div>
         <button class="modal-close" onclick="closeRallyMusterModal()">&times;</button>
@@ -783,10 +783,10 @@
           <label class="auth-label" style="margin-bottom:6px;">1. Squad Capacity / Group Size</label>
           <div style="display:flex; gap:10px;">
             <button type="button" id="rally-grp-party" class="pill-btn active" style="flex:1; padding:8px 12px; font-weight:700;" onclick="selectRallyGroupType('PARTY')">
-              👥 5-Man Squad (Party)
+              <span>5-Man Squad (Party)</span>
             </button>
             <button type="button" id="rally-grp-raid" class="pill-btn" style="flex:1; padding:8px 12px; font-weight:700;" onclick="selectRallyGroupType('RAID')">
-              ⚔️ 40-Man Strike Team (Raid)
+              <span>40-Man Strike Team (Raid)</span>
             </button>
           </div>
         </div>
@@ -796,39 +796,24 @@
           <label class="auth-label" style="margin-bottom:6px;">2. Combat Theatre / Content Type</label>
           <div style="display:flex; gap:10px;">
             <button type="button" id="rally-cnt-world" class="pill-btn active" style="flex:1; padding:8px 12px; font-weight:700;" onclick="selectRallyContentType('WORLD')">
-              🌲 Open World PvP
+              <span>Open World PvP</span>
             </button>
             <button type="button" id="rally-cnt-bg" class="pill-btn" style="flex:1; padding:8px 12px; font-weight:700;" onclick="selectRallyContentType('BG')">
-              🚩 Battleground Operation
+              <span>Battleground</span>
             </button>
           </div>
         </div>
 
-        <!-- 3. Target Location / Zone / BG Specific -->
+        <!-- 3. Target Location / Zone / BG Specific (Dynamic Dropdown + Custom) -->
         <div>
-          <label class="auth-label" for="rally-input-zone" style="margin-bottom:6px;">3. Target Location / Zone / Specific BG</label>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <select id="rally-select-preset-zone" class="normal-auth-input" style="height:38px;" onchange="handleRallyPresetZoneChange(this.value)">
-              <option value="">-- Choose Common Frontline --</option>
-              <optgroup label="Open World PvP Hotspots">
-                <option value="Stranglethorn Vale">Stranglethorn Vale (Gurubashi Arena)</option>
-                <option value="Hillsbrad Foothills">Hillsbrad Foothills (Southshore / Tarren Mill)</option>
-                <option value="Blackrock Mountain">Blackrock Mountain</option>
-                <option value="Ashenvale">Ashenvale</option>
-                <option value="Silithus">Silithus</option>
-                <option value="Redridge Mountains">Redridge Mountains</option>
-                <option value="Duskwood">Duskwood</option>
-                <option value="Winterspring">Winterspring</option>
-                <option value="Tanaris">Tanaris (Gadgetzan)</option>
-              </optgroup>
-              <optgroup label="Battlegrounds">
-                <option value="Warsong Gulch">Warsong Gulch (10v10 CTF)</option>
-                <option value="Arathi Basin">Arathi Basin (15v15 Domination)</option>
-                <option value="Alterac Valley">Alterac Valley (40v40 War)</option>
-                <option value="Eye of the Storm">Eye of the Storm</option>
-              </optgroup>
+          <label class="auth-label" for="rally-select-target" style="margin-bottom:6px;">3. Target Location / Zone / Battleground</label>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <select id="rally-select-target" class="normal-auth-input" style="height:40px; font-weight:600;" onchange="handleRallyTargetChange(this.value)">
+              <!-- Dynamically populated based on Open World vs Battleground -->
             </select>
-            <input type="text" id="rally-input-zone" class="normal-auth-input" placeholder="Or enter specific zone/area..." value="Stranglethorn Vale" required>
+            <div id="rally-custom-location-wrap" style="display:none;">
+              <input type="text" id="rally-input-zone-custom" class="normal-auth-input" placeholder="Type custom location or coordinates (e.g. Gurubashi Arena, Crossroads, Blackrock Mountain entrance)...">
+            </div>
           </div>
         </div>
 
@@ -855,18 +840,21 @@
           </div>
         </div>
 
-        <!-- 5. Requested Combat Roles / Specs -->
+        <!-- 5. Requested Combat Roles / Specs (Clean SVG Icons, Zero Rectangles) -->
         <div>
           <label class="auth-label" style="margin-bottom:6px;">5. Requested Combat Roles</label>
           <div style="display:flex; gap:10px;">
-            <button type="button" id="rally-role-tank" class="pill-btn active" style="flex:1; padding:6px 12px; font-weight:700;" onclick="toggleRallyRole('tank')">
-              🛡️ Tanks Needed
+            <button type="button" id="rally-role-tank" class="pill-btn active" style="flex:1; padding:8px 12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="toggleRallyRole('tank')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Tank</span>
             </button>
-            <button type="button" id="rally-role-heal" class="pill-btn active" style="flex:1; padding:6px 12px; font-weight:700;" onclick="toggleRallyRole('heal')">
-              💚 Healers Needed
+            <button type="button" id="rally-role-heal" class="pill-btn active" style="flex:1; padding:8px 12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="toggleRallyRole('heal')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="flex-shrink:0;"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2z"/></svg>
+              <span>Healer</span>
             </button>
-            <button type="button" id="rally-role-dps" class="pill-btn active" style="flex:1; padding:6px 12px; font-weight:700;" onclick="toggleRallyRole('dps')">
-              ⚔️ DPS Needed
+            <button type="button" id="rally-role-dps" class="pill-btn active" style="flex:1; padding:8px 12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="toggleRallyRole('dps')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><line x1="4" y1="20" x2="20" y2="4"/><line x1="14" y1="4" x2="20" y2="4"/><line x1="20" y1="4" x2="20" y2="10"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="10" y1="20" x2="4" y2="20"/><line x1="4" y1="14" x2="4" y2="20"/></svg>
+              <span>DPS</span>
             </button>
           </div>
         </div>
@@ -874,13 +862,13 @@
         <!-- 6. Message / Battle Cry -->
         <div>
           <label class="auth-label" for="rally-input-msg" style="margin-bottom:6px;">6. Battle Cry / Mission Directive</label>
-          <input type="text" id="rally-input-msg" class="normal-auth-input" placeholder="e.g. Assembling frontline squad for STV hunting & defense! Auto-invite active." value="Muster Vanguard Strike Team!">
+          <input type="text" id="rally-input-msg" class="normal-auth-input" placeholder="e.g. Assembling frontline squad for STV hunting & defense! Whisper to join." value="Muster Vanguard Strike Team!">
         </div>
 
         <!-- Submit & Cancel -->
         <div style="display:flex; gap:10px; margin-top:8px;">
           <button type="submit" class="normal-auth-submit-btn" style="flex:2; background:linear-gradient(135deg, #d97706 0%, #b45309 100%); font-weight:800;">
-            <span>📯 Broadcast Call to Arms</span>
+            <span>Broadcast War Rally</span>
             <span>&rarr;</span>
           </button>
           <button type="button" class="normal-auth-submit-btn" style="flex:1; background:#1e293b; color:#cbd5e1; border:1px solid #334155;" onclick="closeRallyMusterModal()">
