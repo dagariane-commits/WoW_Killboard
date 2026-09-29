@@ -40,6 +40,12 @@ def get_db():
     db_dir = os.path.dirname(DB_PATH)
     if db_dir and not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
+    if os.path.exists(DB_PATH):
+        try:
+            if not os.access(DB_PATH, os.W_OK):
+                os.chmod(DB_PATH, 0o666)
+        except OSError:
+            pass
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -912,7 +918,7 @@ def ingest_kill_data(data, conn):
     """Surgically ingests or updates a single killmail record with full bounty, feud, and guild tracking."""
     if not data or not isinstance(data, dict):
         return None
-    kill_id = data.get("killId")
+    kill_id = data.get("killId") or data.get("kill_id")
     if not kill_id:
         return None
 
@@ -1176,12 +1182,20 @@ def ingest_kill_data(data, conn):
 @app.route("/api/kills", methods=["POST"])
 def post_kill():
     data = request.json
-    if not data or "killId" not in data:
-        return jsonify({"error": "Invalid payload"}), 400
+    if not data or ("killId" not in data and "kill_id" not in data):
+        return jsonify({"error": "Invalid payload: missing killId"}), 400
 
-    with get_db() as conn:
-        k_id = ingest_kill_data(data, conn)
-        conn.commit()
+    try:
+        with get_db() as conn:
+            k_id = ingest_kill_data(data, conn)
+            conn.commit()
+    except sqlite3.OperationalError as e:
+        logger.error(f"[DB Error] sqlite3.OperationalError: {e}")
+        return jsonify({
+            "error": "Database write error (database file or directory is readonly)",
+            "detail": str(e),
+            "tip": "Run on server: sudo chown -R $USER:$USER /opt/wowkillboard && sudo chmod -R 777 /opt/wowkillboard/web"
+        }), 500
 
     if k_id:
         return jsonify({"success": True, "killId": k_id}), 201

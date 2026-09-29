@@ -916,7 +916,7 @@ function UI:CreateMainWindow()
             SafePrint("|cffff9900[WoWKB]|r Cannot reload UI during combat.")
             return
         end
-        SafePrint("|cff00ccff[WoWKB]|r Flushing combat records to disk... Reloading UI to trigger desktop sync.")
+        SafePrint("|cff00ccff[WoWKB]|r Flushing combat records to disk... Keep WoWKillboardSync.exe running in the background to automatically upload to web.")
         ReloadUI()
     end)
     syncBtn:SetScript("OnEnter", function(self)
@@ -925,7 +925,7 @@ function UI:CreateMainWindow()
             self:SetBackdropColor(unpack(t.btnHoverBg))
             self:SetBackdropBorderColor(0.1, 0.85, 0.4, 1.0)
         end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Save & Sync Kills|r", "Flushes all in-memory combat records to SavedVariables on disk.\n\nTriggers WoWKillboardSync.exe to immediately upload your kills to the live web killboard.\n\n(Performs a quick /reload)")
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Save & Sync Kills|r", "Flushes all in-memory combat records to SavedVariables on disk via /reload.\n\nNOTE: WoW's security sandbox prevents addons from accessing the internet directly. Keep WoWKillboardSync.exe running in the background (or in Windows Startup) to automatically ingest and sync your kills to the web platform.")
     end)
     syncBtn:SetScript("OnLeave", function(self)
         local t = UI:GetTheme()
