@@ -1991,23 +1991,6 @@ frame:SetScript("OnEvent", function(self, event, ...)
         end
         CT:CheckPendingDeathBounty()
 
-    elseif event == "UNIT_HEALTH" then
-        local unit = ...
-        if unit and UnitExists(unit) and UnitIsPlayer(unit) then
-            local hp = UnitHealth(unit)
-            local isDead = (hp == 0) or UnitIsDead(unit) or UnitIsDeadOrGhost(unit)
-            if isDead then
-                local isEnemy = UnitIsEnemy("player", unit) or (UnitCanAttack and UnitCanAttack("player", unit)) or (not UnitIsFriend("player", unit))
-                if isEnemy then
-                    local tName = UnitName(unit)
-                    local tGuid = UnitGUID(unit)
-                    if tName and tName ~= "" then
-                        CT:OnPlayerHonorableKill(tName, tGuid, unit)
-                    end
-                end
-            end
-        end
-
     elseif event == "PLAYER_TARGET_CHANGED" then
         if UnitExists("target") and UnitIsPlayer("target") then
             local isEnemy = UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or (not UnitIsFriend("player", "target"))
@@ -2150,12 +2133,4 @@ frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
-
-pcall(function()
-    if frame.RegisterUnitEvent then
-        frame:RegisterUnitEvent("UNIT_HEALTH", "target", "mouseover", "focus", "targettarget")
-    else
-        frame:RegisterEvent("UNIT_HEALTH")
-    end
-end)
 
