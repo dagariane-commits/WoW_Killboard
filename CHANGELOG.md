@@ -5,6 +5,21 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.57] - 2026-09-28
+
+### Changed
+- **Warcraft Dark-Fantasy Terminology Overhaul (`app.js`, `index.html`, `UI.lua`)**:
+  - Purged modern corporate SaaS and military developer jargon (`operative`, `callsign`, `dossier`, `telemetry`, `recon`) across all user-facing views in favor of immersive Warcraft terminology:
+    - *Champion Combat Profile* & *Champion Identity* (replaces "Operative Dossier" & "Callsign").
+    - *Killmail Combat Record* & *War Archives* (replaces "Killmail Intelligence Dossier" & "Historical Codex").
+    - *Frontline Vanguard Wire* & *Live Intel* (replaces "Frontline Telemetry Wire" & "Live Recon").
+    - *Combat Log Ingestion & War Ledger Sync* (replaces "Telemetry Sync").
+    - *Vanguard Scout* & *Champion Standing* (replaces "Recon Operative" & "Operative Standing").
+    - *Arsenal Tier 1 // In-Game Field Kit* and *Arsenal Tier 2 // Azeroth War Room* (replaces "Module 1" / "Module 2").
+  - In-game Addon bug dispatch dialog updated to "Our AI agent analyzes diagnostics on sync".
+- **Cache-Busting & Web Parity (`index.html`)**:
+  - Incremented static asset cache-buster version to `?v=1.4.57` for `style.css` and `app.js`.
+
 ## [1.4.56] - 2026-09-28
 
 ### Added

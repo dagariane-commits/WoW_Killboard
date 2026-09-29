@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=1.4.56">
+  <link rel="stylesheet" href="/static/style.css?v=1.4.57">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -208,7 +208,7 @@
           <div class="section-title">Deadliest Zones (24 Hours)</div>
         </div>
         <div id="sidebar-24h-zones" class="sidebar-rank-list">
-          <div style="color:#64748b; font-size:0.8rem;">Gathering telemetry...</div>
+          <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
         </div>
       </div>
 
@@ -218,7 +218,7 @@
           <div class="section-title">Top Active Gankers (24 Hours)</div>
         </div>
         <div id="sidebar-24h-characters" class="sidebar-rank-list">
-          <div style="color:#64748b; font-size:0.8rem;">Gathering telemetry...</div>
+          <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
         </div>
       </div>
 
@@ -228,7 +228,7 @@
           <div class="section-title">Top Active Guilds (24 Hours)</div>
         </div>
         <div id="sidebar-24h-guilds" class="sidebar-rank-list">
-          <div style="color:#64748b; font-size:0.8rem;">Gathering telemetry...</div>
+          <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
         </div>
       </div>
 
@@ -261,7 +261,7 @@
       <div class="modal-header">
         <strong style="color: var(--wow-gold, #c69b3a); font-family: var(--font-cinzel, Cinzel, serif); font-size: 1.15rem; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
           <span>⚔️</span>
-          <span>Killmail Intelligence Dossier</span>
+          <span>Killmail Combat Record</span>
         </strong>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
@@ -275,7 +275,7 @@
   <div class="modal-overlay" id="character-modal">
     <div class="modal-card modal-card-lg">
       <div class="modal-header">
-        <strong style="color: var(--accent-cyan); font-size: 1.1rem;" id="character-modal-title">Character Combat Dossier</strong>
+        <strong style="color: var(--accent-cyan); font-size: 1.1rem;" id="character-modal-title">Champion Combat Profile</strong>
         <button class="modal-close" onclick="closeCharacterModal()">&times;</button>
       </div>
       <div id="character-modal-body" style="display: flex; flex-direction: column; gap: 16px; max-height: 80vh; overflow-y: auto; padding-right: 4px;">
@@ -343,7 +343,7 @@
       <div class="modal-header">
         <div>
           <strong style="color: var(--wow-gold); font-size: 1.15rem; font-family: var(--font-display);">WoW Forever — Select Realm Server</strong>
-          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">Choose your active realm ruleset. All telemetry, kill feeds, and bounties filter to this server.</div>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">Choose your active realm ruleset. All combat records, kill feeds, and bounties filter to this server.</div>
         </div>
         <button class="modal-close" onclick="closeServerSelectorModal()">&times;</button>
       </div>
@@ -448,8 +448,8 @@
         <div class="dossier-tier-section">
           <div class="dossier-tier-title-row">
             <div>
-              <h3 class="dossier-tier-heading">TACTICAL ARCHITECTURE &amp; CAPABILITIES</h3>
-              <div class="dossier-tier-subhead">100% Free &bull; Open-World Combat Telemetry &bull; In-Game Addon &amp; Web Synchronization</div>
+              <h3 class="dossier-tier-heading">CHRONICLES &amp; COMBAT ARSENAL</h3>
+              <div class="dossier-tier-subhead">100% Free &bull; Open-World Combat Intelligence &bull; In-Game Addon &amp; Web Synchronization</div>
             </div>
           </div>
 
@@ -457,8 +457,8 @@
             <!-- Column 1: In-Game Combat Addon (Live Modules) -->
             <div class="dossier-tier-card guest-tier">
               <div class="tier-card-header">
-                <span class="tier-badge guest">MODULE 1 // IN-GAME ADDON</span>
-                <div class="tier-name">Tactical Combat Addon</div>
+                <span class="tier-badge guest">ARSENAL TIER 1 // IN-GAME FIELD KIT</span>
+                <div class="tier-name">In-Game Combat Tracker</div>
                 <div class="tier-sub">In-Game UI &bull; Zero Taint &bull; Real-Time Radar</div>
               </div>
               <ul class="tier-features-list">
@@ -480,7 +480,7 @@
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Zone Intel &amp; Telemetry:</strong> Sector heatmaps, 1v1 solo kill verification, and Battleground damage/healing metrics.</span>
+                  <span class="tier-text"><strong>Zone Intel &amp; Heatmaps:</strong> Sector heatmaps, 1v1 solo kill verification, and Battleground damage/healing metrics.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
@@ -497,8 +497,8 @@
             <!-- Column 2: Web War Room & Operative Identity -->
             <div class="dossier-tier-card free-tier">
               <div class="tier-card-header">
-                <span class="tier-badge free">MODULE 2 // WEB WAR ROOM</span>
-                <div class="tier-name">Operative Telemetry Portal</div>
+                <span class="tier-badge free">ARSENAL TIER 2 // AZEROTH WAR ROOM</span>
+                <div class="tier-name">Champion Identity &amp; War Ledger</div>
                 <div class="tier-sub">Live Synchronization &bull; Armory Identity &bull; Auto-Sync</div>
               </div>
               <ul class="tier-features-list">
@@ -508,7 +508,7 @@
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Personalized Combat Banner:</strong> Link your operative to display personalized K/D, solo rates, and rank insignia.</span>
+                  <span class="tier-text"><strong>Personalized Combat Banner:</strong> Link your Champion to display personalized K/D, solo rates, and rank insignia.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
@@ -529,7 +529,7 @@
               </ul>
               <div class="tier-card-action">
                 <button class="tier-cta-btn free" onclick="closeAddonDossierModal(); openCharacterLinkModal();">
-                  <span>Link / Claim Operative &rarr;</span>
+                  <span>Claim Your Champion &rarr;</span>
                 </button>
               </div>
             </div>
@@ -633,7 +633,7 @@
           </div>
           <div>
             <strong style="color: #ef4444; font-family: var(--font-tactical); font-size: 1.15rem; letter-spacing: 0.6px;">FIELD BUG DISPATCHES &amp; AI DIAGNOSTICS</strong>
-            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">IN-GAME TELEMETRY &bull; AUTOMATED AI ROOT CAUSE ANALYSIS &bull; SURGICAL REMEDIATION</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">IN-GAME COMBAT DISPATCHES &bull; AUTOMATED AI ROOT CAUSE ANALYSIS &bull; SURGICAL REMEDIATION</div>
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -647,7 +647,7 @@
 
       <div style="overflow-y: auto; padding: 16px 20px; flex: 1;" id="bug-reports-list">
         <div style="text-align: center; color: #94a3b8; padding: 30px;">
-          Loading automated telemetry dispatches...
+          Loading combat dispatches...
         </div>
       </div>
     </div>
@@ -659,10 +659,10 @@
       <div class="modal-header">
         <div>
           <div style="font-size:0.75rem; font-weight:800; color:var(--wow-gold); letter-spacing:1px; text-transform:uppercase;">
-            Azeroth Identity &amp; Clearance
+            Champion Identity &amp; War Clearance
           </div>
           <h3 style="margin:2px 0 0 0; color:#fff; font-family:var(--font-tactical); font-size:1.35rem; display:flex; align-items:center; gap:8px;">
-            <span>⚔️ Select &amp; Claim Operative Identity</span>
+            <span>⚔️ Select &amp; Claim Your Champion</span>
           </h3>
         </div>
         <button class="modal-close" onclick="closeCharacterLinkModal()">&times;</button>
@@ -674,7 +674,7 @@
           📋 Realm Combatants (<span id="char-known-count">0</span>)
         </button>
         <button id="char-tab-btn-custom" class="pill-btn" onclick="switchCharModalTab('custom')">
-          ✏️ Register New Callsign
+          ✏️ Register Hero Identity
         </button>
       </div>
 
@@ -763,7 +763,7 @@
       </div>
       <div style="display:flex; flex-direction:column; gap:14px; padding:12px 0;">
         <p style="margin:0; font-size:0.9rem; color:#cbd5e1; line-height:1.5;">
-          Operative callsign <strong id="claim-modal-char-name" style="color:var(--accent-cyan);"></strong> is now claimed and bound to your browser session.
+          Champion <strong id="claim-modal-char-name" style="color:var(--accent-cyan);"></strong> is now claimed and bound to your war room session.
         </p>
         <div style="background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.3); border-radius:8px; padding:14px; text-align:center;">
           <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#94a3b8; margin-bottom:4px;">In-Game Claim Verification Code</div>
@@ -795,7 +795,7 @@
         </span>
         <div>
           <div class="oracle-title">THE WAR ARCHIVIST</div>
-          <div class="oracle-sub">Live Azeroth Combat Telemetry &amp; Historical Codex</div>
+          <div class="oracle-sub">Live Azeroth Combat Intelligence &amp; War Archives</div>
         </div>
       </div>
       <div class="oracle-header-actions">
@@ -844,6 +844,6 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=1.4.56"></script>
+  <script src="/static/app.js?v=1.4.57"></script>
 </body>
 </html>

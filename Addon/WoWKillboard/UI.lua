@@ -303,7 +303,7 @@ function UI:ApplyTheme()
         UI.DetailModal:SetBackdropBorderColor(unpack(theme.modalBorder))
         if UI.DetailModal.Title then
             local mColor = (theme.id == "classic") and "|cffffd100" or "|cffffffff"
-            UI.DetailModal.Title:SetText(mColor .. "KILLMAIL INTELLIGENCE DOSSIER|r")
+            UI.DetailModal.Title:SetText(mColor .. "KILLMAIL COMBAT RECORD|r")
         end
         if UI.DetailModal.CloseBtn then
             if theme.id == "classic" then
@@ -739,7 +739,7 @@ function UI:CreateMainWindow()
         local pName = UnitName("player") or "Player"
         local knownCount = KB.UnitScanner and KB.UnitScanner.GetKnownCharactersCount and KB.UnitScanner:GetKnownCharactersCount() or 0
         local title = string.format("|cffffd100%s — Web Profile|r", pName)
-        local desc = "Click to copy your character's public web profile link.\nView detailed combat dossier, kill timeline, and charts outside the game."
+        local desc = "Click to copy your character's public web profile link.\nView detailed combat record, kill timeline, and charts outside the game."
         if knownCount > 0 then
             desc = desc .. string.format("\n|cff94a3b8Known Realm Characters Tracked:|r |cff00e5ff%d|r", knownCount)
         end
@@ -767,7 +767,7 @@ function UI:CreateMainWindow()
             self:SetBackdropColor(unpack(t.btnHoverBg))
             self:SetBackdropBorderColor(0.0, 0.85, 1.0, 1.0)
         end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff00e5ffCharacter Web Profile|r", "Click to copy your character's public web profile link.\nView detailed combat dossier, kill timeline, and charts outside the game.")
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff00e5ffCharacter Web Profile|r", "Click to copy your character's public web profile link.\nView detailed combat record, kill timeline, and charts outside the game.")
     end)
     webBtn:SetScript("OnLeave", function(self)
         local t = UI:GetTheme()
@@ -931,7 +931,7 @@ function UI:CreateMainWindow()
             self:SetBackdropColor(unpack(t.btnHoverBg))
             self:SetBackdropBorderColor(1.0, 0.35, 0.35, 1.0)
         end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffff5555Report Bug / Issue|r", "Capture system telemetry and submit a bug ticket.\n\nOur AI diagnostic agent analyzes the issue upon sync.")
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffff5555Report Bug / Issue|r", "Capture combat diagnostics and submit a bug ticket.\n\nOur AI diagnostic agent analyzes the issue upon sync.")
     end)
     bugBtn:SetScript("OnLeave", function(self)
         local t = UI:GetTheme()
@@ -1049,7 +1049,7 @@ function UI:CreateMainWindow()
 
     -- 4-Way Mode Filter Pills (World | BGs | Duels | Arenas [Disabled / Greyed Out])
     local filterConfigs = {
-        { id = "ARENA", text = "Arenas", w = 58, disabled = true, color = {0.5, 0.5, 0.5}, tooltip = "Arenas (Coming Soon - Season Telemetry Pending)" },
+        { id = "ARENA", text = "Arenas", w = 58, disabled = true, color = {0.5, 0.5, 0.5}, tooltip = "Arenas (Coming Soon - Season Records Pending)" },
         { id = "DUEL",  text = "Duels",  w = 52, color = {1.0, 0.84, 0.0} },
         { id = "BG",    text = "BGs",    w = 48, color = {0.3, 0.65, 1.0} },
         { id = "WORLD", text = "World",  w = 54, color = {0.2, 0.85, 0.3} },
@@ -1811,7 +1811,7 @@ function UI:RenderLeaderboard()
         -- Left side: Benchmark Title and Player Identity
         local bmTitle = bmCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         bmTitle:SetPoint("TOPLEFT", 10, -6)
-        bmTitle:SetText("|cffffd100OPERATIVE BENCHMARK COMPARISON|r")
+        bmTitle:SetText("|cffffd100CHAMPION STANDING COMPARISON|r")
         bmTitle:SetShadowOffset(1, -1)
         bmTitle:SetShadowColor(0, 0, 0, 1)
 
@@ -2324,7 +2324,7 @@ function UI:RenderBounties()
     local pMarksTxt = pCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     pMarksTxt:SetPoint("LEFT", 12, 0)
     pMarksTxt:SetText(string.format(
-        "|cffffd100YOUR MARK DOSSIER:|r   |cff38bdf8%d Contracts Issued by You|r   |cff64748b•|r   |cff%s%d Active Marks Placed on Your Head|r",
+        "|cffffd100YOUR MARK OF SPITE RECORD:|r   |cff38bdf8%d Contracts Issued by You|r   |cff64748b•|r   |cff%s%d Active Marks Placed on Your Head|r",
         pMarks.issued or 0,
         (pMarks.onHead and pMarks.onHead > 0) and "ef4444" or "10b981",
         pMarks.onHead or 0
@@ -2751,7 +2751,7 @@ function UI:RenderZones()
     if #zones == 0 then
         local emptyZ = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
         emptyZ:SetPoint("TOPLEFT", 10, yOffset)
-        emptyZ:SetText("No zone casualty telemetry recorded yet. Engage in combat to populate!")
+        emptyZ:SetText("No zone combat records recorded yet. Engage in combat to populate!")
         emptyZ:SetShadowOffset(1, -1)
         emptyZ:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 30
@@ -2973,7 +2973,7 @@ function UI:CreateDetailModal()
     local title = modal:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", 0, -12)
     local mColor = (theme.id == "classic") and "|cffffd100" or "|cffffffff"
-    title:SetText(mColor .. "KILLMAIL INTELLIGENCE DOSSIER|r")
+    title:SetText(mColor .. "KILLMAIL COMBAT RECORD|r")
     modal.Title = title
 
     -- Top-Right Close Button
@@ -3222,7 +3222,7 @@ function UI:ShowCharacterWebLink(charName, className, level, faction)
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         desc:SetPoint("TOP", 0, -44)
-        desc:SetText("Press |cffffd100Ctrl+C|r to copy your public dossier URL to view or share online:")
+        desc:SetText("Press |cffffd100Ctrl+C|r to copy your public combat profile URL to view or share online:")
         dlg.Desc = desc
 
         -- EditBox container plate
@@ -3455,7 +3455,7 @@ function UI:ShowBugReportModal()
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         desc:SetPoint("TOP", 0, -36)
-        desc:SetText("Submit a combat issue or UI glitch. Our AI agent diagnoses telemetry on sync:")
+        desc:SetText("Submit a combat issue or UI glitch. Our AI agent analyzes diagnostics on sync:")
         dlg.Desc = desc
 
         local tStrip = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
@@ -3539,7 +3539,7 @@ function UI:ShowBugReportModal()
     local subZ = GetSubZoneText() or ""
     local zStr = (subZ ~= "") and string.format("%s (%s)", zName, subZ) or zName
 
-    dlg.TelemetryLabel:SetText(string.format("|cff00e5ffClient:|r %s | |cffffd100Operative:|r %s | |cff10b981Sector:|r %s", flavor, pName, zStr))
+    dlg.TelemetryLabel:SetText(string.format("|cff00e5ffClient:|r %s | |cffffd100Champion:|r %s | |cff10b981Sector:|r %s", flavor, pName, zStr))
     dlg.EditBox:SetText("")
     dlg:Show()
     dlg.EditBox:SetFocus()
@@ -3995,7 +3995,7 @@ function UI:ShowReinforcementAlert(beaconData)
     ))
 
     UI.ReinforcementDialog.GpsText:SetText(string.format(
-        "GPS Telemetry: (%.1f, %.1f) | Guild: <%s>",
+        "Coordinates: (%.1f, %.1f) | Guild: <%s>",
         beaconData.coord_x or 0,
         beaconData.coord_y or 0,
         beaconData.guild_name or "Unaligned"
@@ -4798,7 +4798,7 @@ function UI:ShowSettingsModal()
         s4Title:SetPoint("TOPLEFT", 24, y)
         s4Title:SetText("|cffffd1004. Data Export & Desktop Sync|r")
 
-        local exportBtn = UI:CreateButton(dlg, 160, 24, "Export Dossier / JSON")
+        local exportBtn = UI:CreateButton(dlg, 160, 24, "Export Data / JSON")
         exportBtn:SetPoint("TOPLEFT", 24, y - 24)
         exportBtn:SetScript("OnClick", function()
             dlg:Hide()
