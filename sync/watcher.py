@@ -500,8 +500,17 @@ class KillboardWatcher:
                     if resp.status in (200, 201):
                         print(f"[Watcher] [CLAIM] Verified ownership for '{character_name}' on {endpoint} via in-game token {code}!")
                         any_success = True
+            except urllib.error.HTTPError as e:
+                err_msg = ""
+                try:
+                    err_json = json.loads(e.read().decode("utf-8"))
+                    err_msg = err_json.get("error", "")
+                except Exception:
+                    pass
+                msg_suffix = f": {err_msg}" if err_msg else ""
+                print(f"[Watcher] [CLAIM ERROR] Failed to verify '{character_name}' on {endpoint} (HTTP {e.code}{msg_suffix})")
             except Exception as e:
-                pass
+                print(f"[Watcher] [CLAIM NOTICE] Could not verify '{character_name}' on {endpoint}: {e}")
         return any_success
 
     def upload_bug_report(self, bug_data: dict) -> bool:

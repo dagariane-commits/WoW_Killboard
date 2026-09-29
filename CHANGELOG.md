@@ -5,6 +5,23 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.62] - 2026-09-29
+
+### Fixed
+- **In-Game UI Button Label Deduplication (`UI.lua`)**:
+  - Removed all redundant bracketed tag prefixes (`[Settings] Settings` -> `Settings`, `[Save] Sync` -> `Sync`, `[Share] Share Wanted` -> `Share Wanted`, `[Share] Share Champions` -> `Share Champions`, `[Share] Share Guilds` -> `Share Guilds`, `[Share] Share Gankers` -> `Share Gankers`, `[Save] Save & Reload UI` -> `Save & Reload UI`).
+  - Standardized role chip toggle buttons in Vanguard Rally Muster dialog (`[Tank] Tank` -> `Tank`, `[Healer] Healer` -> `Healer`, ` DPS` -> `DPS`).
+- **Runtime In-Memory Kill History Self-Healing (`Core.lua`)**:
+  - Implemented `KB:SanitizeKillHistory()` invoked during `KB:Initialize()` on addon load / UI reload.
+  - Automatically sanitizes in-memory `WoWKillboardDB.kills` before UI rendering or disk serialization:
+    - Prunes victim self-insertion from historical kill records, recalculating `attackersCount` and resetting `isSolo = true` for solo ganks (e.g. Slama killing Dagariane corrected from `[GANG x2]` to `[SOLO]`).
+    - Deduplicates player entries and reconstructs Druid ally assist telemetry for assisted takedowns (e.g. Dagariane killing Slama corrected from `[SOLO]` to `[GANG x2]`).
+    - Ensures clean state is written to SavedVariables on disk when `/reload` executes.
+- **Character Claim Verification Resilience & Diagnostics (`server.py`, `watcher.py`)**:
+  - Wrapped `claim_character`, `verify_claim`, and `release_claim` database operations in `sqlite3.OperationalError` exception handling, returning structured diagnostic JSON instead of uncaught Werkzeug HTTP 500 HTML tracebacks.
+  - Enhanced `upload_claim_token` in `sync/watcher.py` to output explicit error diagnostics (`[CLAIM ERROR] HTTP <code>`) when the remote API rejects or encounters server database lockups.
+  - Recompiled standalone `WoWKillboardSync.exe` and refreshed multi-client distribution suite.
+
 ## [1.4.61] - 2026-09-29
 
 ### Fixed

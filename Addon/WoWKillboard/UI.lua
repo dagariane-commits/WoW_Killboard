@@ -879,7 +879,7 @@ function UI:CreateMainWindow()
     settingsBtn:EnableMouse(true)
     local settingsLabel = settingsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     settingsLabel:SetPoint("CENTER", 0, 0)
-    settingsLabel:SetText("|cffffd100[Settings] Settings|r")
+    settingsLabel:SetText("|cffffd100Settings|r")
     settingsBtn.Label = settingsLabel
     settingsBtn:SetScript("OnClick", function()
         UI:ShowSettingsModal()
@@ -909,7 +909,7 @@ function UI:CreateMainWindow()
     syncBtn:EnableMouse(true)
     local syncLabel = syncBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     syncLabel:SetPoint("CENTER", 0, 0)
-    syncLabel:SetText("|cff10b981[Save] Sync|r")
+    syncLabel:SetText("|cff10b981Sync|r")
     syncBtn.Label = syncLabel
     syncBtn:SetScript("OnClick", function()
         if InCombatLockdown and InCombatLockdown() then
@@ -1449,7 +1449,7 @@ function UI:RenderLiveFeed()
         UI:Refresh()
     end)
 
-    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "[Share] Share Wanted")
+    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "Share Wanted")
     shareWantedBtn:SetPoint("RIGHT", seeAllBtn, "LEFT", -6, 0)
     shareWantedBtn:SetScript("OnClick", function()
         UI:ShareWantedToChat()
@@ -1873,11 +1873,11 @@ function UI:RenderLeaderboard()
         UI:Refresh()
     end)
 
-    local shareText = "[Share] Share Champions"
+    local shareText = "Share Champions"
     if hlSubTab == "GUILDS" then
-        shareText = "[Share] Share Guilds"
+        shareText = "Share Guilds"
     elseif hlSubTab == "GANKERS_24H" then
-        shareText = "[Share] Share Gankers"
+        shareText = "Share Gankers"
     end
     local shareBtn = UI:CreateButton(UI.ContentFrame, 140, 22, shareText)
     shareBtn:SetPoint("TOPRIGHT", -10, -44)
@@ -2451,7 +2451,7 @@ function UI:RenderBounties()
         UI:ShowBountyPrompt()
     end)
 
-    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "[Share] Share Wanted")
+    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "Share Wanted")
     shareWantedBtn:SetPoint("RIGHT", placeBtn, "LEFT", -6, 0)
     shareWantedBtn:SetScript("OnClick", function()
         UI:ShareWantedToChat()
@@ -4335,7 +4335,7 @@ function UI:ShowDeathBountyPrompt(killerData)
             curSettings.ignoreDeathBounties = true
             if KB.db and KB.db.settings then KB.db.settings.ignoreDeathBounties = true end
             dlg:Hide()
-            SafePrint("|cffff9900[WoWKB]|r Mark of Spite death prompts disabled. You can re-enable anytime in [[Settings] Settings].")
+            SafePrint("|cffff9900[WoWKB]|r Mark of Spite death prompts disabled. You can re-enable anytime in Settings.")
         end)
 
         local cancelBtn = UI:CreateButton(dlg, 110, 26, "Cancel")
@@ -5273,7 +5273,7 @@ function UI:ShowSettingsModal()
             UI:ShowExportDialog()
         end)
 
-        local reloadBtn = UI:CreateButton(dlg, 160, 24, "[Save] Save & Reload UI")
+        local reloadBtn = UI:CreateButton(dlg, 160, 24, "Save & Reload UI")
         reloadBtn:SetPoint("LEFT", exportBtn, "RIGHT", 10, 0)
         reloadBtn:SetScript("OnClick", function()
             if InCombatLockdown and InCombatLockdown() then
@@ -6232,19 +6232,19 @@ function UI:ShowRallyDialog()
         sec5Title:SetPoint("TOPLEFT", 24, -284)
         sec5Title:SetText("|cffffffff5. REQUESTED COMBAT ROLES / SPECS|r")
 
-        local btnTank = UI:CreateButton(dlg, 136, 24, "[Tank] Tank", "GameFontHighlightSmall")
+        local btnTank = UI:CreateButton(dlg, 136, 24, "Tank", "GameFontHighlightSmall")
         btnTank:SetPoint("TOPLEFT", 24, -304)
-        StyleChip(btnTank, "[Tank] Tank")
+        StyleChip(btnTank, "Tank")
         dlg.BtnTank = btnTank
 
-        local btnHeal = UI:CreateButton(dlg, 136, 24, "[Healer] Healer", "GameFontHighlightSmall")
+        local btnHeal = UI:CreateButton(dlg, 136, 24, "Healer", "GameFontHighlightSmall")
         btnHeal:SetPoint("LEFT", btnTank, "RIGHT", 12, 0)
-        StyleChip(btnHeal, "[Healer] Healer")
+        StyleChip(btnHeal, "Healer")
         dlg.BtnHeal = btnHeal
 
-        local btnDPS = UI:CreateButton(dlg, 136, 24, " DPS", "GameFontHighlightSmall")
+        local btnDPS = UI:CreateButton(dlg, 136, 24, "DPS", "GameFontHighlightSmall")
         btnDPS:SetPoint("LEFT", btnHeal, "RIGHT", 12, 0)
-        StyleChip(btnDPS, " DPS")
+        StyleChip(btnDPS, "DPS")
         dlg.BtnDPS = btnDPS
 
         btnTank:SetScript("OnClick", function()
