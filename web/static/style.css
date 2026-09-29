@@ -164,47 +164,51 @@ body {
 }
 
 .header-faction-crest {
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 1px solid var(--wow-brass-border);
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  border: 2px solid var(--wow-brass-border);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
   object-fit: cover;
-  transition: transform 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.25s ease;
 }
 
 .header-faction-crest.alliance {
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.8), inset 0 0 6px rgba(59, 130, 246, 0.5);
   border-color: #3b82f6;
+  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.8));
 }
 
 .header-faction-crest.horde {
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.8), inset 0 0 6px rgba(239, 68, 68, 0.5);
   border-color: #ef4444;
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8));
 }
 
 .logo-group:hover .header-faction-crest {
-  transform: scale(1.1);
+  transform: scale(1.18);
+  filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
 }
 
 .logo-title {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   font-weight: 900;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   line-height: 1.1;
-  background: linear-gradient(180deg, #fff2a3 0%, #d4a329 45%, #7a5704 100%);
+  background: linear-gradient(180deg, #fffadb 0%, #f59e0b 50%, #92400e 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.95));
 }
 
 .logo-subtitle {
   font-family: var(--font-tactical);
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #856a36;
+  font-size: 0.70rem;
+  font-weight: 800;
+  color: #00e5ff;
   letter-spacing: 1.5px;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
 }
 
 .live-status-pill {
@@ -6078,6 +6082,61 @@ body.portal-active .container {
   color: var(--wow-gold-bright);
   box-shadow: 0 0 14px rgba(212, 163, 41, 0.3);
   transform: translateY(-1px);
+}
+
+/* ----------------- Character Link & Claim Modal Enhanced Styling ----------------- */
+#character-link-modal {
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.90) 0%, rgba(2, 6, 17, 0.97) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: opacity 0.2s ease;
+}
+
+#character-link-modal .modal-card {
+  background: linear-gradient(180deg, #0d121f 0%, #05080f 100%);
+  border: 1px solid rgba(212, 163, 41, 0.4);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.95), 0 0 25px rgba(212, 163, 41, 0.15);
+  border-radius: 12px;
+}
+
+.char-modal-tabs .pill-btn {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+}
+
+.char-modal-tabs .pill-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  color: #fff;
+  border-color: rgba(212, 163, 41, 0.5);
+}
+
+.char-modal-tabs .pill-btn.active {
+  background: rgba(212, 163, 41, 0.18);
+  color: #ffd100;
+  border-color: #ffd100;
+  box-shadow: 0 0 12px rgba(212, 163, 41, 0.25);
+}
+
+.known-char-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: all 0.18s ease;
+}
+
+.known-char-card:hover {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(212, 163, 41, 0.4);
+  transform: translateX(2px);
 }
 
 

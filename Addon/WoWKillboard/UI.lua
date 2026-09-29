@@ -224,6 +224,14 @@ function UI:ApplyTheme()
         UI:ApplyButtonStyle(UI.SyncButton, theme)
         if theme.id == "classic" then UI.SyncButton:SetHeight(22) else UI.SyncButton:SetHeight(20) end
     end
+    if UI.SettingsButton then
+        UI:ApplyButtonStyle(UI.SettingsButton, theme)
+        if theme.id == "classic" then UI.SettingsButton:SetHeight(22) else UI.SettingsButton:SetHeight(20) end
+    end
+    if UI.BugButton then
+        UI:ApplyButtonStyle(UI.BugButton, theme)
+        if theme.id == "classic" then UI.BugButton:SetHeight(22) else UI.BugButton:SetHeight(20) end
+    end
     if UI.WireButton then
         UI:ApplyButtonStyle(UI.WireButton, theme)
         if theme.id == "classic" then UI.WireButton:SetHeight(22) else UI.WireButton:SetHeight(20) end
@@ -459,6 +467,9 @@ function UI:OnPlayerRegenDisabled()
     if UI.AlertsDialog and UI.AlertsDialog:IsShown() then
         UI.AlertsDialog:Hide()
     end
+    if UI.SettingsDialog and UI.SettingsDialog:IsShown() then
+        UI.SettingsDialog:Hide()
+    end
     if UI.KOSDialog and UI.KOSDialog:IsShown() then
         UI.KOSDialog:Hide()
     end
@@ -601,7 +612,7 @@ function UI:CreateMainWindow()
 
     -- Anonymous frame to prevent Blizzard AccountData UI_LAYOUT tracking
     mainFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    mainFrame:SetSize(860, 580)
+    mainFrame:SetSize(880, 640)
     mainFrame:SetPoint("CENTER")
     mainFrame:SetMovable(true)
     mainFrame:EnableMouse(true)
@@ -731,7 +742,7 @@ function UI:CreateMainWindow()
     end)
     -- Template-Free Character Web Profile Link Button (Positioned cleanly on Left next to Medallion)
     local webBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    webBtn:SetSize(86, 20)
+    webBtn:SetSize(84, 20)
     webBtn:SetPoint("LEFT", medallion, "RIGHT", 10, 0)
     webBtn:EnableMouse(true)
     local webLabel = webBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -759,40 +770,10 @@ function UI:CreateMainWindow()
     end)
     UI.WebProfileButton = webBtn
 
-    -- Template-Free In-Game Combat Export Button
-    local exportBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    exportBtn:SetSize(64, 20)
-    exportBtn:SetPoint("LEFT", webBtn, "RIGHT", 6, 0)
-    exportBtn:EnableMouse(true)
-    local exportLabel = exportBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    exportLabel:SetPoint("CENTER", 0, 0)
-    exportLabel:SetText("|cffffd100Export|r")
-    exportBtn.Label = exportLabel
-    exportBtn:SetScript("OnClick", function()
-        UI:ShowExportDialog()
-    end)
-    exportBtn:SetScript("OnEnter", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnHoverBg then
-            self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
-        end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Combat Data Export|r", "Click to open the in-game combat export window.\nCopy your combat records to paste directly into the website uploader.")
-    end)
-    exportBtn:SetScript("OnLeave", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnBg then
-            self:SetBackdropColor(unpack(t.btnBg))
-            self:SetBackdropBorderColor(unpack(t.btnBorder))
-        end
-        UI:HidePrivateTooltip()
-    end)
-    UI.ExportButton = exportBtn
-
     -- Template-Free Combat Wire Pop-Out Toggle Button
     local wireBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    wireBtn:SetSize(54, 20)
-    wireBtn:SetPoint("LEFT", exportBtn, "RIGHT", 6, 0)
+    wireBtn:SetSize(52, 20)
+    wireBtn:SetPoint("LEFT", webBtn, "RIGHT", 6, 0)
     wireBtn:EnableMouse(true)
     local wireLabel = wireBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     wireLabel:SetPoint("CENTER", 0, 0)
@@ -858,56 +839,27 @@ function UI:CreateMainWindow()
     end)
     UI.CloseButton = closeBtn
 
-    -- Template-Free Theme Switcher Button
-    local themeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    themeBtn:SetSize(105, 20)
-    themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -6, 0)
-    themeBtn:EnableMouse(true)
-    local themeLabel = themeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    themeLabel:SetPoint("CENTER", 0, 0)
-    themeBtn.Label = themeLabel
-    themeBtn:SetScript("OnClick", function()
-        local cur = UI:GetCurrentThemeName()
-        local nextTheme = (cur == "classic") and "elvui" or "classic"
-        UI:SetTheme(nextTheme)
+    -- Template-Free Consolidated Settings Button
+    local settingsBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    settingsBtn:SetSize(82, 20)
+    settingsBtn:SetPoint("RIGHT", closeBtn, "LEFT", -6, 0)
+    settingsBtn:EnableMouse(true)
+    local settingsLabel = settingsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    settingsLabel:SetPoint("CENTER", 0, 0)
+    settingsLabel:SetText("|cffffd100⚙ Settings|r")
+    settingsBtn.Label = settingsLabel
+    settingsBtn:SetScript("OnClick", function()
+        UI:ShowSettingsModal()
     end)
-    themeBtn:SetScript("OnEnter", function(self)
+    settingsBtn:SetScript("OnEnter", function(self)
         local t = UI:GetTheme()
         if t and t.btnHoverBg then
             self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
+            self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
         end
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Settings & Preferences|r", "Configure Theme, Alert Banners, Sound, Mute Death Marks, Combat Feed & Data Export.")
     end)
-    themeBtn:SetScript("OnLeave", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnBg then
-            self:SetBackdropColor(unpack(t.btnBg))
-            self:SetBackdropBorderColor(unpack(t.btnBorder))
-        end
-    end)
-    UI.ThemeButton = themeBtn
-
-    -- Template-Free Alerts Configuration Button
-    local alertsBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    alertsBtn:SetSize(76, 20)
-    alertsBtn:SetPoint("RIGHT", themeBtn, "LEFT", -6, 0)
-    alertsBtn:EnableMouse(true)
-    local alertsLabel = alertsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    alertsLabel:SetPoint("CENTER", 0, 0)
-    alertsLabel:SetText("|cffffd100Alerts|r")
-    alertsBtn.Label = alertsLabel
-    alertsBtn:SetScript("OnClick", function()
-        UI:ShowAlertsConfig()
-    end)
-    alertsBtn:SetScript("OnEnter", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnHoverBg then
-            self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
-        end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Combat Alert Settings|r", "Configure Kill Banner, Sound Alerts, Raid Warnings & Position.")
-    end)
-    alertsBtn:SetScript("OnLeave", function(self)
+    settingsBtn:SetScript("OnLeave", function(self)
         local t = UI:GetTheme()
         if t and t.btnBg then
             self:SetBackdropColor(unpack(t.btnBg))
@@ -915,16 +867,16 @@ function UI:CreateMainWindow()
         end
         UI:HidePrivateTooltip()
     end)
-    UI.AlertsButton = alertsBtn
+    UI.SettingsButton = settingsBtn
 
     -- Template-Free Desktop Sync / Reload Button
     local syncBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    syncBtn:SetSize(74, 20)
-    syncBtn:SetPoint("RIGHT", alertsBtn, "LEFT", -6, 0)
+    syncBtn:SetSize(72, 20)
+    syncBtn:SetPoint("RIGHT", settingsBtn, "LEFT", -6, 0)
     syncBtn:EnableMouse(true)
     local syncLabel = syncBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     syncLabel:SetPoint("CENTER", 0, 0)
-    syncLabel:SetText("|cff10b981Sync Kills|r")
+    syncLabel:SetText("|cff10b981💾 Sync|r")
     syncBtn.Label = syncLabel
     syncBtn:SetScript("OnClick", function()
         if InCombatLockdown and InCombatLockdown() then
@@ -954,12 +906,12 @@ function UI:CreateMainWindow()
 
     -- Template-Free Report Bug / AI Dispatch Button
     local bugBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    bugBtn:SetSize(78, 20)
+    bugBtn:SetSize(68, 20)
     bugBtn:SetPoint("RIGHT", syncBtn, "LEFT", -6, 0)
     bugBtn:EnableMouse(true)
     local bugLabel = bugBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     bugLabel:SetPoint("CENTER", 0, 0)
-    bugLabel:SetText("|cffff5555Report Bug|r")
+    bugLabel:SetText("|cffff5555🐞 Bug|r")
     bugBtn.Label = bugLabel
     bugBtn:SetScript("OnClick", function()
         UI:ShowBugReportModal()
@@ -985,9 +937,9 @@ function UI:CreateMainWindow()
 
     -- 3 KPI Stat Cards (Authentic Warcraft Attribute Plate Style - Clean Vertical Separation)
     local cardConfigs = {
-        { id = "KD",    title = "SESSION COMBAT K/D",   color = "ffd100", w = 268 },
-        { id = "DUELS", title = "1v1 DUELS RECORD",     color = "ffb82e", w = 268 },
-        { id = "BGS",   title = "BATTLEGROUNDS RECORD", color = "00e5ff", w = 268 },
+        { id = "KD",    title = "SESSION COMBAT K/D",   color = "ffd100", w = 274 },
+        { id = "DUELS", title = "1v1 DUELS RECORD",     color = "ffb82e", w = 274 },
+        { id = "BGS",   title = "BATTLEGROUNDS RECORD", color = "00e5ff", w = 274 },
     }
 
     UI.StatCards = {}
@@ -1061,11 +1013,11 @@ function UI:CreateMainWindow()
 
     -- Navigation Bar (Tabs on Left, Filter Pills on Right - Zero Overlap)
     local tabs = {
-        { id = "FEED",        text = "Intel",           w = 72 },
-        { id = "LEADERBOARD", text = "Champions",       w = 96 },
-        { id = "BOUNTIES",    text = "Marks of Spite",  w = 114 },
-        { id = "RALLIES",     text = "Rallies",         w = 80 },
-        { id = "ZONES",       text = "Zone Intel",      w = 86 },
+        { id = "FEED",        text = "Intel",               w = 68 },
+        { id = "LEADERBOARD", text = "Defender of Azeroth", w = 142 },
+        { id = "BOUNTIES",    text = "The Marked",          w = 95 },
+        { id = "RALLIES",     text = "Manhunt",             w = 78 },
+        { id = "ZONES",       text = "Zone Intel",          w = 84 },
     }
 
     tabButtons = {}
@@ -1378,24 +1330,30 @@ function UI:RenderLiveFeed()
     local kills = KB.Leaderboard:GetRecentKills(currentMode, 40)
     local theme = UI:GetTheme()
 
-    -- 1. High Command Execution List Header (Top 10 Most Wanted - Parity with Website)
+    -- 1. The Blood Ledger (Azeroth's Most Wanted - Red Font & Parity with Website)
     local mwTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     mwTitle:SetPoint("TOPLEFT", 10, -8)
-    mwTitle:SetText("⚔️ |cffffd100HIGH COMMAND EXECUTION LIST — REALM'S MOST NOTORIOUS|r")
+    mwTitle:SetText("⚔️ |cffff2222THE BLOOD LEDGER|r — |cffff4444Azeroth's Most Wanted|r")
     mwTitle:SetShadowOffset(1, -1)
     mwTitle:SetShadowColor(0, 0, 0, 1)
 
     local mwSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     mwSub:SetPoint("TOPLEFT", mwTitle, "BOTTOMLEFT", 0, -2)
-    mwSub:SetText("|cffb8a080Certified Marks of Spite across Azeroth • Deliver the final blow in open combat to claim the reward.|r")
+    mwSub:SetText("|cffb8a080Open World Execution Contracts & Certified Outlaws • Deliver the final blow to claim the bounty.|r")
     mwSub:SetShadowOffset(1, -1)
     mwSub:SetShadowColor(0, 0, 0, 1)
 
-    local seeAllBtn = UI:CreateButton(UI.ContentFrame, 126, 22, "See All Marks →")
+    local seeAllBtn = UI:CreateButton(UI.ContentFrame, 110, 22, "The Marked →")
     seeAllBtn:SetPoint("TOPRIGHT", -10, -8)
     seeAllBtn:SetScript("OnClick", function()
         activeTab = "BOUNTIES"
         UI:Refresh()
+    end)
+
+    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "📢 Share Wanted")
+    shareWantedBtn:SetPoint("RIGHT", seeAllBtn, "LEFT", -6, 0)
+    shareWantedBtn:SetScript("OnClick", function()
+        UI:ShareWantedToChat()
     end)
 
     -- Gather Active Outlaws sorted by highest Mark value
@@ -1575,10 +1533,10 @@ function UI:RenderLiveFeed()
     divLine:SetPoint("TOPLEFT", 0, -288)
     divLine:SetColorTexture(0.35, 0.28, 0.16, 0.8)
 
-    -- 2. Live Combat Recon Feed Header
+    -- 2. Live Combat Recon Feed Header (The Shadow Network)
     local feedTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     feedTitle:SetPoint("TOPLEFT", 10, -298)
-    feedTitle:SetText("|cff00e5ffREALM TELEMETRY & TACTICAL INTEL|r")
+    feedTitle:SetText("👁️ |cff00e5ffTHE SHADOW NETWORK — TACTICAL INTEL|r")
     feedTitle:SetShadowOffset(1, -1)
     feedTitle:SetShadowColor(0, 0, 0, 1)
 
@@ -1600,7 +1558,7 @@ function UI:RenderLiveFeed()
     local kpiText = kpiPlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     kpiText:SetPoint("CENTER", 0, 0)
     kpiText:SetText(string.format(
-        "REALM CARNAGE: |cffffffff%d|r   |cff64748b•|r   1V1 SOLO RATIO: |cff00e5ff%d%%|r   |cff64748b•|r   FACTION WAR: |cff3b82f6A %d%%|r / |cffef4444H %d%%|r   |cff64748b•|r   FILTER: |cffffd100[%s]|r",
+        "THE SHADOW NETWORK: |cffffffff%d|r   |cff64748b•|r   1V1 SOLO RATIO: |cff00e5ff%d%%|r   |cff64748b•|r   FACTION WAR: |cff3b82f6A %d%%|r / |cffef4444H %d%%|r   |cff64748b•|r   FILTER: |cffffd100[%s]|r",
         sum.totalKills, sum.soloPct, sum.alliancePct, sum.hordePct, currentMode
     ))
     kpiText:SetShadowOffset(1, -1)
@@ -1762,20 +1720,20 @@ function UI:RenderLiveFeed()
     UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
 end
 
--- 2. Render Leaderboard Tab (Champions)
+-- 2. Render Leaderboard Tab (Defender of Azeroth)
 function UI:RenderLeaderboard()
     local theme = UI:GetTheme()
 
     -- Top Section Header (Website style)
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("|cffffd100CHAMPIONS|r")
+    title:SetText("|cffffd100DEFENDER OF AZEROTH|r")
     title:SetShadowOffset(1, -1)
     title:SetShadowColor(0, 0, 0, 1)
 
     local subtitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
-    subtitle:SetText("|cffb8a080Most lethal combatants, rank efficiency, and certified executions across Azeroth.|r")
+    subtitle:SetText("|cffb8a080Most lethal combatants, vanguard honor champions, and guild supremacy across Azeroth.|r")
     subtitle:SetShadowOffset(1, -1)
     subtitle:SetShadowColor(0, 0, 0, 1)
 
@@ -1802,6 +1760,16 @@ function UI:RenderLeaderboard()
     btnGuilds:SetScript("OnClick", function()
         hlSubTab = "GUILDS"
         UI:Refresh()
+    end)
+
+    local shareBtn = UI:CreateButton(UI.ContentFrame, 140, 22, (hlSubTab == "PLAYERS") and "📢 Share Champions" or "📢 Share Guilds")
+    shareBtn:SetPoint("TOPRIGHT", -10, -44)
+    shareBtn:SetScript("OnClick", function()
+        if hlSubTab == "PLAYERS" then
+            UI:ShareChampionsToChat()
+        else
+            UI:ShareGuildsToChat()
+        end
     end)
 
     local yOffset = -72
@@ -2274,15 +2242,21 @@ function UI:RenderBounties()
     -- Header Title
     local bntTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bntTitle:SetPoint("TOPLEFT", 10, yOffset)
-    bntTitle:SetText("⚔️ |cffffd100MARKS OF SPITE & EXECUTION CONTRACTS|r")
+    bntTitle:SetText("⚔️ |cffffd100THE MARKED — EXECUTION CONTRACTS|r")
     bntTitle:SetShadowOffset(1, -1)
     bntTitle:SetShadowColor(0, 0, 0, 1)
 
     -- Place Bounty Button
-    local placeBtn = UI:CreateButton(UI.ContentFrame, 158, 22, "+ Issue Mark of Spite")
+    local placeBtn = UI:CreateButton(UI.ContentFrame, 140, 22, "+ Issue Mark")
     placeBtn:SetPoint("TOPRIGHT", -14, yOffset)
     placeBtn:SetScript("OnClick", function()
         UI:ShowBountyPrompt()
+    end)
+
+    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "📢 Share Wanted")
+    shareWantedBtn:SetPoint("RIGHT", placeBtn, "LEFT", -6, 0)
+    shareWantedBtn:SetScript("OnClick", function()
+        UI:ShareWantedToChat()
     end)
 
     -- Subtitle
@@ -2785,14 +2759,14 @@ function UI:RenderRallies()
     -- Header Title
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, yOffset)
-    title:SetText("📯 |cffffd100FACTION WAR RALLIES & CALL TO ARMS|r")
+    title:SetText("📯 |cffffd100VANGUARD MANHUNT & CALL TO ARMS|r")
     title:SetShadowOffset(1, -1)
     title:SetShadowColor(0, 0, 0, 1)
 
     local myFaction = UnitFactionGroup("player") or "Faction"
     local subtitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
-    subtitle:SetText(string.format("|cffb8a080Open %s Vanguard rallies and squad recruitment across Azeroth. Click to join or sound the War Horn.|r", myFaction))
+    subtitle:SetText(string.format("|cffb8a080Open %s Vanguard manhunts and squad recruitment across Azeroth. Click to join or sound the War Horn.|r", myFaction))
     subtitle:SetShadowOffset(1, -1)
     subtitle:SetShadowColor(0, 0, 0, 1)
 
@@ -3743,7 +3717,7 @@ end
 function UI:ShowDeathBountyPrompt(killerData)
     if not killerData or not killerData.name then return end
     local s = WoWKillboardSettings or KB.DefaultSettings or {}
-    if s.promptMarkOnDeath == false or s.promptBountyOnDeath == false then
+    if s.promptMarkOnDeath == false or s.promptBountyOnDeath == false or s.ignoreDeathBounties == true then
         return
     end
     if InCombatLockdown() then
@@ -3753,12 +3727,12 @@ function UI:ShowDeathBountyPrompt(killerData)
 
     if IsInInstance then
         local inInst, instType = IsInInstance()
-        if inInst or (instType and instType ~= "none") then return end
+        if inInst or (instType and (instType == "pvp" or instType == "arena" or instType ~= "none")) then return end
     end
 
     if not UI.DeathBountyDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(440, 220)
+        dlg:SetSize(460, 224)
         dlg:SetPoint("CENTER", 0, 80)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(100)
@@ -3776,7 +3750,7 @@ function UI:ShowDeathBountyPrompt(killerData)
 
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffff2222FALLEN IN BATTLE — DECLARE MARK OF SPITE|r")
+        title:SetText("|cffff2222FALLEN IN BATTLE — THE MARKED CONTRACT|r")
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         desc:SetPoint("TOP", 0, -46)
@@ -3860,8 +3834,8 @@ function UI:ShowDeathBountyPrompt(killerData)
         note:SetPoint("TOP", 0, -136)
         note:SetText("|cff888888Execution contract awarded only to the hunter who lands the final blow (Open World only).|r")
 
-        local okBtn = UI:CreateButton(dlg, 140, 26, "Declare Mark")
-        okBtn:SetPoint("BOTTOMLEFT", 45, 16)
+        local okBtn = UI:CreateButton(dlg, 126, 26, "Declare Mark")
+        okBtn:SetPoint("BOTTOMLEFT", 20, 16)
         okBtn:SetScript("OnClick", function()
             local gold = tonumber(ebGold:GetText()) or 0
             local silver = tonumber(ebSilver:GetText()) or 0
@@ -3877,8 +3851,18 @@ function UI:ShowDeathBountyPrompt(killerData)
             end
         end)
 
-        local cancelBtn = UI:CreateButton(dlg, 130, 26, "Cancel")
-        cancelBtn:SetPoint("BOTTOMRIGHT", -45, 16)
+        local neverBtn = UI:CreateButton(dlg, 134, 26, "Never Ask Again")
+        neverBtn:SetPoint("LEFT", okBtn, "RIGHT", 8, 0)
+        neverBtn:SetScript("OnClick", function()
+            local curSettings = WoWKillboardSettings or KB.DefaultSettings or {}
+            curSettings.ignoreDeathBounties = true
+            if KB.db and KB.db.settings then KB.db.settings.ignoreDeathBounties = true end
+            dlg:Hide()
+            SafePrint("|cffff9900[WoWKB]|r Mark of Spite death prompts disabled. You can re-enable anytime in [⚙ Settings].")
+        end)
+
+        local cancelBtn = UI:CreateButton(dlg, 110, 26, "Cancel")
+        cancelBtn:SetPoint("BOTTOMRIGHT", -20, 16)
         cancelBtn:SetScript("OnClick", function()
             dlg:Hide()
         end)
@@ -4543,6 +4527,308 @@ function UI:TestKillBanner()
         },
     }
     UI:ShowKillBanner(testKM, true)
+end
+
+-- =========================================================================
+-- Chat Broadcast & Realm Sharing Helpers (100% Zero-Taint)
+-- =========================================================================
+function UI:GetDefaultChatChannel()
+    if IsInRaid and IsInRaid() then
+        return "RAID"
+    elseif IsInGroup and IsInGroup(LE_PARTY_CATEGORY_INSTANCE or 2) then
+        return "INSTANCE_CHAT"
+    elseif IsInGroup and IsInGroup() then
+        return "PARTY"
+    elseif IsInGuild and IsInGuild() then
+        return "GUILD"
+    else
+        return "SAY"
+    end
+end
+
+function UI:SendChatBroadcast(lines)
+    if InCombatLockdown and InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot share to chat during combat.")
+        return
+    end
+    if not lines or #lines == 0 then return end
+
+    local channel = UI:GetDefaultChatChannel()
+    for _, text in ipairs(lines) do
+        if SendChatMessage then
+            SendChatMessage(text, channel)
+        else
+            SafePrint(text)
+        end
+    end
+    SafePrint(string.format("|cff00e5ff[WoWKB]|r Shared %d line(s) to |cffffd100/%s|r chat.", #lines, channel:lower()))
+end
+
+function UI:ShareWantedToChat()
+    local outlaws = {}
+    if WoWKillboardBounties then
+        for _, b in pairs(WoWKillboardBounties) do
+            if b.status == (KB.STATUS and KB.STATUS.ACTIVE or "ACTIVE") then
+                table.insert(outlaws, b)
+            end
+        end
+        table.sort(outlaws, function(a, b)
+            return (a.amountCopper or 0) > (b.amountCopper or 0)
+        end)
+    end
+    if #outlaws == 0 then
+        SafePrint("|cffff9900[WoWKB]|r No active Marks of Spite to share.")
+        return
+    end
+
+    local lines = {
+        "== [WoWKB] The Blood Ledger: Azeroth's Most Wanted =="
+    }
+    local count = math.min(5, #outlaws)
+    for i = 1, count do
+        local b = outlaws[i]
+        local gold = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
+        local fac = b.targetFaction and (" (" .. b.targetFaction .. ")") or ""
+        table.insert(lines, string.format("#%d %s - %s%s | Reward: %dg", i, b.targetName, b.targetClass or "Unknown", fac, gold))
+    end
+    UI:SendChatBroadcast(lines)
+end
+
+function UI:ShareHitlistToChat()
+    UI:ShareWantedToChat()
+end
+
+function UI:ShareChampionsToChat()
+    local killers = KB.Leaderboard and KB.Leaderboard.GetTopKillers and KB.Leaderboard:GetTopKillers(currentMode or "ALL", 5) or {}
+    if #killers == 0 then
+        SafePrint("|cffff9900[WoWKB]|r No recorded PvP champions to share.")
+        return
+    end
+
+    local lines = {
+        string.format("== [WoWKB] Defender of Azeroth: Top Champions [%s] ==", currentMode or "ALL")
+    }
+    for i, p in ipairs(killers) do
+        local kd = (p.deaths and p.deaths > 0) and string.format("%.2f", p.kills / p.deaths) or tostring(p.kills)
+        local guildStr = (p.guild and p.guild ~= "None") and (" <" .. p.guild .. ">") or ""
+        table.insert(lines, string.format("#%d %s%s (%s) - %d Kills (K/D: %s)", i, p.name, guildStr, p.class or "Unknown", p.kills, kd))
+    end
+    UI:SendChatBroadcast(lines)
+end
+
+function UI:ShareGuildsToChat()
+    local guilds = KB.Leaderboard and KB.Leaderboard.GetTopGuilds and KB.Leaderboard:GetTopGuilds(currentMode or "ALL", 5) or {}
+    if #guilds == 0 then
+        SafePrint("|cffff9900[WoWKB]|r No recorded PvP guilds to share.")
+        return
+    end
+
+    local lines = {
+        string.format("== [WoWKB] Defender of Azeroth: Top War Guilds [%s] ==", currentMode or "ALL")
+    }
+    for i, g in ipairs(guilds) do
+        table.insert(lines, string.format("#%d <%s> - %d Certified Kills", i, g.guild, g.kills))
+    end
+    UI:SendChatBroadcast(lines)
+end
+
+-- =========================================================================
+-- Consolidated Settings & Preferences Modal (100% Template-Free, Zero-Taint)
+-- =========================================================================
+function UI:ShowSettingsModal()
+    if InCombatLockdown and InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot open settings during combat.")
+        return
+    end
+
+    if not UI.SettingsDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(480, 430)
+        dlg:SetPoint("CENTER", 0, 20)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(120)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+        dlg:SetMovable(true)
+        dlg:RegisterForDrag("LeftButton")
+        dlg:SetScript("OnDragStart", function(self)
+            if not InCombatLockdown() then self:StartMoving() end
+        end)
+        dlg:SetScript("OnDragStop", function(self)
+            self:StopMovingOrSizing()
+        end)
+
+        -- ESC Key Handling
+        dlg:EnableKeyboard(false)
+        dlg:SetScript("OnShow", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(true) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
+        dlg:SetScript("OnHide", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(false) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if not self:IsShown() then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+                return
+            end
+            if key == "ESCAPE" then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
+                self:Hide()
+            else
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+            end
+        end)
+
+        local theme = UI:GetTheme()
+        dlg:SetBackdrop(theme and theme.modalBackdrop or {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        dlg:SetBackdropColor(0.06, 0.06, 0.08, 0.98)
+        dlg:SetBackdropBorderColor(0.85, 0.70, 0.20, 1.0)
+
+        -- Title & Subtitle
+        local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", 0, -16)
+        title:SetText("|cffffd100KILLBOARD SETTINGS & PREFERENCES|r")
+
+        local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        sub:SetPoint("TOP", title, "BOTTOM", 0, -4)
+        sub:SetText("|cffb8a080Configure interface appearance, combat alerts, and gameplay prompts.|r")
+
+        -- Close Button [X]
+        local closeBtn = CreateFrame("Button", nil, dlg, "BackdropTemplate")
+        closeBtn:SetSize(22, 22)
+        closeBtn:SetPoint("TOPRIGHT", -8, -8)
+        closeBtn:EnableMouse(true)
+        local closeLabel = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        closeLabel:SetPoint("CENTER", 0, 0)
+        closeLabel:SetText("|cffff3333X|r")
+        closeBtn.Label = closeLabel
+        closeBtn:SetScript("OnClick", function() dlg:Hide() end)
+
+        local y = -62
+
+        -- SECTION 1: INTERFACE THEME
+        local s1Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        s1Title:SetPoint("TOPLEFT", 24, y)
+        s1Title:SetText("|cffffd1001. Interface Theme|r")
+
+        local themeDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        themeDesc:SetPoint("TOPLEFT", 24, y - 18)
+        themeDesc:SetText("Choose between classic Warcraft stone or modern ElvUI dark style.")
+
+        local themeBtn = UI:CreateButton(dlg, 190, 24, "Toggle Theme")
+        themeBtn:SetPoint("TOPLEFT", 24, y - 36)
+        themeBtn:SetScript("OnClick", function()
+            UI:CycleTheme()
+            local cur = UI:GetTheme()
+            themeBtn.Label:SetText(cur.id == "classic" and "Theme: Classic Stone" or "Theme: ElvUI Dark")
+            dlg:SetBackdropColor(unpack(cur.mainBg or {0.06, 0.06, 0.08, 0.98}))
+            dlg:SetBackdropBorderColor(unpack(cur.mainBorder or {0.85, 0.70, 0.20, 1.0}))
+        end)
+        dlg.themeBtn = themeBtn
+
+        y = y - 76
+
+        -- SECTION 2: COMBAT ALERTS & RADAR
+        local s2Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        s2Title:SetPoint("TOPLEFT", 24, y)
+        s2Title:SetText("|cffffd1002. Combat Alerts & Kill Banners|r")
+
+        local alertsDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        alertsDesc:SetPoint("TOPLEFT", 24, y - 18)
+        alertsDesc:SetText("Calibrate screen positioning, kill banner scale, sound, and HUD.")
+
+        local calibBtn = UI:CreateButton(dlg, 190, 24, "Calibrate Alerts & Banners")
+        calibBtn:SetPoint("TOPLEFT", 24, y - 36)
+        calibBtn:SetScript("OnClick", function()
+            dlg:Hide()
+            UI:ShowAlertsConfig()
+        end)
+
+        local soundBtn = UI:CreateButton(dlg, 140, 24, "Sound: Enabled")
+        soundBtn:SetPoint("LEFT", calibBtn, "RIGHT", 10, 0)
+        soundBtn:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings or {}
+            s.soundAlerts = not s.soundAlerts
+            if KB.db and KB.db.settings then KB.db.settings.soundAlerts = s.soundAlerts end
+            soundBtn.Label:SetText(s.soundAlerts and "|cff00ff00Sound: ON|r" or "|cffff3333Sound: OFF|r")
+        end)
+        dlg.soundBtn = soundBtn
+
+        y = y - 76
+
+        -- SECTION 3: DEATH MARK PROMPT (MARK OF SPITE)
+        local s3Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        s3Title:SetPoint("TOPLEFT", 24, y)
+        s3Title:SetText("|cffffd1003. Mark of Spite Death Prompt|r")
+
+        local deathDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        deathDesc:SetPoint("TOPLEFT", 24, y - 18)
+        deathDesc:SetText("Offer to declare an execution contract when slain in open combat.\n(Prompts are automatically suppressed in Battlegrounds and Arenas).")
+
+        local deathPromptBtn = UI:CreateButton(dlg, 220, 24, "Death Prompt: Enabled")
+        deathPromptBtn:SetPoint("TOPLEFT", 24, y - 48)
+        deathPromptBtn:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings or {}
+            s.ignoreDeathBounties = not s.ignoreDeathBounties
+            if KB.db and KB.db.settings then KB.db.settings.ignoreDeathBounties = s.ignoreDeathBounties end
+            deathPromptBtn.Label:SetText(s.ignoreDeathBounties and "|cffff3333Death Prompt: MUTED|r" or "|cff00ff00Death Prompt: ENABLED|r")
+            SafePrint(string.format("|cff00e5ff[WoWKB]|r Death Mark Prompt is now %s.", s.ignoreDeathBounties and "|cffff3333MUTED|r" or "|cff00ff00ENABLED|r"))
+        end)
+        dlg.deathPromptBtn = deathPromptBtn
+
+        y = y - 90
+
+        -- SECTION 4: DATA EXPORT & DESKTOP SYNC
+        local s4Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        s4Title:SetPoint("TOPLEFT", 24, y)
+        s4Title:SetText("|cffffd1004. Data Export & Desktop Sync|r")
+
+        local exportBtn = UI:CreateButton(dlg, 160, 24, "Export Dossier / JSON")
+        exportBtn:SetPoint("TOPLEFT", 24, y - 24)
+        exportBtn:SetScript("OnClick", function()
+            dlg:Hide()
+            UI:ShowExportDialog()
+        end)
+
+        local reloadBtn = UI:CreateButton(dlg, 160, 24, "💾 Save & Reload UI")
+        reloadBtn:SetPoint("LEFT", exportBtn, "RIGHT", 10, 0)
+        reloadBtn:SetScript("OnClick", function()
+            if InCombatLockdown and InCombatLockdown() then
+                SafePrint("|cffff9900[WoWKB]|r Cannot reload UI during combat.")
+                return
+            end
+            SafePrint("|cff00ccff[WoWKB]|r Saving combat records and reloading UI...")
+            ReloadUI()
+        end)
+
+        -- Bottom Done Button
+        local doneBtn = UI:CreateButton(dlg, 120, 26, "Done")
+        doneBtn:SetPoint("BOTTOM", 0, 16)
+        doneBtn:SetScript("OnClick", function() dlg:Hide() end)
+
+        UI.SettingsDialog = dlg
+    end
+
+    -- Update dynamic labels
+    local cur = UI:GetTheme()
+    if UI.SettingsDialog.themeBtn and UI.SettingsDialog.themeBtn.Label then
+        UI.SettingsDialog.themeBtn.Label:SetText(cur.id == "classic" and "Theme: Classic Stone" or "Theme: ElvUI Dark")
+    end
+    local s = WoWKillboardSettings or KB.DefaultSettings or {}
+    if UI.SettingsDialog.soundBtn and UI.SettingsDialog.soundBtn.Label then
+        UI.SettingsDialog.soundBtn.Label:SetText(s.soundAlerts ~= false and "|cff00ff00Sound: ON|r" or "|cffff3333Sound: OFF|r")
+    end
+    if UI.SettingsDialog.deathPromptBtn and UI.SettingsDialog.deathPromptBtn.Label then
+        UI.SettingsDialog.deathPromptBtn.Label:SetText(s.ignoreDeathBounties and "|cffff3333Death Prompt: MUTED|r" or "|cff00ff00Death Prompt: ENABLED|r")
+    end
+
+    UI.SettingsDialog:Show()
 end
 
 -- Alerts & Radar Configuration Modal Dialog (100% Template-Free, Zero-Taint)
