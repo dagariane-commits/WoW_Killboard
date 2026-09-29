@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=1.4.56">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
       <!-- 1. Logo -->
       <div class="logo-group" onclick="switchTab('INTEL')">
         <img src="/static/icons/factions/alliance.jpg" class="header-faction-crest alliance" alt="Alliance" title="For the Alliance!">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2.2" class="logo-swords-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M9.5 17.5 21 6V3h-3L6.5 14.5"/><path d="m11 19-6-6"/><path d="M8 16l-4 4"/><path d="M5 21l-2-2"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2.2" class="logo-swords-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M9.5 17.5 21 6V3h-3L6.5 14.5"/><path d="m11 19-6-6"/><path d="M8 16l-4 4"/><path d="M5 21l-2-2"/></svg>
         <img src="/static/icons/factions/horde.jpg" class="header-faction-crest horde" alt="Horde" title="For the Horde!">
         <div>
           <div class="logo-title">WoW Killboard</div>
@@ -689,7 +689,7 @@
           </select>
         </div>
         <div id="char-known-list" style="display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto; padding-right:4px;">
-          <div style="text-align:center; padding:30px; color:#64748b;">Loading indexed champions...</div>
+          <div style="text-align:center; padding:30px; color:#64748b;">Loading indexed combatants...</div>
         </div>
       </div>
 
@@ -844,6 +844,6 @@
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=1.4.56"></script>
 </body>
 </html>

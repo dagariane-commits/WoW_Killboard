@@ -822,7 +822,7 @@ async function loadLeaderboards() {
       container.innerHTML = `
         <div style="background: linear-gradient(180deg, #1e1313 0%, #0a0505 100%); border: 1px solid #7f1d1d; border-radius: 8px; padding: 32px 24px; text-align: center; max-width: 640px; margin: 40px auto;">
           <div style="font-size: 2rem; margin-bottom: 12px;">⚔️</div>
-          <h2 style="color: #ef4444; font-family: var(--font-cinzel, Cinzel, serif); font-size: 1.25rem; margin-bottom: 8px;">Champions Offline</h2>
+          <h2 style="color: #ef4444; font-family: var(--font-cinzel, Cinzel, serif); font-size: 1.25rem; margin-bottom: 8px;">Defender of Azeroth Offline</h2>
           <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.6; margin-bottom: 16px;">
             The server was unable to retrieve combat records (${escapeHtml(err.message)}). If you are viewing on Render Cloud, click <strong>Manual Deploy &rarr; Deploy latest commit</strong> in your Render dashboard to complete database initialization, or view your local war room at <a href="http://localhost:8080" style="color: var(--wow-gold, #c69b3a); text-decoration: underline;">http://localhost:8080</a>.
           </p>
@@ -1191,12 +1191,12 @@ function renderFeed(kills) {
     <div style="display: flex; flex-direction: column; gap: 6px;">
       <div class="feed-header-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); gap:10px; flex-wrap:wrap;">
         <div style="display:flex; align-items:center; gap:8px;">
-          <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">Recent Kills</span>
+          <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">THE SHADOW NETWORK &mdash; RECENT COMBAT FEED</span>
           <span class="feed-count-pill">${worldKills.length}</span>
           <span style="font-size:0.75rem; color:#10b981; font-weight:700; background:rgba(16,185,129,0.12); padding:2px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.25);">Open World</span>
           <button class="pill-btn" onclick="loadKills(); loadSidebar();" title="Refresh Live Combat Feed" style="padding:2px 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Refresh</button>
         </div>
-        <span style="font-size:0.75rem; color:#856a36;">Azeroth Combat Feed &bull; Type <code style="color:var(--wow-gold);">/reload</code> in WoW to sync</span>
+        <span style="font-size:0.75rem; color:#856a36;">The Shadow Network &bull; Type <code style="color:var(--wow-gold);">/reload</code> in WoW to sync</span>
       </div>
   `;
   visibleKills.forEach(km => {

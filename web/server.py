@@ -418,11 +418,21 @@ def init_db():
 # Ensure database tables and schema are initialized on startup (e.g. under Gunicorn / Docker / Render)
 init_db()
 
+@app.after_request
+def add_cache_control_headers(response):
+    # Enforce no-cache for HTML, CSS, and JS so users always receive fresh UI changes
+    if request.path.endswith(".html") or request.path == "/" or request.path.endswith(".js") or request.path.endswith(".css"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 @app.route("/api/health", methods=["GET"])
 def health_check():
     return jsonify({
         "status": "ok",
         "service": "WoW Killboard API",
+        "version": "1.4.56",
         "db": "ready"
     })
 

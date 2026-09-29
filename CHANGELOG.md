@@ -5,6 +5,25 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.56] - 2026-09-28
+
+### Added
+- **Aggressive Browser Cache-Busting (`index.html`, `server.py`)**:
+  - Injected `?v=1.4.56` query parameters into `style.css` and `app.js` bundle tags in `index.html` to eliminate stale browser disk cache.
+  - Implemented `@app.after_request` in `web/server.py` injecting `Cache-Control: no-cache, no-store, must-revalidate`, `Pragma: no-cache`, and `Expires: 0` headers for all HTML, CSS, and JS routes.
+  - Exposed semantic `version: "1.4.56"` on the `/api/health` diagnostic endpoint.
+
+### Changed
+- **Header Logo & Faction Crest Radiant Styling (`index.html`, `style.css`)**:
+  - Scaled Alliance and Horde crests to 40px (precisely 2x larger than the 20px crossed swords icon).
+  - Engineered radiant faction aura glows (`0 0 16px` primary + `0 0 32px` outer aura) with golden interactive hover bloom (`0 0 14px rgba(255, 215, 0, 0.65)`).
+- **Cleaned Character Link & Claim Modal Backdrop (`style.css`, `index.html`)**:
+  - Replaced the blue-navy radial halo with a deep, clean cinematic obsidian backdrop (`rgba(2, 4, 8, 0.90)` with `12px` Gaussian blur).
+  - Aligned modal card framing to authentic war room brass border aesthetics.
+- **The Shadow Network Feed Parity (`app.js`)**:
+  - Labeled the live combat feed explicitly as `THE SHADOW NETWORK — RECENT COMBAT FEED`.
+  - Updated offline error state title to `Defender of Azeroth Offline`.
+
 ## [1.4.55] - 2026-09-28
 
 ### Added
