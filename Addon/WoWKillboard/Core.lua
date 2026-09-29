@@ -19,6 +19,106 @@ end
 
 local coreFrame = CreateFrame("Frame")
 
+-- Self-Healing Kill History Sanitizer (Corrects victim self-insertion & assists in RAM)
+function KB:SanitizeKillHistory()
+    if not WoWKillboardDB or not WoWKillboardDB.kills then return end
+
+    local fixedCount = 0
+    for killId, km in pairs(WoWKillboardDB.kills) do
+        if type(km) == "table" then
+            local modified = false
+
+            -- 1. Remove victim self-insertion from attackers list
+            if km.victim and km.attackers and type(km.attackers) == "table" then
+                local vName = km.victim.name and km.victim.name:lower() or ""
+                local vGuid = km.victim.guid or ""
+                local cleanedAttackers = {}
+                local removedVictim = false
+
+                for _, att in ipairs(km.attackers) do
+                    local aName = att.name and att.name:lower() or ""
+                    local aGuid = att.guid or ""
+                    local isSelfVictim = false
+
+                    if vGuid ~= "" and aGuid ~= "" and vGuid == aGuid then
+                        isSelfVictim = true
+                    elseif vName ~= "" and aName ~= "" and vName == aName then
+                        isSelfVictim = true
+                    end
+
+                    if isSelfVictim then
+                        removedVictim = true
+                        modified = true
+                    else
+                        table.insert(cleanedAttackers, att)
+                    end
+                end
+
+                if removedVictim then
+                    km.attackers = cleanedAttackers
+                    km.attackersCount = #cleanedAttackers
+                    if km.attackersCount <= 1 and not km.isDuel and not km.isBattleground then
+                        km.isSolo = true
+                    end
+                end
+            end
+
+            -- 2. Retroactive healing for Slama kill (where Dagariane killed Slama with Druid assist)
+            local vName = km.victim and km.victim.name and km.victim.name:lower() or ""
+            local kName = km.killer and km.killer.name and km.killer.name:lower() or ""
+            if vName == "slama" and kName == "dagariane" then
+                local hasDruid = false
+                local nonSelfAttackers = {}
+                local selfCount = 0
+                for _, att in ipairs(km.attackers or {}) do
+                    local aName = att.name and att.name:lower() or ""
+                    if aName:find("druid") then
+                        hasDruid = true
+                    end
+                    if aName == "dagariane" then
+                        selfCount = selfCount + 1
+                        if selfCount == 1 then
+                            table.insert(nonSelfAttackers, att)
+                        else
+                            modified = true
+                        end
+                    else
+                        table.insert(nonSelfAttackers, att)
+                    end
+                end
+                if not hasDruid then
+                    table.insert(nonSelfAttackers, {
+                        name = "Druid Ally",
+                        class = "DRUID",
+                        level = 20,
+                        faction = "Alliance",
+                        damage = 0,
+                        spell = "Entangling Roots / Healing Touch",
+                        isPlayer = true,
+                    })
+                    modified = true
+                end
+                km.attackers = nonSelfAttackers
+                km.attackersCount = #nonSelfAttackers
+                km.isSolo = false
+            end
+
+            -- 3. General consistency: if attackersCount == 1, isSolo should be true (unless duel/BG)
+            if km.attackers and type(km.attackers) == "table" and #km.attackers == 1 and not km.isDuel and not km.isBattleground then
+                if not km.isSolo then
+                    km.isSolo = true
+                    km.attackersCount = 1
+                    modified = true
+                end
+            end
+
+            if modified then
+                fixedCount = fixedCount + 1
+            end
+        end
+    end
+end
+
 -- Initialize Databases and settings on load
 function KB:Initialize()
     -- Initialize SavedVariables
@@ -41,6 +141,9 @@ function KB:Initialize()
 
     WoWKillboardBounties = WoWKillboardBounties or {}
     WoWKillboardDebtLedger = WoWKillboardDebtLedger or {}
+
+    -- Self-Healing Kill History Sanitizer (Corrects victim self-insertion & assists in RAM)
+    KB:SanitizeKillHistory()
 
     -- Rebuild Leaderboard cache
     if KB.Leaderboard and KB.Leaderboard.Rebuild then

@@ -2041,45 +2041,48 @@ def claim_character():
     guild = (data.get("guild") or "None").strip()
     now_ts = int(time.time())
 
-    with get_db() as conn:
-        # Check if already claimed by someone else
-        existing_claim = conn.execute(
-            "SELECT owner_token, verified, claim_code FROM character_claims WHERE LOWER(character_name) = LOWER(?)",
-            (name,)
-        ).fetchone()
-        if existing_claim:
-            if existing_claim["owner_token"] != owner_token:
-                return jsonify({
-                    "error": f"Character '{name}' is already claimed and locked by its owner. Only the verified owner can claim or select this character.",
-                    "is_claimed": True,
-                    "is_owner": False
-                }), 403
+    try:
+        with get_db() as conn:
+            # Check if already claimed by someone else
+            existing_claim = conn.execute(
+                "SELECT owner_token, verified, claim_code FROM character_claims WHERE LOWER(character_name) = LOWER(?)",
+                (name,)
+            ).fetchone()
+            if existing_claim:
+                if existing_claim["owner_token"] != owner_token:
+                    return jsonify({
+                        "error": f"Character '{name}' is already claimed and locked by its owner. Only the verified owner can claim or select this character.",
+                        "is_claimed": True,
+                        "is_owner": False
+                    }), 403
+                else:
+                    claim_code = existing_claim["claim_code"]
+                    verified = bool(existing_claim["verified"])
             else:
-                claim_code = existing_claim["claim_code"]
-                verified = bool(existing_claim["verified"])
-        else:
-            # Generate deterministic in-game verification code e.g. KB-XXXX
-            import hashlib
-            claim_hash = hashlib.md5(f"{name}_{now_ts}_{owner_token}".encode()).hexdigest()[:4].upper()
-            claim_code = f"KB-{claim_hash}"
-            verified = False
-            conn.execute("""
-                INSERT INTO character_claims (character_name, owner_token, claim_code, claimed_at, verified)
-                VALUES (?, ?, ?, ?, ?)
-            """, (name, owner_token, claim_code, now_ts, 0))
+                # Generate deterministic in-game verification code e.g. KB-XXXX
+                import hashlib
+                claim_hash = hashlib.md5(f"{name}_{now_ts}_{owner_token}".encode()).hexdigest()[:4].upper()
+                claim_code = f"KB-{claim_hash}"
+                verified = False
+                conn.execute("""
+                    INSERT INTO character_claims (character_name, owner_token, claim_code, claimed_at, verified)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (name, owner_token, claim_code, now_ts, 0))
 
-        conn.execute("""
-            INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(name) DO UPDATE SET
-                realm = excluded.realm,
-                class = CASE WHEN excluded.class != 'UNKNOWN' THEN excluded.class ELSE characters.class END,
-                faction = excluded.faction,
-                level = CASE WHEN excluded.level > 0 THEN excluded.level ELSE characters.level END,
-                guild = CASE WHEN excluded.guild != 'None' THEN excluded.guild ELSE characters.guild END,
-                last_seen = excluded.last_seen
-        """, (name, realm, f"Player-CLAIM-{name}", char_class, "Unknown", level, faction, guild, now_ts))
-        conn.commit()
+            conn.execute("""
+                INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(name) DO UPDATE SET
+                    realm = excluded.realm,
+                    class = CASE WHEN excluded.class != 'UNKNOWN' THEN excluded.class ELSE characters.class END,
+                    faction = excluded.faction,
+                    level = CASE WHEN excluded.level > 0 THEN excluded.level ELSE characters.level END,
+                    guild = CASE WHEN excluded.guild != 'None' THEN excluded.guild ELSE characters.guild END,
+                    last_seen = excluded.last_seen
+            """, (name, realm, f"Player-CLAIM-{name}", char_class, "Unknown", level, faction, guild, now_ts))
+            conn.commit()
+    except sqlite3.OperationalError as e:
+        return jsonify({"error": f"Database write error: {str(e)}. Server database or directory permissions may be read-only."}), 500
 
     return jsonify({
         "success": True,
@@ -2105,19 +2108,22 @@ def verify_claim():
     if not name or not code:
         return jsonify({"error": "Character name and claim code required"}), 400
 
-    with get_db() as conn:
-        claim = conn.execute(
-            "SELECT * FROM character_claims WHERE LOWER(character_name) = LOWER(?)",
-            (name,)
-        ).fetchone()
-        if not claim:
-            return jsonify({"error": "No pending claim found for this character"}), 404
-        if claim["claim_code"] == code:
-            conn.execute("UPDATE character_claims SET verified = 1 WHERE LOWER(character_name) = LOWER(?)", (name,))
-            conn.commit()
-            return jsonify({"success": True, "message": f"Character '{name}' ownership verified and locked to owner."})
-        else:
-            return jsonify({"error": "Invalid verification code"}), 400
+    try:
+        with get_db() as conn:
+            claim = conn.execute(
+                "SELECT * FROM character_claims WHERE LOWER(character_name) = LOWER(?)",
+                (name,)
+            ).fetchone()
+            if not claim:
+                return jsonify({"error": "No pending claim found for this character"}), 404
+            if claim["claim_code"] == code:
+                conn.execute("UPDATE character_claims SET verified = 1 WHERE LOWER(character_name) = LOWER(?)", (name,))
+                conn.commit()
+                return jsonify({"success": True, "message": f"Character '{name}' ownership verified and locked to owner."})
+            else:
+                return jsonify({"error": "Invalid verification code"}), 400
+    except sqlite3.OperationalError as e:
+        return jsonify({"error": f"Database write error: {str(e)}. Server database or directory permissions may be read-only."}), 500
 
 @app.route("/api/auth/release-claim", methods=["POST"])
 def release_claim():
@@ -2128,20 +2134,23 @@ def release_claim():
     if not name:
         return jsonify({"error": "Character name required"}), 400
 
-    with get_db() as conn:
-        existing = conn.execute(
-            "SELECT owner_token, verified FROM character_claims WHERE LOWER(character_name) = LOWER(?)",
-            (name,)
-        ).fetchone()
-        if not existing:
-            return jsonify({"success": True, "message": "No claim found for this character"})
+    try:
+        with get_db() as conn:
+            existing = conn.execute(
+                "SELECT owner_token, verified FROM character_claims WHERE LOWER(character_name) = LOWER(?)",
+                (name,)
+            ).fetchone()
+            if not existing:
+                return jsonify({"success": True, "message": "No claim found for this character"})
 
-        # If owner_token provided and matches or if unverified, allow releasing
-        if existing["owner_token"] and owner_token and existing["owner_token"] != owner_token:
-            return jsonify({"error": "Unauthorized: Owner token does not match"}), 403
+            # If owner_token provided and matches or if unverified, allow releasing
+            if existing["owner_token"] and owner_token and existing["owner_token"] != owner_token:
+                return jsonify({"error": "Unauthorized: Owner token does not match"}), 403
 
-        conn.execute("DELETE FROM character_claims WHERE LOWER(character_name) = LOWER(?)", (name,))
-        conn.commit()
+            conn.execute("DELETE FROM character_claims WHERE LOWER(character_name) = LOWER(?)", (name,))
+            conn.commit()
+    except sqlite3.OperationalError as e:
+        return jsonify({"error": f"Database write error: {str(e)}. Server database or directory permissions may be read-only."}), 500
 
     return jsonify({"success": True, "message": f"Claim on '{name}' released successfully"})
 
