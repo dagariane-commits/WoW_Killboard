@@ -1048,7 +1048,7 @@ async function renderStats(kills) {
 
         <!-- Divider to Cumulative Frontier Stats -->
         <div class="stats-section-divider">
-          <span>THE SHADOW NETWORK — CUMULATIVE COMBAT TELEMETRY (ALL STATS)</span>
+          <span>THE SHADOW NETWORK — CUMULATIVE COMBAT INTELLIGENCE (ALL STATS)</span>
         </div>
 
         <!-- 4 Cumulative Frontier Metrics -->
@@ -1463,7 +1463,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:1.15rem;">⚔️</span>
               <div>
-                <div style="font-size:0.68rem; color:var(--wow-gold, #f59e0b); font-weight:800; letter-spacing:0.5px;">OPERATIVE BENCHMARK COMPARISON</div>
+                <div style="font-size:0.68rem; color:var(--wow-gold, #f59e0b); font-weight:800; letter-spacing:0.5px;">CHAMPION BENCHMARK COMPARISON</div>
                 <div style="font-size:0.95rem; font-weight:700;">
                   <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(bmName)}')">${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}</span>
                   <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
@@ -1494,7 +1494,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
               <div>${pctBadge}</div>
             </div>
             <div class="benchmark-input-wrap" style="display:flex; align-items:center; gap:6px;">
-              <input type="text" id="benchmark-callsign-input" placeholder="Compare callsign..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 8px; border-radius:4px; width:130px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
+              <input type="text" id="benchmark-callsign-input" placeholder="Compare champion..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 8px; border-radius:4px; width:130px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
               <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn" style="padding:4px 8px; font-size:0.72rem;">Compare</button>
               ${sessionStorage.getItem("wowkb_benchmark_player") ? `<button onclick="setBenchmarkPlayer('')" class="pill-btn" style="padding:4px 6px; font-size:0.7rem; color:#ef4444;" title="Reset Benchmark">&times;</button>` : ''}
             </div>
@@ -1506,10 +1506,10 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         <div class="legends-comparison-banner" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px dashed rgba(212, 163, 41, 0.45); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 12px 16px; margin-bottom: 4px;">
           <div style="display:flex; align-items:center; gap:10px;">
             <span style="font-size:1.1rem;">⚔️</span>
-            <span style="font-size:0.82rem; color:#cbd5e1;">Benchmark your operative standing against realm leaders:</span>
+            <span style="font-size:0.82rem; color:#cbd5e1;">Benchmark your champion standing against realm leaders:</span>
           </div>
           <div class="benchmark-input-wrap" style="display:flex; align-items:center; gap:8px;">
-            <input type="text" id="benchmark-callsign-input" placeholder="Enter Character Callsign..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 10px; border-radius:4px; width:180px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
+            <input type="text" id="benchmark-callsign-input" placeholder="Enter Champion Name..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 10px; border-radius:4px; width:180px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
             <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn active" style="padding:4px 12px; font-size:0.75rem;">Benchmark</button>
           </div>
         </div>
@@ -1659,7 +1659,7 @@ function renderSingleBountyCard(b, isSupporter) {
         <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:rgba(7,9,14,0.75); padding:6px 10px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);">
           <span style="font-weight:700;">Last Sighted:</span> ${escapeHtml(lastSeen.zone)} <span style="color:#fbbf24;">(${escapeHtml(lastSeen.subzone)})</span>
           <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">
-            ~${lastSeen.minutesAgo}m ago &bull; <span style="color:#fbbf24; font-weight:700;">Sector Recon</span>
+            ~${lastSeen.minutesAgo}m ago &bull; <span style="color:#fbbf24; font-weight:700;">Zone Intel</span>
           </div>
         </div>
       `;
@@ -2169,7 +2169,7 @@ function openKillModal(killId) {
       <div style="background:#0e121a; padding:12px 14px; border-radius:6px; border:1px solid #242b3d;">
         <strong style="color:var(--accent-gold); display:flex; align-items:center; gap:6px;">
           <span>🎯</span>
-          <span>Engagement Telemetry</span>
+          <span>Combat Engagement</span>
         </strong>
         <div style="color:#cbd5e1; margin-top:6px; font-weight:600;">${km.isDuel ? 'Sanctioned 1v1 Duel' : (km.isArena ? 'Ranked Arena Match' : (km.isBattleground ? `Battleground [${km.battlegroundName || 'BG'}]` : 'Open World PvP Encounter'))}</div>
         <div style="color:#94a3b8; font-size:0.75rem; margin-top:3px;">Attacking Squad: <span style="color:#fff; font-weight:700;">${km.attackersCount}</span> &bull; Hostile Squad: <span style="color:#fff; font-weight:700;">${km.victim.partySize || 1}</span></div>
@@ -2386,20 +2386,20 @@ async function openCharacterProfile(charName) {
   const title = document.getElementById("character-modal-title");
   if (!modal || !body) return;
 
-  title.innerText = `Character Dossier: ${charName}`;
-  body.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">Decrypting combat dossier for ${charName}...</div>`;
+  title.innerText = `Champion Profile: ${charName}`;
+  body.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">Consulting the War Archives for ${escapeHtml(charName)}...</div>`;
   modal.style.display = "flex";
 
   try {
     const res = await fetch(`/api/character/${encodeURIComponent(charName)}`);
     if (!res.ok) {
-      body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Character telemetry not found.</div>`;
+      body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Champion combat record not found.</div>`;
       return;
     }
     const data = await res.json();
     body.innerHTML = buildCharacterDossierHtml(data);
 
-    // Synchronize operative class and level if viewing active user
+    // Synchronize champion class and level if viewing active user
     const currentActive = (localStorage.getItem("wowkb_user_character") || "").toLowerCase();
     if (data && data.name && data.name.toLowerCase() === currentActive) {
       if (data.class && data.class !== "UNKNOWN") localStorage.setItem("wowkb_user_class", data.class.toUpperCase());
@@ -2431,10 +2431,10 @@ function copyCharacterProfileLink(charName, btn) {
         }, 2000);
       }
     }).catch(() => {
-      prompt("Copy character dossier URL:", url);
+      prompt("Copy Champion Profile URL:", url);
     });
   } else {
-    prompt("Copy character dossier URL:", url);
+    prompt("Copy Champion Profile URL:", url);
   }
 }
 
@@ -2452,9 +2452,9 @@ async function loadPersonalArmoryView(charName) {
         <div class="personal-armory-container" style="display:flex; flex-direction:column; gap:20px;">
           <div style="background:#0c0f17; border:1px solid #1e293b; border-radius:8px; padding:24px; text-align:center;">
 
-            <h2 style="color:var(--wow-gold); font-size:1.25rem;">Welcome, Operative ${escapeHtml(charName)}</h2>
+            <h2 style="color:var(--wow-gold); font-size:1.25rem;">Welcome, Champion ${escapeHtml(charName)}</h2>
             <p style="color:#94a3b8; font-size:0.85rem; margin-top:6px; max-width:550px; margin-left:auto; margin-right:auto;">
-              Your personal combat dossier has not yet recorded open-world engagements. Equip the free in-game addon and engage in combat to log honorable kills, deaths, and rank telemetry!
+              Your personal combat record has not yet recorded open-world engagements. Equip the free in-game addon and engage in combat to log honorable kills, deaths, and rank standings!
             </p>
             <div style="margin-top:16px; display:flex; justify-content:center; gap:10px;">
               <button class="nav-btn" style="background:var(--accent-cyan); color:#000; font-weight:700;" onclick="loadArmoryView()">Browse Realm Directory</button>
@@ -2476,7 +2476,7 @@ async function loadPersonalArmoryView(charName) {
 
             <div>
               <div style="font-weight:800; font-size:1.15rem; color:#fff;">Your Personal Combat Armory</div>
-              <div style="font-size:0.75rem; color:#94a3b8;">Career telemetry &amp; PvP standing for <strong style="color:var(--wow-gold);">${escapeHtml(data.name)}</strong></div>
+              <div style="font-size:0.75rem; color:#94a3b8;">Career combat records &amp; PvP standing for <strong style="color:var(--wow-gold);">${escapeHtml(data.name)}</strong></div>
             </div>
           </div>
           <button class="nav-btn" style="border:1px solid var(--border-color); background:rgba(255,255,255,0.05);" onclick="loadArmoryView()">
@@ -2504,13 +2504,13 @@ async function openGuildProfile(guildName) {
   if (!modal || !body) return;
 
   title.innerText = `Guild Intelligence: <${guildName}>`;
-  body.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">Compiling war telemetry for <${guildName}>...</div>`;
+  body.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">Gathering battlefield records for <${guildName}>...</div>`;
   modal.style.display = "flex";
 
   try {
     const res = await fetch(`/api/guild/${encodeURIComponent(guildName)}`);
     if (!res.ok) {
-      body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Guild telemetry record not found.</div>`;
+      body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Guild war record not found.</div>`;
       return;
     }
     const data = await res.json();
@@ -2627,7 +2627,7 @@ async function loadGuildsView() {
     if (guilds.length === 0) {
       container.innerHTML = `
         <div style="text-align:center; padding:40px; color:#64748b;">
-          <h3>No Guild PvP telemetry recorded yet.</h3>
+          <h3>No Guild PvP war records recorded yet.</h3>
           <p style="margin-top:8px;">Engage in combat while wearing a guild tabard to populate the rankings.</p>
         </div>
       `;
@@ -2839,7 +2839,7 @@ async function fetchArmoryDataAndRender() {
               ${lastSeenText}
             </div>
             <button class="armory-dossier-btn" onclick="openCharacterProfile('${c.name}')">
-              Dossier &rarr;
+              Profile &rarr;
             </button>
           </div>
         </div>
@@ -2959,7 +2959,7 @@ function handleMobileSearch(e) {
 async function loadDeadlyNpcsView() {
   const container = document.getElementById("main-content-area");
   if (!container) return;
-  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering deadly creature executions and fallen mortals telemetry...</div>`;
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering wilderness executions and fallen mortal records...</div>`;
 
   try {
     const [lbRes, deathsRes] = await Promise.all([
@@ -2993,7 +2993,7 @@ function renderDeadlyNpcsView(lbData, deaths) {
             MOST DEADLY NPCS &amp; FALLEN MORTALS LEADERBOARD
           </div>
           <div class="deadly-hero-subtitle">
-            Pure PvE Execution Telemetry &bull; Isolated from PvP feeds &bull; Tracking every player executed by beasts, elites, and raid bosses across Azeroth
+            Pure PvE Execution Records &bull; Isolated from PvP feeds &bull; Tracking every mortal slain by beasts, elites, and raid bosses across Azeroth
           </div>
         </div>
         <div class="deadly-summary-metrics">
@@ -3229,7 +3229,7 @@ function loadPortalView() {
           </div>
           <div>
             <div style="font-weight:800; font-size:1.0rem; color:#fff;">
-              Active Operative: <span style="color:${userClsColor};">${escapeHtml(storedAccount)}</span>
+              Active Champion: <span style="color:${userClsColor};">${escapeHtml(storedAccount)}</span>
               <span style="font-size:0.75rem; color:#94a3b8;">(Lvl ${userLvl} ${userCls.charAt(0) + userCls.slice(1).toLowerCase()})</span>
             </div>
             <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
@@ -3239,12 +3239,12 @@ function loadPortalView() {
         </div>
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px;">
           <button class="dramatic-gate-btn officer" onclick="openCharacterProfile('${escapeHtml(storedAccount)}')">
-            <span>Inspect Combat Dossier</span>
+            <span>Inspect Combat Profile</span>
             <span>&rarr;</span>
           </button>
           <div style="display:flex; justify-content:center; gap:16px; margin-top:6px;">
             <button class="gate-signout-link" onclick="openCharacterLinkModal()" style="color:var(--accent-cyan); background:none; border:none; cursor:pointer; font-size:0.8rem;">Switch / Claim Character</button>
-            <button class="gate-signout-link" onclick="portalSignOut()" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:0.8rem;">Clear Operative</button>
+            <button class="gate-signout-link" onclick="portalSignOut()" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:0.8rem;">Release Champion</button>
           </div>
         </div>
       </div>
@@ -3273,7 +3273,7 @@ function loadPortalView() {
   const leftCardContent = `
     <div style="display:flex; flex-direction:column; gap:14px; width:100%; justify-content:space-between; flex:1;">
       <div style="font-size:0.86rem; color:#94a3b8; line-height:1.5;">
-        Step immediately into the live frontline telemetry feed. Real-time killmail dispatches, verified 1v1 solo duels, bounty alerts, and battleground casualties.
+        Step immediately into the live frontline combat feed. Real-time killmail dispatches, verified 1v1 solo duels, bounty alerts, and battleground casualties.
       </div>
       <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(0,229,255,0.18); border-radius:6px; padding:12px 14px; font-size:0.8rem; color:#cbd5e1; display:flex; flex-direction:column; gap:6px;">
         <div style="color:var(--accent-cyan); font-weight:700;">Zero-Barrier Frontline Intel:</div>
@@ -3299,7 +3299,7 @@ function loadPortalView() {
           <img src="/static/icons/factions/horde.jpg" class="portal-crest horde" alt="Horde" title="For the Horde!">
         </div>
         <h1 class="portal-title">AZEROTH COMBAT WAR ROOM</h1>
-        <div class="portal-tagline">CHRONICLES OF MARTIAL CONFLICT &bull; BLOOD BOUNTIES &bull; BATTLEGROUND RECONNAISSANCE</div>
+        <div class="portal-tagline">CHRONICLES OF MARTIAL CONFLICT &bull; BLOOD BOUNTIES &bull; BATTLEGROUND INTELLIGENCE</div>
         <p class="portal-lead">
           The Third War shattered the kingdoms; the frontier remains soaked in blood. Choose your clearance of entry to inspect certified combat casualties, issue blood bounties, or consult the war ledger.
         </p>
@@ -3325,7 +3325,7 @@ function loadPortalView() {
             </div>
             <h2 class="gate-card-title">Frontline Killboard Feed</h2>
             <p class="gate-card-desc">
-              Direct access to live combat casualties, real-time killmails, solo duel certifications, and battleground reconnaissance.
+              Direct access to live combat casualties, real-time killmails, solo duel certifications, and battleground intelligence.
             </p>
           </div>
           ${leftCardContent}
@@ -3338,7 +3338,7 @@ function loadPortalView() {
             <div class="gate-card-icon">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
-            <h2 class="gate-card-title">Character Dossier &amp; Claim</h2>
+            <h2 class="gate-card-title">Champion Identity &amp; Claim</h2>
             <p class="gate-card-desc">
               View your personalized combat record, Classic military rank, and placed bounties. Link or claim ownership directly from World of Warcraft.
             </p>
@@ -3483,7 +3483,7 @@ function loadTheaterSelectorView() {
           Theaters of War — Campaign Selector
         </h2>
         <div style="font-size: 0.82rem; color: #94a3b8; max-width: 680px; margin: 0 auto;">
-          Select your active World of Warcraft theater and realm server. All combat telemetry, kill feeds, and leaderboards filter to the selected campaign ruleset.
+          Select your active World of Warcraft theater and realm server. All combat records, kill feeds, and leaderboards filter to the selected campaign ruleset.
         </div>
       </div>
 
@@ -3615,7 +3615,7 @@ function closeAddonDossierModal() {
 async function loadBugReports() {
   const container = document.getElementById("bug-reports-list");
   if (!container) return;
-  container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 30px;">Querying telemetry codex...</div>`;
+  container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 30px;">Consulting the War Archivist...</div>`;
   try {
     const res = await fetch("/api/bugs");
     if (!res.ok) throw new Error("HTTP " + res.status);
@@ -3626,7 +3626,7 @@ async function loadBugReports() {
           <div style="font-size: 2rem; margin-bottom: 8px;">🛡️</div>
           <div style="font-weight: 700; color: #f8fafc; font-size: 1rem;">No Field Bug Reports Logged</div>
           <p style="font-size: 0.8rem; max-width: 440px; margin: 8px auto 0; line-height: 1.5;">
-            All combat tracking systems are operating nominally. Field operatives can submit issues directly in-game using <code>/kb bug [description]</code> or clicking <strong>[Report Bug]</strong> in the addon.
+            All combat tracking systems are operating nominally. Champions can submit issues directly in-game using <code>/kb bug [description]</code> or clicking <strong>[Report Bug]</strong> in the addon.
           </p>
         </div>
       `;
@@ -3660,7 +3660,7 @@ async function loadBugReports() {
           </div>
 
           <div style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px; display: flex; gap: 12px; flex-wrap: wrap;">
-            <span>Operative: <strong style="color: #f1f5f9;">${escapeHtml(b.reporter_name || 'Anonymous')}</strong></span>
+            <span>Champion: <strong style="color: #f1f5f9;">${escapeHtml(b.reporter_name || 'Anonymous')}</strong></span>
             <span>Realm: <strong style="color: #f1f5f9;">${escapeHtml(b.reporter_realm || 'Unknown')}</strong></span>
             <span>Flavor: <strong style="color: #38bdf8;">${escapeHtml(b.client_flavor || 'CLASSIC_ERA')}</strong></span>
             <span>Zone: <strong style="color: #fbbf24;">${escapeHtml(b.zone || 'Unknown')}${b.subzone ? ' (' + escapeHtml(b.subzone) + ')' : ''}</strong></span>
@@ -3668,7 +3668,7 @@ async function loadBugReports() {
           </div>
 
           <div style="background: rgba(0, 0, 0, 0.4); border-left: 3px solid #64748b; padding: 8px 12px; border-radius: 0 4px 4px 0; margin-bottom: 10px; font-size: 0.82rem; color: #e2e8f0; line-height: 1.4;">
-            <div style="font-size: 0.68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;">Field Operative Report</div>
+            <div style="font-size: 0.68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;">Champion Field Report</div>
             "${escapeHtml(b.user_report || 'No verbal description provided')}"
             ${b.lua_error ? `<pre style="margin-top: 6px; font-size: 0.7rem; color: #ef4444; background: rgba(0,0,0,0.5); padding: 6px; border-radius: 4px; overflow-x: auto;">${escapeHtml(b.lua_error)}</pre>` : ''}
           </div>
@@ -3798,7 +3798,7 @@ async function sendOracleMessage() {
   const userMsgEl = document.createElement("div");
   userMsgEl.className = "oracle-msg user";
   userMsgEl.innerHTML = `
-    <div class="msg-meta">Recon Operative</div>
+    <div class="msg-meta">Vanguard Scout</div>
     <div class="msg-body">${escapeHtml(query)}</div>
   `;
   msgContainer.appendChild(userMsgEl);
@@ -3978,7 +3978,7 @@ function loadUploadView() {
       <!-- Masthead Header -->
       <div style="background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.12) 0%, rgba(10, 13, 20, 0.95) 75%); border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 28px 24px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.7);">
         <h2 style="font-family: var(--font-tactical); font-size: 1.6rem; color: #fff; margin: 0 0 6px 0; letter-spacing: 0.5px;">
-          Combat Log Ingestion & Telemetry Sync
+          Combat Log Ingestion & War Ledger Sync
         </h2>
         <div style="font-size: 0.85rem; color: #94a3b8; max-width: 680px; margin: 0 auto;">
           Upload your World of Warcraft combat data to the global Master Ledger. Choose between hands-free real-time background sync or direct browser upload with zero installation required.
@@ -4121,7 +4121,7 @@ function loadUploadView() {
           </div>
         </div>
         <p style="font-size:0.78rem; color:#cbd5e1; margin:0 0 12px 0;">
-          Completely reset all combat telemetry, kills, bounties, and leaderboards back to zero. Protected by the administrative secret key.
+          Completely reset all combat records, kills, bounties, and leaderboards back to zero. Protected by the administrative secret key.
         </p>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <input type="password" id="admin-reset-key" value="${localStorage.getItem("wowkb_admin_key") || ""}" placeholder="Enter Administrative Secret Key" style="background:#020617; border:1px solid #475569; color:#fff; padding:7px 12px; border-radius:4px; font-size:0.8rem; width:260px;">
@@ -4403,7 +4403,7 @@ function renderKnownCharactersList(chars) {
       <div style="text-align:center; padding:30px; color:#64748b;">
         <div>No matching combatants found.</div>
         <button type="button" class="pill-btn" style="margin-top:10px; background:var(--accent-cyan); color:#000; font-weight:700;" onclick="switchCharModalTab('custom')">
-          + Enter Custom Callsign
+          + Register Custom Hero Name
         </button>
       </div>
     `;
@@ -4465,19 +4465,19 @@ function renderKnownCharactersList(chars) {
         }
       }
     } else {
-      // Unclaimed Operative
+      // Unclaimed Champion
       if (isAct) {
         actionBtnHtml = `
           <div style="display:flex; gap:6px;">
             <button class="pill-btn active" style="background:#10b981; color:#fff; font-size:0.75rem; padding:4px 10px;" disabled>✓ Selected</button>
-            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.72rem; padding:5px 10px; border:none; cursor:pointer;" onclick="claimKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Claim Callsign &rarr;</button>
+            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.72rem; padding:5px 10px; border:none; cursor:pointer;" onclick="claimKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Claim Champion &rarr;</button>
           </div>
         `;
       } else {
         actionBtnHtml = `
           <div style="display:flex; gap:6px;">
             <button class="pill-btn" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.2); font-size:0.75rem; padding:5px 10px; cursor:pointer;" onclick="selectKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Select</button>
-            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.75rem; padding:5px 12px; border:none; cursor:pointer;" onclick="claimKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Claim Callsign &rarr;</button>
+            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.75rem; padding:5px 12px; border:none; cursor:pointer;" onclick="claimKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Claim Champion &rarr;</button>
           </div>
         `;
       }
@@ -4915,7 +4915,7 @@ function loadRalliesView() {
       <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(245, 158, 11, 0.4); border-radius:10px; padding:20px 24px; position:relative; overflow:hidden;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
           <div>
-            <div style="font-size:12px; font-weight:700; color:#f59e0b; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Frontline Telemetry Wire</div>
+            <div style="font-size:12px; font-weight:700; color:#f59e0b; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Frontline Vanguard Wire</div>
             <h2 style="font-size:24px; font-weight:800; color:#f8fafc; margin:0; display:flex; align-items:center; gap:10px;">
               <span>Vanguard Manhunt &amp; Call to Arms</span>
             </h2>
@@ -4929,7 +4929,7 @@ function loadRalliesView() {
             </div>
             <div style="background:rgba(30, 41, 59, 0.8); border:1px solid rgba(148, 163, 184, 0.2); border-radius:6px; padding:8px 14px; font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:8px;">
               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; animation:pulse 2s infinite;"></span>
-              <span>Live Recon</span>
+              <span>Live Intel</span>
             </div>
           </div>
         </div>
@@ -5050,7 +5050,7 @@ function loadRalliesView() {
       console.error("Error loading rallies:", err);
       const listEl = document.getElementById("rallies-list-container");
       if (listEl) {
-        listEl.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Failed to load live rallies telemetry.</div>`;
+        listEl.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Failed to load live manhunts.</div>`;
       }
     });
 }
