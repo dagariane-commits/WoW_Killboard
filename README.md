@@ -222,7 +222,7 @@ WoW_Killboard/
    - `/killboard alerts` or `/wowkb alerts` — Open Combat Alerts & Radar settings (or click `⚙️ Alerts` button in header).
    - `/killboard move` or `/wowkb move` — Unlock and reposition Kill Banner anywhere on screen.
    - `/killboard test` or `/wowkb test` — Preview Kill Banner with audio and raid warning.
-   - `/killboard theme` — Switch between Aegis Tactical, ElvUI, and Classic themes.
+   - `/killboard theme` — Switch between Classic WoW and ElvUI Minimalist themes.
    - `/warhorn` or `/kbrally` — Sound the War Horn (open-world emergency distress & auto-invite rally).
    - `/killboard stats` — View current session damage, healing, kills, and K/D.
    - `/killboard sync` or `/kb sync` — Flush combat SavedVariables to disk (`/reload`) to sync immediately with the live website.

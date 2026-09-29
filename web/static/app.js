@@ -3971,7 +3971,6 @@ function loadUploadView() {
   if (!container) return;
 
   const isAdmin = (new URLSearchParams(window.location.search).get("admin") === "1" || 
-                   new URLSearchParams(window.location.search).get("admin") === "valor2026" || 
                    localStorage.getItem("wowkb_is_admin") === "true");
 
   container.innerHTML = `
@@ -4145,7 +4144,7 @@ function loadUploadView() {
 
 function promptAdminAccess() {
   const key = prompt("Enter Master War Archivist Secret Key:");
-  if (key && (key.trim() === "valor2026" || key.trim().length > 0)) {
+  if (key && key.trim().length > 0) {
     localStorage.setItem("wowkb_is_admin", "true");
     localStorage.setItem("wowkb_admin_key", key.trim());
     loadUploadView();

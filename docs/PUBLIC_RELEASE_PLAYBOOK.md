@@ -17,7 +17,7 @@ The `WoWKillboard.toc` manifest includes multi-client declarations:
 ## Title: WoW Killboard
 ## Notes: Comprehensive PvP combat intelligence, in-game leaderboard, and bounty escrow platform.
 ## Version: 1.0.0
-## Author: Scott Quick
+## Author: Dagariane
 ## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties
 ```
 

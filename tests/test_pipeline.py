@@ -1072,7 +1072,7 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertEqual(res_bad_reset.status_code, 403)
 
         # 5. Test Admin Reset with Valid Key -> 200 OK
-        res_good_reset = self.client.post("/api/admin/reset", json={"secret": "valor2026"})
+        res_good_reset = self.client.post("/api/admin/reset", json={"secret": "REDACTED_ADMIN_KEY"})
         self.assertEqual(res_good_reset.status_code, 200)
         self.assertTrue(res_good_reset.get_json()["success"])
 
