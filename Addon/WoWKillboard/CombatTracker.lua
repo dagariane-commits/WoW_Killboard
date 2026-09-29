@@ -108,13 +108,18 @@ end
 
 -- Get Friendly Group Size (Cross-Client Guardrail 2 Compliant)
 function CT:GetFriendlyPartySize()
+    local num = 0
     if IsInRaid and IsInRaid() then
-        return (GetNumGroupMembers and GetNumGroupMembers()) or (GetNumRaidMembers and GetNumRaidMembers()) or 1
+        if GetNumGroupMembers then num = GetNumGroupMembers() end
+        if (not num or num <= 0) and GetNumRaidMembers then num = GetNumRaidMembers() end
     elseif (IsInGroup and IsInGroup()) or (GetNumPartyMembers and GetNumPartyMembers() > 0) then
-        return (GetNumGroupMembers and GetNumGroupMembers()) or ((GetNumPartyMembers and GetNumPartyMembers() or 0) + 1)
-    else
-        return 1  -- Solo
+        if GetNumGroupMembers then num = GetNumGroupMembers() end
+        if (not num or num <= 0) and GetNumPartyMembers then num = GetNumPartyMembers() + 1 end
     end
+    if not num or num <= 0 then
+        num = 1
+    end
+    return num
 end
 
 -- Retrieve all friendly party or raid members with their combatant metadata (Cross-Client Guardrail 2 Compliant)
@@ -836,10 +841,12 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
 
     local inGroup = (CT:GetFriendlyPartySize() > 1)
     local hasNearbyFriendly = (friendlyAssists > 0)
+    local isInstanceCombat = (context.isBattleground or context.isArena)
 
     local isSolo = false
     if finalBlowKillerGUID == playerGUID then
-        isSolo = (not hasExternalAttacker)
+        isSolo = (not isInstanceCombat)
+             and (not hasExternalAttacker)
              and (not hasExternalAssistOnVictim)
              and (not hasExternalAssistOnPlayer)
              and (not hasRecentAssistedAlly)
@@ -847,7 +854,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
              and (not hasNearbyFriendly)
              and (totalDamage > 0)
     else
-        isSolo = (#attackersList == 1) and (not inGroup)
+        isSolo = (not isInstanceCombat) and (#attackersList == 1) and (not inGroup)
     end
 
     local friendlyPartySize = math.max(CT:GetFriendlyPartySize(), #attackersList)
@@ -905,7 +912,9 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     -- Trigger Death Bounty Opportunity if player was killed by an enemy player in the open world
     local inInst, instType = false, "none"
     if IsInInstance then inInst, instType = IsInInstance() end
-    local isInstanceCombat = inInst or (instType and instType ~= "none") or context.isBattleground or context.isArena
+    local isBG = context.isBattleground or (C_PvP and C_PvP.IsBattleground and C_PvP.IsBattleground())
+    local isArena = context.isArena or (C_PvP and C_PvP.IsArena and C_PvP.IsArena())
+    local isInstanceCombat = inInst or (instType and instType ~= "none") or isBG or isArena
 
     if not isInstanceCombat and victimGUID == playerGUID and killerInfo and killerInfo.name and killerInfo.name ~= "Unknown" and killerInfo.name ~= UnitName("player") then
         CT.LastPvpKiller = {
@@ -915,7 +924,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             faction = killerInfo.faction,
         }
         local settings = WoWKillboardSettings or {}
-        if settings.promptMarkOnDeath ~= false and settings.promptBountyOnDeath ~= false then
+        if settings.promptMarkOnDeath ~= false and settings.promptBountyOnDeath ~= false and settings.ignoreDeathBounties ~= true then
             CT.PendingDeathBounty = CT.LastPvpKiller
             CT:CheckPendingDeathBounty()
         end
@@ -1363,6 +1372,8 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         end
     end
 
+    local context = CT:GetCombatContext()
+    local isInstanceCombat = (context.isBattleground or context.isArena)
     local inGroup = (partySize > 1)
     local hasNearbyFriendly = (friendlyAssists > 0)
     local hasPlayerDamage = (playerDamage > 0)
@@ -1377,7 +1388,8 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
                          or (cleanVictim and CT.RecentVictimGUIDs and CT.RecentVictimGUIDs[cleanVictim:lower()] ~= nil)
                          or (normVictim and CT.RecentVictimGUIDs and CT.RecentVictimGUIDs[normVictim] ~= nil)
 
-    local isSolo = (not hasExternalAttacker)
+    local isSolo = (not isInstanceCombat)
+               and (not hasExternalAttacker)
                and (not hasExternalAssistOnVictim)
                and (not hasExternalAssistOnPlayer)
                and (not hasRecentAssistedAlly)
@@ -1386,8 +1398,8 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
                and (hasPlayerDamage or isCLEUForbidden or isTargetEngaged or isPlayerInCombat)
 
     local attackersCount = math.max(#attackersList, partySize, 1 + friendlyAssists)
-    if not isSolo and attackersCount < 2 then
-        attackersCount = 2
+    if isInstanceCombat or not isSolo then
+        if attackersCount < 2 then attackersCount = 2 end
     end
     if isSolo then
         attackersCount = 1
@@ -1800,13 +1812,16 @@ end
 function CT:CheckPendingDeathBounty()
     if not CT.PendingDeathBounty then return end
     local settings = WoWKillboardSettings or {}
-    if settings.promptMarkOnDeath == false or settings.promptBountyOnDeath == false then
+    if settings.promptMarkOnDeath == false or settings.promptBountyOnDeath == false or settings.ignoreDeathBounties == true then
         CT.PendingDeathBounty = nil
         return
     end
     local inInst, instType = false, "none"
     if IsInInstance then inInst, instType = IsInInstance() end
-    if inInst or (instType and instType ~= "none") then
+    local context = CT:GetCombatContext()
+    local isBG = context.isBattleground or (C_PvP and C_PvP.IsBattleground and C_PvP.IsBattleground())
+    local isArena = context.isArena or (C_PvP and C_PvP.IsArena and C_PvP.IsArena())
+    if inInst or (instType and instType ~= "none") or isBG or isArena then
         CT.PendingDeathBounty = nil
         return
     end
@@ -1918,6 +1933,20 @@ frame:SetScript("OnEvent", function(self, event, ...)
             CT:ProcessDeath(destGUID, destName, destFlags, sourceGUID, sourceName)
         elseif subevent == "UNIT_DIED" then
             CT:ProcessDeath(destGUID, destName, destFlags, nil, nil)
+            -- Instant death detection for engaged/damaged hostile players (Zero-delay RW Banner)
+            if destGUID and IsPlayerUnit(destGUID, destFlags, destName) then
+                local pGUID = UnitGUID("player")
+                if pGUID and destGUID ~= pGUID then
+                    local isEngaged = (UnitExists("target") and (UnitGUID("target") == destGUID or UnitName("target") == destName))
+                                   or (activeEnemyTarget and (activeEnemyTarget.guid == destGUID or activeEnemyTarget.name == destName))
+                                   or (CT.RecentEngagedEnemies and CT.RecentEngagedEnemies[destGUID])
+                                   or (CT.RecentDamage and CT.RecentDamage[destGUID])
+                    if isEngaged then
+                        local unitTok = (UnitExists("target") and UnitGUID("target") == destGUID) and "target" or nil
+                        CT:OnPlayerHonorableKill(destName, destGUID, unitTok)
+                    end
+                end
+            end
         end
 
     elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
@@ -1964,14 +1993,16 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "UNIT_HEALTH" then
         local unit = ...
-        if unit == "target" and UnitExists("target") and UnitIsPlayer("target") then
-            if UnitIsDead("target") or UnitIsDeadOrGhost("target") then
-                local isEnemy = UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or (not UnitIsFriend("player", "target"))
+        if unit and UnitExists(unit) and UnitIsPlayer(unit) then
+            local hp = UnitHealth(unit)
+            local isDead = (hp == 0) or UnitIsDead(unit) or UnitIsDeadOrGhost(unit)
+            if isDead then
+                local isEnemy = UnitIsEnemy("player", unit) or (UnitCanAttack and UnitCanAttack("player", unit)) or (not UnitIsFriend("player", unit))
                 if isEnemy then
-                    local tName = UnitName("target")
-                    local tGuid = UnitGUID("target")
+                    local tName = UnitName(unit)
+                    local tGuid = UnitGUID(unit)
                     if tName and tName ~= "" then
-                        CT:OnPlayerHonorableKill(tName, tGuid, "target")
+                        CT:OnPlayerHonorableKill(tName, tGuid, unit)
                     end
                 end
             end
@@ -2122,7 +2153,7 @@ frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 
 pcall(function()
     if frame.RegisterUnitEvent then
-        frame:RegisterUnitEvent("UNIT_HEALTH", "target")
+        frame:RegisterUnitEvent("UNIT_HEALTH", "target", "mouseover", "focus", "targettarget")
     else
         frame:RegisterEvent("UNIT_HEALTH")
     end

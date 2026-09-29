@@ -1048,7 +1048,7 @@ async function renderStats(kills) {
 
         <!-- Divider to Cumulative Frontier Stats -->
         <div class="stats-section-divider">
-          <span>WOW FOREVER FRONTIER — CUMULATIVE REALM TELEMETRY (ALL STATS)</span>
+          <span>THE SHADOW NETWORK — CUMULATIVE COMBAT TELEMETRY (ALL STATS)</span>
         </div>
 
         <!-- 4 Cumulative Frontier Metrics -->
@@ -1083,7 +1083,7 @@ async function renderStats(kills) {
       <div class="guest-stats-header">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
           <div style="display:flex; align-items:center; gap:8px;">
-            <span class="wow-gold-header" style="font-size:0.95rem; font-weight:800; letter-spacing:0.5px;">WOW FOREVER FRONTIER — REALM TELEMETRY (ALL STATS)</span>
+            <span class="wow-gold-header" style="font-size:0.95rem; font-weight:800; letter-spacing:0.5px;">THE SHADOW NETWORK — CUMULATIVE COMBAT TELEMETRY (ALL STATS)</span>
           </div>
         </div>
       </div>
@@ -1328,7 +1328,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); margin-bottom:4px;">
         <div>
           <h2 class="wow-gold-header" style="font-size: 1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
-            Champions
+            Defender of Azeroth
           </h2>
           <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">
             ${isGuilds ? 'Premier guild war standings, total kills, and combat effectiveness across Azeroth.' : 'Most lethal combatants, rank efficiency, and certified executions across Azeroth.'}
@@ -1732,20 +1732,20 @@ function renderBountiesView(bounties, debts, leaderboards) {
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
           <div>
             <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; margin:0;">
-              Your Active Marks of Spite (${myBounties.length})
+              Your Active Marked Contracts (${myBounties.length})
             </h2>
             <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">
-              Marks of Spite issued by you or placed upon your head
+              Contracts issued by you or placed upon your head
             </div>
           </div>
-          <button class="see-all-marks-btn" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
+          <button class="see-all-marks-btn" onclick="openPlaceBountyModal()">+ Issue Mark</button>
         </div>
     `;
 
     if (myBounties.length === 0) {
       html += `
         <div style="color: #64748b; font-size:0.8rem; padding: 14px 16px; background: rgba(3,4,7,0.7); border-radius:6px; border: 1px dashed rgba(255,255,255,0.08);">
-          You have no active Marks of Spite issued or placed against you. When ganked in the world, brand your killer with a Mark of Spite to dispatch the realm's hunters!
+          You have no active Marked contracts issued or placed against you. When ganked in the world, brand your killer with a Mark of Spite to dispatch the realm's hunters!
         </div>
       `;
     } else {
@@ -1761,7 +1761,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
     html += `
       <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85); border-radius: 6px; padding: 12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div style="font-size:0.82rem; color:#94a3b8;">
-          <strong style="color:var(--wow-gold);">Personal Marks:</strong> Sign in to pin Marks of Spite you issued or marks placed upon your head to the top.
+          <strong style="color:var(--wow-gold);">Personal Marks:</strong> Sign in to pin contracts you issued or marks placed upon your head to the top.
         </div>
         <button class="header-signin-btn" onclick="switchTab('PORTAL')">Sign In &rarr;</button>
       </div>
@@ -1773,10 +1773,10 @@ function renderBountiesView(bounties, debts, leaderboards) {
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
           <div>
-            <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">Realm High Command Marks of Spite</h2>
+            <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">The Marked — Execution Contracts</h2>
             <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">Track and execute targets in open combat to claim the reward.</div>
           </div>
-          <button class="see-all-marks-btn" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
+          <button class="see-all-marks-btn" onclick="openPlaceBountyModal()">+ Issue Mark</button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
   `;
@@ -1794,7 +1794,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
       <!-- Bounty Leaderboards: Hall of Fame -->
       <div>
         <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27);">
-          <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">Marks of Spite Hall of Fame &amp; Records</h2>
+          <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">The Marked — Hall of Fame &amp; Records</h2>
           <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">All-time outlaw hunts, highest bounties collected, and record survival times.</div>
         </div>
         <div class="bounty-hall-of-fame-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -1824,7 +1824,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <!-- 2. Highest Bounty Contracts -->
           <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="color:var(--accent-gold); font-size:0.95rem;">Highest Mark of Spite Rewards</h3>
+              <h3 style="color:var(--accent-gold); font-size:0.95rem;">Highest Marked Rewards</h3>
               <span style="font-size:0.7rem; color:#856a36; font-family:var(--font-tactical); font-weight:700;">Biggest Escrow Rewards</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
@@ -4917,14 +4917,14 @@ function loadRalliesView() {
           <div>
             <div style="font-size:12px; font-weight:700; color:#f59e0b; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Frontline Telemetry Wire</div>
             <h2 style="font-size:24px; font-weight:800; color:#f8fafc; margin:0; display:flex; align-items:center; gap:10px;">
-              <span>Realm War Rallies &amp; Call to Arms</span>
+              <span>Vanguard Manhunt &amp; Call to Arms</span>
             </h2>
             <div style="font-size:14px; color:#94a3b8; margin-top:6px; max-width:640px;">
-              Live joinable squads, battleground strike teams, and faction recruitment broadcast across Azeroth.
+              Live joinable squads, open manhunts, and faction recruitment broadcast across Azeroth.
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
-            <div style="background:rgba(217, 119, 6, 0.15); border:1px solid rgba(217, 119, 6, 0.45); border-radius:6px; padding:7px 14px; font-size:12px; color:#fbbf24; font-weight:700; display:flex; align-items:center; gap:8px;" title="Muster squads and war rallies in-game using the WoW Killboard addon (/kb rally)">
+            <div style="background:rgba(217, 119, 6, 0.15); border:1px solid rgba(217, 119, 6, 0.45); border-radius:6px; padding:7px 14px; font-size:12px; color:#fbbf24; font-weight:700; display:flex; align-items:center; gap:8px;" title="Muster squads and manhunts in-game using the WoW Killboard addon (/kb rally)">
               <span>📯 Muster In-Game: <code style="color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:3px; font-family:monospace;">/kb rally</code></span>
             </div>
             <div style="background:rgba(30, 41, 59, 0.8); border:1px solid rgba(148, 163, 184, 0.2); border-radius:6px; padding:8px 14px; font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:8px;">

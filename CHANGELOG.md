@@ -5,6 +5,44 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.55] - 2026-09-28
+
+### Added
+- **In-Game Chat Sharing Engine (`UI.lua`)**:
+  - Implemented `UI:SendChatBroadcast(lines)` with intelligent channel resolution (`RAID`, `INSTANCE_CHAT`, `PARTY`, `GUILD`, or `/say` fallback) strictly guarded by `InCombatLockdown()` checks.
+  - Added `[📢 Share Wanted]` button to **The Blood Ledger** and **The Marked** tabs to broadcast top execution contracts into group/guild chat.
+  - Added `[📢 Share Champions]` and `[📢 Share Guilds]` buttons to **Defender of Azeroth** tab to post realm honor ladder standings directly into chat.
+- **Consolidated Settings Modal (`UI.lua`, `Config.lua`)**:
+  - Combined top header clutter into a unified `[⚙ Settings]` button.
+  - Built pure Lua modal (`UI:ShowSettingsModal()`, 480x430) with ESC key listeners, zero XML templates, and combat lockdown auto-hiding.
+  - Configures Interface Theme, Alerts & Banner calibration modal link, Sound Alerts toggle, Death Mark prompt mute, and Data Dossier Export.
+
+### Fixed
+- **Gang Kill Attribution & BG Solo Bug (`CombatTracker.lua`)**:
+  - Resolved Lua truthiness defect where `GetNumGroupMembers()` returning `0` caused party size evaluations to evaluate to 1.
+  - Enforced strict `context.isBattleground or context.isArena` attribution locks (`isSolo = false`, `attackersCount >= 2`), ensuring battleground group kills are never misattributed as solo kills.
+- **Instant Raid Warning Kill Banner Latency (`CombatTracker.lua`)**:
+  - Added 0ms instant `UNIT_DIED` death detection for hostile targets damaged by the player within the 12-second engagement window, eliminating the 1.5–3.0s round-trip server latency of `CHAT_MSG_COMBAT_HONOR_GAIN`.
+  - Broadened unit health death hooks to `"target"`, `"mouseover"`, `"focus"`, and `"targettarget"` with 5-second temporal deduplication against subsequent honor gain events.
+- **Death Mark Prompt Suppression & BG/Arena Gating (`CombatTracker.lua`, `UI.lua`, `Config.lua`)**:
+  - Added `ignoreDeathBounties = false` preference to `KB.DefaultSettings`.
+  - Added `[Never Ask Again]` button to the in-game death prompt dialog.
+  - Gated all death mark dialogs (`ProcessDeath` and `CheckPendingDeathBounty`) to immediately abort inside Battlegrounds and Arenas (`instType == "pvp" or instType == "arena" or inInst`).
+
+### Changed
+- **Terminology & Branding Overhaul (Addon & Web Platform)**:
+  - **The Blood Ledger & Azeroth's Most Wanted**: Replaced "High Command Execution List" on both the web showcase and the in-game header, styled with radiant crimson red font (`|cffff2222|r`) in the addon.
+  - **The Marked**: Replaced "Mark of Spite" tab on the addon navigation bar, sub-tabs, and web navigation.
+  - **Defender of Azeroth**: Replaced "Champions" on the addon navigation tab, leaderboard title, and web nav.
+  - **The Shadow Network**: Replaced "Realm Telemetry" in the live recon feed, KPI summaries, and web stats hub.
+  - **Vanguard Manhunt**: Replaced "War Rallies" across addon tabs, rally headers, and web views.
+- **Web Navigation & Modal Polish (`index.html`, `style.css`, `app.js`)**:
+  - Purged in-development buttons ("World Hazards", "Armory", "War Room") from desktop navbar and mobile drawer.
+  - Enlarged Alliance and Horde faction crests to 32px with radiant faction glows (`#3b82f6` blue / `#ef4444` red) and enhanced metallic war room logo title.
+  - Re-architected `#character-link-modal` backdrop and panel styling with sleek obsidian gradients, crisp gold borders, and responsive tab buttons.
+- **Multi-Client Deployment & Package Build (`deploy.py`)**:
+  - Rebuilt `WoWKillboard-v1.0.0.zip` and synchronized all updated files to `_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`, and the Google Drive sync folder `WoW KB Beta/`.
+
 ## [1.4.54] - 2026-09-28
 
 ### Security
