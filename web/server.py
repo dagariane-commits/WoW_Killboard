@@ -411,17 +411,27 @@ def index():
 def static_files(path):
     return send_from_directory(STATIC_DIR, path)
 
+GOOGLE_DRIVE_DOWNLOAD_URL = "https://drive.google.com/file/d/1POiV8uple8LxFihPYE1u95IJFAuAAlII/view?usp=sharing"
+
 @app.route("/WoWKillboard-v1.0.0.zip")
 @app.route("/download")
 @app.route("/addon.zip")
 def download_addon():
     root_dir = os.path.dirname(APP_DIR)
     zip_path = os.path.join(root_dir, "WoWKillboard-v1.0.0.zip")
+    static_zip = os.path.join(STATIC_DIR, "WoWKillboard-v1.0.0.zip")
+    if os.path.exists(static_zip):
+        return send_from_directory(STATIC_DIR, "WoWKillboard-v1.0.0.zip", as_attachment=True)
     if os.path.exists(zip_path):
         return send_from_directory(root_dir, "WoWKillboard-v1.0.0.zip", as_attachment=True)
-    if os.path.exists(os.path.join(STATIC_DIR, "WoWKillboard-v1.0.0.zip")):
-        return send_from_directory(STATIC_DIR, "WoWKillboard-v1.0.0.zip", as_attachment=True)
-    return jsonify({"error": "Distribution package not found"}), 404
+    from flask import redirect
+    return redirect(GOOGLE_DRIVE_DOWNLOAD_URL)
+
+@app.route("/drive")
+@app.route("/gdrive")
+def download_gdrive():
+    from flask import redirect
+    return redirect(GOOGLE_DRIVE_DOWNLOAD_URL)
 
 # ----------------- StreamBox (OBS Overlay) -----------------
 

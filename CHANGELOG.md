@@ -5,6 +5,16 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.51] - 2026-09-28
+
+### Added
+- **Dual Addon Distribution Pipeline with Google Drive Mirror (`server.py`, `index.html`, `app.js`)**:
+  - Implemented dual distribution channels on the web platform: Direct server package download (`/download`, `/WoWKillboard-v1.0.0.zip`) and high-availability Google Drive Mirror.
+  - Added dedicated `/drive` and `/gdrive` redirect routes in `server.py` pointing to Scott Quick's Google Drive link.
+  - Added resilient fallback in `server.py` `/download` endpoint: automatically redirects to the Google Drive mirror if the physical local `.zip` file is absent on a deployment.
+  - Updated Addon Dossier Modal (`#addon-dossier-modal`) with side-by-side buttons for `[⬇ Direct Download (.zip)]` and `[☁ Google Drive Mirror]`.
+  - Added dual download callout banner in Upload view (`loadUploadView()`) and added Google Drive Mirror link in the site footer navigation.
+
 ## [1.4.50] - 2026-09-28
 
 ### Fixed
