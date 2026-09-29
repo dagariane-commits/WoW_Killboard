@@ -83,8 +83,17 @@ function UI:SetTheme(themeName)
         UI:Refresh()
     end
 
-    local th = KB.Themes[themeName]
-    SafePrint(string.format("|cff00ccff[WoWKB]|r Theme switched to: |cffffd100%s|r", th.name))
+    local th = KB.Themes and KB.Themes[themeName]
+    if th and th.name then
+        SafePrint(string.format("|cff00ccff[WoWKB]|r Theme switched to: |cffffd100%s|r", th.name))
+    end
+end
+
+function UI:CycleTheme()
+    local current = UI:GetCurrentThemeName()
+    local nextTheme = (current == "classic") and "elvui" or "classic"
+    UI:SetTheme(nextTheme)
+    return nextTheme
 end
 
 function UI:ApplyButtonStyle(btn, theme)
