@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=1.4.60">
+  <link rel="stylesheet" href="/static/style.css?v=1.4.64">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -15,31 +15,26 @@
   <!-- Top Header Navigation -->
   <header class="site-header">
     <div class="header-main-row">
-      <!-- 1. Logo -->
-      <div class="logo-group" onclick="switchTab('INTEL')">
-        <img src="/static/icons/factions/alliance.jpg" class="header-faction-crest alliance" alt="Alliance" title="For the Alliance!">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2.2" class="logo-swords-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M9.5 17.5 21 6V3h-3L6.5 14.5"/><path d="m11 19-6-6"/><path d="M8 16l-4 4"/><path d="M5 21l-2-2"/></svg>
-        <img src="/static/icons/factions/horde.jpg" class="header-faction-crest horde" alt="Horde" title="For the Horde!">
-        <div>
-          <div class="logo-title">WoW Killboard</div>
-          <div class="logo-subtitle">AZEROTH COMBAT OVERVIEW</div>
+      <!-- 1. Brand & Active Theater -->
+      <div class="header-brand-group">
+        <div class="logo-group" onclick="switchTab('INTEL')">
+          <img src="/static/icons/factions/alliance.jpg" class="header-faction-crest alliance" alt="Alliance" title="For the Alliance!">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2.2" class="logo-swords-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M9.5 17.5 21 6V3h-3L6.5 14.5"/><path d="m11 19-6-6"/><path d="M8 16l-4 4"/><path d="M5 21l-2-2"/></svg>
+          <img src="/static/icons/factions/horde.jpg" class="header-faction-crest horde" alt="Horde" title="For the Horde!">
+          <div>
+            <div class="logo-title">WoW Killboard</div>
+            <div class="logo-subtitle">AZEROTH COMBAT OVERVIEW</div>
+          </div>
+        </div>
+
+        <div class="header-theater-wrap">
+          <button id="nav-theater" class="nav-btn theater-btn" onclick="switchTab('THEATER')" title="Active Theater of War / Select Version">
+            <span class="theater-label">Theater:</span> <strong id="theater-nav-version" class="theater-version-name">WoW Forever</strong> <span id="theater-nav-server" class="theater-server-pill" onclick="event.stopPropagation(); openServerSelectorModal();" title="Click to Switch Realm Server">PvP</span> <span class="theater-caret">▾</span>
+          </button>
         </div>
       </div>
 
-      <!-- 2. Primary Navigation Rail -->
-      <nav class="nav-links-rail" id="nav-rail">
-        <button id="nav-theater" class="nav-btn theater-btn" onclick="switchTab('THEATER')" title="Active Theater of War / Select Version">
-          <span class="theater-label">Theater:</span> <strong id="theater-nav-version" class="theater-version-name">WoW Forever</strong> <span id="theater-nav-server" class="theater-server-pill" onclick="event.stopPropagation(); openServerSelectorModal();" title="Click to Switch Realm Server">PvP</span> <span class="theater-caret">▾</span>
-        </button>
-        <button id="nav-intel" class="nav-btn active" onclick="switchTab('INTEL')">Intel</button>
-        <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">Defender of Azeroth</button>
-        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">The Marked</button>
-        <button id="nav-rallies" class="nav-btn" onclick="switchTab('RALLIES')">Manhunt</button>
-        <button id="nav-zones" class="nav-btn" onclick="switchTab('ZONES')">Zone Intel</button>
-        <button id="nav-upload" class="nav-btn" onclick="switchTab('UPLOAD')">Upload</button>
-      </nav>
-
-      <!-- 3. Tools Group -->
+      <!-- 2. Combat Filters & Character Actions -->
       <div class="header-tools-group">
         <!-- 4-Way Mode Filter Pills: World | BGs | Duels | Arenas -->
         <div class="header-mode-filters" id="header-mode-filters">
@@ -59,6 +54,18 @@
           <span class="menu-bar"></span>
         </button>
       </div>
+    </div>
+
+    <!-- 3. Dedicated Sub-Navigation Rail Strip -->
+    <div class="header-sub-row">
+      <nav class="nav-links-rail" id="nav-rail">
+        <button id="nav-intel" class="nav-btn active" onclick="switchTab('INTEL')">Intel</button>
+        <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">Defender of Azeroth</button>
+        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">The Marked</button>
+        <button id="nav-rallies" class="nav-btn" onclick="switchTab('RALLIES')">Manhunt</button>
+        <button id="nav-zones" class="nav-btn" onclick="switchTab('ZONES')">Zone Intel</button>
+        <button id="nav-upload" class="nav-btn" onclick="switchTab('UPLOAD')">Upload</button>
+      </nav>
     </div>
   </header>
 

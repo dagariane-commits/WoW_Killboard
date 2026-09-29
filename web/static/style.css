@@ -154,6 +154,21 @@ body {
   min-height: 56px;
 }
 
+.header-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.header-theater-wrap {
+  display: flex;
+  align-items: center;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 .logo-group {
   display: flex;
   align-items: center;
@@ -427,25 +442,27 @@ body {
   flex-shrink: 0;
 }
 
-/* Sub Row: Navigation Rail & Filter Strip */
+/* Sub Row: Dedicated Navigation Rail Strip */
 .header-sub-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 0 24px;
-  gap: 16px;
-  background: rgba(6, 8, 13, 0.7);
+  background: rgba(6, 8, 13, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 40px;
 }
 
 .nav-links-rail {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   padding: 0;
+  width: 100%;
 }
 
 .nav-links-rail::-webkit-scrollbar {
@@ -3615,6 +3632,17 @@ body {
   .stats-grid {
     grid-template-columns: repeat(4, 1fr);
   }
+  .logo-subtitle {
+    display: none;
+  }
+  .header-main-row,
+  .header-top-row {
+    padding: 8px 18px;
+    gap: 12px;
+  }
+  .header-sub-row {
+    padding: 0 18px;
+  }
 }
 
 /* Tablet Portrait & Small Laptops (769px to 1024px) */
@@ -3623,6 +3651,14 @@ body {
     position: sticky;
     top: 0;
     z-index: 1000;
+  }
+
+  .logo-subtitle {
+    display: none !important;
+  }
+
+  .theater-label {
+    display: none !important;
   }
 
   .header-main-row,
@@ -3663,17 +3699,19 @@ body {
     flex-shrink: 0 !important;
   }
 
-  /* Dual-Tier Header: Primary Navigation Rail as Sticky Horizontal Strip */
+  .header-sub-row {
+    display: flex !important;
+    padding: 0 16px !important;
+  }
+
   .nav-links-rail {
     display: flex !important;
     width: 100% !important;
-    order: 3 !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
-    padding: 6px 0 2px 0 !important;
+    padding: 4px 0 2px 0 !important;
     gap: 6px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
   }
 
   .nav-links-rail::-webkit-scrollbar {
@@ -3795,8 +3833,13 @@ body {
   }
 
   /* Completely hide redundant horizontal sub-menu rail on mobile: all pages/modes live in the slide-in drawer */
+  .header-sub-row,
   .nav-links-rail {
     display: none !important;
+  }
+
+  .header-theater-wrap {
+    display: none !important; /* Managed via mobile drawer */
   }
 
   /* Unroll tools group so auth badge and hamburger participate in Row 1, and mode pills take Row 2 */

@@ -5,6 +5,17 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.64] - 2026-09-29
+
+### Fixed
+- **Web Platform Header Layout at 150%+ Zoom & Mid-Sized Displays (`index.html`, `style.css`)**:
+  - Restructured site header into an intentional two-tier visual hierarchy:
+    - **Tier 1 (Main Row)**: Brand logo, faction crests, and active Theater selector (`WoW Forever [PvP] ▾`) on the left; 4-way combat mode filter pills (`WORLD` | `BGS` | `DUELS` | `ARENAS`) and `Select / Claim Character` button on the right.
+    - **Tier 2 (Sub-Navigation Bar)**: Dedicated sub-rail containing all platform tabs (`Intel`, `Defender of Azeroth`, `The Marked`, `Manhunt`, `Zone Intel`, `Upload`).
+  - Permanently eliminated header crowding, tab squishing, and text truncation (e.g. "Defender of Azeroth" clipped to "Def") when zoomed to 150%, 175%, or on 1080p laptops and tablets.
+  - Added responsive breakpoint optimizations at 1280px and 1024px to collapse redundant logo subtitles and theater labels for maximum breathing room.
+  - Bumped stylesheet cachebuster query string to `v=1.4.64`.
+
 ## [1.4.63] - 2026-09-29
 
 ### Fixed
