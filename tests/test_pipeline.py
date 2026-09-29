@@ -1190,6 +1190,37 @@ class TestKillboardPipeline(unittest.TestCase):
 
         print("[PASS] Verified Character Claim Ownership Lock, In-Game Verification, Release Claim, and Rich Rally Muster.")
 
+    def test_feedback_portal_and_api(self):
+        """Verify Web Feedback page serving and /api/feedback submission lifecycle."""
+        # 1. Verify GET /feedback serves HTML
+        res_page = self.client.get("/feedback")
+        self.assertEqual(res_page.status_code, 200)
+        self.assertIn(b"Welcome to the WoW Killboard Beta", res_page.data)
+        self.assertIn(b"Submit Player Feedback", res_page.data)
+
+        # 2. Verify POST /api/feedback creates ticket and runs AI diagnostics
+        fb_payload = {
+            "category": "Feature Suggestion",
+            "character_name": "TestHero",
+            "realm": "WoW Forever Beta",
+            "faction": "Alliance",
+            "message": "Please add guild vs guild battleground challenges!"
+        }
+        res_post = self.client.post("/api/feedback", json=fb_payload)
+        self.assertEqual(res_post.status_code, 201)
+        data = res_post.get_json()
+        self.assertEqual(data["status"], "ok")
+        self.assertTrue(data["feedbackId"].startswith("FB-"))
+        self.assertIn("diagnosis", data)
+
+        # 3. Verify GET /api/feedback lists the new entry
+        res_list = self.client.get("/api/feedback")
+        self.assertEqual(res_list.status_code, 200)
+        entries = res_list.get_json()
+        self.assertTrue(any("guild vs guild" in (e.get("user_report") or "") for e in entries))
+
+        print("[PASS] Verified Early Beta Web Feedback Portal, /api/feedback submission, and AI triage.")
+
 if __name__ == "__main__":
     unittest.main()
 

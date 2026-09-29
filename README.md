@@ -115,6 +115,9 @@ flowchart TD
   - Broadcasts across Guild, Group/Raid, and P2P Addon channels. Live web recon ticker with Discord embeds.
 - **In-Game Player Armory Lookup (`/armory [Name]`, `/killboard armory [Name]`)**:
   - Direct chat combat dossier: reports character class, level, faction, Classic Military Honor Rank, K/D, solo triumphs, KOS status, and active blood bounties without leaving the game client.
+- **Early Preview Welcome & Community Feedback Modal (`/kb welcome`, `/kb feedback`)**:
+  - Unobtrusive first-time login popup explaining early stage development, encouraging sharing freely across guildmates and friends, and soliciting direct feedback.
+  - Interactive actions: 1-click in-game feedback dispatcher (`UI:ShowBugReportModal()`), copyable web feedback link with auto-highlighting, and "Do not show on future logins" checkbox.
 
 ### 2. Desktop Ingestion Agent (`WoWKillboardSync.exe`)
 - **Standalone Windows Executable**: Zero Python installation required for players.

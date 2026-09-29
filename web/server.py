@@ -440,6 +440,10 @@ def health_check():
 def index():
     return send_from_directory(STATIC_DIR, "index.html")
 
+@app.route("/feedback")
+def feedback_page():
+    return send_from_directory(STATIC_DIR, "feedback.html")
+
 @app.route("/static/<path:path>")
 def static_files(path):
     return send_from_directory(STATIC_DIR, path)
@@ -3993,6 +3997,58 @@ def get_bug_report(bug_id):
         if not row:
             return jsonify({"error": "Bug report not found"}), 404
         return jsonify(dict(row))
+
+@app.route("/api/feedback", methods=["POST", "GET"])
+def feedback_api():
+    if request.method == "POST":
+        data = request.json or {}
+        if not data and request.form:
+            data = request.form.to_dict()
+
+        fb_id = f"FB-{int(time.time())}-{int(time.time()*1000)%10000:04d}"
+        reporter = data.get("character_name") or data.get("reporter") or "Unmarked Soldier"
+        realm = data.get("realm") or "Unknown Realm"
+        faction = data.get("faction") or "Unknown"
+        category = data.get("category") or "General Feedback"
+        user_msg = data.get("message") or data.get("feedback") or data.get("description") or ""
+        user_report = f"[{category}] {user_msg}"
+        ts = int(time.time())
+
+        # Run automated AI diagnosis / categorization
+        diag = diagnose_bug_report({
+            "reporter": reporter,
+            "realm": realm,
+            "faction": faction,
+            "zone": "Web Feedback Portal",
+            "clientFlavor": "WEB_PORTAL",
+            "userReport": user_report,
+        })
+
+        with get_db() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO bug_reports (
+                    id, reporter_name, reporter_realm, reporter_faction,
+                    client_flavor, game_build, zone, subzone, coordinates,
+                    in_combat, user_report, lua_error, timestamp,
+                    ai_status, ai_severity, ai_root_cause, ai_diagnosis, ai_suggested_fix
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                fb_id, reporter, realm, faction, "WEB_PORTAL", "Web Interface", "Feedback Portal", category,
+                "0, 0", 0, user_report, "", ts,
+                diag.get("status", "ANALYZED"), diag.get("severity", "LOW"), diag.get("root_cause", "User Feedback"),
+                diag.get("diagnosis", "User feedback received via web portal."), diag.get("suggested_fix", "Review feedback for roadmap priorities.")
+            ))
+
+        return jsonify({
+            "status": "ok",
+            "feedbackId": fb_id,
+            "message": "Feedback received successfully. Thank you for supporting WoW Killboard!",
+            "diagnosis": diag
+        }), 201
+
+    with get_db() as conn:
+        rows = conn.execute("SELECT * FROM bug_reports ORDER BY timestamp DESC LIMIT 50").fetchall()
+        return jsonify([dict(r) for r in rows]), 200
 
 
 if __name__ == "__main__":
