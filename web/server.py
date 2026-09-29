@@ -432,7 +432,7 @@ def health_check():
     return jsonify({
         "status": "ok",
         "service": "WoW Killboard API",
-        "version": "1.4.57",
+        "version": "1.4.58",
         "db": "ready"
     })
 

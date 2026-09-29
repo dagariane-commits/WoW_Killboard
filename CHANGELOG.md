@@ -5,6 +5,13 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.58] - 2026-09-28
+
+### Fixed
+- **Blizzard Secret Number Value Taint Exception (`CombatTracker.lua`)**:
+  - Root Cause: In modern WoW client builds (Classic 1.15.5+, Anniversary, Beta, Retail), Blizzard implemented protected "secret number values" on `UnitHealth(unit)` during combat or tainted execution paths. When the player buffed an ally, entered combat, or engaged mobs/murlocs, `UNIT_HEALTH` fired and evaluated `(hp == 0)`, causing Lua to throw `attempt to compare local 'hp' (a secret number value, while execution tainted by 'WoWKillboard')`.
+  - Fix: Completely unregistered the high-frequency `UNIT_HEALTH` event and purged the `UnitHealth(unit)` comparison branch from `CombatTracker.lua`. Instant death detection is cleanly handled by `COMBAT_LOG_EVENT_UNFILTERED` (`subevent == "UNIT_DIED"`), `PARTY_KILL`, and safe boolean `UnitIsDead` checks on `PLAYER_TARGET_CHANGED`, eliminating UI taint and secret value crashes.
+
 ## [1.4.57] - 2026-09-28
 
 ### Changed
