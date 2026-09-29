@@ -1380,6 +1380,42 @@ def admin_reset():
         "message": "All combat tables, leaderboards, and telemetry ledgers have been completely reset."
     }), 200
 
+@app.route("/api/admin/deploy", methods=["POST", "GET"])
+def admin_deploy():
+    """
+    Administrative Endpoint: Pulls latest git commits from origin/main.
+    Permits remote 1-click deployment on the AWS Lightsail production VPS.
+    Requires ADMIN_SECRET_KEY.
+    """
+    req_secret = None
+    if request.is_json:
+        req_secret = request.json.get("secret")
+    if not req_secret:
+        req_secret = request.args.get("secret") or request.form.get("secret")
+
+    if req_secret != ADMIN_SECRET_KEY:
+        return jsonify({"error": "Unauthorized: Invalid administrative secret key."}), 403
+
+    import subprocess
+    try:
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        pull_res = subprocess.run(
+            ["git", "pull", "origin", "main"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        return jsonify({
+            "success": True,
+            "message": "Git pull executed successfully.",
+            "stdout": pull_res.stdout,
+            "stderr": pull_res.stderr,
+            "returncode": pull_res.returncode
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Deploy execution failed: {str(e)}"}), 500
+
 # ----------------- Stats & Telemetry API -----------------
 
 @app.route("/api/stats", methods=["GET", "POST"])

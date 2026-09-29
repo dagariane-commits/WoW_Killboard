@@ -2,7 +2,7 @@ import urllib.request
 
 endpoints = ['/', '/api/health', '/api/kills', '/api/leaderboard', '/api/bounties', '/api/stats']
 for ep in endpoints:
-    url = 'https://wow-killboard.onrender.com' + ep
+    url = 'http://13.216.102.148' + ep
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     try:
         res = urllib.request.urlopen(req)

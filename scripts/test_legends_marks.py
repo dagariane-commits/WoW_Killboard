@@ -4,7 +4,7 @@ import json
 
 targets = [
     "http://127.0.0.1:8080",
-    "https://wow-killboard.onrender.com"
+    "http://13.216.102.148"
 ]
 
 routes = [
