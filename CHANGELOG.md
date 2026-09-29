@@ -5,6 +5,45 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.59] - 2026-09-29
+
+### Added
+- **Two-Way Data Sync Pipeline (`server.py`, `watcher.py`, `WoWKillboard_RealmData.lua`)**:
+  - Implemented `@app.route("/api/realm/summary")` aggregating `RealmTotalCarnage`, `SoloRatio`, `FactionSplit`, `DeadliestZones` (top 5), and `TopGankers24h` (top 5).
+  - Built `sync_realm_data_to_client()` in `sync/watcher.py` generating `WoWKillboard_RealmData.lua` across all detected local client installations (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+  - Added in-game top ribbon toggle button `[ Realm Stats | Session Stats ]` in `UI.lua` allowing players to switch stat cards between downloaded realm-wide totals and local combat session data.
+  - Added `[Top Gankers (24h)]` sub-tab to **Defender of Azeroth** and wired `Zone Intel` tab to display downloaded 24-hour deadliest conflict hotspots.
+- **Live Combat Toast Alerts (`app.js`, `style.css`, `index.html`)**:
+  - Added `#combat-toast-container` and `showCombatToast(km)` triggering slide-in toast notifications for newly ingested kills, matching in-game kill alerts with gold/bounty border accents and clickable battle reports.
+- **Zone Intel Web View (`app.js`, `style.css`)**:
+  - Implemented `loadZonesView()` rendering the Danger Index & Hotspots view matching the Addon's `Zone Intel` tab with interactive zone feed filtering.
+- **Top 4-Way Mode Filter Pills (`index.html`, `style.css`, `app.js`)**:
+  - Added `[World | BGs | Duels | Arenas]` mode filter pills in the top navigation tools group with reactive feed filtering.
+
+### Changed
+- **Jargon Sweep & Warcraft Dark-Fantasy Immersion (`index.html`, `app.js`, `Core.lua`, `UI.lua`)**:
+  - Replaced modern military and software engineering jargon across both Web and Addon interfaces:
+    - *The Blood Ledger* (replaces "High Command Execution List").
+    - *The Marked* (replaces "Gibbet List" and "KOS Debtor").
+    - *Manhunts* (replaces "Rallies" and "Squad Objectives").
+    - *The Shadow Network* (replaces "KB Combat Wire" and "Wire").
+    - *Verify Character / Claim Profile* (replaces "Cryptographic Ownership Lock").
+    - Purged "FNV-1a", "Temporal Clustering", "Zero Taint", and "AI Surgical Remediation" from public user-facing interfaces.
+  - Added `/kb manhunt` and `/manhunt` slash commands to in-game Addon.
+- **Elevated Hero Bounty System ("The Blood Ledger") (`style.css`, `app.js`)**:
+  - Redesigned 10 wanted execution cards with high-contrast dark stone styling (`#181d28` to `#0d1017`) and gold borders (`rgba(197, 160, 89, 0.4)`).
+  - Prominent bold gold `#ffd100` `#1 WANTED` stamp, level badges (`Lv 60`), and gold bounty pots (`💰 1,500g`).
+  - Dimmed right rail headers (`.sidebar-card .section-title`) to eliminate visual competition with the hero Blood Ledger.
+  - Highlighted bounty claim records in the live combat feed with gold borders (`.bounty-claimed-row`) and `[💰 BOUNTY CLAIMED]` tags.
+- **Header Subtitle Parity (`index.html`)**:
+  - Standardized header subtitle to `AZEROTH COMBAT OVERVIEW`.
+
+### Fixed
+- **Web Profile URL Truncation (`UI.lua`)**:
+  - Standardized URL format to `https://[DOMAIN]/character?name=...&class=...&level=...&faction=...`, set `maxLetters=1024`, width=410, and cursor=0 to ensure complete copyability without ellipsis.
+- **UTF-8 Font Box Glyph Purge (`clean_fonts.py`, Lua files)**:
+  - Purged unsupported Unicode characters across all Addon Lua files that previously rendered as empty square boxes (`[]`) in standard Blizzard game fonts.
+
 ## [1.4.58] - 2026-09-28
 
 ### Fixed

@@ -31,7 +31,8 @@ end
 local mainFrame = nil
 local activeTab = "FEED"   -- "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES"
 local currentMode = "WORLD"  -- "WORLD", "BG", "DUEL", "ARENA"
-local hlSubTab = "PLAYERS"   -- "PLAYERS" (Player Ranks), "GUILDS" (Guild Ranks)
+local hlSubTab = "PLAYERS"   -- "PLAYERS" (Player Ranks), "GUILDS" (Guild Ranks), "GANKERS_24H" (Top Gankers 24h)
+local ribbonMode = "SESSION" -- "SESSION" or "REALM"
 local marksSubTab = "ACTIVE" -- "ACTIVE" (Execution List), "RECORDS" (Hall of Fame), "DEBTORS" (Wall of Shame)
 
 local tabButtons = {}
@@ -190,7 +191,7 @@ function UI:ApplyTheme()
                 UI.SubtitleText:ClearAllPoints()
                 UI.SubtitleText:SetPoint("TOP", UI.TitleText, "BOTTOM", 0, -2)
                 local sub = KB.Utils and KB.Utils.GetClientFlavorSubtitle and KB.Utils.GetClientFlavorSubtitle()
-                UI.SubtitleText:SetText(sub or string.format("|cff00e5ffWoW Forever|r • |cffc7b28c%s|r • |cff888888v%s|r", (GetRealmName and GetRealmName()) or "PvP", KB.Version))
+                UI.SubtitleText:SetText(sub or string.format("|cff00e5ffWoW Forever|r | |cffc7b28c%s|r | |cff888888v%s|r", (GetRealmName and GetRealmName()) or "PvP", KB.Version))
             end
         else
             UI.HeaderPlate:Hide()
@@ -204,7 +205,7 @@ function UI:ApplyTheme()
                 UI.SubtitleText:ClearAllPoints()
                 UI.SubtitleText:SetPoint("TOPLEFT", UI.TitleText, "BOTTOMLEFT", 0, -3)
                 local sub = KB.Utils and KB.Utils.GetClientFlavorSubtitle and KB.Utils.GetClientFlavorSubtitle()
-                UI.SubtitleText:SetText(sub or string.format("|cff00e5ffWoW Forever|r • |cffc7b28c%s|r • |cff888888v%s|r", (GetRealmName and GetRealmName()) or "PvP", KB.Version))
+                UI.SubtitleText:SetText(sub or string.format("|cff00e5ffWoW Forever|r | |cffc7b28c%s|r | |cff888888v%s|r", (GetRealmName and GetRealmName()) or "PvP", KB.Version))
             end
         end
     end
@@ -738,7 +739,7 @@ function UI:CreateMainWindow()
     medallion:SetScript("OnEnter", function(self)
         local pName = UnitName("player") or "Player"
         local knownCount = KB.UnitScanner and KB.UnitScanner.GetKnownCharactersCount and KB.UnitScanner:GetKnownCharactersCount() or 0
-        local title = string.format("|cffffd100%s — Web Profile|r", pName)
+        local title = string.format("|cffffd100%s  -  Web Profile|r", pName)
         local desc = "Click to copy your character's public web profile link.\nView detailed combat record, kill timeline, and charts outside the game."
         if knownCount > 0 then
             desc = desc .. string.format("\n|cff94a3b8Known Realm Characters Tracked:|r |cff00e5ff%d|r", knownCount)
@@ -855,7 +856,7 @@ function UI:CreateMainWindow()
     settingsBtn:EnableMouse(true)
     local settingsLabel = settingsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     settingsLabel:SetPoint("CENTER", 0, 0)
-    settingsLabel:SetText("|cffffd100⚙ Settings|r")
+    settingsLabel:SetText("|cffffd100[Settings] Settings|r")
     settingsBtn.Label = settingsLabel
     settingsBtn:SetScript("OnClick", function()
         UI:ShowSettingsModal()
@@ -885,7 +886,7 @@ function UI:CreateMainWindow()
     syncBtn:EnableMouse(true)
     local syncLabel = syncBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     syncLabel:SetPoint("CENTER", 0, 0)
-    syncLabel:SetText("|cff10b981💾 Sync|r")
+    syncLabel:SetText("|cff10b981[Save] Sync|r")
     syncBtn.Label = syncLabel
     syncBtn:SetScript("OnClick", function()
         if InCombatLockdown and InCombatLockdown() then
@@ -920,7 +921,7 @@ function UI:CreateMainWindow()
     bugBtn:EnableMouse(true)
     local bugLabel = bugBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     bugLabel:SetPoint("CENTER", 0, 0)
-    bugLabel:SetText("|cffff5555🐞 Bug|r")
+    bugLabel:SetText("|cffff5555[Bug] Bug|r")
     bugBtn.Label = bugLabel
     bugBtn:SetScript("OnClick", function()
         UI:ShowBugReportModal()
@@ -1011,6 +1012,41 @@ function UI:CreateMainWindow()
         UI.StatCards[cfg.id] = card
         prevCard = card
     end
+
+    -- Ribbon Stats Mode Toggle Button [ Realm Stats | Session Stats ]
+    local ribbonToggleBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    ribbonToggleBtn:SetSize(180, 18)
+    ribbonToggleBtn:SetPoint("BOTTOMRIGHT", UI.StatCards["BGS"], "TOPRIGHT", 0, 4)
+    ribbonToggleBtn:EnableMouse(true)
+    local ribbonLabel = ribbonToggleBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    ribbonLabel:SetPoint("CENTER", 0, 0)
+    ribbonLabel:SetText("|cff64748bRealm|r |cffffd100[ Session Stats ]|r")
+    ribbonToggleBtn.Label = ribbonLabel
+    ribbonToggleBtn:SetScript("OnClick", function()
+        if ribbonMode == "SESSION" then
+            ribbonMode = "REALM"
+        else
+            ribbonMode = "SESSION"
+        end
+        UI:Refresh()
+    end)
+    ribbonToggleBtn:SetScript("OnEnter", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
+        end
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Telemetry Ribbon Mode|r", "Toggle between your personal Session Combat Stats and Global Realm Intelligence.")
+    end)
+    ribbonToggleBtn:SetScript("OnLeave", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
+        end
+        UI:HidePrivateTooltip()
+    end)
+    UI.RibbonToggleBtn = ribbonToggleBtn
 
     -- 1px Dividing Rule
     local divider = mainFrame:CreateTexture(nil, "ARTWORK")
@@ -1207,37 +1243,74 @@ function UI:Refresh()
 
     local kd = (myDeaths > 0) and string.format("%.2f", myKills / myDeaths) or tostring(myKills)
 
+    if UI.RibbonToggleBtn and UI.RibbonToggleBtn.Label then
+        if ribbonMode == "REALM" then
+            UI.RibbonToggleBtn.Label:SetText("|cffffd100[ Realm Stats ]|r |cff64748bSession|r")
+        else
+            UI.RibbonToggleBtn.Label:SetText("|cff64748bRealm|r |cffffd100[ Session Stats ]|r")
+        end
+    end
+
     if UI.StatCards then
-        if UI.StatCards.KD and UI.StatCards.KD.ValueLabel then
-            UI.StatCards.KD.ValueLabel:SetText(string.format(
-                "|cffffffff%d|rK / |cffff4444%d|rD |cff64748b(You)|r  |cff64748b•|r  |cffffd100%d|r |cff94a3b8Logged|r",
-                myKills, myDeaths, totalKillsCount
-            ))
-        end
-        if UI.StatCards.DUELS and UI.StatCards.DUELS.ValueLabel then
-            if dTot > 0 then
-                UI.StatCards.DUELS.ValueLabel:SetText(string.format(
-                    "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b•|r  |cffffd100%d|r |cff94a3b8Logged|r",
-                    dW, dL, dRate, totalDuelsCount
-                ))
-            else
-                UI.StatCards.DUELS.ValueLabel:SetText(string.format(
-                    "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b•|r  |cffffd100%d|r |cff94a3b8Logged|r",
-                    totalDuelsCount
-                ))
+        if ribbonMode == "REALM" then
+            local rData = WoWKillboard_RealmData or {}
+            local rCarnage = rData.RealmTotalCarnage or totalKillsCount or 0
+            local rSolo = rData.SoloRatio or 0.0
+            local fSplit = rData.FactionSplit or { Alliance = 50.0, Horde = 50.0 }
+
+            if UI.StatCards.KD then
+                if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100REALM TOTAL CARNAGE|r") end
+                if UI.StatCards.KD.ValueLabel then UI.StatCards.KD.ValueLabel:SetText(string.format("|cffffd100%d|r |cff94a3b8Total Confirmed Kills|r", rCarnage)) end
             end
-        end
-        if UI.StatCards.BGS and UI.StatCards.BGS.ValueLabel then
-            if bgTot > 0 then
-                UI.StatCards.BGS.ValueLabel:SetText(string.format(
-                    "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b•|r  |cff00e5ff%d|r |cff94a3b8Logged|r",
-                    bgW, bgL, bgRate, totalBgsCount
-                ))
-            else
-                UI.StatCards.BGS.ValueLabel:SetText(string.format(
-                    "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b•|r  |cff00e5ff%d|r |cff94a3b8Logged|r",
-                    totalBgsCount
-                ))
+            if UI.StatCards.DUELS then
+                if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cff10b9811v1 SOLO KILL RATIO|r") end
+                if UI.StatCards.DUELS.ValueLabel then UI.StatCards.DUELS.ValueLabel:SetText(string.format("|cff10b981%.1f%%|r |cff94a3b8Solo Encounters|r", rSolo)) end
+            end
+            if UI.StatCards.BGS then
+                if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffFACTION WAR SPLIT|r") end
+                if UI.StatCards.BGS.ValueLabel then UI.StatCards.BGS.ValueLabel:SetText(string.format("|cff3b82f6A: %.1f%%|r  |cff64748b||r  |cffef4444H: %.1f%%|r", fSplit.Alliance or 50, fSplit.Horde or 50)) end
+            end
+        else
+            if UI.StatCards.KD then
+                if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100SESSION COMBAT K/D|r") end
+                if UI.StatCards.KD.ValueLabel then
+                    UI.StatCards.KD.ValueLabel:SetText(string.format(
+                        "|cffffffff%d|rK / |cffff4444%d|rD |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
+                        myKills, myDeaths, totalKillsCount
+                    ))
+                end
+            end
+            if UI.StatCards.DUELS then
+                if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cffffb82e1v1 DUELS RECORD|r") end
+                if UI.StatCards.DUELS.ValueLabel then
+                    if dTot > 0 then
+                        UI.StatCards.DUELS.ValueLabel:SetText(string.format(
+                            "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
+                            dW, dL, dRate, totalDuelsCount
+                        ))
+                    else
+                        UI.StatCards.DUELS.ValueLabel:SetText(string.format(
+                            "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
+                            totalDuelsCount
+                        ))
+                    end
+                end
+            end
+            if UI.StatCards.BGS then
+                if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffBATTLEGROUNDS RECORD|r") end
+                if UI.StatCards.BGS.ValueLabel then
+                    if bgTot > 0 then
+                        UI.StatCards.BGS.ValueLabel:SetText(string.format(
+                            "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b||r  |cff00e5ff%d|r |cff94a3b8Logged|r",
+                            bgW, bgL, bgRate, totalBgsCount
+                        ))
+                    else
+                        UI.StatCards.BGS.ValueLabel:SetText(string.format(
+                            "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b||r  |cff00e5ff%d|r |cff94a3b8Logged|r",
+                            totalBgsCount
+                        ))
+                    end
+                end
             end
         end
     end
@@ -1342,24 +1415,24 @@ function UI:RenderLiveFeed()
     -- 1. The Blood Ledger (Azeroth's Most Wanted - Red Font & Parity with Website)
     local mwTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     mwTitle:SetPoint("TOPLEFT", 10, -8)
-    mwTitle:SetText("⚔️ |cffff2222THE BLOOD LEDGER|r — |cffff4444Azeroth's Most Wanted|r")
+    mwTitle:SetText(" |cffff2222THE BLOOD LEDGER|r  -  |cffff4444Azeroth's Most Wanted|r")
     mwTitle:SetShadowOffset(1, -1)
     mwTitle:SetShadowColor(0, 0, 0, 1)
 
     local mwSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     mwSub:SetPoint("TOPLEFT", mwTitle, "BOTTOMLEFT", 0, -2)
-    mwSub:SetText("|cffb8a080Open World Execution Contracts & Certified Outlaws • Deliver the final blow to claim the bounty.|r")
+    mwSub:SetText("|cffb8a080Open World Execution Contracts & Certified Outlaws | Deliver the final blow to claim the bounty.|r")
     mwSub:SetShadowOffset(1, -1)
     mwSub:SetShadowColor(0, 0, 0, 1)
 
-    local seeAllBtn = UI:CreateButton(UI.ContentFrame, 110, 22, "The Marked →")
+    local seeAllBtn = UI:CreateButton(UI.ContentFrame, 110, 22, "The Marked ->")
     seeAllBtn:SetPoint("TOPRIGHT", -10, -8)
     seeAllBtn:SetScript("OnClick", function()
         activeTab = "BOUNTIES"
         UI:Refresh()
     end)
 
-    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "📢 Share Wanted")
+    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "[Share] Share Wanted")
     shareWantedBtn:SetPoint("RIGHT", seeAllBtn, "LEFT", -6, 0)
     shareWantedBtn:SetScript("OnClick", function()
         UI:ShareWantedToChat()
@@ -1469,13 +1542,13 @@ function UI:RenderLiveFeed()
 
             local bId = b.id
             local isAccepted = KB.BountyEngine and KB.BountyEngine.IsBountyAccepted and KB.BountyEngine:IsBountyAccepted(bId)
-            local actBtn = UI:CreateButton(card, 142, 20, isAccepted and "|cff00ff66✓ Tracking|r" or "|cffffd100⚔ Accept|r")
+            local actBtn = UI:CreateButton(card, 142, 20, isAccepted and "|cff00ff66[OK] Tracking|r" or "|cffffd100 Accept|r")
             actBtn:SetPoint("BOTTOM", 0, 6)
             if not isAccepted then
                 actBtn:SetScript("OnClick", function(btnSelf)
                     if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
                         KB.BountyEngine:AcceptBounty(bId)
-                        if btnSelf.Label then btnSelf.Label:SetText("|cff00ff66✓ Tracking|r") end
+                        if btnSelf.Label then btnSelf.Label:SetText("|cff00ff66[OK] Tracking|r") end
                     end
                 end)
             end
@@ -1545,7 +1618,7 @@ function UI:RenderLiveFeed()
     -- 2. Live Combat Recon Feed Header (The Shadow Network)
     local feedTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     feedTitle:SetPoint("TOPLEFT", 10, -298)
-    feedTitle:SetText("👁️ |cff00e5ffTHE SHADOW NETWORK — TACTICAL INTEL|r")
+    feedTitle:SetText(" |cff00e5ffTHE SHADOW NETWORK  -  TACTICAL INTEL|r")
     feedTitle:SetShadowOffset(1, -1)
     feedTitle:SetShadowColor(0, 0, 0, 1)
 
@@ -1567,7 +1640,7 @@ function UI:RenderLiveFeed()
     local kpiText = kpiPlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     kpiText:SetPoint("CENTER", 0, 0)
     kpiText:SetText(string.format(
-        "THE SHADOW NETWORK: |cffffffff%d|r   |cff64748b•|r   1V1 SOLO RATIO: |cff00e5ff%d%%|r   |cff64748b•|r   FACTION WAR: |cff3b82f6A %d%%|r / |cffef4444H %d%%|r   |cff64748b•|r   FILTER: |cffffd100[%s]|r",
+        "THE SHADOW NETWORK: |cffffffff%d|r   |cff64748b||r   1V1 SOLO RATIO: |cff00e5ff%d%%|r   |cff64748b||r   FACTION WAR: |cff3b82f6A %d%%|r / |cffef4444H %d%%|r   |cff64748b||r   FILTER: |cffffd100[%s]|r",
         sum.totalKills, sum.soloPct, sum.alliancePct, sum.hordePct, currentMode
     ))
     kpiText:SetShadowOffset(1, -1)
@@ -1584,8 +1657,8 @@ function UI:RenderLiveFeed()
         UI.EmptyFeedText:SetPoint("TOP", UI.ContentFrame, "TOP", 0, yOffset - 16)
         local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Azeroth"
         UI.EmptyFeedText:SetText(string.format(
-            "|cffffd100● FRONTLINE COMBAT RADAR ONLINE|r\n\n" ..
-            "|cffcbd5e1Sector Surveillance:|r |cffffffff%s|r   |cff64748b•|r   |cffcbd5e1Filter Mode:|r |cffffd100[%s]|r\n" ..
+            "|cffffd100* FRONTLINE COMBAT RADAR ONLINE|r\n\n" ..
+            "|cffcbd5e1Sector Surveillance:|r |cffffffff%s|r   |cff64748b||r   |cffcbd5e1Filter Mode:|r |cffffd100[%s]|r\n" ..
             "|cffcbd5e1Combat Engine Status:|r |cff10b981ARMED & RECORDING COMBAT|r |cff94a3b8(Zero confirmed deaths in this filter)|r\n\n" ..
             "|cff94a3b8Killmails are automatically recorded upon confirming an open-world player kill,\n" ..
             "battleground victory, or sanctioned 1v1 duel.|r\n\n" ..
@@ -1686,7 +1759,7 @@ function UI:RenderLiveFeed()
         local infoStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         infoStr:SetPoint("RIGHT", -12, 0)
         local locName = km.isBattleground and (km.battlegroundName or "Battleground") or km.location.zone
-        infoStr:SetText(string.format("|cffcbd5e1%s|r  |cff64748b•|r  |cffa0aab8%s|r", locName, KB.Utils.FormatTimeAgo(km.timestamp)))
+        infoStr:SetText(string.format("|cffcbd5e1%s|r  |cff64748b||r  |cffa0aab8%s|r", locName, KB.Utils.FormatTimeAgo(km.timestamp)))
         infoStr:SetShadowOffset(1, -1)
         infoStr:SetShadowColor(0, 0, 0, 1)
 
@@ -1746,8 +1819,8 @@ function UI:RenderLeaderboard()
     subtitle:SetShadowOffset(1, -1)
     subtitle:SetShadowColor(0, 0, 0, 1)
 
-    -- Sub-navigation Toggle Bar: [Player Ranks] | [Guild Ranks] (matching website)
-    local btnPlayers = UI:CreateButton(UI.ContentFrame, 114, 22, "Player Ranks")
+    -- Sub-navigation Toggle Bar: [Player Ranks] | [Guild Ranks] | [Top Gankers (24h)] (matching website)
+    local btnPlayers = UI:CreateButton(UI.ContentFrame, 100, 22, "Player Ranks")
     btnPlayers:SetPoint("TOPLEFT", 10, -44)
     btnPlayers.isActive = (hlSubTab == "PLAYERS")
     UI:ApplyButtonStyle(btnPlayers, theme)
@@ -1759,7 +1832,7 @@ function UI:RenderLeaderboard()
         UI:Refresh()
     end)
 
-    local btnGuilds = UI:CreateButton(UI.ContentFrame, 104, 22, "Guild Ranks")
+    local btnGuilds = UI:CreateButton(UI.ContentFrame, 96, 22, "Guild Ranks")
     btnGuilds:SetPoint("LEFT", btnPlayers, "RIGHT", 6, 0)
     btnGuilds.isActive = (hlSubTab == "GUILDS")
     UI:ApplyButtonStyle(btnGuilds, theme)
@@ -1771,7 +1844,25 @@ function UI:RenderLeaderboard()
         UI:Refresh()
     end)
 
-    local shareBtn = UI:CreateButton(UI.ContentFrame, 140, 22, (hlSubTab == "PLAYERS") and "📢 Share Champions" or "📢 Share Guilds")
+    local btnGankers = UI:CreateButton(UI.ContentFrame, 136, 22, "Top Gankers (24h)")
+    btnGankers:SetPoint("LEFT", btnGuilds, "RIGHT", 6, 0)
+    btnGankers.isActive = (hlSubTab == "GANKERS_24H")
+    UI:ApplyButtonStyle(btnGankers, theme)
+    if btnGankers.Label then
+        btnGankers.Label:SetTextColor(btnGankers.isActive and 1.0 or 0.80, btnGankers.isActive and 0.84 or 0.70, btnGankers.isActive and 0.0 or 0.55)
+    end
+    btnGankers:SetScript("OnClick", function()
+        hlSubTab = "GANKERS_24H"
+        UI:Refresh()
+    end)
+
+    local shareText = "[Share] Share Champions"
+    if hlSubTab == "GUILDS" then
+        shareText = "[Share] Share Guilds"
+    elseif hlSubTab == "GANKERS_24H" then
+        shareText = "[Share] Share Gankers"
+    end
+    local shareBtn = UI:CreateButton(UI.ContentFrame, 140, 22, shareText)
     shareBtn:SetPoint("TOPRIGHT", -10, -44)
     shareBtn:SetScript("OnClick", function()
         if hlSubTab == "PLAYERS" then
@@ -1858,7 +1949,7 @@ function UI:RenderLeaderboard()
         local valDelta = bmCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         valDelta:SetPoint("BOTTOMLEFT", 485, 8)
         if isApex then
-            valDelta:SetText("|cffffd100★ #1 Apex Leader|r")
+            valDelta:SetText("|cffffd100* #1 Apex Leader|r")
         elseif not pRank or pRank == 0 then
             valDelta:SetText("|cff888888Unranked|r")
         else
@@ -2039,7 +2130,7 @@ function UI:RenderLeaderboard()
 
             local divLabel = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             divLabel:SetPoint("CENTER", div, "CENTER", 0, 0)
-            divLabel:SetText("|cffffd100— YOUR STANDING —|r")
+            divLabel:SetText("|cffffd100 -  YOUR STANDING  - |r")
 
             yOffset = yOffset - 20
 
@@ -2201,7 +2292,7 @@ function UI:RenderLeaderboard()
 
             local divLabel = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             divLabel:SetPoint("CENTER", div, "CENTER", 0, 0)
-            divLabel:SetText("|cffffd100— YOUR GUILD STANDING —|r")
+            divLabel:SetText("|cffffd100 -  YOUR GUILD STANDING  - |r")
 
             yOffset = yOffset - 20
 
@@ -2238,6 +2329,87 @@ function UI:RenderLeaderboard()
 
             yOffset = yOffset - 36
         end
+
+    elseif hlSubTab == "GANKERS_24H" then
+        local gankers = (WoWKillboard_RealmData and WoWKillboard_RealmData.TopGankers24h) or {}
+
+        -- Table Header Row
+        local thRow = CreateFrame("Frame", nil, UI.ContentFrame)
+        thRow:SetSize(820, 22)
+        thRow:SetPoint("TOPLEFT", 0, yOffset)
+
+        local thLine = thRow:CreateTexture(nil, "ARTWORK")
+        thLine:SetPoint("BOTTOMLEFT", 0, 0)
+        thLine:SetPoint("BOTTOMRIGHT", 0, 0)
+        thLine:SetHeight(1)
+        thLine:SetColorTexture(0.35, 0.28, 0.16, 0.8)
+
+        local function CreateThCol(text, x, w, justify)
+            local fs = thRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            fs:SetPoint("LEFT", x, 0)
+            if w then fs:SetWidth(w) end
+            fs:SetJustifyH(justify or "LEFT")
+            fs:SetText(string.format("|cffb8a080%s|r", text))
+            return fs
+        end
+
+        CreateThCol("RANK", 12, 40)
+        CreateThCol("CHAMPION", 58, 220)
+        CreateThCol("ALLEGIANCE", 300, 120)
+        CreateThCol("GUILD", 440, 180)
+        CreateThCol("24H CONFIRMED KILLS", 640, 160, "RIGHT")
+
+        yOffset = yOffset - 26
+
+        if #gankers == 0 then
+            local empty = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+            empty:SetPoint("TOPLEFT", 14, yOffset)
+            empty:SetText("No active gankers recorded in the last 24 hours. Sync data to refresh.")
+            empty:SetShadowOffset(1, -1)
+            empty:SetShadowColor(0, 0, 0, 1)
+            yOffset = yOffset - 30
+        else
+            for gIdx, g in ipairs(gankers) do
+                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+                row:SetSize(820, 32)
+                row:SetPoint("TOPLEFT", 0, yOffset)
+                local isEven = (gIdx % 2 == 0)
+
+                row:SetBackdrop(theme.rowBackdrop)
+                row:SetBackdropColor(unpack(isEven and theme.rowBgAlt or theme.rowBg))
+                row:SetBackdropBorderColor(unpack(theme.rowBorder))
+
+                local rankColor = (gIdx == 1 and "ffd100") or (gIdx == 2 and "c0c0c0") or (gIdx == 3 and "cd7f32") or "8899aa"
+                local rLabel = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                rLabel:SetPoint("LEFT", 12, 0)
+                rLabel:SetText(string.format("|cff%s#%d|r", rankColor, gIdx))
+
+                local cls = (g.class or "WARRIOR"):upper()
+                local cIcon = UI:CreateClassIcon(row, cls, 20)
+                cIcon:SetPoint("LEFT", 44, 0)
+
+                local nameTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                nameTxt:SetPoint("LEFT", cIcon, "RIGHT", 8, 0)
+                nameTxt:SetText(KB.Utils.ColorizeByClass(g.name or "Unknown", cls))
+
+                local fac = g.faction or "Alliance"
+                local facColor = (fac == "Alliance" and "3b82f6") or (fac == "Horde" and "ef4444") or "94a3b8"
+                local facTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                facTxt:SetPoint("LEFT", 300, 0)
+                facTxt:SetText(string.format("|cff%s%s|r", facColor, fac))
+
+                local gldTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                gldTxt:SetPoint("LEFT", 440, 0)
+                local gld = (g.guild and g.guild ~= "" and g.guild ~= "None") and string.format("<%s>", g.guild) or "-"
+                gldTxt:SetText(string.format("|cff8899aa%s|r", gld))
+
+                local killsTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                killsTxt:SetPoint("RIGHT", -16, 0)
+                killsTxt:SetText(string.format("|cffff4444%d Kills|r", g.kills or 0))
+
+                yOffset = yOffset - 36
+            end
+        end
     end
 
     UI.ContentFrame:SetHeight(math.abs(yOffset) + 40)
@@ -2251,7 +2423,7 @@ function UI:RenderBounties()
     -- Header Title
     local bntTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bntTitle:SetPoint("TOPLEFT", 10, yOffset)
-    bntTitle:SetText("⚔️ |cffffd100THE MARKED — EXECUTION CONTRACTS|r")
+    bntTitle:SetText(" |cffffd100THE MARKED  -  EXECUTION CONTRACTS|r")
     bntTitle:SetShadowOffset(1, -1)
     bntTitle:SetShadowColor(0, 0, 0, 1)
 
@@ -2262,7 +2434,7 @@ function UI:RenderBounties()
         UI:ShowBountyPrompt()
     end)
 
-    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "📢 Share Wanted")
+    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "[Share] Share Wanted")
     shareWantedBtn:SetPoint("RIGHT", placeBtn, "LEFT", -6, 0)
     shareWantedBtn:SetScript("OnClick", function()
         UI:ShareWantedToChat()
@@ -2324,7 +2496,7 @@ function UI:RenderBounties()
     local pMarksTxt = pCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     pMarksTxt:SetPoint("LEFT", 12, 0)
     pMarksTxt:SetText(string.format(
-        "|cffffd100YOUR MARK OF SPITE RECORD:|r   |cff38bdf8%d Contracts Issued by You|r   |cff64748b•|r   |cff%s%d Active Marks Placed on Your Head|r",
+        "|cffffd100YOUR MARK OF SPITE RECORD:|r   |cff38bdf8%d Contracts Issued by You|r   |cff64748b||r   |cff%s%d Active Marks Placed on Your Head|r",
         pMarks.issued or 0,
         (pMarks.onHead and pMarks.onHead > 0) and "ef4444" or "10b981",
         pMarks.onHead or 0
@@ -2338,7 +2510,7 @@ function UI:RenderBounties()
         -- 1. Active Marks List
         local activeHeader = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         activeHeader:SetPoint("TOPLEFT", 10, yOffset)
-        activeHeader:SetText("|cffffd100ACTIVE HUNT CONTRACTS|r — High Command Marked Targets")
+        activeHeader:SetText("|cffffd100ACTIVE HUNT CONTRACTS|r  -  High Command Marked Targets")
         activeHeader:SetShadowOffset(1, -1)
         activeHeader:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 24
@@ -2414,7 +2586,7 @@ function UI:RenderBounties()
         yOffset = yOffset - 16
         local coldTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         coldTitle:SetPoint("TOPLEFT", 10, yOffset)
-        coldTitle:SetText("📜 |cff94a3b8ARCHIVED COLD CASES|r — Escaped Targets (>30 Days Unclaimed)")
+        coldTitle:SetText("[Cases] |cff94a3b8ARCHIVED COLD CASES|r  -  Escaped Targets (>30 Days Unclaimed)")
         coldTitle:SetShadowOffset(1, -1)
         coldTitle:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 24
@@ -2459,7 +2631,7 @@ function UI:RenderBounties()
         -- Section A: Top Mark Hunters
         local hTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         hTitle:SetPoint("TOPLEFT", 10, yOffset)
-        hTitle:SetText("🏆 |cffffd100TOP MARK HUNTERS|r — Sanctioned Contract Executions")
+        hTitle:SetText("[Top] |cffffd100TOP MARK HUNTERS|r  -  Sanctioned Contract Executions")
         hTitle:SetShadowOffset(1, -1)
         hTitle:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 24
@@ -2508,7 +2680,7 @@ function UI:RenderBounties()
         yOffset = yOffset - 12
         local rTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         rTitle:SetPoint("TOPLEFT", 10, yOffset)
-        rTitle:SetText("💰 |cffffd100RICHEST BOUNTY PURSUITS|r — Highest Placed Stakes")
+        rTitle:SetText("[Gold] |cffffd100RICHEST BOUNTY PURSUITS|r  -  Highest Placed Stakes")
         rTitle:SetShadowOffset(1, -1)
         rTitle:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 24
@@ -2557,7 +2729,7 @@ function UI:RenderBounties()
         yOffset = yOffset - 12
         local eTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         eTitle:SetPoint("TOPLEFT", 10, yOffset)
-        eTitle:SetText("⏳ |cffffd100MOST ELUSIVE OUTLAWS|r — Evading Active Pursuit")
+        eTitle:SetText("[Timer] |cffffd100MOST ELUSIVE OUTLAWS|r  -  Evading Active Pursuit")
         eTitle:SetShadowOffset(1, -1)
         eTitle:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 24
@@ -2603,7 +2775,7 @@ function UI:RenderBounties()
     elseif marksSubTab == "DEBTORS" then
         local debtTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         debtTitle:SetPoint("TOPLEFT", 10, yOffset)
-        debtTitle:SetText("⛓️ |cffff2222THE TRAITOR'S GIBBET|r — Oathbreakers & Defaulted Debts")
+        debtTitle:SetText(" |cffff2222THE TRAITOR'S GIBBET|r  -  Oathbreakers & Defaulted Debts")
         debtTitle:SetShadowOffset(1, -1)
         debtTitle:SetShadowColor(0, 0, 0, 1)
 
@@ -2636,7 +2808,7 @@ function UI:RenderBounties()
 
                 -- If player is the debtor, show redemption button
                 if playerName == UnitName("player") then
-                    local payBtn = UI:CreateButton(row, 130, 24, "⚔️ Settle Debt")
+                    local payBtn = UI:CreateButton(row, 130, 24, " Settle Debt")
                     payBtn:SetPoint("RIGHT", -10, 0)
                     local pName = playerName
                     payBtn:SetScript("OnClick", function()
@@ -2670,7 +2842,7 @@ function UI:RenderBGMetrics()
 
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, yOffset)
-    title:SetText("Battleground Gladiators — Damage, Healing, and Efficiency")
+    title:SetText("Battleground Gladiators  -  Damage, Healing, and Efficiency")
 
     yOffset = yOffset - 40
     for rank, g in ipairs(gladiators) do
@@ -2709,23 +2881,75 @@ end
 
 -- 5. Render Zone Intel
 function UI:RenderZones()
-    local zones = (KB.Leaderboard.GetTopZones and KB.Leaderboard:GetTopZones(currentMode, 15))
-               or (KB.Leaderboard.GetDeadliestZones and KB.Leaderboard:GetDeadliestZones(15))
-               or {}
+    local theme = UI:GetTheme()
     local yOffset = -10
 
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, yOffset)
-    title:SetText(string.format("Hotspot Conflict Zones & Bloodshed Rankings — [%s]", currentMode))
+    title:SetText(string.format("Hotspot Conflict Zones & Bloodshed Rankings  -  [%s]", currentMode))
     title:SetShadowOffset(1, -1)
     title:SetShadowColor(0, 0, 0, 1)
 
-    yOffset = yOffset - 40
+    yOffset = yOffset - 36
+
+    -- 1. Downloaded Realm Telemetry Zones (via Two-Way Sync)
+    local realmZones = (WoWKillboard_RealmData and WoWKillboard_RealmData.DeadliestZones) or {}
+    if #realmZones > 0 then
+        local rHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        rHeader:SetSize(820, 28)
+        rHeader:SetPoint("TOPLEFT", 0, yOffset)
+        rHeader:SetBackdrop(theme.rowBackdrop)
+        rHeader:SetBackdropColor(0.12, 0.08, 0.04, 0.95)
+        rHeader:SetBackdropBorderColor(0.85, 0.65, 0.20, 0.9)
+
+        local rTitle = rHeader:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        rTitle:SetPoint("LEFT", 12, 0)
+        rTitle:SetText("|cffffd100REALM 24-HOUR DEADLIEST HOTSPOTS|r  -  |cffb8a080Two-Way Sync Telemetry|r")
+
+        yOffset = yOffset - 34
+
+        for rIdx, rz in ipairs(realmZones) do
+            local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+            row:SetSize(820, 30)
+            row:SetPoint("TOPLEFT", 0, yOffset)
+            local isEven = (rIdx % 2 == 0)
+            row:SetBackdrop(theme.rowBackdrop)
+            row:SetBackdropColor(unpack(isEven and theme.rowBgAlt or theme.rowBg))
+            row:SetBackdropBorderColor(unpack(theme.rowBorder))
+
+            local rankColor = (rIdx == 1 and "ffd100") or (rIdx == 2 and "c0c0c0") or (rIdx == 3 and "cd7f32") or "8899aa"
+            local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            txt:SetPoint("LEFT", 14, 0)
+            txt:SetText(string.format("|cff%s#%d|r  |cffffffff%s|r", rankColor, rIdx, rz.zone or "Unknown"))
+            txt:SetShadowOffset(1, -1)
+            txt:SetShadowColor(0, 0, 0, 1)
+
+            local countTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            countTxt:SetPoint("RIGHT", -15, 0)
+            countTxt:SetText(string.format("|cffff4444%d Confirmed Kills (24h)|r", rz.kills or 0))
+            countTxt:SetShadowOffset(1, -1)
+            countTxt:SetShadowColor(0, 0, 0, 1)
+
+            yOffset = yOffset - 34
+        end
+
+        yOffset = yOffset - 12
+    end
+
+    -- 2. Local Session Hotspots
+    local localHeader = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    localHeader:SetPoint("TOPLEFT", 10, yOffset)
+    localHeader:SetText("|cffb8a080Local Session Conflict Records & Observed Skirmishes|r")
+    yOffset = yOffset - 22
+
+    local zones = (KB.Leaderboard.GetTopZones and KB.Leaderboard:GetTopZones(currentMode, 15))
+               or (KB.Leaderboard.GetDeadliestZones and KB.Leaderboard:GetDeadliestZones(15))
+               or {}
+
     for rank, z in ipairs(zones) do
         local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
         row:SetSize(820, 30)
         row:SetPoint("TOPLEFT", 0, yOffset)
-        local theme = UI:GetTheme()
         local isEven = (rank % 2 == 0)
         local baseBg = isEven and theme.rowBgAlt or theme.rowBg
         row:SetBackdrop(theme.rowBackdrop)
@@ -2741,14 +2965,14 @@ function UI:RenderZones()
 
         local countTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         countTxt:SetPoint("RIGHT", -15, 0)
-        countTxt:SetText(string.format("|cffff4444%d Confirmed Kills|r", z.kills or 0))
+        countTxt:SetText(string.format("|cffff4444%d Local Kills|r", z.kills or 0))
         countTxt:SetShadowOffset(1, -1)
         countTxt:SetShadowColor(0, 0, 0, 1)
 
         yOffset = yOffset - 34
     end
 
-    if #zones == 0 then
+    if #zones == 0 and #realmZones == 0 then
         local emptyZ = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
         emptyZ:SetPoint("TOPLEFT", 10, yOffset)
         emptyZ:SetText("No zone combat records recorded yet. Engage in combat to populate!")
@@ -2768,7 +2992,7 @@ function UI:RenderRallies()
     -- Header Title
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, yOffset)
-    title:SetText("📯 |cffffd100VANGUARD MANHUNT & CALL TO ARMS|r")
+    title:SetText(" |cffffd100VANGUARD MANHUNT & CALL TO ARMS|r")
     title:SetShadowOffset(1, -1)
     title:SetShadowColor(0, 0, 0, 1)
 
@@ -2800,14 +3024,14 @@ function UI:RenderRallies()
     hornTxt:SetPoint("LEFT", 14, 0)
     if isMyBeaconActive then
         local locStr = (KB.Reinforcements and KB.Reinforcements.GetBeaconLocationStr) and KB.Reinforcements:GetBeaconLocationStr() or "Frontline"
-        hornTxt:SetText(string.format("|cff00ff00● YOUR WAR HORN IS ACTIVE|r  |  Broadcasting in |cffffffff%s|r  |  Auto-Invite Open", locStr))
+        hornTxt:SetText(string.format("|cff00ff00* YOUR WAR HORN IS ACTIVE|r  |  Broadcasting in |cffffffff%s|r  |  Auto-Invite Open", locStr))
     else
         hornTxt:SetText("|cffffd100Under siege in Open World PvP?|r  |cffb8a080Sound the War Horn to broadcast coordinates and rally faction allies.|r")
     end
     hornTxt:SetShadowOffset(1, -1)
     hornTxt:SetShadowColor(0, 0, 0, 1)
 
-    local hornBtn = UI:CreateButton(hornCard, 150, 24, isMyBeaconActive and "|cffff4444Close Rally|r" or "📯 Sound War Horn")
+    local hornBtn = UI:CreateButton(hornCard, 150, 24, isMyBeaconActive and "|cffff4444Close Rally|r" or " Sound War Horn")
     hornBtn:SetPoint("RIGHT", -10, 0)
     hornBtn:SetScript("OnClick", function()
         if isMyBeaconActive then
@@ -2825,7 +3049,7 @@ function UI:RenderRallies()
     -- Section Title: Open Rallies
     local listTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     listTitle:SetPoint("TOPLEFT", 10, yOffset)
-    listTitle:SetText(string.format("⚔️ |cffffd100OPEN %s RALLIES|r — Join Vanguard Strike Teams", myFaction:upper()))
+    listTitle:SetText(string.format(" |cffffd100OPEN %s RALLIES|r  -  Join Vanguard Strike Teams", myFaction:upper()))
     listTitle:SetShadowOffset(1, -1)
     listTitle:SetShadowColor(0, 0, 0, 1)
 
@@ -2880,7 +3104,7 @@ function UI:RenderRallies()
                 end)
             else
                 local targetLeader = r.character_name
-                joinBtn = UI:CreateButton(row, 115, 24, "⚔️ Join Rally")
+                joinBtn = UI:CreateButton(row, 115, 24, " Join Rally")
                 joinBtn:SetPoint("RIGHT", -10, 0)
                 joinBtn:SetScript("OnClick", function(self)
                     if KB.Reinforcements and KB.Reinforcements.RequestJoinRally then
@@ -2911,8 +3135,8 @@ function UI:RenderRallies()
 
             -- Bottom Line: Location, Level Bracket, Roles Needed, Message & Age
             local diffMin = math.max(1, math.floor((time() - (r.timestamp or time())) / 60))
-            local locStr = string.format("📍 |cffffffff%s|r", r.zone or "Wilderness")
-            local lvlBracket = string.format("• |cffffd100Lvl %d-%d|r", r.min_level or 1, r.max_level or 60)
+            local locStr = string.format(" |cffffffff%s|r", r.zone or "Wilderness")
+            local lvlBracket = string.format("| |cffffd100Lvl %d-%d|r", r.min_level or 1, r.max_level or 60)
 
             local roleParts = {}
             local roles = r.roles or { tank = true, heal = true, dps = true }
@@ -2920,12 +3144,12 @@ function UI:RenderRallies()
             if roles.heal then table.insert(roleParts, "Heal") end
             if roles.dps then table.insert(roleParts, "DPS") end
             local roleStr = #roleParts > 0 and table.concat(roleParts, "/") or "Any"
-            local rolesNeeded = string.format("• |cff67e8f9Roles: %s|r", roleStr)
+            local rolesNeeded = string.format("| |cff67e8f9Roles: %s|r", roleStr)
 
             local msg = r.message or "Muster Vanguard!"
             if #msg > 36 then msg = msg:sub(1, 34) .. ".." end
-            local msgStr = string.format("• |cffffffff\"%s\"|r", msg)
-            local timeStr = string.format("• |cff8899aa~%dm ago|r", diffMin)
+            local msgStr = string.format("| |cffffffff\"%s\"|r", msg)
+            local timeStr = string.format("| |cff8899aa~%dm ago|r", diffMin)
 
             local botTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             botTxt:SetPoint("BOTTOMLEFT", 12, 6)
@@ -3147,7 +3371,7 @@ function UI:ShowKillDetail(km)
     local subzoneStr = (km.location.subZone and km.location.subZone ~= "") and (" (" .. km.location.subZone .. ")") or ""
 
     m.DetailsText:SetText(string.format(
-        "|cffffd100Engagement:|r %s  •  %s\n|cffffd100Location:|r %s%s  (GPS: %.1f, %.1f | MapID: %s)\n|cffffd100Timestamp:|r %s  (|cff888888%s|r)\n|cffffd100Kill ID:|r %s",
+        "|cffffd100Engagement:|r %s  |  %s\n|cffffd100Location:|r %s%s  (GPS: %.1f, %.1f | MapID: %s)\n|cffffd100Timestamp:|r %s  (|cff888888%s|r)\n|cffffd100Kill ID:|r %s",
         modeStr, soloStr, km.location.zone or "Unknown", subzoneStr, km.location.x or 0, km.location.y or 0, tostring(km.location.mapId or 0),
         date("%Y-%m-%d %H:%M:%S", km.timestamp), KB.Utils.FormatTimeAgo(km.timestamp), km.killId
     ))
@@ -3183,7 +3407,8 @@ function UI:ShowCharacterWebLink(charName, className, level, faction)
         faction = faction or "Alliance"
     end
 
-    local rawUrl = string.format("http://13.216.102.148/?character=%s&class=%s&level=%d&faction=%s", charName, className, level, faction)
+    local domain = (KB.Config and KB.Config.WebDomain) or KB.WebDomain or "13.216.102.148"
+    local rawUrl = string.format("https://%s/character?name=%s&class=%s&level=%d&faction=%s", domain, charName, className, level, faction)
 
     if not UI.WebLinkDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
@@ -3241,6 +3466,7 @@ function UI:ShowCharacterWebLink(charName, className, level, faction)
         eb:SetPoint("LEFT", ebPlate, "LEFT", 10, 0)
         eb:SetPoint("RIGHT", ebPlate, "RIGHT", -10, 0)
         eb:SetHeight(24)
+        eb:SetMaxLetters(1024)
         eb:SetAutoFocus(false)
         eb:SetFontObject("GameFontHighlight")
         eb:SetScript("OnEscapePressed", function() dlg:Hide() end)
@@ -3279,10 +3505,11 @@ function UI:ShowCharacterWebLink(charName, className, level, faction)
 
     local dlg = UI.WebLinkDialog
     dlg.currentUrl = rawUrl
-    dlg.Title:SetText(string.format("|cff00e5ffWeb Profile — %s|r", charName))
+    dlg.Title:SetText(string.format("|cff00e5ffWeb Profile: %s|r", charName))
     dlg.EditBox:SetText(rawUrl)
     dlg:Show()
     dlg.EditBox:SetFocus()
+    dlg.EditBox:SetCursorPosition(0)
     dlg.EditBox:HighlightText()
     if dlg.Raise then dlg:Raise() end
 end
@@ -3314,7 +3541,7 @@ function UI:ShowExportDialog()
 
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffffd100WoW Killboard — Combat Data Export|r")
+        title:SetText("|cffffd100WoW Killboard  -  Combat Data Export|r")
         dlg.Title = title
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -3450,7 +3677,7 @@ function UI:ShowBugReportModal()
 
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -14)
-        title:SetText("|cffff5555WoW Killboard — Bug Dispatch & AI Diagnosis|r")
+        title:SetText("|cffff5555WoW Killboard  -  Bug Dispatch & AI Diagnosis|r")
         dlg.Title = title
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -3759,7 +3986,7 @@ function UI:ShowDeathBountyPrompt(killerData)
 
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffff2222FALLEN IN BATTLE — THE MARKED CONTRACT|r")
+        title:SetText("|cffff2222FALLEN IN BATTLE  -  THE MARKED CONTRACT|r")
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         desc:SetPoint("TOP", 0, -46)
@@ -3867,7 +4094,7 @@ function UI:ShowDeathBountyPrompt(killerData)
             curSettings.ignoreDeathBounties = true
             if KB.db and KB.db.settings then KB.db.settings.ignoreDeathBounties = true end
             dlg:Hide()
-            SafePrint("|cffff9900[WoWKB]|r Mark of Spite death prompts disabled. You can re-enable anytime in [⚙ Settings].")
+            SafePrint("|cffff9900[WoWKB]|r Mark of Spite death prompts disabled. You can re-enable anytime in [[Settings] Settings].")
         end)
 
         local cancelBtn = UI:CreateButton(dlg, 110, 26, "Cancel")
@@ -3935,7 +4162,7 @@ function UI:ShowReinforcementAlert(beaconData)
 
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffff2222📯 WAR HORN: CALL TO ARMS!|r")
+        title:SetText("|cffff2222 WAR HORN: CALL TO ARMS!|r")
 
         local body = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         body:SetPoint("TOP", 0, -48)
@@ -3951,7 +4178,7 @@ function UI:ShowReinforcementAlert(beaconData)
         gps:SetPoint("TOP", 0, -140)
         dlg.GpsText = gps
 
-        local joinBtn = UI:CreateButton(dlg, 180, 28, "⚔️ Answer the Call")
+        local joinBtn = UI:CreateButton(dlg, 180, 28, " Answer the Call")
         joinBtn:SetPoint("BOTTOMLEFT", 30, 20)
         joinBtn:SetScript("OnClick", function()
             if dlg.CurrentBeacon and dlg.CurrentBeacon.character_name then
@@ -4062,7 +4289,7 @@ function UI:ShowKOSAlert(targetName, guildOrFormer, alertType, reason)
         sub:SetPoint("TOP", 0, -110)
         dlg.SubText = sub
 
-        local spotBtn = UI:CreateButton(dlg, 180, 28, "👁️ Broadcast Spot")
+        local spotBtn = UI:CreateButton(dlg, 180, 28, " Broadcast Spot")
         spotBtn:SetPoint("BOTTOMLEFT", 30, 20)
         spotBtn:SetScript("OnClick", function()
             if KB.IntelScanner then
@@ -4081,15 +4308,15 @@ function UI:ShowKOSAlert(targetName, guildOrFormer, alertType, reason)
     end
 
     if alertType == "DESERTER" then
-        UI.KOSDialog.TitleText:SetText("|cffff0000🚨 KOS DESERTER DETECTED!|r")
+        UI.KOSDialog.TitleText:SetText("|cffff0000[!] KOS DESERTER DETECTED!|r")
         UI.KOSDialog.BodyText:SetText(string.format("Enemy |cffffd100%s|r is serving a |cffff333330-Day Deserter Penance|r!\nFormer Guild: |cffff5555<%s>|r", targetName, guildOrFormer or "Unknown"))
         UI.KOSDialog.SubText:SetText("Branded for deserting a defeated guild. Kill on sight with zero mercy!")
     elseif alertType == "GUILD_KOS" then
-        UI.KOSDialog.TitleText:SetText("|cffff0000🚨 GUILD KOS BLACKLIST!|r")
+        UI.KOSDialog.TitleText:SetText("|cffff0000[!] GUILD KOS BLACKLIST!|r")
         UI.KOSDialog.BodyText:SetText(string.format("Enemy |cffffd100%s|r (<%s>) belongs to a |cffff3333Blacklisted Guild|r!\nReason: %s", targetName, guildOrFormer or "Unknown", reason or "Realm Feud Defeat"))
         UI.KOSDialog.SubText:SetText("The entire guild is marked for eradication across all territories.")
     else
-        UI.KOSDialog.TitleText:SetText("|cffff0000🚨 KOS BLACKLIST TARGET!|r")
+        UI.KOSDialog.TitleText:SetText("|cffff0000[!] KOS BLACKLIST TARGET!|r")
         UI.KOSDialog.BodyText:SetText(string.format("Hostile |cffffd100%s|r is officially branded on the |cffff3333KOS Blacklist|r!", targetName))
         UI.KOSDialog.SubText:SetText(reason or "Realm KOS Order")
     end
@@ -4334,13 +4561,13 @@ function UI:ShowKillBanner(killmail, isTest)
             rwSub = rwSub .. " - " .. loc.subZone
         end
         if killmail.isSolo then
-            rwSub = rwSub .. " • |cff00ff00Certified 1v1 Solo Kill|r"
+            rwSub = rwSub .. " | |cff00ff00Certified 1v1 Solo Kill|r"
         elseif killmail.isDuel then
-            rwSub = rwSub .. " • |cffffd7001v1 Certified Duel|r"
+            rwSub = rwSub .. " | |cffffd7001v1 Certified Duel|r"
         elseif killmail.isBattleground then
-            rwSub = rwSub .. string.format(" • |cff00ccff%s|r", killmail.battlegroundName or "Battleground")
+            rwSub = rwSub .. string.format(" | |cff00ccff%s|r", killmail.battlegroundName or "Battleground")
         elseif killmail.attackersCount and killmail.attackersCount > 1 then
-            rwSub = rwSub .. string.format(" • |cffff9900Gang Combat (x%d)|r", killmail.attackersCount)
+            rwSub = rwSub .. string.format(" | |cffff9900Gang Combat (x%d)|r", killmail.attackersCount)
         end
         UI:ShowRaidNotice(rwMain, rwSub, 1.0, 0.28, 0.0)
     end
@@ -4805,7 +5032,7 @@ function UI:ShowSettingsModal()
             UI:ShowExportDialog()
         end)
 
-        local reloadBtn = UI:CreateButton(dlg, 160, 24, "💾 Save & Reload UI")
+        local reloadBtn = UI:CreateButton(dlg, 160, 24, "[Save] Save & Reload UI")
         reloadBtn:SetPoint("LEFT", exportBtn, "RIGHT", 10, 0)
         reloadBtn:SetScript("OnClick", function()
             if InCombatLockdown and InCombatLockdown() then
@@ -5071,7 +5298,7 @@ function UI:ShowAlertsConfig()
             if isActive then
                 btn:SetBackdropColor(unpack(theme.btnActiveBg or { 0.25, 0.18, 0.07, 1.0 }))
                 btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder or { 1.0, 0.82, 0.0, 1.0 }))
-                btn.Label:SetText(string.format("|cff00ff00●|r |cffffd100%s|r", btn.baseText or ""))
+                btn.Label:SetText(string.format("|cff00ff00*|r |cffffd100%s|r", btn.baseText or ""))
             else
                 btn:SetBackdropColor(unpack(theme.btnBg or { 0.08, 0.10, 0.15, 1.0 }))
                 btn:SetBackdropBorderColor(unpack(theme.btnBorder or { 0.45, 0.35, 0.18, 0.95 }))
@@ -5092,11 +5319,11 @@ function UI:ShowAlertsConfig()
             ApplySegmentState(dlg.BtnModeOff, mode == "OFF")
 
             if mode == "SOUND_AND_BANNER" then
-                dlg.ModeHint:SetText("|cff00ff00● Active:|r |cff94a3b8Plays combat sound alert and displays visual notification.|r")
+                dlg.ModeHint:SetText("|cff00ff00* Active:|r |cff94a3b8Plays combat sound alert and displays visual notification.|r")
             elseif mode == "BANNER_ONLY" then
-                dlg.ModeHint:SetText("|cffffd100● Muted:|r |cff94a3b8Displays visual notification silently with sound muted.|r")
+                dlg.ModeHint:SetText("|cffffd100* Muted:|r |cff94a3b8Displays visual notification silently with sound muted.|r")
             else
-                dlg.ModeHint:SetText("|cffff3333● Off:|r |cff94a3b8Suppresses all kill banners, sounds, and raid warnings.|r")
+                dlg.ModeHint:SetText("|cffff3333* Off:|r |cff94a3b8Suppresses all kill banners, sounds, and raid warnings.|r")
             end
 
             -- Section 2: Proximity Scope
@@ -5105,11 +5332,11 @@ function UI:ShowAlertsConfig()
             ApplySegmentState(dlg.BtnScopeMine, scope == "MINE")
 
             if scope == "ZONE" then
-                dlg.ScopeHint:SetText("|cff00e5ff● Radar:|r |cff94a3b8Alerts only when combat occurs in your current zone.|r")
+                dlg.ScopeHint:SetText("|cff00e5ff* Radar:|r |cff94a3b8Alerts only when combat occurs in your current zone.|r")
             elseif scope == "ALL" then
-                dlg.ScopeHint:SetText("|cffffd700● Broadcast:|r |cff94a3b8Alerts for all kills broadcasted across realm network.|r")
+                dlg.ScopeHint:SetText("|cffffd700* Broadcast:|r |cff94a3b8Alerts for all kills broadcasted across realm network.|r")
             else
-                dlg.ScopeHint:SetText("|cff10b981● Solo:|r |cff94a3b8Only triggers when you personally kill or are killed.|r")
+                dlg.ScopeHint:SetText("|cff10b981* Solo:|r |cff94a3b8Only triggers when you personally kill or are killed.|r")
             end
 
             -- Section 3: Visual Alert Style
@@ -5118,11 +5345,11 @@ function UI:ShowAlertsConfig()
             ApplySegmentState(dlg.BtnStyleBanner, style == "BANNER")
 
             if style == "BOTH" then
-                dlg.StyleHint:SetText("|cff00e5ff● Dual Display:|r |cff94a3b8Flashes large Raid Warning text AND Tactical Kill Banner.|r")
+                dlg.StyleHint:SetText("|cff00e5ff* Dual Display:|r |cff94a3b8Flashes large Raid Warning text AND Tactical Kill Banner.|r")
             elseif style == "RAID_WARNING" then
-                dlg.StyleHint:SetText("|cffff3333● Raid Warning:|r |cff94a3b8Flashes high-visibility cinematic text across screen center.|r")
+                dlg.StyleHint:SetText("|cffff3333* Raid Warning:|r |cff94a3b8Flashes high-visibility cinematic text across screen center.|r")
             else
-                dlg.StyleHint:SetText("|cffffd100● Tactical Banner:|r |cff94a3b8Displays compact banner with combatant class icons & GPS.|r")
+                dlg.StyleHint:SetText("|cffffd100* Tactical Banner:|r |cff94a3b8Displays compact banner with combatant class icons & GPS.|r")
             end
 
             -- Section 4: Screen Positioning
@@ -5141,9 +5368,9 @@ function UI:ShowAlertsConfig()
             ApplySegmentState(dlg.BtnMarkPromptOff, not promptEnabled)
 
             if promptEnabled then
-                dlg.MarkHint:SetText("|cff00ff00● Enabled:|r |cff94a3b8Prompts revenge Mark of Spite contract upon dying in Open World.|r")
+                dlg.MarkHint:SetText("|cff00ff00* Enabled:|r |cff94a3b8Prompts revenge Mark of Spite contract upon dying in Open World.|r")
             else
-                dlg.MarkHint:SetText("|cffff3333● Disabled:|r |cff94a3b8Suppresses popup upon PvP death. Mark contracts can still be set in War Room.|r")
+                dlg.MarkHint:SetText("|cffff3333* Disabled:|r |cff94a3b8Suppresses popup upon PvP death. Mark contracts can still be set in War Room.|r")
             end
 
             -- Section 6: Combat Feed Destination
@@ -5153,11 +5380,11 @@ function UI:ShowAlertsConfig()
             ApplySegmentState(dlg.BtnFeedOff, feedMode == "OFF")
 
             if feedMode == "POPOUT" then
-                dlg.FeedHint:SetText("|cff00e5ff● Pop-Out Wire:|r |cff94a3b8Routes combat events to floating Combat Wire window. Zero chat spam.|r")
+                dlg.FeedHint:SetText("|cff00e5ff* Pop-Out Wire:|r |cff94a3b8Routes combat events to floating Combat Wire window. Zero chat spam.|r")
             elseif feedMode == "CHAT" then
-                dlg.FeedHint:SetText("|cffffd100● Main Chat:|r |cff94a3b8Prints combat records directly to your standard General chat frame.|r")
+                dlg.FeedHint:SetText("|cffffd100* Main Chat:|r |cff94a3b8Prints combat records directly to your standard General chat frame.|r")
             else
-                dlg.FeedHint:SetText("|cffff3333● Muted:|r |cff94a3b8Suppresses both chat and wire feed. Combat is recorded silently.|r")
+                dlg.FeedHint:SetText("|cffff3333* Muted:|r |cff94a3b8Suppresses both chat and wire feed. Combat is recorded silently.|r")
             end
         end
         dlg.UpdateControls = UpdateControls
@@ -5598,7 +5825,7 @@ function UI:ShowRallyDialog()
         -- Header
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("📯 |cffffd100MUSTER FACTION VANGUARD RALLY|r")
+        title:SetText(" |cffffd100MUSTER FACTION VANGUARD RALLY|r")
         dlg.TitleText = title
 
         local subtitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -5623,7 +5850,7 @@ function UI:ShowRallyDialog()
             if isActive then
                 btn:SetBackdropColor(unpack(theme.btnActiveBg or { 0.25, 0.18, 0.07, 1.0 }))
                 btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder or { 1.0, 0.82, 0.0, 1.0 }))
-                btn.Label:SetText(string.format("|cff00ff00●|r |cffffd100%s|r", btn.baseText or ""))
+                btn.Label:SetText(string.format("|cff00ff00*|r |cffffd100%s|r", btn.baseText or ""))
             else
                 btn:SetBackdropColor(unpack(theme.btnBg or { 0.08, 0.10, 0.15, 1.0 }))
                 btn:SetBackdropBorderColor(unpack(theme.btnBorder or { 0.45, 0.35, 0.18, 0.95 }))
@@ -5764,19 +5991,19 @@ function UI:ShowRallyDialog()
         sec5Title:SetPoint("TOPLEFT", 24, -284)
         sec5Title:SetText("|cffffffff5. REQUESTED COMBAT ROLES / SPECS|r")
 
-        local btnTank = UI:CreateButton(dlg, 136, 24, "🛡️ Tank", "GameFontHighlightSmall")
+        local btnTank = UI:CreateButton(dlg, 136, 24, "[Tank] Tank", "GameFontHighlightSmall")
         btnTank:SetPoint("TOPLEFT", 24, -304)
-        StyleChip(btnTank, "🛡️ Tank")
+        StyleChip(btnTank, "[Tank] Tank")
         dlg.BtnTank = btnTank
 
-        local btnHeal = UI:CreateButton(dlg, 136, 24, "💚 Healer", "GameFontHighlightSmall")
+        local btnHeal = UI:CreateButton(dlg, 136, 24, "[Healer] Healer", "GameFontHighlightSmall")
         btnHeal:SetPoint("LEFT", btnTank, "RIGHT", 12, 0)
-        StyleChip(btnHeal, "💚 Healer")
+        StyleChip(btnHeal, "[Healer] Healer")
         dlg.BtnHeal = btnHeal
 
-        local btnDPS = UI:CreateButton(dlg, 136, 24, "⚔️ DPS", "GameFontHighlightSmall")
+        local btnDPS = UI:CreateButton(dlg, 136, 24, " DPS", "GameFontHighlightSmall")
         btnDPS:SetPoint("LEFT", btnHeal, "RIGHT", 12, 0)
-        StyleChip(btnDPS, "⚔️ DPS")
+        StyleChip(btnDPS, " DPS")
         dlg.BtnDPS = btnDPS
 
         btnTank:SetScript("OnClick", function()
@@ -5820,7 +6047,7 @@ function UI:ShowRallyDialog()
         dlg.BottomDivider = bDiv
 
         -- Submit Button
-        local submitBtn = UI:CreateButton(dlg, 240, 30, "📯 Muster Vanguard Rally", "GameFontNormal")
+        local submitBtn = UI:CreateButton(dlg, 240, 30, " Muster Vanguard Rally", "GameFontNormal")
         submitBtn:SetPoint("BOTTOMLEFT", 24, 20)
         submitBtn:SetScript("OnClick", function()
             local groupType = dlg.selectedGroupType or "PARTY"
@@ -5998,7 +6225,7 @@ function UI:InitializeCombatWire()
     clearBtn:SetScript("OnClick", function()
         if hud.msgFrame and hud.msgFrame.Clear then
             hud.msgFrame:Clear()
-            hud.msgFrame:AddMessage("|cff64748b[Combat Wire cleared — listening for live combat records...]|r")
+            hud.msgFrame:AddMessage("|cff64748b[Combat Wire cleared  -  listening for live combat records...]|r")
         end
     end)
 

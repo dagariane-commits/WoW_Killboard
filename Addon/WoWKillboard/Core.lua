@@ -98,7 +98,11 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         else
             if KB.Reinforcements then KB.Reinforcements:TriggerCallForBackup() end
         end
-    elseif cmd == "event" or cmd == "rally" then
+    elseif cmd == "event" or cmd == "rally" or cmd == "manhunt" then
+        if (not arg or arg == "") and KB.UI and KB.UI.ShowRallyMusterDialog then
+            KB.UI:ShowRallyMusterDialog()
+            return
+        end
         local title, zone, timeStr = arg:match("^([^|]+)%s*|%s*([^|]+)%s*|?%s*(.*)$")
         if title and zone then
             local myGuild = GetGuildInfo("player") or "Guild"
@@ -118,7 +122,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
                 KB.Sync:BroadcastEvent(evt)
             end
             if IsInGuild() then
-                SendChatMessage(string.format("[WoWKillboard Event] ⚔️ %s in %s! Announced by %s. Time: %s.",
+                SendChatMessage(string.format("[WoWKillboard Event] [PvP] %s in %s! Announced by %s. Time: %s.",
                     evt.title, evt.zone, myName, evt.time_str), "GUILD")
             end
             SafePrint(string.format("|cff00ccff[WoWKB Event]|r Created Guild Rally: |cffffd100%s|r in |cffffffff%s|r!", evt.title, evt.zone))
@@ -424,10 +428,11 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             KB:SubmitBugReport(cleanArg)
         end
     else
-        SafePrint("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
+        SafePrint("|cff00ccffWoW Killboard: Frontline War Room Commands:|r")
         SafePrint("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
         SafePrint("  |cffffd100/kb bug [details]|r or |cffffd100/kb report|r - Report a bug or issue for instant AI diagnosis")
-        SafePrint("  |cffffd100/kb wire|r or |cffffd100/kb feed|r - Toggle floating Combat Wire pop-out live feed window")
+        SafePrint("  |cffffd100/kb wire|r or |cffffd100/kb feed|r - Toggle The Shadow Network floating feed window")
+        SafePrint("  |cffffd100/kb manhunt|r or |cffffd100/kb rally|r - Muster a Vanguard hunting squad")
         SafePrint("  |cffffd100/kb radar|r or |cffffd100/kbradar|r - Toggle the Tactical Radar HUD floating window")
         SafePrint("  |cffffd100/kb alerts|r - Open Combat Alerts & Radar Configuration")
         SafePrint("  |cffffd100/kb markprompt [on|off]|r - Toggle Mark of Spite revenge prompt on PvP death")
@@ -437,8 +442,8 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/kb test|r - Preview Kill Alert Banner with sound and raid warning")
         SafePrint("  |cffffd100/kb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
         SafePrint("  |cffffd100/kb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
-        SafePrint("  |cffffd100/kb armory [Name]|r or |cffffd100/armory [Name]|r - Inspect Character Combat Dossier")
-        SafePrint("  |cffffd100/kb profile [Name]|r or |cffffd100/kb web|r - Open public web profile dossier link dialog")
+        SafePrint("  |cffffd100/kb armory [Name]|r or |cffffd100/armory [Name]|r - Inspect Champion Combat Profile")
+        SafePrint("  |cffffd100/kb profile [Name]|r or |cffffd100/kb web|r - Open public web combat profile dialog")
         SafePrint("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
         SafePrint("  |cffffd100/warhorn|r or |cffffd100/kbsos|r - Sound the War Horn (Call to Arms & muster war party)")
         SafePrint("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
@@ -582,17 +587,17 @@ function KB:PrintArmoryDossier(targetName)
     local factionColor = (charFaction == "Alliance") and "|cff3b82f6Alliance|r" or ((charFaction == "Horde") and "|cffef4444Horde|r" or "|cff94a3b8Neutral|r")
 
     SafePrint(string.format("|cff00e5ff[WoWKB Player Armory]|r |c%s%s|r (Lvl %d %s)%s - %s", colorHex, name, charLevel, charClass, guildPart, factionColor))
-    SafePrint(string.format("  |cffffd700🎖️ Honor Rank:|r |cffffffff%s|r | |cff00ff00K/D:|r |cffffffff%s|r (|cff00ff00%d|r Kills / |cffff3333%d|r Deaths)",
+    SafePrint(string.format("  |cffffd700[Rank] Honor Rank:|r |cffffffff%s|r | |cff00ff00K/D:|r |cffffffff%s|r (|cff00ff00%d|r Kills / |cffff3333%d|r Deaths)",
         rankTitle, kd, killsCount, deathsCount))
     SafePrint(string.format("  |cff00e5ffSolo Kills:|r %d | |cffffd700Duels (1v1):|r %d | |cff3b82f6BGs:|r %d", soloCount, duelCount, bgCount))
 
     -- Check KOS Blacklist or Deserter status
     if WoWKillboardDB then
         if (WoWKillboardDB.kosGuilds and charGuild and WoWKillboardDB.kosGuilds[charGuild]) or (WoWKillboardDB.kosPlayers and WoWKillboardDB.kosPlayers[name]) then
-            SafePrint("  |cffff0000🚨 TARGET IS ON REALM KOS BLACKLIST! Execute on sight!|r")
+            SafePrint("  |cffff0000[!] TARGET IS ON REALM KOS BLACKLIST! Execute on sight!|r")
         end
         if WoWKillboardDB.kosDeserters and WoWKillboardDB.kosDeserters[name] then
-            SafePrint("  |cffffaa00⚡ TARGET IS A MARKED GUILD-HOP DESERTER!|r")
+            SafePrint("  |cffffaa00[*] TARGET IS A MARKED GUILD-HOP DESERTER!|r")
         end
     end
 
@@ -600,7 +605,7 @@ function KB:PrintArmoryDossier(targetName)
     if WoWKillboardBounties then
         for _, b in pairs(WoWKillboardBounties) do
             if b.target_name and b.target_name:lower() == name:lower() and b.status == "ACTIVE" then
-                SafePrint(string.format("  |cffffd100💰 ACTIVE BLOOD BOUNTY:|r %d Gold! Deliver the killing blow to collect!", b.amount_gold or 0))
+                SafePrint(string.format("  |cffffd100[Bounty] ACTIVE BLOOD BOUNTY:|r %d Gold! Deliver the killing blow to collect!", b.amount_gold or 0))
                 break
             end
         end
@@ -624,6 +629,8 @@ SLASH_WOWKILLBOARDSOS2 = "/kbbackup"
 SLASH_WOWKILLBOARDSOS3 = "/warhorn"
 SLASH_WOWKILLBOARDSOS4 = "/kbwarhorn"
 SLASH_WOWKILLBOARDSOS5 = "/kbrally"
+SLASH_WOWKILLBOARDSOS6 = "/kbmanhunt"
+SLASH_WOWKILLBOARDSOS7 = "/manhunt"
 SlashCmdList["WOWKILLBOARDSOS"] = function(msg)
     local arg = msg and msg:lower():trim() or ""
     if arg == "stop" or arg == "resolve" or arg == "clear" or arg == "off" then

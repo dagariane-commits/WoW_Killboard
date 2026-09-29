@@ -119,7 +119,7 @@ function IS:SpotTarget(notes)
     -- Format broadcast message
     local guildTag = (targetGuild ~= "" and " <" .. targetGuild .. ">" or "")
     local subzoneTag = (subzone ~= "" and " (" .. subzone .. ")" or "")
-    local broadcastMsg = string.format("[WoWKB Intel] 👁️ Spotted %s (Lvl %d %s)%s in %s%s at (%.1f, %.1f)! %s",
+    local broadcastMsg = string.format("[WoWKB Intel] [Spot] Spotted %s (Lvl %d %s)%s in %s%s at (%.1f, %.1f)! %s",
         targetName, targetLevel, targetClass, guildTag, zone, subzoneTag, x, y, noteText)
 
     -- Local feedback

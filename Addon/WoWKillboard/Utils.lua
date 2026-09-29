@@ -268,7 +268,7 @@ function U.GetClientFlavorTitle()
         flavorColor = "d97706"
     end
 
-    return string.format("|cffffffffWoW Killboard|r |cff%s[%s • %s]|r", flavorColor, flavorName, realm)
+    return string.format("|cffffffffWoW Killboard|r |cff%s[%s - %s]|r", flavorColor, flavorName, realm)
 end
 
 -- Retrieve standardized client flavor subtitle for UI Header (Cross-Client Parity)

@@ -169,19 +169,19 @@ function US:CheckKOS(info)
 
         if isDeserter then
             local former = deserterInfo and deserterInfo.former_guild or guild or "Enemy Guild"
-            KB.Utils.SafePrint(string.format("|cffff0000[🚨 KOS DESERTER DETECTED]|r |cffffd100%s|r (Ex-Guild: |cffff5555<%s>|r) - SERVING 30-DAY DESERTER PENANCE! KILL ON SIGHT!",
+            KB.Utils.SafePrint(string.format("|cffff0000[KOS DESERTER DETECTED]|r |cffffd100%s|r (Ex-Guild: |cffff5555<%s>|r) - SERVING 30-DAY DESERTER PENANCE! KILL ON SIGHT!",
                 name, former))
             if KB.UI and KB.UI.ShowKOSAlert then
                 KB.UI:ShowKOSAlert(name, former, "DESERTER", "Serving 30-Day Deserter Penance")
             end
         elseif isKosGuild then
-            KB.Utils.SafePrint(string.format("|cffff0000[🚨 GUILD KOS BLACKLIST]|r |cffffd100%s|r (<%s>) - CONSIGNED TO THE REALM BLACKLIST (%s)! DESTROY ON SIGHT!",
+            KB.Utils.SafePrint(string.format("|cffff0000[GUILD KOS BLACKLIST]|r |cffffd100%s|r (<%s>) - CONSIGNED TO THE REALM BLACKLIST (%s)! DESTROY ON SIGHT!",
                 name, guild, kosGuildReason))
             if KB.UI and KB.UI.ShowKOSAlert then
                 KB.UI:ShowKOSAlert(name, guild, "GUILD_KOS", kosGuildReason)
             end
         elseif isKosPlayer then
-            KB.Utils.SafePrint(string.format("|cffff0000[🚨 ENEMY KOS TARGET]|r |cffffd100%s|r is BRANDED KOS (%s)! ENGAGE IMMEDIATELY!",
+            KB.Utils.SafePrint(string.format("|cffff0000[ENEMY KOS TARGET]|r |cffffd100%s|r is BRANDED KOS (%s)! ENGAGE IMMEDIATELY!",
                 name, kosPlayerReason))
             if KB.UI and KB.UI.ShowKOSAlert then
                 KB.UI:ShowKOSAlert(name, guild, "PLAYER_KOS", kosPlayerReason)

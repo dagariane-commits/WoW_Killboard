@@ -224,20 +224,20 @@ function RF:TriggerCallForBackup()
 
     -- Broadcast to Guild Chat
     if IsInGuild() then
-        SendChatMessage(string.format("[WoWKillboard] 📯 WAR HORN SOUNDED! Vanguard under attack in %s (%s) by %d hostile(s) (%s)! Whisper 'rally' or 'invite' to muster!",
+        SendChatMessage(string.format("[WoWKillboard] [WAR HORN] Sounded! Vanguard under attack in %s (%s) by %d hostile(s) (%s)! Whisper 'rally' or 'invite' to muster!",
             zone, coordsFormatted, hostileCount, hostileNamesStr), "GUILD")
     end
 
     -- Broadcast to Group/Raid
     if IsInGroup() then
-        SendChatMessage(string.format("[WoWKillboard] 📯 CALL TO ARMS: %s (%s) engaged by %s! Whisper 'rally' to reinforce!",
+        SendChatMessage(string.format("[WoWKillboard] [CALL TO ARMS] %s (%s) engaged by %s! Whisper 'rally' to reinforce!",
             zone, coordsFormatted, hostileNamesStr), IsInRaid() and "RAID" or "PARTY")
     end
 
     -- Local Yell (if outside instances)
     local inInstance = IsInInstance()
     if not inInstance then
-        SendChatMessage(string.format("[WoWKillboard] 📯 WAR HORN SOUNDED at %s (%s)! Engaged by %s! To arms!",
+        SendChatMessage(string.format("[WoWKillboard] [WAR HORN] Sounded at %s (%s)! Engaged by %s! To arms!",
             zone, coordsFormatted, hostileNamesStr), "YELL")
     end
 
@@ -270,7 +270,7 @@ function RF:ResolveBeacon(silent)
     if not silent then
         SafePrint("|cff00ff00[WoWKB WAR HORN]|r The front is secured. War Horn dismissed and recruitment closed.")
         if IsInGuild() then
-            SendChatMessage("[WoWKillboard] ⚔️ The front is secured. The enemy has fallen or retreated. War Horn dismissed. Blood and Honor!", "GUILD")
+            SendChatMessage("[WoWKillboard] [Secured] The front is secured. The enemy has fallen or retreated. War Horn dismissed. Blood and Honor!", "GUILD")
         end
     end
 
@@ -359,7 +359,7 @@ function RF:CreateCustomRally(params)
         typeStr, contentStr, zone, minLevel, maxLevel, roleStr))
 
     if IsInGuild() then
-        SendChatMessage(string.format("[WoWKillboard] 📯 RALLY MUSTER: %s (%s) in %s! Lvl %d-%d [%s] - %s! Whisper 'rally' to join!",
+        SendChatMessage(string.format("[WoWKillboard] [MANHUNT MUSTER]: %s (%s) in %s! Lvl %d-%d [%s] - %s! Whisper 'rally' to join!",
             typeStr, contentStr, zone, minLevel, maxLevel, roleStr, message), "GUILD")
     end
 

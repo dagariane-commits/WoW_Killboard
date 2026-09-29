@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=1.4.58">
+  <link rel="stylesheet" href="/static/style.css?v=1.4.59">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
         <img src="/static/icons/factions/horde.jpg" class="header-faction-crest horde" alt="Horde" title="For the Horde!">
         <div>
           <div class="logo-title">WoW Killboard</div>
-          <div class="logo-subtitle">AZEROTH COMBAT WAR ROOM</div>
+          <div class="logo-subtitle">AZEROTH COMBAT OVERVIEW</div>
         </div>
       </div>
 
@@ -35,11 +35,20 @@
         <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">Defender of Azeroth</button>
         <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">The Marked</button>
         <button id="nav-rallies" class="nav-btn" onclick="switchTab('RALLIES')">Manhunt</button>
+        <button id="nav-zones" class="nav-btn" onclick="switchTab('ZONES')">Zone Intel</button>
         <button id="nav-upload" class="nav-btn" onclick="switchTab('UPLOAD')">Upload</button>
       </nav>
 
       <!-- 3. Tools Group -->
       <div class="header-tools-group">
+        <!-- 4-Way Mode Filter Pills: World | BGs | Duels | Arenas -->
+        <div class="header-mode-filters" id="header-mode-filters">
+          <button class="header-mode-pill active" id="hdr-pill-world" onclick="setFilterMode('WORLD')" title="Open-World Combat">World</button>
+          <button class="header-mode-pill" id="hdr-pill-bg" onclick="setFilterMode('BG')" title="Battleground Matches">BGs</button>
+          <button class="header-mode-pill" id="hdr-pill-duel" onclick="setFilterMode('DUEL')" title="1v1 Sanctioned Duels">Duels</button>
+          <button class="header-mode-pill disabled" id="hdr-pill-arena" onclick="setFilterMode('ARENA')" title="Arena Matches">Arenas</button>
+        </div>
+
         <div id="header-auth-badge" class="header-auth-badge">
           <!-- Populated by app.js -->
         </div>
@@ -93,6 +102,10 @@
           <span>Manhunt</span>
           <span>&rarr;</span>
         </button>
+        <button class="mobile-nav-item" id="m-nav-zones" onclick="switchTab('ZONES'); toggleMobileDrawer(false);">
+          <span>Zone Intel</span>
+          <span>&rarr;</span>
+        </button>
         <button class="mobile-nav-item" id="m-nav-upload" onclick="switchTab('UPLOAD'); toggleMobileDrawer(false);">
           <span>Upload Combat Log</span>
           <span>&rarr;</span>
@@ -119,7 +132,7 @@
   <div class="container">
     <!-- Main Center Column -->
     <main class="main-column">
-      <!-- High-Level Homepage Stats Hub (Personalized Operative Telemetry + Frontier Cumulative) -->
+      <!-- High-Level Homepage Stats Hub (Personalized Character Telemetry & Realm Cumulative) -->
       <div id="homepage-stats-hub" class="homepage-stats-hub">
         <div class="stats-grid">
           <div class="stat-card">
@@ -397,7 +410,7 @@
           </div>
           <div>
             <strong style="color: var(--wow-gold); font-family: var(--font-tactical); font-size: 1.15rem; letter-spacing: 0.6px;">WAR ROOM OPERATIONAL SPECIFICATION</strong>
-            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">REAL-TIME COMBAT TRACKING &bull; ZERO TAINT &bull; AUTOMATED DESKTOP COURIER &bull; OPEN-WORLD BOUNTIES</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">REAL-TIME COMBAT TRACKING &bull; PURE LUA ENGINE &bull; AUTOMATED DESKTOP COURIER &bull; OPEN-WORLD BOUNTIES</div>
           </div>
         </div>
         <button class="modal-close" onclick="closeAddonDossierModal()">&times;</button>
@@ -437,7 +450,7 @@
 
           <div class="dossier-feature-card">
             <div class="feature-tag">BOUNTY SYSTEM</div>
-            <h4 class="feature-head">Bounties on Gankers &amp; Gibbet List</h4>
+            <h4 class="feature-head">The Blood Ledger &amp; The Marked</h4>
             <p class="feature-text">
               When an enemy player kills or ganks you in the open world, you can place an in-game gold bounty on their head right from your death alert or the website. Any player who takes down your killer can claim the reward, and repeat gankers are posted on the realm Kill on Sight (KOS) board.
             </p>
@@ -459,7 +472,7 @@
               <div class="tier-card-header">
                 <span class="tier-badge guest">ARSENAL TIER 1 // IN-GAME FIELD KIT</span>
                 <div class="tier-name">In-Game Combat Tracker</div>
-                <div class="tier-sub">In-Game UI &bull; Zero Taint &bull; Real-Time Radar</div>
+                <div class="tier-sub">In-Game UI &bull; Pure Lua Engine &bull; Real-Time Radar</div>
               </div>
               <ul class="tier-features-list">
                 <li class="tier-item">
@@ -494,7 +507,7 @@
               </div>
             </div>
 
-            <!-- Column 2: Web War Room & Operative Identity -->
+            <!-- Column 2: Web War Room & Combatant Identity -->
             <div class="dossier-tier-card free-tier">
               <div class="tier-card-header">
                 <span class="tier-badge free">ARSENAL TIER 2 // AZEROTH WAR ROOM</span>
@@ -512,7 +525,7 @@
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Accurate Battle Merging:</strong> 15-second sliding temporal clustering deduplicates group kills with FNV-1a hashing.</span>
+                  <span class="tier-text"><strong>Accurate Battle Merging:</strong> Smart battle grouping merges group kills and credits all participants into a single verified killmail.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
@@ -520,7 +533,7 @@
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
-                  <span class="tier-text"><strong>Public Execution Registry:</strong> Searchable marks registry, active bounty pots, and hunter leaderboards.</span>
+                  <span class="tier-text"><strong>The Blood Ledger:</strong> Searchable marks registry, active bounty pots, and hunter leaderboards.</span>
                 </li>
                 <li class="tier-item">
                   <span class="tier-bullet check">✔</span>
@@ -633,7 +646,7 @@
           </div>
           <div>
             <strong style="color: #ef4444; font-family: var(--font-tactical); font-size: 1.15rem; letter-spacing: 0.6px;">FIELD BUG DISPATCHES &amp; AI DIAGNOSTICS</strong>
-            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">IN-GAME COMBAT DISPATCHES &bull; AUTOMATED AI ROOT CAUSE ANALYSIS &bull; SURGICAL REMEDIATION</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">IN-GAME COMBAT DISPATCHES &bull; REAL-TIME COMBAT LOG ANALYSIS &bull; ACTIVE REMEDIATION</div>
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -653,7 +666,7 @@
     </div>
   </div>
 
-  <!-- Champion Recognition & Operative Identity Claim Modal -->
+  <!-- Champion Recognition & Combatant Identity Claim Modal -->
   <div id="character-link-modal" class="modal-overlay" onclick="handleCharacterModalBackdrop(event)">
     <div class="modal-card modal-card-lg" style="max-width: 780px;">
       <div class="modal-header">
@@ -753,7 +766,7 @@
       <div class="modal-header">
         <div>
           <div style="font-size:0.75rem; font-weight:800; color:var(--accent-cyan); letter-spacing:1px; text-transform:uppercase;">
-            Cryptographic Ownership Lock
+            Verify Character / Claim Profile
           </div>
           <h3 style="margin:2px 0 0 0; color:#fff; font-family:var(--font-tactical); font-size:1.25rem;">
             🛡️ Character Claim Registered
@@ -828,10 +841,10 @@
 
     <!-- Suggested Quick Chips -->
     <div class="oracle-quick-chips" id="oracle-quick-chips">
-      <button class="oracle-chip" onclick="sendOracleQuickQuery('Who holds the highest bounty on the gibbet?')">Highest Bounty</button>
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('Who holds the highest bounty in The Blood Ledger?')">Highest Bounty</button>
       <button class="oracle-chip" onclick="sendOracleQuickQuery('Which zone has seen the most slaughter?')">Bloodiest Zone</button>
       <button class="oracle-chip" onclick="sendOracleQuickQuery('What are the deadliest wilderness creatures?')">Deadliest NPCs</button>
-      <button class="oracle-chip" onclick="sendOracleQuickQuery('How does the addon record combat with zero UI taint?')">Zero-Taint Addon</button>
+      <button class="oracle-chip" onclick="sendOracleQuickQuery('How does the addon record combat safely without errors?')">Addon Safety</button>
     </div>
 
     <!-- Chat Input Area -->
@@ -844,6 +857,9 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=1.4.58"></script>
+  <!-- Live Combat Slide-In Toast Notification Banner -->
+  <div id="combat-toast-container" class="combat-toast-container"></div>
+
+  <script src="/static/app.js?v=1.4.59"></script>
 </body>
 </html>
