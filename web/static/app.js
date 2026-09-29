@@ -3894,6 +3894,26 @@ function loadUploadView() {
         </div>
       </div>
 
+      <!-- Addon Download Callout with Dual Mirrors -->
+      <div style="background: rgba(212, 163, 41, 0.08); border: 1px solid var(--wow-gold); border-radius: 8px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <div style="font-weight: 800; font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>⚔️</span> <span>Need the WoW Killboard Addon?</span>
+          </div>
+          <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 3px;">
+            Download the lightweight, zero-taint addon package (v1.0.0) for World PvP &amp; Battlegrounds.
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <a href="/WoWKillboard-v1.0.0.zip" download style="display: inline-flex; align-items: center; gap: 6px; background: var(--wow-gold); color: #000; font-weight: 800; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none; text-transform: uppercase;">
+            <span>⬇ Direct Download (.zip)</span>
+          </a>
+          <a href="https://drive.google.com/file/d/1POiV8uple8LxFihPYE1u95IJFAuAAlII/view?usp=sharing" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(66, 133, 244, 0.2); border: 1px solid #4285f4; color: #93c5fd; font-weight: 700; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none;">
+            <span>☁ Google Drive Mirror</span>
+          </a>
+        </div>
+      </div>
+
       <!-- Ingestion Channels Grid -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;">
         <!-- Option 1: Desktop Companion Binary -->
