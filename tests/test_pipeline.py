@@ -1221,6 +1221,53 @@ class TestKillboardPipeline(unittest.TestCase):
 
         print("[PASS] Verified Early Beta Web Feedback Portal, /api/feedback submission, and AI triage.")
 
+    def test_post_kill_parity(self):
+        """Verify /api/kills supports killId and kill_id interchangeably and maintains solo purity integrity."""
+        # 1. Test killId ingestion
+        payload_1 = {
+            "killId": "KB-test-parity-1",
+            "timestamp": int(time.time()),
+            "isSolo": True,
+            "attackersCount": 1,
+            "totalDamage": 1500,
+            "killer": {"name": "Dagariane", "class": "PALADIN", "level": 20, "faction": "Alliance", "damageDone": 1500},
+            "victim": {"name": "Slama", "class": "ROGUE", "level": 20, "faction": "Horde"},
+            "attackers": [{"name": "Dagariane", "damage": 1500, "isPlayer": True}]
+        }
+        res1 = self.client.post("/api/kills", json=payload_1)
+        self.assertEqual(res1.status_code, 201)
+        self.assertEqual(res1.get_json()["killId"], "KB-test-parity-1")
+
+        # 2. Test kill_id snake_case ingestion
+        payload_2 = {
+            "kill_id": "KB-test-parity-2",
+            "timestamp": int(time.time()),
+            "isSolo": False,
+            "attackersCount": 2,
+            "totalDamage": 2000,
+            "killer": {"name": "Dagariane", "class": "PALADIN", "level": 20, "faction": "Alliance", "damageDone": 1500},
+            "victim": {"name": "Slama", "class": "ROGUE", "level": 20, "faction": "Horde"},
+            "attackers": [
+                {"name": "Dagariane", "damage": 1500, "isPlayer": True},
+                {"name": "DruidAlly", "damage": 500, "isPlayer": True}
+            ]
+        }
+        res2 = self.client.post("/api/kills", json=payload_2)
+        self.assertEqual(res2.status_code, 201)
+        self.assertEqual(res2.get_json()["killId"], "KB-test-parity-2")
+
+        # Verify database fields
+        with get_db() as conn:
+            row1 = conn.execute("SELECT is_solo, attackers_count FROM kills WHERE kill_id = 'KB-test-parity-1'").fetchone()
+            self.assertEqual(row1["is_solo"], 1)
+            self.assertEqual(row1["attackers_count"], 1)
+
+            row2 = conn.execute("SELECT is_solo, attackers_count FROM kills WHERE kill_id = 'KB-test-parity-2'").fetchone()
+            self.assertEqual(row2["is_solo"], 0)
+            self.assertEqual(row2["attackers_count"], 2)
+
+        print("[PASS] Verified /api/kills killId/kill_id interoperability and multi-attacker solo purity revocation.")
+
 if __name__ == "__main__":
     unittest.main()
 

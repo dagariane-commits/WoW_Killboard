@@ -366,6 +366,15 @@ class KillboardWatcher:
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     if resp.status in (200, 201):
                         any_success = True
+            except urllib.error.HTTPError as e:
+                err_detail = ""
+                try:
+                    raw_err = e.read().decode("utf-8", errors="replace")
+                    err_obj = json.loads(raw_err)
+                    err_detail = f" - {err_obj.get('error') or ''} {err_obj.get('tip') or ''}".strip()
+                except Exception:
+                    pass
+                print(f"[Watcher] Notice for {kill_id} -> {endpoint}: {e}{err_detail}")
             except Exception as e:
                 print(f"[Watcher] Notice for {kill_id} -> {endpoint}: {e}")
         return any_success

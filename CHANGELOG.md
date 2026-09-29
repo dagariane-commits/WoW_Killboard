@@ -5,6 +5,23 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.61] - 2026-09-29
+
+### Fixed
+- **Combat Tracker Squad Assist & Solo Classification Integrity (`CombatTracker.lua`, `Config.lua`)**:
+  - **Victim Self-Insertion Elimination**: Fixed critical bug where `CT:GetPartyMembersList()` indiscriminately inserted the player (and friendly party members) as attackers of themselves when dying (`victimGUID == playerGUID`). Added strict gating (`if victimGUID ~= playerGUID`) and pre-seeded `recordedAttackersMap` with victim identifiers, ensuring solo ganks against the player (such as Slama soloing Dagariane) are accurately classified as `[SOLO]` rather than `[GANG x2]`.
+  - **External Healer / Buffer Assist Recognition**: Fixed flaw where friendly allies who healed or buffed the player (`CT.ExternalAssistsOnPlayer`) were tracked in telemetry but never inserted into `attackersList`. Both `ProcessDeath` and `OnPlayerHonorableKill` now iterate `CT.ExternalAssistsOnPlayer` and append external helpers (e.g. Druid casting heals or roots) to `attackersList` with appropriate class telemetry, correctly setting `attackersCount >= 2` and revoking `isSolo`.
+  - **Attacker Deduplication & Party Purity**: Enforced strict `recordedAttackersMap` tracking across all fallback and killing blow insertion paths to prevent duplicate entries for the player or squad members.
+  - **Expanded Temporal Engagement Window**: Increased default `combatWindowSeconds` from 30s to 45s in `Config.lua` to accommodate prolonged open-world PvP kiting, root resets, and stealth re-openings without premature assist pruning.
+- **Web Backend & SQLite Write Permission Resilience (`server.py`)**:
+  - Added self-healing permission checks in `get_db()` attempting `os.chmod(DB_PATH, 0o666)` if SQLite database file exists and lacks write permissions.
+  - Added defensive `sqlite3.OperationalError` exception handling in `post_kill` returning actionable JSON diagnostic instructions when file or directory permissions are readonly on Linux hosts.
+  - Added seamless interoperability for both `killId` (camelCase) and `kill_id` (snake_case) in payload ingestion.
+- **Desktop Sync Client Notice & In-Game Sync UX (`watcher.py`, `UI.lua`)**:
+  - Enhanced `upload_killmail` error handling in `sync/watcher.py` to parse and display server error messages and remediation tips on HTTP errors.
+  - Updated in-game `[Save] Sync` tooltip and chat feedback in `UI.lua` to clarify that `/reload` writes combat logs to disk and `WoWKillboardSync.exe` must be running in the background to sync to the web platform.
+  - Recompiled standalone `WoWKillboardSync.exe` and refreshed multi-client distribution suite.
+
 ## [1.4.60] - 2026-09-29
 
 ### Fixed
