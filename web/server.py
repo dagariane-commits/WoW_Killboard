@@ -46,8 +46,11 @@ def get_db():
                 os.chmod(DB_PATH, 0o666)
         except OSError:
             pass
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=15.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout = 10000;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
     return conn
 
 def init_db():
@@ -438,7 +441,7 @@ def health_check():
     return jsonify({
         "status": "ok",
         "service": "WoW Killboard API",
-        "version": "1.4.59",
+        "version": "1.4.65",
         "db": "ready"
     })
 

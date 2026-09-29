@@ -390,6 +390,122 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         end
         SafePrint(string.format("|cff00ff00[WoWKB]|r Generated synthetic Open-World PvP Kill against |cffff3333%s|r in %s!", enemyName, loc.zone))
 
+    elseif cmd == "stress" or cmd == "stresstest" then
+        local count = tonumber(arg) or 25
+        if count < 1 then count = 1 end
+        if count > 250 then count = 250 end
+
+        local startTime = (debugprofilestop and debugprofilestop()) or (GetTime() * 1000)
+        local initialMem = collectgarbage("count")
+
+        local pName = UnitName("player") or "Hero"
+        local _, pClass = UnitClass("player")
+        pClass = pClass or "WARRIOR"
+        local pLevel = UnitLevel("player") or 60
+        local pGuild = GetGuildInfo("player") or "Ironclad Vanguard"
+        local pFaction = UnitFactionGroup("player") or "Alliance"
+
+        local enemyFaction = (pFaction == "Alliance") and "Horde" or "Alliance"
+        local classes = {"WARRIOR", "ROGUE", "MAGE", "PRIEST", "WARLOCK", "HUNTER", "DRUID", "SHAMAN", "PALADIN"}
+        local races = (enemyFaction == "Horde") and {"Orc", "Undead", "Tauren", "Troll"} or {"Human", "Dwarf", "NightElf", "Gnome"}
+        local zones = {
+            { mapId = 1421, zone = "Silverpine Forest", subZone = "The Sepulcher", x = 43.5, y = 40.2 },
+            { mapId = 1424, zone = "Hillsbrad Foothills", subZone = "Southshore", x = 50.1, y = 57.4 },
+            { mapId = 1417, zone = "Arathi Highlands", subZone = "Refuge Pointe", x = 46.8, y = 45.2 },
+            { mapId = 1448, zone = "Stranglethorn Vale", subZone = "Booty Bay", x = 27.4, y = 77.1 },
+            { mapId = 1445, zone = "Blackrock Mountain", subZone = "Blackrock Spire", x = 48.0, y = 35.0 },
+        }
+        local names = {"Grimclaw", "Shadowstrike", "Bloodhoof", "Voidwhisper", "Ironhide", "Frostweaver", "Deathbringer", "Nightstalker", "Sunstrider", "Stormherald"}
+
+        local injected = 0
+        local now = time()
+        for i = 1, count do
+            local eClass = classes[((i - 1) % #classes) + 1]
+            local eRace = races[((i - 1) % #races) + 1]
+            local loc = zones[((i - 1) % #zones) + 1]
+            local baseName = names[((i - 1) % #names) + 1]
+            local eName = baseName .. "-" .. tostring(i)
+            local eGuid = string.format("Player-STRESS-%d-%d", now, i)
+            local dmgAmount = math.random(800, 3500)
+
+            local testKill = {
+                timestamp = now - (count - i) * 15,
+                isSolo = (i % 2 == 1),
+                isBattleground = (i % 5 == 0),
+                isArena = false,
+                isDuel = false,
+                attackersCount = (i % 2 == 1) and 1 or math.random(2, 4),
+                totalDamage = dmgAmount,
+                killer = {
+                    guid = UnitGUID("player") or "Player-0001",
+                    name = pName,
+                    level = pLevel,
+                    class = pClass,
+                    guild = pGuild,
+                    faction = pFaction,
+                    partySize = 1,
+                    damageDone = dmgAmount,
+                    healingDone = math.floor(dmgAmount * 0.2),
+                },
+                victim = {
+                    guid = eGuid,
+                    name = eName,
+                    level = math.random(55, 60),
+                    class = eClass,
+                    race = eRace,
+                    guild = "Syndicate",
+                    faction = enemyFaction,
+                    partySize = 1,
+                },
+                location = {
+                    mapId = loc.mapId,
+                    zone = loc.zone,
+                    subZone = loc.subZone,
+                    x = loc.x + (math.random(-50, 50) / 100),
+                    y = loc.y + (math.random(-50, 50) / 100),
+                },
+                attackers = {
+                    {
+                        guid = UnitGUID("player") or "Player-0001",
+                        name = pName,
+                        class = pClass,
+                        level = pLevel,
+                        guild = pGuild,
+                        faction = pFaction,
+                        damage = dmgAmount,
+                        spell = "Attack",
+                        isPlayer = true,
+                    }
+                },
+            }
+
+            if KB.CombatTracker then
+                KB.CombatTracker.SessionStats.kills = KB.CombatTracker.SessionStats.kills + 1
+                KB.CombatTracker.SessionStats.damageDone = KB.CombatTracker.SessionStats.damageDone + dmgAmount
+            end
+            if KB.Killmail and KB.Killmail.RecordKill then
+                KB.Killmail:RecordKill(testKill)
+                injected = injected + 1
+            end
+        end
+
+        if KB.UI and KB.UI.TestKillBanner and injected > 0 then
+            KB.UI:TestKillBanner()
+        end
+
+        local endTime = (debugprofilestop and debugprofilestop()) or (GetTime() * 1000)
+        local elapsed = endTime - startTime
+        local finalMem = collectgarbage("count")
+        local memDelta = finalMem - initialMem
+        local totalKills = 0
+        if WoWKillboardDB and WoWKillboardDB.kills then
+            for _ in pairs(WoWKillboardDB.kills) do totalKills = totalKills + 1 end
+        end
+
+        SafePrint(string.format("|cff00ff00[WoWKB Stress]|r Injected |cffffd100%d|r kills in |cffffffff%.2f ms|r. Total DB: |cff00ccff%d|r kills. Addon Mem: |cffffffff%.1f KB|r (+%.1f KB). Zero UI taint.",
+            injected, elapsed, totalKills, finalMem, memDelta))
+        SafePrint("  Use |cffffd100/kb|r to view your feed or |cffffd100/kb reset|r to purge stress records.")
+
     elseif cmd == "testdeath" then
         local pName = UnitName("player") or "Hero"
         local _, pClass = UnitClass("player")
@@ -575,6 +691,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/kb test|r - Preview Kill Alert Banner with sound and raid warning")
         SafePrint("  |cffffd100/kb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
         SafePrint("  |cffffd100/kb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
+        SafePrint("  |cffffd100/kb stress [N]|r - Stress test addon with N (default 25) simulated kills")
         SafePrint("  |cffffd100/kb armory [Name]|r or |cffffd100/armory [Name]|r - Inspect Champion Combat Profile")
         SafePrint("  |cffffd100/kb profile [Name]|r or |cffffd100/kb web|r - Open public web combat profile dialog")
         SafePrint("  |cffffd100/spot|r or |cffffd100/scout [notes]|r - Report and broadcast spotted enemy hostile to allies")
