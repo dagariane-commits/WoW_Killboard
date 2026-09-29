@@ -5,6 +5,25 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.52] - 2026-09-28
+
+### Added
+- **Direct Windows Companion Download Routes (`server.py`, `index.html`, `deploy.py`)**:
+  - Added dedicated endpoints (`/WoWKillboardSync.exe`, `/download/sync`, `/sync.exe`) serving the zero-config Windows sync companion directly from the web platform.
+  - Updated Addon Dossier Modal (`#addon-dossier-modal`) with a direct download button for `WoWKillboardSync.exe`.
+  - Updated multi-client build script (`scripts/deploy.py`) to automatically mirror `WoWKillboardSync.exe` into `web/static/`.
+- **Comprehensive Community Playtest Documentation (`README_GOOGLE_DRIVE.txt`, `README_GOOGLE_DRIVE.md`)**:
+  - Authored complete, authoritative specification and operational guides for Google Drive playtesters.
+  - Documented full addon architecture, slash commands, zero-taint design, and step-by-step setup instructions.
+  - Integrated protective intellectual property, anti-theft, and confidentiality notices strictly forbidding reverse engineering or unauthorized redistribution.
+
+### Changed
+- **Web Addon Dossier Alignment with In-Game Architecture (`index.html`, `app.js`, `style.css`)**:
+  - Restructured the Addon Dossier modal to directly mirror the in-game addon's five operational modules: Tactical Intel & High Command (Top 10 Most Wanted), Champions & Military Ranks, Marks of Spite, War Rallies & SOS Defense, and Zone Intel & Telemetry.
+  - Moved **Deadly Wilderness Threats (NPCs)** from active guest tier into the **Planned Capabilities & Engineering Roadmap**.
+  - Reclassified **Community Benefactor Insignia** into the planned features roadmap, completely purging all monetization, tip, and donation references.
+  - Cleaned bounty card telemetry rendering in `app.js` so subzones display seamlessly without artificial `[Subzone Locked]` barriers.
+
 ## [1.4.51] - 2026-09-28
 
 ### Added

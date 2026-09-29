@@ -433,6 +433,24 @@ def download_gdrive():
     from flask import redirect
     return redirect(GOOGLE_DRIVE_DOWNLOAD_URL)
 
+@app.route("/WoWKillboardSync.exe")
+@app.route("/download/sync")
+@app.route("/sync.exe")
+def download_sync_exe():
+    root_dir = os.path.dirname(APP_DIR)
+    exe_path = os.path.join(root_dir, "WoWKillboardSync.exe")
+    dist_exe = os.path.join(root_dir, "dist", "WoWKillboardSync.exe")
+    static_exe = os.path.join(STATIC_DIR, "WoWKillboardSync.exe")
+    if os.path.exists(static_exe):
+        return send_from_directory(STATIC_DIR, "WoWKillboardSync.exe", as_attachment=True)
+    if os.path.exists(exe_path):
+        return send_from_directory(root_dir, "WoWKillboardSync.exe", as_attachment=True)
+    if os.path.exists(dist_exe):
+        return send_from_directory(os.path.join(root_dir, "dist"), "WoWKillboardSync.exe", as_attachment=True)
+    from flask import redirect
+    return redirect(GOOGLE_DRIVE_DOWNLOAD_URL)
+
+
 # ----------------- StreamBox (OBS Overlay) -----------------
 
 STREAMBOX_HTML = """<!DOCTYPE html>

@@ -5251,7 +5251,8 @@ body.portal-active .container {
   background: linear-gradient(180deg, rgba(10, 20, 30, 0.6) 0%, rgba(9, 13, 22, 0.95) 100%);
 }
 
-.dossier-tier-card.supporter-tier {
+.dossier-tier-card.supporter-tier,
+.dossier-tier-card.roadmap-tier {
   border: 1px solid rgba(212, 163, 41, 0.35);
   border-top: 3px solid var(--wow-gold);
   background: linear-gradient(180deg, rgba(28, 24, 15, 0.6) 0%, rgba(10, 14, 23, 0.95) 100%);
@@ -5289,7 +5290,8 @@ body.portal-active .container {
   color: var(--accent-cyan);
 }
 
-.tier-badge.supporter {
+.tier-badge.supporter,
+.tier-badge.roadmap {
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.35);
   color: var(--wow-gold);
@@ -5426,13 +5428,15 @@ body.portal-active .container {
   transform: translateY(-1px);
 }
 
-.tier-cta-btn.supporter {
+.tier-cta-btn.supporter,
+.tier-cta-btn.roadmap {
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
   color: #fff;
   border: 1px solid rgba(255, 230, 128, 0.35);
 }
 
-.tier-cta-btn.supporter:hover {
+.tier-cta-btn.supporter:hover,
+.tier-cta-btn.roadmap:hover {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
   transform: translateY(-1px);

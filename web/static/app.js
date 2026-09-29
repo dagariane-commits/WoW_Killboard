@@ -1654,23 +1654,20 @@ function renderSingleBountyCard(b, isSupporter) {
   const lastSeen = b.lastSeen || {};
   let lastSeenHtml = "";
   if (lastSeen.hasTelemetry) {
-    if (isSupporter && lastSeen.subzone) {
+    if (lastSeen.subzone) {
       lastSeenHtml = `
         <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:rgba(7,9,14,0.75); padding:6px 10px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);">
           <span style="font-weight:700;">Last Sighted:</span> ${escapeHtml(lastSeen.zone)} <span style="color:#fbbf24;">(${escapeHtml(lastSeen.subzone)})</span>
           <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">
-            ~${lastSeen.minutesAgo}m ago &bull; <span style="color:#fbbf24; font-weight:700;">⭐ Subzone Intel</span>
+            ~${lastSeen.minutesAgo}m ago &bull; <span style="color:#fbbf24; font-weight:700;">Sector Recon</span>
           </div>
         </div>
       `;
     } else {
       lastSeenHtml = `
-        <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:rgba(7,9,14,0.75); padding:6px 10px; border-radius:4px; border:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <span style="font-weight:700;">Last Sighted:</span> ${escapeHtml(lastSeen.zone)}
-            <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">~${lastSeen.minutesAgo}m ago</div>
-          </div>
-          <span style="color:#64748b; font-size:0.7rem; cursor:pointer;" onclick="toggleSupporterMode()" title="Toggle Supporter Mode to unlock Subzone Recon">[Subzone Locked]</span>
+        <div style="font-size:0.75rem; color:#38bdf8; margin-top:8px; background:rgba(7,9,14,0.75); padding:6px 10px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);">
+          <span style="font-weight:700;">Last Sighted:</span> ${escapeHtml(lastSeen.zone)}
+          <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">~${lastSeen.minutesAgo}m ago</div>
         </div>
       `;
     }
@@ -5717,7 +5714,7 @@ function handleSupporterClick() {
   toggleSupporterMode();
   const active = isSupporterActive();
   if (active) {
-    alert("Thank you for supporting WoW Killboard!\n\nOptional community donations will open soon to help cover server hosting costs. In the meantime, Supporter Mode preview is ENABLED for your browser session.");
+    alert("Honorary Benefactor Insignia and Community Supporter crests are currently in development as planned community perks.");
   } else {
     alert("Supporter Mode preview disabled.");
   }
