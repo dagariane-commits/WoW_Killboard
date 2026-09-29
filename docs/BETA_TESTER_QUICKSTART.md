@@ -55,6 +55,7 @@ flowchart LR
 | `/warhorn stop` | Stand down active War Horn muster |
 | `/killboard kos` | Review or manage realm KOS Blacklist |
 | `/killboard bounty` | Issue a Mark of Spite on an enemy target |
+| `/kb bug [text]` or `/kb report` | Submit instant in-game bug report to AI Diagnostician |
 
 ---
 
@@ -75,5 +76,8 @@ World of Warcraft only writes `SavedVariables` to disk when you **log out**, **e
 
 ---
 
-## 💬 Beta Feedback & Bug Reporting
-Please report all combat discrepancies, UI feedback, or feature requests to the **Forged By Valor** team via Discord or GitHub Issues!
+## 💬 Beta Feedback & Automated AI Bug Reporting
+Found an issue, interface anomaly, or combat discrepancy?
+- **In-Game (Instant AI Diagnosis)**: Click the **`[Report Bug]`** button in the addon header bar, or type `/kb bug [details]`. Your telemetry and description will be captured and analyzed by our Automated AI Diagnostician!
+- **Web Platform**: Review active tickets, root-cause analyses, and suggested surgical fixes under **Field Bug Dispatches** in the web footer.
+- **Direct Feedback**: Send questions or suggestions directly to **Dagariane**.

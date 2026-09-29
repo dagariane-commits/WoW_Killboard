@@ -34,3 +34,6 @@ ENV/
 cloudflared.exe
 backups/
 scratch/
+WoW KB Beta/
+web/static/*.exe
+

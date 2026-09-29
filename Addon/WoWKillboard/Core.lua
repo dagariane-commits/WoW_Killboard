@@ -408,9 +408,21 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         if KB.UI and KB.UI.ShowCharacterWebLink then
             KB.UI:ShowCharacterWebLink(pTarget)
         end
+    elseif cmd == "bug" or cmd == "report" or cmd == "feedback" then
+        local cleanArg = arg and arg:match("^%s*(.-)%s*$") or ""
+        if cleanArg == "" then
+            if KB.UI and KB.UI.ShowBugReportModal then
+                KB.UI:ShowBugReportModal()
+            else
+                SafePrint("|cffff9900Usage:|r /kb bug <describe what happened> (e.g. /kb bug Kills not recording in Arathi Basin)")
+            end
+        else
+            KB:SubmitBugReport(cleanArg)
+        end
     else
         SafePrint("|cff00ccffWoW Killboard — Frontline War Room Commands:|r")
         SafePrint("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
+        SafePrint("  |cffffd100/kb bug [details]|r or |cffffd100/kb report|r - Report a bug or issue for instant AI diagnosis")
         SafePrint("  |cffffd100/kb wire|r or |cffffd100/kb feed|r - Toggle floating Combat Wire pop-out live feed window")
         SafePrint("  |cffffd100/kb radar|r or |cffffd100/kbradar|r - Toggle the Tactical Radar HUD floating window")
         SafePrint("  |cffffd100/kb alerts|r - Open Combat Alerts & Radar Configuration")
@@ -739,4 +751,60 @@ diagFrame:SetScript("OnEvent", function(self, event, addon, func)
         inCombat = InCombatLockdown(),
     }
 end)
+
+-- ============================================================================
+-- Automated Bug Reporting & AI Diagnostics Dispatch
+-- ============================================================================
+function KB:SubmitBugReport(userDescription)
+    local cleanDesc = userDescription and userDescription:match("^%s*(.-)%s*$") or ""
+    if cleanDesc == "" then
+        SafePrint("|cffff9900[WoWKB]|r Cannot submit an empty bug report. Describe what happened.")
+        return nil
+    end
+
+    WoWKillboardDB = WoWKillboardDB or {}
+    WoWKillboardDB.bugReports = WoWKillboardDB.bugReports or {}
+
+    local pName = UnitName("player") or "Player"
+    local _, pClass = UnitClass("player")
+    local pLevel = UnitLevel("player") or 0
+    local pFaction = UnitFactionGroup("player") or "Alliance"
+    local pRealm = (GetRealmName and GetRealmName()) or "Unknown"
+    local loc = (KB.Utils and KB.Utils.GetPlayerLocation) and KB.Utils:GetPlayerLocation() or {}
+    local inCombat = (InCombatLockdown and InCombatLockdown()) and true or false
+    local partySize = (GetNumGroupMembers and GetNumGroupMembers()) or (GetNumSubgroupMembers and GetNumSubgroupMembers() + 1) or 1
+    local buildVer, buildNum = GetBuildInfo()
+    local ticketId = string.format("BUG-%d-%04d", time(), math.random(1000, 9999))
+
+    local report = {
+        id = ticketId,
+        timestamp = time(),
+        reporter = pName,
+        realm = pRealm,
+        class = pClass or "WARRIOR",
+        level = pLevel,
+        faction = pFaction,
+        clientFlavor = KB.ClientFlavor or "CLASSIC_ERA",
+        gameBuild = tostring(buildVer) .. " (" .. tostring(buildNum) .. ")",
+        zone = loc.zone or GetRealZoneText() or "Unknown",
+        subzone = loc.subZone or GetSubZoneText() or "",
+        mapId = loc.mapId or 0,
+        coordinates = string.format("%.1f, %.1f", loc.x or 0, loc.y or 0),
+        inCombat = inCombat,
+        partySize = partySize,
+        userReport = cleanDesc,
+        lastBlockedAction = WoWKillboardDB.lastBlockedAction or nil,
+        addonVersion = KB.Version or "1.0.0",
+        aiStatus = "PENDING_SYNC",
+    }
+
+    WoWKillboardDB.bugReports[ticketId] = report
+
+    SafePrint(string.format("|cff00ccff[WoWKB Bug Dispatch]|r Ticket |cffffd100[%s]|r logged!", ticketId))
+    SafePrint(string.format("  Telemetry: |cffffffff%s (%s)|r in |cffffffff%s|r | Combat: %s",
+        pName, pRealm, report.zone, inCombat and "|cffff3333In Combat|r" or "|cff00ff00Safe|r"))
+    SafePrint("|cff10b981[AI Diagnostician]|r Run |cffffd100WoWKillboardSync.exe|r or reload UI to transmit this ticket to the AI diagnostic agent.")
+    return ticketId
+end
+
 

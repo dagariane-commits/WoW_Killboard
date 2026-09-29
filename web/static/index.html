@@ -117,9 +117,13 @@
       <!-- Mobile User Action -->
       <div id="mobile-auth-section" style="margin-top:16px;"></div>
 
-      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 6px;">
         <button class="mobile-nav-item" onclick="openAddonDossierModal(); toggleMobileDrawer(false);">
           <span>How the Addon Works &amp; Download</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" onclick="openBugReportsModal(); toggleMobileDrawer(false);" style="color: #ef4444;">
+          <span>Field Bug Dispatches (AI Diagnosed)</span>
           <span>&rarr;</span>
         </button>
       </div>
@@ -373,6 +377,7 @@
       </div>
       <div class="footer-links">
         <a href="javascript:void(0)" onclick="openAddonDossierModal()">How the Addon Works</a> &bull;
+        <a href="javascript:void(0)" onclick="openBugReportsModal()" style="color: #ef4444; font-weight: 600;">Field Bug Dispatches</a> &bull;
         <a href="/WoWKillboard-v1.0.0.zip" download>Direct Download (.zip)</a> &bull;
         <a href="https://drive.google.com/file/d/1POiV8uple8LxFihPYE1u95IJFAuAAlII/view?usp=sharing" target="_blank" rel="noopener" title="Google Drive Mirror">Google Drive Mirror</a> &bull;
         <a href="javascript:void(0)" onclick="switchTab('THEATER')">Theater of War</a>
@@ -626,6 +631,36 @@
               <span>Explore Intel Feed</span>
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Field Bug Reports & AI Diagnostics Modal -->
+  <div class="modal-overlay" id="bug-reports-modal" style="display: none;" onclick="if(event.target===this) closeBugReportsModal()">
+    <div class="modal-card modal-card-lg" style="max-width: 860px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="officer-sigil-badge" style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>
+          </div>
+          <div>
+            <strong style="color: #ef4444; font-family: var(--font-tactical); font-size: 1.15rem; letter-spacing: 0.6px;">FIELD BUG DISPATCHES &amp; AI DIAGNOSTICS</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">IN-GAME TELEMETRY &bull; AUTOMATED AI ROOT CAUSE ANALYSIS &bull; SURGICAL REMEDIATION</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="dossier-btn outline" style="padding: 4px 10px; font-size: 0.75rem;" onclick="loadBugReports()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span>Refresh</span>
+          </button>
+          <button class="modal-close" onclick="closeBugReportsModal()">&times;</button>
+        </div>
+      </div>
+
+      <div style="overflow-y: auto; padding: 16px 20px; flex: 1;" id="bug-reports-list">
+        <div style="text-align: center; color: #94a3b8; padding: 30px;">
+          Loading automated telemetry dispatches...
         </div>
       </div>
     </div>

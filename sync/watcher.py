@@ -169,6 +169,7 @@ class KillboardWatcher:
         self.known_pve_deaths = set()
         self.known_events = set()
         self.known_claims = set()
+        self.known_bugs = set()
         self.last_distress_time = 0
         self.warned_missing = False
 
@@ -256,7 +257,18 @@ class KillboardWatcher:
                     if self.upload_claim_token(char_name, code):
                         self.known_claims.add(claim_key)
 
-        print(f"[Watcher] Synced {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debt records.")
+        # Ingest Bug Reports for AI Diagnostics
+        bug_reports = parsed.get("WoWKillboardDB", {}).get("bugReports", {}) if isinstance(parsed.get("WoWKillboardDB"), dict) else {}
+        if not bug_reports and isinstance(parsed.get("bugReports"), dict):
+            bug_reports = parsed.get("bugReports")
+        new_bugs_count = 0
+        for b_id, b_data in bug_reports.items():
+            if isinstance(b_data, dict) and b_id not in self.known_bugs:
+                if self.upload_bug_report(b_data):
+                    self.known_bugs.add(b_id)
+                    new_bugs_count += 1
+
+        print(f"[Watcher] Synced {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debt records, {new_bugs_count} bug reports.")
         return new_count
 
     def upload_pve_death(self, death_id: str, data: dict) -> bool:
@@ -477,6 +489,28 @@ class KillboardWatcher:
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     if resp.status in (200, 201):
                         print(f"[Watcher] [CLAIM] Verified ownership for '{character_name}' on {endpoint} via in-game token {code}!")
+                        any_success = True
+            except Exception as e:
+                pass
+        return any_success
+
+    def upload_bug_report(self, bug_data: dict) -> bool:
+        any_success = False
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/bugs"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(bug_data).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    if resp.status in (200, 201):
+                        res_json = json.loads(resp.read().decode("utf-8"))
+                        diag = res_json.get("diagnosis", {})
+                        sev = diag.get("severity", "ANALYZED")
+                        print(f"[Watcher] [BUG DISPATCH] Ticket {bug_data.get('id')} submitted to AI Diagnostician on {endpoint}! Severity: {sev}")
                         any_success = True
             except Exception as e:
                 pass

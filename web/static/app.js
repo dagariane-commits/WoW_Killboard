@@ -3610,6 +3610,101 @@ function closeAddonDossierModal() {
   }
 }
 
+// ----------------- Field Bug Reports & AI Diagnostics Modal -----------------
+
+async function loadBugReports() {
+  const container = document.getElementById("bug-reports-list");
+  if (!container) return;
+  container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 30px;">Querying telemetry codex...</div>`;
+  try {
+    const res = await fetch("/api/bugs");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const bugs = await res.json();
+    if (!bugs || bugs.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px; color: #94a3b8;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">🛡️</div>
+          <div style="font-weight: 700; color: #f8fafc; font-size: 1rem;">No Field Bug Reports Logged</div>
+          <p style="font-size: 0.8rem; max-width: 440px; margin: 8px auto 0; line-height: 1.5;">
+            All combat tracking systems are operating nominally. Field operatives can submit issues directly in-game using <code>/kb bug [description]</code> or clicking <strong>[Report Bug]</strong> in the addon.
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = bugs.map(b => {
+      const isP0 = (b.ai_severity || '').includes('P0');
+      const isP1 = (b.ai_severity || '').includes('P1');
+      const badgeCol = isP0 ? '#ef4444' : (isP1 ? '#f59e0b' : '#38bdf8');
+      const badgeBg = isP0 ? 'rgba(239, 68, 68, 0.15)' : (isP1 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)');
+      const badgeBorder = isP0 ? 'rgba(239, 68, 68, 0.3)' : (isP1 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(56, 189, 248, 0.3)');
+
+      const combatBadge = b.in_combat ?
+        `<span style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 700;">IN COMBAT</span>` :
+        `<span style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 0.68rem;">OUT OF COMBAT</span>`;
+
+      const dateStr = b.timestamp ? new Date(b.timestamp * 1000).toLocaleString() : 'Unknown';
+
+      return `
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-family: monospace; font-size: 0.85rem; font-weight: 700; color: #f8fafc; background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">${escapeHtml(b.id)}</span>
+              <span style="background: ${badgeBg}; color: ${badgeCol}; border: 1px solid ${badgeBorder}; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.5px;">
+                ${escapeHtml(b.ai_severity || 'P2 - Visual / Minor')}
+              </span>
+              ${combatBadge}
+            </div>
+            <div style="font-size: 0.72rem; color: #64748b;">${dateStr}</div>
+          </div>
+
+          <div style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <span>Operative: <strong style="color: #f1f5f9;">${escapeHtml(b.reporter_name || 'Anonymous')}</strong></span>
+            <span>Realm: <strong style="color: #f1f5f9;">${escapeHtml(b.reporter_realm || 'Unknown')}</strong></span>
+            <span>Flavor: <strong style="color: #38bdf8;">${escapeHtml(b.client_flavor || 'CLASSIC_ERA')}</strong></span>
+            <span>Zone: <strong style="color: #fbbf24;">${escapeHtml(b.zone || 'Unknown')}${b.subzone ? ' (' + escapeHtml(b.subzone) + ')' : ''}</strong></span>
+            ${b.coordinates ? `<span>Coords: <code style="color: #94a3b8;">${escapeHtml(b.coordinates)}</code></span>` : ''}
+          </div>
+
+          <div style="background: rgba(0, 0, 0, 0.4); border-left: 3px solid #64748b; padding: 8px 12px; border-radius: 0 4px 4px 0; margin-bottom: 10px; font-size: 0.82rem; color: #e2e8f0; line-height: 1.4;">
+            <div style="font-size: 0.68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;">Field Operative Report</div>
+            "${escapeHtml(b.user_report || 'No verbal description provided')}"
+            ${b.lua_error ? `<pre style="margin-top: 6px; font-size: 0.7rem; color: #ef4444; background: rgba(0,0,0,0.5); padding: 6px; border-radius: 4px; overflow-x: auto;">${escapeHtml(b.lua_error)}</pre>` : ''}
+          </div>
+
+          <div style="background: rgba(14, 21, 37, 0.85); border: 1px solid ${badgeBorder}; border-radius: 6px; padding: 10px 12px; font-size: 0.78rem;">
+            <div style="display: flex; align-items: center; gap: 6px; color: ${badgeCol}; font-weight: 800; font-size: 0.72rem; text-transform: uppercase; margin-bottom: 4px;">
+              <span>🤖 AI Diagnostician Analysis</span>
+              <span style="font-size: 0.65rem; color: #64748b; font-weight: 400;">(${escapeHtml(b.ai_status || 'ANALYZED')})</span>
+            </div>
+            <div style="margin-bottom: 4px;"><strong style="color: #cbd5e1;">Root Cause:</strong> <span style="color: #94a3b8;">${escapeHtml(b.ai_root_cause || 'Under investigation')}</span></div>
+            <div style="margin-bottom: 4px;"><strong style="color: #cbd5e1;">Diagnosis:</strong> <span style="color: #94a3b8;">${escapeHtml(b.ai_diagnosis || '')}</span></div>
+            <div><strong style="color: #10b981;">Suggested Surgical Fix:</strong> <span style="color: #a7f3d0;">${escapeHtml(b.ai_suggested_fix || '')}</span></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 30px;">Error loading bug reports: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function openBugReportsModal() {
+  const modal = document.getElementById("bug-reports-modal");
+  if (modal) {
+    modal.style.display = "flex";
+    loadBugReports();
+  }
+}
+
+function closeBugReportsModal() {
+  const modal = document.getElementById("bug-reports-modal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
 // ----------------- The War Archivist & Combat Oracle AI Chat -----------------
 
 function toggleOracleChatModal(forceOpen) {

@@ -5,6 +5,28 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.53] - 2026-09-28
+
+### Added
+- **Dedicated Google Drive Sync Directory (`WoW KB Beta/`, `deploy.py`)**:
+  - Established a dedicated local distribution folder `C:\Users\SQUICK\WoW_Killboard\WoW KB Beta\` mapped to Google Drive (`dagariane@gmail.com`).
+  - Automated deployment synchronization in `scripts/deploy.py` (`sync_to_gdrive_folder()`) to automatically update `WoWKillboard-v1.0.0.zip`, `WoWKillboardSync.exe`, `README.txt`, and `README.md` upon every build.
+  - Added `WoW KB Beta/` and `web/static/*.exe` to `.gitignore` to prevent binary file bloat in the git repository.
+- **In-Game Bug Submission Engine (`Core.lua`, `UI.lua`)**:
+  - Implemented `KB:SubmitBugReport(userDescription)` in `Core.lua`, capturing in-game telemetry: unique Ticket ID (`BUG-<timestamp>-<rand>`), reporter identity (character, realm, faction, class, level), client flavor (`CLASSIC_BETA`, `CLASSIC_ERA`, `ANNIVERSARY`, `RETAIL`), game build version, zone, subzone, coordinates, combat lockdown flag (`InCombatLockdown()`), party size, and last blocked action.
+  - Added slash command handlers `/kb bug [description]` and `/kb report` for swift battlefield dispatches.
+  - Built pure Lua dialog modal in `UI.lua` (`UI:ShowBugReportModal()`) with live telemetry badge strip, multi-line scrollable EditBox, and `[Submit to AI Diagnostician]` button, strictly adhering to zero-taint guardrails.
+  - Integrated `[Report Bug]` button into the primary addon header bar next to close and minimize controls.
+- **Desktop Companion Bug Telemetry Ingestion (`sync/watcher.py`)**:
+  - Enhanced desktop sync companion to scan `WoWKillboardDB.bugReports` during SavedVariables processing.
+  - Added `upload_bug_report(self, bug_data)` to transmit newly logged tickets to `{endpoint}/api/bugs`.
+- **Automated AI Bug Diagnostician & Ledger (`server.py`, `index.html`, `app.js`)**:
+  - Created `bug_reports` table schema in SQLite database.
+  - Implemented `diagnose_bug_report(report_data)` leveraging Google Gemini API (`gemini-2.5-flash`) with Staff Engineer system prompt, alongside intelligent deterministic heuristic fallback rules for `P0` (Taint/Action Blocked), `P1` (Attribution/CLEU restrictions), and `P2` (Spatial/Visual telemetry).
+  - Added REST endpoints `POST /api/bugs`, `GET /api/bugs`, and `GET /api/bugs/<bug_id>`.
+  - Added bug report extraction in `/api/upload` for SavedVariables uploads.
+  - Created "Field Bug Dispatches & AI Diagnostics" viewer modal (`openBugReportsModal()`) on the web platform, accessible from footer links and mobile navigation, displaying live tickets, combat status, operative reports, and AI root-cause analysis with suggested surgical fixes.
+
 ## [1.4.52] - 2026-09-28
 
 ### Added

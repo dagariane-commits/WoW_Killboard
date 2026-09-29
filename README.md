@@ -227,6 +227,7 @@ WoW_Killboard/
    - `/killboard stats` — View current session damage, healing, kills, and K/D.
    - `/killboard sync` or `/kb sync` — Flush combat SavedVariables to disk (`/reload`) to sync immediately with the live website.
    - `/killboard bounty <Name> <Gold>` — Declare a blood bounty upon an enemy player (open world only).
+   - `/kb bug <description>` or `/kb report` — Submit in-game telemetry & bug dispatch directly to the AI Diagnostician (or click `[Report Bug]` in header).
    - `/killboard reset` — Clear local kill database.
 
 ### 2. Standalone Desktop Sync (Zero-Python)
