@@ -1411,7 +1411,7 @@ def admin_deploy():
     try:
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         pull_res = subprocess.run(
-            ["git", "pull", "origin", "main"],
+            ["git", "-c", "safe.directory=*", "pull", "origin", "main"],
             cwd=repo_root,
             capture_output=True,
             text=True,
@@ -3755,22 +3755,22 @@ Answer strictly in your role as the Classic Azeroth Scribe. Grounded, utilitaria
         reply += "Keep your guard high; reputations in Azeroth are earned in blood and paid in steel."
         sources.append("Frontline Kill Ledger")
 
-    elif any(k in q_lower for k in ["bounty", "bounties", "contract", "gibbet", "most wanted", "wanted", "gold"]):
+    elif any(k in q_lower for k in ["bounty", "bounties", "contract", "marked", "most wanted", "wanted", "gold", "ledger"]):
         b_list = telemetry_facts["top_bounties"]
         if b_list:
-            b_text = "\n".join([f"- **{b['target_name']}** ({b.get('target_class', 'Target')}): **{b['amount_gold']} Gold** pledged by {b.get('placer_name', 'High Command')}" for b in b_list])
+            b_text = "\n".join([f"- **{b['target_name']}** ({b.get('target_class', 'Target')}): **{b['amount_gold']} Gold** pledged by {b.get('placer_name', 'The Blood Ledger')}" for b in b_list])
             reply = (
-                f"**The Blood Bounty Ledger & Gibbet:**\n\n"
-                f"Coin is pledged; retribution is sworn. High Command has approved the following execution contracts:\n\n"
+                f"**The Blood Ledger & The Marked:**\n\n"
+                f"Coin is pledged; retribution is sworn. The Blood Ledger has registered the following execution contracts:\n\n"
                 f"{b_text}\n\n"
-                f"Fell the marked target in certified combat and your dispatches will automatically deliver the gold. Default on a pledged bounty debt, and your name shall be branded upon the server KOS rolls."
+                f"Fell the marked target in certified combat and your dispatches will automatically deliver the gold. Default on a pledged bounty debt, and your name shall be branded upon The Marked KOS rolls."
             )
         else:
             reply = (
-                "**The Bounty Board is Quiet:**\n\n"
-                "No open blood contracts currently stain the ledger for this front. Any veteran with coin may issue a contract through the Blood Bounties hub. Once pledged, the hunter who logs the killmail collects the prize."
+                "**The Blood Ledger is Quiet:**\n\n"
+                "No open blood contracts currently stain the ledger for this front. Any veteran with coin may issue a contract through The Blood Ledger hub. Once pledged, the hunter who logs the killmail collects the prize."
             )
-        sources.append("Bounty Board & Debt Ledger")
+        sources.append("The Blood Ledger & The Marked")
 
     elif any(k in q_lower for k in ["npc", "boss", "pve", "creature", "stitches", "arugal", "beast", "threat"]):
         n_list = telemetry_facts["deadly_npcs"]
