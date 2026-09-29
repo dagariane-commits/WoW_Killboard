@@ -434,7 +434,7 @@ def index():
 def static_files(path):
     return send_from_directory(STATIC_DIR, path)
 
-GOOGLE_DRIVE_DOWNLOAD_URL = "https://drive.google.com/file/d/1POiV8uple8LxFihPYE1u95IJFAuAAlII/view?usp=sharing"
+GOOGLE_DRIVE_DOWNLOAD_URL = "https://drive.google.com/drive/folders/1j3_jS91Q9OJvVLzria0IDUKJIAHR9JRE?usp=sharing"
 
 @app.route("/WoWKillboard-v1.0.0.zip")
 @app.route("/download")
