@@ -434,6 +434,8 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     local finalBlowKillerName = killerName
     local hasPlayerAttacker = false
     local topNpcAttacker = nil
+    local maxNpcDamage = 0
+    local damageSources = {}
     local recordedAttackersMap = {}
     if victimGUID then recordedAttackersMap[victimGUID] = true end
     if cleanVictim then recordedAttackersMap[cleanVictim] = true end
