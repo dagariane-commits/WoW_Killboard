@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Comprehensive Community Playtest Documentation (`README_GOOGLE_DRIVE.txt`, `README_GOOGLE_DRIVE.md`)**:
   - Authored complete, authoritative specification and operational guides for Google Drive playtesters.
   - Documented full addon architecture, slash commands, zero-taint design, and step-by-step setup instructions.
-  - Integrated protective intellectual property, anti-theft, and confidentiality notices strictly forbidding reverse engineering or unauthorized redistribution.
+  - Set official project lead and author to `Dagariane` across `WoWKillboard.toc` and community guides.
+  - Streamlined playtest documentation with a friendly, non-defensive community creator note in place of heavy legal jargon.
 
 ### Changed
 - **Web Addon Dossier Alignment with In-Game Architecture (`index.html`, `app.js`, `style.css`)**:

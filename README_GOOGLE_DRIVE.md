@@ -1,6 +1,6 @@
 # WoW Killboard — Community Preview
 ### Tactical Open-World PvP Combat Intelligence Suite
-**Version 1.0.0 (Beta)** • *Development Lead: Scott Quick*
+**Version 1.0.0 (Beta)** • *Lead: Dagariane (WoW Killboard Team)*
 
 ---
 
@@ -113,12 +113,11 @@ We are advancing WoW Killboard through disciplined engineering phases:
 
 ---
 
-## ⚖️ Legal Notice, Intellectual Property & Anti-Theft Protection
-**Copyright © 2026 Scott Quick / WoW Killboard Development Team. All Rights Reserved.**
+## 🛡️ Community Preview & Credits
+**Project Lead: Dagariane (WoW Killboard Team)**
 
-### CONFIDENTIAL PLAYTEST PREVIEW
-This software, source code, companion binary, UI designs, synchronization protocols, temporal clustering algorithms, and documentation are the proprietary intellectual property of **Scott Quick**.
+This is an early preview build shared privately for playtesting and feedback. Please keep this package within our testing circle—do not re-upload, re-post to public addon databases (CurseForge, Wowhead, etc.), or redistribute without asking first.
 
-This package is provided strictly for private evaluation by authorized playtesters. Unauthorized copying, decompilation, disassembly, reverse engineering, redistribution, sub-licensing, public re-hosting, or creation of derivative works without prior express written authorization from Scott Quick is strictly prohibited under United States and international copyright, trade secret, and intellectual property laws.
+**100% Free & Blizzard-Friendly:**  
+Built with pure Lua widgets, zero UI taint, and strictly compliant with Blizzard's official UI & Add-on Development Policy.
 
-*World of Warcraft, Warcraft, and Blizzard Entertainment are trademarks or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other countries. This project is an independent combat telemetry software network and is not affiliated with, endorsed by, or sponsored by Blizzard Entertainment, Inc. All addon components are developed in strict compliance with Blizzard's UI & Add-on Development Policy.*
