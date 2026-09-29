@@ -512,20 +512,29 @@ function renderMostWanted(outlaws) {
       }
       const factionClass = targetFaction.toLowerCase() === "alliance" ? "alliance" : (targetFaction.toLowerCase() === "horde" ? "horde" : "");
 
+      const isRank1 = idx === 0;
+      const rank1Class = isRank1 ? "rank-1-card" : "";
+      const stampRankClass = isRank1 ? "rank-1" : "";
+      const targetLevel = b.target_level || b.level || 60;
+      const goldPotHtml = `<span class="wanted-reward-pill gold-pot">💰 ${formatNumber(b.amount_gold)}g</span>`;
+
       html += `
-        <div class="wanted-card compact ${factionClass}">
+        <div class="wanted-card compact ${factionClass} ${rank1Class}">
           <div class="wanted-card-top">
-            <span class="wanted-stamp">#${idx + 1} WANTED</span>
-            <span class="wanted-reward-pill">${formatNumber(b.amount_gold)} ${renderWowCoin('gold')}</span>
+            <span class="wanted-stamp ${stampRankClass}">#${idx + 1} WANTED</span>
+            ${goldPotHtml}
           </div>
           <div class="wanted-avatar-wrap compact" style="border-color: ${clsColor};">
             <img src="/static/icons/classes/${cls.toLowerCase()}.jpg" class="wanted-avatar-img" alt="${cls}" onerror="this.src='/static/icons/classes/warrior.jpg'">
           </div>
-          <div class="wanted-name" onclick="openCharacterProfile('${b.target_name}')" title="${b.target_name}">
-            ${colorizeClass(b.target_name, cls)}
+          <div class="wanted-name-row">
+            <span class="wanted-level-badge">Lv ${targetLevel}</span>
+            <div class="wanted-name" onclick="openCharacterProfile('${b.target_name}')" title="${b.target_name}">
+              ${colorizeClass(b.target_name, cls)}
+            </div>
           </div>
           <div class="wanted-guild" title="${targetFaction || 'Neutral'}">&lt;${targetFaction || 'Neutral'}&gt;</div>
-          <div class="wanted-lastseen" title="Last Seen: ${lastSeenText}">${lastSeenText}</div>
+          <div class="wanted-lastseen" title="Last Seen: ${lastSeenText}">📍 ${lastSeenText}</div>
           <div class="wanted-action-wrap">
             ${btnHtml}
           </div>
@@ -601,12 +610,80 @@ function colorizeClass(name, cls) {
   return `<span style="color: ${color}; font-weight: 700;">${name || "Unknown"}</span>`;
 }
 
+// Live Combat Toast Alert System (1:1 Addon Parity)
+let knownKillIds = new Set();
+let isInitialKillsLoad = true;
+
+function showCombatToast(km) {
+  const container = document.getElementById("combat-toast-container");
+  if (!container || !km) return;
+
+  const killerName = (km.killer && km.killer.name) || "Unknown";
+  const killerCls = ((km.killer && km.killer.class) || "WARRIOR").toUpperCase();
+  const victimName = (km.victim && km.victim.name) || "Unknown";
+  const victimCls = ((km.victim && km.victim.class) || "WARRIOR").toUpperCase();
+  const zone = (km.location && km.location.zone) || "Azeroth";
+  const isBounty = km.isBountyClaim || (km.bountyRewardGold && km.bountyRewardGold > 0) || (km.bounty && (km.bounty.amountGold > 0 || km.bounty.amountCopper > 0));
+
+  const toast = document.createElement("div");
+  toast.className = `combat-toast ${isBounty ? "bounty-claim" : ""}`;
+  toast.onclick = () => openKillModal(km.killId);
+
+  const icon = isBounty ? "💰" : (km.isSolo ? "⚔️" : "💀");
+  const title = isBounty ? "BOUNTY CLAIMED" : (km.isSolo ? "1v1 SOLO SLAIN" : "COMBAT CASUALTY");
+
+  toast.innerHTML = `
+    <div class="combat-toast-icon">${icon}</div>
+    <div class="combat-toast-content">
+      <div class="combat-toast-header">
+        <span>${title}</span>
+        <span>${zone}</span>
+      </div>
+      <div class="combat-toast-body">
+        ${colorizeClass(killerName, killerCls)} slayed ${colorizeClass(victimName, victimCls)}
+      </div>
+      <div class="combat-toast-sub">
+        ${isBounty ? `<span style="color:#ffd100; font-weight:800;">💰 ${km.bountyRewardGold || ''}g Claimed</span> &bull; ` : ''}Click to view Battle Report
+      </div>
+    </div>
+  `;
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.classList.add("visible");
+  });
+
+  setTimeout(() => {
+    toast.classList.remove("visible");
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 400);
+  }, 5500);
+}
+window.showCombatToast = showCombatToast;
+
 // Data Fetching
 async function loadKills() {
   try {
-    const res = await fetch(`/api/kills?mode=WORLD&search=${encodeURIComponent(searchQuery)}`);
+    const fetchMode = (currentMode || "WORLD").toUpperCase();
+    const res = await fetch(`/api/kills?mode=${encodeURIComponent(fetchMode)}&search=${encodeURIComponent(searchQuery)}`);
     const data = await res.json();
-    cachedKills = data.kills || [];
+    const incomingKills = data.kills || [];
+
+    if (isInitialKillsLoad) {
+      incomingKills.forEach(k => knownKillIds.add(k.killId));
+      isInitialKillsLoad = false;
+    } else {
+      const newKills = incomingKills.filter(k => !knownKillIds.has(k.killId));
+      newKills.forEach(k => {
+        knownKillIds.add(k.killId);
+        showCombatToast(k);
+      });
+    }
+
+    cachedKills = incomingKills;
     renderStats(cachedKills);
     if (currentTab === "FEED" || currentTab === "INTEL") {
       renderFeed(cachedKills);
@@ -1174,26 +1251,39 @@ function getWowLogsPercentileBadge(pct) {
 
 function renderFeed(kills) {
   const container = document.getElementById("main-content-area");
-  const worldKills = (kills || []).filter(km => !km.isBattleground && !km.isArena && !km.isDuel);
-  if (worldKills.length === 0) {
+  let modeFilteredKills = kills || [];
+  if (currentMode === "WORLD") {
+    modeFilteredKills = modeFilteredKills.filter(km => !km.isBattleground && !km.isArena && !km.isDuel);
+  } else if (currentMode === "BG") {
+    modeFilteredKills = modeFilteredKills.filter(km => km.isBattleground);
+  } else if (currentMode === "ARENA") {
+    modeFilteredKills = modeFilteredKills.filter(km => km.isArena);
+  } else if (currentMode === "DUEL") {
+    modeFilteredKills = modeFilteredKills.filter(km => km.isDuel);
+  }
+
+  const modeLabelHeader = currentMode === "BG" ? "Battleground" : (currentMode === "DUEL" ? "Duel" : (currentMode === "ARENA" ? "Arena" : "Open World"));
+  const modePillText = currentMode === "BG" ? "Battlegrounds" : (currentMode === "DUEL" ? "1v1 Duels" : (currentMode === "ARENA" ? "Arenas" : "Open World"));
+
+  if (modeFilteredKills.length === 0) {
     container.innerHTML = `
       <div style="text-align: center; padding: 40px; color: #64748b;">
-        <h3>No Open World PvP records found yet.</h3>
-        <p style="margin-top: 8px;">Engage in open-world combat across Azeroth to populate the feed.</p>
+        <h3>No ${modeLabelHeader} PvP records found yet.</h3>
+        <p style="margin-top: 8px;">Engage in combat across Azeroth to populate the feed.</p>
       </div>
     `;
     return;
   }
 
-  const visibleKills = worldKills.slice(0, feedDisplayLimit);
+  const visibleKills = modeFilteredKills.slice(0, feedDisplayLimit);
 
   let html = `
     <div style="display: flex; flex-direction: column; gap: 6px;">
       <div class="feed-header-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); gap:10px; flex-wrap:wrap;">
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">THE SHADOW NETWORK &mdash; RECENT COMBAT FEED</span>
-          <span class="feed-count-pill">${worldKills.length}</span>
-          <span style="font-size:0.75rem; color:#10b981; font-weight:700; background:rgba(16,185,129,0.12); padding:2px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.25);">Open World</span>
+          <span class="feed-count-pill">${modeFilteredKills.length}</span>
+          <span style="font-size:0.75rem; color:#10b981; font-weight:700; background:rgba(16,185,129,0.12); padding:2px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.25);">${modePillText}</span>
           <button class="pill-btn" onclick="loadKills(); loadSidebar();" title="Refresh Live Combat Feed" style="padding:2px 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Refresh</button>
         </div>
         <span style="font-size:0.75rem; color:#856a36;">The Shadow Network &bull; Type <code style="color:var(--wow-gold);">/reload</code> in WoW to sync</span>
@@ -1258,8 +1348,13 @@ function renderFeed(kills) {
     const killerLvlStr = (km.killer && km.killer.level && km.killer.level > 0) ? `(${km.killer.level})` : '??';
     const victimLvlStr = (km.victim && km.victim.level && km.victim.level > 0) ? `(${km.victim.level})` : '??';
 
+    const isBounty = km.isBountyClaim || (km.bountyRewardGold && km.bountyRewardGold > 0) || (km.bounty && (km.bounty.amountGold > 0 || km.bounty.amountCopper > 0));
+    const bountyRowClass = isBounty ? "bounty-claimed-row" : "";
+    const bountyGoldVal = km.bountyRewardGold || (km.bounty && km.bounty.amountGold) || 0;
+    const bountyTag = isBounty ? `<span class="km-bounty-claimed-tag">💰 BOUNTY CLAIMED${bountyGoldVal > 0 ? ` (${formatNumber(bountyGoldVal)}g)` : ''}</span>` : "";
+
     html += `
-      <div class="killmail-row ${modeClass} ${victorClass}" onclick="openKillModal('${km.killId}')" title="${rowTooltip}">
+      <div class="killmail-row ${modeClass} ${victorClass} ${bountyRowClass}" onclick="openKillModal('${km.killId}')" title="${rowTooltip}">
         <div class="km-left-meta">
           <span class="km-zone-name">${km.location.zone}</span>
           <span class="km-subzone-text">${subzoneOrCoords}</span>
@@ -1294,6 +1389,7 @@ function renderFeed(kills) {
         </div>
 
         <div class="km-right-meta">
+          ${bountyTag}
           <span class="km-mode-tag ${modeClass}">${modeTagText}</span>
           <span class="km-time">${timeAgo(km.timestamp)}</span>
         </div>
@@ -1301,11 +1397,11 @@ function renderFeed(kills) {
     `;
   });
 
-  if (kills.length > visibleKills.length) {
+  if (modeFilteredKills.length > visibleKills.length) {
     html += `
       <div class="feed-view-more-wrap">
         <button class="feed-view-more-btn" onclick="feedShowMoreKills()">
-          <span>View More Combat Records (Showing ${visibleKills.length} of ${kills.length})</span>
+          <span>View More Combat Records (Showing ${visibleKills.length} of ${modeFilteredKills.length})</span>
           <span>&darr;</span>
         </button>
       </div>
@@ -3253,7 +3349,7 @@ function loadPortalView() {
     rightCardContent = `
       <div style="display:flex; flex-direction:column; gap:14px; width:100%; justify-content:space-between; flex:1;">
         <div style="font-size:0.86rem; color:#94a3b8; line-height:1.5;">
-          Select your character directly from the live combat ledger or authenticate ownership using in-game cryptographic claim tokens. Zero email, password, or third-party accounts.
+          Select your character directly from the live combat ledger or authenticate ownership using in-game claim tokens. Zero email, password, or third-party accounts.
         </div>
         <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,0,0.18); border-radius:6px; padding:12px 14px; font-size:0.8rem; color:#cbd5e1; display:flex; flex-direction:column; gap:6px;">
           <div style="color:var(--wow-gold); font-weight:700;">In-Game Identity Claim:</div>
@@ -3959,10 +4055,119 @@ function switchTab(tab) {
   else if (tab === "RALLIES") {
     loadRalliesView();
   }
+  else if (tab === "ZONES") {
+    loadZonesView();
+  }
   else if (tab === "WARROOM") {
     loadWarroomView();
   }
 }
+
+// ----------------- Zone Intel Danger Index & Hotspots View -----------------
+
+async function loadZonesView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="text-align: center; padding: 40px; color: #64748b;">
+      Loading Zone Intelligence &amp; Hotspot Telemetry...
+    </div>
+  `;
+
+  try {
+    const res = await fetch("/api/stats/overview");
+    const data = await res.json();
+    const zones24h = data.deadliestZones24h || data.topZones || [];
+
+    let html = `
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-bottom:10px; border-bottom:1px solid var(--wow-brass-border, #4a3b27);">
+          <div>
+            <h2 class="wow-gold-header" style="font-size:1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
+              ZONE INTEL &bull; AZEROTH DANGER INDEX
+            </h2>
+            <div style="font-size:0.75rem; color:#856a36; margin-top:3px;">
+              Real-time regional conflict rankings, hotspot death tolls, and wilderness threat telemetry.
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="feed-count-pill">${zones24h.length} Hotspots</span>
+            <button class="pill-btn" onclick="loadZonesView()" style="padding:4px 10px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <!-- 24-Hour Deadliest Zones Cards -->
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="font-family:var(--font-tactical); font-size:0.85rem; font-weight:800; color:#ffd100; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">
+            🔥 REALM 24-HOUR DEADLIEST HOTSPOTS
+          </div>
+    `;
+
+    if (zones24h.length === 0) {
+      html += `
+        <div style="text-align:center; padding:30px; background:rgba(15,23,42,0.6); border:1px solid var(--wow-brass-border); border-radius:6px; color:#64748b;">
+          No active conflict zones recorded in the last 24 hours.
+        </div>
+      `;
+    } else {
+      const maxKills = Math.max(...zones24h.map(z => z.kills), 1);
+      zones24h.forEach((z, idx) => {
+        const pct = Math.round((z.kills / maxKills) * 100);
+        let threatColor = "#ffd100";
+        let threatLabel = "ACTIVE CONFLICT";
+        if (z.kills >= 20) {
+          threatColor = "#ef4444";
+          threatLabel = "EXTREME THREAT";
+        } else if (z.kills >= 10) {
+          threatColor = "#f97316";
+          threatLabel = "HIGH RISK";
+        }
+
+        html += `
+          <div class="sidebar-row" style="background:var(--wow-iron-bg); border:1px solid var(--wow-brass-border); border-radius:6px; padding:12px 16px; display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-family:var(--font-tactical); font-weight:800; font-size:0.95rem; color:${idx === 0 ? '#ffd100' : 'var(--wow-gold)'};">#${idx + 1}</span>
+                <span style="font-weight:700; font-size:0.95rem; color:#f8fafc; cursor:pointer;" onclick="filterFeedByZone('${escapeHtml(z.zone)}')" title="Click to filter feed for ${escapeHtml(z.zone)}">${escapeHtml(z.zone)}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-family:var(--font-tactical); font-size:0.75rem; font-weight:800; color:${threatColor}; background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:3px; border:1px solid ${threatColor};">${threatLabel}</span>
+                <span style="font-family:var(--font-tactical); font-size:0.9rem; font-weight:800; color:#ffd100;">${z.kills} Kills</span>
+              </div>
+            </div>
+            <!-- Danger Bar -->
+            <div style="width:100%; height:6px; background:rgba(0,0,0,0.5); border-radius:3px; overflow:hidden;">
+              <div style="width:${pct}%; height:100%; background:linear-gradient(90deg, #d4a329 0%, ${threatColor} 100%);"></div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error("Failed to load zone intel:", err);
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Zone Intelligence.</div>`;
+  }
+}
+window.loadZonesView = loadZonesView;
+
+function filterFeedByZone(zoneName) {
+  searchQuery = zoneName;
+  const input = document.getElementById("search-input");
+  if (input) input.value = zoneName;
+  const mobileInput = document.getElementById("mobile-search-box-input");
+  if (mobileInput) mobileInput.value = zoneName;
+  switchTab("INTEL");
+}
+window.filterFeedByZone = filterFeedByZone;
 
 // ----------------- Web Drag-and-Drop Uploader & Admin Reset -----------------
 
@@ -4022,7 +4227,7 @@ function loadUploadView() {
             </p>
             <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
               &bull; Zero Python or setup required<br>
-              &bull; Deterministic 32-bit FNV-1a deduplication<br>
+              &bull; Deterministic battle deduplication<br>
               &bull; Dual-sync to local & cloud servers
             </div>
           </div>
@@ -4046,7 +4251,7 @@ function loadUploadView() {
             </p>
             <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
               &bull; 100% Client-side file reading<br>
-              &bull; Anti-tamper FNV-1a validation<br>
+              &bull; Anti-tamper battle validation<br>
               &bull; Instant leaderboard & bounty recalculation
             </div>
           </div>
@@ -4302,7 +4507,7 @@ function handleAdminResetSubmit() {
   });
 }
 
-// ----------------- Character Selector & Cryptographic Identity Claims -----------------
+// ----------------- Character Selector & Verified Character Claims -----------------
 
 let knownCharactersCache = [];
 
@@ -4924,8 +5129,8 @@ function loadRalliesView() {
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
-            <div style="background:rgba(217, 119, 6, 0.15); border:1px solid rgba(217, 119, 6, 0.45); border-radius:6px; padding:7px 14px; font-size:12px; color:#fbbf24; font-weight:700; display:flex; align-items:center; gap:8px;" title="Muster squads and manhunts in-game using the WoW Killboard addon (/kb rally)">
-              <span>📯 Muster In-Game: <code style="color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:3px; font-family:monospace;">/kb rally</code></span>
+            <div style="background:rgba(217, 119, 6, 0.15); border:1px solid rgba(217, 119, 6, 0.45); border-radius:6px; padding:7px 14px; font-size:12px; color:#fbbf24; font-weight:700; display:flex; align-items:center; gap:8px;" title="Muster squads and manhunts in-game using the WoW Killboard addon (/kb manhunt)">
+              <span>📯 Form up in-game: <code style="color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:3px; font-family:monospace;">/kb manhunt</code></span>
             </div>
             <div style="background:rgba(30, 41, 59, 0.8); border:1px solid rgba(148, 163, 184, 0.2); border-radius:6px; padding:8px 14px; font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:8px;">
               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; animation:pulse 2s infinite;"></span>
@@ -4939,7 +5144,7 @@ function loadRalliesView() {
       <div style="background:rgba(14, 165, 233, 0.08); border-left:4px solid #00e5ff; border-radius:6px; padding:12px 18px; font-size:13px; color:#cbd5e1; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
         <div>
           <strong style="color:#00e5ff;">In-Game Squad Join Notice:</strong>
-          <span>Join any active squad inside World of Warcraft. Whisper <code>/w CommanderName rally</code> to any active rally commander for instant automatic squad invite.</span>
+          <span>Join any active squad inside World of Warcraft. Whisper <code>/w CommanderName manhunt</code> to any active rally commander for instant automatic squad invite.</span>
         </div>
         <span style="font-size:11px; color:#64748b; font-family:monospace;">Addon Feed Relay</span>
       </div>
@@ -4966,12 +5171,12 @@ function loadRalliesView() {
             <div style="margin-bottom:12px; display:flex; justify-content:center;">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
-            <h3 style="font-size:18px; font-weight:700; color:#e2e8f0; margin:0 0 6px 0;">No Active Faction Rallies</h3>
+            <h3 style="font-size:18px; font-weight:700; color:#e2e8f0; margin:0 0 6px 0;">No Active Faction Manhunts</h3>
             <p style="font-size:14px; color:#94a3b8; max-width:540px; margin:0 auto 16px auto;">
-              The frontier is quiet. No distress beacons or call-to-arms signals are currently broadcasting. Frontline squads will appear here in real-time when mustered in-game with the WoW Killboard addon (/kb rally)!
+              The frontier is quiet. No distress beacons or call-to-arms signals are currently broadcasting. Frontline squads will appear here in real-time when mustered in-game with the WoW Killboard addon (/kb manhunt)!
             </p>
             <div style="font-size:13px; color:#fbbf24; background:rgba(217, 119, 6, 0.12); border:1px solid rgba(217, 119, 6, 0.35); border-radius:6px; padding:8px 16px; display:inline-block;">
-              <span>Muster your squad in-game: <code style="color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:3px; font-family:monospace;">/kb rally</code></span>
+              <span>Form up in-game: <code style="color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:3px; font-family:monospace;">/kb manhunt</code></span>
             </div>
           </div>
         `;
@@ -5735,6 +5940,11 @@ function setFilterMode(mode) {
   if (activePill) activePill.classList.add("active");
   const activeMobilePill = document.getElementById(`m-pill-${mode.toLowerCase()}`);
   if (activeMobilePill) activeMobilePill.classList.add("active");
+
+  // Sync 4-way mode filter pills in header
+  document.querySelectorAll(".header-mode-pill").forEach(b => b.classList.remove("active"));
+  const activeHdrPill = document.getElementById(`hdr-pill-${mode.toLowerCase()}`);
+  if (activeHdrPill) activeHdrPill.classList.add("active");
 
   const statModeEl = document.getElementById("stat-active-mode");
   if (statModeEl) {

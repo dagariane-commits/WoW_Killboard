@@ -40,6 +40,7 @@ class TestKillboardPipeline(unittest.TestCase):
         expected_files = [
             "WoWKillboard.toc",
             "Config.lua",
+            "WoWKillboard_RealmData.lua",
             "Utils.lua",
             "UnitScanner.lua",
             "CombatTracker.lua",
@@ -58,7 +59,7 @@ class TestKillboardPipeline(unittest.TestCase):
             with open(fpath, "r", encoding="utf-8") as f:
                 content = f.read()
                 self.assertGreater(len(content), 10, f"File {fname} is empty")
-        print("[PASS] All 13 Addon Lua and TOC files verified.")
+        print("[PASS] All 14 Addon Lua and TOC files verified.")
 
 
     def test_02_ingest_synthetic_kills(self):

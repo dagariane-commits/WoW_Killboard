@@ -293,7 +293,7 @@ function BE:CheckUnitForDebt(unit)
     local debt = WoWKillboardDebtLedger[name]
     if debt and debt.status == KB.STATUS.OATHBREAKER then
         local owedStr = KB.Utils.FormatMoney(debt.amountOwedCopper)
-        BE:ShowAlert(string.format("⚠️ CONDEMNED TRAITOR SIGHTED: %s (Owes %s to %s)!", name, owedStr, debt.creditor), 1, 0.2, 0.2)
+        BE:ShowAlert(string.format("[!] CONDEMNED TRAITOR SIGHTED: %s (Owes %s to %s)!", name, owedStr, debt.creditor), 1, 0.2, 0.2)
         local s = WoWKillboardSettings or KB.DefaultSettings
         if (s.alertMode == "SOUND_AND_BANNER" or (s.alertMode ~= "BANNER_ONLY" and s.alertMode ~= "OFF" and s.soundAlerts ~= false)) then
             PlaySound(KB.SoundAlerts.DEBTOR_SIGHTED, "Master")

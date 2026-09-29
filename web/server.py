@@ -432,7 +432,7 @@ def health_check():
     return jsonify({
         "status": "ok",
         "service": "WoW Killboard API",
-        "version": "1.4.58",
+        "version": "1.4.59",
         "db": "ready"
     })
 
@@ -821,6 +821,14 @@ def get_kills():
     with get_db() as conn:
         cursor = conn.execute(query, params)
         rows = cursor.fetchall()
+        bounty_claims = {}
+        try:
+            b_rows = conn.execute("SELECT kill_id, amount_gold FROM bounties WHERE status = 'CLAIMED' AND kill_id IS NOT NULL").fetchall()
+            for br in b_rows:
+                if br["kill_id"]:
+                    bounty_claims[br["kill_id"]] = br["amount_gold"]
+        except Exception:
+            pass
         kills = []
         for r in rows:
             raw_meta = {}
@@ -830,10 +838,13 @@ def get_kills():
                 except Exception:
                     raw_meta = {}
             attackers = raw_meta.get("attackers", [])
+            bounty_gold = bounty_claims.get(r["kill_id"], 0)
 
             kills.append({
                 "killId": r["kill_id"],
                 "timestamp": r["timestamp"],
+                "isBountyClaim": bounty_gold > 0,
+                "bountyRewardGold": bounty_gold,
                 "isDuel": bool(r["is_duel"]) if "is_duel" in r.keys() else False,
                 "isBattleground": bool(r["is_battleground"]),
                 "isArena": bool(r["is_arena"]),
@@ -2932,6 +2943,78 @@ def get_activity_7d():
         "topGuilds": top_guilds_24h,
         "topZones": top_zones_24h
     })
+
+@app.route("/api/realm/summary", methods=["GET"])
+def get_realm_summary():
+    now = int(time.time())
+    one_day_ago = now - 86400
+    with get_db() as conn:
+        total_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
+        solo_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_solo = 1 AND (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
+        solo_ratio = round((solo_kills / total_kills * 100), 1) if total_kills > 0 else 0.0
+
+        alliance_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance' AND (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
+        horde_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde' AND (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
+        faction_total = alliance_kills + horde_kills
+        alliance_pct = round((alliance_kills / faction_total * 100), 1) if faction_total > 0 else 50.0
+        horde_pct = round((horde_kills / faction_total * 100), 1) if faction_total > 0 else 50.0
+
+        deadliest_rows = conn.execute("""
+            SELECT zone, COUNT(*) AS kills
+            FROM kills
+            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+            GROUP BY zone
+            ORDER BY kills DESC
+            LIMIT 5
+        """, (one_day_ago,)).fetchall()
+        if not deadliest_rows:
+            deadliest_rows = conn.execute("""
+                SELECT zone, COUNT(*) AS kills
+                FROM kills
+                WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+                GROUP BY zone
+                ORDER BY kills DESC
+                LIMIT 5
+            """).fetchall()
+        deadliest_zones = [{"zone": r["zone"], "kills": r["kills"]} for r in deadliest_rows]
+
+        ganker_rows = conn.execute("""
+            SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
+            FROM kills
+            WHERE timestamp >= ? AND killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+            GROUP BY killer_name
+            ORDER BY kills DESC
+            LIMIT 5
+        """, (one_day_ago,)).fetchall()
+        if not ganker_rows:
+            ganker_rows = conn.execute("""
+                SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
+                FROM kills
+                WHERE killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+                GROUP BY killer_name
+                ORDER BY kills DESC
+                LIMIT 5
+            """).fetchall()
+        top_gankers = [{
+            "name": r["name"],
+            "class": r["class"] or "WARRIOR",
+            "spec": r["spec"] or "Arms",
+            "faction": r["faction"] or "Horde",
+            "guild": r["guild"] or "",
+            "kills": r["kills"]
+        } for r in ganker_rows]
+
+        return jsonify({
+            "RealmTotalCarnage": total_kills,
+            "SoloRatio": solo_ratio,
+            "FactionSplit": {
+                "Alliance": alliance_pct,
+                "Horde": horde_pct
+            },
+            "DeadliestZones": deadliest_zones,
+            "TopGankers24h": top_gankers,
+            "timestamp": now
+        })
 
 @app.route("/api/bounties/debt-ledger", methods=["GET"])
 def get_debt_ledger():
