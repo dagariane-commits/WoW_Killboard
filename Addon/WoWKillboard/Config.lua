@@ -42,6 +42,7 @@ KB.DefaultSettings = {
     combatFeedMode = "POPOUT",   -- "POPOUT" (Dedicated floating Combat Wire window), "CHAT" (Main chat window), "OFF"
     showCombatWire = true,       -- show floating moveable Combat Wire pop-out window
     combatWirePos = nil,         -- saved position for Combat Wire window: { point, relPoint, x, y }
+    hasSeenBetaWelcome = false,  -- shows early beta preview & feedback dialog on first login
 }
 
 -- Fallback Class Colors (ARGB Hex)

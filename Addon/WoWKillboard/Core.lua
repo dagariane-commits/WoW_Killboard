@@ -430,7 +430,22 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         if KB.UI and KB.UI.ShowCharacterWebLink then
             KB.UI:ShowCharacterWebLink(pTarget)
         end
-    elseif cmd == "bug" or cmd == "report" or cmd == "feedback" then
+    elseif cmd == "welcome" or cmd == "beta" or cmd == "about" then
+        if KB.UI and KB.UI.ShowWelcomeModal then
+            KB.UI:ShowWelcomeModal(true)
+        end
+    elseif cmd == "feedback" then
+        local cleanArg = arg and arg:match("^%s*(.-)%s*$") or ""
+        if cleanArg == "" then
+            if KB.UI and KB.UI.ShowWelcomeModal then
+                KB.UI:ShowWelcomeModal(true)
+            elseif KB.UI and KB.UI.ShowBugReportModal then
+                KB.UI:ShowBugReportModal()
+            end
+        else
+            KB:SubmitBugReport(cleanArg)
+        end
+    elseif cmd == "bug" or cmd == "report" then
         local cleanArg = arg and arg:match("^%s*(.-)%s*$") or ""
         if cleanArg == "" then
             if KB.UI and KB.UI.ShowBugReportModal then
@@ -444,7 +459,8 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     else
         SafePrint("|cff00ccffWoW Killboard: Frontline War Room Commands:|r")
         SafePrint("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
-        SafePrint("  |cffffd100/kb bug [details]|r or |cffffd100/kb report|r - Report a bug or issue for instant AI diagnosis")
+        SafePrint("  |cffffd100/kb welcome|r or |cffffd100/kb beta|r - Open Early Preview & Feedback Guide")
+        SafePrint("  |cffffd100/kb feedback|r or |cffffd100/kb bug|r - Submit feedback or report an issue")
         SafePrint("  |cffffd100/kb wire|r or |cffffd100/kb feed|r - Toggle The Shadow Network floating feed window")
         SafePrint("  |cffffd100/kb manhunt|r or |cffffd100/kb rally|r - Muster a Vanguard hunting squad")
         SafePrint("  |cffffd100/kb radar|r or |cffffd100/kbradar|r - Toggle the Tactical Radar HUD floating window")
@@ -665,6 +681,31 @@ SlashCmdList["WOWKB_MANHUNT"] = function(msg)
     end
 end
 
+-- Dedicated Quick-Slash Commands for Early Beta Welcome & Feedback
+SLASH_WOWKB_WELCOME1 = "/wowkbwelcome"
+SLASH_WOWKB_WELCOME2 = "/kbwelcome"
+SLASH_WOWKB_WELCOME3 = "/kbbeta"
+SlashCmdList["WOWKB_WELCOME"] = function()
+    if KB.UI and KB.UI.ShowWelcomeModal then
+        KB.UI:ShowWelcomeModal(true)
+    end
+end
+
+SLASH_WOWKB_FEEDBACK1 = "/wowkbfeedback"
+SLASH_WOWKB_FEEDBACK2 = "/kbfeedback"
+SlashCmdList["WOWKB_FEEDBACK"] = function(msg)
+    local arg = msg and msg:match("^%s*(.-)%s*$") or ""
+    if arg ~= "" then
+        KB:SubmitBugReport(arg)
+    else
+        if KB.UI and KB.UI.ShowWelcomeModal then
+            KB.UI:ShowWelcomeModal(true)
+        elseif KB.UI and KB.UI.ShowBugReportModal then
+            KB.UI:ShowBugReportModal()
+        end
+    end
+end
+
 -- Dedicated Quick-Slash Commands for Kill Alert Calibration & Testing
 SLASH_WOWKB_MOVE1 = "/wowkbmove"
 SLASH_WOWKB_MOVE2 = "/kbmove"
@@ -752,6 +793,24 @@ function KB:CreateMinimapButton()
     btn:SetScript("OnLeave", function() tipFrame:Hide() end)
 end
 
+-- First-Time Login Early Beta & Feedback Welcome Dialog Trigger
+local pendingWelcome = false
+
+local function TriggerWelcomeModal(isManual)
+    if InCombatLockdown and InCombatLockdown() then
+        if not isManual then
+            pendingWelcome = true
+        else
+            SafePrint("|cffff9900[WoWKB]|r Cannot open Welcome dialog during combat.")
+        end
+        return
+    end
+
+    if KB.UI and KB.UI.ShowWelcomeModal then
+        KB.UI:ShowWelcomeModal(isManual or false)
+    end
+end
+
 -- Event Router
 coreFrame:SetScript("OnEvent", function(self, event, ...)
     if event == "ADDON_LOADED" then
@@ -759,10 +818,35 @@ coreFrame:SetScript("OnEvent", function(self, event, ...)
         if addonName == "WoWKillboard" then
             KB:Initialize()
         end
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        -- Wait 2.5s for fonts, world loading, and SavedVariables to settle
+        if C_Timer and C_Timer.After then
+            C_Timer.After(2.5, function()
+                local s = WoWKillboardSettings or {}
+                if not s.hasSeenBetaWelcome then
+                    TriggerWelcomeModal(false)
+                end
+            end)
+        else
+            local s = WoWKillboardSettings or {}
+            if not s.hasSeenBetaWelcome then
+                TriggerWelcomeModal(false)
+            end
+        end
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        if pendingWelcome then
+            pendingWelcome = false
+            local s = WoWKillboardSettings or {}
+            if not s.hasSeenBetaWelcome then
+                TriggerWelcomeModal(false)
+            end
+        end
     end
 end)
 
 coreFrame:RegisterEvent("ADDON_LOADED")
+coreFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+coreFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 -- Diagnostic Taint & Action Block Interceptor (Telemetry-First Diagnostics)
 local diagFrame = CreateFrame("Frame")

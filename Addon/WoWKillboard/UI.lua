@@ -937,14 +937,14 @@ function UI:CreateMainWindow()
     end)
     UI.SyncButton = syncBtn
 
-    -- Template-Free Report Bug / AI Dispatch Button
+    -- Template-Free Feedback & Bug Dispatch Button
     local bugBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    bugBtn:SetSize(68, 20)
+    bugBtn:SetSize(74, 20)
     bugBtn:SetPoint("RIGHT", syncBtn, "LEFT", -6, 0)
     bugBtn:EnableMouse(true)
     local bugLabel = bugBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     bugLabel:SetPoint("CENTER", 0, 0)
-    bugLabel:SetText("|cffff5555[Bug] Bug|r")
+    bugLabel:SetText("|cffffd100Feedback|r")
     bugBtn.Label = bugLabel
     bugBtn:SetScript("OnClick", function()
         UI:ShowBugReportModal()
@@ -953,9 +953,9 @@ function UI:CreateMainWindow()
         local t = UI:GetTheme()
         if t and t.btnHoverBg then
             self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(1.0, 0.35, 0.35, 1.0)
+            self:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
         end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffff5555Report Bug / Issue|r", "Capture combat diagnostics and submit a bug ticket.\n\nOur AI diagnostic agent analyzes the issue upon sync.")
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Send Feedback & Bug Reports|r", "Submit player feedback, balance suggestions, or report combat glitches.\n\nOur AI diagnostic agent analyzes diagnostics upon desktop sync.")
     end)
     bugBtn:SetScript("OnLeave", function(self)
         local t = UI:GetTheme()
@@ -3666,6 +3666,230 @@ function UI:ShowExportDialog()
 end
 
 -- ============================================================================
+-- Template-Free First-Time Early Beta & Feedback Welcome Dialog
+-- ============================================================================
+function UI:ShowWelcomeModal(isManual)
+    if InCombatLockdown and InCombatLockdown() then
+        if isManual then
+            SafePrint("|cffff9900[WoWKB]|r Cannot open Welcome dialog during combat.")
+        end
+        return
+    end
+
+    if not UI.WelcomeDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(580, 480)
+        dlg:SetPoint("CENTER", 0, 30)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(110)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+        dlg:SetMovable(true)
+
+        dlg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        dlg:SetBackdropColor(0.06, 0.08, 0.12, 0.98)
+        dlg:SetBackdropBorderColor(0.85, 0.68, 0.22, 1.0)
+
+        -- Header Drag Bar
+        local header = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        header:SetPoint("TOPLEFT", 1, -1)
+        header:SetPoint("TOPRIGHT", -1, -1)
+        header:SetHeight(28)
+        header:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+        })
+        header:SetBackdropColor(0.12, 0.09, 0.06, 0.98)
+        header:EnableMouse(true)
+        header:RegisterForDrag("LeftButton")
+        header:SetScript("OnDragStart", function() if not InCombatLockdown() then dlg:StartMoving() end end)
+        header:SetScript("OnDragStop", function() dlg:StopMovingOrSizing() end)
+        dlg.Header = header
+
+        local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("LEFT", 12, 0)
+        title:SetText("|cffffd100WoW KILLBOARD  -  EARLY BETA PREVIEW|r")
+        dlg.Title = title
+
+        -- Close [X] Button on header
+        local closeX = CreateFrame("Button", nil, header)
+        closeX:SetSize(22, 22)
+        closeX:SetPoint("RIGHT", -4, 0)
+        local closeXText = closeX:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        closeXText:SetPoint("CENTER", 0, 0)
+        closeXText:SetText("|cffff4444X|r")
+        closeX:SetScript("OnClick", function()
+            if dlg.DoNotShowAgain then
+                WoWKillboardSettings = WoWKillboardSettings or {}
+                WoWKillboardSettings.hasSeenBetaWelcome = true
+            end
+            dlg:Hide()
+        end)
+
+        -- Subtitle
+        local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        sub:SetPoint("TOPLEFT", 16, -34)
+        sub:SetText("|cff38bdf8Community Playtest, Feedback & Battle Intelligence Protocol|r")
+
+        -- Inset Content Box
+        local inset = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        inset:SetPoint("TOPLEFT", 16, -54)
+        inset:SetPoint("TOPRIGHT", -16, -54)
+        inset:SetHeight(230)
+        inset:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        inset:SetBackdropColor(0.02, 0.03, 0.05, 0.95)
+        inset:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.9)
+
+        local function AddNotice(parent, yOffset, tag, tagColor, body)
+            local tagFs = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            tagFs:SetPoint("TOPLEFT", 12, yOffset)
+            tagFs:SetText(string.format("|c%s%s|r", tagColor, tag))
+
+            local bodyFs = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            bodyFs:SetPoint("TOPLEFT", 12, yOffset - 18)
+            bodyFs:SetPoint("RIGHT", parent, "RIGHT", -12, 0)
+            bodyFs:SetJustifyH("LEFT")
+            bodyFs:SetWordWrap(true)
+            bodyFs:SetText(string.format("|cffb8a080%s|r", body))
+            return bodyFs
+        end
+
+        AddNotice(inset, -10, "1. Early Stage Development Notice", "ffffd100",
+            "Welcome to the early preview build of WoW Killboard! We are actively designing, refining, and tuning combat telemetry, 1v1 solo detection, The Blood Ledger bounties, and two-way realm sync. Expect rapid development, balance tweaks, and new features.")
+
+        AddNotice(inset, -82, "2. Feel Free to Share Forward", "ff00e5ff",
+            "If you received this addon from a friend, guildmate, or fellow combatant, you are warmly encouraged to share it forward! Send it to anyone on your realm who enjoys World PvP, Duels, Battlegrounds, or tracking local guild wars.")
+
+        AddNotice(inset, -154, "3. Your Feedback Shapes the Addon", "ff10b981",
+            "Player feedback directly steers our priorities. Whether you notice an issue, have an idea for a feature, or want to suggest UI improvements, please share your thoughts via the in-game feedback tool or our web feedback portal.")
+
+        -- Web Feedback Link Section
+        local linkTitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        linkTitle:SetPoint("TOPLEFT", 16, -294)
+        linkTitle:SetText("|cffffd100Web Feedback Link (Click & press Ctrl+C to copy):|r")
+
+        local linkBox = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        linkBox:SetPoint("TOPLEFT", 16, -314)
+        linkBox:SetPoint("TOPRIGHT", -16, -314)
+        linkBox:SetHeight(24)
+        linkBox:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        linkBox:SetBackdropColor(0.02, 0.04, 0.08, 0.95)
+        linkBox:SetBackdropBorderColor(0.25, 0.35, 0.50, 0.9)
+
+        local eb = CreateFrame("EditBox", nil, linkBox)
+        eb:SetPoint("TOPLEFT", 6, 0)
+        eb:SetPoint("BOTTOMRIGHT", -6, 0)
+        eb:SetFontObject("GameFontHighlightSmall")
+        eb:SetAutoFocus(false)
+        eb:EnableMouse(true)
+        eb:SetText("http://13.216.102.148/feedback")
+        eb:SetScript("OnEditFocusGained", function(self)
+            self:HighlightText()
+        end)
+        eb:SetScript("OnMouseUp", function(self)
+            self:HighlightText()
+        end)
+        eb:SetScript("OnEscapePressed", function(self)
+            self:ClearFocus()
+        end)
+        dlg.FeedbackUrlEditBox = eb
+
+        -- In-Game Feedback & Dashboard Buttons Row
+        local inGameFbBtn = UI:CreateButton(dlg, 240, 26, "|cff00e5ff[+] Submit In-Game Feedback|r", "GameFontHighlightSmall")
+        inGameFbBtn:SetPoint("TOPLEFT", 16, -348)
+        inGameFbBtn:SetScript("OnClick", function()
+            if dlg.DoNotShowAgain then
+                WoWKillboardSettings = WoWKillboardSettings or {}
+                WoWKillboardSettings.hasSeenBetaWelcome = true
+            end
+            dlg:Hide()
+            if UI.ShowBugReportModal then
+                UI:ShowBugReportModal()
+            end
+        end)
+
+        local openKbBtn = UI:CreateButton(dlg, 170, 26, "|cffffd100Open Killboard (/kb)|r", "GameFontHighlightSmall")
+        openKbBtn:SetPoint("LEFT", inGameFbBtn, "RIGHT", 10, 0)
+        openKbBtn:SetScript("OnClick", function()
+            if dlg.DoNotShowAgain then
+                WoWKillboardSettings = WoWKillboardSettings or {}
+                WoWKillboardSettings.hasSeenBetaWelcome = true
+            end
+            dlg:Hide()
+            UI:Toggle()
+        end)
+
+        -- Bottom Row: Checkbox & Dismiss Button
+        dlg.DoNotShowAgain = true
+
+        local chkBtn = CreateFrame("Button", nil, dlg)
+        chkBtn:SetSize(280, 22)
+        chkBtn:SetPoint("BOTTOMLEFT", 16, 14)
+        chkBtn:EnableMouse(true)
+
+        local chkText = chkBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        chkText:SetPoint("LEFT", 0, 0)
+        chkText:SetText("|cff00ff00[X]|r |cffccccccDo not show again on login|r")
+        chkBtn.Label = chkText
+
+        chkBtn:SetScript("OnClick", function()
+            dlg.DoNotShowAgain = not dlg.DoNotShowAgain
+            if dlg.DoNotShowAgain then
+                chkText:SetText("|cff00ff00[X]|r |cffccccccDo not show again on login|r")
+            else
+                chkText:SetText("|cff64748b[  ]|r |cff888888Do not show again on login|r")
+            end
+        end)
+
+        local closeBtn = UI:CreateButton(dlg, 100, 26, "Got It!", "GameFontHighlightSmall")
+        closeBtn:SetPoint("BOTTOMRIGHT", -16, 12)
+        closeBtn:SetScript("OnClick", function()
+            if dlg.DoNotShowAgain then
+                WoWKillboardSettings = WoWKillboardSettings or {}
+                WoWKillboardSettings.hasSeenBetaWelcome = true
+            end
+            dlg:Hide()
+        end)
+
+        -- ESC handler
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                if dlg.DoNotShowAgain then
+                    WoWKillboardSettings = WoWKillboardSettings or {}
+                    WoWKillboardSettings.hasSeenBetaWelcome = true
+                end
+                self:SetPropagateKeyboardInput(false)
+                self:Hide()
+            else
+                self:SetPropagateKeyboardInput(true)
+            end
+        end)
+
+        UI.WelcomeDialog = dlg
+    end
+
+    local dlg = UI.WelcomeDialog
+    local domain = (KB.WebDomain and KB.WebDomain ~= "") and KB.WebDomain or "13.216.102.148"
+    if dlg.FeedbackUrlEditBox then
+        dlg.FeedbackUrlEditBox:SetText(string.format("http://%s/feedback", domain))
+    end
+    dlg:Show()
+    if dlg.Raise then dlg:Raise() end
+end
+
+-- ============================================================================
 -- Template-Free Bug Report & AI Diagnostics Dispatch Dialog
 -- ============================================================================
 function UI:ShowBugReportModal()
@@ -3690,16 +3914,16 @@ function UI:ShowBugReportModal()
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         })
         dlg:SetBackdropColor(0.06, 0.07, 0.10, 0.98)
-        dlg:SetBackdropBorderColor(0.85, 0.25, 0.25, 1.0)
+        dlg:SetBackdropBorderColor(0.85, 0.68, 0.22, 1.0)
 
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -14)
-        title:SetText("|cffff5555WoW Killboard  -  Bug Dispatch & AI Diagnosis|r")
+        title:SetText("|cffffd100WoW Killboard  -  Feedback & Bug Dispatch|r")
         dlg.Title = title
 
         local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         desc:SetPoint("TOP", 0, -36)
-        desc:SetText("Submit a combat issue or UI glitch. Our AI agent analyzes diagnostics on sync:")
+        desc:SetText("Submit player feedback, balance suggestions, or report combat glitches:")
         dlg.Desc = desc
 
         local tStrip = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
@@ -3751,7 +3975,7 @@ function UI:ShowBugReportModal()
         end)
         dlg.EditBox = eb
 
-        local submitBtn = UI:CreateButton(dlg, 180, 26, "|cffffffffSubmit to AI Diagnostician|r", "GameFontHighlightSmall")
+        local submitBtn = UI:CreateButton(dlg, 190, 26, "|cffffffffSubmit Feedback / Bug|r", "GameFontHighlightSmall")
         submitBtn:SetPoint("BOTTOMLEFT", 16, 14)
         submitBtn:SetScript("OnClick", function()
             local text = eb:GetText()

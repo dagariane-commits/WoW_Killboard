@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoW Killboard — Early Beta Feedback & Field Dispatch</title>
+  <link rel="stylesheet" href="/static/style.css?v=1.4.59">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
+  <style>
+    .feedback-page-wrapper {
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    .beta-hero-banner {
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.12), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(212, 160, 23, 0.45);
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+    .beta-badge {
+      display: inline-block;
+      background: #b45309;
+      color: #fef3c7;
+      font-family: var(--font-tactical);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .beta-title {
+      font-family: var(--font-cinzel);
+      font-size: 1.65rem;
+      color: var(--wow-gold);
+      margin: 0 0 10px 0;
+      letter-spacing: 0.8px;
+    }
+    .beta-desc {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .beta-highlights {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(212, 160, 23, 0.2);
+    }
+    .highlight-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+    .highlight-card strong {
+      display: block;
+      color: #f8fafc;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+    .highlight-card p {
+      color: #94a3b8;
+      font-size: 0.8rem;
+      margin: 0;
+      line-height: 1.4;
+    }
+    .feedback-form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-gold-subtle);
+      border-radius: 8px;
+      padding: 28px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      font-family: var(--font-tactical);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      color: var(--wow-gold);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%;
+      background: #090d14;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f8fafc;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--wow-gold);
+      box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.25);
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 600px) {
+      .form-grid-2 { grid-template-columns: 1fr; }
+    }
+    .submit-btn {
+      background: linear-gradient(180deg, #d97706, #b45309);
+      color: #ffffff;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      font-family: var(--font-tactical);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 12px 24px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .submit-btn:hover {
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+    }
+    .submit-btn:active {
+      transform: translateY(1px);
+    }
+    .success-alert {
+      display: none;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      border-radius: 6px;
+      padding: 16px 20px;
+      color: #a7f3d0;
+      margin-bottom: 20px;
+    }
+    .back-home-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.85rem;
+      margin-bottom: 18px;
+      transition: color 0.2s;
+    }
+    .back-home-link:hover {
+      color: var(--wow-gold);
+    }
+  </style>
+</head>
+<body style="background: #04060a; color: #f8fafc; font-family: var(--font-sans); margin: 0; min-height: 100vh;">
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-main-row">
+      <div class="logo-group" onclick="window.location.href='/'" style="cursor: pointer;">
+        <img src="/static/icons/factions/alliance.jpg" class="header-faction-crest alliance" alt="Alliance">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2.2" class="logo-swords-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M9.5 17.5 21 6V3h-3L6.5 14.5"/><path d="m11 19-6-6"/><path d="M8 16l-4 4"/><path d="M5 21l-2-2"/></svg>
+        <img src="/static/icons/factions/horde.jpg" class="header-faction-crest horde" alt="Horde">
+        <div>
+          <div class="logo-title">WoW Killboard</div>
+          <div class="logo-subtitle">AZEROTH COMBAT OVERVIEW</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <a href="/" class="dossier-btn outline" style="text-decoration: none; padding: 6px 14px; font-size: 0.8rem;">⚔️ War Room Dashboard</a>
+        <a href="/download" class="dossier-btn" style="text-decoration: none; padding: 6px 14px; font-size: 0.8rem;">📦 Download Addon</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="feedback-page-wrapper">
+    <a href="/" class="back-home-link">← Return to War Room Dashboard</a>
+
+    <!-- Early Beta Notice Banner -->
+    <div class="beta-hero-banner">
+      <span class="beta-badge">Early Preview Build</span>
+      <h1 class="beta-title">Welcome to the WoW Killboard Beta</h1>
+      <p class="beta-desc">
+        Thank you for playtesting WoW Killboard! We are actively designing, refining, and tuning combat telemetry, 1v1 solo kill detection, The Blood Ledger execution contracts, and two-way realm sync across all World of Warcraft flavors.
+      </p>
+
+      <div class="beta-highlights">
+        <div class="highlight-card">
+          <strong style="color: #38bdf8;">🔄 Feel Free to Share Forward</strong>
+          <p>If you received this addon from a friend or guildmate, you are encouraged to share it forward with anyone in your guild or realm!</p>
+        </div>
+        <div class="highlight-card">
+          <strong style="color: #10b981;">💬 Direct Developer Feedback</strong>
+          <p>Every submission is reviewed by our engineering team. Your feedback directly prioritizes features, UI refinements, and balance tuning.</p>
+        </div>
+        <div class="highlight-card">
+          <strong style="color: #f59e0b;">🤖 In-Game & Web Diagnostics</strong>
+          <p>You can also type <code>/kb bug [details]</code> in-game to transmit automated combat telemetry directly to our AI diagnostic agent.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feedback Submission Card -->
+    <div class="feedback-form-card">
+      <h2 style="font-family: var(--font-cinzel); font-size: 1.25rem; color: var(--wow-gold); margin-top: 0; margin-bottom: 6px;">
+        Submit Player Feedback &amp; Bug Report
+      </h2>
+      <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 22px;">
+        Have an idea, praise, calculation critique, or a glitch to report? Send your dispatch directly to the War Room engineers.
+      </p>
+
+      <div id="feedback-success" class="success-alert">
+        <strong style="font-size: 1rem;">✔ Dispatch Received!</strong>
+        <p style="margin: 4px 0 0 0; font-size: 0.85rem;">
+          Thank you for taking the time to share your feedback. Your dispatch has been cataloged for analysis.
+        </p>
+      </div>
+
+      <form id="feedback-form" onsubmit="submitFeedback(event)">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="fb-category">Feedback Category</label>
+            <select id="fb-category" class="form-control" required>
+              <option value="General Feedback">💬 General Feedback &amp; Impressions</option>
+              <option value="Feature Suggestion">💡 Feature / Enhancement Suggestion</option>
+              <option value="Combat Bug Report">🐛 Combat Log / Kill Tracking Bug</option>
+              <option value="UI & Layout Polish">🎨 UI, Layout &amp; Theme Polish</option>
+              <option value="Other">⚔️ Other Warcraft Telemetry Dispatch</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="fb-character">Your Character &amp; Class</label>
+            <input type="text" id="fb-character" class="form-control" placeholder="e.g. Dagariane (Paladin)" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="fb-realm">Realm &amp; Client Flavor</label>
+            <input type="text" id="fb-realm" class="form-control" placeholder="e.g. WoW Forever Beta, Era, or Retail" required>
+          </div>
+
+          <div class="form-group">
+            <label for="fb-faction">Faction Allegiance</label>
+            <select id="fb-faction" class="form-control">
+              <option value="Alliance">Alliance (For the Alliance!)</option>
+              <option value="Horde">Horde (For the Horde!)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="fb-message">Your Feedback / Issue Details</label>
+          <textarea id="fb-message" class="form-control" rows="6" placeholder="Describe your experience, what you like, what feels clunky, or what bug you ran into..." required></textarea>
+        </div>
+
+        <button type="submit" id="fb-submit-btn" class="submit-btn">
+          ⚔️ Transmit Feedback to War Room
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    async function submitFeedback(event) {
+      event.preventDefault();
+      const btn = document.getElementById("fb-submit-btn");
+      const successDiv = document.getElementById("feedback-success");
+      
+      const payload = {
+        category: document.getElementById("fb-category").value,
+        character_name: document.getElementById("fb-character").value,
+        realm: document.getElementById("fb-realm").value,
+        faction: document.getElementById("fb-faction").value,
+        message: document.getElementById("fb-message").value,
+      };
+
+      btn.disabled = true;
+      btn.innerText = "Transmitting to War Room...";
+
+      try {
+        const resp = await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        
+        successDiv.style.display = "block";
+        document.getElementById("feedback-form").reset();
+        btn.innerText = "✔ Dispatch Transmitted!";
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerText = "⚔️ Transmit Another Dispatch";
+        }, 3000);
+      } catch (err) {
+        alert("Error sending feedback: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "⚔️ Transmit Feedback to War Room";
+      }
+    }
+  </script>
+</body>
+</html>

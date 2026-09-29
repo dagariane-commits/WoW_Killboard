@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented `loadZonesView()` rendering the Danger Index & Hotspots view matching the Addon's `Zone Intel` tab with interactive zone feed filtering.
 - **Top 4-Way Mode Filter Pills (`index.html`, `style.css`, `app.js`)**:
   - Added `[World | BGs | Duels | Arenas]` mode filter pills in the top navigation tools group with reactive feed filtering.
+- **First-Time Early Preview Welcome & Feedback Modal (`UI.lua`, `Core.lua`, `Config.lua`)**:
+  - Implemented `UI:ShowWelcomeModal(isManual)`: a pure Lua, template-free, draggable welcome window greeting first-time players upon character login (`PLAYER_ENTERING_WORLD`).
+  - Explains the early beta stage, encourages sharing freely with guildmates and realm combatants, and solicits direct community feedback.
+  - Interactive feedback actions: 1-click in-game feedback dispatcher (`UI:ShowBugReportModal()`), copyable web feedback link with auto-highlighting, and "Do not show on future logins" checkbox saving to `WoWKillboardSettings.hasSeenBetaWelcome`.
+  - Upgraded header button from `[Bug] Bug` to prominent `[Feedback]` button with direct dispatch.
+  - Added dedicated slash command routing: `/kb welcome`, `/kb beta`, `/kb feedback`, and `/wowkbwelcome`.
+- **Web Feedback Portal & API (`web/static/feedback.html`, `web/server.py`)**:
+  - Implemented dedicated dark-fantasy feedback portal at `/feedback` and REST endpoint `@app.route("/api/feedback", methods=["POST", "GET"])`.
+  - Ingests user feedback, feature suggestions, balance critiques, and bug reports directly into the database with automated AI diagnostic triage.
 
 ### Changed
 - **Jargon Sweep & Warcraft Dark-Fantasy Immersion (`index.html`, `app.js`, `Core.lua`, `UI.lua`)**:
