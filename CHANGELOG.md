@@ -5,6 +5,14 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.63] - 2026-09-29
+
+### Fixed
+- **Combat Tracker NPC & PvE Death Nil Exception (`CombatTracker.lua`)**:
+  - Fixed Lua error `CombatTracker.lua:457: bad argument #1 to 'pairs' (table expected, got nil)` when a player is killed by an open-world creature or dungeon NPC (e.g. Dalaran Apprentice).
+  - Explicitly initialized `local damageSources = {}` and `local maxNpcDamage = 0` in `ProcessDeath`, preventing nil-indexing and nil-comparison exceptions.
+  - Ensured pure PvE deaths cleanly bypass PvP processing and record to the local PvE death journal without UI disruption.
+
 ## [1.4.62] - 2026-09-29
 
 ### Fixed
