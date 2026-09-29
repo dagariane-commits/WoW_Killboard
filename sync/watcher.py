@@ -588,6 +588,7 @@ class KillboardWatcher:
         if os.path.exists(os.path.dirname(local_repo_addon)):
             target_paths.append(local_repo_addon)
 
+        import glob
         drives = ["D:", "C:", "E:"]
         flavors = ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_"]
         for d in drives:
@@ -595,6 +596,8 @@ class KillboardWatcher:
                 p = f"{d}/World of Warcraft/{flv}/Interface/AddOns/WoWKillboard/WoWKillboard_RealmData.lua"
                 if os.path.exists(os.path.dirname(p)):
                     target_paths.append(p)
+                for sv in glob.glob(f"{d}/World of Warcraft/{flv}/WTF/Account/*/SavedVariables"):
+                    target_paths.append(os.path.join(sv, "WoWKillboard_RealmData.lua"))
 
         written = 0
         for tp in set(target_paths):

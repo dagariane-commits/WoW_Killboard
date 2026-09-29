@@ -32,8 +32,8 @@ local mainFrame = nil
 local activeTab = "FEED"   -- "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES"
 local currentMode = "WORLD"  -- "WORLD", "BG", "DUEL", "ARENA"
 local hlSubTab = "PLAYERS"   -- "PLAYERS" (Player Ranks), "GUILDS" (Guild Ranks), "GANKERS_24H" (Top Gankers 24h)
-local ribbonMode = "SESSION" -- "SESSION" or "REALM"
-local marksSubTab = "ACTIVE" -- "ACTIVE" (Execution List), "RECORDS" (Hall of Fame), "DEBTORS" (Wall of Shame)
+local ribbonMode = "REALM"   -- "REALM" or "SESSION" (Defaults to REALM for immediate telemetry visibility)
+local marksSubTab = "ACTIVE" -- "ACTIVE" (Execution List), "RECORDS" (Hall of Fame), "DEBTORS" (The Marked Debts)
 
 local tabButtons = {}
 local filterButtons = {}
@@ -245,6 +245,10 @@ function UI:ApplyTheme()
     if UI.WireButton then
         UI:ApplyButtonStyle(UI.WireButton, theme)
         if theme.id == "classic" then UI.WireButton:SetHeight(22) else UI.WireButton:SetHeight(20) end
+    end
+    if UI.RibbonToggleBtn then
+        UI:ApplyButtonStyle(UI.RibbonToggleBtn, theme)
+        if theme.id == "classic" then UI.RibbonToggleBtn:SetHeight(22) else UI.RibbonToggleBtn:SetHeight(20) end
     end
     if UI.RegisteredButtons then
         for _, b in ipairs(UI.RegisteredButtons) do
@@ -458,6 +462,25 @@ function UI:Toggle()
         UI:UpdatePortrait()
         UI:Refresh()
     end
+end
+
+function UI:ShowTab(tabId)
+    if InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot toggle Killboard during combat.")
+        return
+    end
+
+    if not mainFrame then
+        UI:CreateMainWindow()
+    end
+
+    if not mainFrame:IsShown() then
+        mainFrame:Show()
+        UI:UpdatePortrait()
+    end
+
+    activeTab = tabId or "FEED"
+    UI:Refresh()
 end
 
 function UI:RefreshIfVisible()
@@ -780,14 +803,14 @@ function UI:CreateMainWindow()
     end)
     UI.WebProfileButton = webBtn
 
-    -- Template-Free Combat Wire Pop-Out Toggle Button
+    -- Template-Free Shadow Network Pop-Out Toggle Button
     local wireBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    wireBtn:SetSize(52, 20)
+    wireBtn:SetSize(68, 20)
     wireBtn:SetPoint("LEFT", webBtn, "RIGHT", 6, 0)
     wireBtn:EnableMouse(true)
     local wireLabel = wireBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     wireLabel:SetPoint("CENTER", 0, 0)
-    wireLabel:SetText("|cff00e5ffWire|r")
+    wireLabel:SetText("|cff00e5ffNetwork|r")
     wireBtn.Label = wireLabel
     wireBtn:SetScript("OnClick", function()
         UI:ToggleCombatWire()
@@ -798,7 +821,7 @@ function UI:CreateMainWindow()
             self:SetBackdropColor(unpack(t.btnHoverBg))
             self:SetBackdropBorderColor(0.0, 0.85, 1.0, 1.0)
         end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff00e5ffCombat Wire Pop-Out|r", "Click to toggle the floating Combat Wire pop-out window.\nLive combat notifications stream here instead of cluttering your main chat.")
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff00e5ffThe Shadow Network (Pop-Out)|r", "Click to toggle the floating Shadow Network live combat feed window.\nLive combat notifications stream here instead of cluttering your main chat.")
     end)
     wireBtn:SetScript("OnLeave", function(self)
         local t = UI:GetTheme()
@@ -1014,14 +1037,8 @@ function UI:CreateMainWindow()
     end
 
     -- Ribbon Stats Mode Toggle Button [ Realm Stats | Session Stats ]
-    local ribbonToggleBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    ribbonToggleBtn:SetSize(180, 18)
+    local ribbonToggleBtn = UI:CreateButton(mainFrame, 192, 22, "|cffffd100[ Realm Stats ]|r |cff64748bSession|r", "GameFontHighlightSmall")
     ribbonToggleBtn:SetPoint("BOTTOMRIGHT", UI.StatCards["BGS"], "TOPRIGHT", 0, 4)
-    ribbonToggleBtn:EnableMouse(true)
-    local ribbonLabel = ribbonToggleBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    ribbonLabel:SetPoint("CENTER", 0, 0)
-    ribbonLabel:SetText("|cff64748bRealm|r |cffffd100[ Session Stats ]|r")
-    ribbonToggleBtn.Label = ribbonLabel
     ribbonToggleBtn:SetScript("OnClick", function()
         if ribbonMode == "SESSION" then
             ribbonMode = "REALM"
@@ -1253,7 +1270,7 @@ function UI:Refresh()
 
     if UI.StatCards then
         if ribbonMode == "REALM" then
-            local rData = WoWKillboard_RealmData or {}
+            local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData) or {}
             local rCarnage = rData.RealmTotalCarnage or totalKillsCount or 0
             local rSolo = rData.SoloRatio or 0.0
             local fSplit = rData.FactionSplit or { Alliance = 50.0, Horde = 50.0 }
@@ -2331,7 +2348,7 @@ function UI:RenderLeaderboard()
         end
 
     elseif hlSubTab == "GANKERS_24H" then
-        local gankers = (WoWKillboard_RealmData and WoWKillboard_RealmData.TopGankers24h) or {}
+        local gankers = (WoWKillboard_RealmData and WoWKillboard_RealmData.TopGankers24h) or (WoWKillboardDB and WoWKillboardDB.RealmData and WoWKillboardDB.RealmData.TopGankers24h) or {}
 
         -- Table Header Row
         local thRow = CreateFrame("Frame", nil, UI.ContentFrame)
@@ -2415,7 +2432,7 @@ function UI:RenderLeaderboard()
     UI.ContentFrame:SetHeight(math.abs(yOffset) + 40)
 end
 
--- 3. Render Bounties & Debt Ledger (Wall of Shame)
+-- 3. Render Bounties & Debt Ledger (The Marked)
 function UI:RenderBounties()
     local theme = UI:GetTheme()
     local yOffset = -8
@@ -2423,7 +2440,7 @@ function UI:RenderBounties()
     -- Header Title
     local bntTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bntTitle:SetPoint("TOPLEFT", 10, yOffset)
-    bntTitle:SetText(" |cffffd100THE MARKED  -  EXECUTION CONTRACTS|r")
+    bntTitle:SetText(" |cffffd100THE BLOOD LEDGER  -  EXECUTION MARKS|r")
     bntTitle:SetShadowOffset(1, -1)
     bntTitle:SetShadowColor(0, 0, 0, 1)
 
@@ -2447,7 +2464,7 @@ function UI:RenderBounties()
     subtitle:SetShadowOffset(1, -1)
     subtitle:SetShadowColor(0, 0, 0, 1)
 
-    -- Sub-navigation Toggle Bar: [Active Marks] | [Hall of Fame] | [Wall of Shame]
+    -- Sub-navigation Toggle Bar: [Active Marks] | [Hall of Fame] | [The Marked Debts]
     local btnActive = UI:CreateButton(UI.ContentFrame, 106, 22, "Active Marks")
     btnActive:SetPoint("TOPLEFT", 10, -46)
     btnActive.isActive = (marksSubTab == "ACTIVE")
@@ -2472,7 +2489,7 @@ function UI:RenderBounties()
         UI:Refresh()
     end)
 
-    local btnDebtors = UI:CreateButton(UI.ContentFrame, 114, 22, "Wall of Shame")
+    local btnDebtors = UI:CreateButton(UI.ContentFrame, 126, 22, "The Marked Debts")
     btnDebtors:SetPoint("LEFT", btnRecords, "RIGHT", 6, 0)
     btnDebtors.isActive = (marksSubTab == "DEBTORS")
     UI:ApplyButtonStyle(btnDebtors, theme)
@@ -2510,7 +2527,7 @@ function UI:RenderBounties()
         -- 1. Active Marks List
         local activeHeader = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         activeHeader:SetPoint("TOPLEFT", 10, yOffset)
-        activeHeader:SetText("|cffffd100ACTIVE HUNT CONTRACTS|r  -  High Command Marked Targets")
+        activeHeader:SetText("|cffffd100ACTIVE HUNT CONTRACTS|r - The Blood Ledger Execution Marks")
         activeHeader:SetShadowOffset(1, -1)
         activeHeader:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 24
@@ -2775,7 +2792,7 @@ function UI:RenderBounties()
     elseif marksSubTab == "DEBTORS" then
         local debtTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         debtTitle:SetPoint("TOPLEFT", 10, yOffset)
-        debtTitle:SetText(" |cffff2222THE TRAITOR'S GIBBET|r  -  Oathbreakers & Defaulted Debts")
+        debtTitle:SetText(" |cffff2222THE MARKED|r - Defaulted Bounties & Debts")
         debtTitle:SetShadowOffset(1, -1)
         debtTitle:SetShadowColor(0, 0, 0, 1)
 
@@ -2893,7 +2910,7 @@ function UI:RenderZones()
     yOffset = yOffset - 36
 
     -- 1. Downloaded Realm Telemetry Zones (via Two-Way Sync)
-    local realmZones = (WoWKillboard_RealmData and WoWKillboard_RealmData.DeadliestZones) or {}
+    local realmZones = (WoWKillboard_RealmData and WoWKillboard_RealmData.DeadliestZones) or (WoWKillboardDB and WoWKillboardDB.RealmData and WoWKillboardDB.RealmData.DeadliestZones) or {}
     if #realmZones > 0 then
         local rHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
         rHeader:SetSize(820, 28)
@@ -3031,7 +3048,7 @@ function UI:RenderRallies()
     hornTxt:SetShadowOffset(1, -1)
     hornTxt:SetShadowColor(0, 0, 0, 1)
 
-    local hornBtn = UI:CreateButton(hornCard, 150, 24, isMyBeaconActive and "|cffff4444Close Rally|r" or " Sound War Horn")
+    local hornBtn = UI:CreateButton(hornCard, 150, 24, isMyBeaconActive and "|cffff4444Close Manhunt|r" or " Sound War Horn")
     hornBtn:SetPoint("RIGHT", -10, 0)
     hornBtn:SetScript("OnClick", function()
         if isMyBeaconActive then
@@ -3046,10 +3063,10 @@ function UI:RenderRallies()
 
     yOffset = yOffset - 50
 
-    -- Section Title: Open Rallies
+    -- Section Title: Open Manhunts
     local listTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     listTitle:SetPoint("TOPLEFT", 10, yOffset)
-    listTitle:SetText(string.format(" |cffffd100OPEN %s RALLIES|r  -  Join Vanguard Strike Teams", myFaction:upper()))
+    listTitle:SetText(string.format(" |cffffd100OPEN %s MANHUNTS|r - Join Vanguard Strike Teams", myFaction:upper()))
     listTitle:SetShadowOffset(1, -1)
     listTitle:SetShadowColor(0, 0, 0, 1)
 
@@ -3060,7 +3077,7 @@ function UI:RenderRallies()
     if #rallies == 0 then
         local empty = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
         empty:SetPoint("TOPLEFT", 14, yOffset)
-        empty:SetText("No active faction rallies currently underway on your realm.\nSound your War Horn above to muster a Vanguard Strike Team or Raid!")
+        empty:SetText("No active faction manhunts currently underway on your realm.\nSound your War Horn above to muster a Vanguard Strike Team or Raid!")
         empty:SetShadowOffset(1, -1)
         empty:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 40
@@ -3094,7 +3111,7 @@ function UI:RenderRallies()
             -- Action Button (Right side, centered vertically)
             local joinBtn
             if isSelf then
-                joinBtn = UI:CreateButton(row, 110, 24, "|cffff4444Close Rally|r")
+                joinBtn = UI:CreateButton(row, 110, 24, "|cffff4444Close Manhunt|r")
                 joinBtn:SetPoint("RIGHT", -10, 0)
                 joinBtn:SetScript("OnClick", function()
                     if KB.Reinforcements and KB.Reinforcements.ResolveBeacon then
@@ -3104,7 +3121,7 @@ function UI:RenderRallies()
                 end)
             else
                 local targetLeader = r.character_name
-                joinBtn = UI:CreateButton(row, 115, 24, " Join Rally")
+                joinBtn = UI:CreateButton(row, 115, 24, " Join Manhunt")
                 joinBtn:SetPoint("RIGHT", -10, 0)
                 joinBtn:SetScript("OnClick", function(self)
                     if KB.Reinforcements and KB.Reinforcements.RequestJoinRally then
@@ -5251,14 +5268,14 @@ function UI:ShowAlertsConfig()
         markHint:SetPoint("TOPLEFT", 24, -422)
         dlg.MarkHint = markHint
 
-        -- Section 6: Combat Feed Destination (Pop-Out Wire vs Main Chat)
+        -- Section 6: Combat Feed Destination (Shadow Network vs Main Chat)
         local sec6Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sec6Title:SetPoint("TOPLEFT", 24, -446)
         sec6Title:SetText("|cffffffff6. COMBAT FEED DESTINATION|r")
 
-        local btnFeedWire = UI:CreateButton(dlg, 150, 24, "Pop-Out Wire", "GameFontHighlightSmall")
+        local btnFeedWire = UI:CreateButton(dlg, 150, 24, "Shadow Network", "GameFontHighlightSmall")
         btnFeedWire:SetPoint("TOPLEFT", 24, -466)
-        StyleSegmentButton(btnFeedWire, "Pop-Out Wire")
+        StyleSegmentButton(btnFeedWire, "Shadow Network")
         dlg.BtnFeedWire = btnFeedWire
 
         local btnFeedChat = UI:CreateButton(dlg, 150, 24, "Main Chat Frame", "GameFontHighlightSmall")
@@ -5380,7 +5397,7 @@ function UI:ShowAlertsConfig()
             ApplySegmentState(dlg.BtnFeedOff, feedMode == "OFF")
 
             if feedMode == "POPOUT" then
-                dlg.FeedHint:SetText("|cff00e5ff* Pop-Out Wire:|r |cff94a3b8Routes combat events to floating Combat Wire window. Zero chat spam.|r")
+                dlg.FeedHint:SetText("|cff00e5ff* Shadow Network:|r |cff94a3b8Routes combat events to floating live feed window. Zero chat spam.|r")
             elseif feedMode == "CHAT" then
                 dlg.FeedHint:SetText("|cffffd100* Main Chat:|r |cff94a3b8Prints combat records directly to your standard General chat frame.|r")
             else
@@ -6133,7 +6150,7 @@ function UI:ShowRallyDialog()
 end
 
 --------------------------------------------------------------------------------
--- Tactical Combat Wire (Floating, Moveable Live Combat Pop-Out Window)
+-- The Shadow Network (Floating, Moveable Live Combat Pop-Out Window)
 --------------------------------------------------------------------------------
 local combatWireHUD = nil
 
@@ -6199,7 +6216,7 @@ function UI:InitializeCombatWire()
 
     local title = header:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     title:SetPoint("LEFT", 8, 0)
-    title:SetText("|cff00e5ffKB COMBAT WIRE|r  |cff64748b(Pop-Out Live Feed)|r")
+    title:SetText("|cff00e5ffTHE SHADOW NETWORK|r  |cff64748b(Pop-Out Live Feed)|r")
 
     -- Close Button [X]
     local close = CreateFrame("Button", nil, header)
@@ -6212,7 +6229,7 @@ function UI:InitializeCombatWire()
         hud:Hide()
         WoWKillboardSettings = WoWKillboardSettings or {}
         WoWKillboardSettings.showCombatWire = false
-        SafePrint("|cff00ccff[WoWKB]|r Combat Wire hidden. Click |cffffd100[Wire]|r in header or type |cffffff00/kb wire|r to restore.")
+        SafePrint("|cff00ccff[WoWKB]|r Shadow Network hidden. Click |cffffd100[Network]|r in header or type |cffffff00/kb wire|r to restore.")
     end)
 
     -- Clear Button [Clear]
@@ -6225,7 +6242,7 @@ function UI:InitializeCombatWire()
     clearBtn:SetScript("OnClick", function()
         if hud.msgFrame and hud.msgFrame.Clear then
             hud.msgFrame:Clear()
-            hud.msgFrame:AddMessage("|cff64748b[Combat Wire cleared  -  listening for live combat records...]|r")
+            hud.msgFrame:AddMessage("|cff64748b[Shadow Network cleared  -  listening for live combat records...]|r")
         end
     end)
 
@@ -6246,7 +6263,7 @@ function UI:InitializeCombatWire()
         end
     end)
 
-    msgFrame:AddMessage("|cff00e5ff[WoWKB Wire Initialized]|r |cff64748bCombat events stream here. Chat is clean.|r")
+    msgFrame:AddMessage("|cff00e5ff[WoWKB Network Initialized]|r |cff64748bCombat events stream here. Chat is clean.|r")
 
     hud.msgFrame = msgFrame
     combatWireHUD = hud
@@ -6291,7 +6308,7 @@ end
 
 function UI:ToggleCombatWire()
     if InCombatLockdown() then
-        SafePrint("|cffff9900[WoWKB]|r Cannot toggle Combat Wire during combat.")
+        SafePrint("|cffff9900[WoWKB]|r Cannot toggle Shadow Network during combat.")
         return
     end
     if not combatWireHUD then UI:InitializeCombatWire() end
@@ -6301,11 +6318,11 @@ function UI:ToggleCombatWire()
     if combatWireHUD:IsShown() then
         combatWireHUD:Hide()
         WoWKillboardSettings.showCombatWire = false
-        SafePrint("|cff00ccff[WoWKB]|r Combat Wire: |cffff4444Hidden|r.")
+        SafePrint("|cff00ccff[WoWKB]|r Shadow Network: |cffff4444Hidden|r.")
     else
         combatWireHUD:Show()
         WoWKillboardSettings.showCombatWire = true
-        SafePrint("|cff00ccff[WoWKB]|r Combat Wire: |cff00ff00Shown|r (Click & drag header to reposition).")
+        SafePrint("|cff00ccff[WoWKB]|r Shadow Network: |cff00ff00Shown|r (Click & drag header to reposition).")
     end
 end
 

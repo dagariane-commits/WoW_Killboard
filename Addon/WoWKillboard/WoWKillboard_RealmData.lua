@@ -14,5 +14,5 @@ WoWKillboard_RealmData = {
         { name = "Dagariane", class = "PALADIN", faction = "Alliance", guild = "None", kills = 3 },
         { name = "Mhureth", class = "HUNTER", faction = "Horde", guild = "None", kills = 1 },
     },
-    LastSync = 1790655156,
+    LastSync = 1790657971,
 }

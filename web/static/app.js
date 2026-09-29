@@ -1986,10 +1986,10 @@ function renderBountiesView(bounties, debts, leaderboards) {
         </div>
       </div>
 
-      <!-- Wall of Shame: Blood Debtor Ledger -->
+      <!-- The Marked: Blood Debtor Ledger -->
       <div>
         <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin-bottom: 4px;">
-          Wall of Shame — Realm Blood Debtors (Kill On Sight)
+          The Marked — Realm Blood Debtors (Kill On Sight)
         </h2>
         <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:12px;">
           Defaulters who failed to settle their bounty debts are marked Kill on Sight server-wide. Tracked permanently across character name changes and guild transfers.

@@ -275,7 +275,7 @@ function BE:AuditDebtLedger()
 
             bounty.status = KB.STATUS.OATHBREAKER
 
-            SafePrint(string.format("|cffff0000[WoWKB TRAITOR'S GIBBET ALERT]|r %s defaulted on blood debt of %s! Now condemned to the Traitor's Gibbet on the realm killboard.",
+            SafePrint(string.format("|cffff0000[WoWKB THE MARKED ALERT]|r %s defaulted on blood debt of %s! Now condemned to The Marked on the realm killboard.",
                 placer, KB.Utils.FormatMoney(totalOwed)))
         end
     end

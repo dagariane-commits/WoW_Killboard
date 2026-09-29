@@ -25,6 +25,13 @@ function KB:Initialize()
     WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {} }
     WoWKillboardDB.kills = WoWKillboardDB.kills or {}
 
+    -- Two-Way Sync Realm Data Linking
+    if WoWKillboard_RealmData then
+        WoWKillboardDB.RealmData = WoWKillboard_RealmData
+    elseif WoWKillboardDB.RealmData then
+        WoWKillboard_RealmData = WoWKillboardDB.RealmData
+    end
+
     WoWKillboardSettings = WoWKillboardSettings or {}
     for k, v in pairs(KB.DefaultSettings) do
         if WoWKillboardSettings[k] == nil then
@@ -98,9 +105,16 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         else
             if KB.Reinforcements then KB.Reinforcements:TriggerCallForBackup() end
         end
-    elseif cmd == "event" or cmd == "rally" or cmd == "manhunt" then
-        if (not arg or arg == "") and KB.UI and KB.UI.ShowRallyMusterDialog then
-            KB.UI:ShowRallyMusterDialog()
+    elseif cmd == "manhunt" or cmd == "rally" then
+        if KB.UI then
+            KB.UI:ShowTab("RALLIES")
+            if arg and arg ~= "" and KB.UI.ShowRallyDialog then
+                KB.UI:ShowRallyDialog()
+            end
+        end
+    elseif cmd == "event" then
+        if (not arg or arg == "") and KB.UI and KB.UI.ShowRallyDialog then
+            KB.UI:ShowRallyDialog()
             return
         end
         local title, zone, timeStr = arg:match("^([^|]+)%s*|%s*([^|]+)%s*|?%s*(.*)$")
@@ -628,15 +642,26 @@ SLASH_WOWKILLBOARDSOS1 = "/kbsos"
 SLASH_WOWKILLBOARDSOS2 = "/kbbackup"
 SLASH_WOWKILLBOARDSOS3 = "/warhorn"
 SLASH_WOWKILLBOARDSOS4 = "/kbwarhorn"
-SLASH_WOWKILLBOARDSOS5 = "/kbrally"
-SLASH_WOWKILLBOARDSOS6 = "/kbmanhunt"
-SLASH_WOWKILLBOARDSOS7 = "/manhunt"
 SlashCmdList["WOWKILLBOARDSOS"] = function(msg)
     local arg = msg and msg:lower():trim() or ""
     if arg == "stop" or arg == "resolve" or arg == "clear" or arg == "off" then
         if KB.Reinforcements then KB.Reinforcements:ResolveBeacon(false) end
     else
         if KB.Reinforcements then KB.Reinforcements:TriggerCallForBackup() end
+    end
+end
+
+-- Dedicated Quick-Slash Commands for Vanguard Manhunts
+SLASH_WOWKB_MANHUNT1 = "/manhunt"
+SLASH_WOWKB_MANHUNT2 = "/kbmanhunt"
+SLASH_WOWKB_MANHUNT3 = "/kbrally"
+SlashCmdList["WOWKB_MANHUNT"] = function(msg)
+    if KB.UI then
+        KB.UI:ShowTab("RALLIES")
+        local arg = msg and msg:match("^%s*(.-)%s*$") or ""
+        if arg ~= "" and KB.UI.ShowRallyDialog then
+            KB.UI:ShowRallyDialog()
+        end
     end
 end
 

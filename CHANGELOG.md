@@ -39,6 +39,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Standardized header subtitle to `AZEROTH COMBAT OVERVIEW`.
 
 ### Fixed
+- **Two-Way Sync Ribbon Default & Fallback (`UI.lua`, `Core.lua`, `watcher.py`)**:
+  - Defaulted `ribbonMode` to `"REALM"` in `UI.lua` so downloaded realm telemetry is visible immediately upon login or reload without requiring manual toggle clicks.
+  - Styled `RibbonToggleBtn` using pure Lua `UI:CreateButton` (192x22) with backdrop, gold highlight text, hover states, and theme reactivity.
+  - Added dual-fallback linking between `WoWKillboard_RealmData` and `WoWKillboardDB.RealmData` in `Core.lua` (`KB:Initialize`) and `UI.lua` (`UI:Refresh`, `UI:RenderLeaderboard`, `UI:RenderZones`) so telemetry persists cleanly across `/reload` without requiring a full client restart.
+- **Vanguard Manhunt Command Routing (`Core.lua`)**:
+  - Decoupled `/manhunt`, `/kbmanhunt`, and `/kbrally` from `WOWKILLBOARDSOS` into a dedicated slash command handler opening the Manhunt UI tab and muster dialog directly.
+- **Jargon Sweep Completion (`UI.lua`, `BountyEngine.lua`, `app.js`, `index.html`, `server.py`)**:
+  - Completely purged remaining instances of "Wall of Shame", "Traitor's Gibbet", "High Command Marked Targets", and "Combat Wire" across addon files, web frontend, and backend AI assistant routing in favor of *The Blood Ledger*, *The Marked*, *Manhunts*, and *The Shadow Network*.
+- **Lightsail Remote Deployment Hook (`web/server.py`)**:
+  - Added `-c safe.directory=*` to git subprocess invocation in `/api/admin/deploy` to resolve git dubious ownership restrictions on remote cloud VPS.
+- **Sync Agent SavedVariables Multi-Drive Discovery (`sync/watcher.py`, `WoWKillboardSync.exe`)**:
+  - Added glob auto-discovery of all `WTF/Account/*/SavedVariables` directories across `C:`, `D:`, `E:` drives and client flavors in `sync/watcher.py` and recompiled `WoWKillboardSync.exe`.
 - **Web Profile URL Truncation (`UI.lua`)**:
   - Standardized URL format to `https://[DOMAIN]/character?name=...&class=...&level=...&faction=...`, set `maxLetters=1024`, width=410, and cursor=0 to ensure complete copyability without ellipsis.
 - **UTF-8 Font Box Glyph Purge (`clean_fonts.py`, Lua files)**:

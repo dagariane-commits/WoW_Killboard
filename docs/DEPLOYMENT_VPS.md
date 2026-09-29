@@ -131,10 +131,10 @@ systemctl restart wowkillboard
 
 ### Updating to the Latest Code
 ```bash
-cd /root/WoW_Killboard
-git pull origin main
-cp -ru web /opt/wowkillboard/
-systemctl restart wowkillboard
+sudo git config --global --add safe.directory /opt/wowkillboard
+cd /opt/wowkillboard
+sudo git pull origin main
+sudo systemctl restart wowkillboard
 ```
 
 ### Database Backups

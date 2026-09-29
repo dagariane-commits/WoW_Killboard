@@ -17,7 +17,7 @@ Comprehensive technical documentation is maintained in the [`docs/`](docs/) dire
 - 📖 **[Master Technical Wiki](docs/README.md)** — Architectural index and developer portal.
 - 🏛️ **[System Architecture Specification](docs/ARCHITECTURE.md)** — In-depth breakdown of the 3-tier model, data contracts, and FNV-1a hashing.
 - ⚔️ **[Combat Telemetry & Gang Engine](docs/COMBAT_ENGINE.md)** — 15-second sliding gang clustering, 1v1 duels, and BG scoreboard telemetry.
-- 🩸 **[Blood Bounties & The Traitor's Gibbet](docs/BOUNTY_SYSTEM.md)** — Execution contracts, strict open-world PvP gating, anti-win-trade rules, and debtor radar.
+- 🩸 **[Blood Bounties & The Marked](docs/BOUNTY_SYSTEM.md)** — Execution contracts, strict open-world PvP gating, anti-win-trade rules, and debtor radar.
 - 🛡️ **[Taint Security & Compatibility](docs/TAINT_AND_COMPATIBILITY.md)** — Complete guide to our zero-taint standard across all 4 WoW client flavors.
 - 🗺️ **[Forward Strategic Roadmap](docs/ROADMAP.md)** — Phased roadmap covering public launch, guild war rooms, and ranked seasons.
 - 🚀 **[Public Release & Distribution Playbook](docs/PUBLIC_RELEASE_PLAYBOOK.md)** — Guide for packaging, CurseForge/Wago distribution, and hosting.
@@ -54,7 +54,7 @@ flowchart TD
     subgraph Web ["Frontline War Room Web Platform"]
         API --> Server["web/server.py (Flask API + SQLite)"]
         API2 --> Server
-        Server --> WebUI["Tactical Dark Web UI\n(Live Ticker, BGs, Blood Bounties, Traitor's Gibbet)"]
+        Server --> WebUI["Tactical Dark Web UI\n(Live Ticker, BGs, The Blood Ledger, The Marked)"]
     end
 ```
 
@@ -85,20 +85,20 @@ flowchart TD
 - **Guild War Tracking & In-Game Leaderboards**:
   - In-game guild affiliation indexing via `GetGuildInfo(unit)`.
   - In-game Top War Guilds ranking table inside the `/kb` dashboard.
-- **War Horn: Call to Arms & Vanguard Muster (World PvP Only)**:
-  - Sound the emergency War Horn via `/warhorn`, `/killboard warhorn`, `/kbrally`, or header button `[ 📯 WAR HORN ]`.
+- **War Horn: Call to Arms & Vanguard Manhunt (World PvP Only)**:
+  - Sound the emergency War Horn via `/warhorn`, `/killboard warhorn`, `/manhunt`, `/kb manhunt`, or header button `[ 📯 WAR HORN ]`.
   - **Strict Open-World PvP Gating**: Cannot be sounded in dungeons, raids, battlegrounds, or arenas (`IsInInstance()` protection).
   - Transmits exact GPS coordinates, zone, subzone, and hostile attacker telemetry to Guild Chat, Party/Raid, Yell, and P2P addon channels.
   - Automatically enables a 10-minute Auto-Invite listener (`EnsureRaidConversion`): whispering `"rally"`, `"war"`, `"backup"`, or `"invite"` automatically invites the ally to the vanguard squad!
   - Pops up an on-screen Reinforcement Alert dialog for guildmates with 1-click `"⚔️ Answer the Call"` response.
-- **Blood Bounties, Execution Contracts & The Traitor's Gibbet (World PvP Only)**:
+- **The Blood Ledger: Execution Contracts & The Marked (World PvP Only)**:
   - Place gold bounties upon enemy players via `/kb bounty <Target> <Gold>`.
   - **Strict Open-World PvP Gating**: Bounties can strictly only be declared on the open battlefields of Azeroth. Blocked inside instances/BGs.
   - In-game death vengeance prompt: Falling to an enemy in open-world combat prompts the victim to immediately declare a blood bounty.
   - **Delayed Last-Seen Vicinity**: Bounty rows display the last confirmed combat zone and elapsed time (`Last Sighted: Stranglethorn Vale ~14m ago`).
   - Anti-win-trade heuristics (level deltas, guild collusion protection, duplicate kill cooldowns).
   - Anti-name-change evasion via permanent character GUID tracking (`Player-XXXX-XXXXXXXX`).
-  - **The Traitor's Gibbet (Defaulted Debts)**: Debtor sirens (`PlaySound(8959)`) and screen alarms when an Oathbreaker is near.
+  - **The Marked (Defaulted Debts)**: Debtor sirens (`PlaySound(8959)`) and screen alarms when an Oathbreaker is near.
   - 1-click mail redemption portal with a 10% administrative fee.
 
 - **Head-to-Head Blood Feuds & Rules of Engagement (ROE)**:
@@ -152,7 +152,7 @@ flowchart TD
 - **External Armory Links**: 1-click links to Official Blizzard Armory, Classic Vanilla Armory (`Ironforge.pro`), and Warcraft Logs.
 - **War Guilds Leaderboards & Guild Dossiers**: Dedicated Guilds tab ranking top guilds by kills, deaths, K/D, and active combatant count, with roster inspection.
 - **Combat Dossiers**: Click any killmail to open detailed combatant cards, damage meters, and location telemetry.
-- **The Traitor's Gibbet**: Public pillory of Oathbreakers in default with days-in-default counters.
+- **The Marked**: Public pillory of Oathbreakers in default with days-in-default counters.
 - **Vanguard Manhunt & SOS Beacons (Discord Gateway)**: Real-time distress call tracking, squad recruitment, and Discord Webhook forwarding.
 - **War Correspondent HUD (OBS Overlay)**: Direct `/war-hud/<CharacterName>` (and `/streambox/<CharacterName>`) overlay for OBS Studio and streamers with transparent background and auto-updating kill/death ticker.
 - **Frontline Field Manual & Codex**: Comprehensive tactical archives covering Features, FAQ, About, Tactical Fog of War, Vanguard Benefactor, War Correspondent HUD, and the Warcraft Accord.
