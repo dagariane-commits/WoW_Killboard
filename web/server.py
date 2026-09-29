@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 WoWKillboard - web/server.py
 zKillboard-style Web Platform & REST API Server for World of Warcraft.
@@ -337,6 +338,28 @@ def init_db():
                 raw_json TEXT
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS bug_reports (
+                id TEXT PRIMARY KEY,
+                reporter_name TEXT,
+                reporter_realm TEXT,
+                reporter_faction TEXT,
+                client_flavor TEXT,
+                game_build TEXT,
+                zone TEXT,
+                subzone TEXT,
+                coordinates TEXT,
+                in_combat INTEGER,
+                user_report TEXT,
+                lua_error TEXT,
+                timestamp INTEGER,
+                ai_status TEXT DEFAULT 'ANALYZED',
+                ai_severity TEXT DEFAULT 'P2 - Visual / Minor',
+                ai_root_cause TEXT,
+                ai_diagnosis TEXT,
+                ai_suggested_fix TEXT
+            )
+        """)
 
         # Initialize default flavor in platform_stats
         try:
@@ -457,7 +480,7 @@ STREAMBOX_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WoW Killboard — War Correspondent HUD: {{ character_name }}</title>
+  <title>WoW Killboard -- War Correspondent HUD: {{ character_name }}</title>
   <style>
     :root {
       --cls-warrior: #c79c6e; --cls-paladin: #f58cba; --cls-hunter: #abd473;
@@ -1273,6 +1296,50 @@ def upload_saved_variables():
                         ))
                     except Exception:
                         pass
+
+        # Also extract bugReports if present
+        bug_list = []
+        if isinstance(parsed, dict):
+            if "bugReports" in parsed and isinstance(parsed["bugReports"], dict):
+                bug_list.extend(parsed["bugReports"].values())
+            elif "WoWKillboardDB" in parsed and isinstance(parsed["WoWKillboardDB"], dict) and "bugReports" in parsed["WoWKillboardDB"]:
+                bugs_obj = parsed["WoWKillboardDB"]["bugReports"]
+                if isinstance(bugs_obj, dict):
+                    bug_list.extend(bugs_obj.values())
+        for b in bug_list:
+            if isinstance(b, dict) and b.get("id"):
+                b_id = b["id"]
+                try:
+                    existing = conn.execute("SELECT id FROM bug_reports WHERE id = ?", (b_id,)).fetchone()
+                    if not existing:
+                        reporter = b.get("reporter") or b.get("reporter_name") or "Unmarked Soldier"
+                        realm = b.get("realm") or b.get("reporter_realm") or "Unknown Realm"
+                        faction = b.get("faction") or b.get("reporter_faction") or "Unknown Faction"
+                        flavor = b.get("clientFlavor") or b.get("client_flavor") or "CLASSIC_ERA"
+                        build = b.get("gameBuild") or b.get("game_build") or "Unknown"
+                        zone = b.get("zone") or "Unknown Zone"
+                        subzone = b.get("subzone") or ""
+                        coords = b.get("coordinates") or ""
+                        in_combat = 1 if b.get("inCombat", b.get("in_combat", False)) else 0
+                        user_report = b.get("userReport") or b.get("user_report") or ""
+                        lua_error = b.get("luaError") or b.get("lua_error") or ""
+                        ts = int(b.get("timestamp") or time.time())
+
+                        diag = diagnose_bug_report(b)
+                        conn.execute("""
+                            INSERT OR REPLACE INTO bug_reports (
+                                id, reporter_name, reporter_realm, reporter_faction,
+                                client_flavor, game_build, zone, subzone, coordinates,
+                                in_combat, user_report, lua_error, timestamp,
+                                ai_status, ai_severity, ai_root_cause, ai_diagnosis, ai_suggested_fix
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            b_id, reporter, realm, faction, flavor, build, zone, subzone,
+                            coords, in_combat, user_report, lua_error, ts,
+                            diag["status"], diag["severity"], diag["root_cause"], diag["diagnosis"], diag["suggested_fix"]
+                        ))
+                except Exception as ex:
+                    print(f"[Upload Bug Extraction Exception]: {ex}")
 
         conn.commit()
 
@@ -3654,6 +3721,150 @@ Answer strictly in your role as the Classic Azeroth Scribe. Grounded, utilitaria
         "sources": sources,
         "status": "ok"
     })
+
+# ----------------- Automated Bug Reporting & AI Diagnostician API -----------------
+
+def diagnose_bug_report(report_data: dict) -> dict:
+    """
+    Automated AI Bug Diagnostician.
+    Analyzes telemetry, combat lockdown state, client flavor, and error traces.
+    Uses Gemini API if available, with intelligent rule-based fallback.
+    """
+    reporter = report_data.get("reporter", report_data.get("reporter_name", "Unknown Soldier"))
+    realm = report_data.get("realm", report_data.get("reporter_realm", "Unknown Realm"))
+    flavor = report_data.get("clientFlavor", report_data.get("client_flavor", "CLASSIC_ERA"))
+    build = report_data.get("gameBuild", report_data.get("game_build", "Unknown Build"))
+    zone = report_data.get("zone", "Unknown Zone")
+    subzone = report_data.get("subzone", "")
+    in_combat = bool(report_data.get("inCombat", report_data.get("in_combat", False)))
+    user_report = report_data.get("userReport", report_data.get("user_report", ""))
+    lua_error = report_data.get("luaError", report_data.get("lua_error", ""))
+
+    # Default heuristic diagnosis
+    severity = "P2 - Visual / Minor"
+    root_cause = "General interface or telemetry discrepancy reported by field operative."
+    diagnosis = f"Operative {reporter} ({realm}) reported: '{user_report}' in {zone} ({subzone})."
+    suggested_fix = "Review active telemetry parsers and event listener registrations in Addon/WoWKillboard/."
+
+    # Heuristic checks
+    report_lower = (user_report + " " + lua_error).lower()
+    if in_combat or "combat" in report_lower or "action blocked" in report_lower or "taint" in report_lower:
+        severity = "P0 - Taint / Action Blocked Risk"
+        root_cause = "Potential execution during InCombatLockdown or protected frame anchoring."
+        suggested_fix = "Enforce 'if InCombatLockdown and InCombatLockdown() then return end' in affected UI/scanner routine."
+    elif "cleu" in report_lower or "combat log" in report_lower or "not counting" in report_lower or "not registered" in report_lower:
+        severity = "P1 - Attribution / CLEU Restriction"
+        root_cause = "CLEU restriction on target client flavor or bystander gating filtered the kill tick."
+        suggested_fix = f"Verify UNIT_HEALTH and bystander gating thresholds in CombatTracker.lua for {flavor}."
+    elif "subzone" in report_lower or "gurubashi" in report_lower or "gps" in report_lower or "map" in report_lower:
+        severity = "P2 - Spatial Telemetry / Map Discrepancy"
+        root_cause = "Subzone sanitization or map coordinate fallback."
+        suggested_fix = "Check watcher.py and server.py subzone fallback sanitization."
+
+    # Gemini API Analysis if key is configured
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if api_key:
+        try:
+            from google import genai
+            client = genai.Client(api_key=api_key)
+            ai_prompt = f"""You are the Staff Engineer and Automated Bug Diagnostician for WoW Killboard.
+World of Warcraft combat tracking addon & web platform.
+Operational Guardrails:
+1. Zero Blizzard UI Taint: Pure Lua, no XML, strict InCombatLockdown gating.
+2. Cross-Client Parity: WoW Forever Beta, Classic Era, Anniversary, Retail.
+3. Telemetry-First: 32-bit FNV-1a hashing, 15-second sliding clustering, spatial coordinates.
+
+Bug Report Telemetry:
+- Reporter: {reporter} ({realm}, {flavor}, Build: {build})
+- Location: {zone} {f'({subzone})' if subzone else ''}
+- In Combat Lockdown: {in_combat}
+- Operative Description: "{user_report}"
+- Lua Error Stack Trace: "{lua_error}"
+
+Diagnose this bug. Return valid JSON only with keys:
+- "severity": "P0 - Game Breaking / Taint Risk" or "P1 - Telemetry / Attribution Issue" or "P2 - Visual / Minor"
+- "root_cause": Concise 1-2 sentence technical explanation
+- "diagnosis": Detailed engineering explanation (2-3 sentences)
+- "suggested_fix": Actionable surgical fix steps for the engineers"""
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[ai_prompt],
+                config={"response_mime_type": "application/json"}
+            )
+            if response and response.text:
+                ai_data = json.loads(response.text)
+                if isinstance(ai_data, dict):
+                    severity = ai_data.get("severity", severity)
+                    root_cause = ai_data.get("root_cause", root_cause)
+                    diagnosis = ai_data.get("diagnosis", diagnosis)
+                    suggested_fix = ai_data.get("suggested_fix", suggested_fix)
+        except Exception as e:
+            print(f"[AI Bug Diagnostician Gemini Exception]: {e}")
+
+    return {
+        "status": "ANALYZED",
+        "severity": severity,
+        "root_cause": root_cause,
+        "diagnosis": diagnosis,
+        "suggested_fix": suggested_fix
+    }
+
+@app.route("/api/bugs", methods=["GET", "POST"])
+def bugs_api():
+    if request.method == "POST":
+        data = request.json or {}
+        b_id = data.get("id") or f"BUG-{int(time.time())}-{int(time.time()*1000)%10000:04d}"
+        reporter = data.get("reporter") or data.get("reporter_name") or "Unmarked Soldier"
+        realm = data.get("realm") or data.get("reporter_realm") or "Unknown Realm"
+        faction = data.get("faction") or data.get("reporter_faction") or "Unknown Faction"
+        flavor = data.get("clientFlavor") or data.get("client_flavor") or "CLASSIC_ERA"
+        build = data.get("gameBuild") or data.get("game_build") or "Unknown"
+        zone = data.get("zone") or "Unknown Zone"
+        subzone = data.get("subzone") or ""
+        coords = data.get("coordinates") or ""
+        in_combat = 1 if data.get("inCombat", data.get("in_combat", False)) else 0
+        user_report = data.get("userReport") or data.get("user_report") or ""
+        lua_error = data.get("luaError") or data.get("lua_error") or ""
+        ts = int(data.get("timestamp") or time.time())
+
+        # Run automated AI diagnosis
+        diag = diagnose_bug_report(data)
+
+        with get_db() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO bug_reports (
+                    id, reporter_name, reporter_realm, reporter_faction,
+                    client_flavor, game_build, zone, subzone, coordinates,
+                    in_combat, user_report, lua_error, timestamp,
+                    ai_status, ai_severity, ai_root_cause, ai_diagnosis, ai_suggested_fix
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                b_id, reporter, realm, faction, flavor, build, zone, subzone,
+                coords, in_combat, user_report, lua_error, ts,
+                diag["status"], diag["severity"], diag["root_cause"], diag["diagnosis"], diag["suggested_fix"]
+            ))
+
+        return jsonify({
+            "status": "ok",
+            "ticketId": b_id,
+            "diagnosis": diag
+        }), 201
+
+    # GET: return list of bug reports
+    with get_db() as conn:
+        rows = conn.execute("SELECT * FROM bug_reports ORDER BY timestamp DESC LIMIT 50").fetchall()
+        bugs = [dict(r) for r in rows]
+    return jsonify(bugs)
+
+@app.route("/api/bugs/<bug_id>", methods=["GET"])
+def get_bug_report(bug_id):
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM bug_reports WHERE id = ?", (bug_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "Bug report not found"}), 404
+        return jsonify(dict(row))
+
 
 if __name__ == "__main__":
     if "--reset-db" in sys.argv:

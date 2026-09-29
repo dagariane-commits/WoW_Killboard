@@ -952,6 +952,37 @@ function UI:CreateMainWindow()
     end)
     UI.SyncButton = syncBtn
 
+    -- Template-Free Report Bug / AI Dispatch Button
+    local bugBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    bugBtn:SetSize(78, 20)
+    bugBtn:SetPoint("RIGHT", syncBtn, "LEFT", -6, 0)
+    bugBtn:EnableMouse(true)
+    local bugLabel = bugBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    bugLabel:SetPoint("CENTER", 0, 0)
+    bugLabel:SetText("|cffff5555Report Bug|r")
+    bugBtn.Label = bugLabel
+    bugBtn:SetScript("OnClick", function()
+        UI:ShowBugReportModal()
+    end)
+    bugBtn:SetScript("OnEnter", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(1.0, 0.35, 0.35, 1.0)
+        end
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffff5555Report Bug / Issue|r", "Capture system telemetry and submit a bug ticket.\n\nOur AI diagnostic agent analyzes the issue upon sync.")
+    end)
+    bugBtn:SetScript("OnLeave", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
+        end
+        UI:HidePrivateTooltip()
+    end)
+    UI.BugButton = bugBtn
+
+
     -- 3 KPI Stat Cards (Authentic Warcraft Attribute Plate Style - Clean Vertical Separation)
     local cardConfigs = {
         { id = "KD",    title = "SESSION COMBAT K/D",   color = "ffd100", w = 268 },
@@ -3404,6 +3435,131 @@ function UI:ShowExportDialog()
     dlg:Show()
     dlg.EditBox:SetFocus()
     dlg.EditBox:HighlightText()
+    if dlg.Raise then dlg:Raise() end
+end
+
+-- ============================================================================
+-- Template-Free Bug Report & AI Diagnostics Dispatch Dialog
+-- ============================================================================
+function UI:ShowBugReportModal()
+    if InCombatLockdown and InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot open bug report dialog during combat.")
+        return
+    end
+
+    if not UI.BugReportDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(520, 360)
+        dlg:SetPoint("CENTER")
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(105)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+
+        dlg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        dlg:SetBackdropColor(0.06, 0.07, 0.10, 0.98)
+        dlg:SetBackdropBorderColor(0.85, 0.25, 0.25, 1.0)
+
+        local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", 0, -14)
+        title:SetText("|cffff5555WoW Killboard — Bug Dispatch & AI Diagnosis|r")
+        dlg.Title = title
+
+        local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        desc:SetPoint("TOP", 0, -36)
+        desc:SetText("Submit a combat issue or UI glitch. Our AI agent diagnoses telemetry on sync:")
+        dlg.Desc = desc
+
+        local tStrip = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        tStrip:SetPoint("TOPLEFT", dlg, "TOPLEFT", 16, -56)
+        tStrip:SetPoint("TOPRIGHT", dlg, "TOPRIGHT", -16, -56)
+        tStrip:SetHeight(28)
+        tStrip:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        tStrip:SetBackdropColor(0.02, 0.04, 0.08, 0.9)
+        tStrip:SetBackdropBorderColor(0.2, 0.3, 0.45, 0.7)
+
+        local tLabel = tStrip:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        tLabel:SetPoint("CENTER", 0, 0)
+        dlg.TelemetryLabel = tLabel
+
+        local inset = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        inset:SetPoint("TOPLEFT", tStrip, "BOTTOMLEFT", 0, -10)
+        inset:SetPoint("BOTTOMRIGHT", dlg, "BOTTOMRIGHT", -16, 52)
+        inset:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        inset:SetBackdropColor(0.02, 0.03, 0.05, 0.95)
+        inset:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.9)
+
+        local scrollFrame = CreateFrame("ScrollFrame", nil, inset)
+        scrollFrame:SetPoint("TOPLEFT", inset, "TOPLEFT", 8, -8)
+        scrollFrame:SetPoint("BOTTOMRIGHT", inset, "BOTTOMRIGHT", -8, 8)
+        scrollFrame:EnableMouseWheel(true)
+
+        local eb = CreateFrame("EditBox", nil, scrollFrame)
+        eb:SetMultiLine(true)
+        eb:SetMaxLetters(2000)
+        eb:EnableMouse(true)
+        eb:SetAutoFocus(false)
+        eb:SetFontObject("ChatFontNormal")
+        eb:SetWidth(460)
+        eb:SetScript("OnEscapePressed", function() dlg:Hide() end)
+        scrollFrame:SetScrollChild(eb)
+        scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+            local current = self:GetVerticalScroll()
+            local maxScroll = math.max(0, eb:GetHeight() - self:GetHeight())
+            local newScroll = math.max(0, math.min(maxScroll, current - (delta * 30)))
+            self:SetVerticalScroll(newScroll)
+        end)
+        dlg.EditBox = eb
+
+        local submitBtn = UI:CreateButton(dlg, 180, 26, "|cffffffffSubmit to AI Diagnostician|r", "GameFontHighlightSmall")
+        submitBtn:SetPoint("BOTTOMLEFT", 16, 14)
+        submitBtn:SetScript("OnClick", function()
+            local text = eb:GetText()
+            if not text or text:match("^%s*$") then
+                SafePrint("|cffff9900[WoWKB]|r Please describe what happened before submitting.")
+                return
+            end
+            if KB and KB.SubmitBugReport then
+                local tid = KB:SubmitBugReport(text)
+                if tid then
+                    dlg:Hide()
+                end
+            end
+        end)
+
+        local cancelBtn = UI:CreateButton(dlg, 100, 26, "Close", "GameFontHighlightSmall")
+        cancelBtn:SetPoint("BOTTOMRIGHT", -16, 14)
+        cancelBtn:SetScript("OnClick", function()
+            dlg:Hide()
+        end)
+
+        UI.BugReportDialog = dlg
+    end
+
+    local dlg = UI.BugReportDialog
+    local pName = UnitName("player") or "Player"
+    local flavor = KB.ClientFlavor or "CLASSIC_ERA"
+    local zName = GetRealZoneText() or "Wilderness"
+    local subZ = GetSubZoneText() or ""
+    local zStr = (subZ ~= "") and string.format("%s (%s)", zName, subZ) or zName
+
+    dlg.TelemetryLabel:SetText(string.format("|cff00e5ffClient:|r %s | |cffffd100Operative:|r %s | |cff10b981Sector:|r %s", flavor, pName, zStr))
+    dlg.EditBox:SetText("")
+    dlg:Show()
+    dlg.EditBox:SetFocus()
     if dlg.Raise then dlg:Raise() end
 end
 
