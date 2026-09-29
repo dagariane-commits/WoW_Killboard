@@ -170,6 +170,10 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             KB.UI:TestKillBanner()
             SafePrint("|cff00ff00[WoWKB]|r Frontline Kill Banner test preview triggered!")
         end
+    elseif cmd == "theme" then
+        if KB.UI and KB.UI.CycleTheme then
+            KB.UI:CycleTheme()
+        end
     elseif cmd == "testkill" or cmd == "mockkill" or cmd == "recordkill" or cmd == "demo" then
         local pName = UnitName("player") or "Hero"
         local _, pClass = UnitClass("player")

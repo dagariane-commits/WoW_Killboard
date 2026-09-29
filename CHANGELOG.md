@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `ignoreDeathBounties = false` preference to `KB.DefaultSettings`.
   - Added `[Never Ask Again]` button to the in-game death prompt dialog.
   - Gated all death mark dialogs (`ProcessDeath` and `CheckPendingDeathBounty`) to immediately abort inside Battlegrounds and Arenas (`instType == "pvp" or instType == "arena" or inInst`).
+- **Theme Cycling Nil Exception Fix (`UI.lua`, `Core.lua`)**:
+  - Implemented `UI:CycleTheme()` in `UI.lua` and added the `/kb theme` slash command to cleanly cycle between Classic Stone and ElvUI Dark styles, eliminating the `attempt to call a nil value` runtime error when clicking "Toggle Theme" in Settings.
 
 ### Changed
 - **Terminology & Branding Overhaul (Addon & Web Platform)**:
