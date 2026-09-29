@@ -82,6 +82,11 @@ html {
   scrollbar-gutter: stable;
   scroll-behavior: smooth;
   color-scheme: dark;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -101,7 +106,10 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  width: 100%;
+  max-width: 100vw;
   overflow-x: hidden;
+  position: relative;
 }
 
 /* Custom Scrollbars */
@@ -376,6 +384,47 @@ body {
   background-color: var(--text-main);
   border-radius: 2px;
   transition: all 0.2s;
+}
+
+.btn-text-desktop {
+  display: inline;
+}
+
+.btn-text-mobile {
+  display: none;
+}
+
+/* Champion Claim & Character Selector Cards */
+.char-select-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.char-select-card.active {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: var(--accent-cyan);
+}
+
+.char-select-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.char-select-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 /* Sub Row: Navigation Rail & Filter Strip */
@@ -744,12 +793,16 @@ body {
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease;
   overflow-y: auto;
 }
 
 .mobile-drawer.open {
   transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .mobile-drawer-header {
@@ -3042,6 +3095,18 @@ body {
   width: 820px;
 }
 
+.char-modal-card {
+  max-width: 780px;
+}
+
+.server-modal-card {
+  max-width: 640px;
+}
+
+.bug-reports-modal-card {
+  max-width: 860px;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -3654,42 +3719,70 @@ body {
     display: none !important;
   }
 
+  /* Mobile Viewport & Page-wide Horizontal Overflow Lock */
+  html {
+    scrollbar-gutter: auto !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  body {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    position: relative !important;
+  }
+
   /* 2. Streamlined Ultra-Compact Header */
   .site-header {
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
   }
 
   .header-main-row,
   .header-top-row {
-    padding: 6px 12px 4px 12px !important;
+    padding: 6px 10px !important;
     min-height: auto !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
     flex-wrap: wrap !important;
-    gap: 6px 8px !important;
+    gap: 4px 6px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
   }
 
   .logo-group {
-    gap: 6px;
-    flex-shrink: 0;
+    order: 1 !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+    cursor: pointer;
   }
 
   .header-faction-crest {
-    width: 20px;
-    height: 20px;
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .logo-swords-icon {
+    width: 16px !important;
+    height: 16px !important;
   }
 
   .logo-crest {
-    font-size: 1.0rem;
+    font-size: 1.0rem !important;
   }
 
   .logo-title {
-    font-size: 1.05rem;
-    letter-spacing: 0.5px;
-    line-height: 1.1;
+    font-size: 1.05rem !important;
+    letter-spacing: 0.5px !important;
+    line-height: 1.1 !important;
   }
 
   /* Hide bloated subtitles and desktop pills from mobile top row */
@@ -3701,17 +3794,14 @@ body {
     display: none !important;
   }
 
-  .header-tools-group {
-    display: flex !important;
-    align-items: center !important;
-    margin-left: auto !important;
-    gap: 6px !important;
-    flex-shrink: 0 !important;
+  /* Completely hide redundant horizontal sub-menu rail on mobile: all pages/modes live in the slide-in drawer */
+  .nav-links-rail {
+    display: none !important;
   }
 
-  .header-signin-btn {
-    padding: 5px 10px !important;
-    font-size: 0.75rem !important;
+  /* Unroll tools group so auth badge and hamburger participate in Row 1, and mode pills take Row 2 */
+  .header-tools-group {
+    display: contents !important;
   }
 
   .header-tools-group .search-wrap {
@@ -3720,6 +3810,89 @@ body {
 
   .supporter-btn {
     display: none !important; /* Accessible in mobile drawer */
+  }
+
+  /* Mobile Row 1 Right: Compact Claim Hero / Active Character Badge */
+  #header-auth-badge {
+    order: 2 !important;
+    margin-left: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-signin-btn {
+    padding: 5px 9px !important;
+    font-size: 0.74rem !important;
+    letter-spacing: 0.3px !important;
+    white-space: nowrap !important;
+  }
+
+  .header-user-pill {
+    gap: 5px !important;
+    padding: 2px 6px !important;
+  }
+
+  .header-user-pill .header-signout-btn {
+    display: none !important; /* Sign out is inside the mobile drawer */
+  }
+
+  .header-user-pill .clickable-player strong {
+    max-width: 85px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    vertical-align: bottom;
+  }
+
+  /* Mobile Row 1 Far Right: Tactile Hamburger Toggle */
+  .mobile-menu-btn {
+    order: 3 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    margin-left: 6px !important;
+    padding: 6px !important;
+    border: 1px solid var(--wow-brass-border, #4a3b27) !important;
+    background: rgba(10, 13, 20, 0.9) !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Mobile Row 2: 4-Way Mode Filter Strip (Full Width, Centered, Touch-Friendly) */
+  .header-mode-filters {
+    order: 4 !important;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    margin-top: 4px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 3px !important;
+    padding: 3px !important;
+    background: rgba(8, 12, 18, 0.95) !important;
+    border: 1px solid rgba(197, 160, 89, 0.3) !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  .header-mode-pill {
+    flex: 1 !important;
+    text-align: center !important;
+    padding: 6px 2px !important;
+    font-size: 0.76rem !important;
+    letter-spacing: 0.4px !important;
+    border-radius: 4px !important;
+  }
+
+  .btn-text-desktop {
+    display: none !important;
+  }
+
+  .btn-text-mobile {
+    display: inline !important;
   }
 
   .mobile-flavor-badge {
@@ -3743,47 +3916,32 @@ body {
     background: rgba(255, 255, 255, 0.12);
   }
 
-  .mobile-menu-btn {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 32px !important;
-    height: 32px !important;
-    padding: 6px !important;
-    border: 1px solid var(--wow-brass-border, #4a3b27) !important;
-    background: rgba(10, 13, 20, 0.9) !important;
-    border-radius: 4px !important;
-    cursor: pointer !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* Dual-Tier Header: Primary Navigation Rail as Sticky Horizontal Strip */
-  .nav-links-rail {
-    display: flex !important;
-    width: 100% !important;
-    order: 3 !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
-    padding: 4px 0 2px 0 !important;
-    gap: 4px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-  }
-
-  .nav-links-rail::-webkit-scrollbar {
-    display: none !important;
-  }
-
-  .nav-btn {
-    padding: 5px 8px !important;
-    font-size: 0.76rem !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* 3. Main Container Spacing */
+  /* 3. Main Container Spacing & Horizontal Containment */
   .container {
     padding: 10px 8px;
     gap: 10px;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .main-column,
+  .homepage-stats-hub,
+  #main-content-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #toast-container,
+  .combat-toast-container {
+    bottom: 12px !important;
+    right: 12px !important;
+    left: 12px !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    overflow: hidden !important;
   }
 
   /* 4. Compact Realm Stats Bar (2x2 Grid) */
@@ -3791,6 +3949,9 @@ body {
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
     margin-bottom: 2px;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .stat-card {
@@ -3815,6 +3976,10 @@ body {
   /* 5. Most Wanted Showcase: Compact Touch-Snap Horizontal Carousel */
   .most-wanted-section {
     margin-bottom: 6px;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
   }
 
   .most-wanted-header {
@@ -4053,12 +4218,83 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .modal-card {
-    padding: 14px;
-    width: 100%;
-    max-width: 100%;
-    max-height: 95dvh;
-    border-radius: 8px;
+  .modal-overlay {
+    padding: 8px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .modal-card,
+  .modal-card-lg,
+  .kill-dossier-card {
+    padding: 12px 10px !important;
+    width: 100% !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: 95dvh !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    margin: auto !important;
+  }
+
+  .modal-header h3 {
+    font-size: 1.15rem !important;
+  }
+
+  /* Champion Claim Modal Internal Responsive Rules */
+  #char-panel-known,
+  #char-panel-custom,
+  #char-known-list {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .char-select-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 9px 10px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .char-select-info {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .char-select-actions {
+    width: 100% !important;
+    display: flex !important;
+    gap: 6px !important;
+    margin-top: 2px !important;
+  }
+
+  .char-select-actions > div {
+    width: 100% !important;
+    display: flex !important;
+    gap: 6px !important;
+  }
+
+  .char-select-actions button {
+    flex: 1 !important;
+    text-align: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    padding: 6px 8px !important;
+  }
+
+  .char-modal-search-row {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  #char-faction-filter {
+    width: 100% !important;
   }
 
   .footer-inner {
@@ -4155,17 +4391,27 @@ body {
 /* Small Phones (< 480px) */
 @media (max-width: 480px) {
   .logo-title {
-    font-size: 0.98rem;
-  }
-
-  .nav-btn {
-    padding: 4px 6px !important;
-    font-size: 0.74rem !important;
+    font-size: 0.95rem !important;
   }
 
   .header-faction-crest {
-    width: 18px;
-    height: 18px;
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .logo-swords-icon {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .header-signin-btn {
+    padding: 4px 7px !important;
+    font-size: 0.70rem !important;
+  }
+
+  .header-mode-pill {
+    font-size: 0.72rem !important;
+    padding: 5px 1px !important;
   }
 
   .stats-grid {
@@ -6276,6 +6522,7 @@ body.portal-active .container {
   pointer-events: none;
   max-width: 380px;
   width: calc(100vw - 48px);
+  overflow: hidden;
 }
 
 .combat-toast {
@@ -6291,12 +6538,14 @@ body.portal-active .container {
   cursor: pointer;
   transform: translateX(120%);
   opacity: 0;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  visibility: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, visibility 0.35s ease;
 }
 
 .combat-toast.visible {
   transform: translateX(0);
   opacity: 1;
+  visibility: visible;
 }
 
 .combat-toast.bounty-claim {

@@ -5,6 +5,25 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.60] - 2026-09-29
+
+### Fixed
+- **Mobile Viewport Horizontal Scroll Lock (`style.css`)**:
+  - Enforced strict horizontal containment on `html` and `body` (`width: 100%; max-width: 100vw; overflow-x: hidden; position: relative;`) to permanently eliminate side-to-side page sliding on iOS Safari and Android Chrome.
+  - Reset `scrollbar-gutter: auto` on mobile touch viewports to prevent virtual gutters from artificially widening viewport dimensions past device bounds.
+  - Added `overflow: hidden` to `#toast-container` / `.combat-toast-container` and toggled `visibility: hidden; pointer-events: none;` on non-visible `.combat-toast` elements, preventing translated toasts (`translateX(120%)`) from expanding the document scrollable geometry.
+  - Added `visibility: hidden; pointer-events: none;` to the closed `.mobile-drawer` so off-canvas geometry (`translateX(100%)`) cannot induce horizontal swipe drift.
+- **Mobile Header Overhaul & Sub-Menu Deduplication (`index.html`, `style.css`, `app.js`)**:
+  - Completely hid the redundant horizontal navigation rail (`#nav-rail` / `.nav-links-rail`) on mobile screens (`max-width: 768px`) since all navigation tabs cleanly reside within the slide-in hamburger drawer.
+  - Restructured mobile header into a clean, uncrowded two-tier hierarchy:
+    - **Tier 1 (Top Bar)**: Left-aligned crests and brand logo (`WoW Killboard`), right-aligned compact `[⚔️ Claim Hero]` / active champion badge, and tactile hamburger button (`[≡]`).
+    - **Tier 2 (Filter Strip)**: Full-width, centered 4-way mode filter pills (`[WORLD] [BGS] [DUELS] [ARENAS]`) with equal-width touch-friendly tap targets (`flex: 1`).
+  - Added responsive button labels (`.btn-text-desktop` / `.btn-text-mobile`) displaying `⚔️ Claim Hero` on mobile devices.
+- **Champion Claim Modal Mobile Responsiveness (`index.html`, `style.css`, `app.js`)**:
+  - Refactored `.char-select-card` from hardcoded inline flex styles into responsive classes (`.char-select-card`, `.char-select-info`, `.char-select-actions`).
+  - On viewports `<= 768px`, combatant rows automatically transition to vertical card stacking: character metadata (faction, class icon, name, level, guild) occupies the card top, while action buttons (`[Select]`, `[Claim Champion ->]`) drop to an evenly divided full-width bottom row.
+  - Constrained all modal dialogs (`.modal-card`, `.modal-card-lg`, `.kill-dossier-card`) to `max-width: calc(100vw - 16px) !important; box-sizing: border-box !important; overflow-x: hidden !important;`, preventing modal cards and buttons from clipping off the screen edge.
+
 ## [1.4.59] - 2026-09-29
 
 ### Added

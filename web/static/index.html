@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=1.4.59">
+  <link rel="stylesheet" href="/static/style.css?v=1.4.60">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -352,7 +352,7 @@
 
   <!-- WoW Forever Realm / Server Selector Modal -->
   <div class="modal-overlay" id="server-modal" style="display: none;">
-    <div class="modal-card modal-card-lg" style="max-width: 640px;">
+    <div class="modal-card modal-card-lg">
       <div class="modal-header">
         <div>
           <strong style="color: var(--wow-gold); font-size: 1.15rem; font-family: var(--font-display);">WoW Forever — Select Realm Server</strong>
@@ -638,7 +638,7 @@
 
   <!-- Field Bug Reports & AI Diagnostics Modal -->
   <div class="modal-overlay" id="bug-reports-modal" style="display: none;" onclick="if(event.target===this) closeBugReportsModal()">
-    <div class="modal-card modal-card-lg" style="max-width: 860px; max-height: 85vh; display: flex; flex-direction: column;">
+    <div class="modal-card modal-card-lg" style="max-height: 85vh; display: flex; flex-direction: column;">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="officer-sigil-badge" style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444;">
@@ -668,7 +668,7 @@
 
   <!-- Champion Recognition & Combatant Identity Claim Modal -->
   <div id="character-link-modal" class="modal-overlay" onclick="handleCharacterModalBackdrop(event)">
-    <div class="modal-card modal-card-lg" style="max-width: 780px;">
+    <div class="modal-card modal-card-lg char-modal-card">
       <div class="modal-header">
         <div>
           <div style="font-size:0.75rem; font-weight:800; color:var(--wow-gold); letter-spacing:1px; text-transform:uppercase;">
@@ -693,7 +693,7 @@
 
       <!-- Tab 1: Known Combatants List -->
       <div id="char-panel-known" class="char-modal-panel">
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <div class="char-modal-search-row" style="display:flex; gap:8px; margin-bottom:12px;">
           <input type="text" id="char-search-input" class="search-input" style="flex:1;" placeholder="Search your character by name or guild..." oninput="filterKnownCharacters(this.value)">
           <select id="char-faction-filter" class="search-input" style="width:130px;" onchange="filterKnownCharacters()">
             <option value="">All Factions</option>
@@ -701,7 +701,7 @@
             <option value="horde">Horde</option>
           </select>
         </div>
-        <div id="char-known-list" style="display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto; padding-right:4px;">
+        <div id="char-known-list" class="char-known-list" style="display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto; padding-right:4px;">
           <div style="text-align:center; padding:30px; color:#64748b;">Loading indexed combatants...</div>
         </div>
       </div>

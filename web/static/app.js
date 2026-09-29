@@ -4689,27 +4689,27 @@ function renderKnownCharactersList(chars) {
     }
 
     return `
-      <div class="char-select-card" style="display:flex; justify-content:space-between; align-items:center; background:${isAct ? 'rgba(0, 229, 255, 0.12)' : 'rgba(255, 255, 255, 0.03)'}; border:1px solid ${isAct ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.08)'}; border-radius:6px; padding:10px 14px; transition:all 0.2s ease;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <img src="${factionIcon}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'};" alt="${c.faction || 'Faction'}">
-          <div class="char-avatar-mini" style="border:1px solid ${clsColor}; border-radius:4px; overflow:hidden; width:28px; height:28px;">
+      <div class="char-select-card ${isAct ? 'active' : ''}">
+        <div class="char-select-info">
+          <img src="${factionIcon}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'}; flex-shrink:0;" alt="${c.faction || 'Faction'}">
+          <div class="char-avatar-mini" style="border:1px solid ${clsColor}; border-radius:4px; overflow:hidden; width:28px; height:28px; flex-shrink:0;">
             <img src="/static/icons/classes/${cls.toLowerCase()}.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/static/icons/classes/warrior.jpg'" alt="${cls}">
           </div>
-          <div>
-            <div style="font-weight:800; font-size:0.95rem;">
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:800; font-size:0.95rem; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
               <span style="color:${clsColor};">${escapeHtml(c.name)}</span>
-              ${isAct ? '<span style="background:var(--accent-cyan); color:#000; font-size:0.65rem; font-weight:800; padding:1px 6px; border-radius:3px; margin-left:6px;">ACTIVE</span>' : ''}
+              ${isAct ? '<span style="background:var(--accent-cyan); color:#000; font-size:0.65rem; font-weight:800; padding:1px 6px; border-radius:3px;">ACTIVE</span>' : ''}
               ${claimBadgeHtml}
             </div>
-            <div style="font-size:0.75rem; color:#94a3b8; display:flex; align-items:center; gap:6px; margin-top:2px;">
+            <div style="font-size:0.75rem; color:#94a3b8; display:flex; align-items:center; gap:6px; margin-top:2px; flex-wrap:wrap;">
               <span>${lvlStr} ${cls.charAt(0) + cls.slice(1).toLowerCase()}</span>
               <span>&bull;</span>
               <span style="color:${isAlliance ? '#60a5fa' : '#f87171'};">${escapeHtml(c.faction || 'Neutral')}</span>
-              ${guildStr ? `<span>&bull;</span> <span style="color:#cbd5e1;">${guildStr}</span>` : ''}
+              ${guildStr ? `<span>&bull;</span> <span style="color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">${guildStr}</span>` : ''}
             </div>
           </div>
         </div>
-        <div>
+        <div class="char-select-actions">
           ${actionBtnHtml}
         </div>
       </div>
@@ -4894,7 +4894,10 @@ function renderHeaderAuthBadge() {
     `;
   } else {
     badge.innerHTML = `
-      <button class="header-signin-btn" onclick="openCharacterLinkModal()">Select / Claim Character</button>
+      <button class="header-signin-btn" onclick="openCharacterLinkModal()">
+        <span class="btn-text-desktop">Select / Claim Character</span>
+        <span class="btn-text-mobile">⚔️ Claim Hero</span>
+      </button>
     `;
   }
 }
