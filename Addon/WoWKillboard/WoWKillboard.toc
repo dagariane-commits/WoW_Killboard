@@ -1,14 +1,14 @@
 ## Interface: 16001
 ## Title: |cff00ccffWoW Killboard|r |cffffd100[Frontline War Room]|r
 ## Notes: World PvP & Battleground Intelligence, Live Killmail Feed, Blood Bounties, Traitor's Gibbet, War Horn, and Running Leaderboards.
-## Author: Scott Quick
+## Author: Dagariane
 ## Version: 1.0.0
 ## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties, WoWKillboardDistress, WoWKillboardEvents
 ## IconTexture: Interface\Icons\Achievement_PVP_P_01
 ## X-Category: PvP, Combat, Leaderboard
-## X-Copyright: Copyright (c) 2026 Scott Quick. All rights reserved.
+## X-Copyright: Copyright (c) 2026 Dagariane. All rights reserved.
 ## X-License: GPLv3
-## X-Website: https://github.com/SQUICK/WoW_Killboard
+## X-Website: https://github.com/dagariane-commits/WoW_Killboard
 
 Config.lua
 Utils.lua
