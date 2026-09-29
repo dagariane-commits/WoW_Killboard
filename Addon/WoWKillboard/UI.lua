@@ -55,7 +55,7 @@ local CLASS_COORDS = CLASS_ICON_TCOORDS or {
     EVOKER      = {0, 0.25, 0.75, 1.0},
 }
 
--- Theme Engine: Aegis Tactical vs ElvUI Minimalist vs Classic WoW UI
+-- Theme Engine: Classic WoW UI vs ElvUI Minimalist
 function UI:GetCurrentThemeName()
     if WoWKillboardSettings and WoWKillboardSettings.theme then
         local t = WoWKillboardSettings.theme:lower()

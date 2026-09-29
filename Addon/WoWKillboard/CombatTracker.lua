@@ -1404,7 +1404,7 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         end
     end
 
-    -- Bystander Protection (Scott Quick directive):
+    -- Bystander Protection (Combat safety directive):
     -- A player is ONLY a passive bystander if:
     -- 1. Not in combat
     -- 2. No enemy targeted or engaged in the last 30s

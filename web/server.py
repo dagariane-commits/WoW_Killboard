@@ -20,7 +20,7 @@ from flask_cors import CORS
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(APP_DIR, "static")
 DB_PATH = os.environ.get("DB_PATH", os.path.join(APP_DIR, "killboard.db"))
-ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "valor2026")
+ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "wowkb_archivist_secret")
 
 try:
     from sync.watcher import LuaTableParser

@@ -5,6 +5,26 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.54] - 2026-09-28
+
+### Security
+- **Purged Hardcoded Admin Secret (`app.js`, `server.py`, `test_pipeline.py`)**:
+  - Eradicated `valor2026` from public client-side JavaScript (`app.js`), preventing unauthorized users from discovering the key in browser DevTools.
+  - Replaced legacy default secret key with project-isolated fallback (`wowkb_archivist_secret`) and updated automated pipeline tests.
+- **Forensic Secret & Credential Audit**:
+  - Executed automated forensic static analysis across all files and git commit history: confirmed zero AWS keys (`AKIA`), zero Stripe keys (`sk_live`/`pk_live`), zero private key blocks (`BEGIN PRIVATE KEY`), zero SSH keys, zero PayPal/banking tokens, and zero credit card numbers.
+
+### Changed
+- **Developer Identity & PII Sanitization (`CombatTracker.lua`, `LICENSE`, `LEGAL_AND_COMPLIANCE.md`, `PUBLIC_RELEASE_PLAYBOOK.md`)**:
+  - Removed author real name comment (`Scott Quick directive`) from `CombatTracker.lua` line 1407 and rebuilt distribution archive (`WoWKillboard-v1.0.0.zip`), ensuring zero personal identifier leakage in public addon files.
+  - Standardized all legal, compliance, and license declarations to `Dagariane (WoW Killboard Team)`.
+  - Configured local Git author identity to `Dagariane <dagariane@gmail.com>` for all future commits.
+- **Decoupled Cross-Project References (`CONTRIBUTING.md`, `UI.lua`, `README.md`, `BETA_TESTER_QUICKSTART.md`)**:
+  - Updated repository clone URL in `CONTRIBUTING.md` to `dagariane-commits/WoW_Killboard.git` and updated security contact email to `dagariane@gmail.com`.
+  - Corrected theme engine comments and documentation to accurately reflect the two active in-game themes: **Classic WoW** and **ElvUI Minimalist** (purged legacy references to "Aegis Tactical").
+- **Formal Blizzard Trademark Notice (`index.html`)**:
+  - Injected official Blizzard Entertainment trademark and non-affiliation legal notice into the public web footer in compliance with Blizzard UI and Fan Site policies.
+
 ## [1.4.53] - 2026-09-28
 
 ### Added

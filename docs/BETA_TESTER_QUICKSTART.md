@@ -30,7 +30,7 @@ flowchart LR
 ### Step 3: Slay & Track Live
 - In-Game Commands:
   - Click the **PvP Skull Minimap Button** (or type `/wowkb` or `/killboard`) to open the **Frontline War Room Dashboard**.
-  - **Right-click the Minimap Button** to cycle between **Aegis Tactical**, **ElvUI Minimalist**, and **Classic WoW** visual themes!
+  - **Right-click the Minimap Button** to toggle between **Classic WoW** and **ElvUI Minimalist** visual themes!
   - Slay an enemy player in open world, duels, or battlegrounds to trigger the **Frontline Kill Banner** on your screen.
   - Sound the War Horn with `/warhorn` or `/kbsos` to rally your guild and party when overwhelmed.
 - View the Web Killboard:
@@ -46,7 +46,7 @@ flowchart LR
 | `/killboard alerts` or `/wowkb alerts` | Open Frontline Combat Alerts & Radar Settings (or click `⚙️ Alerts` in header) |
 | `/killboard move` or `/wowkb move` | Unlock/lock Kill Banner to drag and reposition anywhere on screen |
 | `/killboard test` or `/wowkb test` | Fire preview Kill Banner with sound and raid warning |
-| `/killboard theme` | Cycle between Aegis Tactical, ElvUI, and Classic themes |
+| `/killboard theme` | Toggle between Classic WoW and ElvUI Minimalist themes |
 | `/armory [Name]` | Inspect detailed combat dossier for any combatant |
 | `/kb profile [Name]` | Copy web profile dossier URL for yourself or target |
 | `/kb claim <code>` | Verify character ownership token from web platform |

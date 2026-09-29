@@ -29,7 +29,7 @@ Thank you for your interest in contributing to **WoW Killboard**! This document 
 ### Repository Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/ForgedByValor/WoW_Killboard.git
+   git clone https://github.com/dagariane-commits/WoW_Killboard.git
    cd WoW_Killboard
    ```
 2. Set up Python virtual environment (for tests and desktop sync):
@@ -79,4 +79,4 @@ Before submitting any pull request, you **must** pass all local verification tes
 ## 4. Reporting Issues & Security Vulnerabilities
 
 - **Bug Reports**: Open an issue detailing your client flavor (`Classic Era`, `Forever Beta`, `Retail`), the exact Lua error stack trace, and reproduction steps.
-- **Security Vulnerabilities**: For potential exploits regarding gold transactions or anti-win-trade heuristics, please email `security@forgedbyvalor.com` directly rather than filing public issues.
+- **Security Vulnerabilities**: For potential exploits regarding gold transactions or anti-win-trade heuristics, please email `dagariane@gmail.com` directly rather than filing public issues.
