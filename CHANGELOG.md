@@ -5,6 +5,27 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.75] - 2026-09-30
+
+### Fixed
+- **Stale Kill Ledger Discrepancy & Ambient Spectator Duel Suppression (`CombatTracker.lua`, `sync/watcher.py`, `web/server.py`)**:
+  - **The Issue**: After resetting in-game combat data across test characters (wiping to 11 active combat events across `Dagariane` and `Dag`), the production website (`http://13.216.102.148`) displayed `Realm Total Carnage: 45`.
+  - **Root Cause**:
+    1. *Stale Cross-Client SavedVariables Ingestion*: `sync/watcher.py` auto-discovers all WoW branches (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`). An un-reset `_classic_era_/WTF/Account/SQUICK/SavedVariables/WoWKillboard.lua` contained 27 historical battleground test kills from previous sessions that re-uploaded automatically.
+    2. *Ambient Spectator Duel Recording*: `CT:RecordDuelVictory()` in `CombatTracker.lua` listened to Blizzard's `DUEL_FINISHED` event and generated a killmail for *any* nearby duel between strangers in Undercity/Orgrimmar, even when the player was not a combatant (`isPlayerWinner == false and isPlayerLoser == false`), generating 7 stranger duel killmails with 0 damage.
+    3. *Remote Database Persistence*: The cloud SQLite database retained old testing kills independently of local WTF SavedVariables resets until administrative reconciliation.
+  - **Surgical Solution**:
+    1. **Spectator Duel Suppression (`Addon/WoWKillboard/CombatTracker.lua`)**:
+       - Added explicit combatant participation guard: `if not isPlayerWinner and not isPlayerLoser then return end`. Duels between third-party strangers within emote range are now strictly ignored and never generate killmails or increment duel counters.
+    2. **Multi-Account & Cross-Branch Ledger Reconciliation**:
+       - Cleared stale historical test kills from `_classic_era_`'s SavedVariables.
+       - Purged 7 ambient spectator duels from Account 2 (`993618181#1`), preserving the exact 9 legitimate character combat records + 1 active bounty against `Pepper`.
+       - Reconciled remote AWS Lightsail SQLite database via administrative reset endpoint and re-ingested clean character telemetry (10 total world kills: 1 for `Dagariane`, 9 for `Dag`).
+    3. **Automated Verification & Zero-Taint Deployment**:
+       - All 13 Lua syntax files passed validation (`validate_lua.py`).
+       - All 19 integration and pipeline tests passed (`test_pipeline.py`).
+       - Auto-deployed to all 4 local WoW clients and rebuilt `WoWKillboard-v1.0.0.zip`.
+
 ## [1.4.74] - 2026-09-30
 
 ### Fixed

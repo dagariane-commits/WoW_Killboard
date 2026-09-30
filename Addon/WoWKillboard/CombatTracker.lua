@@ -1715,6 +1715,12 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
     local isPlayerWinner = MatchesPlayer(winnerName) or MatchesPlayer(cleanWinner)
     local isPlayerLoser = MatchesPlayer(loserName) or MatchesPlayer(cleanLoser)
 
+    -- If neither winner nor loser is the local player, this is an ambient spectator duel
+    -- Do not record stranger duels into the local player's killmail feed or duel statistics
+    if not isPlayerWinner and not isPlayerLoser then
+        return
+    end
+
     -- Update W/L and Total statistics in WoWKillboardDB
     WoWKillboardDB = WoWKillboardDB or {}
     WoWKillboardDB.stats = WoWKillboardDB.stats or {}
