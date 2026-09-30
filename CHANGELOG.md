@@ -5,6 +5,16 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.67] - 2026-09-29
+
+### Added
+- **In-Game 1-Click Database Reset Button (`UI.lua`)**:
+  - Added dedicated `5. Database Management` section to the in-game Settings dialog (`/kb` -> `Settings`).
+  - Added red `[Reset Local Database]` button that wipes local combat records (`WoWKillboardDB.kills`), resets cached realm telemetry (`WoWKillboard_RealmData.RealmTotalCarnage = 0`), resets active session stats to zero, and immediately refreshes the interface without requiring combat reload.
+- **Web Admin Console Direct Access (`index.html`, `app.js`)**:
+  - Linked `Admin Console` directly in the site footer navigation rail.
+  - Clicking prompts for the secret key (`wowkb_archivist_secret`), unlocks the Master War Archivist Administration console, and smoothly scrolls to the `[Reset Master Database]` panel.
+
 ## [1.4.66] - 2026-09-29
 
 ### Fixed
