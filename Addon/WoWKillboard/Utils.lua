@@ -250,11 +250,12 @@ function U.GetClientFlavorTitle()
 
     local isBeta = (type(IsTestBuild) == "function" and IsTestBuild())
     local isClassicBeta = (version and (version:lower():find("beta") or version:lower():find("ptr")))
+    local isForeverRealm = (realm and realm:lower():find("forever"))
 
-    local flavorName = "WoW Forever"
-    local flavorColor = "00e5ff" -- Tactical Cyan for Forever Beta
+    local flavorName = "Classic Era"
+    local flavorColor = "d97706" -- Amber for Classic Era
 
-    if isBeta or isClassicBeta or (tocversion >= 11500 and tocversion < 11600) then
+    if isBeta or isClassicBeta or isForeverRealm then
         flavorName = "WoW Forever"
         flavorColor = "00e5ff"
     elseif tocversion >= 110000 then
@@ -283,13 +284,14 @@ function U.GetClientFlavorSubtitle()
 
     local isBeta = (type(IsTestBuild) == "function" and IsTestBuild())
     local isClassicBeta = (version and (version:lower():find("beta") or version:lower():find("ptr")))
+    local isForeverRealm = (realm and realm:lower():find("forever"))
 
-    local gameVersion = "Forever"
-    local status = "Beta"
-    local gameColor = "00e5ff" -- Tactical Cyan
-    local statusColor = "00ff88" -- Tactical Green
+    local gameVersion = "Classic Era"
+    local status = "Live"
+    local gameColor = "d97706" -- Amber
+    local statusColor = "60a5fa" -- Blue
 
-    if isBeta or isClassicBeta or (tocversion >= 11500 and tocversion < 11600) then
+    if isBeta or isClassicBeta or isForeverRealm then
         gameVersion = "Forever"
         status = "Beta"
         gameColor = "00e5ff"
@@ -320,29 +322,56 @@ end
 
 -- Retrieve active player specialization (Cross-Client Parity)
 function U.GetPlayerSpec()
+    -- Modern Retail / Cataclysm / MoP talent system
     if type(GetSpecialization) == "function" and type(GetSpecializationInfo) == "function" then
-        local specIndex = GetSpecialization()
-        if specIndex then
-            local _, specName = GetSpecializationInfo(specIndex)
-            if specName and specName ~= "" then return specName end
+        local ok, specIndex = pcall(GetSpecialization)
+        if ok and specIndex and type(specIndex) == "number" then
+            local ok2, _, specName = pcall(GetSpecializationInfo, specIndex)
+            if ok2 and specName and type(specName) == "string" and specName ~= "" then
+                return specName
+            end
         end
     end
-    -- Classic Era / Vanilla / Forever talent points inspection
+
+    -- Classic Era / Vanilla / Forever / Wrath talent points inspection
     if type(GetTalentTabInfo) == "function" and type(GetNumTalentTabs) == "function" then
         local maxPoints = -1
         local dominantSpec = nil
-        local numTabs = GetNumTalentTabs() or 3
+        local okNum, numTabs = pcall(GetNumTalentTabs)
+        numTabs = (okNum and type(numTabs) == "number") and numTabs or 3
+
         for i = 1, numTabs do
-            local name, _, pointsSpent = GetTalentTabInfo(i)
-            if pointsSpent and pointsSpent > maxPoints then
-                maxPoints = pointsSpent
-                dominantSpec = name
+            local okTab, ret1, ret2, ret3, ret4, ret5 = pcall(GetTalentTabInfo, i)
+            if okTab then
+                local tabName, pointsSpent
+                -- Modern Classic Era / Retail engine signature:
+                -- (id, name, description, iconTexture, pointsSpent, background, ...)
+                if type(ret2) == "string" and (type(ret5) == "number" or tonumber(ret5)) then
+                    tabName = ret2
+                    pointsSpent = tonumber(ret5)
+                -- Legacy 1.12 Vanilla signature:
+                -- (name, iconTexture, pointsSpent, fileName)
+                elseif type(ret1) == "string" and (type(ret3) == "number" or tonumber(ret3)) then
+                    tabName = ret1
+                    pointsSpent = tonumber(ret3)
+                else
+                    tabName = (type(ret2) == "string" and ret2 ~= "") and ret2 or (type(ret1) == "string" and ret1 or nil)
+                    pointsSpent = tonumber(ret5) or tonumber(ret3) or 0
+                end
+
+                pointsSpent = tonumber(pointsSpent) or 0
+                if pointsSpent > maxPoints then
+                    maxPoints = pointsSpent
+                    dominantSpec = tabName
+                end
             end
         end
-        if dominantSpec and maxPoints > 0 then
+
+        if dominantSpec and type(dominantSpec) == "string" and dominantSpec ~= "" and maxPoints > 0 then
             return dominantSpec
         end
     end
+
     return nil
 end
 

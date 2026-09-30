@@ -5,6 +5,20 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.72] - 2026-09-29
+
+### Fixed
+- **Classic Era Specialization Inspection Crash (`Utils.lua:337`, `Killmail.lua:49`)**:
+  - Resolved fatal Lua error `attempt to compare number with string` in `U.GetPlayerSpec()`:
+    - In Classic Era 1.15+, `GetTalentTabInfo(tabIndex)` returns `(id, name, description, iconTexture, pointsSpent, ...)`.
+    - Previously, `pointsSpent` was receiving the 3rd return value (`description`, a string), causing `pointsSpent > maxPoints` to crash with a type comparison error on every combat kill or death.
+    - Updated `U.GetPlayerSpec()` to correctly map argument 2 (`name`) and argument 5 (`pointsSpent`), while maintaining legacy 1.12 compatibility.
+    - Added strict numeric coercion `pointsSpent = tonumber(pointsSpent) or 0` and wrapped API calls in `pcall` to ensure zero runtime taint or failure under any client version.
+- **Spec Attribution Scoping (`Killmail.lua:49-65`)**:
+  - Scoped `GetPlayerSpec()` exclusively to the local player (`killer.guid == UnitGUID("player")` or `victim.guid == UnitGUID("player")`), preventing player talent specialization from bleeding onto foreign enemy players or NPCs.
+- **Classic Era Client Flavor Detection (`Utils.lua:250-310`)**:
+  - Corrected client flavor detection logic so that live Classic Era (`_classic_era_`) displays cleanly as `Classic Era` instead of defaulting to `WoW Forever`.
+
 ## [1.4.71] - 2026-09-29
 
 ### Fixed
