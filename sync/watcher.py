@@ -436,9 +436,14 @@ class KillboardWatcher:
             "isDuel": bool(data.get("isDuel", False)),
             "isBattleground": bool(data.get("isBattleground", False)),
             "isArena": bool(data.get("isArena", False)),
-            "battlegroundName": data.get("battlegroundName", ""),
-            "isSolo": bool(data.get("isSolo", False) and data.get("attackersCount", 1) <= 1),
-            "attackersCount": data.get("attackersCount", 1),
+            "isSolo": bool(
+                data.get("isSolo", False)
+                and data.get("attackersCount", 1) <= 1
+                and not data.get("isBattleground", False)
+                and not data.get("isArena", False)
+                and (data.get("totalDamage", 0) > 0 or data.get("isDuel", False))
+                and (killer_data.get("damageDone", 0) > 0 or data.get("isDuel", False))
+            ),
             "attackers": data.get("attackers", []),
             "totalDamage": data.get("totalDamage", 0),
             "killer": {
@@ -716,6 +721,16 @@ class KillboardWatcher:
                                 km_copy = dict(km)
                                 if "killId" not in km_copy:
                                     km_copy["killId"] = kid
+                                # Guardrail 4: Strict Solo Purity Sanitization
+                                if not km_copy.get("isDuel"):
+                                    tot_dmg = km_copy.get("totalDamage", 0) or 0
+                                    k_data = km_copy.get("killer", {}) if isinstance(km_copy.get("killer"), dict) else {}
+                                    k_dmg = k_data.get("damageDone", 0) or 0
+                                    att_count = km_copy.get("attackersCount", 1) or 1
+                                    if tot_dmg <= 0 or k_dmg <= 0 or att_count > 1 or km_copy.get("isBattleground") or km_copy.get("isArena"):
+                                        km_copy["isSolo"] = False
+                                        if att_count < 2:
+                                            km_copy["attackersCount"] = 2
                                 recent_kills.append(km_copy)
                                 known_kill_ids.add(kid)
                     # Also merge local bounties if any
@@ -732,23 +747,30 @@ class KillboardWatcher:
                 except Exception:
                     pass
 
+        # Ensure all recent kills strictly conform to Guardrail 4 solo purity
+        for rk in recent_kills:
+            if isinstance(rk, dict) and not rk.get("isDuel"):
+                tot_dmg = rk.get("totalDamage", 0) or 0
+                k_data = rk.get("killer", {}) if isinstance(rk.get("killer"), dict) else {}
+                k_dmg = k_data.get("damageDone", 0) or 0
+                att_count = rk.get("attackersCount", 1) or 1
+                if tot_dmg <= 0 or k_dmg <= 0 or att_count > 1 or rk.get("isBattleground") or rk.get("isArena"):
+                    rk["isSolo"] = False
+                    if att_count < 2:
+                        rk["attackersCount"] = 2
+
         # Sort recent kills descending by timestamp and cap at 60
         recent_kills.sort(key=lambda x: x.get("timestamp", 0) if isinstance(x, dict) else 0, reverse=True)
         recent_kills = recent_kills[:60]
 
         carnage = int(summary.get("RealmTotalCarnage", len(recent_kills))) if summary else len(recent_kills)
-        solo_ratio = float(summary.get("SoloRatio", 0.0)) if summary else 0.0
+        solo_count = sum(1 for k in recent_kills if isinstance(k, dict) and k.get("isSolo"))
+        solo_ratio = round((solo_count / max(1, len(recent_kills))) * 100, 1)
         faction_split = summary.get("FactionSplit", {"Alliance": 50, "Horde": 50}) if summary else {"Alliance": 50, "Horde": 50}
         a_split = float(faction_split.get("Alliance", 50))
         h_split = float(faction_split.get("Horde", 50))
         deadliest_zones = summary.get("DeadliestZones", []) if summary else []
         top_gankers = summary.get("TopGankers24h", []) if summary else []
-
-        # If summary was empty or offline, compute basic stats from recent_kills
-        if not summary and recent_kills:
-            carnage = len(recent_kills)
-            solo_count = sum(1 for k in recent_kills if isinstance(k, dict) and k.get("isSolo"))
-            solo_ratio = round((solo_count / max(1, carnage)) * 100, 1)
 
         lua_lines = [
             "-- WoWKillboard_RealmData.lua",

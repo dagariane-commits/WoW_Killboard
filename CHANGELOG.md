@@ -5,6 +5,35 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.74] - 2026-09-30
+
+### Fixed
+- **Guardrail 4 Solo Purity & 0-Damage Fallback Classification (`CombatTracker.lua`, `Killmail.lua`, `Core.lua`, `UI.lua`, `sync/watcher.py`, `web/server.py`)**:
+  - **The Issue**: All kills (including bystander target tagging, city guard executions, and alt deaths in Undercity) were showing up badged as `|cff00ff66[SOLO]|r` (Certified 1v1 Solo Kill) with `1V1 SOLO RATIO: 100%` in the in-game dashboard and live feed.
+  - **Root Cause**:
+    1. *0-Damage Fallback Attribution*: When a target died in proximity without recorded combat damage (e.g. Alliance targets executed by high-level Undercity guards while observed by Level 1 alt `Dag`), `CT:ProcessDeath` fell back to targeting attribution: `finalBlowKillerGUID = pGUID`, `damage = 0`, `spell = "Killing Blow"`. Because `#attackersList == 1`, `isSolo` evaluated to `true`.
+    2. *`Core.lua` Overwrite Bug*: `KB:SanitizeKillHistory()` previously had a consistency loop forcing `km.isSolo = true` whenever `#km.attackers == 1`, overriding non-solo classifications even on 0-damage kills.
+    3. *Victim Death Gang Blindness*: When the local player died (`victimGUID == playerGUID`), `isSolo` evaluated to `(#attackersList == 1)` without checking `CT.HostileCluster` or `CT:GetInferredHostilePartySize()`, falsely classifying deaths to roaming gangs as 1v1 solo kills.
+    4. *Extreme Level Disparity Bypass*: A level 1 character observing high-level combat was credited with 1v1 solo kills against level 20 players.
+    5. *`raw_json` Desynchronization*: In `web/server.py`, SQL column `is_solo` was revoked to 0 on 0-damage kills, but `data["isSolo"]` inside `raw_json` was not updated prior to serialization.
+  - **Surgical Solution**:
+    1. **Strict Damage Threshold & Guardrail 4 Solo Certification (`Addon/WoWKillboard/CombatTracker.lua`)**:
+       - Added `isFallbackAttribution` flag: 0-damage fallback attribution now marks `spell = "Assisted Blow"`, `isSolo = false`, and `attackersCount = 2`.
+       - Required `playerDamage > 0` and `totalDamage > 0` for killer solo certification (except verified duels).
+       - Added `isHostileGang` check (`hostilePartySize <= 1`) on victim death so gang ganks are never certified as solo.
+       - Added level disparity guard (`(vLvl - kLvl) >= 5` requires $\ge 100$ damage).
+    2. **Ingestion Invariant Enforcement (`Addon/WoWKillboard/Killmail.lua`)**:
+       - Added defense-in-depth in `KM:RecordKill`: any kill with `totalDamage <= 0`, `killerDamage <= 0`, or `attackersCount > 1` is strictly stripped of `isSolo = true` before entering `WoWKillboardDB.kills`.
+    3. **Retroactive Self-Healing Sanitizer (`Addon/WoWKillboard/Core.lua`)**:
+       - Rewrote step 3 in `KB:SanitizeKillHistory()`: actively inspects all historical records on startup and clears `isSolo = false` and sets `attackersCount = 2` on all 0-damage or multi-attacker records.
+    4. **UI Feed Badge & Alert Precision (`Addon/WoWKillboard/UI.lua`)**:
+       - Updated feed rendering to display `[ASSIST]` or `[GANG xN]` (orange) for assisted/multi-combatant engagements.
+       - Updated Raid Warning notice and engagement detail modals.
+    5. **Courier & Server Parity (`sync/watcher.py`, `web/server.py`)**:
+       - Enforced solo purity in `Watcher.upload_kill` and `sync_realm_data_to_client`.
+       - Synchronized `raw_json` `data["isSolo"]` and `data["attackersCount"]` in `ingest_kill_data`.
+       - Recompiled standalone `WoWKillboardSync.exe` and refreshed `WoWKillboard_RealmData.lua` across all clients.
+
 ## [1.4.73] - 2026-09-30
 
 ### Fixed

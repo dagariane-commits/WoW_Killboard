@@ -550,8 +550,10 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         if finalBlowKillerName then recordedAttackersMap[finalBlowKillerName] = true end
     end
 
+    local isFallbackAttribution = false
     -- Fallback: If no recorded attackers in RecentDamage, check active target / player attribution
     if #attackersList == 0 then
+        isFallbackAttribution = true
         local pGUID = UnitGUID("player")
         local isTargetVictim = (UnitExists("target") and (UnitGUID("target") == victimGUID or UnitName("target") == victimName)) or
                                (activeEnemyTarget and (activeEnemyTarget.guid == victimGUID or activeEnemyTarget.name == victimName))
@@ -604,7 +606,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
                 spell = "Support Assist",
                 class = pClass or "UNKNOWN",
                 level = UnitLevel("player") or 0,
-                guild = GetGuildInfo("player") or "None",
+                guild = (not InCombatLockdown() and GetGuildInfo("player")) or "None",
                 faction = UnitFactionGroup("player") or "Unknown",
                 isPlayer = true,
             })
@@ -615,13 +617,13 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             finalBlowKillerGUID = pGUID
             finalBlowKillerName = UnitName("player")
             local _, pClass = UnitClass("player")
-            local pGuild = GetGuildInfo("player")
+            local pGuild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
             local pFaction = UnitFactionGroup("player")
             table.insert(attackersList, {
                 guid = pGUID,
                 name = finalBlowKillerName or "Player",
                 damage = 0,
-                spell = "Killing Blow",
+                spell = "Assisted Blow",
                 class = pClass or "UNKNOWN",
                 level = UnitLevel("player") or 0,
                 guild = pGuild or "None",
@@ -878,12 +880,74 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     local hasNearbyFriendly = (friendlyAssists > 0)
     local isInstanceCombat = (context.isBattleground or context.isArena)
 
+    -- Extract unit scanner details for killer & victim
+    local killerInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(finalBlowKillerGUID) or {
+        guid = finalBlowKillerGUID,
+        name = finalBlowKillerName or "Unknown",
+        level = 0,
+        class = "UNKNOWN",
+        guild = "None",
+        faction = "Unknown",
+    }
+
+    local victimInfo = KB.UnitScanner and KB.UnitScanner:GetUnitInfo(victimGUID) or {
+        guid = victimGUID,
+        name = victimName or "Unknown",
+        level = 0,
+        class = "UNKNOWN",
+        guild = "None",
+        faction = "Unknown",
+    }
+
+    if playerGUID and victimGUID == playerGUID then
+        victimInfo.name = UnitName("player")
+        victimInfo.level = UnitLevel("player") or 0
+        local _, pClass = UnitClass("player")
+        victimInfo.class = pClass or "UNKNOWN"
+        victimInfo.faction = UnitFactionGroup("player") or "Unknown"
+        victimInfo.guild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
+    end
+
+    if playerGUID and finalBlowKillerGUID == playerGUID then
+        killerInfo.name = UnitName("player")
+        killerInfo.level = UnitLevel("player") or 0
+        local _, pClass = UnitClass("player")
+        killerInfo.class = pClass or "UNKNOWN"
+        killerInfo.faction = UnitFactionGroup("player") or "Unknown"
+        killerInfo.guild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
+    end
+
+    local playerDamage = 0
+    for _, att in ipairs(attackersList) do
+        if att.guid == playerGUID or (att.name and att.name == UnitName("player")) then
+            playerDamage = math.max(playerDamage, att.damage or 0)
+        end
+    end
+
+    local killerDamage = 0
+    for _, att in ipairs(attackersList) do
+        if att.guid == finalBlowKillerGUID or att.name == finalBlowKillerName then
+            killerDamage = math.max(killerDamage, att.damage or 0)
+        end
+    end
+
+    local hostilePartySize = CT:GetInferredHostilePartySize()
+    local isHostileGang = (hostilePartySize > 1)
+
+    local vLvl = (victimInfo and victimInfo.level) or 0
+    local kLvl = (killerInfo and killerInfo.level) or (finalBlowKillerGUID == playerGUID and (UnitLevel("player") or 0)) or 0
+    local isLevelDisparity = (vLvl > 0 and kLvl > 0 and (vLvl - kLvl) >= 5 and (finalBlowKillerGUID == playerGUID and playerDamage < 100 or killerDamage < 100))
+
     local isSolo = false
     if victimGUID == playerGUID then
-        -- Player is victim: solo if only 1 enemy attacker engaged player
-        isSolo = (not isInstanceCombat) and (#attackersList == 1)
+        -- Player is victim: solo only if pure 1v1 engagement with no gang around and positive damage
+        isSolo = (not isInstanceCombat)
+             and (#attackersList == 1)
+             and (not inGroup)
+             and (not isHostileGang)
+             and (totalDamage > 0 or killerDamage > 0)
     elseif finalBlowKillerGUID == playerGUID then
-        -- Player is killer: solo only if 100% pure solo engagement
+        -- Player is killer: solo only if 100% pure solo engagement with positive damage, no fallback tag, no level disparity
         isSolo = (not isInstanceCombat)
              and (not hasExternalAttacker)
              and (not hasExternalAssistOnVictim)
@@ -892,8 +956,17 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
              and (not inGroup)
              and (not hasNearbyFriendly)
              and (#attackersList == 1)
+             and (playerDamage > 0)
+             and (not isLevelDisparity)
+             and (not isFallbackAttribution)
     else
-        isSolo = (not isInstanceCombat) and (#attackersList == 1) and (not inGroup)
+        -- Third party kill observed: solo only if 1 attacker, positive damage, and reasonable level
+        local firstAtt = attackersList[1]
+        local attDmg = firstAtt and (firstAtt.damage or 0) or 0
+        isSolo = (not isInstanceCombat)
+             and (#attackersList == 1)
+             and (totalDamage > 0 or attDmg > 0)
+             and (not isLevelDisparity)
     end
 
     local friendlyPartySize = math.max(CT:GetFriendlyPartySize(), (victimGUID ~= playerGUID and #attackersList or 1))
@@ -903,7 +976,6 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     if victimGUID ~= playerGUID and not isSolo and friendlyPartySize < 2 then
         friendlyPartySize = 2
     end
-    local hostilePartySize = CT:GetInferredHostilePartySize()
 
     local attackersCount = #attackersList
     if victimGUID == playerGUID then
@@ -921,45 +993,9 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         attackersCount = 1
     end
 
-    -- Extract unit scanner details for killer & victim
-    local killerInfo = KB.UnitScanner:GetUnitInfo(finalBlowKillerGUID) or {
-        guid = finalBlowKillerGUID,
-        name = finalBlowKillerName or "Unknown",
-        level = 0,
-        class = "UNKNOWN",
-        guild = "None",
-        faction = "Unknown",
-    }
-
-    local victimInfo = KB.UnitScanner:GetUnitInfo(victimGUID) or {
-        guid = victimGUID,
-        name = victimName or "Unknown",
-        level = 0,
-        class = "UNKNOWN",
-        guild = "None",
-        faction = "Unknown",
-    }
-
-    if playerGUID and victimGUID == playerGUID then
-        victimInfo.name = UnitName("player")
-        victimInfo.level = UnitLevel("player") or 0
-        local _, pClass = UnitClass("player")
-        victimInfo.class = pClass or "UNKNOWN"
-        victimInfo.faction = UnitFactionGroup("player") or "Unknown"
-        victimInfo.guild = GetGuildInfo("player") or "None"
-    end
-
     -- If killer was the player
     if finalBlowKillerGUID == playerGUID then
         CT.SessionStats.kills = CT.SessionStats.kills + 1
-        killerInfo.name = UnitName("player")
-        killerInfo.level = UnitLevel("player")
-        local _, pClass = UnitClass("player")
-        killerInfo.class = pClass
-        local pFaction = UnitFactionGroup("player")
-        killerInfo.faction = pFaction
-        local pGuild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
-        killerInfo.guild = pGuild or "None"
     elseif inGroup or (playerDamage and playerDamage > 0) then
         CT.SessionStats.assists = (CT.SessionStats.assists or 0) + 1
     end
@@ -1005,7 +1041,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             guild = killerInfo.guild,
             faction = killerInfo.faction,
             partySize = (finalBlowKillerGUID == playerGUID) and friendlyPartySize or math.max(1, #attackersList),
-            damageDone = totalDamage,
+            damageDone = (finalBlowKillerGUID == playerGUID) and math.max(playerDamage, 0) or math.max(killerDamage, totalDamage),
             healingDone = (finalBlowKillerGUID == playerGUID) and CT.SessionStats.healingDone or 0,
         },
         victim = {
@@ -1458,6 +1494,10 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
                          or (cleanVictim and CT.RecentVictimGUIDs and CT.RecentVictimGUIDs[cleanVictim:lower()] ~= nil)
                          or (normVictim and CT.RecentVictimGUIDs and CT.RecentVictimGUIDs[normVictim] ~= nil)
 
+    local vLvl = (victimInfo and victimInfo.level) or 0
+    local pLvl = UnitLevel("player") or 0
+    local isLevelDisparity = (vLvl > 0 and pLvl > 0 and (vLvl - pLvl) >= 5 and playerDamage < 100)
+
     local isSolo = (not isInstanceCombat)
                and (not hasExternalAttacker)
                and (not hasExternalAssistOnVictim)
@@ -1465,7 +1505,8 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
                and (not hasRecentAssistedAlly)
                and (not inGroup)
                and (not hasNearbyFriendly)
-               and (hasPlayerDamage or isCLEUForbidden or isTargetEngaged or isPlayerInCombat)
+               and (hasPlayerDamage or (isCLEUForbidden and (isTargetEngaged or isPlayerInCombat) and not isLevelDisparity and pLvl >= 10))
+               and (not isLevelDisparity)
 
     local attackersCount = math.max(#attackersList, partySize, 1 + friendlyAssists)
     if isInstanceCombat or not isSolo then

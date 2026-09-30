@@ -58,7 +58,12 @@ function KB:SanitizeKillHistory()
                     km.attackers = cleanedAttackers
                     km.attackersCount = #cleanedAttackers
                     if km.attackersCount <= 1 and not km.isDuel and not km.isBattleground then
-                        km.isSolo = true
+                        if (km.totalDamage or 0) > 0 and (km.killer and (km.killer.damageDone or 0) > 0) then
+                            km.isSolo = true
+                        else
+                            km.isSolo = false
+                            km.attackersCount = 2
+                        end
                     end
                 end
             end
@@ -103,11 +108,24 @@ function KB:SanitizeKillHistory()
                 km.isSolo = false
             end
 
-            -- 3. General consistency: if attackersCount == 1, isSolo should be true (unless duel/BG)
-            if km.attackers and type(km.attackers) == "table" and #km.attackers == 1 and not km.isDuel and not km.isBattleground then
-                if not km.isSolo then
-                    km.isSolo = true
-                    km.attackersCount = 1
+            -- 3. Strict Guardrail 4 Solo Purity & 0-Damage Sanitization:
+            -- A kill is NEVER certified solo if totalDamage <= 0, killerDamage <= 0, or multiple attackers exist
+            if not km.isDuel then
+                local kDmg = (km.killer and km.killer.damageDone) or 0
+                local totDmg = km.totalDamage or 0
+                local kLvl = (km.killer and km.killer.level) or 0
+                local vLvl = (km.victim and km.victim.level) or 0
+                local hasLevelDisparity = (vLvl > 0 and kLvl > 0 and (vLvl - kLvl) >= 5 and kDmg < 100)
+
+                if km.isSolo then
+                    if totDmg <= 0 or kDmg <= 0 or hasLevelDisparity or (km.attackersCount and km.attackersCount > 1) or (km.attackers and #km.attackers > 1) or km.isBattleground or km.isArena then
+                        km.isSolo = false
+                        km.attackersCount = math.max(2, km.attackersCount or 2)
+                        modified = true
+                    end
+                elseif (km.attackersCount and km.attackersCount <= 1) and not km.isSolo then
+                    -- If not certified solo, ensure attackersCount reflects an assisted/gang engagement
+                    km.attackersCount = 2
                     modified = true
                 end
             end

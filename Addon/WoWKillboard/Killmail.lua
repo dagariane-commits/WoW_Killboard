@@ -35,16 +35,38 @@ function KM:RecordKill(data)
     local isVictimSelf = (data.victim and data.victim.guid and playerGUID ~= "" and data.victim.guid == playerGUID)
     local playerSpec = (KB.Utils and KB.Utils.GetPlayerSpec and KB.Utils.GetPlayerSpec()) or nil
 
+    local isSolo = data.isSolo or false
+    local attackersCount = data.attackersCount or 1
+    local totalDamage = data.totalDamage or 0
+    local killerDamage = (data.killer and data.killer.damageDone) or 0
+    local isDuel = data.isDuel or false
+    local isBattleground = data.isBattleground or false
+    local isArena = data.isArena or false
+
+    -- Guardrail 4: Strict Solo Purity Enforcement (0-damage & gang ganks never certified solo)
+    if not isDuel then
+        if isBattleground or isArena or totalDamage <= 0 or (isKillerSelf and killerDamage <= 0) then
+            isSolo = false
+            if attackersCount < 2 then attackersCount = 2 end
+        end
+        if attackersCount > 1 or (data.attackers and #data.attackers > 1) then
+            isSolo = false
+        end
+    end
+    if isSolo then
+        attackersCount = 1
+    end
+
     local killmail = {
         killId = killId,
         timestamp = data.timestamp or time(),
-        isDuel = data.isDuel or false,
-        isBattleground = data.isBattleground or false,
-        isArena = data.isArena or false,
+        isDuel = isDuel,
+        isBattleground = isBattleground,
+        isArena = isArena,
         battlegroundName = data.battlegroundName,
-        isSolo = data.isSolo or false,
-        attackersCount = data.attackersCount or 1,
-        totalDamage = data.totalDamage or 0,
+        isSolo = isSolo,
+        attackersCount = attackersCount,
+        totalDamage = totalDamage,
         attackers = data.attackers or {},
         killer = {
             guid = data.killer.guid,

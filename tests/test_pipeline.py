@@ -1307,6 +1307,101 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertIn("KB-test-1", parsed["WoWKillboardDB"])
         print("[PASS] Verified LuaTableParser claimTokens, bugReports, and lastManualSync extraction integrity.")
 
+    def test_20_solo_purity_and_zero_damage_revocation(self):
+        """Guardrail 4: Verify 0-damage tag kills and gang ganks are strictly revoked from 1v1 solo certification."""
+        # 1. Zero-damage fallback kill (player tagged enemy who died to guards/world)
+        zero_dmg_kill = {
+            "killId": "KB-ZERO-DMG-01",
+            "timestamp": int(time.time()),
+            "isDuel": False,
+            "isBattleground": False,
+            "isSolo": True,
+            "attackersCount": 1,
+            "totalDamage": 0,
+            "killer": {
+                "name": "Dag", "level": 1, "class": "PALADIN",
+                "guild": "None", "faction": "Horde", "partySize": 1,
+                "damageDone": 0, "healingDone": 0
+            },
+            "victim": {
+                "name": "Mirria", "level": 20, "class": "MAGE",
+                "guild": "None", "faction": "Alliance", "partySize": 1
+            },
+            "location": {
+                "mapId": 1458, "zone": "Undercity", "subZone": "Ruins of Lordaeron",
+                "x": 71.0, "y": 11.0
+            }
+        }
+        resp = self.client.post("/api/kills", json=zero_dmg_kill)
+        self.assertEqual(resp.status_code, 201)
+
+        # Fetch kill back from API and assert isSolo == False
+        res = self.client.get("/api/kill/KB-ZERO-DMG-01")
+        self.assertEqual(res.status_code, 200)
+        k_data = res.get_json()
+        self.assertFalse(k_data["isSolo"], "0-damage fallback kill must NEVER be certified as a 1v1 solo kill")
+
+        # 2. Multi-attacker kill with isSolo: True
+        gang_kill = {
+            "killId": "KB-GANG-01",
+            "timestamp": int(time.time()),
+            "isDuel": False,
+            "isBattleground": False,
+            "isSolo": True,
+            "attackersCount": 3,
+            "totalDamage": 3500,
+            "killer": {
+                "name": "Ganker1", "level": 20, "class": "ROGUE",
+                "guild": "None", "faction": "Horde", "partySize": 3,
+                "damageDone": 1200, "healingDone": 0
+            },
+            "victim": {
+                "name": "Victim1", "level": 20, "class": "PALADIN",
+                "guild": "None", "faction": "Alliance", "partySize": 1
+            },
+            "location": {
+                "mapId": 1458, "zone": "Undercity", "subZone": "Ruins of Lordaeron",
+                "x": 71.0, "y": 11.0
+            }
+        }
+        resp = self.client.post("/api/kills", json=gang_kill)
+        self.assertEqual(resp.status_code, 201)
+        res = self.client.get("/api/kill/KB-GANG-01")
+        self.assertEqual(res.status_code, 200)
+        k_data = res.get_json()
+        self.assertFalse(k_data["isSolo"], "Multi-attacker gang gank must NEVER be certified as a 1v1 solo kill")
+
+        # 3. Certified 100% pure 1v1 solo kill
+        pure_solo_kill = {
+            "killId": "KB-PURE-SOLO-01",
+            "timestamp": int(time.time()),
+            "isDuel": False,
+            "isBattleground": False,
+            "isSolo": True,
+            "attackersCount": 1,
+            "totalDamage": 2400,
+            "killer": {
+                "name": "Dagariane", "level": 20, "class": "PALADIN",
+                "guild": "Vanguard", "faction": "Alliance", "partySize": 1,
+                "damageDone": 2400, "healingDone": 0
+            },
+            "victim": {
+                "name": "EnemyRogue", "level": 20, "class": "ROGUE",
+                "guild": "Shadows", "faction": "Horde", "partySize": 1
+            },
+            "location": {
+                "mapId": 1458, "zone": "Undercity", "subZone": "Ruins of Lordaeron",
+                "x": 71.0, "y": 11.0
+            }
+        }
+        resp = self.client.post("/api/kills", json=pure_solo_kill)
+        self.assertEqual(resp.status_code, 201)
+        res = self.client.get("/api/kill/KB-PURE-SOLO-01")
+        self.assertEqual(res.status_code, 200)
+        k_data = res.get_json()
+        self.assertTrue(k_data["isSolo"], "Legitimate 1v1 solo kill with 100% solo damage must remain certified")
+        print("[PASS] Verified Guardrail 4 Solo Purity: 0-damage tags revoked, multi-attacker revoked, true 1v1 preserved.")
+
 if __name__ == "__main__":
     unittest.main()
 
