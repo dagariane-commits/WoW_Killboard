@@ -30,6 +30,11 @@ function KM:RecordKill(data)
         return -- already recorded
     end
 
+    local playerGUID = (UnitGUID and UnitGUID("player")) or ""
+    local isKillerSelf = (data.killer and data.killer.guid and playerGUID ~= "" and data.killer.guid == playerGUID)
+    local isVictimSelf = (data.victim and data.victim.guid and playerGUID ~= "" and data.victim.guid == playerGUID)
+    local playerSpec = (KB.Utils and KB.Utils.GetPlayerSpec and KB.Utils.GetPlayerSpec()) or nil
+
     local killmail = {
         killId = killId,
         timestamp = data.timestamp or time(),
@@ -46,7 +51,7 @@ function KM:RecordKill(data)
             name = data.killer.name or "Unknown",
             level = data.killer.level or 0,
             class = data.killer.class or "UNKNOWN",
-            spec = data.killer.spec or KB.Utils.GetPlayerSpec() or nil,
+            spec = data.killer.spec or (isKillerSelf and playerSpec) or nil,
             guild = data.killer.guild or "None",
             faction = data.killer.faction or "Unknown",
             partySize = data.killer.partySize or 1,
@@ -58,7 +63,7 @@ function KM:RecordKill(data)
             name = data.victim.name or "Unknown",
             level = data.victim.level or 0,
             class = data.victim.class or "UNKNOWN",
-            spec = data.victim.spec or nil,
+            spec = data.victim.spec or (isVictimSelf and playerSpec) or nil,
             guild = data.victim.guild or "None",
             faction = data.victim.faction or "Unknown",
             partySize = data.victim.partySize or 1,
