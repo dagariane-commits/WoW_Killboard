@@ -11,6 +11,8 @@ dist/
 # Database files
 *.db
 *.sqlite3
+*.db-wal
+*.db-shm
 
 # Archives (except distribution releases if desired)
 # *.zip
