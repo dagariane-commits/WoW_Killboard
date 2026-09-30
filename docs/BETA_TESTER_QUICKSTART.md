@@ -55,7 +55,13 @@ flowchart LR
 | `/warhorn stop` | Stand down active War Horn muster |
 | `/killboard kos` | Review or manage realm KOS Blacklist |
 | `/killboard bounty` | Issue a Mark of Spite on an enemy target |
+| `/kb testkill` | Simulate an open-world PvP kill to test your feed & banner |
+| `/kb stress [N]` | Simulate N (default 25) combat encounters to benchmark FPS and memory |
+| `/kb reset` | Reset local battle history and cached realm totals to 0 |
 | `/kb bug [text]` or `/kb report` | Submit instant in-game bug report to AI Diagnostician |
+
+> [!TIP]
+> You can also reset your local database anytime with 1 click: open `/kb` &rarr; click **`Settings`** &rarr; scroll to **`5. Database Management`** &rarr; click **`[Reset Local Database]`**!
 
 ---
 

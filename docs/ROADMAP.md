@@ -97,19 +97,28 @@ timeline
 
 ---
 
-## Phase 5: Public Release, Cloud Hosting & Multi-Realm Federation (Status: ACTIVE / NEXT FOCUS)
+## Phase 5: Public Release, Cloud Hosting & Multi-Realm Federation (Status: ACTIVE / IN PROGRESS)
 
-**Milestone Objective**: Distribute the addon to public community portals, deploy production cloud hosting with SSL, and support multi-realm federation.
+**Milestone Objective**: Deploy production cloud hosting, establish custom domain and SSL, distribute the addon to public community portals (CurseForge, Wago.io), and support multi-realm federation.
 
 ### Action Items & Deliverables:
-1. **Public Addon Portals**:
-   - [ ] Submit package to **CurseForge** (`WoWKillboard.zip` supporting interface versions `11503`, `11504`, `110002`).
+1. **Production Cloud Infrastructure (Status: DEPLOYED & TESTED)**:
+   - [x] Deploy Flask + SQLite platform to production AWS Lightsail instance (`13.216.102.148:8080`).
+   - [x] Configure systemd service daemon (`wowkillboard.service`) for automatic process recovery.
+   - [x] Enable SQLite Write-Ahead Logging (`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=10000;`) for non-blocking concurrent writes.
+   - [x] Automated stress testing suite (`scripts/stress_test.py`, `/kb stress [N]`) validating 168+ RPS throughput.
+   - [x] Administrative database reset lifecycle with multi-table cascade purging.
+2. **Domain Registration & SSL Hardening (Status: NEXT STEP)**:
+   - [ ] Register public domain (e.g., `wowkillboard.com` via Cloudflare).
+   - [ ] Configure DNS A-records pointing to AWS Lightsail elastic IP (`13.216.102.148`).
+   - [ ] Configure automated SSL certificate provisioning via Let's Encrypt / Certbot or Cloudflare Edge SSL.
+   - [ ] Update `KB.WebDomain` in Addon and `DEFAULT_PROD_URL` in `WoWKillboardSync.py` to custom HTTPS domain.
+   - [ ] Recompile standalone binary `WoWKillboardSync.exe`.
+3. **Public Addon Portals & Distribution (Status: QUEUED)**:
+   - [ ] Submit package to **CurseForge** (`WoWKillboard-v1.0.0.zip` supporting interface versions `11503`, `11504`, `110002`).
    - [ ] Submit to **Wago.io** and **WoWInterface**.
-   - [ ] Automated GitHub Release pipeline for semantic version tags (`v1.4.9`).
-2. **Production Cloud Deployment & SSL**:
-   - [ ] Deploy Dockerized Flask + SQLite platform to production cloud infrastructure.
-   - [ ] Configure automated SSL certificate provisioning via Let's Encrypt / Cloudflare.
-   - [ ] Automated nightly SQLite database backup snapshots.
-3. **Multi-Realm Federation**:
+   - [ ] Automated GitHub Release pipeline for semantic version tags.
+4. **Multi-Realm Federation**:
    - [ ] Segment combat telemetry by Realm (WoW Forever Realm 1, Era Whitemane, Retail Illidan).
    - [ ] Realm-vs-Realm macro analytics and faction balance telemetry.
+

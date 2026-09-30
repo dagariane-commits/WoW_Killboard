@@ -4,6 +4,25 @@ This playbook provides the operational procedures for packaging, publishing, hos
 
 ---
 
+## 0. Domain & Pre-Flight Release Sequence (Domain First)
+
+Before submitting the addon archive to CurseForge, execute the release sequence in this strict order:
+
+```mermaid
+flowchart TD
+    S1["1. Register Domain\n(e.g. wowkillboard.com via Cloudflare)"] --> S2["2. Point DNS A-Record\nMap @ and api to 13.216.102.148"]
+    S2 --> S3["3. Automatic HTTPS / SSL\nCaddy provisions Let's Encrypt certificate"]
+    S3 --> S4["4. Update In-Game URLs\nSet KB.WebDomain in Config.lua & recompile Sync.exe"]
+    S4 --> S5["5. Rebuild & Submit\nWoWKillboard-v1.0.0.zip to CurseForge"]
+```
+
+### Why Domain First?
+1. **CurseForge Human Moderation**: Addons linking to trusted, branded HTTPS domains pass human review faster than raw IP addresses.
+2. **Zero Browser "Not Secure" Warnings**: When players click `/kb web`, `/armory`, or `/feedback`, browsers open a green padlock connection (`https://`).
+3. **No Re-Submission Overhead**: Registering the domain first means the initially published addon zip is permanent, avoiding immediate version increments.
+
+---
+
 ## 1. Addon Packaging & Manifest Standards
 
 ### The Interface Number Reference

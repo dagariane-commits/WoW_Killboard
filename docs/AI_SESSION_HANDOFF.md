@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.
-> **Last Synchronized**: 2026-09-27 14:32:00 EDT
-> **Git Status**: Branch `main` at commit `9b93905` (Clean working tree, synced with `origin/main`).
+> **Last Synchronized**: 2026-09-29 21:15:00 EDT
+> **Git Status**: Branch `main` at commit `ab5c010` (Clean working tree, synced with `origin/main`).
 > **Developer & Lead**: Scott Quick.
 
 ---
@@ -42,17 +42,21 @@ Scott Quick has provisioned the dedicated production VPS instance on AWS Lightsa
 | **Instance Plan** | General Purpose (1 GB RAM, 2 vCPUs, 40 GB SSD) |
 | **Static IPv4 Address** | **`13.216.102.148`** (Permanently attached) |
 | **Firewall Rules** | Port 22 (SSH), Port 80 (HTTP), Port 443 (HTTPS) all open |
-| **Domain Status** | No custom domain yet. Configured for direct IP access on `http://13.216.102.148/` |
-| **Bootstrap Script** | `deploy/setup_vps.sh` (Refined, supports blank domain for direct IP fallback) |
+| **Domain Status** | Configured for direct IP access on `http://13.216.102.148/` (Preparing for custom domain & CurseForge) |
+| **Service Daemon** | systemd: `wowkillboard.service` (Flask REST API + SQLite) |
+| **Reverse Proxy** | Caddy v2 (Port 80/443 -> Localhost:8080) |
 
-### Exact Deployment Command on the VPS:
+### Synchronizing the VPS to Latest Code:
 Inside the Lightsail browser SSH terminal (`ubuntu@wowkillboard-vps`), run:
 ```bash
-sudo git clone https://github.com/dagariane-commits/WoW_Killboard.git /opt/wowkillboard
-cd /opt/wowkillboard
-sudo bash deploy/setup_vps.sh ""
+cd /opt/wowkillboard && sudo git fetch origin main && sudo git reset --hard origin/main && sudo systemctl restart wowkillboard
 ```
-This automatically installs Python 3, venv, Caddy web server, registers `wowkillboard.service` via systemd, and binds the web app to port 80.
+
+### Remote Database Reset Command:
+To wipe all tables (`kills`, `bounties`, `characters`, `character_claims`, etc.) back to 0:
+```powershell
+Invoke-RestMethod -Uri "http://13.216.102.148/api/admin/reset" -Method Post -ContentType "application/json" -Body '{"secret":"wowkb_archivist_secret"}'
+```
 
 ---
 
@@ -70,44 +74,42 @@ This automatically installs Python 3, venv, Caddy web server, registers `wowkill
 
 ---
 
-## 4. Key Components & Implementation Summary
+## 4. Key Systems & Recent Implementation Summary
 
-### A. Mark of Spite Currency Overhaul (`BountyEngine.lua`, `UI.lua`)
-- Allows exact declaration in **Gold, Silver, and Copper**.
-- Input form has dedicated `Target Name` editbox, discrete numeric editboxes for `[ G ]`, `[ S ]`, `[ C ]` with coin textures, and `[Declare Mark]` / `[Cancel]` buttons.
-- `PlaceBounty` calculates exact copper (`(gold * 10000) + (silver * 100) + copper`).
-- All user-facing terminology changed from "Blood Bounty" to "Mark of Spite" / "Mark".
+### A. In-Game 1-Click Database Reset (`UI.lua`)
+- Added Section `5. Database Management` to the Settings dialog (`/kb` -> `Settings`).
+- Red **`[Reset Local Database]`** button wipes local combat records (`WoWKillboardDB.kills`), resets cached realm carnage to 0, clears session stats, and refreshes the UI immediately without requiring a `/reload`.
 
-### B. Classic Theme Header Plate Fix (`UI.lua`)
-- Prevented `ApplyTheme()` from overwriting `UI.TitleText` with the 45-character `GetClientFlavorTitle()`.
-- Title text is strictly `"WoW Killboard"` centered inside the 320px arched header plate (`Interface\DialogFrame\UI-DialogBox-Header`).
-- Realm and version information is displayed below in `UI.SubtitleText`.
+### B. Multi-Tier Stress Testing Suite (`scripts/stress_test.py`, `docs/STRESS_TESTING.md`)
+- **Tier 1 (Addon)**: `/kb stress [N]` injects up to 250 verified synthetic kills into memory in 1 frame, measuring execution time (`debugprofilestop`) and memory delta (`collectgarbage`).
+- **Tier 2 (Parser)**: `python scripts/stress_test.py --mode parser` benchmarks `LuaTableParser`, achieving **7,200+ records/second** parsing throughput across 2,500 kill payloads.
+- **Tier 3 (API Concurrency)**: Multi-threaded load tester (`ThreadPoolExecutor`) measuring RPS and latency percentiles. Benched on AWS Lightsail: **168.9 RPS (Reads)**, **82.6 RPS (Writes)**, and **159.9 RPS (Mixed)** with **100% success rate and 0 lock errors**.
 
-### C. Alert Anchor Visual Transparency (`UI.lua`)
-- Removed the harsh solid yellow border (`SetBackdropBorderColor(0, 0, 0, 0)`).
-- Anchor backdrop is semi-transparent (`alpha 0.60`).
+### C. SQLite Write-Ahead Logging (WAL) Hardening (`web/server.py`)
+- Configured `PRAGMA journal_mode=WAL;`, `PRAGMA busy_timeout = 10000;`, and `PRAGMA synchronous = NORMAL;` in `get_db()`.
+- Eliminates database file locking under concurrent ingestion bursts.
 
-### D. Radar HUD Floating Widget (`UI.lua`, `UnitScanner.lua`)
-- Replaced chat spam with a draggable floating radar widget (`WoWKillboardRadarHUD`).
-- Toggled via `/kb radar` or `/kbradar`. Auto-fades after 15s of inactivity.
+### D. Decoupled Dual-Tier Web Header (`index.html`, `style.css`)
+- Separated header into Tier 1 (Brand, Factions, Theater, Mode Filters, Claim) and Tier 2 (Dedicated Navigation Sub-Rail).
+- Eliminates tab squishing and text truncation (e.g. `Def`) at 150%+ zoom levels.
 
-### E. 100% Solo Purity Algorithm (`CombatTracker.lua`)
-- Guarantees 100% solo kills have zero external damage, zero external friendly heals, zero external buffs, zero external CC/debuffs within 30 seconds.
+### E. Dynamic Most Wanted Grid Sizing (`app.js`)
+- Dynamically scales bounty cards: renders 1 single row of 5 slots when $\le 5$ bounties exist, pulling the combat feed up by ~180px and eliminating empty-state clutter.
 
-### F. Character Claiming & Ownership Protection (`web/server.py`, `web/static/app.js`)
-- Protects characters from being claimed by unauthorized users.
-- In-game secret token challenge (`/kb claim <code>`) where only the active in-game character can execute the command, with automated verification via `WoWKillboardSync.exe`.
-- In-game character web profile links (`http://13.216.102.148/?character=Name`) automatically authenticate the active player session seamlessly.
-- Single-owner locking rejects unauthorized claims with HTTP 403 Forbidden.
+### F. Complete Database Wipe Lifecycle (`web/server.py`)
+- `wipe_database()` drops and re-creates all tables: `kills`, `platform_stats`, `bounties`, `bounty_acceptances`, `debt_ledger`, `character_guild_history`, `characters`, `character_claims`, `distress_beacons`, `guild_events`, `guild_discord_configs`, `blood_feuds`, `kos_blacklist`, `kos_deserters`, `intel_sightings`, `pve_deaths`, and `bug_reports`.
+- Linked **`Admin Console`** directly in the web footer navigation rail.
+
+### G. Runtime Kill History Self-Healing (`Core.lua`)
+- Implemented `KB:SanitizeKillHistory()` on addon initialization to auto-prune victim self-insertion from historical kills and restore Druid/healer assists.
+
+### H. PvE Death Isolation (`CombatTracker.lua`)
+- Initialized `damageSources = {}` and `maxNpcDamage = 0` in `ProcessDeath`, resolving nil `pairs` crashes on open-world creature deaths.
 
 ---
 
-## 5. Next Steps When Starting a New Session
-1. **VPS Deployment Check**:
-   - Check if Scott ran the 3 commands on his Lightsail VPS terminal (`sudo git clone ... && sudo bash deploy/setup_vps.sh ""`).
-   - Verify if `http://13.216.102.148` is responding.
-2. **Domain Mapping (When Scott is ready)**:
-   - When a domain is purchased/attached, add an A-Record to `13.216.102.148` and run:
-     `sudo bash /opt/wowkillboard/deploy/setup_vps.sh yourdomain.com`
-3. **In-Game Playtesting**:
-   - Have Scott test `/reload` in game to observe the clean Classic title plate, the semi-transparent alert anchor (`/wowkb move`), and issuing a Mark of Spite in G/S/C.
+## 5. Next Steps for Release (Domain & CurseForge)
+1. **Domain Registration**: Register domain (e.g., `wowkillboard.com` via Cloudflare).
+2. **Point DNS**: Add A-Record for `@` and `api` to `13.216.102.148`.
+3. **SSL & URL Update**: Update `KB.WebDomain` in `Config.lua` and `DEFAULT_PROD_URL` in `watcher.py`, rebuild `WoWKillboardSync.exe`.
+4. **Publish to CurseForge**: Upload `WoWKillboard-v1.0.0.zip` to CurseForge Author Portal under `PvP / Combat / Information`.

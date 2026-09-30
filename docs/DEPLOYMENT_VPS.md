@@ -130,12 +130,30 @@ systemctl restart wowkillboard
 ```
 
 ### Updating to the Latest Code
+If local files have been modified or touched on the server, use `fetch` and `reset --hard` to cleanly synchronize:
 ```bash
 sudo git config --global --add safe.directory /opt/wowkillboard
 cd /opt/wowkillboard
-sudo git pull origin main
+sudo git fetch origin main
+sudo git reset --hard origin/main
 sudo systemctl restart wowkillboard
 ```
+
+### Administrative Database Resets
+To wipe all combat records, leaderboards, and character claims back to zero for launch:
+
+#### Option 1: From Local Windows PowerShell (No SSH Needed)
+```powershell
+Invoke-RestMethod -Uri "http://13.216.102.148/api/admin/reset" -Method Post -ContentType "application/json" -Body '{"secret":"wowkb_archivist_secret"}'
+```
+
+#### Option 2: Inside the Lightsail Terminal
+```bash
+curl -X POST http://localhost:8080/api/admin/reset -H "Content-Type: application/json" -d '{"secret":"wowkb_archivist_secret"}'
+```
+
+#### Option 3: Directly from the Website
+Scroll to the footer at `http://13.216.102.148`, click **Admin Console**, enter `wowkb_archivist_secret`, and click **[Reset Master Database]**.
 
 ### Database Backups
 Automated backups run daily at 03:30 AM via `/usr/local/bin/wowkillboard-backup.sh`. Backups older than 14 days are automatically pruned.
