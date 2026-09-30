@@ -5,6 +5,14 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.66] - 2026-09-29
+
+### Fixed
+- **Azeroth's Most Wanted Dynamic Grid Sizing (`app.js`, `index.html`)**:
+  - Dynamically scaled the Most Wanted cards container: when 5 or fewer active bounties exist, renders a single, sleek row of 5 slots instead of forcing 10 placeholder cards across two full rows.
+  - Reclaimed ~180px of vertical viewport above the fold, eliminating empty-state clutter and elevating the recent combat feed and leaderboards into immediate view.
+  - Bumped script cachebuster to `v=1.4.66`.
+
 ## [1.4.65] - 2026-09-29
 
 ### Added

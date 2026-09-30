@@ -487,8 +487,9 @@ function renderMostWanted(outlaws) {
   const container = document.getElementById("most-wanted-cards-container");
   if (!container) return;
 
-  const totalSlots = 10;
   const safeOutlaws = Array.isArray(outlaws) ? outlaws : [];
+  // Show 1 clean row (5 slots) if 5 or fewer bounties exist, expand to 10 only when crowded
+  const totalSlots = safeOutlaws.length > 5 ? 10 : 5;
   let html = "";
 
   for (let idx = 0; idx < totalSlots; idx++) {
