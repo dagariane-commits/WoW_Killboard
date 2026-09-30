@@ -630,7 +630,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
                 realm = (GetRealmName and GetRealmName()) or "PvP",
             }
             SafePrint(string.format("|cff00ff00[WoWKB]|r Claim verification token registered for |cffffd100%s|r: |cffffff00%s|r.", pName, code))
-            SafePrint("|cff00ccff[WoWKB]|r Run sync client or upload SavedVariables to complete character ownership claim.")
+            SafePrint("|cff00ccff[WoWKB]|r Type |cffffd100/reload|r to flush to disk and lock ownership immediately.")
         else
             SafePrint("|cffff9900Usage:|r /kb claim <code> (e.g. /kb claim KB-7842)")
         end

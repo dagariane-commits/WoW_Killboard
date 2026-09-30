@@ -49,7 +49,7 @@ flowchart LR
 | `/killboard theme` | Toggle between Classic WoW and ElvUI Minimalist themes |
 | `/armory [Name]` | Inspect detailed combat dossier for any combatant |
 | `/kb profile [Name]` | Copy web profile dossier URL for yourself or target |
-| `/kb claim <code>` | Verify character ownership token from web platform |
+| `/kb claim <code>` | Verify character ownership token from web platform (follow with `/reload`) |
 | `/spot` or `/scout` | Broadcast enemy sighting with coordinates to allies |
 | `/warhorn` or `/kbsos` | Trigger Call to Arms SOS emergency rally beacon |
 | `/warhorn stop` | Stand down active War Horn muster |
@@ -66,6 +66,13 @@ flowchart LR
 ---
 
 ## 🛠️ Frequently Asked Questions & Troubleshooting
+
+### Q: How do I verify and lock character ownership?
+1. On the web platform, click **"Select / Claim Character"** &rarr; find your character &rarr; click **"Claim Champion"**.
+2. Copy the generated code (e.g. `KB-5ACD`).
+3. In World of Warcraft on that character, enter: `/kb claim <CODE>`.
+4. Type **`/reload`** in game. `WoWKillboardSync.exe` ingests the token and locks ownership.
+5. In the web modal, click **"⚡ Check Verification Status"** to receive instant confirmation (`🛡️ Verified Owner`).
 
 ### Q: Does the desktop sync require Python installed?
 **No.** `WoWKillboardSync.exe` is a standalone, self-contained Windows binary. No Python, terminal, or environment setup is needed.
