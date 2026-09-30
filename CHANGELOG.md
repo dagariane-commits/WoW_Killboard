@@ -5,6 +5,14 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.68] - 2026-09-29
+
+### Fixed
+- **Complete Administrative Database Reset Lifecycle (`server.py`)**:
+  - Added missing tables `characters`, `character_claims`, `guild_discord_configs`, and `bug_reports` to `wipe_database()`.
+  - Guarantees that invoking `/api/admin/reset` purges the entire character roster and all pending/verified character claims back to zero.
+  - Successfully released stale unverified claim on `Dagariane` on the live production API.
+
 ## [1.4.67] - 2026-09-29
 
 ### Added

@@ -908,8 +908,9 @@ def wipe_database():
     tables = [
         "kills", "platform_stats", "bounties", "bounty_acceptances",
         "pve_deaths", "character_guild_history", "debt_ledger",
-        "distress_beacons", "guild_events", "discord_config", "intel_sightings",
-        "blood_feuds", "kos_blacklist", "kos_deserters"
+        "distress_beacons", "guild_events", "discord_config", "guild_discord_configs",
+        "intel_sightings", "blood_feuds", "kos_blacklist", "kos_deserters",
+        "characters", "character_claims", "bug_reports"
     ]
     with get_db() as conn:
         for tbl in tables:
