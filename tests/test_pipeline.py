@@ -1268,6 +1268,45 @@ class TestKillboardPipeline(unittest.TestCase):
 
         print("[PASS] Verified /api/kills killId/kill_id interoperability and multi-attacker solo purity revocation.")
 
+    def test_lua_table_parser_claim_tokens(self):
+        """Verify LuaTableParser extracts claimTokens, bugReports, and lastManualSync without kill flattening corruption."""
+        from sync.watcher import LuaTableParser
+        sample_lua = """
+        WoWKillboardDB = {
+            ["kills"] = {
+                ["KB-test-1"] = {
+                    ["timestamp"] = 1790732145,
+                    ["isSolo"] = true,
+                },
+            },
+            ["claimTokens"] = {
+                ["Dagariane"] = {
+                    ["realm"] = "Classic Beta PvP",
+                    ["guid"] = "Player-4619-007592A0",
+                    ["time"] = 1790732145,
+                    ["code"] = "KB-5ACD",
+                },
+            },
+            ["bugReports"] = {
+                ["BUG-1"] = {
+                    ["message"] = "Test bug",
+                },
+            },
+            ["lastManualSync"] = 1790732149,
+            ["stats"] = {
+                ["kills"] = 12,
+            },
+        }
+        """
+        parsed = LuaTableParser.parse_string(sample_lua)
+        self.assertIn("claimTokens", parsed)
+        self.assertIn("Dagariane", parsed["claimTokens"])
+        self.assertEqual(parsed["claimTokens"]["Dagariane"]["code"], "KB-5ACD")
+        self.assertEqual(parsed.get("lastManualSync"), 1790732149)
+        self.assertIn("bugReports", parsed)
+        self.assertIn("KB-test-1", parsed["WoWKillboardDB"])
+        print("[PASS] Verified LuaTableParser claimTokens, bugReports, and lastManualSync extraction integrity.")
+
 if __name__ == "__main__":
     unittest.main()
 

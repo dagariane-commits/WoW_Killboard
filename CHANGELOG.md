@@ -5,6 +5,21 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.71] - 2026-09-29
+
+### Fixed
+- **In-Game Character Claim Token Ingestion (`sync/watcher.py`, `WoWKillboardSync.exe`)**:
+  - Fixed critical parsing bug in `LuaTableParser.parse_string`: preserved `rawWoWKillboardDB` and extracted `claimTokens`, `bugReports`, `guildEvents`, `distressBeacon`, `lastManualSync`, and `stats` prior to flattening `WoWKillboardDB` into `kills`.
+  - Resolved root cause where `/kb claim <code>` tokens stored in `WoWKillboardDB.claimTokens` were dropped from memory during parsing and never transmitted to `/api/auth/verify-claim`.
+  - Integrated persistent diagnostic logging (`log_event`) in `upload_claim_token` and added claim counter to `sync_summary`.
+  - Recompiled standalone `WoWKillboardSync.exe` (v1.0.0-beta.5).
+- **In-Game Claim Prompting (`Addon/WoWKillboard/Core.lua`)**:
+  - Updated `/kb claim <code>` completion message to explicitly remind players to type `/reload` immediately to flush SavedVariables to disk and finalize character ownership.
+- **Web Claim Modal & Real-Time Verification (`web/static/index.html`, `web/static/app.js`)**:
+  - Added interactive `[⚡ Check Verification Status]` button and live status banner to the Claim Verification Code modal.
+  - Added `checkClaimStatus()` to verify character ownership against the server in real-time and provide instant visual confirmation (`🛡️ Success! Ownership verified and locked!`).
+  - Added automatic character roster reload (`loadKnownCharacters()`) upon closing the claim modal to eliminate stale UI state.
+
 ## [1.4.70] - 2026-09-29
 
 ### Fixed

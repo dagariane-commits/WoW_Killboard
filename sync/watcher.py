@@ -159,12 +159,23 @@ class LuaTableParser:
         # Flatten WoWKillboardDB if it has a nested "kills" table
         db = parsed.get("WoWKillboardDB", {})
         if isinstance(db, dict):
+            parsed["rawWoWKillboardDB"] = db
             if "pveDeaths" in db and isinstance(db["pveDeaths"], dict):
                 parsed["pveDeaths"] = db["pveDeaths"]
-            if "kills" in db and isinstance(db["kills"], dict):
-                parsed["WoWKillboardDB"] = db["kills"]
+            if "claimTokens" in db and isinstance(db["claimTokens"], dict):
+                parsed["claimTokens"] = db["claimTokens"]
+            if "bugReports" in db and isinstance(db["bugReports"], dict):
+                parsed["bugReports"] = db["bugReports"]
+            if "guildEvents" in db and isinstance(db["guildEvents"], dict):
+                parsed["guildEvents"] = db["guildEvents"]
+            if "distressBeacon" in db and isinstance(db["distressBeacon"], dict):
+                parsed["distressBeacon"] = db["distressBeacon"]
+            if "lastManualSync" in db:
+                parsed["lastManualSync"] = db["lastManualSync"]
             if "stats" in db and isinstance(db["stats"], dict):
                 parsed["stats"] = db["stats"]
+            if "kills" in db and isinstance(db["kills"], dict):
+                parsed["WoWKillboardDB"] = db["kills"]
             
         return parsed
 
@@ -241,8 +252,8 @@ class KillboardWatcher:
             return 0
 
         parsed = LuaTableParser.parse_string(content)
-        raw_db = parsed.get("WoWKillboardDB", {})
-        manual_sync_ts = raw_db.get("lastManualSync", 0) if isinstance(raw_db, dict) else 0
+        raw_db = parsed.get("rawWoWKillboardDB", parsed.get("WoWKillboardDB", {}))
+        manual_sync_ts = parsed.get("lastManualSync", 0) or (raw_db.get("lastManualSync", 0) if isinstance(raw_db, dict) else 0)
 
         db_kills = parsed.get("WoWKillboardDB", {})
         pve_deaths = parsed.get("pveDeaths", {})
@@ -281,8 +292,8 @@ class KillboardWatcher:
 
         # Ingest Call for Backup distress beacons
         distress = parsed.get("WoWKillboardDistress", {})
-        if not distress and isinstance(parsed.get("WoWKillboardDB"), dict):
-            distress_beacon = parsed.get("WoWKillboardDB", {}).get("distressBeacon")
+        if not distress and isinstance(raw_db, dict):
+            distress_beacon = raw_db.get("distressBeacon")
             if distress_beacon and isinstance(distress_beacon, dict):
                 distress = {distress_beacon.get("id", "SOS"): distress_beacon}
 
@@ -295,8 +306,8 @@ class KillboardWatcher:
 
         # Ingest Guild Events and Rallies
         events = parsed.get("WoWKillboardEvents", {})
-        if not events and isinstance(parsed.get("WoWKillboardDB"), dict):
-            events = parsed.get("WoWKillboardDB", {}).get("guildEvents", {})
+        if not events and isinstance(raw_db, dict):
+            events = raw_db.get("guildEvents", {})
 
         for evt_id, evt_data in events.items():
             if evt_id not in self.known_events and isinstance(evt_data, dict):
@@ -304,21 +315,25 @@ class KillboardWatcher:
                     self.known_events.add(evt_id)
 
         # Ingest character claim verification tokens
-        claim_tokens = parsed.get("WoWKillboardDB", {}).get("claimTokens", {}) if isinstance(parsed.get("WoWKillboardDB"), dict) else {}
-        if not claim_tokens and isinstance(parsed.get("claimTokens"), dict):
-            claim_tokens = parsed.get("claimTokens")
+        claim_tokens = parsed.get("claimTokens", {})
+        if not claim_tokens and isinstance(raw_db, dict):
+            claim_tokens = raw_db.get("claimTokens", {})
+        new_claims_count = 0
         for char_name, c_data in claim_tokens.items():
             if isinstance(c_data, dict):
                 code = c_data.get("code")
-                claim_key = f"{char_name}:{code}"
-                if code and claim_key not in self.known_claims:
-                    if self.upload_claim_token(char_name, code):
-                        self.known_claims.add(claim_key)
+            else:
+                code = str(c_data) if c_data else None
+            claim_key = f"{char_name}:{code}"
+            if code and claim_key not in self.known_claims:
+                if self.upload_claim_token(char_name, code):
+                    self.known_claims.add(claim_key)
+                    new_claims_count += 1
 
         # Ingest Bug Reports for AI Diagnostics
-        bug_reports = parsed.get("WoWKillboardDB", {}).get("bugReports", {}) if isinstance(parsed.get("WoWKillboardDB"), dict) else {}
-        if not bug_reports and isinstance(parsed.get("bugReports"), dict):
-            bug_reports = parsed.get("bugReports")
+        bug_reports = parsed.get("bugReports", {})
+        if not bug_reports and isinstance(raw_db, dict):
+            bug_reports = raw_db.get("bugReports", {})
         new_bugs_count = 0
         for b_id, b_data in bug_reports.items():
             if isinstance(b_data, dict) and b_id not in self.known_bugs:
@@ -326,7 +341,7 @@ class KillboardWatcher:
                     self.known_bugs.add(b_id)
                     new_bugs_count += 1
 
-        sync_summary = f"[Watcher] [{client_tag}] Synced: {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debts, {new_bugs_count} bug reports"
+        sync_summary = f"[Watcher] [{client_tag}] Synced: {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debts, {new_claims_count} claims, {new_bugs_count} bug reports"
         if is_manual_sync:
             sync_summary += " [Manual Sync Heartbeat OK]"
         log_event(sync_summary)
@@ -559,7 +574,7 @@ class KillboardWatcher:
                 )
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     if resp.status in (200, 201):
-                        print(f"[Watcher] [CLAIM] Verified ownership for '{character_name}' on {endpoint} via in-game token {code}!")
+                        log_event(f"[Watcher] [CLAIM] Verified ownership for '{character_name}' on {endpoint} via in-game token {code}!")
                         any_success = True
             except urllib.error.HTTPError as e:
                 err_msg = ""
@@ -569,9 +584,10 @@ class KillboardWatcher:
                 except Exception:
                     pass
                 msg_suffix = f": {err_msg}" if err_msg else ""
-                print(f"[Watcher] [CLAIM ERROR] Failed to verify '{character_name}' on {endpoint} (HTTP {e.code}{msg_suffix})")
+                log_event(f"[Watcher] [CLAIM ERROR] Failed to verify '{character_name}' on {endpoint} (HTTP {e.code}{msg_suffix})")
             except Exception as e:
-                print(f"[Watcher] [CLAIM NOTICE] Could not verify '{character_name}' on {endpoint}: {e}")
+                if "127.0.0.1" not in endpoint:
+                    log_event(f"[Watcher] [CLAIM NOTICE] Could not verify '{character_name}' on {endpoint}: {e}")
         return any_success
 
     def upload_bug_report(self, bug_data: dict) -> bool:
@@ -763,7 +779,7 @@ def auto_detect_saved_variables() -> str:
         return os.path.abspath("WoWKillboard.lua").replace("\\", "/")
     return ""
 
-SYNC_VERSION = "1.0.0-beta.4"
+SYNC_VERSION = "1.0.0-beta.5"
 DEFAULT_PROD_URL = "http://13.216.102.148"
 DEFAULT_LOCAL_URL = "http://127.0.0.1:8080"
 

@@ -4560,16 +4560,60 @@ function showClaimCodeModal(name, code) {
   const nameEl = document.getElementById("claim-modal-char-name");
   const codeEl = document.getElementById("claim-modal-code");
   const cmdEl = document.getElementById("claim-modal-command");
+  const statusEl = document.getElementById("claim-modal-status");
   if (!modal) return;
   if (nameEl) nameEl.innerText = name;
   if (codeEl) codeEl.innerText = code;
   if (cmdEl) cmdEl.innerText = `/kb claim ${code}`;
+  if (statusEl) {
+    statusEl.innerText = "";
+    statusEl.style.display = "none";
+  }
   modal.style.display = "flex";
 }
 
 function closeClaimCodeModal() {
   const modal = document.getElementById("claim-code-modal");
   if (modal) modal.style.display = "none";
+  loadKnownCharacters();
+}
+
+async function checkClaimStatus() {
+  const nameEl = document.getElementById("claim-modal-char-name");
+  const name = nameEl ? nameEl.innerText.trim() : "";
+  const codeEl = document.getElementById("claim-modal-code");
+  const code = codeEl ? codeEl.innerText.trim() : "";
+  const statusEl = document.getElementById("claim-modal-status");
+  if (!name) return;
+  if (statusEl) {
+    statusEl.innerHTML = `<span style="color:#00e5ff;">Checking ownership status on server...</span>`;
+    statusEl.style.display = "block";
+  }
+  try {
+    const res = await fetch("/api/characters?limit=100", {
+      headers: { "X-Owner-Token": getOwnerToken() }
+    });
+    if (!res.ok) throw new Error("Failed to query characters");
+    const chars = await res.json();
+    const c = chars.find(x => x.name.toLowerCase() === name.toLowerCase());
+    if (c && c.is_verified) {
+      if (statusEl) {
+        statusEl.innerHTML = `<span style="color:#10b981; font-weight:700;">🛡️ Success! Ownership of ${escapeHtml(name)} is verified and locked!</span>`;
+      }
+      setTimeout(() => {
+        closeClaimCodeModal();
+        selectKnownCharacter(c.name, c.class, c.level, c.faction, c.guild, c.realm);
+      }, 1000);
+    } else {
+      if (statusEl) {
+        statusEl.innerHTML = `<span style="color:#eab308;">⏳ Pending: Run <code>/kb claim ${escapeHtml(code)}</code> in-game and type <code>/reload</code> (or run WoWKillboardSync.exe).</span>`;
+      }
+    }
+  } catch (err) {
+    if (statusEl) {
+      statusEl.innerHTML = `<span style="color:#ef4444;">Error checking status: ${escapeHtml(err.message)}</span>`;
+    }
+  }
 }
 
 async function loadKnownCharacters() {

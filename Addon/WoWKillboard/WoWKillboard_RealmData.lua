@@ -13,5 +13,5 @@ WoWKillboard_RealmData = {
     TopGankers24h = {
         { name = "Dagariane", class = "PALADIN", faction = "Alliance", guild = "None", kills = 1 },
     },
-    LastSync = 1790731795,
+    LastSync = 1790732803,
 }
