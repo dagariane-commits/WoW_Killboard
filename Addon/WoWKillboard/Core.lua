@@ -280,6 +280,8 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             if count == 0 then SafePrint("  (No active KOS blacklist targets)") end
         end
     elseif cmd == "sync" or cmd == "reload" then
+        WoWKillboardDB = WoWKillboardDB or {}
+        WoWKillboardDB.lastManualSync = time()
         SafePrint("|cff00ccff[WoWKB]|r Flushed combat SavedVariables to disk. Reloading UI to sync with live web platform...")
         ReloadUI()
     elseif cmd == "move" or cmd == "unlock" then

@@ -26,6 +26,20 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+def log_event(msg: str):
+    """Logs message to both standard output and persistent wowkb_sync.log."""
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    formatted = f"[{timestamp}] {msg}"
+    print(formatted)
+    try:
+        base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        log_path = os.path.join(base_dir, "wowkb_sync.log")
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(formatted + "\n")
+    except Exception:
+        pass
+
+
 class LuaTableParser:
     """Robust tokenizer and recursive-descent parser for WoW SavedVariables Lua tables."""
     
@@ -155,8 +169,14 @@ class LuaTableParser:
         return parsed
 
 class KillboardWatcher:
-    def __init__(self, filepath: str, api_urls = None):
-        self.filepath = filepath
+    def __init__(self, filepaths, api_urls = None):
+        if isinstance(filepaths, str):
+            self.filepaths = [os.path.abspath(filepaths).replace("\\", "/")] if filepaths else []
+        elif isinstance(filepaths, (list, set, tuple)):
+            self.filepaths = [os.path.abspath(p).replace("\\", "/") for p in filepaths if p]
+        else:
+            self.filepaths = []
+
         if isinstance(api_urls, list):
             self.api_urls = [u.rstrip("/") for u in api_urls if u]
         elif isinstance(api_urls, str) and api_urls:
@@ -164,44 +184,77 @@ class KillboardWatcher:
         else:
             self.api_urls = ["http://13.216.102.148", "http://127.0.0.1:8080"]
         self.api_url = ", ".join(self.api_urls)
-        self.last_mtime = 0
+        self.filepath = self.filepaths[0] if self.filepaths else ""
+
+        self.file_mtimes = {}
+        self.last_manual_syncs = {}
         self.known_kills = set()
         self.known_pve_deaths = set()
         self.known_events = set()
         self.known_claims = set()
         self.known_bugs = set()
         self.last_distress_time = 0
-        self.warned_missing = False
+        self.warned_missing = set()
 
-    def process_file(self) -> int:
-        if not os.path.exists(self.filepath):
-            if not self.warned_missing:
-                print(f"[Watcher] Waiting for '{self.filepath}' to be created by WoW (triggers upon /reload or logout)...")
-                self.warned_missing = True
+    def _client_tag(self, path: str) -> str:
+        """Extracts human-readable client flavor and account name from a path."""
+        norm = path.replace("\\", "/")
+        parts = norm.split("/")
+        flavor = "WoW"
+        account = "Default"
+        for i, p in enumerate(parts):
+            if p.startswith("_") and p.endswith("_"):
+                flavor = p
+            if p.lower() == "account" and i + 1 < len(parts):
+                account = parts[i + 1]
+        return f"{flavor}/{account}"
+
+    def process_file(self, target_path: str = None) -> int:
+        if target_path is None:
+            total_synced = 0
+            for p in list(self.filepaths):
+                total_synced += self.process_file(p)
+            return total_synced
+
+        filepath = os.path.abspath(target_path).replace("\\", "/")
+        if not os.path.exists(filepath):
+            if filepath not in self.warned_missing:
+                log_event(f"[Watcher] Waiting for '{filepath}' to be created by WoW (triggers upon /reload or logout)...")
+                self.warned_missing.add(filepath)
             return 0
 
-        self.warned_missing = False
+        self.warned_missing.discard(filepath)
 
-        mtime = os.path.getmtime(self.filepath)
-        if mtime == self.last_mtime:
+        mtime = os.path.getmtime(filepath)
+        if mtime == self.file_mtimes.get(filepath, 0):
             return 0
 
-        self.last_mtime = mtime
-        print(f"[Watcher] Change detected in {self.filepath} at {time.strftime('%X')}")
+        self.file_mtimes[filepath] = mtime
+        client_tag = self._client_tag(filepath)
+        log_event(f"[Watcher] Change detected in [{client_tag}] ({filepath}) at {time.strftime('%X')}")
 
         try:
-            with open(self.filepath, "r", encoding="utf-8", errors="ignore") as f:
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
         except Exception as e:
-            print(f"[Watcher] Error reading file: {e}")
+            log_event(f"[Watcher] Error reading {filepath}: {e}")
             return 0
 
         parsed = LuaTableParser.parse_string(content)
+        raw_db = parsed.get("WoWKillboardDB", {})
+        manual_sync_ts = raw_db.get("lastManualSync", 0) if isinstance(raw_db, dict) else 0
+
         db_kills = parsed.get("WoWKillboardDB", {})
         pve_deaths = parsed.get("pveDeaths", {})
         bounties = parsed.get("WoWKillboardBounties", {})
         debts = parsed.get("WoWKillboardDebtLedger", {})
         stats = parsed.get("stats", {})
+
+        is_manual_sync = False
+        if manual_sync_ts and manual_sync_ts > self.last_manual_syncs.get(filepath, 0):
+            is_manual_sync = True
+            self.last_manual_syncs[filepath] = manual_sync_ts
+            log_event(f"[Watcher] [Manual Sync] In-game 'Sync' button / reload confirmed for [{client_tag}] (Heartbeat TS: {manual_sync_ts})!")
 
         new_count = 0
         for kill_id, km_data in db_kills.items():
@@ -245,6 +298,11 @@ class KillboardWatcher:
         if not events and isinstance(parsed.get("WoWKillboardDB"), dict):
             events = parsed.get("WoWKillboardDB", {}).get("guildEvents", {})
 
+        for evt_id, evt_data in events.items():
+            if evt_id not in self.known_events and isinstance(evt_data, dict):
+                if self.upload_event(evt_data):
+                    self.known_events.add(evt_id)
+
         # Ingest character claim verification tokens
         claim_tokens = parsed.get("WoWKillboardDB", {}).get("claimTokens", {}) if isinstance(parsed.get("WoWKillboardDB"), dict) else {}
         if not claim_tokens and isinstance(parsed.get("claimTokens"), dict):
@@ -268,7 +326,10 @@ class KillboardWatcher:
                     self.known_bugs.add(b_id)
                     new_bugs_count += 1
 
-        print(f"[Watcher] Synced {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debt records, {new_bugs_count} bug reports.")
+        sync_summary = f"[Watcher] [{client_tag}] Synced: {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debts, {new_bugs_count} bug reports"
+        if is_manual_sync:
+            sync_summary += " [Manual Sync Heartbeat OK]"
+        log_event(sync_summary)
         self.sync_realm_data_to_client()
         return new_count
 
@@ -593,8 +654,8 @@ class KillboardWatcher:
         lua_content = "\n".join(lua_lines) + "\n"
 
         target_paths = []
-        if self.filepath:
-            sv_dir = os.path.dirname(os.path.abspath(self.filepath))
+        for fp in getattr(self, "filepaths", [self.filepath] if getattr(self, "filepath", None) else []):
+            sv_dir = os.path.dirname(os.path.abspath(fp))
             if os.path.exists(sv_dir):
                 target_paths.append(os.path.join(sv_dir, "WoWKillboard_RealmData.lua"))
                 wow_flavor_dir = os.path.abspath(os.path.join(sv_dir, "..", "..", ".."))
@@ -630,30 +691,56 @@ class KillboardWatcher:
             print(f"[Watcher] [2-WAY SYNC] Injected realm telemetry payload (WoWKillboard_RealmData.lua) into {written} location(s).")
         return True
 
-    def run_daemon(self, poll_interval: float = 3.0):
-        print(f"[Watcher] Watching '{self.filepath}' -> APIs: {', '.join(self.api_urls)}")
-        print("[Watcher] Polling for changes... (Press Ctrl+C to stop)")
+    def run_daemon(self, poll_interval: float = 2.0):
+        log_event(f"[Watcher] Starting Universal Multi-Client Watcher daemon (Polling every {poll_interval}s)...")
+        log_event(f"[Watcher] Target Ingestion APIs: {', '.join(self.api_urls)}")
+        log_event(f"[Watcher] Actively monitoring {len(self.filepaths)} SavedVariables file(s) across all WoW flavors/accounts:")
+        for p in self.filepaths:
+            log_event(f"   -> [{self._client_tag(p)}] {p}")
+
+        # Initial pass across all files
+        for p in list(self.filepaths):
+            self.process_file(p)
         self.sync_realm_data_to_client()
+
+        last_discovery = time.time()
         last_realm_sync = time.time()
+
         while True:
             try:
-                self.process_file()
+                # 1. Process all monitored files
+                for p in list(self.filepaths):
+                    self.process_file(p)
+
+                # 2. Periodic rescan every 15s to discover new accounts or client flavors
+                if time.time() - last_discovery > 15.0:
+                    current_set = set(self.filepaths)
+                    all_found = set(find_all_saved_variables())
+                    new_paths = all_found - current_set
+                    if new_paths:
+                        for np in new_paths:
+                            log_event(f"[Watcher] Discovered new active WoW account / flavor: [{self._client_tag(np)}] {np}")
+                            self.filepaths.append(np)
+                            self.process_file(np)
+                    last_discovery = time.time()
+
+                # 3. Two-way realm data sync every 30s
                 if time.time() - last_realm_sync > 30.0:
                     self.sync_realm_data_to_client()
                     last_realm_sync = time.time()
+
                 time.sleep(poll_interval)
             except KeyboardInterrupt:
-                print("\n[Watcher] Stopped.")
+                log_event("\n[Watcher] Stopped by user.")
                 break
 
-def auto_detect_saved_variables() -> str:
-    """Scans common Windows directories to locate WoW SavedVariables/WoWKillboard.lua automatically."""
+def find_all_saved_variables() -> list:
+    """Scans all connected Windows drives and WoW client branches for all active SavedVariables/WoWKillboard.lua files."""
     import glob
-    
     candidates = []
     drives = ["C:", "D:", "E:", "F:"]
-    branches = ["_*_", "_classic_beta_", "_retail_", "_classic_", "_classic_era_", "_ptr_"]
-    
+    branches = ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_", "_ptr_", "_classic_", "_*"]
+
     for drive in drives:
         for branch in branches:
             pattern_no_x86 = f"{drive}/World of Warcraft/{branch}/WTF/Account/*/SavedVariables/WoWKillboard.lua"
@@ -663,19 +750,20 @@ def auto_detect_saved_variables() -> str:
             pattern_direct = f"{drive}/Games/World of Warcraft/{branch}/WTF/Account/*/SavedVariables/WoWKillboard.lua"
             candidates.extend(glob.glob(pattern_direct))
 
-    unique_candidates = list(set(candidates))
-    if unique_candidates:
-        # Return the most recently modified candidate
-        unique_candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
-        return unique_candidates[0]
-        
-    # Fallback to local test file
-    if os.path.exists("WoWKillboard.lua"):
-        return "WoWKillboard.lua"
+    unique = sorted(list(set(os.path.abspath(p).replace("\\", "/") for p in candidates)))
+    return unique
 
+def auto_detect_saved_variables() -> str:
+    """Returns the single most recently modified SavedVariables file (for backward compatibility)."""
+    all_files = find_all_saved_variables()
+    if all_files:
+        all_files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        return all_files[0]
+    if os.path.exists("WoWKillboard.lua"):
+        return os.path.abspath("WoWKillboard.lua").replace("\\", "/")
     return ""
 
-SYNC_VERSION = "1.0.0-beta.3"
+SYNC_VERSION = "1.0.0-beta.4"
 DEFAULT_PROD_URL = "http://13.216.102.148"
 DEFAULT_LOCAL_URL = "http://127.0.0.1:8080"
 
@@ -705,7 +793,7 @@ def resolve_api_endpoints(cli_arg: str = None, force_local: bool = False, force_
         except Exception:
             pass
 
-    # Default to dual broadcasting: Cloud Render + Local Server (if reachable)
+    # Default to dual broadcasting: Cloud Lightsail + Local Server (if reachable)
     endpoints = [DEFAULT_PROD_URL]
     try:
         req = urllib.request.Request(f"{DEFAULT_LOCAL_URL}/api/health", headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
@@ -719,13 +807,13 @@ def resolve_api_endpoints(cli_arg: str = None, force_local: bool = False, force_
 
 if __name__ == "__main__":
     print("=" * 64)
-    print(f"  [WoW Killboard] Desktop Sync Client v{SYNC_VERSION}")
+    print(f"  [WoW Killboard] Universal Multi-Client Sync v{SYNC_VERSION}")
     print("  Automated Combat Telemetry & Marks of Spite Ingestion")
     print("=" * 64)
 
     parser = argparse.ArgumentParser(description="WoWKillboard SavedVariables Watcher")
-    parser.add_argument("--file", "-f", default="", help="Path to WoWKillboard.lua (auto-detected if omitted)")
-    parser.add_argument("--api", "-a", default="", help="Web Killboard API URL (defaults to dual sync)")
+    parser.add_argument("--file", "-f", default="", help="Path to WoWKillboard.lua (monitors ALL clients if omitted)")
+    parser.add_argument("--api", "-a", default="", help="Web Killboard API URL (defaults to production)")
     parser.add_argument("--local", action="store_true", help="Force local development endpoint only (http://127.0.0.1:8080)")
     parser.add_argument("--cloud", "--render", action="store_true", help="Force cloud production endpoint only (http://13.216.102.148)")
     parser.add_argument("--once", action="store_true", help="Run once and exit instead of continuous daemon")
@@ -735,16 +823,21 @@ if __name__ == "__main__":
     print(f"[*] Ingestion Target APIs: {', '.join(target_apis)}")
 
     target_file = args.file
-    if not target_file:
-        detected = auto_detect_saved_variables()
-        if detected:
-            print(f"[+] Auto-detected WoW SavedVariables: {detected}")
-            target_file = detected
+    if target_file:
+        target_files = [os.path.abspath(target_file).replace("\\", "/")]
+        log_event(f"[*] Monitoring user-specified file: {target_files[0]}")
+    else:
+        target_files = find_all_saved_variables()
+        if target_files:
+            log_event(f"[+] Discovered {len(target_files)} active WoW client/account SavedVariables:")
+            for tf in target_files:
+                log_event(f"    - {tf}")
         else:
-            target_file = "WoWKillboard.lua"
-            print(f"[*] Could not auto-detect WoW directory. Defaulting to local: {target_file}")
+            fallback = auto_detect_saved_variables()
+            target_files = [fallback] if fallback else ["WoWKillboard.lua"]
+            log_event(f"[*] Could not auto-detect active WoW directory. Defaulting to: {target_files[0]}")
 
-    watcher = KillboardWatcher(target_file, target_apis)
+    watcher = KillboardWatcher(target_files, target_apis)
     if args.once:
         watcher.process_file()
     else:
