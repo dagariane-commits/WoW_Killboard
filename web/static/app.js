@@ -4312,7 +4312,7 @@ function loadUploadView() {
 
       ${isAdmin ? `
       <!-- Admin Reset Panel -->
-      <div style="background: rgba(185, 28, 28, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 20px;">
+      <div id="admin-reset-panel" style="background: rgba(185, 28, 28, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <h4 style="font-family:var(--font-tactical); font-size:1.05rem; color:#f87171; margin:0;">
             Master War Archivist &bull; Database Administration
@@ -4349,11 +4349,16 @@ function loadUploadView() {
 }
 
 function promptAdminAccess() {
-  const key = prompt("Enter Master War Archivist Secret Key:");
+  const existing = localStorage.getItem("wowkb_admin_key") || "";
+  const key = prompt("Enter Master War Archivist Secret Key:", existing);
   if (key && key.trim().length > 0) {
     localStorage.setItem("wowkb_is_admin", "true");
     localStorage.setItem("wowkb_admin_key", key.trim());
-    loadUploadView();
+    switchTab('UPLOAD');
+    setTimeout(() => {
+      const el = document.getElementById("admin-reset-panel");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }, 150);
   }
 }
 
