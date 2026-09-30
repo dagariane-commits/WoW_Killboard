@@ -157,3 +157,27 @@ end
 ```
 On the web platform, classes and combat modes not available in the active flavor are dynamically greyed out with lock indicators (e.g., Death Knight disabled in Classic Era / TBC, Arenas disabled in Classic Era).
 
+---
+
+## 8. Runtime In-Memory History Self-Healing (`KB:SanitizeKillHistory`)
+
+When loading or reloading the interface (`/reload`), the engine invokes `KB:SanitizeKillHistory()` during `KB:Initialize()` to heal historical records stored in `WoWKillboardDB.kills` before UI rendering or serialization:
+1. **Victim Self-Insertion Pruning**: Removes any corrupted records where a victim accidentally recorded themselves as an attacker. Recalculates `attackersCount` and restores `isSolo = true` for certified solo ganks.
+2. **Healer & Ally Assist Telemetry Restoration**: Deduplicates party entries and reconstructs Druid, Priest, and Paladin friendly assist telemetry for multi-combatant engagements.
+3. **Automatic Disk Persistence**: Repaired records are cleanly written back to disk when the player exits combat or reloads.
+
+---
+
+## 9. Frontline Performance Profiling & Stress Testing (`/kb stress`)
+
+Under massive 40v40 world PvP battles (e.g., Southshore vs. Tarren Mill), thousands of combat events fire concurrently. The addon provides built-in benchmarking:
+
+```text
+/kb stress [count]
+```
+- Injects up to 250 realistic, cryptographically validated combat encounters into memory in a single frame.
+- Automatically profiles microsecond execution duration using `debugprofilestop()`.
+- Tracks memory allocation delta via `collectgarbage("count")`.
+- Confirms zero Blizzard UI taint (`ActionBlocked`) under heavy combat load.
+- Provides 1-click test record purge via `/kb reset` or the in-game Settings **`[Reset Local Database]`** button.
+

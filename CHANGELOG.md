@@ -5,6 +5,19 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.69] - 2026-09-29
+
+### Documentation
+- **Full Master Technical Wiki & Documentation Synchronization (`docs/`, `README.md`)**:
+  - **Master Wiki Index (`docs/README.md`)**: Added `STRESS_TESTING.md`, `DEPLOYMENT_VPS.md`, `BETA_TESTER_QUICKSTART.md`, and `AI_SESSION_HANDOFF.md` to the central architecture map.
+  - **System Architecture (`docs/ARCHITECTURE.md`)**: Documented Tier 1 self-healing history sanitizer (`KB:SanitizeKillHistory`), Tier 2 `LuaTableParser` streaming parser benchmarks (7,200+ rec/s), Tier 3 SQLite WAL mode concurrency (`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=10000;`), multi-table cascade administrative wipes, and responsive dual-tier header layout.
+  - **Combat Engine Specification (`docs/COMBAT_ENGINE.md`)**: Documented Section 8 in-memory historical sanitization protocol and Section 9 in-game `/kb stress [N]` frontline load simulation protocol.
+  - **Beta Tester Quickstart (`docs/BETA_TESTER_QUICKSTART.md`)**: Added in-game combat testing commands (`/kb testkill`, `/kb stress [N]`, `/kb reset`) and in-game Settings `[Reset Local Database]` button instructions.
+  - **AWS VPS Production Deployment Guide (`docs/DEPLOYMENT_VPS.md`)**: Documented hard-reset remote git fetch command (`git fetch origin main && git reset --hard origin/main`), multi-table administrative wipe, and three database reset execution methods (PowerShell, Lightsail terminal, web UI).
+  - **Public Release Playbook (`docs/PUBLIC_RELEASE_PLAYBOOK.md`)**: Established Phase 0 pre-flight sequence ("Domain First" principle before CurseForge / Wago package submission).
+  - **Strategic Roadmap (`docs/ROADMAP.md`)**: Updated Phase 5 to reflect completed AWS Lightsail cloud deployment, active stress testing benchmarks, and queued domain/SSL/CurseForge milestones.
+  - **AI Session Handoff (`docs/AI_SESSION_HANDOFF.md`)**: Fully updated with live commit state, active server daemons, operational runbooks, and zero-drift verification.
+
 ## [1.4.68] - 2026-09-29
 
 ### Fixed

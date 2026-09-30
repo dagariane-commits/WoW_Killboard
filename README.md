@@ -16,9 +16,12 @@ Comprehensive technical documentation is maintained in the [`docs/`](docs/) dire
 
 - 📖 **[Master Technical Wiki](docs/README.md)** — Architectural index and developer portal.
 - 🏛️ **[System Architecture Specification](docs/ARCHITECTURE.md)** — In-depth breakdown of the 3-tier model, data contracts, and FNV-1a hashing.
+- ⚡ **[Beta Tester Quickstart Guide](docs/BETA_TESTER_QUICKSTART.md)** — 2-minute setup, in-game controls, and automated AI bug reporting.
 - ⚔️ **[Combat Telemetry & Gang Engine](docs/COMBAT_ENGINE.md)** — 15-second sliding gang clustering, 1v1 duels, and BG scoreboard telemetry.
 - 🩸 **[Blood Bounties & The Marked](docs/BOUNTY_SYSTEM.md)** — Execution contracts, strict open-world PvP gating, anti-win-trade rules, and debtor radar.
 - 🛡️ **[Taint Security & Compatibility](docs/TAINT_AND_COMPATIBILITY.md)** — Complete guide to our zero-taint standard across all 4 WoW client flavors.
+- 📊 **[Stress Testing & Performance Benchmarks](docs/STRESS_TESTING.md)** — Multi-tier load testing, parser benchmarking (7,200+ rec/s), and API concurrency.
+- ☁️ **[Dedicated Linux VPS Deployment](docs/DEPLOYMENT_VPS.md)** — AWS Lightsail runbook, automated SSL/TLS via Caddy, and backup automation.
 - 🗺️ **[Forward Strategic Roadmap](docs/ROADMAP.md)** — Phased roadmap covering public launch, guild war rooms, and ranked seasons.
 - 🚀 **[Public Release & Distribution Playbook](docs/PUBLIC_RELEASE_PLAYBOOK.md)** — Guide for packaging, CurseForge/Wago distribution, and hosting.
 - 📝 **[Semantic Version Change Log](CHANGELOG.md)** — Full changelog trail from initial prototype to v1.0.0 release.
@@ -115,6 +118,12 @@ flowchart TD
   - Broadcasts across Guild, Group/Raid, and P2P Addon channels. Live web recon ticker with Discord embeds.
 - **In-Game Player Armory Lookup (`/armory [Name]`, `/killboard armory [Name]`)**:
   - Direct chat combat dossier: reports character class, level, faction, Classic Military Honor Rank, K/D, solo triumphs, KOS status, and active blood bounties without leaving the game client.
+- **In-Game Database Management & 1-Click Reset (`/kb` -> `Settings`)**:
+  - Dedicated Section 5 in Settings with a prominent red `[Reset Local Database]` button.
+  - Instantly wipes local combat records (`WoWKillboardDB.kills`), resets cached realm carnage to 0, clears session stats, and refreshes the UI without requiring a reload.
+- **In-Game Frontline Combat Stress Testing (`/kb stress [N]`)**:
+  - Dynamically injects up to 250 verified synthetic kills into memory in a single frame.
+  - Profiles microsecond execution time (`debugprofilestop`) and memory allocation delta (`collectgarbage`), confirming 0 FPS drops and zero Blizzard UI taint (`ActionBlocked`).
 - **Early Preview Welcome & Community Feedback Modal (`/kb welcome`, `/kb feedback`)**:
   - Unobtrusive first-time login popup explaining early stage development, encouraging sharing freely across guildmates and friends, and soliciting direct feedback.
   - Interactive actions: 1-click in-game feedback dispatcher (`UI:ShowBugReportModal()`), copyable web feedback link with auto-highlighting, and "Do not show on future logins" checkbox.
@@ -125,6 +134,16 @@ flowchart TD
 - **Streaming Lua Tokenizer**: High-speed recursive-descent parser.
 
 ### 3. Frontline War Room Web Intelligence Platform (`web/`)
+- **Decoupled Dual-Tier Header & 150%+ Zoom Resilience**:
+  - Restructured site header into an intentional two-tier visual hierarchy:
+    - **Tier 1 (Main Row)**: Brand logo, faction crests, active Theater selector, 4-way combat mode filter pills (`WORLD` | `BGS` | `DUELS` | `ARENAS`), and `Select / Claim Character` button.
+    - **Tier 2 (Sub-Navigation Bar)**: Dedicated sub-rail containing all platform tabs (`Intel`, `Defender of Azeroth`, `The Marked`, `Manhunt`, `Zone Intel`, `Upload`).
+  - Eliminates tab squishing, label truncation (e.g. `Def`), and overflow blowout on 1080p screens and 150%+ browser zoom levels.
+- **Dynamic Most Wanted Grid Sizing**:
+  - Automatically scales the Most Wanted showcase: renders as a single, sleek row of 5 slots when 5 or fewer bounties exist, pulling the combat feed up by ~180px and eliminating empty-state clutter.
+- **High-Concurrency SQLite WAL Engine & Web Admin Console**:
+  - Configured Write-Ahead Logging (`PRAGMA journal_mode=WAL;`), 10-second busy timeout, and normalized synchronous mode for non-blocking concurrent reads and burst write throughput.
+  - Linked **Admin Console** directly in the site footer for 1-click cloud database wipes via master secret key.
 - **Dark Warcraft Tactical War Room & Mobile/Tablet Responsive Overhaul**:
   - Immersive dark fantasy aesthetic with radial faction illumination (Alliance Blue & Horde Crimson), ambient tactical grid, and glassmorphic panels (`backdrop-filter: blur(16px)`).
   - Integrated Google typography: `'Cinzel'` for regal war room titles, `'Rajdhani'` for telemetry/meters, and `'Inter'` for combat feeds.
