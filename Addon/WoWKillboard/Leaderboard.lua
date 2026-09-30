@@ -34,7 +34,7 @@ function LB:MatchesMode(km, mode)
     return (not km.isDuel)
 end
 
--- Rebuild all aggregate statistics from WoWKillboardDB
+-- Rebuild all aggregate statistics from WoWKillboardDB and shared WoWKillboard_RealmData
 function LB:Rebuild()
     LB.Aggregates = {
         ALL = { players = {}, zones = {}, guilds = {} },
@@ -44,20 +44,48 @@ function LB:Rebuild()
         DUEL = { players = {}, zones = {}, guilds = {} },
     }
 
-    if not WoWKillboardDB or not WoWKillboardDB.kills then return end
+    local seenKills = {}
 
-    for _, km in pairs(WoWKillboardDB.kills) do
-        if not km.isDuel then
-            LB:IndexKillmail(km, "ALL")
+    -- 1. Index local account kills
+    if WoWKillboardDB and WoWKillboardDB.kills then
+        for _, km in pairs(WoWKillboardDB.kills) do
+            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
+            if kId then seenKills[kId] = true end
+            if not km.isDuel then
+                LB:IndexKillmail(km, "ALL")
+            end
+            if km.isDuel then
+                LB:IndexKillmail(km, "DUEL")
+            elseif km.isArena then
+                LB:IndexKillmail(km, "ARENA")
+            elseif km.isBattleground then
+                LB:IndexKillmail(km, "BG")
+            else
+                LB:IndexKillmail(km, "WORLD")
+            end
         end
-        if km.isDuel then
-            LB:IndexKillmail(km, "DUEL")
-        elseif km.isArena then
-            LB:IndexKillmail(km, "ARENA")
-        elseif km.isBattleground then
-            LB:IndexKillmail(km, "BG")
-        else
-            LB:IndexKillmail(km, "WORLD")
+    end
+
+    -- 2. Index shared realm kills from two-way sync
+    local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+    if rData and rData.RecentKills then
+        for _, km in ipairs(rData.RecentKills) do
+            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
+            if kId and not seenKills[kId] then
+                seenKills[kId] = true
+                if not km.isDuel then
+                    LB:IndexKillmail(km, "ALL")
+                end
+                if km.isDuel then
+                    LB:IndexKillmail(km, "DUEL")
+                elseif km.isArena then
+                    LB:IndexKillmail(km, "ARENA")
+                elseif km.isBattleground then
+                    LB:IndexKillmail(km, "BG")
+                else
+                    LB:IndexKillmail(km, "WORLD")
+                end
+            end
         end
     end
 end
@@ -261,16 +289,34 @@ function LB:GetTopGuilds(mode, limit)
     return res
 end
 
--- Get Recent Killmails sorted chronologically
+-- Get Recent Killmails sorted chronologically (merges local account + shared realm kills)
 function LB:GetRecentKills(mode, limit)
     mode = mode or "ALL"
     limit = limit or 50
-    if not WoWKillboardDB or not WoWKillboardDB.kills then return {} end
 
     local list = {}
-    for _, km in pairs(WoWKillboardDB.kills) do
-        if LB:MatchesMode(km, mode) then
-            table.insert(list, km)
+    local seenKills = {}
+
+    -- 1. Local account kills
+    if WoWKillboardDB and WoWKillboardDB.kills then
+        for _, km in pairs(WoWKillboardDB.kills) do
+            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
+            if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                seenKills[kId] = true
+                table.insert(list, km)
+            end
+        end
+    end
+
+    -- 2. Shared realm kills from two-way sync
+    local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+    if rData and rData.RecentKills then
+        for _, km in ipairs(rData.RecentKills) do
+            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
+            if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                seenKills[kId] = true
+                table.insert(list, km)
+            end
         end
     end
 

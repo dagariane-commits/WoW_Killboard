@@ -71,8 +71,10 @@ WoW flushes its Lua `SavedVariables` cache to disk when the player reloads the U
 
 1. **Option A: Desktop Ingestion Agent (`WoWKillboardSync.exe`)**:
    - Automated Multi-Drive Discovery: Scans `C:`, `D:`, and `E:` for active WoW client roots (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+   - Two-Way Realm Intel Synchronization: In addition to streaming local combat records to cloud endpoints (`http://13.216.102.148`), automatically pulls the latest 60 confirmed realm kills and active bounties down into `WoWKillboard_RealmData.lua` across all client directories.
+   - Cross-Account Parity: Automatically monitors all local account directories (`WTF/Account/*`), aggregating combat telemetry so that secondary accounts and alts instantly share confirmed kills and intel on the same machine.
    - Real-time file system watcher streams updates automatically to both local and cloud endpoints (`http://13.216.102.148`).
-   - Self-contained, zero-Python binary distributed in `dist/WoWKillboardSync.exe`.
+   - Self-contained, zero-Python binary distributed in `dist/WoWKillboardSync.exe` and `WoWKillboardSync.exe`.
 2. **Option B: Web Drag-and-Drop Uploader (`/api/upload`)**:
    - Zero-download, browser-native alternative for players who do not want a desktop background process.
    - Accepts raw `WoWKillboard.lua` files or JSON payloads directly via web interface (`/upload`).
