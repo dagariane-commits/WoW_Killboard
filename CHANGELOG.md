@@ -5,6 +5,28 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.73] - 2026-09-30
+
+### Fixed
+- **Two-Way Cross-Account & Realm Intel Synchronization (`sync/watcher.py`, `Leaderboard.lua`, `UI.lua`, `BountyEngine.lua`, `WoWKillboard.toc`)**:
+  - **The Issue**: When logging into a secondary WoW account (`WTF/Account/<ACCOUNT_2>`), the in-game "Intel" combat feed was completely blank, displaying 0 kills and unpopulated Most Wanted contract cards, giving the impression that combat records were not syncing to/from the platform.
+  - **Root Cause**:
+    1. SavedVariables are strictly sandboxed per WoW account directory (`WTF/Account/<ACCOUNT>/SavedVariables/WoWKillboard.lua`). Fresh accounts or alts initialize with `WoWKillboardDB = { kills = {} }`.
+    2. Previously, `sync_realm_data_to_client()` in `watcher.py` was unidirectional for kills: it only uploaded local kills to `/api/kills` and fetched `/api/realm/summary` counts (lacking recent kill and bounty lists).
+    3. `WoWKillboard_RealmData` was registered under `## SavedVariables` in `WoWKillboard.toc`, causing Blizzard to overwrite the freshly injected realm file with an empty per-account SavedVariables table on `ADDON_LOADED`.
+    4. `LB:GetRecentKills()` and `LB:Rebuild()` only iterated over local `WoWKillboardDB.kills`, never ingesting shared realm data.
+  - **Surgical Solution**:
+    1. **Two-Way Sync Courier Enhancement (`sync/watcher.py`, `WoWKillboardSync.exe`)**:
+       - Added robust `serialize_to_lua()` formatter.
+       - Updated `sync_realm_data_to_client()` to fetch `/api/kills?limit=60` and `/api/bounties`, as well as dynamically aggregate all local accounts' `SavedVariables` across the machine.
+       - Injects `WoWKillboard_RealmData.RecentKills` and `WoWKillboard_RealmData.ActiveBounties` into all client flavor directories (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+    2. **TOC SavedVariables Decoupling (`Addon/WoWKillboard/WoWKillboard.toc`)**:
+       - Removed `WoWKillboard_RealmData` from `## SavedVariables:` so Blizzard never replaces the authoritative disk payload with stale account caches.
+    3. **Lua In-Game Intel Merging (`Addon/WoWKillboard/Leaderboard.lua`, `UI.lua`, `BountyEngine.lua`)**:
+       - Updated `LB:GetRecentKills()` and `LB:Rebuild()` to merge local `WoWKillboardDB.kills` with shared `WoWKillboard_RealmData.RecentKills`, deduplicating deterministically by `killId` and sorting chronologically.
+       - Updated `BE:InitDB()` and `UI:RenderLiveFeed()` to merge active realm bounties into `activeOutlaws` and `WoWKillboardBounties`.
+       - All accounts and characters now immediately load confirmed realm kills and active contracts upon login.
+
 ## [1.4.72] - 2026-09-29
 
 ### Fixed

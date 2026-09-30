@@ -1458,17 +1458,33 @@ function UI:RenderLiveFeed()
     end)
 
     -- Gather Active Outlaws sorted by highest Mark value
+    if KB.BountyEngine and KB.BountyEngine.InitDB then KB.BountyEngine:InitDB() end
     local activeOutlaws = {}
+    local seenBounties = {}
     if WoWKillboardBounties then
         for _, b in pairs(WoWKillboardBounties) do
-            if b.status == KB.STATUS.ACTIVE then
+            local bId = b.id or b.bountyId
+            local bStatus = b.status or "ACTIVE"
+            if (bStatus == "ACTIVE" or bStatus == KB.STATUS.ACTIVE) and bId and not seenBounties[bId] then
+                seenBounties[bId] = true
                 table.insert(activeOutlaws, b)
             end
         end
-        table.sort(activeOutlaws, function(a, b)
-            return (a.amountCopper or 0) > (b.amountCopper or 0)
-        end)
     end
+    local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+    if rData and rData.ActiveBounties then
+        for _, b in ipairs(rData.ActiveBounties) do
+            local bId = b.id or b.bountyId
+            local bStatus = b.status or "ACTIVE"
+            if (bStatus == "ACTIVE" or bStatus == KB.STATUS.ACTIVE) and bId and not seenBounties[bId] then
+                seenBounties[bId] = true
+                table.insert(activeOutlaws, b)
+            end
+        end
+    end
+    table.sort(activeOutlaws, function(a, b)
+        return (a.amountCopper or 0) > (b.amountCopper or 0)
+    end)
 
     -- Render 10 Most Wanted Cards in a 2x5 Grid
     for idx = 1, 10 do

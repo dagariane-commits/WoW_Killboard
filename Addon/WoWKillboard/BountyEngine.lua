@@ -21,11 +21,21 @@ end
 
 local frame = CreateFrame("Frame")
 
--- Initialize database tables
+-- Initialize database tables (merges shared realm bounties)
 function BE:InitDB()
     WoWKillboardBounties = WoWKillboardBounties or {}
     WoWKillboardDebtLedger = WoWKillboardDebtLedger or {}
     WoWKillboardAcceptedBounties = WoWKillboardAcceptedBounties or {}
+
+    local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+    if rData and rData.ActiveBounties then
+        for _, b in ipairs(rData.ActiveBounties) do
+            local bId = b.id or b.bountyId
+            if bId and not WoWKillboardBounties[bId] then
+                WoWKillboardBounties[bId] = b
+            end
+        end
+    end
 end
 
 -- Validate and place a new Mark of Spite (with permanent Character GUID binding)

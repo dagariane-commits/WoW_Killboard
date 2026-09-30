@@ -179,6 +179,45 @@ class LuaTableParser:
             
         return parsed
 
+def serialize_to_lua(val, indent=1) -> str:
+    """Serializes Python datatypes to syntactically clean, robust Lua literal representation."""
+    ind = "    " * indent
+    if val is None:
+        return "nil"
+    elif isinstance(val, bool):
+        return "true" if val else "false"
+    elif isinstance(val, (int, float)):
+        if isinstance(val, float) and val.is_integer():
+            return str(int(val))
+        return str(val)
+    elif isinstance(val, str):
+        esc = val.replace('\\', '\\\\').replace('"', '\\"').replace('\r', '').replace('\n', '\\n')
+        return f'"{esc}"'
+    elif isinstance(val, list):
+        if not val:
+            return "{}"
+        lines = ["{"]
+        for item in val:
+            lines.append(f"{ind}    {serialize_to_lua(item, indent + 1)},")
+        lines.append(f"{ind}}}")
+        return "\n".join(lines)
+    elif isinstance(val, dict):
+        if not val:
+            return "{}"
+        lines = ["{"]
+        for k, v in val.items():
+            if isinstance(k, int):
+                k_repr = f"[{k}]"
+            elif isinstance(k, str) and k.isidentifier() and k not in ('and','break','do','else','elseif','end','false','for','function','goto','if','in','local','nil','not','or','repeat','return','then','true','until','while'):
+                k_repr = k
+            else:
+                esc_k = str(k).replace('\\', '\\\\').replace('"', '\\"')
+                k_repr = f'["{esc_k}"]'
+            lines.append(f"{ind}    {k_repr} = {serialize_to_lua(v, indent + 1)},")
+        lines.append(f"{ind}}}")
+        return "\n".join(lines)
+    return '""'
+
 class KillboardWatcher:
     def __init__(self, filepaths, api_urls = None):
         if isinstance(filepaths, str):
@@ -613,34 +652,107 @@ class KillboardWatcher:
         return any_success
 
     def sync_realm_data_to_client(self) -> bool:
-        """Fetches /api/realm/summary and writes WoWKillboard_RealmData.lua into AddOn and SavedVariables dirs."""
+        """Fetches /api/realm/summary, /api/kills, and /api/bounties, merges local kills across accounts, and writes WoWKillboard_RealmData.lua."""
         summary = None
+        recent_kills = []
+        active_bounties = []
+
         for endpoint in self.api_urls:
-            url = f"{endpoint}/api/realm/summary"
-            try:
-                req = urllib.request.Request(url, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
-                with urllib.request.urlopen(req, timeout=4) as resp:
-                    if resp.status == 200:
-                        summary = json.loads(resp.read().decode("utf-8"))
-                        break
-            except Exception:
-                pass
+            # 1. Fetch summary
+            if not summary:
+                url = f"{endpoint}/api/realm/summary"
+                try:
+                    req = urllib.request.Request(url, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
+                    with urllib.request.urlopen(req, timeout=4) as resp:
+                        if resp.status == 200:
+                            summary = json.loads(resp.read().decode("utf-8"))
+                except Exception:
+                    pass
 
-        if not summary:
-            return False
+            # 2. Fetch recent kills (up to 60)
+            if not recent_kills:
+                url_kills = f"{endpoint}/api/kills?limit=60"
+                try:
+                    req = urllib.request.Request(url_kills, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        if resp.status == 200:
+                            k_data = json.loads(resp.read().decode("utf-8"))
+                            recent_kills = k_data.get("kills", [])
+                except Exception:
+                    pass
 
-        carnage = int(summary.get("RealmTotalCarnage", 0))
-        solo_ratio = float(summary.get("SoloRatio", 0.0))
-        faction_split = summary.get("FactionSplit", {"Alliance": 50, "Horde": 50})
+            # 3. Fetch active bounties
+            if not active_bounties:
+                url_bnt = f"{endpoint}/api/bounties"
+                try:
+                    req = urllib.request.Request(url_bnt, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
+                    with urllib.request.urlopen(req, timeout=4) as resp:
+                        if resp.status == 200:
+                            b_data = json.loads(resp.read().decode("utf-8"))
+                            if isinstance(b_data, list):
+                                active_bounties = b_data
+                            elif isinstance(b_data, dict):
+                                active_bounties = b_data.get("bounties", [])
+                except Exception:
+                    pass
+
+        # Also merge local kills from all monitored accounts on this machine
+        # (guarantees cross-account sharing even offline or before remote indexing)
+        known_kill_ids = set()
+        for k in recent_kills:
+            if isinstance(k, dict) and k.get("killId"):
+                known_kill_ids.add(k["killId"])
+
+        for fp in getattr(self, "filepaths", []):
+            if os.path.exists(fp):
+                try:
+                    with open(fp, "r", encoding="utf-8", errors="ignore") as f:
+                        content = f.read()
+                    parsed = LuaTableParser.parse_string(content)
+                    db_kills = parsed.get("WoWKillboardDB", {})
+                    if isinstance(db_kills, dict):
+                        for kid, km in db_kills.items():
+                            if kid not in known_kill_ids and isinstance(km, dict):
+                                km_copy = dict(km)
+                                if "killId" not in km_copy:
+                                    km_copy["killId"] = kid
+                                recent_kills.append(km_copy)
+                                known_kill_ids.add(kid)
+                    # Also merge local bounties if any
+                    local_bounties = parsed.get("WoWKillboardBounties", {})
+                    if isinstance(local_bounties, dict):
+                        known_bnt_ids = set(b.get("id") or b.get("bountyId") for b in active_bounties if isinstance(b, dict))
+                        for bid, bnt in local_bounties.items():
+                            if bid not in known_bnt_ids and isinstance(bnt, dict) and bnt.get("status") == "ACTIVE":
+                                b_copy = dict(bnt)
+                                if "id" not in b_copy:
+                                    b_copy["id"] = bid
+                                active_bounties.append(b_copy)
+                                known_bnt_ids.add(bid)
+                except Exception:
+                    pass
+
+        # Sort recent kills descending by timestamp and cap at 60
+        recent_kills.sort(key=lambda x: x.get("timestamp", 0) if isinstance(x, dict) else 0, reverse=True)
+        recent_kills = recent_kills[:60]
+
+        carnage = int(summary.get("RealmTotalCarnage", len(recent_kills))) if summary else len(recent_kills)
+        solo_ratio = float(summary.get("SoloRatio", 0.0)) if summary else 0.0
+        faction_split = summary.get("FactionSplit", {"Alliance": 50, "Horde": 50}) if summary else {"Alliance": 50, "Horde": 50}
         a_split = float(faction_split.get("Alliance", 50))
         h_split = float(faction_split.get("Horde", 50))
+        deadliest_zones = summary.get("DeadliestZones", []) if summary else []
+        top_gankers = summary.get("TopGankers24h", []) if summary else []
 
-        deadliest_zones = summary.get("DeadliestZones", [])
-        top_gankers = summary.get("TopGankers24h", [])
+        # If summary was empty or offline, compute basic stats from recent_kills
+        if not summary and recent_kills:
+            carnage = len(recent_kills)
+            solo_count = sum(1 for k in recent_kills if isinstance(k, dict) and k.get("isSolo"))
+            solo_ratio = round((solo_count / max(1, carnage)) * 100, 1)
 
         lua_lines = [
             "-- WoWKillboard_RealmData.lua",
-            "-- Automated Realm Intelligence generated by WoWKillboardSync",
+            "-- Automated Realm Intelligence & Two-Way Sync generated by WoWKillboardSync",
             "WoWKillboard_RealmData = {",
             f"    RealmTotalCarnage = {carnage},",
             f"    SoloRatio = {solo_ratio},",
@@ -648,25 +760,13 @@ class KillboardWatcher:
             f"        Alliance = {a_split},",
             f"        Horde = {h_split},",
             "    },",
-            "    DeadliestZones = {",
+            f"    DeadliestZones = {serialize_to_lua(deadliest_zones, 1)},",
+            f"    TopGankers24h = {serialize_to_lua(top_gankers, 1)},",
+            f"    RecentKills = {serialize_to_lua(recent_kills, 1)},",
+            f"    ActiveBounties = {serialize_to_lua(active_bounties, 1)},",
+            f"    LastSync = {int(time.time())},",
+            "}",
         ]
-        for z in deadliest_zones:
-            z_name = str(z.get("zone", "")).replace('"', '\\"')
-            z_kills = int(z.get("kills", 0))
-            lua_lines.append(f'        {{ zone = "{z_name}", kills = {z_kills} }},')
-        lua_lines.append("    },")
-
-        lua_lines.append("    TopGankers24h = {")
-        for g in top_gankers:
-            g_name = str(g.get("name", "")).replace('"', '\\"')
-            g_cls = str(g.get("class", "WARRIOR")).replace('"', '\\"')
-            g_fac = str(g.get("faction", "Alliance")).replace('"', '\\"')
-            g_gld = str(g.get("guild", "")).replace('"', '\\"')
-            g_kills = int(g.get("kills", 0))
-            lua_lines.append(f'        {{ name = "{g_name}", class = "{g_cls}", faction = "{g_fac}", guild = "{g_gld}", kills = {g_kills} }},')
-        lua_lines.append("    },")
-        lua_lines.append(f"    LastSync = {int(time.time())},")
-        lua_lines.append("}")
         lua_content = "\n".join(lua_lines) + "\n"
 
         target_paths = []
@@ -704,7 +804,7 @@ class KillboardWatcher:
                 pass
 
         if written > 0:
-            print(f"[Watcher] [2-WAY SYNC] Injected realm telemetry payload (WoWKillboard_RealmData.lua) into {written} location(s).")
+            log_event(f"[Watcher] [2-WAY SYNC] Injected realm telemetry payload (WoWKillboard_RealmData.lua) with {len(recent_kills)} kills and {len(active_bounties)} bounties into {written} location(s).")
         return True
 
     def run_daemon(self, poll_interval: float = 2.0):
@@ -856,6 +956,7 @@ if __name__ == "__main__":
     watcher = KillboardWatcher(target_files, target_apis)
     if args.once:
         watcher.process_file()
+        watcher.sync_realm_data_to_client()
     else:
         watcher.run_daemon()
 
