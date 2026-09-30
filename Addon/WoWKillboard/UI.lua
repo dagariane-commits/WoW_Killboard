@@ -1737,7 +1737,12 @@ function UI:RenderLiveFeed()
             badgeStr = "|cff00ff66[SOLO]|r"
         else
             accent:SetColorTexture(1.0, 0.6, 0.0, 1.0) -- Orange
-            badgeStr = string.format("|cffffaa00[GANG x%d]|r", km.attackersCount or 1)
+            local attCount = km.attackersCount or 2
+            if attCount > 1 then
+                badgeStr = string.format("|cffffaa00[GANG x%d]|r", attCount)
+            else
+                badgeStr = "|cffffaa00[ASSIST]|r"
+            end
         end
 
         -- Category Badge
@@ -3402,7 +3407,7 @@ function UI:ShowKillDetail(km)
         modeStr = "|cff00ff66Open World PvP|r"
     end
 
-    local soloStr = km.isSolo and "|cff00ff66Certified Solo Kill|r" or string.format("|cffffaa00Gang Engagement (%d Attackers)|r", km.attackersCount or 1)
+    local soloStr = km.isSolo and "|cff00ff66Certified Solo Kill|r" or (((km.attackersCount or 1) > 1) and string.format("|cffffaa00Gang Engagement (%d Attackers)|r", km.attackersCount) or "|cffffaa00Assisted Engagement|r")
     local subzoneStr = (km.location.subZone and km.location.subZone ~= "") and (" (" .. km.location.subZone .. ")") or ""
 
     m.DetailsText:SetText(string.format(
@@ -4827,6 +4832,8 @@ function UI:ShowKillBanner(killmail, isTest)
             rwSub = rwSub .. string.format(" | |cff00ccff%s|r", killmail.battlegroundName or "Battleground")
         elseif killmail.attackersCount and killmail.attackersCount > 1 then
             rwSub = rwSub .. string.format(" | |cffff9900Gang Combat (x%d)|r", killmail.attackersCount)
+        else
+            rwSub = rwSub .. " | |cffff9900Assisted Kill|r"
         end
         UI:ShowRaidNotice(rwMain, rwSub, 1.0, 0.28, 0.0)
     end

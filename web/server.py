@@ -941,7 +941,9 @@ def ingest_kill_data(data, conn):
     is_solo = 1 if data.get("isSolo") else 0
     if attackers_count > 1 or (isinstance(attackers, list) and len(attackers) > 1):
         is_solo = 0
-    if not is_duel and k_damage <= 0:
+    if not is_duel and (k_damage <= 0 or total_damage <= 0):
+        is_solo = 0
+    if is_bg or is_arena:
         is_solo = 0
     if k.get("name") in ("Allied Vanguard", "Unknown", ""):
         is_solo = 0
@@ -955,6 +957,9 @@ def ingest_kill_data(data, conn):
                     if att.get("guild"): k["guild"] = att.get("guild")
                     if att.get("faction"): k["faction"] = att.get("faction")
                     break
+
+    data["isSolo"] = bool(is_solo)
+    data["attackersCount"] = attackers_count
 
     v = data.get("victim", {})
     loc = data.get("location", {})
