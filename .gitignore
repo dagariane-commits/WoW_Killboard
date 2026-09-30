@@ -39,3 +39,7 @@ scratch/
 WoW KB Beta/
 web/static/*.exe
 
+# Logs
+*.log
+
+

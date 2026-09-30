@@ -5,6 +5,21 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.70] - 2026-09-29
+
+### Fixed
+- **Universal Multi-Client Watcher Engine (`sync/watcher.py`, `WoWKillboardSync.exe`)**:
+  - Re-architected `KillboardWatcher` from a single-file listener into an active multi-directory monitoring daemon.
+  - Automatically discovers and monitors all active `SavedVariables/WoWKillboard.lua` files across all connected Windows drives (`C:`, `D:`, `E:`, `F:`) and all game client flavors (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+  - Added periodic 15-second background discovery to detect newly created account directories or client flavor launches on the fly.
+  - Resolved the critical blindspot where switching between game flavors or accounts caused the sync client to stay locked onto the wrong directory.
+- **In-Game Manual Sync Heartbeat (`Addon/WoWKillboard/UI.lua`, `Core.lua`)**:
+  - Clicking the in-game `[Sync]` button or executing `/kb sync` now stamps `WoWKillboardDB.lastManualSync = time()`.
+  - The watcher detects this heartbeat timestamp immediately upon `/reload` or logout, providing verified synchronization and pulling down fresh two-way realm telemetry (`WoWKillboard_RealmData.lua`) even when no new PvP kills occurred.
+- **Persistent Activity Logging (`wowkb_sync.log`)**:
+  - Added dual logging (`log_event`) that outputs to stdout and appends timestamped diagnostics directly to `wowkb_sync.log` adjacent to `WoWKillboardSync.exe`.
+  - Allows end-users and testers to inspect exactly which client flavors, accounts, and telemetry batches were synchronized.
+
 ## [1.4.69] - 2026-09-29
 
 ### Documentation

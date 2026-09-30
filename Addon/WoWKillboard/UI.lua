@@ -916,6 +916,8 @@ function UI:CreateMainWindow()
             SafePrint("|cffff9900[WoWKB]|r Cannot reload UI during combat.")
             return
         end
+        WoWKillboardDB = WoWKillboardDB or {}
+        WoWKillboardDB.lastManualSync = time()
         SafePrint("|cff00ccff[WoWKB]|r Flushing combat records to disk... Keep WoWKillboardSync.exe running in the background to automatically upload to web.")
         ReloadUI()
     end)
