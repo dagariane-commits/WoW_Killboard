@@ -9,23 +9,11 @@ WoWKillboard_RealmData = {
     },
     DeadliestZones = {
         {
-            kills = 2,
-            zone = "Undercity",
-        },
-        {
             kills = 1,
             zone = "Arathi Highlands",
         },
     },
     TopGankers24h = {
-        {
-            class = "HUNTER",
-            faction = "Alliance",
-            guild = "Olympus Firing Squad",
-            kills = 1,
-            name = "Pepper",
-            spec = "Marksmanship",
-        },
         {
             class = "SHAMAN",
             faction = "Horde",
@@ -33,14 +21,6 @@ WoWKillboard_RealmData = {
             kills = 1,
             name = "Hemmy",
             spec = "Elemental",
-        },
-        {
-            class = "PALADIN",
-            faction = "Horde",
-            guild = "None",
-            kills = 1,
-            name = "Dag",
-            spec = "Retribution",
         },
     },
     RecentKills = {
@@ -620,10 +600,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Arathi Highlands",
-                elapsedSeconds = 78633,
+                elapsedSeconds = 78905,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 1310,
+                minutesAgo = 1315,
                 subzone = nil,
                 timestamp = 1790813427,
                 zone = "Arathi Highlands",
@@ -656,10 +636,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Undercity",
-                elapsedSeconds = 86225,
+                elapsedSeconds = 86497,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 1437,
+                minutesAgo = 1441,
                 subzone = nil,
                 timestamp = 1790805835,
                 zone = "Undercity",
@@ -680,5 +660,5 @@ WoWKillboard_RealmData = {
             timestamp = 1790823564,
         },
     },
-    LastSync = 1790892060,
+    LastSync = 1790892332,
 }
