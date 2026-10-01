@@ -5,6 +5,25 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.76] - 2026-09-30
+
+### Fixed
+- **Universal Multi-Drive & Fresh Installation Discovery (`sync/watcher.py`, `WoWKillboardSync.exe`)**:
+  - **The Issue**: When launching `WoWKillboardSync.exe` on a fresh or alternate computer, the in-game addon displayed no realm intelligence, kills, or bounties from the website.
+  - **Root Cause**:
+    1. *Stale Remote Server Assets*: The production Lightsail server (`http://13.216.102.148`) had not pulled recent commits and was serving pre-sync zip/exe binaries from early morning.
+    2. *Standard Path Blindness*: `sync_realm_data_to_client()` previously only checked direct `{d}/World of Warcraft/` roots, missing standard Windows Battle.net directories such as `C:\Program Files (x86)\World of Warcraft\` and custom game drives.
+    3. *Fresh Install Cold-Start*: On a fresh computer, `SavedVariables/WoWKillboard.lua` does not exist until the player logs out or reloads the UI. The watcher previously defaulted to `./WoWKillboard.lua` in the download folder and failed to locate the actual WoW installation.
+  - **Surgical Solution**:
+    1. **Universal WoW Root & Addon Auto-Discovery (`sync/watcher.py`)**:
+       - Added `find_all_wow_roots()` scanning drives `C:`, `D:`, `E:`, `F:`, `G:` across `Program Files (x86)`, `Program Files`, `Games`, and `Battle.net`, plus relative upward directory traversal.
+       - Added `find_all_wow_addon_dirs()` to locate `Interface/AddOns/WoWKillboard/` across all roots and client flavors.
+       - Updated `find_all_saved_variables()` to detect account directories before first logout.
+       - Enhanced `sync_realm_data_to_client()` to inject `WoWKillboard_RealmData.lua` into all discovered addon and WTF directories simultaneously (expanding injection to 19+ targets).
+    2. **Binary Recompilation & Distribution**:
+       - Recompiled standalone `WoWKillboardSync.exe` (`v1.0.0-beta.6`) with PyInstaller.
+       - Rebuilt `WoWKillboard-v1.0.0.zip` and mirrored to `web/static/` and `WoW KB Beta/`.
+
 ## [1.4.75] - 2026-09-30
 
 ### Fixed
