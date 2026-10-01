@@ -5,6 +5,27 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.77] - 2026-09-30
+
+### Fixed
+- **Cross-Machine Player Career Telemetry Synchronization & Two-Way Historical Merge (`Core.lua`, `Leaderboard.lua`, `UI.lua`)**:
+  - **The Issue**: When logging into a secondary test computer with an existing character (`Dagariane`), the in-game addon showed no historical kills or telemetry from the website; it only showed the 1 death recorded during that session, despite `Dagariane` having confirmed kills (e.g. `Shadowstalker`) on the production website.
+  - **Root Cause**:
+    1. *WTF Local Disk Isolation*: `SavedVariables/WoWKillboard.lua` is strictly physical to each computer. Historical kills recorded on Computer 1 were absent from Computer 2's SavedVariables.
+    2. *`UnitName("player")` Lifecycle Timing*: At `ADDON_LOADED`, `UnitName("player")` is frequently uninitialized by the WoW engine (`nil` or `"Unknown"`). The previous merge in `KB:Initialize()` was skipped because player identity had not yet resolved.
+    3. *UI Header Card K/D Isolation*: Header cards in `UI.lua` displayed `SESSION COMBAT K/D` using local `histKills` without incorporating cross-machine player combat records, and `REALM` view did not show personal K/D metrics.
+    4. *Mode Summary Incompleteness*: `LB:GetModeSummary()` in `Leaderboard.lua` only scanned `WoWKillboardDB.kills` and omitted two-way sync realm kills.
+  - **Surgical Solution**:
+    1. **Dedicated Cross-Machine Career Sync (`Addon/WoWKillboard/Core.lua`)**:
+       - Created `KB:SyncRealmData()` featuring robust, cross-realm name matching (`IsPlayerMatch()`) inspecting killer, victim, and attackers list.
+       - Registered `PLAYER_LOGIN` event and attached `KB:SyncRealmData()` to `PLAYER_LOGIN`, `PLAYER_ENTERING_WORLD`, `KB:Initialize()`, and `/kb` slash command.
+    2. **UI Real-Time Career Integration (`Addon/WoWKillboard/UI.lua`)**:
+       - Injected `KB:SyncRealmData()` directly into `UI:Refresh()`.
+       - Enhanced Header Stat Cards: In `REALM` mode, Card 1 presents both total realm carnage and personal career K/D (`X Realm || Y K / Z D (You)`). In `CAREER` mode, presents complete all-time career combat record.
+       - Updated Ribbon toggle to `[ Realm Stats ] | Career`.
+    3. **Leaderboard Mode Summary Telemetry Parity (`Addon/WoWKillboard/Leaderboard.lua`)**:
+       - Updated `LB:GetModeSummary()` to merge local kills and two-way sync realm kills, gracefully falling back to server aggregate telemetry.
+
 ## [1.4.76] - 2026-09-30
 
 ### Fixed

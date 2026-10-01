@@ -388,10 +388,14 @@ function LB:GetModeSummary(mode)
     local soloKills = 0
     local allianceKills = 0
     local hordeKills = 0
+    local seenKills = {}
 
+    -- 1. Index local account kills
     if WoWKillboardDB and WoWKillboardDB.kills then
         for _, km in pairs(WoWKillboardDB.kills) do
-            if LB:MatchesMode(km, mode) then
+            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
+            if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                seenKills[kId] = true
                 totalKills = totalKills + 1
                 if km.isSolo then soloKills = soloKills + 1 end
                 local f = km.killer and km.killer.faction
@@ -402,6 +406,39 @@ function LB:GetModeSummary(mode)
                 end
             end
         end
+    end
+
+    -- 2. Index shared realm kills from two-way sync
+    local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+    if rData and rData.RecentKills then
+        for _, km in ipairs(rData.RecentKills) do
+            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
+            if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                seenKills[kId] = true
+                totalKills = totalKills + 1
+                if km.isSolo then soloKills = soloKills + 1 end
+                local f = km.killer and km.killer.faction
+                if f == "Alliance" then
+                    allianceKills = allianceKills + 1
+                elseif f == "Horde" then
+                    hordeKills = hordeKills + 1
+                end
+            end
+        end
+    end
+
+    -- Use top-level server telemetry summary if mode is WORLD/ALL and server aggregate is higher
+    if (mode == "WORLD" or mode == "ALL") and rData and rData.RealmTotalCarnage and rData.RealmTotalCarnage > totalKills then
+        totalKills = rData.RealmTotalCarnage
+        local soloR = rData.SoloRatio or 0
+        local fSplit = rData.FactionSplit or { Alliance = 50, Horde = 50 }
+        return {
+            totalKills = totalKills,
+            soloKills = math.floor(totalKills * (soloR / 100)),
+            soloPct = math.floor(soloR),
+            alliancePct = math.floor(fSplit.Alliance or 50),
+            hordePct = math.floor(fSplit.Horde or 50),
+        }
     end
 
     local soloPct = (totalKills > 0) and math.floor((soloKills / totalKills) * 100) or 0
