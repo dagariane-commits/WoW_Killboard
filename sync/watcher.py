@@ -805,15 +805,18 @@ class KillboardWatcher:
         if os.path.exists(os.path.dirname(local_repo_addon)):
             target_paths.append(local_repo_addon)
 
+        # Universal Addon Directories across all drives and WoW flavors
+        for ad in find_all_wow_addon_dirs():
+            target_paths.append(os.path.join(ad, "WoWKillboard_RealmData.lua"))
+
+        # Universal WTF SavedVariables directories across all roots
         import glob
-        drives = ["D:", "C:", "E:"]
-        flavors = ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_"]
-        for d in drives:
-            for flv in flavors:
-                p = f"{d}/World of Warcraft/{flv}/Interface/AddOns/WoWKillboard/WoWKillboard_RealmData.lua"
-                if os.path.exists(os.path.dirname(p)):
-                    target_paths.append(p)
-                for sv in glob.glob(f"{d}/World of Warcraft/{flv}/WTF/Account/*/SavedVariables"):
+        for root in find_all_wow_roots():
+            for flv in ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_", "_ptr_", "_classic_"]:
+                p_addon = f"{root}/{flv}/Interface/AddOns/WoWKillboard/WoWKillboard_RealmData.lua"
+                if os.path.exists(os.path.dirname(p_addon)):
+                    target_paths.append(p_addon)
+                for sv in glob.glob(f"{root}/{flv}/WTF/Account/*/SavedVariables"):
                     target_paths.append(os.path.join(sv, "WoWKillboard_RealmData.lua"))
 
         written = 0
@@ -872,36 +875,95 @@ class KillboardWatcher:
                 log_event("\n[Watcher] Stopped by user.")
                 break
 
+def find_all_wow_roots() -> list:
+    """Discovers all World of Warcraft base directories across drives and standard install paths."""
+    import glob
+    roots = []
+    drives = ["C:", "D:", "E:", "F:", "G:"]
+    patterns = [
+        "{drive}/World of Warcraft",
+        "{drive}/Program Files (x86)/World of Warcraft",
+        "{drive}/Program Files/World of Warcraft",
+        "{drive}/Games/World of Warcraft",
+        "{drive}/Battle.net/World of Warcraft",
+        "{drive}/Blizzard/World of Warcraft",
+        "{drive}/Games/Blizzard/World of Warcraft",
+    ]
+    for d in drives:
+        for pat in patterns:
+            p = pat.format(drive=d)
+            if os.path.exists(p):
+                roots.append(os.path.abspath(p).replace("\\", "/"))
+
+    # Also check upward from the running executable / script directory
+    base_dir = os.path.dirname(os.path.abspath(sys.argv[0])).replace("\\", "/")
+    curr = base_dir
+    for _ in range(5):
+        for flv in ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_", "_ptr_", "_classic_"]:
+            if os.path.exists(os.path.join(curr, flv)):
+                roots.append(os.path.abspath(curr).replace("\\", "/"))
+                break
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            break
+        curr = parent
+
+    return sorted(list(set(roots)))
+
+def find_all_wow_addon_dirs() -> list:
+    """Discovers all Interface/AddOns/WoWKillboard directories across all WoW roots and client flavors."""
+    addon_dirs = []
+    roots = find_all_wow_roots()
+    flavors = ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_", "_ptr_", "_classic_", "_*"]
+    import glob
+    for root in roots:
+        for flv in flavors:
+            p = f"{root}/{flv}/Interface/AddOns/WoWKillboard"
+            if os.path.exists(p):
+                addon_dirs.append(os.path.abspath(p).replace("\\", "/"))
+            else:
+                for m in glob.glob(f"{root}/{flv}/Interface/AddOns/WoWKillboard"):
+                    addon_dirs.append(os.path.abspath(m).replace("\\", "/"))
+    return sorted(list(set(addon_dirs)))
+
 def find_all_saved_variables() -> list:
-    """Scans all connected Windows drives and WoW client branches for all active SavedVariables/WoWKillboard.lua files."""
+    """Scans all connected Windows drives and WoW client branches for active and pending SavedVariables/WoWKillboard.lua files."""
     import glob
     candidates = []
-    drives = ["C:", "D:", "E:", "F:"]
+    roots = find_all_wow_roots()
     branches = ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_", "_ptr_", "_classic_", "_*"]
 
-    for drive in drives:
+    for root in roots:
         for branch in branches:
-            pattern_no_x86 = f"{drive}/World of Warcraft/{branch}/WTF/Account/*/SavedVariables/WoWKillboard.lua"
-            candidates.extend(glob.glob(pattern_no_x86))
-            pattern_x86 = f"{drive}/Program Files (x86)/World of Warcraft/{branch}/WTF/Account/*/SavedVariables/WoWKillboard.lua"
-            candidates.extend(glob.glob(pattern_x86))
-            pattern_direct = f"{drive}/Games/World of Warcraft/{branch}/WTF/Account/*/SavedVariables/WoWKillboard.lua"
-            candidates.extend(glob.glob(pattern_direct))
+            # 1. Existing SavedVariables files
+            pat_existing = f"{root}/{branch}/WTF/Account/*/SavedVariables/WoWKillboard.lua"
+            candidates.extend(glob.glob(pat_existing))
+            # 2. Account directories (even before first logout/reload generates SavedVariables)
+            pat_accounts = f"{root}/{branch}/WTF/Account/*"
+            for acc in glob.glob(pat_accounts):
+                if os.path.isdir(acc) and os.path.basename(acc).lower() != "savedvariables":
+                    sv_target = os.path.join(acc, "SavedVariables", "WoWKillboard.lua")
+                    candidates.append(sv_target)
 
-    unique = sorted(list(set(os.path.abspath(p).replace("\\", "/") for p in candidates)))
-    return unique
+    # Return existing files first, or potential account targets if fresh install
+    existing = [os.path.abspath(p).replace("\\", "/") for p in candidates if os.path.exists(p)]
+    if existing:
+        return sorted(list(set(existing)))
+
+    unique_all = sorted(list(set(os.path.abspath(p).replace("\\", "/") for p in candidates)))
+    return unique_all
 
 def auto_detect_saved_variables() -> str:
     """Returns the single most recently modified SavedVariables file (for backward compatibility)."""
     all_files = find_all_saved_variables()
     if all_files:
-        all_files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        all_files.sort(key=lambda p: os.path.getmtime(p) if os.path.exists(p) else 0, reverse=True)
         return all_files[0]
     if os.path.exists("WoWKillboard.lua"):
         return os.path.abspath("WoWKillboard.lua").replace("\\", "/")
     return ""
 
-SYNC_VERSION = "1.0.0-beta.5"
+SYNC_VERSION = "1.0.0-beta.6"
 DEFAULT_PROD_URL = "http://13.216.102.148"
 DEFAULT_LOCAL_URL = "http://127.0.0.1:8080"
 
