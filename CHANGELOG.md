@@ -5,6 +5,32 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.79] - 2026-09-30
+
+### Fixed
+- **Bounty Default Amount, Multi-Unit Reward Display, Dynamic Level Resolution & Campaign Ruleset Isolation (`UI.lua`, `server.py`, `app.js`)**:
+  - **1. Bounty Default Amount Reset to 1c (`UI.lua`)**:
+    - Replaced legacy `50g` and `10g` defaults in both `UI.DeathBountyDialog` (Mark of Spite prompt on death) and `UI.BountyDialog` (manual `+ Issue Mark` dialog) with `0g 0s 1c`.
+  - **2. Dynamic Multi-Coin Money Formatting on Web (`web/static/app.js`)**:
+    - Resolved the `0g` / `1g` rendering bug caused by truncating copper via integer division (`Math.floor(copper / 10000)`).
+    - Implemented granular coin formatting across `Most Wanted` cards, `The Marked` contracts, and `The Blood Ledger`:
+      - Values >= 10,000c render as gold (`Xg`).
+      - Values >= 100c render as silver & copper (`Xs Yc`).
+      - Values < 100c render as copper (`Xc`).
+  - **3. Dynamic Target Level Resolution (`web/server.py`, `web/static/app.js`)**:
+    - Fixed hardcoded `"Level 60"` in `renderSingleBountyCard` and `renderMostWanted`.
+    - Updated `get_bounties()` and `get_most_wanted()` in `web/server.py` to dynamically query `characters` and `kills` tables to resolve the outlaw's authentic level (e.g. `Hemmy (Level 20)`, `Pepper (Level 18)`).
+  - **4. WoW Forever PvE vs. PvP Campaign Ruleset Isolation (`web/static/app.js`)**:
+    - Fixed issue where selecting `Theater: WoW Forever [PvE]` continued to display open-world PvP kills and player bounties from the PvP realm.
+    - Routed `PvE` ruleset to the **Wilderness Hazard & Bestiary Campaign**:
+      - Main feed streams PvE wilderness casualties (`/api/pve/deaths`).
+      - Stats hub renders fallen mortals, deadly monster slayers, and deadliest conflict zones (`/api/pve/leaderboard`).
+      - Most Wanted cards display the **Top Executioner Monsters & Elites** (`Hogger`, `Defias Pillager`, `Son of Arugal`, `Mor'Ladim`, `Stitches`).
+      - Switching back to `PvP` seamlessly restores the PvP Shadow Network feed, outlaws, and carnage telemetry.
+  - **5. In-Game Contract Acceptance Restriction (`web/static/app.js`)**:
+    - Removed the browser `[ Accept ]` and `[ ✓ Tracking ]` buttons from the web portal.
+    - Replaced with tactical `[ Target Intel → ]` button linking to character combat dossiers, clarifying that blood contracts can only be accepted and hunted in-game in World of Warcraft.
+
 ## [1.4.78] - 2026-09-30
 
 ### Fixed

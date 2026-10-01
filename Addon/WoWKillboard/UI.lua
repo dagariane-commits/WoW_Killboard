@@ -4173,7 +4173,7 @@ function UI:ShowBountyPrompt()
         ebGold:SetPoint("LEFT", amtLabel, "RIGHT", 14, 0)
         ebGold:SetAutoFocus(false)
         ebGold:SetNumeric(true)
-        ebGold:SetNumber(10)
+        ebGold:SetNumber(0)
         ebGold:SetFontObject("GameFontHighlight")
         ebGold:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -4219,7 +4219,7 @@ function UI:ShowBountyPrompt()
         ebCopper:SetPoint("LEFT", sIcon, "RIGHT", 8, 0)
         ebCopper:SetAutoFocus(false)
         ebCopper:SetNumeric(true)
-        ebCopper:SetNumber(0)
+        ebCopper:SetNumber(1)
         ebCopper:SetFontObject("GameFontHighlight")
         ebCopper:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -4273,9 +4273,9 @@ function UI:ShowBountyPrompt()
     end
 
     UI.BountyDialog.targetBox:SetText("")
-    UI.BountyDialog.goldBox:SetText("10")
+    UI.BountyDialog.goldBox:SetText("0")
     UI.BountyDialog.silverBox:SetText("0")
-    UI.BountyDialog.copperBox:SetText("0")
+    UI.BountyDialog.copperBox:SetText("1")
     UI.BountyDialog:Show()
     UI.BountyDialog.targetBox:SetFocus()
 end
@@ -4334,7 +4334,7 @@ function UI:ShowDeathBountyPrompt(killerData)
         ebGold:SetPoint("LEFT", amtLabel, "RIGHT", 14, 0)
         ebGold:SetAutoFocus(false)
         ebGold:SetNumeric(true)
-        ebGold:SetNumber(50)
+        ebGold:SetNumber(0)
         ebGold:SetFontObject("GameFontHighlight")
         ebGold:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -4380,7 +4380,7 @@ function UI:ShowDeathBountyPrompt(killerData)
         ebCopper:SetPoint("LEFT", sIcon, "RIGHT", 8, 0)
         ebCopper:SetAutoFocus(false)
         ebCopper:SetNumeric(true)
-        ebCopper:SetNumber(0)
+        ebCopper:SetNumber(1)
         ebCopper:SetFontObject("GameFontHighlight")
         ebCopper:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -4439,9 +4439,9 @@ function UI:ShowDeathBountyPrompt(killerData)
 
     UI.DeathBountyDialog.CurrentKiller = killerData
     UI.DeathBountyDialog.DescText:SetText(string.format("The soil drinks your blood! |cffff3333%s|r has slain you in open combat.\nDeclare a Mark of Spite for their head upon a pike!", killerData.name))
-    UI.DeathBountyDialog.goldBox:SetText("50")
+    UI.DeathBountyDialog.goldBox:SetText("0")
     UI.DeathBountyDialog.silverBox:SetText("0")
-    UI.DeathBountyDialog.copperBox:SetText("0")
+    UI.DeathBountyDialog.copperBox:SetText("1")
     UI.DeathBountyDialog:Show()
     if UI.DeathBountyDialog.Raise then UI.DeathBountyDialog:Raise() end
 end
