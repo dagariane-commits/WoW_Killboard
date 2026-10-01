@@ -376,33 +376,7 @@ def init_db():
         except Exception:
             pass
 
-        # Seed iconic PvE execution data if table is empty
-        try:
-            cur = conn.execute("SELECT COUNT(*) FROM pve_deaths")
-            if cur.fetchone()[0] == 0:
-                now_ts = int(time.time())
-                sample_pve = [
-                    ("PVE-1001", now_ts - 360, "Hogger", 448, "Creature-0-1-0-0-448-1", "Vicious Bite", 650, "Noviceadventurer", "Player-01", 11, "WARRIOR", "Goldshire Militia", "Alliance", 1429, "Elwynn Forest", "Forest's Edge", 26.4, 76.8),
-                    ("PVE-1002", now_ts - 1200, "Hogger", 448, "Creature-0-1-0-0-448-1", "Skull Cracker", 720, "Elwynnhealer", "Player-02", 10, "PRIEST", "None", "Alliance", 1429, "Elwynn Forest", "Forest's Edge", 26.5, 76.9),
-                    ("PVE-1003", now_ts - 2100, "Defias Pillager", 589, "Creature-0-1-0-0-589-2", "Pyroblast", 1850, "Moonbrookscout", "Player-03", 15, "ROGUE", "Westfall Watch", "Alliance", 1436, "Westfall", "Moonbrook", 42.1, 68.3),
-                    ("PVE-1004", now_ts - 3400, "Son of Arugal", 4275, "Creature-0-1-0-0-4275-3", "Shadow Bolt", 2400, "Undeadshadow", "Player-04", 18, "WARLOCK", "Deathstalkers", "Horde", 1421, "Silverpine Forest", "The Decrepit Ferry", 54.3, 41.2),
-                    ("PVE-1005", now_ts - 4800, "Mor'Ladim", 522, "Creature-0-1-0-0-522-4", "Unholy Cleave", 3100, "Duskwoodrider", "Player-05", 28, "PALADIN", "Night's Watch", "Alliance", 1431, "Duskwood", "Raven Hill Cemetery", 18.2, 56.4),
-                    ("PVE-1006", now_ts - 6200, "Stitches", 412, "Creature-0-1-0-0-412-5", "Hook & Slam", 4500, "Towncrier", "Player-06", 32, "MAGE", "Darkshire Guardians", "Alliance", 1431, "Duskwood", "Darkshire Road", 73.1, 46.8),
-                    ("PVE-1007", now_ts - 8900, "Devilsaur", 6584, "Creature-0-1-0-0-6584-6", "Crush & Swallow", 5800, "Un'Gorobotanist", "Player-07", 52, "DRUID", "Cenarion Circle", "Alliance", 1449, "Un'Goro Crater", "Tar Pits", 51.2, 28.6),
-                    ("PVE-1008", now_ts - 11000, "Baron Geddon", 12056, "Creature-0-1-0-0-12056-7", "Living Bomb", 8200, "Raidtank", "Player-08", 60, "WARRIOR", "Vanguard Brigade", "Alliance", 1541, "Molten Core", "The Core", 44.0, 52.0),
-                    ("PVE-1009", now_ts - 14500, "Hogger", 448, "Creature-0-1-0-0-448-1", "Vicious Bite", 590, "Gnomecaster", "Player-09", 9, "MAGE", "Gnomeregan Exiles", "Alliance", 1429, "Elwynn Forest", "Forest's Edge", 26.2, 77.0),
-                    ("PVE-1010", now_ts - 18000, "Defias Pillager", 589, "Creature-0-1-0-0-589-2", "Fireball", 1420, "Farmboy", "Player-10", 14, "HUNTER", "None", "Alliance", 1436, "Westfall", "Moonbrook", 42.8, 67.9),
-                ]
-                for p in sample_pve:
-                    conn.execute("""
-                        INSERT OR IGNORE INTO pve_deaths (
-                            death_id, timestamp, npc_name, npc_id, npc_guid, npc_spell, npc_damage,
-                            victim_name, victim_guid, victim_level, victim_class, victim_guild, victim_faction,
-                            map_id, zone, subzone, coord_x, coord_y, raw_json
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}')
-                    """, p)
-        except Exception:
-            pass
+        # PvE deaths table initialized without synthetic seed data (ready for authentic live combat)
 
         # Backfill character_guild_history from existing kills if any
         try:
