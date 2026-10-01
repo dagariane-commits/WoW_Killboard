@@ -5,6 +5,27 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.78] - 2026-09-30
+
+### Fixed
+- **Execution Marks & Most Wanted Bounty Deserialization (`BountyEngine.lua`, `UI.lua`, `sync/watcher.py`, `web/server.py`)**:
+  - **The Issue**: In both "The Blood Ledger - Execution Marks" (The Marked tab) and "Azeroth's Most Wanted" (Intel tab), active bounties displayed missing target names, 0c/0g rewards, "Issued by: Unknown", and missing class icons (`MARK: | Reward: 0c | Issued by: Unknown`).
+  - **Root Cause**:
+    1. *Snake_case vs CamelCase Key Mismatch*: The web database and server JSON APIs use snake_case (`target_name`, `target_class`, `placer_name`, `amount_copper`, `amount_gold`), whereas the in-game Lua addon expected camelCase (`targetName`, `targetClass`, `placerName`, `amountCopper`, `amountGold`).
+    2. *Server Overwrite Bug*: `watcher.py` read SavedVariables using `data.get("targetName")` which returned `None` on snake_case tables, defaulting to `"Unknown"` and `0`, and POSTed these dummy entries to `/api/bounties`, overwriting the server database records.
+    3. *Addon Fallback Absence*: `UI.lua` referenced `b.targetName` and `b.amountCopper` without checking `b.target_name` or `b.amount_copper`, printing blank strings and 0c rewards.
+  - **Surgical Solution**:
+    1. **Watcher Key Normalization & Overwrite Prevention (`sync/watcher.py`)**:
+       - Added dual-key access for all bounty fields in `upload_bounty()` and guarded against uploading empty or `"Unknown"` targets.
+       - Cleaned and normalized `ActiveBounties` in `sync_realm_data_to_client()` to inject both camelCase and snake_case fields into `WoWKillboard_RealmData.lua`.
+    2. **Addon Dual-Key Normalization & Self-Healing (`Addon/WoWKillboard/BountyEngine.lua`, `UI.lua`)**:
+       - Updated `BE:InitDB()` to prune corrupt `"Unknown"` entries from local SavedVariables and normalize both camelCase and snake_case properties.
+       - Updated `UI:RenderLiveFeed()` and `UI:RenderBounties()` to extract targets, classes, rewards, and placers defensively with fallbacks, ensuring class icons and proper gold/copper formatting.
+    3. **Web API Dual-Key Response & Input Validation (`web/server.py`)**:
+       - Updated `get_bounties()` to include both camelCase and snake_case properties in JSON responses.
+       - Hardened `create_bounty()` against `"Unknown"` targets and 0 amounts.
+    4. **Restored Active Contracts**: Re-established legitimate active contracts for `Pepper` (placed by `Dag`) and `Hemmy` (placed by `Dagariane`).
+
 ## [1.4.77] - 2026-09-30
 
 ### Fixed

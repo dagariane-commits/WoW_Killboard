@@ -1467,25 +1467,38 @@ function UI:RenderLiveFeed()
     if KB.BountyEngine and KB.BountyEngine.InitDB then KB.BountyEngine:InitDB() end
     local activeOutlaws = {}
     local seenBounties = {}
+
+    local function AddCleanBounty(b)
+        if not b then return end
+        local bId = b.id or b.bountyId
+        local bStatus = b.status or "ACTIVE"
+        local tName = b.targetName or b.target_name
+        if (bStatus == "ACTIVE" or bStatus == KB.STATUS.ACTIVE) and bId and not seenBounties[bId] and tName and tName ~= "" and tName:lower() ~= "unknown" then
+            seenBounties[bId] = true
+            b.id = bId
+            b.targetName = tName
+            b.target_name = tName
+            b.targetClass = b.targetClass or b.target_class or "UNKNOWN"
+            b.targetFaction = b.targetFaction or b.target_faction or ""
+            b.placerName = b.placerName or b.placer_name or "Unknown"
+            local copper = tonumber(b.amountCopper or b.amount_copper or 0) or 0
+            local gold = tonumber(b.amountGold or b.amount_gold or math.floor(copper / 10000)) or 0
+            if copper <= 0 and gold > 0 then copper = gold * 10000 end
+            b.amountCopper = copper
+            b.amountGold = gold
+            table.insert(activeOutlaws, b)
+        end
+    end
+
     if WoWKillboardBounties then
         for _, b in pairs(WoWKillboardBounties) do
-            local bId = b.id or b.bountyId
-            local bStatus = b.status or "ACTIVE"
-            if (bStatus == "ACTIVE" or bStatus == KB.STATUS.ACTIVE) and bId and not seenBounties[bId] then
-                seenBounties[bId] = true
-                table.insert(activeOutlaws, b)
-            end
+            AddCleanBounty(b)
         end
     end
     local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
     if rData and rData.ActiveBounties then
         for _, b in ipairs(rData.ActiveBounties) do
-            local bId = b.id or b.bountyId
-            local bStatus = b.status or "ACTIVE"
-            if (bStatus == "ACTIVE" or bStatus == KB.STATUS.ACTIVE) and bId and not seenBounties[bId] then
-                seenBounties[bId] = true
-                table.insert(activeOutlaws, b)
-            end
+            AddCleanBounty(b)
         end
     end
     table.sort(activeOutlaws, function(a, b)
@@ -1506,13 +1519,15 @@ function UI:RenderLiveFeed()
         card:SetBackdrop(theme.rowBackdrop)
 
         if b then
-            local bFaction = (b.targetFaction or ""):lower()
+            local bFaction = (b.targetFaction or b.target_faction or ""):lower()
+            local bClass = b.targetClass or b.target_class or "UNKNOWN"
+            local tName = b.targetName or b.target_name or "Target"
             local borderColor = { 0.55, 0.45, 0.22, 0.95 }
             local bgColor = { 0.07, 0.07, 0.09, 0.96 }
-            if bFaction == "alliance" or b.targetClass == "PALADIN" then
+            if bFaction == "alliance" or bClass == "PALADIN" then
                 borderColor = { 0.22, 0.52, 0.88, 0.95 }
                 bgColor = { 0.04, 0.08, 0.16, 0.96 }
-            elseif bFaction == "horde" or b.targetClass == "SHAMAN" then
+            elseif bFaction == "horde" or bClass == "SHAMAN" then
                 borderColor = { 0.85, 0.24, 0.20, 0.95 }
                 bgColor = { 0.16, 0.04, 0.04, 0.96 }
             end
@@ -1528,11 +1543,14 @@ function UI:RenderLiveFeed()
             local reward = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             reward:SetPoint("TOPRIGHT", -6, -6)
             local goldAmt = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
+            if goldAmt <= 0 and (b.amountCopper or 0) > 0 then
+                goldAmt = math.max(1, math.floor((b.amountCopper or 0) / 10000))
+            end
             reward:SetText(string.format("|cffffd100%dg|r |TInterface\\MoneyFrame\\UI-GoldIcon:12:12:0:0|t", goldAmt))
             reward:SetShadowOffset(1, -1)
             reward:SetShadowColor(0, 0, 0, 1)
 
-            local icon = UI:CreateClassIcon(card, b.targetClass, 24)
+            local icon = UI:CreateClassIcon(card, bClass, 24)
             icon:SetPoint("TOPLEFT", 6, -26)
 
             local nameStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -1540,7 +1558,7 @@ function UI:RenderLiveFeed()
             nameStr:SetPoint("RIGHT", card, "RIGHT", -6, 0)
             nameStr:SetJustifyH("LEFT")
             nameStr:SetWordWrap(false)
-            nameStr:SetText(KB.Utils and KB.Utils.ColorizeByClass and KB.Utils.ColorizeByClass(b.targetName, b.targetClass) or b.targetName)
+            nameStr:SetText(KB.Utils and KB.Utils.ColorizeByClass and KB.Utils.ColorizeByClass(tName, bClass) or tName)
             nameStr:SetShadowOffset(1, -1)
             nameStr:SetShadowColor(0, 0, 0, 1)
 
@@ -2561,62 +2579,105 @@ function UI:RenderBounties()
         activeHeader:SetShadowColor(0, 0, 0, 1)
         yOffset = yOffset - 24
 
-        WoWKillboardBounties = WoWKillboardBounties or {}
-        local hasBounties = false
-        for _, b in pairs(WoWKillboardBounties) do
-            if b.status == KB.STATUS.ACTIVE then
-                hasBounties = true
-                local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-                row:SetSize(820, 32)
-                row:SetPoint("TOPLEFT", 0, yOffset)
-                row:SetBackdrop(theme.rowBackdrop)
-                row:SetBackdropColor(0.14, 0.08, 0.07, 0.92)
-                row:SetBackdropBorderColor(0.65, 0.28, 0.20, 0.85)
+        if KB.BountyEngine and KB.BountyEngine.InitDB then KB.BountyEngine:InitDB() end
+        local activeList = {}
+        local seenB = {}
 
-                local icon = UI:CreateClassIcon(row, b.targetClass, 20)
-                icon:SetPoint("LEFT", 12, 0)
-
-                -- Lookup last known sighting in SavedVariables
-                local lastSeenStr = ""
-                if WoWKillboardDB and WoWKillboardDB.kills then
-                    local latestTime = 0
-                    local latestZone = nil
-                    for _, km in pairs(WoWKillboardDB.kills) do
-                        if km.killer and km.victim and (km.killer.name == b.targetName or km.victim.name == b.targetName) then
-                            if (km.timestamp or 0) > latestTime then
-                                latestTime = km.timestamp
-                                latestZone = km.location and km.location.zone
-                            end
-                        end
-                    end
-                    if latestZone and latestTime > 0 then
-                        local diffMin = math.max(1, math.floor((time() - latestTime) / 60))
-                        lastSeenStr = string.format("  |  |cff38bdf8Last Sighted: %s (~%dm ago)|r", latestZone, diffMin)
-                    end
-                end
-
-                local targetColored = KB.Utils and KB.Utils.ColorizeByClass and KB.Utils.ColorizeByClass(b.targetName, b.targetClass) or ("|cffff3333" .. (b.targetName or "Target") .. "|r")
-                local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-                txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-                txt:SetText(string.format("MARK: %s  |  Reward: |cffffd700%s|r  |  Issued by: |cffcbd5e1%s|r%s",
-                    targetColored, KB.Utils.FormatMoney(b.amountCopper), b.placerName or "Unknown", lastSeenStr))
-                txt:SetShadowOffset(1, -1)
-                txt:SetShadowColor(0, 0, 0, 1)
-
-                local bId = b.id
-                local isAccepted = KB.BountyEngine and KB.BountyEngine.IsBountyAccepted and KB.BountyEngine:IsBountyAccepted(bId)
-                local acceptBtn = UI:CreateButton(row, 115, 22, isAccepted and "|cff00ff66Tracking|r" or "Accept Contract")
-                acceptBtn:SetPoint("RIGHT", -8, 0)
-                if not isAccepted then
-                    acceptBtn:SetScript("OnClick", function()
-                        if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
-                            KB.BountyEngine:AcceptBounty(bId)
-                        end
-                    end)
-                end
-
-                yOffset = yOffset - 36
+        local function AddBountyRow(b)
+            if not b then return end
+            local bId = b.id or b.bountyId
+            local bStatus = b.status or "ACTIVE"
+            local tName = b.targetName or b.target_name
+            if (bStatus == "ACTIVE" or bStatus == (KB.STATUS and KB.STATUS.ACTIVE or "ACTIVE")) and bId and not seenB[bId] and tName and tName ~= "" and tName:lower() ~= "unknown" then
+                seenB[bId] = true
+                b.id = bId
+                b.targetName = tName
+                b.target_name = tName
+                b.targetClass = b.targetClass or b.target_class or "UNKNOWN"
+                b.targetFaction = b.targetFaction or b.target_faction or ""
+                b.placerName = b.placerName or b.placer_name or "Unknown"
+                local copper = tonumber(b.amountCopper or b.amount_copper or 0) or 0
+                local gold = tonumber(b.amountGold or b.amount_gold or math.floor(copper / 10000)) or 0
+                if copper <= 0 and gold > 0 then copper = gold * 10000 end
+                b.amountCopper = copper
+                b.amountGold = gold
+                table.insert(activeList, b)
             end
+        end
+
+        if WoWKillboardBounties then
+            for _, b in pairs(WoWKillboardBounties) do
+                AddBountyRow(b)
+            end
+        end
+        local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+        if rData and rData.ActiveBounties then
+            for _, b in ipairs(rData.ActiveBounties) do
+                AddBountyRow(b)
+            end
+        end
+        table.sort(activeList, function(a, b)
+            return (a.amountCopper or 0) > (b.amountCopper or 0)
+        end)
+
+        local hasBounties = (#activeList > 0)
+        for _, b in ipairs(activeList) do
+            local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+            row:SetSize(820, 32)
+            row:SetPoint("TOPLEFT", 0, yOffset)
+            row:SetBackdrop(theme.rowBackdrop)
+            row:SetBackdropColor(0.14, 0.08, 0.07, 0.92)
+            row:SetBackdropBorderColor(0.65, 0.28, 0.20, 0.85)
+
+            local bClass = b.targetClass or b.target_class or "UNKNOWN"
+            local tName = b.targetName or b.target_name or "Target"
+            local pName = b.placerName or b.placer_name or "Unknown"
+            local copper = b.amountCopper or 0
+
+            local icon = UI:CreateClassIcon(row, bClass, 20)
+            icon:SetPoint("LEFT", 12, 0)
+
+            -- Lookup last known sighting in SavedVariables
+            local lastSeenStr = ""
+            if WoWKillboardDB and WoWKillboardDB.kills then
+                local latestTime = 0
+                local latestZone = nil
+                for _, km in pairs(WoWKillboardDB.kills) do
+                    if km.killer and km.victim and (km.killer.name == tName or km.victim.name == tName) then
+                        if (km.timestamp or 0) > latestTime then
+                            latestTime = km.timestamp
+                            latestZone = km.location and km.location.zone
+                        end
+                    end
+                end
+                if latestZone and latestTime > 0 then
+                    local diffMin = math.max(1, math.floor((time() - latestTime) / 60))
+                    lastSeenStr = string.format("  |  |cff38bdf8Last Sighted: %s (~%dm ago)|r", latestZone, diffMin)
+                end
+            end
+
+            local moneyStr = (KB.Utils and KB.Utils.FormatMoney and KB.Utils.FormatMoney(copper)) or (math.floor(copper / 10000) .. "g")
+            local targetColored = (KB.Utils and KB.Utils.ColorizeByClass and KB.Utils.ColorizeByClass(tName, bClass)) or ("|cffff3333" .. tName .. "|r")
+            local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            txt:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+            txt:SetText(string.format("MARK: %s  |  Reward: |cffffd700%s|r  |  Issued by: |cffcbd5e1%s|r%s",
+                targetColored, moneyStr, pName, lastSeenStr))
+            txt:SetShadowOffset(1, -1)
+            txt:SetShadowColor(0, 0, 0, 1)
+
+            local bId = b.id
+            local isAccepted = KB.BountyEngine and KB.BountyEngine.IsBountyAccepted and KB.BountyEngine:IsBountyAccepted(bId)
+            local acceptBtn = UI:CreateButton(row, 115, 22, isAccepted and "|cff00ff66Tracking|r" or "Accept Contract")
+            acceptBtn:SetPoint("RIGHT", -8, 0)
+            if not isAccepted then
+                acceptBtn:SetScript("OnClick", function()
+                    if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
+                        KB.BountyEngine:AcceptBounty(bId)
+                    end
+                end)
+            end
+
+            yOffset = yOffset - 36
         end
 
         if not hasBounties then

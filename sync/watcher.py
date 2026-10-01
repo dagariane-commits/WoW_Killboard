@@ -500,17 +500,27 @@ class KillboardWatcher:
         return any_success
 
     def upload_bounty(self, b_id: str, data: dict):
+        target_name = data.get("targetName") or data.get("target_name") or data.get("target")
+        if not target_name or target_name.strip() == "" or target_name.strip().lower() == "unknown":
+            return  # Guardrail: Never overwrite server with blank/unknown dummy bounty
+
+        copper = int(data.get("amountCopper") or data.get("amount_copper") or 0)
+        gold = int(data.get("amountGold") or data.get("amount_gold") or (copper // 10000 if copper else 0))
+        if copper <= 0 and gold > 0:
+            copper = gold * 10000
+
         payload = {
             "id": b_id,
-            "targetName": data.get("targetName", "Unknown"),
-            "targetClass": data.get("targetClass", "UNKNOWN"),
-            "targetFaction": data.get("targetFaction", "Unknown"),
-            "placerName": data.get("placerName", "Unknown"),
-            "amountCopper": data.get("amountCopper", 0),
-            "amountGold": data.get("amountGold", 0),
+            "targetName": target_name,
+            "targetClass": data.get("targetClass") or data.get("target_class") or "UNKNOWN",
+            "targetFaction": data.get("targetFaction") or data.get("target_faction") or "Unknown",
+            "targetGuid": data.get("targetGuid") or data.get("target_guid") or "UNKNOWN",
+            "placerName": data.get("placerName") or data.get("placer_name") or "Unknown",
+            "amountCopper": copper,
+            "amountGold": gold,
             "status": data.get("status", "ACTIVE"),
-            "hunterName": data.get("hunterName"),
-            "killId": data.get("killId"),
+            "hunterName": data.get("hunterName") or data.get("hunter_name"),
+            "killId": data.get("killId") or data.get("kill_id"),
             "timestamp": data.get("timestamp", int(time.time())),
         }
         for endpoint in self.api_urls:
@@ -763,6 +773,44 @@ class KillboardWatcher:
         recent_kills.sort(key=lambda x: x.get("timestamp", 0) if isinstance(x, dict) else 0, reverse=True)
         recent_kills = recent_kills[:60]
 
+        # Clean and normalize active bounties (dual camelCase & snake_case support, zero unknown dummies)
+        cleaned_bounties = []
+        known_bnt_ids = set()
+        for b in active_bounties:
+            if not isinstance(b, dict):
+                continue
+            b_id = b.get("id") or b.get("bountyId")
+            if not b_id or b_id in known_bnt_ids:
+                continue
+            t_name = b.get("targetName") or b.get("target_name")
+            if not t_name or t_name.strip() == "" or t_name.strip().lower() == "unknown":
+                continue
+            t_class = b.get("targetClass") or b.get("target_class") or "UNKNOWN"
+            t_fac = b.get("targetFaction") or b.get("target_faction") or "Unknown"
+            p_name = b.get("placerName") or b.get("placer_name") or "Unknown"
+            a_cop = int(b.get("amountCopper") or b.get("amount_copper") or 0)
+            a_gold = int(b.get("amountGold") or b.get("amount_gold") or (a_cop // 10000 if a_cop else 0))
+            if a_cop <= 0 and a_gold > 0:
+                a_cop = a_gold * 10000
+
+            b_norm = dict(b)
+            b_norm["id"] = b_id
+            b_norm["targetName"] = t_name
+            b_norm["target_name"] = t_name
+            b_norm["targetClass"] = t_class
+            b_norm["target_class"] = t_class
+            b_norm["targetFaction"] = t_fac
+            b_norm["target_faction"] = t_fac
+            b_norm["placerName"] = p_name
+            b_norm["placer_name"] = p_name
+            b_norm["amountCopper"] = a_cop
+            b_norm["amount_copper"] = a_cop
+            b_norm["amountGold"] = a_gold
+            b_norm["amount_gold"] = a_gold
+            b_norm["status"] = b.get("status", "ACTIVE")
+            cleaned_bounties.append(b_norm)
+            known_bnt_ids.add(b_id)
+
         carnage = int(summary.get("RealmTotalCarnage", len(recent_kills))) if summary else len(recent_kills)
         solo_count = sum(1 for k in recent_kills if isinstance(k, dict) and k.get("isSolo"))
         solo_ratio = round((solo_count / max(1, len(recent_kills))) * 100, 1)
@@ -785,7 +833,7 @@ class KillboardWatcher:
             f"    DeadliestZones = {serialize_to_lua(deadliest_zones, 1)},",
             f"    TopGankers24h = {serialize_to_lua(top_gankers, 1)},",
             f"    RecentKills = {serialize_to_lua(recent_kills, 1)},",
-            f"    ActiveBounties = {serialize_to_lua(active_bounties, 1)},",
+            f"    ActiveBounties = {serialize_to_lua(cleaned_bounties, 1)},",
             f"    LastSync = {int(time.time())},",
             "}",
         ]
