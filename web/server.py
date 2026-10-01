@@ -2623,6 +2623,16 @@ def get_bounties():
                     "displayText": "Unknown (No combat logged)"
                 }
 
+            # Dual camelCase & snake_case access
+            b["targetName"] = b.get("target_name")
+            b["targetClass"] = b.get("target_class")
+            b["targetFaction"] = b.get("target_faction")
+            b["placerName"] = b.get("placer_name")
+            b["amountCopper"] = b.get("amount_copper")
+            b["amountGold"] = b.get("amount_gold")
+            b["hunterName"] = b.get("hunter_name")
+            b["killId"] = b.get("kill_id")
+
     return jsonify(bounties)
 
 @app.route("/api/bounties/leaderboards", methods=["GET"])
@@ -2684,12 +2694,23 @@ def create_bounty():
     if data.get("is_instance") or data.get("isBattleground") or data.get("isArena"):
         return jsonify({"error": "Blood bounties can only be placed upon the open battlefields of Azeroth (Open World PvP only)."}), 400
 
+    target = data.get("targetName") or data.get("target_name")
+    if not target or target.strip() == "" or target.strip().lower() == "unknown":
+        return jsonify({"error": "Invalid target name"}), 400
+
+    target_guid = data.get("targetGuid") or data.get("target_guid") or "UNKNOWN"
+    copper = int(data.get("amountCopper") or data.get("amount_copper") or 0)
+    gold = int(data.get("amountGold") or data.get("amount_gold") or (copper // 10000 if copper else 0))
+    if copper <= 0 and gold > 0:
+        copper = gold * 10000
+    if copper <= 0:
+        return jsonify({"error": "Mark amount must be greater than 0"}), 400
+
+    placer = data.get("placerName") or data.get("placer_name") or "Anonymous"
+    t_class = data.get("targetClass") or data.get("target_class") or "UNKNOWN"
+    t_faction = data.get("targetFaction") or data.get("target_faction") or "Unknown"
+
     b_id = data.get("id") or f"BNT-{int(time.time()*1000)}"
-    target = data.get("targetName", "Unknown")
-    target_guid = data.get("targetGuid", "UNKNOWN")
-    gold = int(data.get("amountGold", 100))
-    copper = int(data.get("amountCopper", gold * 10000))
-    placer = data.get("placerName", "Anonymous")
 
     with get_db() as conn:
         conn.execute("""
@@ -2698,7 +2719,7 @@ def create_bounty():
                 amount_copper, amount_gold, status, timestamp, expiry
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
         """, (
-            b_id, target, target_guid, data.get("targetClass", "UNKNOWN"), data.get("targetFaction", "Unknown"),
+            b_id, target, target_guid, t_class, t_faction,
             placer, copper, gold, int(time.time()), int(time.time() + 86400 * 7)
         ))
         conn.commit()

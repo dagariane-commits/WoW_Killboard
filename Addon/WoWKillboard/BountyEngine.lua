@@ -31,9 +31,47 @@ function BE:InitDB()
     if rData and rData.ActiveBounties then
         for _, b in ipairs(rData.ActiveBounties) do
             local bId = b.id or b.bountyId
-            if bId and not WoWKillboardBounties[bId] then
-                WoWKillboardBounties[bId] = b
+            local tName = b.targetName or b.target_name
+            if bId and tName and tName ~= "" and tName:lower() ~= "unknown" then
+                -- Normalize fields
+                b.id = bId
+                b.targetName = tName
+                b.target_name = tName
+                b.targetClass = b.targetClass or b.target_class or "UNKNOWN"
+                b.target_class = b.targetClass
+                b.targetFaction = b.targetFaction or b.target_faction or "Unknown"
+                b.target_faction = b.targetFaction
+                b.placerName = b.placerName or b.placer_name or "Unknown"
+                b.placer_name = b.placerName
+                b.amountCopper = b.amountCopper or b.amount_copper or 0
+                b.amount_copper = b.amountCopper
+                b.amountGold = b.amountGold or b.amount_gold or math.floor(b.amountCopper / 10000)
+                b.amount_gold = b.amountGold
+                if not WoWKillboardBounties[bId] or not WoWKillboardBounties[bId].targetName or WoWKillboardBounties[bId].targetName:lower() == "unknown" then
+                    WoWKillboardBounties[bId] = b
+                end
             end
+        end
+    end
+
+    -- Clean any corrupt dummy bounties out of local SavedVariables and normalize existing
+    for bid, b in pairs(WoWKillboardBounties) do
+        local tName = b.targetName or b.target_name
+        if not tName or tName == "" or tName:lower() == "unknown" then
+            WoWKillboardBounties[bid] = nil
+        else
+            b.targetName = tName
+            b.target_name = tName
+            b.targetClass = b.targetClass or b.target_class or "UNKNOWN"
+            b.target_class = b.targetClass
+            b.targetFaction = b.targetFaction or b.target_faction or "Unknown"
+            b.target_faction = b.targetFaction
+            b.placerName = b.placerName or b.placer_name or "Unknown"
+            b.placer_name = b.placerName
+            b.amountCopper = b.amountCopper or b.amount_copper or 0
+            b.amount_copper = b.amountCopper
+            b.amountGold = b.amountGold or b.amount_gold or math.floor(b.amountCopper / 10000)
+            b.amount_gold = b.amountGold
         end
     end
 end
