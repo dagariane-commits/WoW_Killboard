@@ -636,10 +636,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Arathi Highlands",
-                elapsedSeconds = 10943,
+                elapsedSeconds = 11486,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 182,
+                minutesAgo = 191,
                 subzone = nil,
                 timestamp = 1790813427,
                 zone = "Arathi Highlands",
@@ -672,10 +672,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Undercity",
-                elapsedSeconds = 18535,
+                elapsedSeconds = 19078,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 308,
+                minutesAgo = 317,
                 subzone = nil,
                 timestamp = 1790805835,
                 zone = "Undercity",
@@ -696,5 +696,5 @@ WoWKillboard_RealmData = {
             timestamp = 1790823564,
         },
     },
-    LastSync = 1790824370,
+    LastSync = 1790824913,
 }

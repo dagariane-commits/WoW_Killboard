@@ -5,6 +5,29 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.81] - 2026-09-30
+
+### Changed
+- **Comprehensive Full-Context Theater & Campaign Switching (`web/static/app.js`)**:
+  - **The Issue**: Switching Theater (e.g. to `WoW Forever [PvE]`) left navigation tabs labeled for PvP ("Defender of Azeroth", "The Marked", "Manhunt"), and clicking them still pulled PvP player leaderboards and PvP marks of spite.
+  - **1. Dynamic Navigation Rail Adaptation (`updateNavigationLabels()`)**:
+    - In **PvE Ruleset** (`WoW Forever [PvE]`):
+      - `nav-intel` / `m-nav-intel`: Renamed to **Casualties** (Wilderness Casualties feed).
+      - `nav-legends` / `m-nav-legends`: Renamed to **Deadly Hazards** (Top Executioner Monsters & Elites Leaderboard).
+      - `nav-bounties` / `m-nav-bounties`: Renamed to **Wanted Monsters** (Apex Predators & Militia Bounties).
+      - `nav-rallies` / `m-nav-rallies`: Renamed to **Rescue Beacons** (PvE Dungeon & Quest Reinforcements).
+      - `nav-zones` / `m-nav-zones`: Renamed to **Zone Mortality** (Wilderness Danger Index).
+      - `header-mode-filters`: Replaced PvP pills (World/BGs/Duels/Arenas) with `[ 🛡️ PvE Ruleset ]`.
+      - Most Wanted homepage showcase: Switched to **Apex Predators & Elites** with "View Wanted Monsters &rarr;".
+    - In **PvP Ruleset**: Automatically restores PvP labels ("Intel", "Defender of Azeroth", "The Marked", "Manhunt", "Zone Intel") and 4-way PvP mode filter pills.
+  - **2. Dedicated PvE Views (`loadPveBountiesView()`, `loadPveZonesView()`, `loadPveRalliesView()`)**:
+    - **Wanted Monsters Board (`loadPveBountiesView()`)**: Renders town militia bounties for lethal world bosses and rogue elites (`Hogger`, `Defias Pillager`, `Son of Arugal`, `Mor'Ladim`, `Stitches`) with confirmed mortal kills, lethal abilities, and rewards. Exposes 0 Mortals in Default spirit healing note.
+    - **Zone Mortality Index (`loadPveZonesView()`)**: Renders deadliest regions ranked by mortal deaths (`Elwynn Forest`, `Westfall`, `Duskwood`).
+    - **Rescue Beacons (`loadPveRalliesView()`)**: Renders PvE distress network with `/kb sos` guidance.
+  - **3. Seamless View Reload on Theater Switch (`reloadActiveView()`)**:
+    - Switching theaters immediately reloads the user's currently active view (e.g., if already viewing "Defender of Azeroth", switches instantly to "Deadly Hazards Leaderboard" without requiring navigation back to home).
+    - Unblocked `HAZARDS` and `DEADLY_NPCS` in `switchTab`.
+
 ## [1.4.80] - 2026-09-30
 
 ### Fixed
