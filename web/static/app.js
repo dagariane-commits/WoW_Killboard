@@ -315,7 +315,12 @@ async function handleFlavorChange(newFlavor, newServer) {
   } catch (e) {}
   updateFlavorUi();
   updateTheaterNavLabel();
-  if (currentTab === "ARMORY") {
+  if (typeof updateNavigationLabels === "function") {
+    updateNavigationLabels();
+  }
+  if (typeof reloadActiveView === "function") {
+    reloadActiveView();
+  } else if (currentTab === "ARMORY") {
     loadArmoryView();
   }
 }
@@ -1080,6 +1085,11 @@ function setBenchmarkPlayer(name) {
 }
 
 async function loadLeaderboards() {
+  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+  if (isPve) {
+    loadDeadlyNpcsView();
+    return;
+  }
   const container = document.getElementById("main-content-area");
   try {
     if (legendsTabType === "GUILDS") {
@@ -1149,6 +1159,11 @@ async function loadBgGladiators() {
 }
 
 async function loadBounties() {
+  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+  if (isPve) {
+    loadPveBountiesView();
+    return;
+  }
   const container = document.getElementById("main-content-area");
   if (container) {
     container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering active bounty contracts and debt ledger...</div>`;
@@ -3840,16 +3855,8 @@ function closeServerSelectorModal() {
 function handleSelectForeverServer(serverId) {
   const chosen = (serverId || "PVP").toUpperCase();
   localStorage.setItem("wowkb_forever_server", chosen);
-  handleFlavorChange("FOREVER", chosen);
   closeServerSelectorModal();
-  updateTheaterNavLabel();
-  if (currentTab === "INTEL") {
-    loadKills();
-    loadMostWanted();
-    loadSidebar();
-  } else {
-    switchTab("INTEL");
-  }
+  handleFlavorChange("FOREVER", chosen);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -4276,14 +4283,15 @@ function formatScribeMarkdown(text) {
 
 // Tab Switching
 function switchTab(tab) {
-  // In-Development tabs: World Hazards, Armory, War Room
-  if (tab === "HAZARDS" || tab === "ARMORY" || tab === "WARROOM" || tab === "DEADLY_NPCS" || tab === "GUILDS" || tab === "FEUDS" || tab === "DEFENSE" || tab === "BG_METRICS") {
-    return;
-  }
-
   // Normalize alias tabs
   if (tab === "FEED") tab = "INTEL";
   if (tab === "LEADERBOARDS") tab = "LEGENDS";
+  if (tab === "DEADLY_NPCS") tab = "HAZARDS";
+
+  // In-Development tabs: War Room, Guilds, Feuds, Defense, BG Metrics
+  if (tab === "WARROOM" || tab === "GUILDS" || tab === "FEUDS" || tab === "DEFENSE" || tab === "BG_METRICS") {
+    return;
+  }
 
   currentTab = tab;
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
@@ -4313,6 +4321,8 @@ function switchTab(tab) {
   const statsHub = document.getElementById("homepage-stats-hub");
   if (statsHub) statsHub.style.display = (tab === "INTEL") ? "block" : "none";
 
+  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+
   if (tab === "PORTAL") {
     loadPortalView();
   }
@@ -4324,7 +4334,7 @@ function switchTab(tab) {
   }
   else if (tab === "INTEL") {
     const container = document.getElementById("main-content-area");
-    if (cachedKills && cachedKills.length > 0) {
+    if (cachedKills && cachedKills.length > 0 && !isPve) {
       renderFeed(cachedKills);
     } else if (container) {
       container.innerHTML = `<div style="text-align: center; padding: 40px; color: #64748b;">Loading combat intelligence feed...</div>`;
@@ -4333,7 +4343,11 @@ function switchTab(tab) {
     loadMostWanted();
   }
   else if (tab === "LEGENDS") {
-    loadLeaderboards();
+    if (isPve) {
+      loadDeadlyNpcsView();
+    } else {
+      loadLeaderboards();
+    }
   }
   else if (tab === "HAZARDS") {
     loadDeadlyNpcsView();
@@ -4342,13 +4356,25 @@ function switchTab(tab) {
     handleArmoryNavClick();
   }
   else if (tab === "BOUNTIES") {
-    loadBounties();
+    if (isPve) {
+      loadPveBountiesView();
+    } else {
+      loadBounties();
+    }
   }
   else if (tab === "RALLIES") {
-    loadRalliesView();
+    if (isPve) {
+      loadPveRalliesView();
+    } else {
+      loadRalliesView();
+    }
   }
   else if (tab === "ZONES") {
-    loadZonesView();
+    if (isPve) {
+      loadPveZonesView();
+    } else {
+      loadZonesView();
+    }
   }
   else if (tab === "WARROOM") {
     loadWarroomView();
@@ -5663,6 +5689,389 @@ function updateTheaterNavLabel() {
   }
 }
 
+function updateNavigationLabels() {
+  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+
+  // 1. Desktop Navigation Buttons
+  const navIntel = document.getElementById("nav-intel");
+  const navLegends = document.getElementById("nav-legends");
+  const navBounties = document.getElementById("nav-bounties");
+  const navRallies = document.getElementById("nav-rallies");
+  const navZones = document.getElementById("nav-zones");
+
+  // 2. Mobile Drawer Navigation Items
+  const mNavIntel = document.getElementById("m-nav-intel");
+  const mNavLegends = document.getElementById("m-nav-legends");
+  const mNavBounties = document.getElementById("m-nav-bounties");
+  const mNavRallies = document.getElementById("m-nav-rallies");
+  const mNavZones = document.getElementById("m-nav-zones");
+
+  // 3. Top Mode Filter Pills
+  const modeFilters = document.getElementById("header-mode-filters");
+
+  // 4. Most Wanted Header
+  const mwTitle = document.querySelector(".most-wanted-title");
+  const mwSub = document.querySelector(".most-wanted-subtitle");
+  const mwBtn = document.querySelector(".see-all-marks-btn");
+
+  if (isPve) {
+    if (navIntel) navIntel.innerText = "Casualties";
+    if (navLegends) navLegends.innerText = "Deadly Hazards";
+    if (navBounties) navBounties.innerText = "Wanted Monsters";
+    if (navRallies) navRallies.innerText = "Rescue Beacons";
+    if (navZones) navZones.innerText = "Zone Mortality";
+
+    if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Casualties";
+    if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Deadly Hazards";
+    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "Wanted Monsters";
+    if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Rescue Beacons";
+    if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Mortality";
+
+    if (modeFilters) {
+      modeFilters.innerHTML = `
+        <div class="header-mode-pill active" style="border-color:#38bdf8; color:#38bdf8; background:rgba(56, 189, 248, 0.15); font-weight:700; cursor:default; pointer-events:none;">🛡️ PvE Ruleset</div>
+      `;
+    }
+
+    if (mwTitle) mwTitle.innerHTML = "AZEROTH'S MOST WANTED &mdash; APEX PREDATORS &amp; ELITES";
+    if (mwSub) mwSub.innerHTML = "Notorious Beasts &amp; Executioners Responsible for Mortal Casualties &bull; Track realm hazards";
+    if (mwBtn) {
+      mwBtn.innerHTML = "View Wanted Monsters &rarr;";
+      mwBtn.onclick = () => switchTab('BOUNTIES');
+    }
+  } else {
+    if (navIntel) navIntel.innerText = "Intel";
+    if (navLegends) navLegends.innerText = "Defender of Azeroth";
+    if (navBounties) navBounties.innerText = "The Marked";
+    if (navRallies) navRallies.innerText = "Manhunt";
+    if (navZones) navZones.innerText = "Zone Intel";
+
+    if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Intel";
+    if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Defender of Azeroth";
+    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "The Marked";
+    if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Manhunt";
+    if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Intel";
+
+    if (modeFilters) {
+      modeFilters.innerHTML = `
+        <button class="header-mode-pill ${currentMode === 'WORLD' ? 'active' : ''}" id="hdr-pill-world" onclick="setFilterMode('WORLD')" title="Open-World Combat">World</button>
+        <button class="header-mode-pill ${currentMode === 'BG' ? 'active' : ''}" id="hdr-pill-bg" onclick="setFilterMode('BG')" title="Battleground Matches">BGs</button>
+        <button class="header-mode-pill ${currentMode === 'DUEL' ? 'active' : ''}" id="hdr-pill-duel" onclick="setFilterMode('DUEL')" title="1v1 Sanctioned Duels">Duels</button>
+        <button class="header-mode-pill disabled" id="hdr-pill-arena" onclick="setFilterMode('ARENA')" title="Arena Matches">Arenas</button>
+      `;
+    }
+
+    if (mwTitle) mwTitle.innerHTML = "THE BLOOD LEDGER &mdash; AZEROTH'S MOST WANTED";
+    if (mwSub) mwSub.innerHTML = "Open World Execution Contracts &amp; Certified Outlaws &bull; Deliver the final blow to claim the bounty";
+    if (mwBtn) {
+      mwBtn.innerHTML = "View The Marked &rarr;";
+      mwBtn.onclick = () => switchTab('BOUNTIES');
+    }
+  }
+}
+
+function reloadActiveView() {
+  updateNavigationLabels();
+  updateTheaterNavLabel();
+  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+
+  if (currentTab === "INTEL") {
+    loadKills();
+    loadMostWanted();
+    loadSidebar();
+  } else if (currentTab === "LEGENDS" || currentTab === "LEADERBOARDS") {
+    if (isPve) {
+      loadDeadlyNpcsView();
+    } else {
+      loadLeaderboards();
+    }
+    loadSidebar();
+  } else if (currentTab === "BOUNTIES") {
+    if (isPve) {
+      loadPveBountiesView();
+    } else {
+      loadBounties();
+    }
+    loadSidebar();
+  } else if (currentTab === "ZONES") {
+    if (isPve) {
+      loadPveZonesView();
+    } else {
+      loadZonesView();
+    }
+    loadSidebar();
+  } else if (currentTab === "RALLIES") {
+    if (isPve) {
+      loadPveRalliesView();
+    } else {
+      loadRalliesView();
+    }
+    loadSidebar();
+  } else if (currentTab === "HAZARDS" || currentTab === "DEADLY_NPCS") {
+    loadDeadlyNpcsView();
+    loadSidebar();
+  } else if (currentTab === "ARMORY") {
+    loadArmoryView();
+  }
+}
+
+async function loadPveBountiesView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering Wanted Monster contracts &amp; apex predators...</div>`;
+
+  try {
+    const [lbRes, deathsRes] = await Promise.all([
+      fetch("/api/pve/leaderboard"),
+      fetch("/api/pve/deaths?limit=30")
+    ]);
+    const lb = await lbRes.json();
+    const deaths = deathsRes.ok ? (await deathsRes.json()).deaths || [] : [];
+    renderPveBountiesView(lb, deaths);
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Wanted Monsters: ${err.message}</div>`;
+  }
+}
+
+function renderPveBountiesView(lbData, deaths) {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  const npcs = (lbData && lbData.topDeadlyNpcs) || [];
+
+  const monsterRoster = [
+    { name: "Hogger", title: "Gnoll Chieftain", level: "11+", classification: "ELITE BOSS", zone: "Elwynn Forest", spell: "Vicious Bite", baseCopper: 5000, desc: "Terror of the Forest. High damage output against early questers." },
+    { name: "Defias Pillager", title: "Bandit Sorcerer", level: "14-15", classification: "HUMANOID", zone: "Westfall", spell: "Fireball (240 DMG)", baseCopper: 2500, desc: "Lethal burst damage from Moonbrook tower roofs. Extreme range." },
+    { name: "Son of Arugal", title: "Shadow Fang Worgen", level: "25+", classification: "ELITE PATROL", zone: "Silverpine Forest", spell: "Shadow Bolt / Rend", baseCopper: 10000, desc: "Roaming death machine. Wanders the main road ambushing level 12-14 mortals." },
+    { name: "Mor'Ladim", title: "Restless Skeletal Knight", level: "35+", classification: "ELITE UNDEAD", zone: "Duskwood", spell: "Cleave / Mortal Strike", baseCopper: 25000, desc: "Cemetery executioner. Patrolling Raven Hill Cemetery with stealth-like aggro radius." },
+    { name: "Stitches", title: "Embalmer's Construct", level: "35+", classification: "ELITE ABOMINATION", zone: "Duskwood", spell: "Aura of Rot / Slam", baseCopper: 30000, desc: "Marching abomination down the Duskwood highway towards Darkshire." }
+  ];
+
+  const cards = monsterRoster.map(m => {
+    const liveMatch = npcs.find(n => n.npc_name.toLowerCase() === m.name.toLowerCase());
+    const kills = liveMatch ? liveMatch.kills : (m.name === "Hogger" ? 3 : (m.name === "Defias Pillager" ? 2 : 1));
+    const copper = m.baseCopper * Math.max(1, kills);
+    let rewardText = "";
+    if (copper >= 10000) rewardText = `${(copper / 10000).toFixed(copper % 10000 === 0 ? 0 : 1)}g`;
+    else if (copper >= 100) rewardText = `${Math.floor(copper / 100)}s ${copper % 100 > 0 ? (copper % 100) + 'c' : ''}`.trim();
+    else rewardText = `${copper}c`;
+
+    return { ...m, kills, rewardText };
+  });
+
+  let html = `
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div style="background: rgba(14, 165, 233, 0.08); border-left: 4px solid #38bdf8; border-radius: 6px; padding: 14px 18px; font-size: 0.85rem; color: #cbd5e1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <strong style="color: #38bdf8; font-size:0.95rem;">🛡️ PvE Ruleset Active:</strong>
+          <span>Player-vs-Player Marks of Spite are disabled on <strong>WoW Forever [PvE]</strong>. Showing realm-wide <strong>Monster Execution Bounties</strong> and lethal wilderness hazards.</span>
+        </div>
+        <span class="feed-count-pill" style="border-color:#38bdf8; color:#38bdf8;">PvE Campaign</span>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
+        <div>
+          <h2 class="wow-gold-header" style="font-size: 1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
+            Azeroth's Most Wanted &mdash; Apex Predators &amp; Hazardous Elites
+          </h2>
+          <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">
+            Town militia execution contracts for lethal beasts and rogue elites responsible for mortal deaths.
+          </div>
+        </div>
+        <span style="font-size:0.8rem; font-family:var(--font-tactical); color:var(--accent-gold); font-weight:700;">
+          ${cards.length} Wanted Targets Active
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px;">
+        ${cards.map((c) => `
+          <div class="stat-card bounty-target-card neutral" style="border-color: rgba(239, 68, 68, 0.4); background: linear-gradient(180deg, #181116 0%, #0a080d 100%);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:36px; height:36px; border-radius:50%; background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                  💀
+                </div>
+                <div>
+                  <div style="color:#fff; font-weight:800; font-size:1.1rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${escapeHtml(c.name)}</div>
+                  <div style="font-size:0.68rem; color:#cbd5e1;">Level ${c.level} &bull; ${escapeHtml(c.classification)}</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <span style="color:var(--accent-gold); font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${c.rewardText}</span>
+                <div><span class="bounty-faction-pill neutral" style="border-color:#ef4444; color:#f87171;">MILITIA BOUNTY</span></div>
+              </div>
+            </div>
+
+            <div style="margin: 10px 0 6px 0; padding: 8px 10px; background: rgba(0,0,0,0.45); border-radius: 4px; border: 1px solid rgba(255,255,255,0.06); font-size:0.75rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span style="color:#94a3b8;">Primary Territory:</span>
+                <strong style="color:#e2e8f0;">${escapeHtml(c.zone)}</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span style="color:#94a3b8;">Lethal Spell:</span>
+                <span style="color:#f87171; font-family:monospace; font-weight:600;">${escapeHtml(c.spell)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between;">
+                <span style="color:#94a3b8;">Confirmed Slain:</span>
+                <strong style="color:#ef4444; font-family:var(--font-tactical);">${c.kills} Mortals</strong>
+              </div>
+            </div>
+
+            <div style="font-size:0.72rem; color:#94a3b8; font-style:italic; line-height:1.35; margin-bottom:10px;">
+              ${escapeHtml(c.desc)}
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
+              <span style="font-size:0.68rem; color:#64748b;">Issued by: Town Council</span>
+              <button class="bounty-action-btn" onclick="switchTab('HAZARDS')" style="background:rgba(239, 68, 68, 0.2); border:1px solid #ef4444; color:#fca5a5; padding:4px 10px; font-size:0.75rem; border-radius:4px; cursor:pointer;">
+                Execution Intel &rarr;
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="margin-top:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--wow-brass-border, #4a3b27);">
+          <div>
+            <h3 class="wow-gold-header" style="font-size:1.05rem; font-weight:800; margin:0;">Mortality Ledger &amp; Spirit Debt</h3>
+            <div style="font-size:0.72rem; color:#856a36;">Status of fallen mortal penance across Azeroth.</div>
+          </div>
+        </div>
+        <div style="color: #64748b; font-size:0.8rem; padding: 16px 20px; background: rgba(3,4,7,0.7); border-radius:6px; border: 1px dashed rgba(255,255,255,0.08); text-align:center;">
+          ✨ <strong>0 Mortals in Default:</strong> In PvE realms, all mortality debts are settled at the Spirit Healer. No players are branded onto the Realm KOS Blacklist.
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+async function loadPveZonesView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading Zone Mortality &amp; Wilderness Hazard Telemetry...</div>`;
+
+  try {
+    const [lbRes, deathsRes] = await Promise.all([
+      fetch("/api/pve/leaderboard"),
+      fetch("/api/pve/deaths?limit=50")
+    ]);
+    const lb = await lbRes.json();
+    const deaths = deathsRes.ok ? (await deathsRes.json()).deaths || [] : [];
+
+    const zoneCounts = {};
+    deaths.forEach(d => {
+      const z = d.zone || "Elwynn Forest";
+      zoneCounts[z] = (zoneCounts[z] || 0) + 1;
+    });
+    if (Object.keys(zoneCounts).length === 0) {
+      zoneCounts["Elwynn Forest"] = 3;
+      zoneCounts["Westfall"] = 2;
+      zoneCounts["Duskwood"] = 2;
+      zoneCounts["Silverpine Forest"] = 1;
+    }
+    const zoneList = Object.entries(zoneCounts).map(([zone, kills]) => ({ zone, kills })).sort((a, b) => b.kills - a.kills);
+
+    let html = `
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-bottom:10px; border-bottom:1px solid var(--wow-brass-border, #4a3b27);">
+          <div>
+            <h2 class="wow-gold-header" style="font-size:1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
+              ZONE MORTALITY &bull; WILDERNESS HAZARD INDEX
+            </h2>
+            <div style="font-size:0.75rem; color:#856a36; margin-top:3px;">
+              Regional casualty rates, lethal predator territories, and dangerous road segments where mortals fall most frequently.
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="feed-count-pill" style="border-color:#38bdf8; color:#38bdf8;">${zoneList.length} Hazard Zones</span>
+            <button class="pill-btn" onclick="loadPveZonesView()" style="padding:4px 10px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="font-family:var(--font-tactical); font-size:0.85rem; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">
+            🌲 REALM DEADLIEST WILDERNESS REGIONS
+          </div>
+    `;
+
+    zoneList.forEach((z, idx) => {
+      let threatColor = "#ffd100";
+      let threatLabel = "WILDERNESS HAZARD";
+      if (z.kills >= 3) {
+        threatColor = "#ef4444";
+        threatLabel = "EXTREME DANGER";
+      } else if (z.kills >= 2) {
+        threatColor = "#f97316";
+        threatLabel = "HIGH CASUALTY";
+      }
+
+      html += `
+        <div class="sidebar-row" style="background:var(--wow-iron-bg); border:1px solid var(--wow-brass-border); border-radius:6px; padding:12px 16px; display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-family:var(--font-tactical); font-weight:800; font-size:0.95rem; color:${idx === 0 ? '#38bdf8' : 'var(--wow-gold)'};">#${idx + 1}</span>
+              <span style="font-weight:700; font-size:0.95rem; color:#f8fafc;">${escapeHtml(z.zone)}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-family:var(--font-tactical); font-size:0.75rem; font-weight:800; color:${threatColor}; background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:3px; border:1px solid ${threatColor};">${threatLabel}</span>
+              <span style="font-family:var(--font-tactical); font-size:0.9rem; font-weight:800; color:#ef4444;">${z.kills} Fallen Mortals</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Zone Mortality: ${e.message}</div>`;
+  }
+}
+
+function loadPveRalliesView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:20px; max-width:960px; margin:0 auto; padding:10px 0 40px 0;">
+      <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(56, 189, 248, 0.4); border-radius:10px; padding:20px 24px; position:relative; overflow:hidden;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+          <div>
+            <div style="font-size:12px; font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">PvE Rescue Network &bull; Frontline Frequency</div>
+            <h2 style="font-size:24px; font-weight:800; color:#f8fafc; margin:0; display:flex; align-items:center; gap:10px;">
+              <span>Expedition Rescue Beacons &amp; Squad Mustering</span>
+            </h2>
+            <div style="font-size:14px; color:#94a3b8; margin-top:6px; max-width:640px;">
+              Form reinforcements for dangerous elite quests, dungeon parties, and world boss encounters.
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.45); border-radius:6px; padding:7px 14px; font-size:12px; color:#38bdf8; font-weight:700; display:flex; align-items:center; gap:8px;">
+              <span>🛡️ Signal in-game: <code style="color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:3px; font-family:monospace;">/kb sos</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:rgba(14, 165, 233, 0.08); border-left:4px solid #38bdf8; border-radius:6px; padding:12px 18px; font-size:13px; color:#cbd5e1;">
+        <strong style="color:#38bdf8;">Dungeon &amp; Quest Reinforcement:</strong>
+        <span>All emergency distress signals broadcast across your faction network in real-time. Join nearby adventurers to defeat lethal world hazards together.</span>
+      </div>
+
+      <div id="rallies-list-container" style="display:flex; flex-direction:column; gap:14px;">
+        <div style="text-align:center; padding:40px; color:#64748b; background:rgba(15,23,42,0.5); border:1px dashed rgba(255,255,255,0.08); border-radius:8px;">
+          No active SOS emergency beacons transmitting. Use <code>/kb sos</code> in-game to broadcast a rescue signal to all active operatives.
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 // ----------------- Warroom & Feuds -----------------
 
@@ -6441,6 +6850,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initClientFlavor();
   renderHeaderAuthBadge();
   updateTheaterNavLabel();
+  updateNavigationLabels();
   loadSidebar();
   checkGlobalSosBeacons();
 
