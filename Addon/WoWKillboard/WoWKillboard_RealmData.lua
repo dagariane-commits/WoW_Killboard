@@ -9,7 +9,7 @@ WoWKillboard_RealmData = {
     },
     DeadliestZones = {
         {
-            kills = 9,
+            kills = 2,
             zone = "Undercity",
         },
         {
@@ -19,35 +19,11 @@ WoWKillboard_RealmData = {
     },
     TopGankers24h = {
         {
-            class = "PALADIN",
-            faction = "Horde",
-            guild = "None",
-            kills = 5,
-            name = "Dag",
-            spec = "Retribution",
-        },
-        {
-            class = "PRIEST",
-            faction = "Alliance",
-            guild = "PvP",
-            kills = 1,
-            name = "Zo",
-            spec = "Shadow",
-        },
-        {
             class = "HUNTER",
             faction = "Alliance",
             guild = "Olympus Firing Squad",
             kills = 1,
             name = "Pepper",
-            spec = "Marksmanship",
-        },
-        {
-            class = "HUNTER",
-            faction = "Alliance",
-            guild = "None",
-            kills = 1,
-            name = "Nutsina",
             spec = "Marksmanship",
         },
         {
@@ -57,6 +33,14 @@ WoWKillboard_RealmData = {
             kills = 1,
             name = "Hemmy",
             spec = "Elemental",
+        },
+        {
+            class = "PALADIN",
+            faction = "Horde",
+            guild = "None",
+            kills = 1,
+            name = "Dag",
+            spec = "Retribution",
         },
     },
     RecentKills = {
@@ -636,10 +620,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Arathi Highlands",
-                elapsedSeconds = 11486,
+                elapsedSeconds = 78633,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 191,
+                minutesAgo = 1310,
                 subzone = nil,
                 timestamp = 1790813427,
                 zone = "Arathi Highlands",
@@ -672,10 +656,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Undercity",
-                elapsedSeconds = 19078,
+                elapsedSeconds = 86225,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 317,
+                minutesAgo = 1437,
                 subzone = nil,
                 timestamp = 1790805835,
                 zone = "Undercity",
@@ -696,5 +680,5 @@ WoWKillboard_RealmData = {
             timestamp = 1790823564,
         },
     },
-    LastSync = 1790824913,
+    LastSync = 1790892060,
 }

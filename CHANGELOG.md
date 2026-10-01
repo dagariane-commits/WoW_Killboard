@@ -5,6 +5,25 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.82] - 2026-10-01
+
+### Added
+- **Environmental Hazard & Complete Death Cause Tracking (`CombatTracker.lua`)**:
+  - Implemented CLEU event listener for `ENVIRONMENTAL_DAMAGE`, capturing damage amount, hazard source, and specific environmental type (`Falling`, `Drowning`, `Lava`, `Slime`, `Fatigue`, `Fire`).
+  - Added player fallback mortality logging in `CT:ProcessDeath` when `#attackersList == 0` and victim is the local player, ensuring lethal fall damage, drowning, and lava deaths with zero hostile attackers are accurately recorded to `RecordPveDeath`.
+- **Deadly Hazards Navigation & Tab Integration (`web/static/index.html`, `web/static/app.js`)**:
+  - Added dedicated "Deadly Hazards" tab to the main navigation rail (`#nav-hazards`) and mobile slide-out drawer (`#m-nav-hazards`).
+  - Updated `updateNavigationLabels()` to dynamically route and label hazards across all 4 server rulesets (PvP: "Deadly Hazards", PvE: "Bestiary", Hardcore: "Deadly Hazards", RP: "Deadly Hazards").
+- **Forever Hardcore & Forever RP Realm Campaign Support (`web/static/app.js`)**:
+  - Added full campaign flavor styling and terminology for **WoW Forever Hardcore (1 Life)** (`[ 💀 Hardcore (1 Life) ]`, "Graveyard of Champions", "Apex Predators", and "Run Enders").
+  - Added full campaign flavor styling and terminology for **WoW Forever RP** (`[ 📜 Roleplay Realm ]`, "The Blood Ledger", "The Marked", "Chronicles", and "Defender of Azeroth").
+- **Targeted Administrative Purge Endpoint (`web/server.py`)**:
+  - Added `target: "pve"` capability to `/api/admin/reset` allowing operators to completely purge synthetic and test PvE mortality records while preserving real PvP kills, bounties, and character profiles.
+- **Client Flavor Deployment & Web Sync Scope Disclosure (`web/static/app.js`)**:
+  - Added an explicit deployment notice and status badges to the Theaters of War campaign selector:
+    - Confirmed that the in-game addon is fully functional across all 4 flavors (Classic Era, Anniversary, Modern Retail, and Beta) for local combat tracking, kill alerts, and audio cues.
+    - Clarified that cloud syncing and web portal profiles are currently dedicated exclusively to WoW Forever Beta during this phase.
+
 ## [1.4.81] - 2026-09-30
 
 ### Changed

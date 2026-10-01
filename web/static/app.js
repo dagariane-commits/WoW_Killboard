@@ -3873,12 +3873,16 @@ function loadTheaterSelectorView() {
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:24px; max-width:1060px; margin:0 auto; padding:10px 0 40px 0;">
       <!-- Masthead Header -->
-      <div style="background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.12) 0%, rgba(10, 13, 20, 0.95) 75%); border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 28px 24px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.7);">
+      <div style="background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.12) 0%, rgba(10, 13, 20, 0.95) 75%); border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 24px 24px 20px 24px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.7);">
         <h2 style="font-family: var(--font-tactical); font-size: 1.6rem; color: #fff; margin: 0 0 6px 0; letter-spacing: 0.5px;">
           Theaters of War — Campaign Selector
         </h2>
         <div style="font-size: 0.82rem; color: #94a3b8; max-width: 680px; margin: 0 auto;">
           Select your active World of Warcraft theater and realm server. All combat records, kill feeds, and leaderboards filter to the selected campaign ruleset.
+        </div>
+        <!-- Client Flavor Architecture Notice -->
+        <div style="background:rgba(217, 119, 6, 0.12); border:1px solid rgba(217, 119, 6, 0.4); border-radius:6px; padding:10px 16px; margin: 16px auto 0 auto; max-width:780px; font-size:0.78rem; color:#fbbf24; text-align:left; line-height:1.45;">
+          <strong>Deployment Notice:</strong> The WoW Killboard in-game addon is fully functional across <strong>all 4 flavors</strong> (Classic Era, Anniversary, Modern Retail, and Beta) for local combat tracking, kill alerts, and audio cues. However, <strong>automated web syncing and online killboard profiles are currently dedicated exclusively to WoW Forever Beta</strong>. Web tracking for Classic Era, Anniversary, and Retail is not currently active on the website.
         </div>
       </div>
 
@@ -3889,7 +3893,7 @@ function loadTheaterSelectorView() {
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
               <span style="font-size:0.68rem; font-weight:800; color:#10b981; background:rgba(16, 185, 129, 0.15); border:1px solid #10b981; padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
-                ACTIVE THEATER
+                ACTIVE THEATER (LIVE WEB SYNC)
               </span>
               <span style="font-size:0.75rem; color:var(--wow-gold); font-weight:700;">Level 60 Cap</span>
             </div>
@@ -3917,60 +3921,69 @@ function loadTheaterSelectorView() {
           </button>
         </div>
 
-        <!-- Card 2: Classic Era (GREYED OUT / TBD) -->
-        <div class="theater-version-card disabled-card" style="background:#07090e; border: 1px solid #1e293b; border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; opacity:0.55;">
+        <!-- Card 2: Classic Era (GREYED OUT / ADDON READY) -->
+        <div class="theater-version-card disabled-card" style="background:#07090e; border: 1px solid #1e293b; border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; opacity:0.8;">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-              <span style="font-size:0.68rem; font-weight:800; color:#94a3b8; background:rgba(148, 163, 184, 0.1); border:1px solid #334155; padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
-                TBD &bull; IN DEVELOPMENT
+              <span style="font-size:0.68rem; font-weight:800; color:#fbbf24; background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.3); padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
+                ADDON COMPATIBLE &bull; WEB COMING SOON
               </span>
               <span style="font-size:0.75rem; color:#64748b; font-weight:700;">Level 60 Cap</span>
             </div>
-            <h3 style="font-size:1.2rem; color:#94a3b8; font-family:var(--font-tactical); margin:0 0 6px 0;">Classic Era</h3>
-            <p style="font-size:0.78rem; color:#64748b; line-height:1.45; margin:0 0 16px 0;">
+            <h3 style="font-size:1.2rem; color:#cbd5e1; font-family:var(--font-tactical); margin:0 0 6px 0;">Classic Era</h3>
+            <p style="font-size:0.78rem; color:#94a3b8; line-height:1.45; margin:0 0 8px 0;">
               Patch 1.15.x &bull; Vanilla Whitemane and Firemaw legacy realm clusters.
             </p>
+            <div style="font-size:0.72rem; color:#fbbf24; background:rgba(245, 158, 11, 0.08); border-left:3px solid #f59e0b; padding:6px 10px; border-radius:3px; margin-bottom:12px; line-height:1.4;">
+              <strong>Status:</strong> Addon functions locally for tracking &amp; alerts. Cloud syncing &amp; website tracking not yet active.
+            </div>
           </div>
-          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed; border-radius:6px; display:flex; align-items:center; justify-content:center;" disabled>
-            Theater Offline
+          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#94a3b8; cursor:not-allowed; border-radius:6px; display:flex; align-items:center; justify-content:center;" disabled>
+            Web Sync In Development
           </button>
         </div>
 
-        <!-- Card 3: Anniversary (GREYED OUT / TBD) -->
-        <div class="theater-version-card disabled-card" style="background:#07090e; border: 1px solid #1e293b; border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; opacity:0.55;">
+        <!-- Card 3: Anniversary (GREYED OUT / ADDON READY) -->
+        <div class="theater-version-card disabled-card" style="background:#07090e; border: 1px solid #1e293b; border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; opacity:0.8;">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-              <span style="font-size:0.68rem; font-weight:800; color:#94a3b8; background:rgba(148, 163, 184, 0.1); border:1px solid #334155; padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
-                TBD &bull; IN DEVELOPMENT
+              <span style="font-size:0.68rem; font-weight:800; color:#fbbf24; background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.3); padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
+                ADDON COMPATIBLE &bull; WEB COMING SOON
               </span>
               <span style="font-size:0.75rem; color:#64748b; font-weight:700;">Level 60 Cap</span>
             </div>
-            <h3 style="font-size:1.2rem; color:#94a3b8; font-family:var(--font-tactical); margin:0 0 6px 0;">Anniversary Edition</h3>
-            <p style="font-size:0.78rem; color:#64748b; line-height:1.45; margin:0 0 16px 0;">
+            <h3 style="font-size:1.2rem; color:#cbd5e1; font-family:var(--font-tactical); margin:0 0 6px 0;">Anniversary Edition</h3>
+            <p style="font-size:0.78rem; color:#94a3b8; line-height:1.45; margin:0 0 8px 0;">
               Fresh Progression Realms &bull; Hardcore &amp; PvP seasonal server clusters.
             </p>
+            <div style="font-size:0.72rem; color:#fbbf24; background:rgba(245, 158, 11, 0.08); border-left:3px solid #f59e0b; padding:6px 10px; border-radius:3px; margin-bottom:12px; line-height:1.4;">
+              <strong>Status:</strong> Addon functions locally for tracking &amp; alerts. Cloud syncing &amp; website tracking not yet active.
+            </div>
           </div>
-          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed; border-radius:6px; display:flex; align-items:center; justify-content:center;" disabled>
-            Theater Offline
+          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#94a3b8; cursor:not-allowed; border-radius:6px; display:flex; align-items:center; justify-content:center;" disabled>
+            Web Sync In Development
           </button>
         </div>
 
-        <!-- Card 4: Modern Retail (GREYED OUT / TBD) -->
-        <div class="theater-version-card disabled-card" style="background:#07090e; border: 1px solid #1e293b; border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; opacity:0.55;">
+        <!-- Card 4: Modern Retail (GREYED OUT / ADDON READY) -->
+        <div class="theater-version-card disabled-card" style="background:#07090e; border: 1px solid #1e293b; border-radius: 8px; padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; opacity:0.8;">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-              <span style="font-size:0.68rem; font-weight:800; color:#94a3b8; background:rgba(148, 163, 184, 0.1); border:1px solid #334155; padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
-                TBD &bull; IN DEVELOPMENT
+              <span style="font-size:0.68rem; font-weight:800; color:#fbbf24; background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.3); padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">
+                ADDON COMPATIBLE &bull; WEB COMING SOON
               </span>
               <span style="font-size:0.75rem; color:#64748b; font-weight:700;">Level 80 Cap</span>
             </div>
-            <h3 style="font-size:1.2rem; color:#94a3b8; font-family:var(--font-tactical); margin:0 0 6px 0;">Modern Retail</h3>
-            <p style="font-size:0.78rem; color:#64748b; line-height:1.45; margin:0 0 16px 0;">
+            <h3 style="font-size:1.2rem; color:#cbd5e1; font-family:var(--font-tactical); margin:0 0 6px 0;">Modern Retail</h3>
+            <p style="font-size:0.78rem; color:#94a3b8; line-height:1.45; margin:0 0 8px 0;">
               The War Within (11.x) &bull; Rated Arenas, Solo Shuffle, and Battleground Blitz.
             </p>
+            <div style="font-size:0.72rem; color:#fbbf24; background:rgba(245, 158, 11, 0.08); border-left:3px solid #f59e0b; padding:6px 10px; border-radius:3px; margin-bottom:12px; line-height:1.4;">
+              <strong>Status:</strong> Addon functions locally for tracking &amp; alerts. Cloud syncing &amp; website tracking not yet active.
+            </div>
           </div>
-          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#64748b; cursor:not-allowed; border-radius:6px; display:flex; align-items:center; justify-content:center;" disabled>
-            Theater Offline
+          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-size:0.82rem; background:#1e293b; border:1px solid #334155; color:#94a3b8; cursor:not-allowed; border-radius:6px; display:flex; align-items:center; justify-content:center;" disabled>
+            Web Sync In Development
           </button>
         </div>
       </div>
@@ -5690,12 +5703,16 @@ function updateTheaterNavLabel() {
 }
 
 function updateNavigationLabels() {
-  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+  const activeSrv = (typeof getCurrentForeverServer === "function") ? getCurrentForeverServer() : "PVP";
+  const isPve = (currentFlavor === "FOREVER" && activeSrv === "PVE");
+  const isHc = (currentFlavor === "FOREVER" && activeSrv === "HARDCORE");
+  const isRp = (currentFlavor === "FOREVER" && activeSrv === "RP");
 
   // 1. Desktop Navigation Buttons
   const navIntel = document.getElementById("nav-intel");
   const navLegends = document.getElementById("nav-legends");
   const navBounties = document.getElementById("nav-bounties");
+  const navHazards = document.getElementById("nav-hazards");
   const navRallies = document.getElementById("nav-rallies");
   const navZones = document.getElementById("nav-zones");
 
@@ -5703,6 +5720,7 @@ function updateNavigationLabels() {
   const mNavIntel = document.getElementById("m-nav-intel");
   const mNavLegends = document.getElementById("m-nav-legends");
   const mNavBounties = document.getElementById("m-nav-bounties");
+  const mNavHazards = document.getElementById("m-nav-hazards");
   const mNavRallies = document.getElementById("m-nav-rallies");
   const mNavZones = document.getElementById("m-nav-zones");
 
@@ -5718,12 +5736,14 @@ function updateNavigationLabels() {
     if (navIntel) navIntel.innerText = "Casualties";
     if (navLegends) navLegends.innerText = "Deadly Hazards";
     if (navBounties) navBounties.innerText = "Wanted Monsters";
+    if (navHazards) navHazards.innerText = "Bestiary";
     if (navRallies) navRallies.innerText = "Rescue Beacons";
     if (navZones) navZones.innerText = "Zone Mortality";
 
     if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Casualties";
     if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Deadly Hazards";
     if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "Wanted Monsters";
+    if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Bestiary";
     if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Rescue Beacons";
     if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Mortality";
 
@@ -5739,16 +5759,73 @@ function updateNavigationLabels() {
       mwBtn.innerHTML = "View Wanted Monsters &rarr;";
       mwBtn.onclick = () => switchTab('BOUNTIES');
     }
-  } else {
+  } else if (isHc) {
+    if (navIntel) navIntel.innerText = "Casualties";
+    if (navLegends) navLegends.innerText = "Graveyard of Champions";
+    if (navBounties) navBounties.innerText = "Apex Predators";
+    if (navHazards) navHazards.innerText = "Deadly Hazards";
+    if (navRallies) navRallies.innerText = "Rescue Beacons";
+    if (navZones) navZones.innerText = "Zone Mortality";
+
+    if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Casualties";
+    if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Graveyard of Champions";
+    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "Apex Predators";
+    if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Deadly Hazards";
+    if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Rescue Beacons";
+    if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Mortality";
+
+    if (modeFilters) {
+      modeFilters.innerHTML = `
+        <div class="header-mode-pill active" style="border-color:#f59e0b; color:#f59e0b; background:rgba(245, 158, 11, 0.15); font-weight:700; cursor:default; pointer-events:none;">💀 Hardcore (1 Life)</div>
+      `;
+    }
+
+    if (mwTitle) mwTitle.innerHTML = "AZEROTH'S EXECUTIONERS &mdash; RUN ENDERS";
+    if (mwSub) mwSub.innerHTML = "Monsters &amp; World Hazards that have permanently slain 1-Life characters across Azeroth";
+    if (mwBtn) {
+      mwBtn.innerHTML = "View Deadly Hazards &rarr;";
+      mwBtn.onclick = () => switchTab('HAZARDS');
+    }
+  } else if (isRp) {
     if (navIntel) navIntel.innerText = "Intel";
     if (navLegends) navLegends.innerText = "Defender of Azeroth";
     if (navBounties) navBounties.innerText = "The Marked";
+    if (navHazards) navHazards.innerText = "Deadly Hazards";
+    if (navRallies) navRallies.innerText = "Chronicles";
+    if (navZones) navZones.innerText = "Zone Intel";
+
+    if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Intel";
+    if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Defender of Azeroth";
+    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "The Marked";
+    if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Deadly Hazards";
+    if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Chronicles";
+    if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Intel";
+
+    if (modeFilters) {
+      modeFilters.innerHTML = `
+        <div class="header-mode-pill active" style="border-color:#c084fc; color:#c084fc; background:rgba(192, 132, 252, 0.15); font-weight:700; cursor:default; pointer-events:none;">📜 Roleplay Realm</div>
+      `;
+    }
+
+    if (mwTitle) mwTitle.innerHTML = "THE BLOOD LEDGER &mdash; AZEROTH'S MOST WANTED";
+    if (mwSub) mwSub.innerHTML = "Open World Execution Contracts &amp; Certified Outlaws &bull; Deliver the final blow to claim the bounty";
+    if (mwBtn) {
+      mwBtn.innerHTML = "View The Marked &rarr;";
+      mwBtn.onclick = () => switchTab('BOUNTIES');
+    }
+  } else {
+    // PvP Default
+    if (navIntel) navIntel.innerText = "Intel";
+    if (navLegends) navLegends.innerText = "Defender of Azeroth";
+    if (navBounties) navBounties.innerText = "The Marked";
+    if (navHazards) navHazards.innerText = "Deadly Hazards";
     if (navRallies) navRallies.innerText = "Manhunt";
     if (navZones) navZones.innerText = "Zone Intel";
 
     if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Intel";
     if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Defender of Azeroth";
     if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "The Marked";
+    if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Deadly Hazards";
     if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Manhunt";
     if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Intel";
 
