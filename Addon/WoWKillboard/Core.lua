@@ -137,18 +137,75 @@ function KB:SanitizeKillHistory()
     end
 end
 
+-- Cross-Machine Realm Intelligence & Two-Way Player Career Synchronization
+function KB:SyncRealmData()
+    local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+    if not rData then return false end
+
+    WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {} }
+    WoWKillboardDB.kills = WoWKillboardDB.kills or {}
+    WoWKillboardDB.RealmData = rData
+    WoWKillboard_RealmData = rData
+
+    local pName = UnitName("player")
+    if not pName or pName == "" or pName == "Unknown" then
+        return false
+    end
+    local pLower = pName:lower()
+
+    local function IsPlayerMatch(targetName)
+        if not targetName then return false end
+        local tLower = targetName:lower()
+        if tLower == pLower then return true end
+        if tLower:find("^" .. pLower:gsub("%-", "%%-") .. "%-") then return true end
+        if pLower:find("^" .. tLower:gsub("%-", "%%-") .. "%-") then return true end
+        return false
+    end
+
+    local imported = 0
+    if rData.RecentKills then
+        for _, km in ipairs(rData.RecentKills) do
+            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
+            local isMe = false
+            if km.killer and km.killer.name and IsPlayerMatch(km.killer.name) then
+                isMe = true
+            elseif km.victim and km.victim.name and IsPlayerMatch(km.victim.name) then
+                isMe = true
+            elseif km.attackers then
+                for _, att in pairs(km.attackers) do
+                    if att.name and IsPlayerMatch(att.name) then
+                        isMe = true
+                        break
+                    end
+                end
+            end
+
+            if isMe and kId and not WoWKillboardDB.kills[kId] then
+                WoWKillboardDB.kills[kId] = km
+                imported = imported + 1
+            end
+        end
+    end
+
+    if imported > 0 then
+        if KB.SanitizeKillHistory then
+            KB:SanitizeKillHistory()
+        end
+        if KB.Leaderboard and KB.Leaderboard.Rebuild then
+            KB.Leaderboard:Rebuild()
+        end
+    end
+    return true
+end
+
 -- Initialize Databases and settings on load
 function KB:Initialize()
     -- Initialize SavedVariables
     WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {} }
     WoWKillboardDB.kills = WoWKillboardDB.kills or {}
 
-    -- Two-Way Sync Realm Data Linking
-    if WoWKillboard_RealmData then
-        WoWKillboardDB.RealmData = WoWKillboard_RealmData
-    elseif WoWKillboardDB.RealmData then
-        WoWKillboard_RealmData = WoWKillboardDB.RealmData
-    end
+    -- Two-Way Sync Realm Data Linking & Player Historical Merge
+    KB:SyncRealmData()
 
     WoWKillboardSettings = WoWKillboardSettings or {}
     for k, v in pairs(KB.DefaultSettings) do
@@ -194,6 +251,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     cmd = cmd and cmd:lower() or ""
 
     if cmd == "" then
+        KB:SyncRealmData()
         if KB.UI then KB.UI:Toggle() end
     elseif cmd == "reset" then
         WoWKillboardDB = { kills = {}, stats = {} }
@@ -1058,7 +1116,8 @@ coreFrame:SetScript("OnEvent", function(self, event, ...)
         if addonName == "WoWKillboard" then
             KB:Initialize()
         end
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
+        KB:SyncRealmData()
         -- Wait 2.5s for fonts, world loading, and SavedVariables to settle
         if C_Timer and C_Timer.After then
             C_Timer.After(2.5, function()
@@ -1085,6 +1144,7 @@ coreFrame:SetScript("OnEvent", function(self, event, ...)
 end)
 
 coreFrame:RegisterEvent("ADDON_LOADED")
+coreFrame:RegisterEvent("PLAYER_LOGIN")
 coreFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 coreFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 

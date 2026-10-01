@@ -1195,6 +1195,7 @@ end
 -- Refresh UI content based on activeTab and currentMode
 function UI:Refresh()
     if not UI.ContentFrame or InCombatLockdown() then return end
+    if KB.SyncRealmData then KB:SyncRealmData() end
     KB.Leaderboard:Rebuild()
 
     -- Update KPI Header Cards
@@ -1264,9 +1265,9 @@ function UI:Refresh()
 
     if UI.RibbonToggleBtn and UI.RibbonToggleBtn.Label then
         if ribbonMode == "REALM" then
-            UI.RibbonToggleBtn.Label:SetText("|cffffd100[ Realm Stats ]|r |cff64748bSession|r")
+            UI.RibbonToggleBtn.Label:SetText("|cffffd100[ Realm Stats ]|r |cff64748bCareer|r")
         else
-            UI.RibbonToggleBtn.Label:SetText("|cff64748bRealm|r |cffffd100[ Session Stats ]|r")
+            UI.RibbonToggleBtn.Label:SetText("|cff64748bRealm|r |cffffd100[ Career Stats ]|r")
         end
     end
 
@@ -1279,7 +1280,12 @@ function UI:Refresh()
 
             if UI.StatCards.KD then
                 if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100REALM TOTAL CARNAGE|r") end
-                if UI.StatCards.KD.ValueLabel then UI.StatCards.KD.ValueLabel:SetText(string.format("|cffffd100%d|r |cff94a3b8Total Confirmed Kills|r", rCarnage)) end
+                if UI.StatCards.KD.ValueLabel then
+                    UI.StatCards.KD.ValueLabel:SetText(string.format(
+                        "|cffffd100%d|r |cff94a3b8Realm|r  |cff64748b||r  |cffffffff%d|rK / |cffff4444%d|rD |cff38bdf8(You)|r",
+                        rCarnage, myKills, myDeaths
+                    ))
+                end
             end
             if UI.StatCards.DUELS then
                 if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cff10b9811v1 SOLO KILL RATIO|r") end
@@ -1291,10 +1297,10 @@ function UI:Refresh()
             end
         else
             if UI.StatCards.KD then
-                if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100SESSION COMBAT K/D|r") end
+                if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100CAREER COMBAT K/D|r") end
                 if UI.StatCards.KD.ValueLabel then
                     UI.StatCards.KD.ValueLabel:SetText(string.format(
-                        "|cffffffff%d|rK / |cffff4444%d|rD |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
+                        "|cffffffff%d|rK / |cffff4444%d|rD |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8All-Time Logged|r",
                         myKills, myDeaths, totalKillsCount
                     ))
                 end
