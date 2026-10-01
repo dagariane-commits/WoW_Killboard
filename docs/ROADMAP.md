@@ -97,28 +97,52 @@ timeline
 
 ---
 
-## Phase 5: Public Release, Cloud Hosting & Multi-Realm Federation (Status: ACTIVE / IN PROGRESS)
+## Phase 5: Public Release & Phased Product Strategy (Status: ACTIVE / IN PROGRESS)
 
-**Milestone Objective**: Deploy production cloud hosting, establish custom domain and SSL, distribute the addon to public community portals (CurseForge, Wago.io), and support multi-realm federation.
+**Milestone Objective**: Execute the 3-Tier frictionless product distribution strategy, establishing a massive free player base via CurseForge, followed by the Track 2 monetized companion ecosystem.
 
-### Action Items & Deliverables:
-1. **Production Cloud Infrastructure (Status: DEPLOYED & TESTED)**:
-   - [x] Deploy Flask + SQLite platform to production AWS Lightsail instance (`13.216.102.148:8080`).
-   - [x] Configure systemd service daemon (`wowkillboard.service`) for automatic process recovery.
-   - [x] Enable SQLite Write-Ahead Logging (`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=10000;`) for non-blocking concurrent writes.
-   - [x] Automated stress testing suite (`scripts/stress_test.py`, `/kb stress [N]`) validating 168+ RPS throughput.
-   - [x] Administrative database reset lifecycle with multi-table cascade purging.
-2. **Domain Registration & SSL Hardening (Status: NEXT STEP)**:
-   - [ ] Register public domain (e.g., `wowkillboard.com` via Cloudflare).
-   - [ ] Configure DNS A-records pointing to AWS Lightsail elastic IP (`13.216.102.148`).
-   - [ ] Configure automated SSL certificate provisioning via Let's Encrypt / Certbot or Cloudflare Edge SSL.
-   - [ ] Update `KB.WebDomain` in Addon and `DEFAULT_PROD_URL` in `WoWKillboardSync.py` to custom HTTPS domain.
-   - [ ] Recompile standalone binary `WoWKillboardSync.exe`.
-3. **Public Addon Portals & Distribution (Status: QUEUED)**:
-   - [ ] Submit package to **CurseForge** (`WoWKillboard-v1.0.0.zip` supporting interface versions `11503`, `11504`, `110002`).
-   - [ ] Submit to **Wago.io** and **WoWInterface**.
-   - [ ] Automated GitHub Release pipeline for semantic version tags.
-4. **Multi-Realm Federation**:
-   - [ ] Segment combat telemetry by Realm (WoW Forever Realm 1, Era Whitemane, Retail Illidan).
-   - [ ] Realm-vs-Realm macro analytics and faction balance telemetry.
+### The 3-Track Phased Sequence:
+1. **Track 1: In-Game Addon & Faction Mesh (Free Tier — Current Milestone)**:
+   - Zero-app requirement: 100% in-game combat logging, local stats, and peer-to-peer guild/party/faction broadcast (`Sync.lua`).
+   - Domain registration (`wowkillboard.com`) and HTTPS hardening on AWS Lightsail.
+   - Initial CurseForge / Wago distribution for beta testers and early community adoption.
+   - Community testing phase: Stabilize in-game combat reporting, eliminate edge-case bugs, and establish baseline realm activity.
+2. **Track 2: Silent Desktop Companion & Supporter Pro Suite (Monetized Tier — After Beta Stabilization)**:
+   - Implement 1-Click Silent Desktop Companion with native Windows System Tray integration (`console=False`, zero desktop terminal windows).
+   - Automated startup with Windows for seamless, hands-off background ingestion.
+   - Launch Supporter Pro subscription tiers ($5 - $15/mo) strictly honoring Blizzard's Addon Policy (monetizing out-of-game cloud services, real-time push pipelines, and Discord integrations).
+3. **Track 3: Zero-Software Web Fallback (Post-Track 2 Milestone)**:
+   - On-demand browser drag-and-drop ingestion (`/upload`) and `/kb export` string parser for Mac/Linux and zero-executable users.
+   - Gated until Track 2 desktop companion and server sync pipeline are fully hardened.
+
+---
+
+## Supporter Pro Architecture & Monetization Blueprint
+
+### Compliance with Blizzard Addon Policy
+- **In-Game Code (Lua/XML)**: 100% free, open-source, and uninhibited on CurseForge with zero in-game paywalls or advertisements.
+- **Out-of-Game Cloud Infrastructure**: Premium cloud hosting, Discord bot automation, real-time push streaming, and OBS widgets monetized via Patreon / Stripe.
+
+### Supporter Tier Specifications
+
+#### 1. Duelist & Bounty Hunter Tier ($4.99 / month)
+- **Real-Time Minute-by-Minute Cloud Sync**: Kills and deaths published to the web live (sub-second) rather than waiting for daily realm batch updates.
+- **Verified "Veteran" Web Profile**: Custom gold dragon border, military honor titles, and verified killboard crest.
+- **Permanent Cold Case Vault**: Unlimited historical match and duel archive storage (free tier defaults to 30 days).
+- **Custom Vanity Profile URL**: Direct branded URL (e.g. `wowkillboard.com/player/Dagariane`).
+- **Target Wiretap Alerts**: Real-time push / Discord notification when a tracked bounty target is spotted online or enters a contested sector.
+
+#### 2. Warband & Guild Command Tier ($14.99 / month per Guild)
+- **Discord Defense Gateway Bot**:
+  - Real-time automated Discord alert dispatch when any guildmate triggers an SOS distress beacon in-game.
+  - Interactive response cards with target counts, coordinates, and team rally status.
+- **Guild vs. Guild (GvG) Blood Feud Analytics**:
+  - Head-to-head grudge match tracking between rival guilds with win rates, kill ratios, and officer bounties.
+- **Officer Tactical Map**:
+  - Live tactical radar showing guild patrol distribution and recently spotted enemy death squads.
+
+#### 3. Streamer / Creator Add-On ($9.99 / month)
+- **StreamBox OBS Battlefield HUD**: Transparent browser-source overlay for OBS Studio and Streamlabs showing live killstreaks, dynamic target elimination banners, and active bounty cards.
+- **Twitch / YouTube Chat Bot**: Live chat command integration (`!bounty`, `!pvp`, `!stats`) reporting real-time in-game combat records.
+
 
