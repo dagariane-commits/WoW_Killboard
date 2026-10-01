@@ -967,7 +967,6 @@ function renderSidebarActivity(data) {
   }
 
   // 3. Top Active Gankers (Last 24 Hours)
-  const charListEl = document.getElementById("sidebar-24h-characters") || document.getElementById("sidebar-7d-characters");
   if (charListEl) {
     const chars = data.topGankers24h || data.topCharacters || [];
     if (chars.length === 0) {

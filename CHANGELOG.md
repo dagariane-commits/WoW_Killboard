@@ -5,6 +5,14 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.80] - 2026-09-30
+
+### Fixed
+- **Resolved Web Client Freezing / SyntaxError on Page Load (`web/static/app.js`)**:
+  - **The Issue**: Loading `http://13.216.102.148` caused the page to freeze/hang with blank feeds and unresponsive tabs.
+  - **Root Cause**: `renderSidebarActivity()` in `web/static/app.js` contained a duplicate `const charListEl` declaration in the same function scope, triggering a fatal `SyntaxError: Identifier 'charListEl' has already been declared` in the browser's JavaScript engine (V8), preventing `app.js` from executing.
+  - **Engineering Resolution**: Removed the redundant `const` declaration and reused `charListEl`. Validated with Node.js V8 syntax check (`node -c web/static/app.js` exiting code 0).
+
 ## [1.4.79] - 2026-09-30
 
 ### Fixed
