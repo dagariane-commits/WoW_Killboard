@@ -472,6 +472,37 @@ async function loadMostWanted() {
   const container = document.getElementById("most-wanted-cards-container");
   if (!container) return;
 
+  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+  const mwTitle = document.querySelector(".most-wanted-title");
+  const mwSub = document.querySelector(".most-wanted-subtitle");
+  const mwBtn = document.querySelector(".see-all-marks-btn");
+
+  if (isPve) {
+    if (mwTitle) mwTitle.innerText = "THE BESTIARY — AZEROTH'S DEADLIEST MONSTERS";
+    if (mwSub) mwSub.innerText = "Wilderness Executioners & World Bosses • Highest confirmed mortal kill counts";
+    if (mwBtn) {
+      mwBtn.innerText = "View Bestiary Records →";
+      mwBtn.onclick = () => switchTab('HAZARDS');
+    }
+
+    try {
+      const res = await fetch("/api/pve/leaderboard");
+      if (!res.ok) return;
+      const lb = await res.json();
+      renderPveMostWanted(lb.topDeadlyNpcs || []);
+    } catch (e) {
+      console.error("Failed to load PvE Deadly NPCs:", e);
+    }
+    return;
+  }
+
+  if (mwTitle) mwTitle.innerText = "THE BLOOD LEDGER — AZEROTH'S MOST WANTED";
+  if (mwSub) mwSub.innerText = "Open World Execution Contracts & Certified Outlaws • Deliver the final blow to claim the bounty";
+  if (mwBtn) {
+    mwBtn.innerText = "View The Marked →";
+    mwBtn.onclick = () => switchTab('BOUNTIES');
+  }
+
   try {
     const isSupporter = isSupporterActive();
     const res = await fetch(`/api/bounties/most-wanted?supporter=${isSupporter ? '1' : '0'}`);
@@ -481,6 +512,68 @@ async function loadMostWanted() {
   } catch (err) {
     console.error("Failed to load Most Wanted:", err);
   }
+}
+
+function renderPveMostWanted(npcs) {
+  const container = document.getElementById("most-wanted-cards-container");
+  if (!container) return;
+
+  const safeNpcs = Array.isArray(npcs) ? npcs : [];
+  const totalSlots = safeNpcs.length > 5 ? 10 : 5;
+  let html = "";
+
+  for (let idx = 0; idx < totalSlots; idx++) {
+    const npc = safeNpcs[idx];
+    if (npc) {
+      const isRank1 = idx === 0;
+      const rank1Class = isRank1 ? "rank-1-card" : "";
+      const stampRankClass = isRank1 ? "rank-1" : "";
+      const maxHit = formatNumber(npc.max_damage || 0);
+
+      html += `
+        <div class="wanted-card compact horde ${rank1Class}" style="border-color:#ef4444;">
+          <div class="wanted-card-top">
+            <span class="wanted-stamp ${stampRankClass}">#${idx + 1} DEADLIEST</span>
+            <span class="wanted-reward-pill gold-pot" style="color:#ef4444; border-color:#7f1d1d;">💀 ${npc.kills} Slain</span>
+          </div>
+          <div class="wanted-avatar-wrap compact" style="border-color:#ef4444; background:rgba(239,68,68,0.15); display:flex; align-items:center; justify-content:center; font-size:1.8rem;">
+            💀
+          </div>
+          <div class="wanted-name-row">
+            <span class="wanted-level-badge" style="background:#7f1d1d; color:#fca5a5;">ELITE</span>
+            <div class="wanted-name" style="color:#ef4444;" title="${escapeHtml(npc.npc_name)}">
+              ${escapeHtml(npc.npc_name)}
+            </div>
+          </div>
+          <div class="wanted-guild" style="color:#f87171;">&lt;Wilderness Boss&gt;</div>
+          <div class="wanted-lastseen">💥 Max Hit: ${maxHit} dmg</div>
+          <div class="wanted-action-wrap">
+            <button class="wanted-btn compact" onclick="switchTab('HAZARDS')" style="background:rgba(239,68,68,0.15); border-color:#ef4444; color:#fca5a5;">Inspect Threat &rarr;</button>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="wanted-card compact blank">
+          <div class="wanted-card-top">
+            <span class="wanted-stamp muted">#${idx + 1} DEADLIEST</span>
+            <span class="wanted-reward-pill muted">CLEAR</span>
+          </div>
+          <div class="wanted-avatar-wrap compact blank">
+            <span class="wanted-blank-icon"></span>
+          </div>
+          <div class="wanted-name muted">Sector Clear</div>
+          <div class="wanted-guild muted">&lt;No Hazard&gt;</div>
+          <div class="wanted-lastseen muted">Wilderness Nominal</div>
+          <div class="wanted-action-wrap">
+            <button class="wanted-btn compact blank-issue-btn" disabled>Secured</button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  container.innerHTML = html;
 }
 
 function renderMostWanted(outlaws) {
@@ -502,9 +595,19 @@ function renderMostWanted(outlaws) {
         ? b.lastSeen.displayText 
         : "Unknown Location";
 
-      const btnHtml = accepted 
-        ? `<button class="wanted-btn compact accepted" disabled title="Contract Accepted">✓ Tracking</button>`
-        : `<button class="wanted-btn compact" onclick="acceptBountyContract('${b.id}', '${b.target_name}')" title="Accept Bounty Contract">Accept</button>`;
+      // Format reward accurately for gold, silver, or copper
+      const copper = Number(b.amount_copper) || (Number(b.amount_gold) * 10000) || 0;
+      let rewardText = "";
+      if (copper >= 10000) {
+        rewardText = `${(copper / 10000).toFixed(copper % 10000 === 0 ? 0 : 1)}g`;
+      } else if (copper >= 100) {
+        rewardText = `${Math.floor(copper / 100)}s ${copper % 100 > 0 ? (copper % 100) + 'c' : ''}`.trim();
+      } else {
+        rewardText = `${copper}c`;
+      }
+
+      // Contracts are accepted exclusively in-game in World of Warcraft; website displays tactical dossier link
+      const btnHtml = `<button class="wanted-btn compact" onclick="openCharacterProfile('${escapeHtml(b.target_name)}')" title="Inspect Outlaw Dossier (Marks Accepted In-Game Only)">Target Intel &rarr;</button>`;
 
       let targetFaction = (b.target_faction || "").trim();
       if (!targetFaction && cls) {
@@ -517,7 +620,7 @@ function renderMostWanted(outlaws) {
       const rank1Class = isRank1 ? "rank-1-card" : "";
       const stampRankClass = isRank1 ? "rank-1" : "";
       const targetLevel = b.target_level || b.level || 60;
-      const goldPotHtml = `<span class="wanted-reward-pill gold-pot">💰 ${formatNumber(b.amount_gold)}g</span>`;
+      const goldPotHtml = `<span class="wanted-reward-pill gold-pot">💰 ${rewardText}</span>`;
 
       html += `
         <div class="wanted-card compact ${factionClass} ${rank1Class}">
@@ -667,6 +770,25 @@ window.showCombatToast = showCombatToast;
 
 // Data Fetching
 async function loadKills() {
+  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+
+  if (isPve) {
+    try {
+      const res = await fetch("/api/pve/deaths?limit=30");
+      if (res.ok) {
+        const data = await res.json();
+        const incomingDeaths = data.deaths || [];
+        renderStats([]);
+        if (currentTab === "FEED" || currentTab === "INTEL") {
+          renderPveFeed(incomingDeaths);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load PvE casualties:", e);
+    }
+    return;
+  }
+
   try {
     const fetchMode = (currentMode || "WORLD").toUpperCase();
     const res = await fetch(`/api/kills?mode=${encodeURIComponent(fetchMode)}&search=${encodeURIComponent(searchQuery)}`);
@@ -692,6 +814,73 @@ async function loadKills() {
   } catch (err) {
     console.error("Failed to load kills:", err);
   }
+}
+
+function renderPveFeed(deaths) {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  const safeDeaths = Array.isArray(deaths) ? deaths : [];
+  if (safeDeaths.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #64748b;">
+        <h3>No Wilderness Casualties Logged Yet.</h3>
+        <p style="margin-top: 8px;">Fallen mortals and world boss encounters will populate here.</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = `
+    <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 10px 16px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:0.85rem; color:#38bdf8; font-weight:700;">🛡️ FOREVER PVE CAMPAIGN &bull; WILDERNESS HAZARD CASUALTY FEED</span>
+      </div>
+      <span class="combat-feed-counter" style="color:var(--wow-gold); font-weight:800;">${safeDeaths.length} Fallen Mortals</span>
+    </div>
+  `;
+
+  safeDeaths.forEach(d => {
+    const vCls = (d.victim_class || "WARRIOR").toUpperCase();
+    const vColor = CLASS_COLORS[vCls] || CLASS_COLORS.UNKNOWN;
+    const vLvl = d.victim_level || "??";
+    const zoneStr = d.subzone ? `${d.zone} (${d.subzone})` : (d.zone || "Wilderness");
+    const ago = timeAgo(d.timestamp);
+
+    html += `
+      <div class="kill-card pve-hazard-card" style="border-left: 3px solid #ef4444; margin-bottom: 10px;">
+        <div class="kill-card-header" style="display:flex; justify-content:space-between; align-items:center; padding:6px 14px; background:rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span class="kill-zone" style="color:#e2e8f0; font-size:0.78rem;">📍 ${escapeHtml(zoneStr)}</span>
+          <span class="kill-time" style="color:#94a3b8; font-size:0.75rem;">${ago}</span>
+        </div>
+        <div class="kill-content" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px;">
+          <!-- Monster / NPC Executioner -->
+          <div class="combatant-block" style="display:flex; align-items:center; gap:12px;">
+            <div style="width:40px; height:40px; border-radius:4px; border:1px solid #ef4444; background:rgba(239,68,68,0.15); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">💀</div>
+            <div>
+              <div style="font-weight:800; color:#ef4444; font-size:1.1rem;">${escapeHtml(d.npc_name)}</div>
+              <div style="font-size:0.75rem; color:#94a3b8;">${d.npc_spell ? escapeHtml(d.npc_spell) : 'Melee Strike'} &bull; <strong style="color:#fca5a5;">${formatNumber(d.npc_damage || 0)} dmg</strong></div>
+            </div>
+          </div>
+
+          <div style="font-weight:900; color:#64748b; font-size:0.8rem; letter-spacing:1px; background:rgba(0,0,0,0.4); padding:4px 8px; border-radius:4px;">DEFEATED</div>
+
+          <!-- Fallen Player Victim -->
+          <div class="combatant-block" style="display:flex; align-items:center; gap:12px; text-align:right;">
+            <div>
+              <div style="font-weight:800; font-size:1.1rem; cursor:pointer;" onclick="openCharacterProfile('${escapeHtml(d.victim_name)}')">
+                <span style="color:${vColor};">${escapeHtml(d.victim_name)}</span> <span style="font-size:0.75rem; color:#94a3b8;">(${vLvl})</span>
+              </div>
+              <div style="font-size:0.72rem; color:#cbd5e1;">&lt;${escapeHtml(d.victim_guild || 'Unguilded')}&gt;</div>
+            </div>
+            ${renderClassBadge(vCls, 36)}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
 }
 
 async function loadSidebar() {
@@ -726,6 +915,40 @@ function renderSidebarActivity(data) {
 
   // 2. Deadliest Zones (Last 24 Hours)
   const zoneListEl = document.getElementById("sidebar-24h-zones") || document.getElementById("sidebar-7d-zones-list");
+  const charListEl = document.getElementById("sidebar-24h-characters") || document.getElementById("sidebar-7d-characters");
+
+  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+  if (isPve) {
+    try {
+      fetch("/api/pve/leaderboard").then(r => r.json()).then(pveData => {
+        const deadZone = pveData.summary?.mostDangerousZone || { zone: "Elwynn Forest", deaths: 3 };
+        if (zoneListEl) {
+          zoneListEl.innerHTML = `
+            <div class="sidebar-rank-item zone-item">
+              <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
+                <span class="rank-badge">#1</span>
+                <span style="font-weight:700; color:#e2e8f0;">${escapeHtml(deadZone.zone || "Elwynn Forest")}</span>
+              </div>
+              <span style="color:#ef4444; font-weight:700; font-family:var(--font-tactical); margin-left:8px;">${deadZone.deaths || 3} deaths</span>
+            </div>
+          `;
+        }
+        if (charListEl && pveData.topDeadlyNpcs) {
+          charListEl.innerHTML = pveData.topDeadlyNpcs.slice(0, 5).map((m, i) => `
+            <div class="sidebar-rank-item character-item" style="cursor:pointer;" onclick="switchTab('HAZARDS')">
+              <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
+                <span class="rank-badge">#${i + 1}</span>
+                <span style="font-weight:700; color:#ef4444;">💀 ${escapeHtml(m.npc_name)}</span>
+              </div>
+              <span style="color:var(--accent-gold); font-weight:700; font-family:var(--font-tactical); margin-left:8px;">${m.kills} slain</span>
+            </div>
+          `).join('');
+        }
+      });
+    } catch (e) {}
+    return;
+  }
+
   if (zoneListEl) {
     const zones = data.deadliestZones24h || data.topZones || [];
     if (zones.length === 0) {
@@ -963,6 +1186,57 @@ async function loadBounties() {
 // Rendering Functions
 async function renderStats(kills) {
   const hubContainer = document.getElementById("homepage-stats-hub");
+
+  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+  if (isPve) {
+    let pveSummary = { totalDeaths: 10, uniqueDeadlyNpcs: 8, mostDangerousZone: { zone: "Elwynn Forest", deaths: 3 } };
+    try {
+      const lbRes = await fetch("/api/pve/leaderboard");
+      if (lbRes.ok) {
+        const lb = await lbRes.json();
+        if (lb.summary) pveSummary = lb.summary;
+      }
+    } catch (e) {}
+
+    const deadZone = pveSummary.mostDangerousZone || { zone: "Elwynn Forest", deaths: 3 };
+    const deadZoneStr = (deadZone.zone && deadZone.zone !== "None") ? `${deadZone.zone} (${deadZone.deaths} Slain)` : "Elwynn Forest";
+
+    if (hubContainer) {
+      hubContainer.innerHTML = `
+        <div class="stats-hub-wrapper guest" style="border-color: rgba(56, 189, 248, 0.4);">
+          <div class="guest-stats-header">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="wow-gold-header" style="font-size:0.95rem; font-weight:800; letter-spacing:0.5px; color:#38bdf8;">THE SHADOW NETWORK — PVE HAZARD &amp; CASUALTY TELEMETRY (NORMAL PROGRESSION)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">Total Fallen Mortals</span>
+              <span class="stat-val" id="stat-total-kills" style="color: #ef4444;">${formatNumber(pveSummary.totalDeaths)}</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Deadly Monster Slayers</span>
+              <span class="stat-val" id="stat-solo-percent" style="color: var(--accent-gold);">${formatNumber(pveSummary.uniqueDeadlyNpcs)}</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Deadliest Conflict Zone</span>
+              <span class="stat-val" id="stat-faction-split" style="color: #38bdf8; font-size: 0.95rem; padding-top: 4px;">
+                ${escapeHtml(deadZoneStr)}
+              </span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Active Campaign</span>
+              <span class="stat-val" id="stat-active-mode" style="color: #10b981; font-size: 0.95rem; padding-top: 4px;">Forever PvE</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    return;
+  }
 
   // 1. Fetch cumulative server telemetry
   let cumulative = {
@@ -1786,6 +2060,18 @@ function renderSingleBountyCard(b, isSupporter) {
     ? `<span class="bounty-faction-pill ${targetFaction.toLowerCase()}">${targetFaction.toUpperCase()} TARGET</span>`
     : `<span class="bounty-faction-pill neutral">WANTED TARGET</span>`;
 
+  // Format reward accurately for gold, silver, or copper
+  const cardCopper = Number(b.amount_copper) || (Number(b.amount_gold) * 10000) || 0;
+  let cardRewardText = "";
+  if (cardCopper >= 10000) {
+    cardRewardText = `${(cardCopper / 10000).toFixed(cardCopper % 10000 === 0 ? 0 : 1)}g`;
+  } else if (cardCopper >= 100) {
+    cardRewardText = `${Math.floor(cardCopper / 100)}s ${cardCopper % 100 > 0 ? (cardCopper % 100) + 'c' : ''}`.trim();
+  } else {
+    cardRewardText = `${cardCopper}c`;
+  }
+  const displayTargetLevel = b.target_level || b.level || (b.targetLevel ? b.targetLevel : 60);
+
   return `
     <div class="stat-card bounty-target-card ${factionCardClass}">
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1793,11 +2079,11 @@ function renderSingleBountyCard(b, isSupporter) {
           ${renderClassBadge(b.target_class, 22)}
           <div>
             <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(b.target_name)}')" style="color:#fff; font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${escapeHtml(b.target_name)}</span>
-            <div style="font-size:0.68rem; color:#cbd5e1;">Level 60 ${escapeHtml(b.target_class || 'Combatant')}</div>
+            <div style="font-size:0.68rem; color:#cbd5e1;">Level ${displayTargetLevel} ${escapeHtml(b.target_class || 'Combatant')}</div>
           </div>
         </div>
         <div style="text-align:right;">
-          <span style="color:var(--accent-gold); font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${b.amount_gold || Math.floor((b.amount_copper || 0)/10000)}g</span>
+          <span style="color:var(--accent-gold); font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${cardRewardText}</span>
           <div>${factionBadge}</div>
         </div>
       </div>
@@ -3558,7 +3844,13 @@ function handleSelectForeverServer(serverId) {
   handleFlavorChange("FOREVER", chosen);
   closeServerSelectorModal();
   updateTheaterNavLabel();
-  switchTab("INTEL");
+  if (currentTab === "INTEL") {
+    loadKills();
+    loadMostWanted();
+    loadSidebar();
+  } else {
+    switchTab("INTEL");
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 

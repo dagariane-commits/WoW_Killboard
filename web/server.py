@@ -2593,6 +2593,26 @@ def get_bounties():
 
         for b in bounties:
             target = b["target_name"]
+
+            # Dynamically resolve target's actual level from characters or recent kills
+            char_row = conn.execute("SELECT level FROM characters WHERE name = ? LIMIT 1", (target,)).fetchone()
+            t_level = char_row["level"] if (char_row and char_row["level"]) else None
+            if not t_level:
+                lvl_row = conn.execute("""
+                    SELECT CASE 
+                        WHEN killer_name = ? THEN killer_level 
+                        ELSE victim_level 
+                    END as lvl
+                    FROM kills 
+                    WHERE killer_name = ? OR victim_name = ?
+                    ORDER BY timestamp DESC LIMIT 1
+                """, (target, target, target)).fetchone()
+                if lvl_row and lvl_row["lvl"]:
+                    t_level = lvl_row["lvl"]
+
+            b["target_level"] = t_level or 60
+            b["targetLevel"] = b["target_level"]
+
             last_kill = conn.execute("""
                 SELECT timestamp, zone, subzone
                 FROM kills
@@ -2736,13 +2756,41 @@ def get_most_wanted():
                    amount_gold, amount_copper, timestamp
             FROM bounties
             WHERE status = 'ACTIVE'
-            ORDER BY amount_gold DESC
+            ORDER BY (amount_gold * 10000 + COALESCE(amount_copper, 0)) DESC
             LIMIT 10
         """).fetchall()
         most_wanted = []
         for r in rows:
             b = dict(r)
             target = b["target_name"]
+
+            # Dynamically resolve target's actual level from characters or recent kills
+            char_row = conn.execute("SELECT level FROM characters WHERE name = ? LIMIT 1", (target,)).fetchone()
+            t_level = char_row["level"] if (char_row and char_row["level"]) else None
+            if not t_level:
+                lvl_row = conn.execute("""
+                    SELECT CASE 
+                        WHEN killer_name = ? THEN killer_level 
+                        ELSE victim_level 
+                    END as lvl
+                    FROM kills 
+                    WHERE killer_name = ? OR victim_name = ?
+                    ORDER BY timestamp DESC LIMIT 1
+                """, (target, target, target)).fetchone()
+                if lvl_row and lvl_row["lvl"]:
+                    t_level = lvl_row["lvl"]
+
+            b["target_level"] = t_level or 60
+            b["targetLevel"] = b["target_level"]
+
+            # Dual camelCase & snake_case access
+            b["targetName"] = b.get("target_name")
+            b["targetClass"] = b.get("target_class")
+            b["targetFaction"] = b.get("target_faction")
+            b["placerName"] = b.get("placer_name")
+            b["amountCopper"] = b.get("amount_copper")
+            b["amountGold"] = b.get("amount_gold")
+
             last_kill = conn.execute("""
                 SELECT timestamp, zone, subzone
                 FROM kills
