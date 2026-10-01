@@ -1412,6 +1412,21 @@ def admin_reset():
     if req_secret != ADMIN_SECRET_KEY:
         return jsonify({"error": "Unauthorized: Invalid administrative secret key."}), 403
 
+    target = None
+    if request.is_json:
+        target = request.json.get("target")
+    if not target:
+        target = request.args.get("target") or request.form.get("target") or "all"
+
+    if target == "pve":
+        with get_db() as conn:
+            conn.execute("DELETE FROM pve_deaths")
+            conn.commit()
+        return jsonify({
+            "success": True,
+            "message": "All synthetic and recorded PvE mortality records have been completely purged."
+        }), 200
+
     wipe_database()
     return jsonify({
         "success": True,

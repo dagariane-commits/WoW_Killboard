@@ -683,8 +683,32 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         end
     end
 
-    -- Only proceed if there was at least one attacker
-    if #attackersList == 0 then return end
+    -- Only proceed if there was at least one attacker, or if the local player died (fatal fall / environment)
+    if #attackersList == 0 then
+        if playerGUID and victimGUID == playerGUID then
+            local pClass = select(2, UnitClass("player"))
+            KB.Killmail:RecordPveDeath({
+                timestamp = now,
+                npc = {
+                    name = "Environmental Hazard",
+                    id = 0,
+                    guid = "ENVIRONMENT",
+                    spell = "Fatal Impact / Mishap",
+                    damage = 0,
+                },
+                victim = {
+                    guid = playerGUID,
+                    name = UnitName("player"),
+                    level = UnitLevel("player") or 0,
+                    class = pClass or "UNKNOWN",
+                    guild = (not InCombatLockdown() and GetGuildInfo("player")) or "None",
+                    faction = UnitFactionGroup("player") or "Unknown",
+                },
+                location = KB.Utils.GetPlayerLocation(),
+            })
+        end
+        return
+    end
 
     -- Check if this was a pure PvE execution (player died with ZERO player attackers)
     if not hasPlayerAttacker then
@@ -1977,6 +2001,10 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 KB.UnitScanner:InferClassFromSpell(sourceGUID, sourceName, spellName)
             end
             CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, amount or 0, spellName)
+        elseif subevent == "ENVIRONMENTAL_DAMAGE" then
+            local environmentalType, amount = select(12, GetCombatLogPayload(...))
+            local hazardName = environmentalType or "Environmental Hazard"
+            CT:RecordDamage(timestamp, "Environment", hazardName, 0, destGUID, destName, destFlags, amount or 0, hazardName)
         elseif subevent == "SPELL_HEAL" or subevent == "SPELL_PERIODIC_HEAL" then
             local spellId, spellName, _, amount = select(12, GetCombatLogPayload(...))
             if KB.UnitScanner and KB.UnitScanner.InferClassFromSpell then
