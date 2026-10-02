@@ -135,3 +135,25 @@ Guilds and communities can stream real-time kills to their Discord server by hoo
 }
 ```
 This turns any guild's Discord server into a live PvP War Room.
+
+---
+
+## 6. GitHub Security & Automated CI/CD Protocol
+
+The repository is hardened with GitHub Advanced Security and continuous verification workflows:
+
+### A. GitHub Advanced Security CodeQL Scanning (`.github/workflows/codeql.yml`)
+- **Matrix Analysis**: Performs deep AST code analysis across Python (backend services, API routes, data parser) and JavaScript (interactive web portal UI).
+- **Automated Triggers**: Runs on every pull request and push targeting `main`, as well as a weekly automated Monday cron audit (`0 12 * * 1`).
+- **SARIF Alert Integration**: Automatically publishes vulnerability findings directly to GitHub Security Center.
+
+### B. Secret Scanning & Push Protection
+- **Status**: Enabled across the repository.
+- **Push Protection**: Blocks commits containing accidentally exposed tokens, Discord webhook URLs, or cloud credentials before they reach the remote repository.
+- **OpSec Guardrails**: Telemetry payloads and server configs strictly utilize environment variables (`DISCORD_DEFENSE_WEBHOOK_URL`, `ADMIN_SECRET_KEY`) or local untracked config files (`wowkb_sync_config.json`).
+
+### C. Continuous Integration Test Suite (`.github/workflows/ci.yml`)
+- **Automated Verification**: Automatically runs on every push and PR using Python 3.12 on `ubuntu-latest`.
+- **Lua Validation**: Executes `tests/validate_lua.py` to ensure all 13 addon modules compile cleanly with zero syntax errors or Blizzard UI taint.
+- **Unit Testing**: Executes `python -m unittest discover tests` to guarantee 100% test passing across the 20-point regression suite.
+

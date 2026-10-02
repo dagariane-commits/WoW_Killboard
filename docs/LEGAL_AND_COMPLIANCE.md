@@ -15,7 +15,7 @@ Blizzard Entertainment established formal rules governing World of Warcraft UI c
 | Blizzard Policy Requirement | How WoW Killboard Complies | Status |
 | :--- | :--- | :--- |
 | **1. Free of Charge** | The addon is 100% free. No user is ever charged to download, install, access, or configure the in-game addon. | **COMPLIANT** |
-| **2. Visible & Open Source Code** | All 10 Lua files and TOC manifests are completely un-obfuscated, un-encrypted plain text. Full source code is public under GPLv3. | **COMPLIANT** |
+| **2. Visible & Open Source Code** | All 13 Lua files and TOC manifests are completely un-obfuscated, un-encrypted plain text. Full source code is public under GPLv3. | **COMPLIANT** |
 | **3. Zero Negative Impact on Game** | Addon operates purely within Blizzard's Lua sandbox. Does not automate gameplay, bot, or generate excessive network traffic. Zero UI taint. | **COMPLIANT** |
 | **4. No In-Game Commercial Ads** | No advertisements, sponsors, or commercial banners are displayed inside the World of Warcraft client. | **COMPLIANT** |
 | **5. No In-Game Donation Solicitations** | The addon contains zero donation solicitations or paywalls within the game client. | **COMPLIANT** |
