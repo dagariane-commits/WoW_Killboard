@@ -5,6 +5,24 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.98] - 2026-10-02
+
+### Added
+- **Dynamic PvE Realm Sidebar Telemetry & Card Adaptation (`web/server.py`, `web/static/app.js`, `web/static/index.html`, `tests/test_pipeline.py`)**:
+  - Remediated root cause where PvE realms displayed empty stats, 0-kill classes, or mislabeled Environmental Hazards and lethal creatures as "Top Active Gankers".
+  - Backend (`/api/stats/activity-7d?server=PVE`): dynamically detects PvE realms and queries `pve_deaths`:
+    - Lifetime Total Casualties, Alliance Fallen, Horde Fallen, and Active Mortals.
+    - Deadliest Zones ranked by player casualties.
+    - Deadliest Monsters & Hazards (Apex Predators) tracking creature kills and environmental hazards with `${slain} slain`.
+    - Guild Casualties (Last 24h) tracking casualties suffered by player guilds.
+    - Casualties by Class tracking fallen adventurers across all base classes.
+    - Deadliest Creature Spells tracking lethal mob abilities and hazardous impacts.
+  - Frontend (`app.js`, `index.html`): dynamically adapts table labels and card titles ("Deadliest Monsters & Hazards", "Casualties by Class", "Guild Casualties (24 Hours)", "Deadliest Creature Spells"), eliminating premature event return and restoring full sidebar vitality on PvE realms.
+- **CurseForge 'wkb' Search & Direct Link Hub (`Addon/WoWKillboard/UI.lua`, `Addon/WoWKillboard/Core.lua`)**:
+  - Enhanced promotional chat macros in `UI:ShowPromoModal()` with explicit calls to action: search `wkb` in the CurseForge App or visit `https://www.curseforge.com/wow/addons/wkb`.
+  - Added dedicated 5th 1-click copy box for the direct CurseForge link.
+  - Updated in-game login chat banner and welcome modal to promote `wkb` on CurseForge.
+
 ## [1.4.97] - 2026-10-02
 
 ### Added

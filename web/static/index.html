@@ -209,23 +209,23 @@
         <table class="activity-table">
           <tbody>
             <tr>
-              <td>Total Kills</td>
+              <td id="act-label-kills">Total Kills</td>
               <td id="act-7d-kills" class="act-val" style="color:var(--accent-green); font-weight:800;">--</td>
             </tr>
             <tr>
-              <td>Alliance Kills</td>
+              <td id="act-label-alliance">Alliance Kills</td>
               <td id="act-7d-alliance" class="act-val" style="color:var(--alliance-blue);">--</td>
             </tr>
             <tr>
-              <td>Horde Kills</td>
+              <td id="act-label-horde">Horde Kills</td>
               <td id="act-7d-horde" class="act-val" style="color:var(--horde-red);">--</td>
             </tr>
             <tr>
-              <td>Active Characters</td>
+              <td id="act-label-chars">Active Characters</td>
               <td id="act-7d-chars" class="act-val">--</td>
             </tr>
             <tr>
-              <td>Active Guilds</td>
+              <td id="act-label-guilds">Active Guilds</td>
               <td id="act-7d-guilds" class="act-val">--</td>
             </tr>
           </tbody>
@@ -235,7 +235,7 @@
       <!-- Deadliest Zones (Last 24 Hours) -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">Deadliest Zones (24 Hours)</div>
+          <div class="section-title" id="sidebar-title-zones">Deadliest Zones (24 Hours)</div>
         </div>
         <div id="sidebar-24h-zones" class="sidebar-rank-list">
           <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
@@ -245,7 +245,7 @@
       <!-- Top Active Gankers (Last 24 Hours) -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">Top Active Gankers (24 Hours)</div>
+          <div class="section-title" id="sidebar-title-characters">Top Active Gankers (24 Hours)</div>
         </div>
         <div id="sidebar-24h-characters" class="sidebar-rank-list">
           <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
@@ -255,7 +255,7 @@
       <!-- Top Active Guilds (Last 24 Hours) -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">Top Active Guilds (24 Hours)</div>
+          <div class="section-title" id="sidebar-title-guilds">Top Active Guilds (24 Hours)</div>
         </div>
         <div id="sidebar-24h-guilds" class="sidebar-rank-list">
           <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
@@ -265,7 +265,7 @@
       <!-- All Classes -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">All Classes</div>
+          <div class="section-title" id="sidebar-title-classes">All Classes</div>
         </div>
         <div id="sidebar-top-classes" class="sidebar-rank-list">
           <!-- Populated by app.js -->
@@ -275,7 +275,7 @@
       <!-- Top Active Specs -->
       <div class="sidebar-card">
         <div class="section-header">
-          <div class="section-title">Top Active Specs</div>
+          <div class="section-title" id="sidebar-title-specs">Top Active Specs</div>
         </div>
         <div id="sidebar-top-specs" class="sidebar-rank-list">
           <!-- Populated by app.js -->

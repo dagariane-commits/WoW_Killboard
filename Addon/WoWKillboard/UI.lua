@@ -4966,7 +4966,7 @@ function UI:ShowWelcomeModal(isManual)
             "To stream kills to the web leaderboard (wowkillboard.com) and download rival bounties, run our companion app: WoWKillboardSync.exe. Place it anywhere (Desktop or WoW folder) and double-click to run while playing!")
 
         AddNotice(inset, -158, "3. Promote & Share With Guild & Realm (/kb promo)", "ff00e5ff",
-            "Want to track duels or world PvP with friends and rivals? Click [📢 Promo Macros] below or type /kb promo to view ready-to-copy chat macros for Trade, Duels, and World PvP!")
+            "Want to track duels or world PvP with friends and rivals? Search 'wkb' on the CurseForge App, visit https://www.curseforge.com/wow/addons/wkb, or click [📢 Promo Macros] below for ready-to-use macros!")
 
         -- Web Download & Feedback Link Section
         local linkTitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -5103,8 +5103,8 @@ function UI:ShowPromoModal()
 
     if not UI.PromoDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(660, 540)
-        dlg:SetPoint("CENTER", 0, 30)
+        dlg:SetSize(680, 620)
+        dlg:SetPoint("CENTER", 0, 20)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(115)
         dlg:EnableMouse(true)
@@ -5148,17 +5148,18 @@ function UI:ShowPromoModal()
 
         local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         sub:SetPoint("TOPLEFT", 16, -34)
-        sub:SetText("|cff38bdf8Click inside any macro box to select, press Ctrl+C, then paste into your WoW Macro panel (/m)!|r")
+        sub:SetText("|cff38bdf8Click inside any macro box to select, press Ctrl+C, then paste into your WoW Macro panel (/m)! Search 'wkb' on CurseForge!|r")
 
-        local function CreateMacroEntry(parent, yOffset, labelText, labelColor, macroText)
+        local function CreateMacroEntry(parent, yOffset, labelText, labelColor, macroText, boxHeight)
+            local h = boxHeight or 44
             local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             lbl:SetPoint("TOPLEFT", 16, yOffset)
             lbl:SetText(string.format("|c%s%s|r", labelColor, labelText))
 
             local box = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-            box:SetPoint("TOPLEFT", 16, yOffset - 18)
-            box:SetPoint("TOPRIGHT", -16, yOffset - 18)
-            box:SetHeight(46)
+            box:SetPoint("TOPLEFT", 16, yOffset - 17)
+            box:SetPoint("TOPRIGHT", -16, yOffset - 17)
+            box:SetHeight(h)
             box:SetBackdrop({
                 bgFile = "Interface\\Buttons\\WHITE8X8",
                 edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -5182,22 +5183,25 @@ function UI:ShowPromoModal()
         end
 
         CreateMacroEntry(dlg, -56, "1. General & Trade Channel (City & Zone Recruitment):", "ffffd100",
-            "/1 [WoW Killboard] Track all open-world PvP kills, 1v1 duels, bounties, & death recaps! Live realm leaderboards at wowkillboard.com — grab the early beta on CurseForge & share feedback!")
+            "/1 [WoW Killboard] Track open-world PvP kills, duels, bounties, & death recaps! Live realm stats at wowkillboard.com — search \"wkb\" on CurseForge App or visit https://www.curseforge.com/wow/addons/wkb")
 
-        CreateMacroEntry(dlg, -130, "2. Post-Duel / Friendly Challenge (Say or Whisper):", "ff00e5ff",
-            "/s Gg! Recording duel stats, solo takedowns, and bounty contracts on WoW Killboard. Check out your combat profile and leaderboard rank at wowkillboard.com or on CurseForge!")
+        CreateMacroEntry(dlg, -126, "2. Post-Duel / Friendly Challenge (Say or Whisper):", "ff00e5ff",
+            "/s Gg! Recording duel stats, solo takedowns, and bounty contracts on WoW Killboard. Check out your combat profile at wowkillboard.com or search \"wkb\" on CurseForge!")
 
-        CreateMacroEntry(dlg, -204, "3. Guild & PvP Squad Chat (Recruitment & Linking):", "ff10b981",
-            "/g Hey team! I'm running WoW Killboard to track our world PvP kills, bounty targets, & defense calls across the realm. Grab the addon on CurseForge or wowkillboard.com so we can link kills!")
+        CreateMacroEntry(dlg, -196, "3. Guild & PvP Squad Chat (Recruitment & Linking):", "ff10b981",
+            "/g Hey team! Running WoW Killboard to track our world PvP kills, bounties, & defense calls. Search \"wkb\" on CurseForge or grab at https://www.curseforge.com/wow/addons/wkb!")
 
-        CreateMacroEntry(dlg, -278, "4. Open-World Battle Cry (Yell):", "ffff4444",
-            "/y Another one for the Blood Ledger! Check the kill stats & realm bounties at wowkillboard.com (WoW Killboard on CurseForge).")
+        CreateMacroEntry(dlg, -266, "4. Open-World Battle Cry (Yell):", "ffff4444",
+            "/y Another one for the Blood Ledger! Check kill stats & bounties at wowkillboard.com (search \"wkb\" on CurseForge App).")
+
+        CreateMacroEntry(dlg, -336, "5. Direct CurseForge Link (Search 'wkb' in CurseForge App):", "ff38bdf8",
+            "https://www.curseforge.com/wow/addons/wkb", 30)
 
         -- Tip Note Box
         local tipBox = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
-        tipBox:SetPoint("TOPLEFT", 16, -356)
-        tipBox:SetPoint("TOPRIGHT", -16, -356)
-        tipBox:SetHeight(80)
+        tipBox:SetPoint("TOPLEFT", 16, -412)
+        tipBox:SetPoint("TOPRIGHT", -16, -412)
+        tipBox:SetHeight(92)
         tipBox:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -5212,7 +5216,7 @@ function UI:ShowPromoModal()
         tipText:SetJustifyH("LEFT")
         tipText:SetJustifyV("TOP")
         tipText:SetWordWrap(true)
-        tipText:SetText("|cffffd100How to create in-game macros in WoW:|r\n1. Type |cffffff00/macro|r or |cffffff00/m|r in chat to open your Macro panel.\n2. Click |cff00e5ffNew|r, pick an icon, and name it.\n3. Click into any box above, press |cffffff00Ctrl+C|r to copy, and paste with |cffffff00Ctrl+V|r into the Macro text box.\n4. Drag the macro icon directly to your action bar for 1-click use in-game!")
+        tipText:SetText("|cffffd100How to create in-game macros & share:|r\n1. Type |cffffff00/macro|r or |cffffff00/m|r in chat to open your Macro panel, click |cff00e5ffNew|r, and paste with |cffffff00Ctrl+V|r.\n2. Drag the macro icon directly to your action bar for 1-click chat broadcast!\n3. Search |cffffff00wkb|r in the |cff38bdf8CurseForge Desktop App|r or visit |cffffff00https://www.curseforge.com/wow/addons/wkb|r!")
 
         local closeBtn = UI:CreateButton(dlg, 120, 26, "Got It!", "GameFontHighlightSmall")
         closeBtn:SetPoint("BOTTOMRIGHT", -16, 14)

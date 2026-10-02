@@ -508,6 +508,14 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertIn("topZones", act_data)
         self.assertGreater(act_data["kills"], 0)
 
+        # 6b. Check PvE Dedicated Telemetry
+        res_pve = self.client.get("/api/stats/activity-7d?server=PVE")
+        self.assertEqual(res_pve.status_code, 200)
+        pve_act = res_pve.get_json()
+        self.assertTrue(pve_act.get("isPve"))
+        self.assertIn("topSpecs", pve_act)
+        self.assertIn("topGankers24h", pve_act)
+
         # 7. Check StreamBox OBS Overlay endpoint
         res_sb = self.client.get("/streambox/Hawkeye")
         self.assertEqual(res_sb.status_code, 200)
