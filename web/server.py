@@ -431,7 +431,7 @@ def feedback_page():
 def static_files(path):
     return send_from_directory(STATIC_DIR, path)
 
-CURSEFORGE_PROJECT_URL = "https://www.curseforge.com/wow/addons/wkb-frontline-war-room"
+CURSEFORGE_PROJECT_URL = "https://www.curseforge.com/wow/addons/wkb"
 
 @app.route("/WoWKillboard-v1.0.0.zip")
 @app.route("/download")
