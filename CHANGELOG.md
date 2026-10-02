@@ -5,6 +5,24 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.95] - 2026-10-02
+
+### Added
+- **In-Game Promotional Macros & Community Sharing Hub (`Core.lua`, `UI.lua`)**:
+  - Registered `/kb promo`, `/kb macro`, and `/kb share` slash commands to open a 100% taint-free promotional macro hub.
+  - Implemented `UI:ShowPromoModal()` with 1-click copyable macro boxes for General/Trade channel promotion, post-duel sportsmanship messages, guild/squad recruitment, and open-world PvP yells.
+  - Added step-by-step instructions on creating in-game macros via `/macro` and dragging to action bars.
+- **Login Notification & Welcome Dialog Sync Clarification (`Core.lua`, `UI.lua`)**:
+  - Enhanced in-game login chat message to inform players that combat tracking runs 100% offline out-of-the-box, but global web leaderboards and realm bounty downloads require `WoWKillboardSync.exe`.
+  - Redesigned `UI:ShowWelcomeModal()`: increased size to 620x520, added dedicated cards explaining local tracking vs. global sync, added direct link to `https://wowkillboard.com/download`, and linked the Promo Macros modal.
+- **Desktop Sync App Startup Guide & Windows Startup Support (`sync/watcher.py`, `WoWKillboardSync.exe`)**:
+  - Upgraded standalone `WoWKillboardSync.exe` to v1.0.0-beta.7 with a comprehensive guided startup banner.
+  - Added explicit instructions on where players can place the executable (Desktop, Downloads, or WoW directory) and how automated multi-drive auto-discovery works.
+  - Added Windows Startup auto-run integration (`--startup`, `--no-startup`) via `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
+  - Added interactive prompt when WoW installation is not detected in standard paths, saving custom paths automatically to `wowkb_sync_config.json`.
+  - Added crash-proof console window pause on unhandled exceptions so double-clicking the EXE won't flash and close on error.
+  - Recompiled standalone `WoWKillboardSync.exe` via PyInstaller and mirrored across distribution endpoints.
+
 ## [1.4.93] - 2026-10-02
 
 ### Added

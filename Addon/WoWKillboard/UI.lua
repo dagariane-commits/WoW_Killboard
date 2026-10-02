@@ -4863,7 +4863,7 @@ function UI:ShowWelcomeModal(isManual)
 
     if not UI.WelcomeDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(580, 480)
+        dlg:SetSize(620, 520)
         dlg:SetPoint("CENTER", 0, 30)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(110)
@@ -4924,7 +4924,7 @@ function UI:ShowWelcomeModal(isManual)
         local inset = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
         inset:SetPoint("TOPLEFT", 16, -54)
         inset:SetPoint("TOPRIGHT", -16, -54)
-        inset:SetHeight(230)
+        inset:SetHeight(250)
         inset:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -4947,23 +4947,23 @@ function UI:ShowWelcomeModal(isManual)
             return bodyFs
         end
 
-        AddNotice(inset, -10, "1. Early Stage Development Notice", "ffffd100",
-            "Welcome to the early preview build of WoW Killboard! We are actively designing, refining, and tuning combat telemetry, 1v1 solo detection, The Blood Ledger bounties, and two-way realm sync. Expect rapid development, balance tweaks, and new features.")
+        AddNotice(inset, -10, "1. Local Combat Tracking (100% In-Game)", "ff10b981",
+            "WoW Killboard automatically records all your PvP kills, 1v1 duels, battlegrounds, bounties, and PvE deaths directly in-game. Zero external dependencies are needed for your personal battle log!")
 
-        AddNotice(inset, -82, "2. Feel Free to Share Forward", "ff00e5ff",
-            "If you received this addon from a friend, guildmate, or fellow combatant, you are warmly encouraged to share it forward! Send it to anyone on your realm who enjoys World PvP, Duels, Battlegrounds, or tracking local guild wars.")
+        AddNotice(inset, -82, "2. Global Web Sync Requires WoWKillboardSync.exe", "ffffd100",
+            "To stream kills to the web leaderboard (wowkillboard.com) and download rival bounties, run our companion app: WoWKillboardSync.exe. Place it anywhere (Desktop or WoW folder) and double-click to run while playing!")
 
-        AddNotice(inset, -154, "3. Your Feedback Shapes the Addon", "ff10b981",
-            "Player feedback directly steers our priorities. Whether you notice an issue, have an idea for a feature, or want to suggest UI improvements, please share your thoughts via the in-game feedback tool or our web feedback portal.")
+        AddNotice(inset, -158, "3. Promote & Share With Guild & Realm (/kb promo)", "ff00e5ff",
+            "Want to track duels or world PvP with friends and rivals? Click [📢 Promo Macros] below or type /kb promo to view ready-to-copy chat macros for Trade, Duels, and World PvP!")
 
-        -- Web Feedback Link Section
+        -- Web Download & Feedback Link Section
         local linkTitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        linkTitle:SetPoint("TOPLEFT", 16, -294)
-        linkTitle:SetText("|cffffd100Web Feedback Link (Click & press Ctrl+C to copy):|r")
+        linkTitle:SetPoint("TOPLEFT", 16, -314)
+        linkTitle:SetText("|cffffd100Companion Sync Download & Web Link (Click & press Ctrl+C to copy):|r")
 
         local linkBox = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
-        linkBox:SetPoint("TOPLEFT", 16, -314)
-        linkBox:SetPoint("TOPRIGHT", -16, -314)
+        linkBox:SetPoint("TOPLEFT", 16, -334)
+        linkBox:SetPoint("TOPRIGHT", -16, -334)
         linkBox:SetHeight(24)
         linkBox:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -4979,7 +4979,7 @@ function UI:ShowWelcomeModal(isManual)
         eb:SetFontObject("GameFontHighlightSmall")
         eb:SetAutoFocus(false)
         eb:EnableMouse(true)
-        eb:SetText("https://wowkillboard.com/feedback")
+        eb:SetText("https://wowkillboard.com/download")
         eb:SetScript("OnEditFocusGained", function(self)
             self:HighlightText()
         end)
@@ -4989,11 +4989,11 @@ function UI:ShowWelcomeModal(isManual)
         eb:SetScript("OnEscapePressed", function(self)
             self:ClearFocus()
         end)
-        dlg.FeedbackUrlEditBox = eb
+        dlg.DownloadUrlEditBox = eb
 
-        -- In-Game Feedback & Dashboard Buttons Row
-        local inGameFbBtn = UI:CreateButton(dlg, 240, 26, "|cff00e5ff[+] Submit In-Game Feedback|r", "GameFontHighlightSmall")
-        inGameFbBtn:SetPoint("TOPLEFT", 16, -348)
+        -- Buttons Row: Feedback, Promo Macros, Open Dashboard
+        local inGameFbBtn = UI:CreateButton(dlg, 180, 26, "|cff00e5ff[+] Feedback (/kb bug)|r", "GameFontHighlightSmall")
+        inGameFbBtn:SetPoint("TOPLEFT", 16, -368)
         inGameFbBtn:SetScript("OnClick", function()
             if dlg.DoNotShowAgain then
                 WoWKillboardSettings = WoWKillboardSettings or {}
@@ -5005,8 +5005,16 @@ function UI:ShowWelcomeModal(isManual)
             end
         end)
 
-        local openKbBtn = UI:CreateButton(dlg, 170, 26, "|cffffd100Open Killboard (/kb)|r", "GameFontHighlightSmall")
-        openKbBtn:SetPoint("LEFT", inGameFbBtn, "RIGHT", 10, 0)
+        local promoBtn = UI:CreateButton(dlg, 200, 26, "|cffffd100[📢] Promo Macros (/kb promo)|r", "GameFontHighlightSmall")
+        promoBtn:SetPoint("LEFT", inGameFbBtn, "RIGHT", 8, 0)
+        promoBtn:SetScript("OnClick", function()
+            if UI.ShowPromoModal then
+                UI:ShowPromoModal()
+            end
+        end)
+
+        local openKbBtn = UI:CreateButton(dlg, 180, 26, "|cff10b981Open Killboard (/kb)|r", "GameFontHighlightSmall")
+        openKbBtn:SetPoint("LEFT", promoBtn, "RIGHT", 8, 0)
         openKbBtn:SetScript("OnClick", function()
             if dlg.DoNotShowAgain then
                 WoWKillboardSettings = WoWKillboardSettings or {}
@@ -5067,11 +5075,152 @@ function UI:ShowWelcomeModal(isManual)
 
     local dlg = UI.WelcomeDialog
     local domain = (KB.WebDomain and KB.WebDomain ~= "") and KB.WebDomain or "wowkillboard.com"
-    if dlg.FeedbackUrlEditBox then
-        dlg.FeedbackUrlEditBox:SetText(string.format("https://%s/feedback", domain))
+    if dlg.DownloadUrlEditBox then
+        dlg.DownloadUrlEditBox:SetText(string.format("https://%s/download", domain))
     end
     dlg:Show()
     if dlg.Raise then dlg:Raise() end
+end
+
+-- Promotional Macros & Community Sharing Modal (100% Taint-Free)
+function UI:ShowPromoModal()
+    if InCombatLockdown and InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot open Promotional Macros window during combat.")
+        return
+    end
+
+    if not UI.PromoDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(660, 540)
+        dlg:SetPoint("CENTER", 0, 30)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(115)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+        dlg:SetMovable(true)
+
+        dlg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        dlg:SetBackdropColor(0.06, 0.08, 0.12, 0.98)
+        dlg:SetBackdropBorderColor(0.85, 0.68, 0.22, 1.0)
+
+        -- Header Drag Bar
+        local header = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        header:SetPoint("TOPLEFT", 1, -1)
+        header:SetPoint("TOPRIGHT", -1, -1)
+        header:SetHeight(28)
+        header:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8" })
+        header:SetBackdropColor(0.12, 0.09, 0.06, 0.98)
+        header:EnableMouse(true)
+        header:RegisterForDrag("LeftButton")
+        header:SetScript("OnDragStart", function() if not InCombatLockdown() then dlg:StartMoving() end end)
+        header:SetScript("OnDragStop", function() dlg:StopMovingOrSizing() end)
+        dlg.Header = header
+
+        local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("LEFT", 12, 0)
+        title:SetText("|cffffd100WoW KILLBOARD  -  PROMOTIONAL CHAT MACROS|r")
+        dlg.Title = title
+
+        local closeX = CreateFrame("Button", nil, header)
+        closeX:SetSize(22, 22)
+        closeX:SetPoint("RIGHT", -4, 0)
+        local closeXText = closeX:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        closeXText:SetPoint("CENTER", 0, 0)
+        closeXText:SetText("|cffff4444X|r")
+        closeX:SetScript("OnClick", function() dlg:Hide() end)
+
+        local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        sub:SetPoint("TOPLEFT", 16, -34)
+        sub:SetText("|cff38bdf8Click inside any macro box to select, press Ctrl+C, then paste into your WoW Macro panel (/m)!|r")
+
+        local function CreateMacroEntry(parent, yOffset, labelText, labelColor, macroText)
+            local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            lbl:SetPoint("TOPLEFT", 16, yOffset)
+            lbl:SetText(string.format("|c%s%s|r", labelColor, labelText))
+
+            local box = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+            box:SetPoint("TOPLEFT", 16, yOffset - 18)
+            box:SetPoint("TOPRIGHT", -16, yOffset - 18)
+            box:SetHeight(46)
+            box:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+            })
+            box:SetBackdropColor(0.02, 0.04, 0.08, 0.95)
+            box:SetBackdropBorderColor(0.25, 0.35, 0.50, 0.9)
+
+            local eb = CreateFrame("EditBox", nil, box)
+            eb:SetPoint("TOPLEFT", 8, -4)
+            eb:SetPoint("BOTTOMRIGHT", -8, 4)
+            eb:SetFontObject("GameFontHighlightSmall")
+            eb:SetMultiLine(true)
+            eb:SetAutoFocus(false)
+            eb:EnableMouse(true)
+            eb:SetText(macroText)
+            eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+            eb:SetScript("OnMouseUp", function(self) self:HighlightText() end)
+            eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+            return box
+        end
+
+        CreateMacroEntry(dlg, -56, "1. General & Trade Channel (City & Zone Recruitment):", "ffffd100",
+            "/1 [WoW Killboard] Track all open-world PvP kills, 1v1 duels, bounties, & death recaps! Live realm leaderboards at wowkillboard.com — grab the early beta on CurseForge & share feedback!")
+
+        CreateMacroEntry(dlg, -130, "2. Post-Duel / Friendly Challenge (Say or Whisper):", "ff00e5ff",
+            "/s Gg! Recording duel stats, solo takedowns, and bounty contracts on WoW Killboard. Check out your combat profile and leaderboard rank at wowkillboard.com or on CurseForge!")
+
+        CreateMacroEntry(dlg, -204, "3. Guild & PvP Squad Chat (Recruitment & Linking):", "ff10b981",
+            "/g Hey team! I'm running WoW Killboard to track our world PvP kills, bounty targets, & defense calls across the realm. Grab the addon on CurseForge or wowkillboard.com so we can link kills!")
+
+        CreateMacroEntry(dlg, -278, "4. Open-World Battle Cry (Yell):", "ffff4444",
+            "/y Another one for the Blood Ledger! Check the kill stats & realm bounties at wowkillboard.com (WoW Killboard on CurseForge).")
+
+        -- Tip Note Box
+        local tipBox = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        tipBox:SetPoint("TOPLEFT", 16, -356)
+        tipBox:SetPoint("TOPRIGHT", -16, -356)
+        tipBox:SetHeight(80)
+        tipBox:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        tipBox:SetBackdropColor(0.04, 0.05, 0.08, 0.95)
+        tipBox:SetBackdropBorderColor(0.85, 0.68, 0.22, 0.6)
+
+        local tipText = tipBox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        tipText:SetPoint("TOPLEFT", 10, -8)
+        tipText:SetPoint("BOTTOMRIGHT", -10, 8)
+        tipText:SetJustifyH("LEFT")
+        tipText:SetJustifyV("TOP")
+        tipText:SetWordWrap(true)
+        tipText:SetText("|cffffd100How to create in-game macros in WoW:|r\n1. Type |cffffff00/macro|r or |cffffff00/m|r in chat to open your Macro panel.\n2. Click |cff00e5ffNew|r, pick an icon, and name it.\n3. Click into any box above, press |cffffff00Ctrl+C|r to copy, and paste with |cffffff00Ctrl+V|r into the Macro text box.\n4. Drag the macro icon directly to your action bar for 1-click use in-game!")
+
+        local closeBtn = UI:CreateButton(dlg, 120, 26, "Got It!", "GameFontHighlightSmall")
+        closeBtn:SetPoint("BOTTOMRIGHT", -16, 14)
+        closeBtn:SetScript("OnClick", function() dlg:Hide() end)
+
+        -- ESC handler
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                self:SetPropagateKeyboardInput(false)
+                self:Hide()
+            else
+                self:SetPropagateKeyboardInput(true)
+            end
+        end)
+
+        UI.PromoDialog = dlg
+    end
+
+    UI.PromoDialog:Show()
+    if UI.PromoDialog.Raise then UI.PromoDialog:Raise() end
 end
 
 -- ============================================================================

@@ -241,7 +241,9 @@ function KB:Initialize()
     KB:CreateMinimapButton()
 
     SafePrint(string.format("|cff00ccff[WKB]|r |cffffd100WoW Killboard v%s (Beta)|r loaded.", KB.Version))
-    SafePrint("|cff00ff00Welcome to Early Community Testing!|r Type |cffffd100/kb|r to open your killboard. Hope you like it — let me know your feedback so I can enhance it!")
+    SafePrint("|cff00ff00[Local Tracking]|r All PvP kills, 1v1 duels, bounties, and PvE deaths track 100% offline in-game.")
+    SafePrint("|cffffd100[Global Sync]|r To upload kills to wowkillboard.com & sync realm data, run |cff00e5ffWoWKillboardSync.exe|r (|cffffff00https://wowkillboard.com/download|r).")
+    SafePrint("Commands: |cffffd100/kb|r (Dashboard) | |cffffd100/kb promo|r (Promotional Macros) | |cffffd100/kb feedback|r (Feedback)")
 end
 
 -- Slash Commands (Support /killboard, /wowkb, and /kb)
@@ -782,9 +784,20 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         else
             KB:SubmitBugReport(cleanArg)
         end
+    elseif cmd == "promo" or cmd == "macro" or cmd == "macros" or cmd == "share" then
+        if KB.UI and KB.UI.ShowPromoModal then
+            KB.UI:ShowPromoModal()
+        else
+            SafePrint("|cff00ccff[WoW Killboard] Promotional Macros for In-Game Sharing:|r")
+            SafePrint("  |cffffd100[1. General/Trade]:|r /1 [WoW Killboard] Track all your open-world PvP kills, 1v1 duels, bounties, & death recaps! Live realm leaderboards at wowkillboard.com — grab the early beta on CurseForge & share feedback!")
+            SafePrint("  |cffffd100[2. Post-Duel]:|r /s Gg! Recording duel stats, solo takedowns, and bounty contracts on WoW Killboard. Check out your combat profile and leaderboard rank at wowkillboard.com or on CurseForge!")
+            SafePrint("  |cffffd100[3. Guild/Party]:|r /g Hey team! I'm running WoW Killboard to track our world PvP kills, bounty targets, & defense calls across the realm. Grab the addon on CurseForge or wowkillboard.com so we can link kills!")
+            SafePrint("  |cffffd100[4. World PvP Yell]:|r /y Another one for the Blood Ledger! Check the kill stats & realm bounties at wowkillboard.com (WoW Killboard on CurseForge).")
+        end
     else
         SafePrint("|cff00ccffWoW Killboard: Frontline War Room Commands:|r")
         SafePrint("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
+        SafePrint("  |cffffd100/kb promo|r or |cffffd100/kb macro|r - Open Promotional In-Game Macros & Community Sharing Hub")
         SafePrint("  |cffffd100/kb welcome|r or |cffffd100/kb beta|r - Open Early Preview & Feedback Guide")
         SafePrint("  |cffffd100/kb feedback|r or |cffffd100/kb bug|r - Submit feedback or report an issue")
         SafePrint("  |cffffd100/kb wire|r or |cffffd100/kb feed|r - Toggle The Shadow Network floating feed window")

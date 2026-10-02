@@ -17,7 +17,7 @@ import urllib.request
 import urllib.error
 import ssl
 
-SYNC_VERSION = "1.0.0-beta.6"
+SYNC_VERSION = "1.0.0-beta.7"
 
 def safe_urlopen(req, timeout=5):
     """Executes urllib.request.urlopen with User-Agent and resilient SSL context (protects against clock-skew and expired certs)."""
@@ -1055,11 +1055,109 @@ class KillboardWatcher:
                 log_event("\n[Watcher] Stopped by user.")
                 break
 
+def normalize_wow_root(p: str) -> str:
+    """Normalizes a user-specified path to the root World of Warcraft folder."""
+    p = os.path.abspath(p).replace("\\", "/")
+    # If pointed directly at a flavor branch (_retail_, _classic_era_, etc.)
+    for flv in ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_", "_ptr_", "_classic_"]:
+        if p.endswith("/" + flv):
+            return os.path.dirname(p)
+    # If pointed at WTF or Interface
+    if p.endswith("/WTF") or p.endswith("/Interface"):
+        parent = os.path.dirname(p)
+        for flv in ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_", "_ptr_", "_classic_"]:
+            if parent.endswith("/" + flv):
+                return os.path.dirname(parent)
+        return parent
+    return p
+
+def save_config(config_dict: dict):
+    """Persists settings to wowkb_sync_config.json in the executable directory."""
+    base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    config_file = os.path.join(base_dir, "wowkb_sync_config.json")
+    try:
+        existing = {}
+        if os.path.exists(config_file):
+            with open(config_file, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+        existing.update(config_dict)
+        with open(config_file, "w", encoding="utf-8") as f:
+            json.dump(existing, f, indent=2)
+    except Exception as e:
+        log_event(f"[Config] Error writing config file: {e}")
+
+def load_config() -> dict:
+    """Reads settings from wowkb_sync_config.json."""
+    base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    config_file = os.path.join(base_dir, "wowkb_sync_config.json")
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def is_windows_startup_enabled() -> bool:
+    """Checks whether WoWKillboardSync is registered in Windows CurrentVersion/Run."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_READ)
+        try:
+            val, _ = winreg.QueryValueEx(key, "WoWKillboardSync")
+            winreg.CloseKey(key)
+            return bool(val)
+        except FileNotFoundError:
+            winreg.CloseKey(key)
+            return False
+    except Exception:
+        return False
+
+def set_windows_startup(enable: bool) -> bool:
+    """Enables or disables automatic startup on Windows boot."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
+        if enable:
+            exe_path = os.path.abspath(sys.argv[0])
+            if exe_path.endswith(".py"):
+                cmd = f'"{sys.executable}" "{exe_path}"'
+            else:
+                cmd = f'"{exe_path}"'
+            winreg.SetValueEx(key, "WoWKillboardSync", 0, winreg.REG_SZ, cmd)
+        else:
+            try:
+                winreg.DeleteValue(key, "WoWKillboardSync")
+            except FileNotFoundError:
+                pass
+        winreg.CloseKey(key)
+        return True
+    except Exception as e:
+        log_event(f"[Startup] Failed to configure Windows startup: {e}")
+        return False
+
 def find_all_wow_roots() -> list:
-    """Discovers all World of Warcraft base directories across drives and standard install paths."""
+    """Discovers all World of Warcraft base directories across drives, config file, and standard install paths."""
     import glob
     roots = []
-    drives = ["C:", "D:", "E:", "F:", "G:"]
+    
+    # 1. Check local config file for custom wow_path
+    cfg = load_config()
+    custom_path = cfg.get("wow_path")
+    if custom_path and os.path.exists(custom_path):
+        roots.append(normalize_wow_root(custom_path))
+
+    # 2. Check environment variable
+    env_wow = os.environ.get("WOW_PATH")
+    if env_wow and os.path.exists(env_wow):
+        roots.append(normalize_wow_root(env_wow))
+
+    # 3. Check all standard drives
+    drives = ["C:", "D:", "E:", "F:", "G:", "H:", "I:", "J:", "K:", "Z:"]
     patterns = [
         "{drive}/World of Warcraft",
         "{drive}/Program Files (x86)/World of Warcraft",
@@ -1075,7 +1173,7 @@ def find_all_wow_roots() -> list:
             if os.path.exists(p):
                 roots.append(os.path.abspath(p).replace("\\", "/"))
 
-    # Also check upward from the running executable / script directory
+    # 4. Check upward from the running executable / script directory
     base_dir = os.path.dirname(os.path.abspath(sys.argv[0])).replace("\\", "/")
     curr = base_dir
     for _ in range(5):
@@ -1143,7 +1241,6 @@ def auto_detect_saved_variables() -> str:
         return os.path.abspath("WoWKillboard.lua").replace("\\", "/")
     return ""
 
-SYNC_VERSION = "1.0.0-beta.6"
 DEFAULT_PROD_URL = "https://wowkillboard.com"
 DEFAULT_LOCAL_URL = "http://127.0.0.1:8080"
 
@@ -1162,16 +1259,9 @@ def resolve_api_endpoints(cli_arg: str = None, force_local: bool = False, force_
         return [env_url.rstrip("/")]
 
     # Check local config file next to executable / script
-    base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    config_file = os.path.join(base_dir, "wowkb_sync_config.json")
-    if os.path.exists(config_file):
-        try:
-            with open(config_file, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                if cfg.get("api_url"):
-                    return [cfg["api_url"].rstrip("/")]
-        except Exception:
-            pass
+    cfg = load_config()
+    if cfg.get("api_url"):
+        return [cfg["api_url"].rstrip("/")]
 
     # Default to dual broadcasting: Cloud Platform + Local Server (if reachable)
     endpoints = [DEFAULT_PROD_URL]
@@ -1185,19 +1275,66 @@ def resolve_api_endpoints(cli_arg: str = None, force_local: bool = False, force_
 
     return endpoints
 
-if __name__ == "__main__":
-    print("=" * 64)
-    print(f"  [WoW Killboard] Universal Multi-Client Sync v{SYNC_VERSION}")
-    print("  Automated Combat Telemetry & Marks of Spite Ingestion")
-    print("=" * 64)
+def print_startup_banner():
+    """Prints a friendly, informative startup guide for players running the standalone executable."""
+    startup_status = "ENABLED" if is_windows_startup_enabled() else "DISABLED"
+    print("=" * 70)
+    print(f"  WoW Killboard — Standalone Desktop Sync Agent v{SYNC_VERSION}")
+    print("  Official Website: https://wowkillboard.com | CurseForge: WoW Killboard")
+    print("=" * 70)
+    print("  [WHERE TO PLACE THIS FILE]")
+    print("    • You can place WoWKillboardSync.exe ANYWHERE on your computer!")
+    print("      (e.g., Desktop, Downloads, or inside your World of Warcraft folder)")
+    print("    • It automatically scans all drives (C:, D:, E:, F:, G:, etc.) for WoW.")
+    print()
+    print("  [HOW TO RUN & POINT IT AT WOW]")
+    print("    • Keep this window running in the background while playing World of Warcraft.")
+    print("    • Auto-discovery finds all your WoW clients (Classic, Era, Retail).")
+    print("    • If installed in a custom location, you will be prompted below, or")
+    print("      you can set it anytime using: WoWKillboardSync.exe --set-wow <path>")
+    print()
+    print("  [HOW COMBAT DATA SYNCS]")
+    print("    • The in-game addon tracks all your kills, duels, and bounties locally.")
+    print("    • Whenever you /reload, change characters, or exit WoW, this app")
+    print("      instantly uploads your kills to https://wowkillboard.com.")
+    print("    • Updated realm bounties and rival kills sync back into your game!")
+    print()
+    print(f"  [SYSTEM STATUS]")
+    print(f"    • Windows Auto-Start on Boot: [{startup_status}]")
+    print("      (Tip: Run with --startup to enable, or --no-startup to disable)")
+    print("=" * 70)
 
-    parser = argparse.ArgumentParser(description="WoWKillboard SavedVariables Watcher")
+def main():
+    parser = argparse.ArgumentParser(description="WoWKillboard Desktop Sync Agent")
     parser.add_argument("--file", "-f", default="", help="Path to WoWKillboard.lua (monitors ALL clients if omitted)")
     parser.add_argument("--api", "-a", default="", help="Web Killboard API URL (defaults to production)")
     parser.add_argument("--local", action="store_true", help="Force local development endpoint only (http://127.0.0.1:8080)")
     parser.add_argument("--cloud", "--render", action="store_true", help="Force cloud production endpoint only (https://wowkillboard.com)")
     parser.add_argument("--once", action="store_true", help="Run once and exit instead of continuous daemon")
+    parser.add_argument("--startup", action="store_true", help="Register WoWKillboardSync to run automatically on Windows boot")
+    parser.add_argument("--no-startup", "--remove-startup", action="store_true", help="Remove WoWKillboardSync from Windows startup")
+    parser.add_argument("--set-wow", default="", help="Save a custom World of Warcraft folder path to configuration")
     args = parser.parse_args()
+
+    print_startup_banner()
+
+    if args.startup:
+        if set_windows_startup(True):
+            print("[+] Windows Auto-Start has been ENABLED in Windows Registry.")
+        else:
+            print("[!] Could not enable Windows Auto-Start (non-Windows platform or permission denied).")
+
+    if getattr(args, 'no_startup', False) or getattr(args, 'remove_startup', False):
+        if set_windows_startup(False):
+            print("[+] Windows Auto-Start has been DISABLED.")
+
+    if args.set_wow:
+        if os.path.exists(args.set_wow):
+            norm = normalize_wow_root(args.set_wow)
+            save_config({"wow_path": norm})
+            print(f"[+] Saved custom WoW installation directory: {norm}")
+        else:
+            print(f"[!] Warning: Specified directory does not exist: {args.set_wow}")
 
     target_apis = resolve_api_endpoints(args.api, force_local=args.local, force_cloud=getattr(args, 'cloud', False))
     print(f"[*] Ingestion Target APIs: {', '.join(target_apis)}")
@@ -1208,6 +1345,25 @@ if __name__ == "__main__":
         log_event(f"[*] Monitoring user-specified file: {target_files[0]}")
     else:
         target_files = find_all_saved_variables()
+        if not target_files:
+            if sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty() and not args.once:
+                print("\n" + "!" * 70)
+                print("  [!] ATTENTION: World of Warcraft Directory Not Detected Automatically")
+                print("!" * 70)
+                print("  WoW Killboard looked in standard folders on drives C: through Z:")
+                print("  but did not find an active World of Warcraft installation.\n")
+                print("  Please type or paste your World of Warcraft directory path:")
+                print("  (Example: D:\\Games\\World of Warcraft or C:\\World of Warcraft)")
+                try:
+                    custom_in = input("  > ").strip().strip('"\'')
+                    if custom_in and os.path.exists(custom_in):
+                        norm = normalize_wow_root(custom_in)
+                        save_config({"wow_path": norm})
+                        print(f"  [+] Saved WoW path: {norm}")
+                        target_files = find_all_saved_variables()
+                except Exception:
+                    pass
+
         if target_files:
             log_event(f"[+] Discovered {len(target_files)} active WoW client/account SavedVariables:")
             for tf in target_files:
@@ -1223,4 +1379,20 @@ if __name__ == "__main__":
         watcher.sync_realm_data_to_client()
     else:
         watcher.run_daemon()
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n[Watcher] Exiting WoW Killboard Sync. Good hunting!")
+    except Exception as e:
+        print(f"\n[FATAL ERROR] An unexpected error occurred: {e}")
+        import traceback
+        traceback.print_exc()
+        if sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty():
+            try:
+                input("\nPress Enter to exit...")
+            except Exception:
+                pass
+
 
