@@ -232,7 +232,7 @@ class KillboardWatcher:
         elif isinstance(api_urls, str) and api_urls:
             self.api_urls = [api_urls.rstrip("/")]
         else:
-            self.api_urls = ["https://wowkillboard.com", "http://13.216.102.148", "http://127.0.0.1:8080"]
+            self.api_urls = ["https://wowkillboard.com", "http://127.0.0.1:8080"]
         self.api_url = ", ".join(self.api_urls)
         self.filepath = self.filepaths[0] if self.filepaths else ""
 
@@ -1067,7 +1067,7 @@ def auto_detect_saved_variables() -> str:
     return ""
 
 SYNC_VERSION = "1.0.0-beta.6"
-DEFAULT_PROD_URL = "http://13.216.102.148"
+DEFAULT_PROD_URL = "https://wowkillboard.com"
 DEFAULT_LOCAL_URL = "http://127.0.0.1:8080"
 
 def resolve_api_endpoints(cli_arg: str = None, force_local: bool = False, force_cloud: bool = False) -> list:
@@ -1096,7 +1096,7 @@ def resolve_api_endpoints(cli_arg: str = None, force_local: bool = False, force_
         except Exception:
             pass
 
-    # Default to dual broadcasting: Cloud Lightsail + Local Server (if reachable)
+    # Default to dual broadcasting: Cloud Platform + Local Server (if reachable)
     endpoints = [DEFAULT_PROD_URL]
     try:
         req = urllib.request.Request(f"{DEFAULT_LOCAL_URL}/api/health", headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
@@ -1118,7 +1118,7 @@ if __name__ == "__main__":
     parser.add_argument("--file", "-f", default="", help="Path to WoWKillboard.lua (monitors ALL clients if omitted)")
     parser.add_argument("--api", "-a", default="", help="Web Killboard API URL (defaults to production)")
     parser.add_argument("--local", action="store_true", help="Force local development endpoint only (http://127.0.0.1:8080)")
-    parser.add_argument("--cloud", "--render", action="store_true", help="Force cloud production endpoint only (http://13.216.102.148)")
+    parser.add_argument("--cloud", "--render", action="store_true", help="Force cloud production endpoint only (https://wowkillboard.com)")
     parser.add_argument("--once", action="store_true", help="Run once and exit instead of continuous daemon")
     args = parser.parse_args()
 

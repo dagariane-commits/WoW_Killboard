@@ -24,7 +24,7 @@ local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
 **Why this fails:** Blizzard's XML templates invoke internal secure code and mix protected textures into the addon's execution stack. When combat lockdown engages, modifying or hiding these frames taints the entire secure environment.
 
 **Our Surgical Solution:**
-All frames, buttons, and close widgets in [`UI.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/UI.lua) are instantiated anonymously with pure Lua and the minimal, unpolluted `"BackdropTemplate"`:
+All frames, buttons, and close widgets in [`UI.lua`](../Addon/WoWKillboard/UI.lua) are instantiated anonymously with pure Lua and the minimal, unpolluted `"BackdropTemplate"`:
 ```lua
 -- SECURE & TAINT-FREE (WoW Killboard Standard)
 local frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")

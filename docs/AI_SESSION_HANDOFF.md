@@ -1,14 +1,14 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.
-> **Last Synchronized**: 2026-09-29 21:15:00 EDT
-> **Git Status**: Branch `main` at commit `ab5c010` (Clean working tree, synced with `origin/main`).
-> **Developer & Lead**: Scott Quick.
+> **Last Synchronized**: 2026-10-01 22:30:00 EDT
+> **Git Status**: Branch `main` (Clean working tree, synced with `origin/main`).
+> **Developer & Lead**: Dagariane.
 
 ---
 
 ## 1. Non-Negotiable Operational Guardrails
-1. **Zero Mention Rule (Strict)**: Absolutely **ZERO** mention of 501(c)(3), non-profit, Forged By Valor, or FBV. This is an entirely independent, personal gaming project.
+1. **Zero Mention Rule (Strict)**: Absolutely **ZERO** mention of non-gaming organizations, non-profits, or external corporate entities. This is an entirely independent, personal gaming project.
 2. **BLUF Communication**: Always provide Bottom Line Up Front conclusions, actionable steps, and exact commands before deep technical dives.
 3. **Zero Blizzard UI Taint**: 
    - Never inherit from XML templates (`BasicFrameTemplateWithInset`, `UIPanelButtonTemplate`, `UIPanelCloseButton`, etc.).
@@ -33,7 +33,7 @@
 ---
 
 ## 2. Infrastructure & Dedicated VPS Status (AWS Lightsail)
-Scott Quick has provisioned the dedicated production VPS instance on AWS Lightsail:
+The production VPS instance on AWS Lightsail:
 
 | Parameter | Current Value / State |
 | :--- | :--- |
@@ -42,7 +42,7 @@ Scott Quick has provisioned the dedicated production VPS instance on AWS Lightsa
 | **Instance Plan** | General Purpose (1 GB RAM, 2 vCPUs, 40 GB SSD) |
 | **Static IPv4 Address** | **`13.216.102.148`** (Permanently attached) |
 | **Firewall Rules** | Port 22 (SSH), Port 80 (HTTP), Port 443 (HTTPS) all open |
-| **Domain Status** | Configured for direct IP access on `http://13.216.102.148/` (Preparing for custom domain & CurseForge) |
+| **Domain Status** | Live with Cloudflare Universal SSL on **`https://wowkillboard.com/`** |
 | **Service Daemon** | systemd: `wowkillboard.service` (Flask REST API + SQLite) |
 | **Reverse Proxy** | Caddy v2 (Port 80/443 -> Localhost:8080) |
 
@@ -55,13 +55,13 @@ cd /opt/wowkillboard && sudo git fetch origin main && sudo git reset --hard orig
 ### Remote Database Reset Command:
 To wipe all tables (`kills`, `bounties`, `characters`, `character_claims`, etc.) back to 0:
 ```powershell
-Invoke-RestMethod -Uri "http://13.216.102.148/api/admin/reset" -Method Post -ContentType "application/json" -Body '{"secret":"wowkb_archivist_secret"}'
+Invoke-RestMethod -Uri "https://wowkillboard.com/api/admin/reset" -Method Post -ContentType "application/json" -Body '{"secret":"wowkb_archivist_secret"}'
 ```
 
 ---
 
 ## 3. Local Workspace & Daemon State
-- **Workspace Path**: `C:\Users\SQUICK\WoW_Killboard`
+- **Workspace Path**: `WoW_Killboard` repository root
 - **Active Background Daemons**:
   - `sync/watcher.py` (Task watching local SavedVariables).
   - `web/server.py` (Local web server running at `http://127.0.0.1:8080`).
@@ -70,7 +70,7 @@ Invoke-RestMethod -Uri "http://13.216.102.148/api/admin/reset" -Method Post -Con
   - `D:\World of Warcraft\_classic_era_\Interface\AddOns\WoWKillboard\`
   - `D:\World of Warcraft\_anniversary_\Interface\AddOns\WoWKillboard\`
   - `D:\World of Warcraft\_retail_\Interface\AddOns\WoWKillboard\`
-- **Distribution Package**: `C:\Users\SQUICK\WoW_Killboard\WoWKillboard-v1.0.0.zip`
+- **Distribution Package**: `WoWKillboard-v1.0.0.zip`
 
 ---
 

@@ -96,13 +96,13 @@ The backend REST API and SQLite datastore support high-concurrency ingestion and
 To benchmark concurrent reads and writes against the production server:
 ```bash
 # 50 mixed concurrent requests (50% POST /api/kills + 50% GET feeds) across 10 workers:
-python scripts/stress_test.py --mode api --target http://13.216.102.148 --concurrency 10 --requests 50 --api-mode mixed
+python scripts/stress_test.py --mode api --target https://wowkillboard.com --concurrency 10 --requests 50 --api-mode mixed
 
 # High-throughput read concurrency:
-python scripts/stress_test.py --mode api --target http://13.216.102.148 --concurrency 15 --requests 100 --api-mode read
+python scripts/stress_test.py --mode api --target https://wowkillboard.com --concurrency 15 --requests 100 --api-mode read
 
 # Write-intensive burst:
-python scripts/stress_test.py --mode api --target http://13.216.102.148 --concurrency 10 --requests 50 --api-mode write
+python scripts/stress_test.py --mode api --target https://wowkillboard.com --concurrency 10 --requests 50 --api-mode write
 ```
 
 #### 2. Localhost Development Benchmark
@@ -110,7 +110,7 @@ python scripts/stress_test.py --mode api --target http://13.216.102.148 --concur
 python scripts/stress_test.py --mode api --target http://127.0.0.1:8080 --concurrency 25 --requests 250 --api-mode mixed
 ```
 
-### Empirical Remote Benchmark Results (AWS Lightsail: `13.216.102.148`)
+### Empirical Remote Benchmark Results (Production: `wowkillboard.com`)
 
 | Benchmark Mode | Workers | Total Reqs | Success Rate | Throughput (RPS) | P50 Latency | P95 Latency | Lock Errors |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -124,5 +124,5 @@ python scripts/stress_test.py --mode api --target http://127.0.0.1:8080 --concur
 
 To run all benchmarks sequentially from the command line:
 ```bash
-python scripts/stress_test.py --mode all --target http://13.216.102.148
+python scripts/stress_test.py --mode all --target https://wowkillboard.com
 ```

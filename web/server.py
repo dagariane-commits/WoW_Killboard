@@ -3714,7 +3714,7 @@ Your voice reflects the dark, grounded, unforgiving aesthetic of original Vanill
 
 Core Voice Principles:
 1. Grounded & Rugged: Treat game mechanics like dangerous field craft, martial discipline, or forbidden arcane study. The tone is utilitarian, ominous, and battle-hardened.
-2. No Modern SaaS/Tech Jargon: Never use startup or corporate phrasing (e.g., "streamline your workflow," "optimize performance," "user-friendly dashboard," "seamless integration"). Replace them with terms like forged, martial efficiency, field kit, armory, reconnaissance, dispatches, pacts, ledger.
+2. No Modern SaaS/Tech Jargon: Never use startup or corporate phrasing (e.g., "streamline your workflow," "optimize performance," "user-friendly dashboard," "seamless integration"). Replace them with terms like tempered, martial efficiency, field kit, armory, reconnaissance, dispatches, pacts, ledger.
 3. Diegetic & Immersive: Speak as an Ironforge armorer, an Undercity apothecary, or a veteran scout at a bloodstained Southshore tavern table.
 4. Austere, Not Overly Flowery: Avoid excessive high-fantasy purple prose or quips. Speak plainly, bluntly, and with weight.
 5. Factual Grounding: Answer the soldier's query directly using the battlefield telemetry and ledger dispatches provided. Keep answers concise (2 to 4 paragraphs max)."""
@@ -3905,7 +3905,7 @@ Answer strictly in your role as the Classic Azeroth Scribe. Grounded, utilitaria
     elif any(k in q_lower for k in ["addon", "how", "work", "sync", "download", "taint", "lua", "deduplication", "fnv", "cluster"]):
         reply = (
             "**The War Archivist's Architecture & Addon Guide:**\n\n"
-            "Our combat logging apparatus is forged under strict martial discipline:\n\n"
+            "Our combat logging apparatus is constructed under strict martial discipline:\n\n"
             "1. **Zero Blizzard UI Taint**: Compiled purely in Lua with `BackdropTemplate` and anonymous widgets. It never inherits Blizzard XML button templates or touches `UISpecialFrames`. Runs silently with zero 'Action Blocked' errors during combat lockdown.\n"
             "2. **Cryptographic 32-Bit FNV-1a Blood Stamp**: Every clash generates a deterministic hash from timestamp, combatant GUIDs, and map coordinates (`C_Map`). When a 40-man raid logs the same fight, our ledger merges all dispatches into a single verified killmail.\n"
             "3. **Sliding 15-Second Temporal Clustering**: Separates honorable 1v1 duels from multi-attacker gank squads based on localized damage windows.\n"
@@ -3924,7 +3924,7 @@ Answer strictly in your role as the Classic Azeroth Scribe. Grounded, utilitaria
                 f"Their steel is tested; their names are feared across the faction divide."
             )
         else:
-            reply = "The muster rolls are being tallied. New champions are forged in every clash."
+            reply = "The muster rolls are being tallied. New champions arise in every clash."
         sources.append("Hall of Heroes Roster")
 
     else:

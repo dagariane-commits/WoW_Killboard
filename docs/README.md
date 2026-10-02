@@ -70,10 +70,10 @@ flowchart TD
    - 2-minute setup instructions for community players and guild officers.
    - Complete in-game command cheat-sheet, minimap controls, and Automated AI Bug Reporting dispatch.
 
-10. **[Semantic Change Log](file:///c:/Users/SQUICK/WoW_Killboard/CHANGELOG.md)**
+10. **[Semantic Change Log](../CHANGELOG.md)**
    - Complete historical version log detailing every bug fix, feature addition, and refactor across semantic releases.
 
-11. **[Contributing Guide](file:///c:/Users/SQUICK/WoW_Killboard/CONTRIBUTING.md)**
+11. **[Contributing Guide](../CONTRIBUTING.md)**
    - Standards, style rules, and verification requirements for open-source contributors.
 
 12. **[Legal, Safety & Compliance Guide](LEGAL_AND_COMPLIANCE.md)**

@@ -40,7 +40,7 @@ To preserve the tactical sanctity of instanced play and focus player bounties on
 
 ## 3. Anti-Win-Trade & Anti-Exploit Rules
 
-To prevent players from laundering gold or colluding with friends to collect fake bounties, [`BountyEngine.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/BountyEngine.lua) enforces strict validation heuristics:
+To prevent players from laundering gold or colluding with friends to collect fake bounties, [`BountyEngine.lua`](../Addon/WoWKillboard/BountyEngine.lua) enforces strict validation heuristics:
 
 1. **Self-Bounty Prohibition**: A player cannot place a bounty on themselves or members of their own active party/raid.
 2. **Guild Collusion Filter**: Kills where the killer and victim share the same guild are disqualified from bounty payouts.

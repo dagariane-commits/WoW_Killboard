@@ -233,7 +233,7 @@ WoW_Killboard/
 ## Quickstart Guide
 
 ### 1. In-Game Addon Installation
-1. Download [`WoWKillboard-v1.0.0.zip`](file:///c:/Users/SQUICK/WoW_Killboard/WoWKillboard-v1.0.0.zip) and extract it into your World of Warcraft AddOns directory:
+1. Download [`WoWKillboard-v1.0.0.zip`](WoWKillboard-v1.0.0.zip) and extract it into your World of Warcraft AddOns directory:
    - **Forever Beta**: `World of Warcraft/_classic_beta_/Interface/AddOns/WoWKillboard`
    - **Classic Era**: `World of Warcraft/_classic_era_/Interface/AddOns/WoWKillboard`
    - **Anniversary**: `World of Warcraft/_anniversary_/Interface/AddOns/WoWKillboard`
@@ -253,7 +253,7 @@ WoW_Killboard/
    - `/killboard reset` — Clear local kill database.
 
 ### 2. Standalone Desktop Sync (Zero-Python)
-1. Launch [`WoWKillboardSync.exe`](file:///c:/Users/SQUICK/WoW_Killboard/dist/WoWKillboardSync.exe).
+1. Launch [`WoWKillboardSync.exe`](WoWKillboardSync.exe).
 2. The agent automatically detects your WoW installation and begins monitoring `SavedVariables/WoWKillboard.lua`.
 3. Whenever you reload (`/reload`) or log out of WoW, new combat kills and bounties sync automatically to the web platform.
 

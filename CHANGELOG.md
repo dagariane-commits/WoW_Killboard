@@ -5,6 +5,28 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.84] - 2026-10-01
+
+### Security & Privacy
+- **Comprehensive OpSec & PII Sanitization**:
+  - Replaced all personal names and email references across all documentation, guides, and codebase comments with author gaming pseudonym `Dagariane` (`Dagariane <dagariane@gmail.com>`).
+  - Purged all absolute user paths (`C:\Users\...`, `file:///c:/...`) across all markdown documents (`README.md`, `CHANGELOG.md`, `docs/`), converting all cross-references to standard relative paths.
+  - Eliminated all legacy external project terms across all source code, rules, prompts, and local SQLite database entries.
+  - Hardened server and client URLs to secure production custom domain `https://wowkillboard.com`.
+
+### Removed
+- **Dead & Obsolete Files Purge**:
+  - Permanently removed legacy Google Drive mirror documentation (`README_GOOGLE_DRIVE.md`, `README_GOOGLE_DRIVE.txt`).
+  - Purged obsolete one-off debug scripts (`scripts/probe_render.py`, `scripts/push_to_render.py`, `scripts/check_headers.py`, `scripts/check_local_data.py`, `scripts/test_legends_marks.py`).
+  - Deleted stale 0-byte SQLite database placeholder (`web/database.db`) and local sync logs.
+
+### Changed
+- **Relative Path Resolution in Verification Tooling (`tests/validate_lua.py`)**:
+  - Updated `tests/validate_lua.py` from hardcoded path discovery to dynamic repository root resolution (`BASE_DIR`), enabling portable CI/CD execution across any environment.
+- **Production Endpoint Modernization (`sync/watcher.py`, `UI.lua`, `stress_test.py`)**:
+  - Updated `DEFAULT_PROD_URL` and feedback editboxes to default to `https://wowkillboard.com`.
+  - Recompiled standalone `WoWKillboardSync.exe` binary.
+
 ## [1.4.83] - 2026-10-01
 
 ### Added
@@ -98,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Resolved Web Client Freezing / SyntaxError on Page Load (`web/static/app.js`)**:
-  - **The Issue**: Loading `http://13.216.102.148` caused the page to freeze/hang with blank feeds and unresponsive tabs.
+  - **The Issue**: Loading `https://wowkillboard.com` caused the page to freeze/hang with blank feeds and unresponsive tabs.
   - **Root Cause**: `renderSidebarActivity()` in `web/static/app.js` contained a duplicate `const charListEl` declaration in the same function scope, triggering a fatal `SyntaxError: Identifier 'charListEl' has already been declared` in the browser's JavaScript engine (V8), preventing `app.js` from executing.
   - **Engineering Resolution**: Removed the redundant `const` declaration and reused `charListEl`. Validated with Node.js V8 syntax check (`node -c web/static/app.js` exiting code 0).
 
@@ -176,7 +198,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Universal Multi-Drive & Fresh Installation Discovery (`sync/watcher.py`, `WoWKillboardSync.exe`)**:
   - **The Issue**: When launching `WoWKillboardSync.exe` on a fresh or alternate computer, the in-game addon displayed no realm intelligence, kills, or bounties from the website.
   - **Root Cause**:
-    1. *Stale Remote Server Assets*: The production Lightsail server (`http://13.216.102.148`) had not pulled recent commits and was serving pre-sync zip/exe binaries from early morning.
+    1. *Stale Remote Server Assets*: The production server (`https://wowkillboard.com`) had not pulled recent commits and was serving pre-sync zip/exe binaries from early morning.
     2. *Standard Path Blindness*: `sync_realm_data_to_client()` previously only checked direct `{d}/World of Warcraft/` roots, missing standard Windows Battle.net directories such as `C:\Program Files (x86)\World of Warcraft\` and custom game drives.
     3. *Fresh Install Cold-Start*: On a fresh computer, `SavedVariables/WoWKillboard.lua` does not exist until the player logs out or reloads the UI. The watcher previously defaulted to `./WoWKillboard.lua` in the download folder and failed to locate the actual WoW installation.
   - **Surgical Solution**:
@@ -193,9 +215,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Stale Kill Ledger Discrepancy & Ambient Spectator Duel Suppression (`CombatTracker.lua`, `sync/watcher.py`, `web/server.py`)**:
-  - **The Issue**: After resetting in-game combat data across test characters (wiping to 11 active combat events across `Dagariane` and `Dag`), the production website (`http://13.216.102.148`) displayed `Realm Total Carnage: 45`.
+  - **The Issue**: After resetting in-game combat data across test characters (wiping to 11 active combat events across `Dagariane` and `Dag`), the production website (`https://wowkillboard.com`) displayed `Realm Total Carnage: 45`.
   - **Root Cause**:
-    1. *Stale Cross-Client SavedVariables Ingestion*: `sync/watcher.py` auto-discovers all WoW branches (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`). An un-reset `_classic_era_/WTF/Account/SQUICK/SavedVariables/WoWKillboard.lua` contained 27 historical battleground test kills from previous sessions that re-uploaded automatically.
+    1. *Stale Cross-Client SavedVariables Ingestion*: `sync/watcher.py` auto-discovers all WoW branches (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`). An un-reset `_classic_era_/WTF/Account/<AccountName>/SavedVariables/WoWKillboard.lua` contained 27 historical battleground test kills from previous sessions that re-uploaded automatically.
     2. *Ambient Spectator Duel Recording*: `CT:RecordDuelVictory()` in `CombatTracker.lua` listened to Blizzard's `DUEL_FINISHED` event and generated a killmail for *any* nearby duel between strangers in Undercity/Orgrimmar, even when the player was not a combatant (`isPlayerWinner == false and isPlayerLoser == false`), generating 7 stranger duel killmails with 0 damage.
     3. *Remote Database Persistence*: The cloud SQLite database retained old testing kills independently of local WTF SavedVariables resets until administrative reconciliation.
   - **Surgical Solution**:
@@ -585,12 +607,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Developer Identity & PII Sanitization (`CombatTracker.lua`, `LICENSE`, `LEGAL_AND_COMPLIANCE.md`, `PUBLIC_RELEASE_PLAYBOOK.md`)**:
-  - Removed author real name comment (`Scott Quick directive`) from `CombatTracker.lua` line 1407 and rebuilt distribution archive (`WoWKillboard-v1.0.0.zip`), ensuring zero personal identifier leakage in public addon files.
+  - Removed author directive comments from `CombatTracker.lua` line 1407 and rebuilt distribution archive (`WoWKillboard-v1.0.0.zip`), ensuring zero personal identifier leakage in public addon files.
   - Standardized all legal, compliance, and license declarations to `Dagariane (WoW Killboard Team)`.
   - Configured local Git author identity to `Dagariane <dagariane@gmail.com>` for all future commits.
 - **Decoupled Cross-Project References (`CONTRIBUTING.md`, `UI.lua`, `README.md`, `BETA_TESTER_QUICKSTART.md`)**:
   - Updated repository clone URL in `CONTRIBUTING.md` to `dagariane-commits/WoW_Killboard.git` and updated security contact email to `dagariane@gmail.com`.
-  - Corrected theme engine comments and documentation to accurately reflect the two active in-game themes: **Classic WoW** and **ElvUI Minimalist** (purged legacy references to "Aegis Tactical").
+  - Corrected theme engine comments and documentation to accurately reflect the two active in-game themes: **Classic WoW** and **ElvUI Minimalist** (purged legacy references to "Obsidian Tactical").
 - **Formal Blizzard Trademark Notice (`index.html`)**:
   - Injected official Blizzard Entertainment trademark and non-affiliation legal notice into the public web footer in compliance with Blizzard UI and Fan Site policies.
 
@@ -598,7 +620,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Dedicated Google Drive Sync Directory (`WoW KB Beta/`, `deploy.py`)**:
-  - Established a dedicated local distribution folder `C:\Users\SQUICK\WoW_Killboard\WoW KB Beta\` mapped to Google Drive (`dagariane@gmail.com`).
+  - Established a dedicated distribution folder `WoW KB Beta/` mapped to Google Drive (`dagariane@gmail.com`).
   - Automated deployment synchronization in `scripts/deploy.py` (`sync_to_gdrive_folder()`) to automatically update `WoWKillboard-v1.0.0.zip`, `WoWKillboardSync.exe`, `README.txt`, and `README.md` upon every build.
   - Added `WoW KB Beta/` and `web/static/*.exe` to `.gitignore` to prevent binary file bloat in the git repository.
 - **In-Game Bug Submission Engine (`Core.lua`, `UI.lua`)**:
@@ -641,7 +663,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Dual Addon Distribution Pipeline with Google Drive Mirror (`server.py`, `index.html`, `app.js`)**:
   - Implemented dual distribution channels on the web platform: Direct server package download (`/download`, `/WoWKillboard-v1.0.0.zip`) and high-availability Google Drive Mirror.
-  - Added dedicated `/drive` and `/gdrive` redirect routes in `server.py` pointing to Scott Quick's Google Drive link.
+  - Added dedicated `/drive` and `/gdrive` redirect routes in `server.py` pointing to the public distribution mirror link.
   - Added resilient fallback in `server.py` `/download` endpoint: automatically redirects to the Google Drive mirror if the physical local `.zip` file is absent on a deployment.
   - Updated Addon Dossier Modal (`#addon-dossier-modal`) with side-by-side buttons for `[⬇ Direct Download (.zip)]` and `[☁ Google Drive Mirror]`.
   - Added dual download callout banner in Upload view (`loadUploadView()`) and added Google Drive Mirror link in the site footer navigation.
@@ -693,7 +715,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cleaned all existing bogus subzone records in SQLite.
 - **Allied Vanguard Elimination & Bystander Honor Gating (`CombatTracker.lua`, `server.py`)**:
   - Eliminated dummy `"Allied Vanguard"` placeholder records entirely.
-  - Implemented Scott Quick's bystander protection: solo players who dealt 0 damage, healed 0 attackers, and were not in a party discard passive bystander honor ticks without creating phantom killmails.
+  - Implemented Dagariane's bystander protection: solo players who dealt 0 damage, healed 0 attackers, and were not in a party discard passive bystander honor ticks without creating phantom killmails.
   - Added fallback promotion in `server.py` ensuring incoming or legacy kills with "Allied Vanguard" automatically promote the highest-damage real player attacker.
 
 ### Changed
@@ -795,7 +817,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Zero-Friction In-Game Web Link Auto-Authentication (`app.js`)**:
-  - Clicking any in-game character web profile link (`http://13.216.102.148/?character=Name`) automatically authenticates the player session as that operative, updates the header identity badge, switches to the live feed, and opens their character profile dossier instantly without requiring logins or popups.
+  - Clicking any in-game character web profile link (`https://wowkillboard.com/character?name=Name`) automatically authenticates the player session as that operative, updates the header identity badge, switches to the live feed, and opens their character profile dossier instantly without requiring logins or popups.
 
 ## [1.4.43] - 2026-09-27
 
@@ -839,7 +861,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Two-Line Rich Rally Cards**: Redesigned the open rallies list with 46px tactical cards displaying group type badges (`[5-PARTY]` / `[40-RAID]`), content badges (`[WORLD]` / `[BG]`), commander name colorized by class, guild tags, zone coordinates, level brackets, requested roles, commander battle cry, and age telemetry.
 
 ### Fixed
-- **Web Profile URL Parity (`UI.lua:2630`)**: Repointed character web dossier links from legacy Render URL to the active AWS Lightsail production platform (`http://13.216.102.148/?character=%s`).
+- **Web Profile URL Parity (`UI.lua:2630`)**: Repointed character web dossier links from legacy Render URL to the active production platform (`https://wowkillboard.com/character?name=%s`).
 - **Sync Desktop Client Binary Rebuild (`WoWKillboardSync.exe`)**: Recompiled the standalone zero-Python executable via PyInstaller to include server-verified solo purity logic and multi-drive discovery.
 
 ## [1.4.41] - 2026-09-27
@@ -1177,7 +1199,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Upgraded `KillboardWatcher` to support multiple simultaneous ingestion targets (`api_urls`).
   - By default, `WoWKillboardSync` broadcasts all combat telemetry, kills, bounties, and distress beacons to BOTH the production Render cloud platform (`https://wow-killboard.onrender.com`) and the local development server (`http://127.0.0.1:8080`).
   - Added CLI flags `--cloud` / `--render` and `--local` for explicit routing overrides.
-  - Recompiled standalone Windows binary [`WoWKillboardSync.exe`](file:///c:/Users/SQUICK/WoW_Killboard/WoWKillboardSync.exe).
+  - Recompiled standalone Windows binary [`WoWKillboardSync.exe`](WoWKillboardSync.exe).
 
 ## [1.4.26] - 2026-09-26
 
@@ -1188,16 +1210,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented dynamic runtime gating: `if not isCLEUForbidden then frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED") end`. On Forever Beta and modern engines, the registration is completely bypassed with zero security violations.
   - Combat and killmail tracking on Forever Beta operates cleanly via public, unrestricted events (`CHAT_MSG_COMBAT_HONOR_GAIN`, `CHAT_MSG_SYSTEM`, `UNIT_HEALTH`, `PLAYER_DEAD`, `PLAYER_TARGET_CHANGED`).
   - Removed `pcall(frame.RegisterEvent, frame, "PVP_MATCH_COMPLETE")` in favor of standard `UPDATE_BATTLEFIELD_STATUS`.
-  - Cleaned up all diagnostic stack tracers and temporary hooks from [`Config.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/Config.lua).
+  - Cleaned up all diagnostic stack tracers and temporary hooks from [`Config.lua`](Addon/WoWKillboard/Config.lua).
 
 ## [1.4.25] - 2026-09-26
 
 ### Fixed
 - **Complete Eradication of Blizzard Action Blocked Popup on Login (`WoWKillboard.toc`, `Core.lua`)**:
-  - Removed `## AddonCompartmentFunc: WoWKillboard_OnAddonCompartmentClick` from [`WoWKillboard.toc`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/WoWKillboard.toc) and deleted the global `WoWKillboard_OnAddonCompartmentClick` handler from [`Core.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/Core.lua).
+  - Removed `## AddonCompartmentFunc: WoWKillboard_OnAddonCompartmentClick` from [`WoWKillboard.toc`](Addon/WoWKillboard/WoWKillboard.toc) and deleted the global `WoWKillboard_OnAddonCompartmentClick` handler from [`Core.lua`](Addon/WoWKillboard/Core.lua).
   - In WoW Classic / Forever Beta (1.60.1 / 1.15.x), third-party `AddonCompartmentFunc` tags cause Blizzard's secure Minimap code to block execution and generate the *"WoWKillboard has been blocked from an action only available to the Blizzard UI"* popup dialog upon loading.
 - **Secure Unit Event Dispatcher Taint Elimination (`CombatTracker.lua`)**:
-  - Replaced `frame:RegisterUnitEvent("UNIT_HEALTH", "target")` with standard `frame:RegisterEvent("UNIT_HEALTH")` in [`CombatTracker.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/CombatTracker.lua).
+  - Replaced `frame:RegisterUnitEvent("UNIT_HEALTH", "target")` with standard `frame:RegisterEvent("UNIT_HEALTH")` in [`CombatTracker.lua`](Addon/WoWKillboard/CombatTracker.lua).
   - Calling `RegisterUnitEvent` at load time in Classic binds the addon frame into Blizzard's internal unit event dispatch tables used by secure unit frames (such as `TargetFrame`), triggering action-blocked taint during target updates. Standard event registration with internal `if unit == "target"` checking completely bypasses the secure dispatcher.
 - **Unregistered Action Blocked Diagnostic Listeners (`Core.lua`)**:
   - Removed `ADDON_ACTION_BLOCKED` and `ADDON_ACTION_FORBIDDEN` event registrations from `coreFrame` to eliminate handler loops and secondary taint during engine security notifications.
@@ -1236,13 +1258,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Blizzard UI Login Action Blocked Warning Eradication (`Core.lua`)**:
-  - Eradicated `pcall(SetCVar, "taintLog", "0")` from the `ADDON_LOADED` event handler in [`Core.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/Core.lua).
+  - Eradicated `pcall(SetCVar, "taintLog", "0")` from the `ADDON_LOADED` event handler in [`Core.lua`](Addon/WoWKillboard/Core.lua).
   - Calling `SetCVar` on Blizzard-protected engine/developer CVars (`taintLog`) from an insecure addon environment triggered the C++ engine's `ADDON_ACTION_BLOCKED` / `ADDON_ACTION_FORBIDDEN` popup dialog (*"WoWKillboard has been blocked from an action only available to the Blizzard UI"*).
   - Zero Blizzard engine CVars are touched, ensuring 100% silent, error-free client load on login.
 
 ### Removed
 - **Warfronts Navigation Tab (`UI.lua`)**:
-  - Removed the `Warfronts` (`BG_METRICS`) tab from the primary navigation bar in [`UI.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/UI.lua).
+  - Removed the `Warfronts` (`BG_METRICS`) tab from the primary navigation bar in [`UI.lua`](Addon/WoWKillboard/UI.lua).
   - Consolidated the header navigation bar to the 4 essential tabs: **Intel** (`FEED`), **Hall of Legends** (`LEADERBOARD`), **Marks of Spite** (`BOUNTIES`), and **Zone Intel** (`ZONES`).
   - Added self-healing fallback in `UI:Refresh()` to redirect any active `BG_METRICS` state to `FEED`.
 
@@ -1367,10 +1389,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.16] - 2026-09-26
 
 ### Added
-- **Aegis Tactical / Obsidian Gold In-Game Addon Theme**:
-  - Engineered the flagship **Aegis Tactical** visual theme for the in-game addon (`Addon/WoWKillboard/Config.lua` and `UI.lua`), perfectly matching the dark iron, brushed brass, and tactical gold aesthetic of the web platform.
+- **Obsidian Tactical / Obsidian Gold In-Game Addon Theme**:
+  - Engineered the flagship **Obsidian Tactical** visual theme for the in-game addon (`Addon/WoWKillboard/Config.lua` and `UI.lua`), perfectly matching the dark iron, brushed brass, and tactical gold aesthetic of the web platform.
   - Deep obsidian velvet backdrop (`#090c12`), brushed aged brass framing, dark iron card plates, and radiant golden active buttons.
-  - Added seamless 3-way theme cycling (`Aegis Tactical` &rarr; `ElvUI Minimalist` &rarr; `Classic WoW`) via `/wowkb theme` or 1-click header switcher.
+  - Added seamless 3-way theme cycling (`Obsidian Tactical` &rarr; `ElvUI Minimalist` &rarr; `Classic WoW`) via `/wowkb theme` or 1-click header switcher.
 - **Frontline Kill Banner & Combat Toast System**:
   - Implemented an anonymous, taint-free on-screen combat banner (`UI:ShowKillBanner`) triggered whenever the player secures a PvP execution.
   - Pre-allocated at addon load to guarantee zero memory allocation and 100% `InCombatLockdown()` safety.
@@ -1837,7 +1859,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Most Deadly NPC Leaderboard & PvE Casualty Isolation**:
   - Addon Engine PvE Death Tracking: Initialized dedicated `WoWKillboardDB.pveDeaths` storage, completely separated from `WoWKillboardDB.kills` to guarantee zero PvP stat skew.
-  - Slew-by-NPC Combat Logic: In [`CombatTracker.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/CombatTracker.lua), mapped incoming damage to track `isSourcePlayer` boolean. If a player dies with zero player attackers, the event is routed exclusively to `KM:RecordPveDeath` with `UNIT_DIED` and `PLAYER_DEAD` fallback protection.
+  - Slew-by-NPC Combat Logic: In [`CombatTracker.lua`](Addon/WoWKillboard/CombatTracker.lua), mapped incoming damage to track `isSourcePlayer` boolean. If a player dies with zero player attackers, the event is routed exclusively to `KM:RecordPveDeath` with `UNIT_DIED` and `PLAYER_DEAD` fallback protection.
   - Telemetry Capture: Parses NPC creature ID from GUID (`Creature-0-...-(id)-...`), monster name, signature ability, total damage, victim identity, and map GPS coordinates.
   - Dedicated Web UI Tab **"☠️ Deadly NPCs"**:
     - Hero Metrics Header: Displays total fallen mortals, unique monster slayers, and deadliest realm conflict zone.
@@ -1846,7 +1868,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Live Fallen Mortals Stream: Real-time feed of player PvE executions.
   - Strict PvP Isolation Guarantee: PvE casualties never enter `kills` database, never affect player K/D ratios, never award PvP honor ranks, and never trigger death bounty prompts.
 - **Client Flavor Identification & Dynamic Feature Gating**:
-  - Multi-Expansion Client Flavor System: Engineered runtime flavor detection in [`Utils.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/Utils.lua) (`GetClientFlavor`) and backend endpoints (`GET /api/system/flavor`, `POST /api/system/flavor`) supporting:
+  - Multi-Expansion Client Flavor System: Engineered runtime flavor detection in [`Utils.lua`](Addon/WoWKillboard/Utils.lua) (`GetClientFlavor`) and backend endpoints (`GET /api/system/flavor`, `POST /api/system/flavor`) supporting:
     1. `CLASSIC_ERA` (Vanilla 1.15 / Anniversary / Forever Beta)
     2. `TBC` (The Burning Crusade 2.4.3)
     3. `WOTLK` (Wrath of the Lich King 3.3.5)
@@ -1936,9 +1958,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Broadcasts sightings across Guild chat (`/g`), Party/Raid (`/p`, `/ra`), and P2P addon message wire (`SPT:` protocol via `Sync.lua`).
   - Backend ingestion (`POST /api/intel/sighting`, `GET /api/intel/sightings`) with strict Open-World PvP gating and automated Discord Webhook rich embed broadcast.
   - Live Tactical Intel Sighting Wire (`#intel-sighting-wire`) displayed above the frontline feed with 6-second polling updates.
-- **Complete Decoupling from Forged By Valor**:
-  - 100% eradication of all references to *Forged By Valor*, *FBV*, and *501(c)(3)* across all codebase files, TOC files, manifests, documentation, tests, and web UI.
-  - Updated client-side localStorage keys from `fbv_supporter` to `wowkb_supporter`.
+- **Complete Decoupling from Legacy Branding**:
+  - 100% eradication of all references to legacy external entities across all codebase files, TOC files, manifests, documentation, tests, and web UI.
+  - Updated client-side localStorage keys from `legacy_supporter` to `wowkb_supporter`.
 
 - **Dark Warcraft War Room Lore & Open-World PvP Gating**:
   - **Frontline War Room Theming**: Eradicated generic modern terms in favor of gritty, war-torn Alliance vs. Horde Warcraft lore across Addon, Web, and Discord notifications.
@@ -2033,7 +2055,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Proximity Wanted Debtor Radar triggering audio sirens and screen notifications when a debtor is nearby.
   - 1-click in-game redemption workflow via C.O.D. mail with a 10% administrative surcharge.
 - **Legal, Safety & Compliance Framework**:
-  - Formal declaration of sole authorship and copyright: Scott Quick.
+  - Formal declaration of sole authorship and copyright: Dagariane.
   - Published comprehensive compliance audit in `docs/LEGAL_AND_COMPLIANCE.md`.
   - Formally certified 100% compliance with Blizzard Entertainment's UI Customization Policy (zero in-game ads, free distribution, open source, no RMT).
   - Enforced zero-PII privacy standards (no collection of Real IDs, IPs, emails, or credentials) and zero-Warden-risk filesystem architecture.

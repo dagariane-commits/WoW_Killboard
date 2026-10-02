@@ -102,7 +102,7 @@ Built from the ground up under a strict **Zero Blizzard UI Taint** architecture,
 
 ## 4. Screenshot Gallery & Upload Guide
 
-Upload the 5 screenshots located in [`assets/curseforge/`](file:///c:/Users/SQUICK/WoW_Killboard/assets/curseforge/) in this specific order:
+Upload the screenshots located in [`assets/curseforge/`](assets/curseforge/) in this specific order:
 
 | File | Title / Caption | Description |
 | :--- | :--- | :--- |
@@ -119,14 +119,14 @@ Upload the 5 screenshots located in [`assets/curseforge/`](file:///c:/Users/SQUI
 
 1. Navigate to the **File** tab on your newly created CurseForge project.
 2. Click **Upload File**.
-3. Select `WoWKillboard-v1.0.0.zip` (located in the project root: `C:\Users\SQUICK\WoW_Killboard\WoWKillboard-v1.0.0.zip`).
-4. Set **Display Name**: `WoW Killboard v1.0.0`
-5. Set **Release Type**: `Release` (or `Beta` if you prefer early beta staging).
+3. Select `WoWKillboard-v1.0.0.zip` (located in the project root: `WoWKillboard-v1.0.0.zip`).
+4. Set **Display Name**: `WKB v1.0.0 (Early Beta)`
+5. Set **Release Type**: `Beta` (or `Release` if you prefer).
 6. Under **Supported Game Versions**, select:
    - `World of Warcraft Classic` (Classic Era `1.15.x`)
    - `Classic Beta` / `Classic Anniversary`
    - `World of Warcraft Mainline` (Retail `11.0.x`)
-7. Paste the latest release notes from [`CHANGELOG.md`](file:///c:/Users/SQUICK/WoW_Killboard/CHANGELOG.md) into the **Changelog** field.
+7. Paste the latest release notes from [`CHANGELOG.md`](CHANGELOG.md) into the **Changelog** field.
 8. Click **Submit File**.
 
 > [!NOTE]

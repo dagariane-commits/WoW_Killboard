@@ -379,7 +379,7 @@ def main():
     parser.add_argument("--mode", choices=["all", "parser", "api", "addon"], default="all",
                         help="Benchmark suite to run (default: all)")
     parser.add_argument("--target", default="http://127.0.0.1:8080",
-                        help="Target API URL for API stress testing (e.g. http://13.216.102.148 or http://127.0.0.1:8080)")
+                        help="Target API URL for API stress testing (e.g. https://wowkillboard.com or http://127.0.0.1:8080)")
     parser.add_argument("--concurrency", type=int, default=15,
                         help="Number of concurrent worker threads for API load test (default: 15)")
     parser.add_argument("--requests", type=int, default=100,

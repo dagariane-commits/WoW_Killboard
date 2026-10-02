@@ -41,7 +41,7 @@ The `WoWKillboard.toc` manifest includes multi-client declarations:
 ```
 
 ### Packaging Script
-Run [`package_addon.bat`](file:///c:/Users/SQUICK/WoW_Killboard/package_addon.bat) or PowerShell:
+Run [`package_addon.bat`](package_addon.bat) or PowerShell:
 ```powershell
 Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.0.zip" -Force
 ```
@@ -55,7 +55,7 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
 2. Create New Project -> Category: `PvP` / `Combat` / `Information`.
 3. Upload `WoWKillboard-v1.0.0.zip`.
 4. Supported Flavors: Select `WoW Classic`, `Classic Era`, and `Mainline`.
-5. Upload promotional banner (`assets/curseforge_banner.png`) and in-game UI screenshots.
+5. Upload promotional banner (`assets/curseforge/logo.png`) and in-game UI screenshots.
 
 ### B. Wago.io
 1. Access [Wago Addons](https://addons.wago.io/).
@@ -73,7 +73,7 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
 Players who want their combat data to sync automatically to the public web killboard do not need Python.
 
 ### Building the Executable
-Use [`Build_Desktop_Sync_EXE.bat`](file:///c:/Users/SQUICK/WoW_Killboard/Build_Desktop_Sync_EXE.bat):
+Use [`Build_Desktop_Sync_EXE.bat`](Build_Desktop_Sync_EXE.bat):
 ```cmd
 pyinstaller --onefile --name "WoWKillboardSync" sync\watcher.py
 ```
@@ -83,13 +83,13 @@ pyinstaller --onefile --name "WoWKillboardSync" sync\watcher.py
 ### End-User Experience
 1. Download `WoWKillboardSync.exe`.
 2. Double-click the file.
-3. The executable auto-scans drives `C:`, `D:`, and `E:`, detects `WTF/Account/*/SavedVariables/WoWKillboard.lua`, and begins streaming telemetry to `http://localhost:8080` (or the production server).
+3. The executable auto-scans drives `C:`, `D:`, and `E:`, detects `WTF/Account/*/SavedVariables/WoWKillboard.lua`, and begins streaming telemetry to `https://wowkillboard.com`.
 
 ---
 
 ## 4. Web Platform Deployment (Production Cloud)
 
-The web tier is containerized and cloud-ready via the included [`Dockerfile`](file:///c:/Users/SQUICK/WoW_Killboard/Dockerfile).
+The web tier is containerized and cloud-ready via the included [`Dockerfile`](Dockerfile).
 
 ### Production Deployment Options
 
@@ -107,7 +107,7 @@ docker run -d \
 ```
 
 #### Option B: Platform as a Service (Railway / Render / Fly.io)
-Deploy directly using the repository's [`Procfile`](file:///c:/Users/SQUICK/WoW_Killboard/Procfile):
+Deploy directly using the repository's [`Procfile`](Procfile):
 ```text
 web: gunicorn -w 4 -b 0.0.0.0:$PORT web.server:app
 ```
@@ -122,11 +122,11 @@ Guilds and communities can stream real-time kills to their Discord server by hoo
 ```json
 {
   "embeds": [{
-    "title": "⚔️ Confirmed Killmail: Scottquick defeated Xxroguexx",
+    "title": "⚔️ Confirmed Killmail: Dagariane defeated Xxroguexx",
     "description": "Certified Solo Kill in Stranglethorn Vale (54.2, 71.8)",
     "color": 65519,
     "fields": [
-      { "name": "Killer", "value": "Scottquick (Level 60 Paladin)", "inline": true },
+      { "name": "Killer", "value": "Dagariane (Level 60 Paladin)", "inline": true },
       { "name": "Victim", "value": "Xxroguexx (Level 60 Rogue)", "inline": true },
       { "name": "Engagement", "value": "Open World PvP", "inline": true }
     ],
