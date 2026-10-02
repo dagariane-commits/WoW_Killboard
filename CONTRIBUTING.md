@@ -29,7 +29,7 @@ Thank you for your interest in contributing to **WoW Killboard**! This document 
 ### Repository Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Dagariane/WoW_Killboard.git
+   git clone https://github.com/dagariane-commits/WoW_Killboard.git
    cd WoW_Killboard
    ```
 2. Set up Python virtual environment (for tests and desktop sync):

@@ -8,7 +8,7 @@ import urllib.request
 import json
 import sys
 
-REPO = "Dagariane/WoW_Killboard"
+REPO = "dagariane-commits/WoW_Killboard"
 API_URL = f"https://api.github.com/repos/{REPO}/issues?state=open"
 
 def fetch_issues():
