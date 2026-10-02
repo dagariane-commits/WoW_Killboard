@@ -19,6 +19,7 @@ LB.Aggregates = {
 
 -- Check if a kill matches the requested filter mode
 function LB:MatchesMode(km, mode)
+    if not km or type(km) ~= "table" then return false end
     mode = mode or "WORLD"
     if mode == "WORLD" then
         return (not km.isBattleground and not km.isArena and not km.isDuel)
@@ -49,30 +50,9 @@ function LB:Rebuild()
     -- 1. Index local account kills
     if WoWKillboardDB and WoWKillboardDB.kills then
         for _, km in pairs(WoWKillboardDB.kills) do
-            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
-            if kId then seenKills[kId] = true end
-            if not km.isDuel then
-                LB:IndexKillmail(km, "ALL")
-            end
-            if km.isDuel then
-                LB:IndexKillmail(km, "DUEL")
-            elseif km.isArena then
-                LB:IndexKillmail(km, "ARENA")
-            elseif km.isBattleground then
-                LB:IndexKillmail(km, "BG")
-            else
-                LB:IndexKillmail(km, "WORLD")
-            end
-        end
-    end
-
-    -- 2. Index shared realm kills from two-way sync
-    local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
-    if rData and rData.RecentKills then
-        for _, km in ipairs(rData.RecentKills) do
-            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
-            if kId and not seenKills[kId] then
-                seenKills[kId] = true
+            if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
+                local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
+                if kId then seenKills[kId] = true end
                 if not km.isDuel then
                     LB:IndexKillmail(km, "ALL")
                 end
@@ -84,6 +64,31 @@ function LB:Rebuild()
                     LB:IndexKillmail(km, "BG")
                 else
                     LB:IndexKillmail(km, "WORLD")
+                end
+            end
+        end
+    end
+
+    -- 2. Index shared realm kills from two-way sync
+    local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+    if rData and rData.RecentKills then
+        for _, km in ipairs(rData.RecentKills) do
+            if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
+                local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
+                if kId and not seenKills[kId] then
+                    seenKills[kId] = true
+                    if not km.isDuel then
+                        LB:IndexKillmail(km, "ALL")
+                    end
+                    if km.isDuel then
+                        LB:IndexKillmail(km, "DUEL")
+                    elseif km.isArena then
+                        LB:IndexKillmail(km, "ARENA")
+                    elseif km.isBattleground then
+                        LB:IndexKillmail(km, "BG")
+                    else
+                        LB:IndexKillmail(km, "WORLD")
+                    end
                 end
             end
         end
@@ -185,6 +190,10 @@ end
 
 -- Index a single killmail into a target bucket
 function LB:IndexKillmail(km, mode)
+    if not km or type(km) ~= "table" then return end
+    if not km.killer or type(km.killer) ~= "table" or not km.killer.name then return end
+    if not km.victim or type(km.victim) ~= "table" or not km.victim.name then return end
+
     local bucket = LB.Aggregates[mode]
     if not bucket then return end
 
@@ -228,7 +237,7 @@ function LB:IndexKillmail(km, mode)
     bucket.players[vName] = pV
 
     -- Zone Stats
-    local zone = km.location.zone or "Unknown"
+    local zone = (km.location and km.location.zone) or "Unknown"
     bucket.zones[zone] = (bucket.zones[zone] or 0) + 1
 
     -- Guild Stats
@@ -393,10 +402,12 @@ function LB:GetRecentKills(mode, limit)
     -- 1. Local account kills
     if WoWKillboardDB and WoWKillboardDB.kills then
         for _, km in pairs(WoWKillboardDB.kills) do
-            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
-            if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
-                seenKills[kId] = true
-                table.insert(list, km)
+            if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
+                local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
+                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                    seenKills[kId] = true
+                    table.insert(list, km)
+                end
             end
         end
     end
@@ -405,10 +416,12 @@ function LB:GetRecentKills(mode, limit)
     local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
     if rData and rData.RecentKills then
         for _, km in ipairs(rData.RecentKills) do
-            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
-            if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
-                seenKills[kId] = true
-                table.insert(list, km)
+            if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
+                local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
+                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                    seenKills[kId] = true
+                    table.insert(list, km)
+                end
             end
         end
     end
@@ -486,16 +499,18 @@ function LB:GetModeSummary(mode)
     -- 1. Index local account kills
     if WoWKillboardDB and WoWKillboardDB.kills then
         for _, km in pairs(WoWKillboardDB.kills) do
-            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
-            if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
-                seenKills[kId] = true
-                totalKills = totalKills + 1
-                if km.isSolo then soloKills = soloKills + 1 end
-                local f = km.killer and km.killer.faction
-                if f == "Alliance" then
-                    allianceKills = allianceKills + 1
-                elseif f == "Horde" then
-                    hordeKills = hordeKills + 1
+            if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
+                local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
+                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                    seenKills[kId] = true
+                    totalKills = totalKills + 1
+                    if km.isSolo then soloKills = soloKills + 1 end
+                    local f = km.killer.faction
+                    if f == "Alliance" then
+                        allianceKills = allianceKills + 1
+                    elseif f == "Horde" then
+                        hordeKills = hordeKills + 1
+                    end
                 end
             end
         end
@@ -505,16 +520,18 @@ function LB:GetModeSummary(mode)
     local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
     if rData and rData.RecentKills then
         for _, km in ipairs(rData.RecentKills) do
-            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
-            if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
-                seenKills[kId] = true
-                totalKills = totalKills + 1
-                if km.isSolo then soloKills = soloKills + 1 end
-                local f = km.killer and km.killer.faction
-                if f == "Alliance" then
-                    allianceKills = allianceKills + 1
-                elseif f == "Horde" then
-                    hordeKills = hordeKills + 1
+            if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
+                local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
+                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                    seenKills[kId] = true
+                    totalKills = totalKills + 1
+                    if km.isSolo then soloKills = soloKills + 1 end
+                    local f = km.killer.faction
+                    if f == "Alliance" then
+                        allianceKills = allianceKills + 1
+                    elseif f == "Horde" then
+                        hordeKills = hordeKills + 1
+                    end
                 end
             end
         end
