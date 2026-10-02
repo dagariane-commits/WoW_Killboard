@@ -19,5 +19,5 @@ WoWKillboard_RealmData = {
         deaths = 0,
         zone = "None",
     },
-    LastSync = 1790906729,
+    LastSync = 1790907394,
 }

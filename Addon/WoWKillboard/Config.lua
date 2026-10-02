@@ -10,7 +10,7 @@ local KB = WoWKillboard
 
 KB.Version = "1.0.0"
 KB.Prefix = "WOWKB"
-KB.WebDomain = "13.216.102.148"
+KB.WebDomain = "wowkillboard.com"
 
 -- Default User Settings
 KB.DefaultSettings = {
