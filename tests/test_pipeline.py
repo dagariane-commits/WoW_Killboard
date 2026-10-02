@@ -1423,29 +1423,40 @@ WoWKillboardDB = {
 }
 """)
 
-        watcher = KillboardWatcher(filepaths=[dummy_sv], api_urls=[])
-        success = watcher.sync_realm_data_to_client()
-        self.assertTrue(success)
+        repo_realm_data = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Addon", "WoWKillboard", "WoWKillboard_RealmData.lua")
+        orig_content = None
+        if os.path.exists(repo_realm_data):
+            with open(repo_realm_data, "r", encoding="utf-8") as f:
+                orig_content = f.read()
 
-        realm_data_path = os.path.join(temp_dir, "WoWKillboard_RealmData.lua")
-        self.assertTrue(os.path.exists(realm_data_path), "WoWKillboard_RealmData.lua should be written in SavedVariables directory")
+        try:
+            realm_data_path = os.path.join(temp_dir, "WoWKillboard_RealmData.lua")
+            watcher = KillboardWatcher(filepaths=[dummy_sv], api_urls=[])
+            success = watcher.sync_realm_data_to_client(target_paths_override=[realm_data_path])
+            self.assertTrue(success)
 
-        with open(realm_data_path, "r", encoding="utf-8") as f:
-            content = f.read()
+            self.assertTrue(os.path.exists(realm_data_path), "WoWKillboard_RealmData.lua should be written in SavedVariables directory")
 
-        self.assertIn("RecentPveDeaths", content)
-        self.assertIn("PveTotalDeaths", content)
-        self.assertIn("PveTopExecutioners", content)
-        self.assertIn("Stitches", content)
+            with open(realm_data_path, "r", encoding="utf-8") as f:
+                content = f.read()
 
-        parsed = LuaTableParser.parse_string(content)
-        self.assertIn("WoWKillboard_RealmData", parsed)
-        rd = parsed["WoWKillboard_RealmData"]
-        self.assertIn("RecentPveDeaths", rd)
-        entry = rd["RecentPveDeaths"][1] if 1 in rd["RecentPveDeaths"] else rd["RecentPveDeaths"][0]
-        self.assertEqual(entry["deathId"], "PVE-LOCAL-01")
+            self.assertIn("RecentPveDeaths", content)
+            self.assertIn("PveTotalDeaths", content)
+            self.assertIn("PveTopExecutioners", content)
+            self.assertIn("Stitches", content)
 
-        print("[PASS] Verified Two-Way Sync PvE serialization into WoWKillboard_RealmData.lua.")
+            parsed = LuaTableParser.parse_string(content)
+            self.assertIn("WoWKillboard_RealmData", parsed)
+            rd = parsed["WoWKillboard_RealmData"]
+            self.assertIn("RecentPveDeaths", rd)
+            entry = rd["RecentPveDeaths"][1] if 1 in rd["RecentPveDeaths"] else rd["RecentPveDeaths"][0]
+            self.assertEqual(entry["deathId"], "PVE-LOCAL-01")
+
+            print("[PASS] Verified Two-Way Sync PvE serialization into WoWKillboard_RealmData.lua.")
+        finally:
+            if orig_content is not None and os.path.exists(repo_realm_data):
+                with open(repo_realm_data, "w", encoding="utf-8") as f:
+                    f.write(orig_content)
 
 if __name__ == "__main__":
     unittest.main()

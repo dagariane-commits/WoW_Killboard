@@ -5,6 +5,26 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.87] - 2026-10-02
+
+### Changed
+- **Authentic Community Voice Adoption (`README.md`, `docs/README.md`, `docs/PUBLIC_RELEASE_PLAYBOOK.md`, `WoWKillboard.toc`, `Core.lua`)**:
+  - Removed corporate "enterprise-grade" phrasing and buzzwords across project documentation, manifests, and release notes.
+  - Refactored project overview and CurseForge copy to reflect an authentic, personal gamer tone: *"Hey everyone! I'm just a dude who used AI to help create my very first World of Warcraft addon..."*
+  - Updated in-game initialization banner in `Core.lua` and TOC description in `WoWKillboard.toc` to invite genuine player feedback.
+
+### Fixed
+- **PvE Mock Data Purge & Live Client Sanitization (`WoWKillboard_RealmData.lua`)**:
+  - Purged synthetic test record `PVE-LOCAL-01` (`Stitches` slaying `CasualtyOne` in `Duskwood`) from `WoWKillboard_RealmData.lua` and active SavedVariables directories across all accounts.
+  - Reset `RecentPveDeaths` to empty list and `PveTotalDeaths` to 0.
+- **Unit Test Target Isolation (`sync/watcher.py`, `tests/test_pipeline.py`)**:
+  - Implemented `target_paths_override` in `KillboardWatcher.sync_realm_data_to_client()` to restrict telemetry file generation to ephemeral test directories.
+  - Resolved test pollution vulnerability where unit test execution auto-discovered real World of Warcraft directories and wrote synthetic test data into local client WTF and AddOn folders.
+
+### Infrastructure & Deployment
+- **Multi-Client Local Deployment**: Synchronized sanitized addon files across all 4 local client installations (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+- **Binary & Package Rebuild**: Recompiled `dist/WoWKillboardSync.exe` via PyInstaller and regenerated `WoWKillboard-v1.0.0.zip`.
+
 ## [1.4.86] - 2026-10-02
 
 ### Fixed

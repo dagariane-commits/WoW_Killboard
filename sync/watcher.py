@@ -666,7 +666,7 @@ class KillboardWatcher:
                 pass
         return any_success
 
-    def sync_realm_data_to_client(self) -> bool:
+    def sync_realm_data_to_client(self, target_paths_override: list = None) -> bool:
         """Fetches /api/realm/summary, /api/kills, /api/bounties, /api/pve/deaths, and /api/pve/leaderboard, merges local data across accounts, and writes WoWKillboard_RealmData.lua."""
         summary = None
         recent_kills = []
@@ -908,33 +908,36 @@ class KillboardWatcher:
         ]
         lua_content = "\n".join(lua_lines) + "\n"
 
-        target_paths = []
-        for fp in getattr(self, "filepaths", [self.filepath] if getattr(self, "filepath", None) else []):
-            sv_dir = os.path.dirname(os.path.abspath(fp))
-            if os.path.exists(sv_dir):
-                target_paths.append(os.path.join(sv_dir, "WoWKillboard_RealmData.lua"))
-                wow_flavor_dir = os.path.abspath(os.path.join(sv_dir, "..", "..", ".."))
-                addon_dir = os.path.join(wow_flavor_dir, "Interface", "AddOns", "WoWKillboard")
-                if os.path.exists(addon_dir):
-                    target_paths.append(os.path.join(addon_dir, "WoWKillboard_RealmData.lua"))
+        if target_paths_override is not None:
+            target_paths = list(target_paths_override)
+        else:
+            target_paths = []
+            for fp in getattr(self, "filepaths", [self.filepath] if getattr(self, "filepath", None) else []):
+                sv_dir = os.path.dirname(os.path.abspath(fp))
+                if os.path.exists(sv_dir):
+                    target_paths.append(os.path.join(sv_dir, "WoWKillboard_RealmData.lua"))
+                    wow_flavor_dir = os.path.abspath(os.path.join(sv_dir, "..", "..", ".."))
+                    addon_dir = os.path.join(wow_flavor_dir, "Interface", "AddOns", "WoWKillboard")
+                    if os.path.exists(addon_dir):
+                        target_paths.append(os.path.join(addon_dir, "WoWKillboard_RealmData.lua"))
 
-        local_repo_addon = os.path.join("Addon", "WoWKillboard", "WoWKillboard_RealmData.lua")
-        if os.path.exists(os.path.dirname(local_repo_addon)):
-            target_paths.append(local_repo_addon)
+            local_repo_addon = os.path.join("Addon", "WoWKillboard", "WoWKillboard_RealmData.lua")
+            if os.path.exists(os.path.dirname(local_repo_addon)):
+                target_paths.append(local_repo_addon)
 
-        # Universal Addon Directories across all drives and WoW flavors
-        for ad in find_all_wow_addon_dirs():
-            target_paths.append(os.path.join(ad, "WoWKillboard_RealmData.lua"))
+            # Universal Addon Directories across all drives and WoW flavors
+            for ad in find_all_wow_addon_dirs():
+                target_paths.append(os.path.join(ad, "WoWKillboard_RealmData.lua"))
 
-        # Universal WTF SavedVariables directories across all roots
-        import glob
-        for root in find_all_wow_roots():
-            for flv in ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_", "_ptr_", "_classic_"]:
-                p_addon = f"{root}/{flv}/Interface/AddOns/WoWKillboard/WoWKillboard_RealmData.lua"
-                if os.path.exists(os.path.dirname(p_addon)):
-                    target_paths.append(p_addon)
-                for sv in glob.glob(f"{root}/{flv}/WTF/Account/*/SavedVariables"):
-                    target_paths.append(os.path.join(sv, "WoWKillboard_RealmData.lua"))
+            # Universal WTF SavedVariables directories across all roots
+            import glob
+            for root in find_all_wow_roots():
+                for flv in ["_classic_beta_", "_classic_era_", "_anniversary_", "_retail_", "_ptr_", "_classic_"]:
+                    p_addon = f"{root}/{flv}/Interface/AddOns/WoWKillboard/WoWKillboard_RealmData.lua"
+                    if os.path.exists(os.path.dirname(p_addon)):
+                        target_paths.append(p_addon)
+                    for sv in glob.glob(f"{root}/{flv}/WTF/Account/*/SavedVariables"):
+                        target_paths.append(os.path.join(sv, "WoWKillboard_RealmData.lua"))
 
         written = 0
         for tp in set(target_paths):
