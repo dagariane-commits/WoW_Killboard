@@ -5,6 +5,14 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.94] - 2026-10-02
+
+### Changed
+- **Official GitHub Repository & Project URL Standardization (`WoWKillboard.toc`, `README.md`, `CONTRIBUTING.md`, `scripts/check_issues.py`)**:
+  - Updated all project links, website metadata, and repository references from `dagariane-commits/WoW_Killboard` to `https://github.com/Dagariane/WoW_Killboard`.
+  - Updated CI and CodeQL workflow status badges in `README.md` to point to `Dagariane/WoW_Killboard`.
+  - Updated GitHub issue tracking URL and contributor clone instructions to `https://github.com/Dagariane/WoW_Killboard.git`.
+
 ## [1.4.93] - 2026-10-02
 
 ### Added
