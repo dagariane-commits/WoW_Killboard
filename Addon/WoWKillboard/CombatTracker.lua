@@ -89,6 +89,7 @@ CT.LastKillVictim = nil
 CT.LastKillTime = 0
 CT.LastLifetimeHK = nil
 CT.RecentEngagedEnemies = {}
+CT.LastHostileNpc = nil
 local activeEnemyTarget = nil
 
 -- Get current instance & BG metadata
@@ -647,6 +648,9 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
                     end
                 end
             end
+            if not enemy and CT.LastHostileNpc and (now - (CT.LastHostileNpc.lastSeen or 0)) <= 45 then
+                enemy = CT.LastHostileNpc
+            end
             if not enemy then
                 for hGUID, hTime in pairs(CT.HostileCluster) do
                     if (now - hTime) <= 45 then
@@ -658,27 +662,85 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
                     end
                 end
             end
-            if not enemy and UnitExists("target") and UnitCanAttack("player", "target") and UnitIsPlayer("target") then
-                enemy = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+            -- Live target verification on death
+            if not enemy and UnitExists("target") and (UnitIsEnemy("player", "target") or UnitCanAttack("player", "target")) then
+                local isTargetPlayer = UnitIsPlayer("target")
+                if isTargetPlayer then
+                    enemy = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+                else
+                    local tGuid = UnitGUID("target")
+                    local tName = UnitName("target")
+                    if tName and tName ~= "" and tName ~= UnitName("player") then
+                        local npcId = 0
+                        if tGuid then
+                            local parsed = tGuid:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or tGuid:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
+                            if parsed then npcId = tonumber(parsed) or 0 end
+                        end
+                        enemy = {
+                            guid = tGuid or "UNKNOWN_CREATURE",
+                            name = tName,
+                            id = npcId,
+                            level = UnitLevel("target") or 0,
+                            class = "MONSTER",
+                            guild = "None",
+                            faction = "Hostile NPC",
+                            isPlayer = false,
+                        }
+                    end
+                end
+            end
+            -- Target's target check if enemy was attacking player
+            if not enemy and UnitExists("targettarget") and UnitIsUnit("targettarget", "player") and UnitExists("target") then
+                local tGuid = UnitGUID("target")
+                local tName = UnitName("target")
+                if tName and tName ~= "" and tName ~= UnitName("player") then
+                    local isTP = UnitIsPlayer("target")
+                    local npcId = 0
+                    if not isTP and tGuid then
+                        local parsed = tGuid:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or tGuid:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
+                        if parsed then npcId = tonumber(parsed) or 0 end
+                    end
+                    enemy = {
+                        guid = tGuid or "UNKNOWN_CREATURE",
+                        name = tName,
+                        id = npcId,
+                        level = UnitLevel("target") or 0,
+                        class = isTP and "UNKNOWN" or "MONSTER",
+                        guild = "None",
+                        faction = "Hostile NPC",
+                        isPlayer = isTP,
+                    }
+                end
             end
 
             if enemy and enemy.name and enemy.name ~= UnitName("player") then
                 finalBlowKillerGUID = enemy.guid or "UNKNOWN_HOSTILE"
                 finalBlowKillerName = enemy.name
+                local isEnemyPlayer = (enemy.isPlayer == true) or (enemy.guid and enemy.guid:match("^Player%-") ~= nil)
                 table.insert(attackersList, {
                     guid = finalBlowKillerGUID,
                     name = finalBlowKillerName,
                     damage = 0,
                     spell = "Fatal Strike",
-                    class = enemy.class or "UNKNOWN",
+                    class = enemy.class or (isEnemyPlayer and "UNKNOWN" or "MONSTER"),
                     level = enemy.level or 0,
                     guild = enemy.guild or "None",
                     faction = enemy.faction or "Unknown",
-                    isPlayer = true,
+                    isPlayer = isEnemyPlayer,
                 })
                 recordedAttackersMap[finalBlowKillerGUID] = true
                 if finalBlowKillerName then recordedAttackersMap[finalBlowKillerName] = true end
-                hasPlayerAttacker = true
+                if isEnemyPlayer then
+                    hasPlayerAttacker = true
+                else
+                    topNpcAttacker = {
+                        guid = finalBlowKillerGUID,
+                        name = finalBlowKillerName,
+                        id = enemy.id or 0,
+                        totalDamage = 0,
+                        spellName = "Fatal Strike",
+                    }
+                end
             end
         end
     end
@@ -688,14 +750,21 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         if playerGUID and victimGUID == playerGUID then
             CT.SessionStats.pveDeaths = (CT.SessionStats.pveDeaths or 0) + 1
             local pClass = select(2, UnitClass("player"))
+            local fallbackNpc = (CT.LastHostileNpc and (now - (CT.LastHostileNpc.lastSeen or 0)) <= 45 and CT.LastHostileNpc) or {
+                name = "Environmental Hazard",
+                id = 0,
+                guid = "ENVIRONMENT",
+                spell = "Fatal Impact / Mishap",
+                damage = 0,
+            }
             KB.Killmail:RecordPveDeath({
                 timestamp = now,
                 npc = {
-                    name = "Environmental Hazard",
-                    id = 0,
-                    guid = "ENVIRONMENT",
-                    spell = "Fatal Impact / Mishap",
-                    damage = 0,
+                    name = fallbackNpc.name or "Unknown Monster",
+                    id = fallbackNpc.id or 0,
+                    guid = fallbackNpc.guid or "UNKNOWN",
+                    spell = fallbackNpc.spell or "Fatal Strike",
+                    damage = fallbackNpc.damage or 0,
                 },
                 victim = {
                     guid = playerGUID,
@@ -2161,6 +2230,9 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" or event == "PLAYER_REGEN_ENABLED" then
         CT.LastCombatTime = time()
+        if event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" then
+            CT.LastHostileNpc = nil
+        end
         if KB.Utils and KB.Utils.FlushPrintQueue then
             KB.Utils.FlushPrintQueue()
         end
@@ -2170,27 +2242,57 @@ frame:SetScript("OnEvent", function(self, event, ...)
         CT:CheckPendingDeathBounty()
 
     elseif event == "PLAYER_TARGET_CHANGED" then
-        if UnitExists("target") and UnitIsPlayer("target") then
+        if UnitExists("target") then
             local isEnemy = UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or (not UnitIsFriend("player", "target"))
             if isEnemy then
                 local isDead = (UnitIsDead("target") or UnitIsDeadOrGhost("target")) and true or false
                 local tGuid = UnitGUID("target")
                 local tName = UnitName("target")
-                if isDead and tName and tName ~= "" then
-                    CT:OnPlayerHonorableKill(tName, tGuid, "target")
-                elseif not isDead then
-                    local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
-                    activeEnemyTarget = {
-                        name = tName,
-                        guid = tGuid,
-                        level = UnitLevel("target") or (tInfo and tInfo.level or 0),
-                        class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
-                        guild = (not InCombatLockdown() and GetGuildInfo("target")) or (tInfo and tInfo.guild or "None"),
-                        faction = UnitFactionGroup("target") or (tInfo and tInfo.faction or "Unknown"),
-                        lastSeen = time(),
-                    }
-                    if tGuid then
-                        CT.RecentEngagedEnemies[tGuid] = activeEnemyTarget
+                local isTargetPlayer = UnitIsPlayer("target")
+
+                if isTargetPlayer then
+                    if isDead and tName and tName ~= "" then
+                        CT:OnPlayerHonorableKill(tName, tGuid, "target")
+                    elseif not isDead then
+                        local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+                        activeEnemyTarget = {
+                            name = tName,
+                            guid = tGuid,
+                            level = UnitLevel("target") or (tInfo and tInfo.level or 0),
+                            class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
+                            guild = (not InCombatLockdown() and GetGuildInfo("target")) or (tInfo and tInfo.guild or "None"),
+                            faction = UnitFactionGroup("target") or (tInfo and tInfo.faction or "Unknown"),
+                            lastSeen = time(),
+                            isPlayer = true,
+                        }
+                        if tGuid then
+                            CT.RecentEngagedEnemies[tGuid] = activeEnemyTarget
+                        end
+                    end
+                else
+                    -- Hostile NPC / Monster target tracking for PvE mortality attribution
+                    if not isDead and tName and tName ~= "" then
+                        local npcId = 0
+                        if tGuid then
+                            local parsed = tGuid:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or tGuid:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
+                            if parsed then npcId = tonumber(parsed) or 0 end
+                        end
+                        local npcData = {
+                            name = tName,
+                            guid = tGuid or "UNKNOWN_CREATURE",
+                            id = npcId,
+                            level = UnitLevel("target") or 0,
+                            class = "MONSTER",
+                            guild = "None",
+                            faction = "Hostile NPC",
+                            lastSeen = time(),
+                            isPlayer = false,
+                        }
+                        CT.LastHostileNpc = npcData
+                        activeEnemyTarget = npcData
+                        if tGuid then
+                            CT.RecentEngagedEnemies[tGuid] = npcData
+                        end
                     end
                 end
             end

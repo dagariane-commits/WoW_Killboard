@@ -5,6 +5,18 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.91] - 2026-10-02
+
+### Fixed
+- **Hostile NPC Death Attribution & PvE Hazard Fallback Fix (`Addon/WoWKillboard/CombatTracker.lua`)**:
+  - Remediated root cause where player deaths to hostile creatures on CLEU-restricted clients (such as WoW Forever Beta) defaulted to `Environmental Hazard / Fatal Impact / Mishap • 0 dmg` due to missing NPC targeting telemetry.
+  - Expanded `PLAYER_TARGET_CHANGED` event listener to capture hostile NPC / monster targets (`UnitIsEnemy`, `UnitCanAttack`, or hostile reaction) into `CT.LastHostileNpc`, `activeEnemyTarget`, and `CT.RecentEngagedEnemies` with extracted creature IDs and levels.
+  - Upgraded `CT:ProcessDeath()` fallback execution path when the local player is slain (`victimGUID == playerGUID`):
+    - Added multi-stage fallback checking `CT.LastHostileNpc`, `CT.RecentEngagedEnemies`, current hostile `target`, and `targettarget` (to confirm creature was engaging player).
+    - Preserved `isPlayer = false` distinction on hostile creatures so PvE deaths are cleanly recorded as monster executions (`topNpcAttacker`) rather than incorrectly flagged as PvP or falling into zero-attacker environmental defaults.
+    - Updated fallback PvE recording to attribute to `CT.LastHostileNpc` before falling back to `Environmental Hazard`.
+    - Added state cleanup on resurrection (`PLAYER_ALIVE`, `PLAYER_UNGHOST`) to prevent stale NPC attacker carryover.
+
 ## [1.4.90] - 2026-10-02
 
 ### Added
