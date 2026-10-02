@@ -21,11 +21,12 @@ flowchart LR
    - **Modern Retail**: `World of Warcraft\_retail_\Interface\AddOns\`
 3. Launch World of Warcraft. On your character selection screen, ensure **WoW Killboard** is checked in the **AddOns** menu.
 
-### Step 2: Launch the Automatic Sync Client (Zero Python Required)
+### Step 2: Launch the Desktop Companion App (Zero Python Required)
 1. Download **`WoWKillboardSync.exe`**.
-2. Double-click to launch it.
-3. The sync agent automatically discovers your WoW installation across drives `C:`, `D:`, and `E:`.
-4. Leave it running in the background while you play. Whenever you `/reload` or log out, your combat kills, Marks of Spite, and battle statistics are instantly synchronized to the realm killboard!
+2. Double-click to launch it. The sleek dark-themed **Desktop Companion Dashboard** opens immediately.
+3. When prompted, click **"🚀 Install & Launch"** to install cleanly to your PC, creating a **Desktop shortcut** and Start Menu icon while keeping your Downloads folder completely clean.
+4. The companion automatically discovers your WoW installation across drives `C:`, `D:`, and `E:`.
+5. Check **"Start with Windows"** if you'd like it to monitor automatically in the background. Whenever you `/reload` or log out, your combat kills, Marks of Spite, and battle statistics are instantly synchronized to the realm killboard!
 
 ### Step 3: Slay & Track Live
 - In-Game Commands:
