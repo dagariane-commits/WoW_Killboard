@@ -890,7 +890,9 @@ function renderPveFeed(deaths) {
 
 async function loadSidebar() {
   try {
-    const res = await fetch("/api/stats/activity-7d");
+    const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+    const activeServer = (typeof getCurrentForeverServer === "function") ? getCurrentForeverServer() : "PVP";
+    const res = await fetch(`/api/stats/activity-7d?flavor=${encodeURIComponent(currentFlavor)}&server=${encodeURIComponent(isPve ? "PVE" : activeServer)}`);
     if (!res.ok) return;
     const data = await res.json();
     renderSidebarActivity(data);
@@ -901,6 +903,32 @@ async function loadSidebar() {
 
 function renderSidebarActivity(data) {
   if (!data) return;
+
+  const isPve = Boolean(data.isPve) || (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+
+  // Dynamically adapt activity table labels
+  const lblKills = document.getElementById("act-label-kills");
+  if (lblKills) lblKills.innerText = isPve ? "Total Casualties" : "Total Kills";
+  const lblAlliance = document.getElementById("act-label-alliance");
+  if (lblAlliance) lblAlliance.innerText = isPve ? "Alliance Fallen" : "Alliance Kills";
+  const lblHorde = document.getElementById("act-label-horde");
+  if (lblHorde) lblHorde.innerText = isPve ? "Horde Fallen" : "Horde Kills";
+  const lblChars = document.getElementById("act-label-chars");
+  if (lblChars) lblChars.innerText = isPve ? "Active Mortals" : "Active Characters";
+  const lblGuilds = document.getElementById("act-label-guilds");
+  if (lblGuilds) lblGuilds.innerText = isPve ? "Active Guilds" : "Active Guilds";
+
+  // Dynamically adapt sidebar card titles
+  const titleZones = document.getElementById("sidebar-title-zones");
+  if (titleZones) titleZones.innerText = isPve ? "Deadliest Zones (Casualties)" : "Deadliest Zones (24 Hours)";
+  const titleChars = document.getElementById("sidebar-title-characters");
+  if (titleChars) titleChars.innerText = isPve ? "Deadliest Monsters & Hazards" : "Top Active Gankers (24 Hours)";
+  const titleGuilds = document.getElementById("sidebar-title-guilds");
+  if (titleGuilds) titleGuilds.innerText = isPve ? "Guild Casualties (24 Hours)" : "Top Active Guilds (24 Hours)";
+  const titleClasses = document.getElementById("sidebar-title-classes");
+  if (titleClasses) titleClasses.innerText = isPve ? "Casualties by Class" : "All Classes";
+  const titleSpecs = document.getElementById("sidebar-title-specs");
+  if (titleSpecs) titleSpecs.innerText = isPve ? "Deadliest Creature Spells" : "Top Active Specs";
 
   // 1. Lifetime Combat Activity Table Numbers
   const charsEl = document.getElementById("act-7d-chars");
@@ -920,62 +948,46 @@ function renderSidebarActivity(data) {
 
   // 2. Deadliest Zones (Last 24 Hours)
   const zoneListEl = document.getElementById("sidebar-24h-zones") || document.getElementById("sidebar-7d-zones-list");
-  const charListEl = document.getElementById("sidebar-24h-characters") || document.getElementById("sidebar-7d-characters");
-
-  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
-  if (isPve) {
-    try {
-      fetch("/api/pve/leaderboard").then(r => r.json()).then(pveData => {
-        const deadZone = pveData.summary?.mostDangerousZone || { zone: "Elwynn Forest", deaths: 3 };
-        if (zoneListEl) {
-          zoneListEl.innerHTML = `
-            <div class="sidebar-rank-item zone-item">
-              <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
-                <span class="rank-badge">#1</span>
-                <span style="font-weight:700; color:#e2e8f0;">${escapeHtml(deadZone.zone || "Elwynn Forest")}</span>
-              </div>
-              <span style="color:#ef4444; font-weight:700; font-family:var(--font-tactical); margin-left:8px;">${deadZone.deaths || 3} deaths</span>
-            </div>
-          `;
-        }
-        if (charListEl && pveData.topDeadlyNpcs) {
-          charListEl.innerHTML = pveData.topDeadlyNpcs.slice(0, 5).map((m, i) => `
-            <div class="sidebar-rank-item character-item" style="cursor:pointer;" onclick="switchTab('HAZARDS')">
-              <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
-                <span class="rank-badge">#${i + 1}</span>
-                <span style="font-weight:700; color:#ef4444;">💀 ${escapeHtml(m.npc_name)}</span>
-              </div>
-              <span style="color:var(--accent-gold); font-weight:700; font-family:var(--font-tactical); margin-left:8px;">${m.kills} slain</span>
-            </div>
-          `).join('');
-        }
-      });
-    } catch (e) {}
-    return;
-  }
-
   if (zoneListEl) {
     const zones = data.deadliestZones24h || data.topZones || [];
     if (zones.length === 0) {
-      zoneListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No conflict zones logged in last 24h</div>`;
+      zoneListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">${isPve ? 'No casualty zones recorded' : 'No conflict zones logged in last 24h'}</div>`;
     } else {
-      zoneListEl.innerHTML = zones.map((z, i) => `
-        <div class="sidebar-rank-item zone-item">
-          <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
-            <span class="rank-badge">#${i + 1}</span>
-            <span style="font-weight:700; color:#e2e8f0; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${escapeHtml(z.zone)}</span>
+      zoneListEl.innerHTML = zones.map((z, i) => {
+        const countVal = z.deaths !== undefined ? z.deaths : z.kills;
+        const countSuffix = isPve ? 'fallen' : 'kills';
+        return `
+          <div class="sidebar-rank-item zone-item">
+            <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
+              <span class="rank-badge">#${i + 1}</span>
+              <span style="font-weight:700; color:#e2e8f0; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${escapeHtml(z.zone || 'Azeroth')}</span>
+            </div>
+            <span style="color:#ef4444; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${countVal} ${countSuffix}</span>
           </div>
-          <span style="color:#ef4444; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${z.kills} kills</span>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
   }
 
-  // 3. Top Active Gankers (Last 24 Hours)
+  // 3. Top Active Gankers (PvP) OR Deadliest Monsters & Hazards (PvE)
+  const charListEl = document.getElementById("sidebar-24h-characters") || document.getElementById("sidebar-7d-characters");
   if (charListEl) {
     const chars = data.topGankers24h || data.topCharacters || [];
     if (chars.length === 0) {
-      charListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No character kills logged in last 24h</div>`;
+      charListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">${isPve ? 'No monster kills or hazards logged in last 24h' : 'No character kills logged in last 24h'}</div>`;
+    } else if (isPve) {
+      charListEl.innerHTML = chars.map((m, i) => {
+        const countVal = m.slain !== undefined ? m.slain : m.kills;
+        return `
+          <div class="sidebar-rank-item character-item" style="cursor:pointer;" onclick="switchTab('HAZARDS')">
+            <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
+              <span class="rank-badge">#${i + 1}</span>
+              <span style="font-weight:700; color:#ef4444; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">💀 ${escapeHtml(m.name)}</span>
+            </div>
+            <span style="color:var(--accent-gold); font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${countVal} slain</span>
+          </div>
+        `;
+      }).join('');
     } else {
       charListEl.innerHTML = chars.map((c, i) => {
         let faction = (c.faction || "").toLowerCase();
@@ -998,29 +1010,31 @@ function renderSidebarActivity(data) {
     }
   }
 
-  // 4. Top Active Guilds (Last 24 Hours)
+  // 4. Top Active Guilds (PvP) OR Guild Casualties (PvE)
   const guildListEl = document.getElementById("sidebar-24h-guilds") || document.getElementById("sidebar-7d-guilds");
   if (guildListEl) {
     const guilds = data.topGuilds24h || data.topGuilds || [];
     if (guilds.length === 0) {
-      guildListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No active guild combat in last 24h</div>`;
+      guildListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">${isPve ? 'No guild casualties in last 24h' : 'No active guild combat in last 24h'}</div>`;
     } else {
       guildListEl.innerHTML = guilds.map((g, i) => {
         const factionClass = (g.faction || '').toLowerCase() === 'alliance' ? 'alliance' : ((g.faction || '').toLowerCase() === 'horde' ? 'horde' : '');
+        const countVal = g.deaths !== undefined ? g.deaths : g.kills;
+        const countSuffix = isPve ? 'fallen' : 'kills';
         return `
           <div class="sidebar-rank-item ${factionClass}">
             <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
               <span class="rank-badge">#${i + 1}</span>
               <span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')" style="font-weight:700; color:var(--text-main); white-space:nowrap;">&lt;${escapeHtml(g.guild)}&gt;</span>
             </div>
-            <span style="color:var(--accent-gold); font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${g.kills} kills</span>
+            <span style="color:${isPve ? '#ef4444' : 'var(--accent-gold)'}; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${countVal} ${countSuffix}</span>
           </div>
         `;
       }).join('');
     }
   }
 
-  // 5. Top Classes (Lifetime)
+  // 5. Top Classes (Lifetime / Casualties)
   const classListEl = document.getElementById("sidebar-top-classes") || document.getElementById("sidebar-7d-classes");
   if (classListEl) {
     const classes = data.topClasses || [];
@@ -1031,29 +1045,41 @@ function renderSidebarActivity(data) {
         const rawCls = cls.class || '';
         const color = CLASS_COLORS[rawCls.toUpperCase()] || CLASS_COLORS.UNKNOWN;
         const formattedClassName = rawCls ? (rawCls.charAt(0).toUpperCase() + rawCls.slice(1).toLowerCase()) : 'Unknown';
+        const countVal = cls.deaths !== undefined ? cls.deaths : cls.kills;
+        const countSuffix = isPve ? 'fallen' : 'kills';
         return `
           <div class="sidebar-rank-item">
             <span style="color:${color}; font-weight:700; display:flex; align-items:center; gap:6px;">
               ${renderClassBadge(rawCls, 16)} ${escapeHtml(formattedClassName)}
             </span>
-            <span style="color:#e2e8f0; font-weight:700; font-family:var(--font-tactical);">${cls.kills} kills</span>
+            <span style="color:${countVal > 0 ? (isPve ? '#f87171' : '#10b981') : '#64748b'}; font-weight:700; font-family:var(--font-tactical);">${countVal} ${countSuffix}</span>
           </div>
         `;
       }).join('');
     }
   }
 
-  // 6. Top Specializations (Lifetime)
+  // 6. Top Specializations (Lifetime / Deadliest Creature Spells)
   const specListEl = document.getElementById("sidebar-top-specs");
   if (specListEl) {
-    const specs = (data.topSpecs || []).slice().sort((a, b) => {
-      const cmp = (a.spec || '').localeCompare(b.spec || '');
-      return cmp !== 0 ? cmp : (a.class || '').localeCompare(b.class || '');
-    });
+    const specs = data.topSpecs || [];
     if (specs.length === 0) {
-      specListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No specialization telemetry logged</div>`;
+      specListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">${isPve ? 'No monster spell telemetry' : 'No spec telemetry logged'}</div>`;
+    } else if (isPve) {
+      specListEl.innerHTML = specs.map((sp, i) => `
+        <div class="sidebar-rank-item">
+          <span style="color:#fbbf24; font-weight:700; display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            ⚡ ${escapeHtml(sp.spec || sp.spell || 'Combat Strike')}
+          </span>
+          <span style="color:#ef4444; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${sp.kills} lethal</span>
+        </div>
+      `).join('');
     } else {
-      specListEl.innerHTML = specs.map(s => {
+      const sortedSpecs = specs.slice().sort((a, b) => {
+        const cmp = (a.spec || '').localeCompare(b.spec || '');
+        return cmp !== 0 ? cmp : (a.class || '').localeCompare(b.class || '');
+      });
+      specListEl.innerHTML = sortedSpecs.map(s => {
         const color = CLASS_COLORS[(s.class || '').toUpperCase()] || CLASS_COLORS.UNKNOWN;
         return `
           <div class="sidebar-rank-item">
