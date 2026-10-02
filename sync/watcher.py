@@ -395,7 +395,16 @@ class KillboardWatcher:
                     self.known_bugs.add(b_id)
                     new_bugs_count += 1
 
-        sync_summary = f"[Watcher] [{client_tag}] Synced: {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debts, {new_claims_count} claims, {new_bugs_count} bug reports"
+        # Ingest indexed characters from UnitScanner
+        chars_data = parsed.get("characters", {})
+        if not chars_data and isinstance(raw_db, dict):
+            chars_data = raw_db.get("characters", {})
+        synced_chars = 0
+        if chars_data and isinstance(chars_data, dict):
+            if self.upload_characters(chars_data):
+                synced_chars = len(chars_data)
+
+        sync_summary = f"[Watcher] [{client_tag}] Synced: {new_count} new kills, {new_pve_count} PvE deaths, {len(bounties)} bounties, {len(debts)} debts, {synced_chars} characters, {new_claims_count} claims, {new_bugs_count} bug reports"
         if is_manual_sync:
             sync_summary += " [Manual Sync Heartbeat OK]"
         log_event(sync_summary)
@@ -671,6 +680,28 @@ class KillboardWatcher:
             except Exception as e:
                 if "127.0.0.1" not in endpoint:
                     log_event(f"[Watcher] [CLAIM NOTICE] Could not verify '{character_name}' on {endpoint}: {e}")
+        return any_success
+
+    def upload_characters(self, characters: dict) -> bool:
+        if not characters or not isinstance(characters, dict):
+            return False
+        payload = list(characters.values())
+        any_success = False
+        for endpoint in self.api_urls:
+            url = f"{endpoint}/api/characters"
+            try:
+                data_bytes = json.dumps(payload).encode("utf-8")
+                req = urllib.request.Request(
+                    url,
+                    data=data_bytes,
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"},
+                    method="POST"
+                )
+                with safe_urlopen(req, timeout=10) as resp:
+                    if resp.status in (200, 201):
+                        any_success = True
+            except Exception:
+                pass
         return any_success
 
     def upload_bug_report(self, bug_data: dict) -> bool:

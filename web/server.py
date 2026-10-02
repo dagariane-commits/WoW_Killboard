@@ -1091,7 +1091,26 @@ def get_kill(kill_id):
         row = conn.execute("SELECT * FROM kills WHERE kill_id = ?", (kill_id,)).fetchone()
         if not row:
             return jsonify({"error": "Killmail not found"}), 404
-        return jsonify(json.loads(row["raw_json"]))
+        kill_dict = json.loads(row["raw_json"])
+        if "killer" in kill_dict and isinstance(kill_dict["killer"], dict):
+            if row["killer_class"] and row["killer_class"] != "UNKNOWN":
+                kill_dict["killer"]["class"] = row["killer_class"]
+            if row["killer_level"] and row["killer_level"] > 0:
+                kill_dict["killer"]["level"] = row["killer_level"]
+            if row["killer_guild"] and row["killer_guild"] != "None":
+                kill_dict["killer"]["guild"] = row["killer_guild"]
+            if row["killer_faction"] and row["killer_faction"] != "Unknown":
+                kill_dict["killer"]["faction"] = row["killer_faction"]
+        if "victim" in kill_dict and isinstance(kill_dict["victim"], dict):
+            if row["victim_class"] and row["victim_class"] != "UNKNOWN":
+                kill_dict["victim"]["class"] = row["victim_class"]
+            if row["victim_level"] and row["victim_level"] > 0:
+                kill_dict["victim"]["level"] = row["victim_level"]
+            if row["victim_guild"] and row["victim_guild"] != "None":
+                kill_dict["victim"]["guild"] = row["victim_guild"]
+            if row["victim_faction"] and row["victim_faction"] != "Unknown":
+                kill_dict["victim"]["faction"] = row["victim_faction"]
+        return jsonify(kill_dict)
 
 def wipe_database():
     """Drops and re-creates all SQLite tables for a clean slate."""
@@ -2231,9 +2250,61 @@ def get_armory_directory():
         "characters": paged_characters
     })
 
-@app.route("/api/characters", methods=["GET"])
+@app.route("/api/characters", methods=["GET", "POST"])
 def get_characters_directory():
-    """Returns a list of indexed characters known to the platform for character selection/linking."""
+    """Returns or ingests indexed characters known to the platform for character selection/linking."""
+    if request.method == "POST":
+        data = request.json or {}
+        chars = data if isinstance(data, list) else list(data.values()) if isinstance(data, dict) else []
+        saved_count = 0
+        with get_db() as conn:
+            for c in chars:
+                if isinstance(c, dict) and c.get("name"):
+                    c_name = c.get("name")
+                    if c_name and c_name != "Unknown" and c_name.strip() != "":
+                        c_class = c.get("class", "UNKNOWN")
+                        c_level = int(c.get("level") or 0)
+                        c_guild = c.get("guild", "None")
+                        c_faction = c.get("faction", "Unknown")
+                        conn.execute("""
+                            INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ON CONFLICT(name) DO UPDATE SET
+                                realm = COALESCE(excluded.realm, characters.realm),
+                                guid = COALESCE(excluded.guid, characters.guid),
+                                class = CASE WHEN excluded.class != 'UNKNOWN' THEN excluded.class ELSE characters.class END,
+                                race = CASE WHEN excluded.race != 'Unknown' THEN excluded.race ELSE characters.race END,
+                                level = CASE WHEN excluded.level > 0 AND excluded.level <= 85 THEN excluded.level ELSE characters.level END,
+                                faction = CASE WHEN excluded.faction != 'Unknown' THEN excluded.faction ELSE characters.faction END,
+                                guild = CASE WHEN excluded.guild != 'None' THEN excluded.guild ELSE characters.guild END,
+                                last_seen = MAX(characters.last_seen, excluded.last_seen)
+                        """, (
+                            c_name, c.get("realm"), c.get("guid"), c_class,
+                            c.get("race", "Unknown"), c_level, c_faction,
+                            c_guild, c.get("lastSeen", int(time.time()))
+                        ))
+                        # Backfill past kills where this character had unknown attributes
+                        if c_class != "UNKNOWN" or c_level > 0 or c_guild != "None" or c_faction != "Unknown":
+                            conn.execute("""
+                                UPDATE kills
+                                SET killer_class = CASE WHEN killer_class = 'UNKNOWN' AND ? != 'UNKNOWN' THEN ? ELSE killer_class END,
+                                    killer_level = CASE WHEN (killer_level = 0 OR killer_level IS NULL) AND ? > 0 THEN ? ELSE killer_level END,
+                                    killer_guild = CASE WHEN (killer_guild = 'None' OR killer_guild IS NULL) AND ? != 'None' THEN ? ELSE killer_guild END,
+                                    killer_faction = CASE WHEN (killer_faction = 'Unknown' OR killer_faction IS NULL) AND ? != 'Unknown' THEN ? ELSE killer_faction END
+                                WHERE killer_name = ?
+                            """, (c_class, c_class, c_level, c_level, c_guild, c_guild, c_faction, c_faction, c_name))
+                            conn.execute("""
+                                UPDATE kills
+                                SET victim_class = CASE WHEN victim_class = 'UNKNOWN' AND ? != 'UNKNOWN' THEN ? ELSE victim_class END,
+                                    victim_level = CASE WHEN (victim_level = 0 OR victim_level IS NULL) AND ? > 0 THEN ? ELSE victim_level END,
+                                    victim_guild = CASE WHEN (victim_guild = 'None' OR victim_guild IS NULL) AND ? != 'None' THEN ? ELSE victim_guild END,
+                                    victim_faction = CASE WHEN (victim_faction = 'Unknown' OR victim_faction IS NULL) AND ? != 'Unknown' THEN ? ELSE victim_faction END
+                                WHERE victim_name = ?
+                            """, (c_class, c_class, c_level, c_level, c_guild, c_guild, c_faction, c_faction, c_name))
+                        saved_count += 1
+            conn.commit()
+        return jsonify({"success": True, "saved": saved_count}), 200
+
     search = request.args.get("search", "").strip().lower()
     faction = request.args.get("faction", "").strip().lower()
     limit = min(int(request.args.get("limit", 100)), 200)

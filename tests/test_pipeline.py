@@ -1503,6 +1503,73 @@ WoWKillboardDB = {
 
         print("[PASS] Verified Web Platform Analytics, CurseForge Tracking Pixel, and SVG Badge Telemetry.")
 
+    def test_23_character_directory_sync_and_duel_faction_backfill(self):
+        """Verify character directory POST ingestion, duel same-faction inheritance, and past kill backfilling."""
+        # 1. Ingest duel kill with unknown attributes
+        duel_kill = {
+            "killId": "KB-DUEL-TEST-001",
+            "timestamp": int(time.time()),
+            "isDuel": True,
+            "killer": {
+                "name": "TestDuelist",
+                "class": "UNKNOWN",
+                "level": 0,
+                "guild": "None",
+                "faction": "Unknown"
+            },
+            "victim": {
+                "name": "Dagariane",
+                "class": "PALADIN",
+                "level": 21,
+                "guild": "None",
+                "faction": "Alliance"
+            },
+            "location": {"zone": "Elwynn Forest", "mapId": 1429}
+        }
+        res_kill = self.client.post("/api/kills", json=duel_kill)
+        self.assertEqual(res_kill.status_code, 201)
+
+        # 2. Verify same-faction inheritance: killer is Alliance
+        res_duel = self.client.get("/api/kill/KB-DUEL-TEST-001")
+        self.assertEqual(res_duel.status_code, 200)
+        k_data = res_duel.get_json()
+        self.assertEqual(k_data["killer"]["faction"], "Alliance")
+
+        # 3. Ingest character directory via POST /api/characters
+        chars_payload = [
+            {
+                "name": "TestDuelist",
+                "realm": "Squick",
+                "class": "MAGE",
+                "race": "Gnome",
+                "level": 60,
+                "faction": "Alliance",
+                "guild": "Arcane Order"
+            }
+        ]
+        res_chars = self.client.post("/api/characters", json=chars_payload)
+        self.assertEqual(res_chars.status_code, 200)
+        self.assertEqual(res_chars.get_json()["saved"], 1)
+
+        # 4. Verify past duel kill was backfilled with MAGE, level 60, Arcane Order
+        res_backfill = self.client.get("/api/kill/KB-DUEL-TEST-001")
+        bf_data = res_backfill.get_json()
+        self.assertEqual(bf_data["killer"]["class"], "MAGE")
+        self.assertEqual(bf_data["killer"]["level"], 60)
+        self.assertEqual(bf_data["killer"]["guild"], "Arcane Order")
+
+        # 5. Verify duel leaderboard displays enriched combatant profile
+        res_lb = self.client.get("/api/leaderboard?mode=DUEL")
+        self.assertEqual(res_lb.status_code, 200)
+        lb_data = res_lb.get_json()
+        duel_killer = next((k for k in lb_data.get("topKillers", []) if k["name"] == "TestDuelist"), None)
+        self.assertIsNotNone(duel_killer)
+        self.assertEqual(duel_killer["class"], "MAGE")
+        self.assertEqual(duel_killer["guild"], "Arcane Order")
+        self.assertEqual(duel_killer["faction"], "Alliance")
+
+        print("[PASS] Verified Character Directory Ingestion, Duel Faction Inheritance, and Past Kill Backfilling.")
+
 if __name__ == "__main__":
     unittest.main()
 

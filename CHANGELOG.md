@@ -5,6 +5,16 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.93] - 2026-10-02
+
+### Added
+- **Two-Way Character Directory Sync & Retrospective Kill Backfilling (`sync/watcher.py`, `web/server.py`, `tests/test_pipeline.py`)**:
+  - Added `upload_characters()` to `sync/watcher.py` to automatically upload player directory caches indexed by `UnitScanner` (`WoWKillboardDB.characters`) to the REST API.
+  - Implemented `POST /api/characters` endpoint in `web/server.py` to ingest indexed characters into the global `characters` table with conflict resolution.
+  - Engineered retrospective kill backfilling: whenever a character is scanned or synced (either by themselves or any other player on the realm), the server automatically backfills all legacy kills and duels where that combatant had unknown class, level, or guild.
+  - Updated `/api/kill/<kill_id>` to synchronize live structured attributes into returned killmail responses.
+  - Added pipeline verification test `test_23_character_directory_sync_and_duel_faction_backfill`.
+
 ## [1.4.92] - 2026-10-02
 
 ### Fixed
