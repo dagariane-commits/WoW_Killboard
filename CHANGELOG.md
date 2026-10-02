@@ -5,6 +5,37 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.83] - 2026-10-01
+
+### Added
+- **In-Game Addon PvE Ruleset Parity & Auto-Detection (`Utils.lua`, `UI.lua`, `Leaderboard.lua`, `CombatTracker.lua`)**:
+  - **Ruleset Detection Engine (`Utils.lua`)**:
+    - Added `U.GetRealmRuleset()` to check `WoWKillboardDB.campaignRuleset` with automatic detection from `GetRealmName()` (`"pve"`, `"normal"` -> `PVE`; `"hardcore"`, `"hc"` -> `HARDCORE`; `"rp"` -> `RP`; default `PVP`).
+    - Added `U.IsPveRuleset()` returning `true` for PvE or Hardcore rulesets.
+    - Updated `U.GetClientFlavorSubtitle()` to include colored ruleset tag (`|cff10b981[PvE]|r` vs `|cffef4444[PvP]|r`).
+  - **Interactive 1-Click Campaign Header Button (`UI.lua`)**:
+    - Created anonymous, taint-free `UI.RulesetButton` next to the Shadow Network pop-out button (`[ 🛡️ PvE ]` vs `[ ⚔️ PvP ]`).
+    - Toggling instantly switches the active ruleset in `WoWKillboardDB.campaignRuleset` and triggers an immediate zero-taint UI re-render.
+  - **Dynamic KPI Stat Cards Adaptation in PvE Mode (`UI.lua`)**:
+    - **Card 1**: `WILDERNESS CASUALTIES` (`|cffffd100%d|r Realm Fallen | |cffff4444%d|r Deaths (You)`).
+    - **Card 2**: `APEX EXECUTIONER` (`|cffff4444%s|r | |cffffd100%d|r Mortal Kills`).
+    - **Card 3**: `ZONE DANGER INDEX` (`|cffffd100%s|r | |cffef4444%d|r Casualties`).
+  - **Dynamic Navigation Tabs & Mode Filter Pills Reconfiguration (`UI.lua`)**:
+    - Tabs dynamically adapt names and widths: `Casualties` (w=86), `Deadly Hazards` (w=120), `Wanted Monsters` (w=128), `Rescue Beacons` (w=116), `Zone Mortality` (w=106).
+    - Filter pills switch to: `All`, `Elites`, `Bosses`, `Hazards` (environmental/falling/lava mortalities).
+  - **Dedicated PvE Content Renderers (`UI.lua`)**:
+    - `UI:RenderPveFeed()`: Renders the 10-card **Apex Bestiary** grid (`Hogger`, `Defias Pillager`, `Son of Arugal`, `Mor'Ladim`, `Stitches`, `Devilsaur`) followed by live **Mortal Casualties & Wilderness Hazards** feed rows.
+    - `UI:RenderPveLeaderboard()`: 3-column leaderboard displaying **Apex Executioners**, **Fallen Mortals**, and **Perilous Regions**.
+    - `UI:RenderPveBounties()`: Town militia wanted boards for dangerous world elites with gold/silver bounty rewards.
+    - `UI:RenderPveZones()`: Detailed zone mortality danger rankings (`Extreme`, `High`, `Moderate`).
+    - `UI:RenderPveRallies()`: Rescue beacons network with `/kb sos` backup broadcaster.
+    - `UI:ShowPveDeathDetail()`: Populates the detail modal with monster strike details, damage, creature ID, victim information, and casualty record ID.
+- **Two-Way Sync PvE Ingestion & Realm Data Payload (`sync/watcher.py`)**:
+  - Added fetching of `/api/pve/deaths?limit=60` and `/api/pve/leaderboard` during realm synchronization.
+  - Merged local account `pveDeaths` from SavedVariables across all monitored WoW client folders.
+  - Injected `RecentPveDeaths`, `PveTotalDeaths`, `PveTopExecutioners`, `PveTopVictims`, and `PveDeadliestZone` into `WoWKillboard_RealmData.lua`.
+  - Recompiled standalone executable `WoWKillboardSync.exe` using PyInstaller and updated `WoW KB Beta/`.
+
 ## [1.4.82] - 2026-10-01
 
 ### Added

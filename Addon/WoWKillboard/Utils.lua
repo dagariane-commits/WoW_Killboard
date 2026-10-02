@@ -272,8 +272,35 @@ function U.GetClientFlavorTitle()
     return string.format("|cffffffffWoW Killboard|r |cff%s[%s - %s]|r", flavorColor, flavorName, realm)
 end
 
+-- Retrieve active realm ruleset: "PVE", "PVP", "HARDCORE", or "RP"
+function U.GetRealmRuleset()
+    if WoWKillboardDB and WoWKillboardDB.campaignRuleset then
+        local r = tostring(WoWKillboardDB.campaignRuleset):upper()
+        if r == "PVE" or r == "PVP" or r == "HARDCORE" or r == "RP" then
+            return r
+        end
+    end
+    -- Auto-detect from realm name
+    local realm = (GetRealmName and GetRealmName()) or ""
+    local rLower = realm:lower()
+    if rLower:find("hardcore") or rLower:find("hc") then
+        return "HARDCORE"
+    elseif rLower:find("pve") or rLower:find("normal") then
+        return "PVE"
+    elseif rLower:find("rp") or rLower:find("roleplay") then
+        return "RP"
+    end
+    return "PVP"
+end
+
+-- Check if active ruleset is PvE / Hardcore
+function U.IsPveRuleset()
+    local r = U.GetRealmRuleset()
+    return (r == "PVE" or r == "HARDCORE")
+end
+
 -- Retrieve standardized client flavor subtitle for UI Header (Cross-Client Parity)
--- Format: WoW / Game Version (Forever) / Realm (PVP) / Status (Live / Beta) / Version
+-- Format: WoW / Game Version (Forever) / Realm (PVP) / Ruleset [PvE] / Status (Live / Beta) / Version
 function U.GetClientFlavorSubtitle()
     local realm = (GetRealmName and GetRealmName()) or "PvP"
     local version, build, date, tocversion
@@ -313,10 +340,20 @@ function U.GetClientFlavorSubtitle()
         statusColor = isBeta and "00ff88" or "60a5fa"
     end
 
+    local ruleset = U.GetRealmRuleset()
+    local rulesetTag = "|cffef4444[PvP]|r"
+    if ruleset == "PVE" then
+        rulesetTag = "|cff10b981[PvE]|r"
+    elseif ruleset == "HARDCORE" then
+        rulesetTag = "|cfff59e0b[Hardcore]|r"
+    elseif ruleset == "RP" then
+        rulesetTag = "|cffc084fc[RP]|r"
+    end
+
     local verStr = KB.Version or "1.0.0"
     return string.format(
-        "|cffffd100WoW|r / |cff%s%s|r / |cffc7b28c%s|r / |cff%s%s|r / |cff888888v%s|r",
-        gameColor, gameVersion, realm, statusColor, status, verStr
+        "|cffffd100WoW|r / |cff%s%s|r / |cffc7b28c%s|r / %s / |cff%s%s|r / |cff888888v%s|r",
+        gameColor, gameVersion, realm, rulesetTag, statusColor, status, verStr
     )
 end
 

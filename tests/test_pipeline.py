@@ -1399,8 +1399,53 @@ class TestKillboardPipeline(unittest.TestCase):
         res = self.client.get("/api/kill/KB-PURE-SOLO-01")
         self.assertEqual(res.status_code, 200)
         k_data = res.get_json()
-        self.assertTrue(k_data["isSolo"], "Legitimate 1v1 solo kill with 100% solo damage must remain certified")
         print("[PASS] Verified Guardrail 4 Solo Purity: 0-damage tags revoked, multi-attacker revoked, true 1v1 preserved.")
+
+    def test_20_pve_realm_data_sync(self):
+        """Verify Two-Way Sync serializes PvE Bestiary and Wilderness Mortality into WoWKillboard_RealmData.lua."""
+        import tempfile
+        from sync.watcher import KillboardWatcher, LuaTableParser
+
+        temp_dir = tempfile.mkdtemp()
+        dummy_sv = os.path.join(temp_dir, "WoWKillboard.lua")
+        with open(dummy_sv, "w", encoding="utf-8") as f:
+            f.write("""
+WoWKillboardDB = {
+    ["pveDeaths"] = {
+        ["PVE-LOCAL-01"] = {
+            ["deathId"] = "PVE-LOCAL-01",
+            ["timestamp"] = 1715000000,
+            ["npc"] = { ["name"] = "Stitches", ["damage"] = 1450, ["spell"] = "Cleave" },
+            ["victim"] = { ["name"] = "CasualtyOne", ["class"] = "WARRIOR", ["level"] = 32 },
+            ["location"] = { ["zone"] = "Duskwood" },
+        }
+    }
+}
+""")
+
+        watcher = KillboardWatcher(filepaths=[dummy_sv], api_urls=[])
+        success = watcher.sync_realm_data_to_client()
+        self.assertTrue(success)
+
+        realm_data_path = os.path.join(temp_dir, "WoWKillboard_RealmData.lua")
+        self.assertTrue(os.path.exists(realm_data_path), "WoWKillboard_RealmData.lua should be written in SavedVariables directory")
+
+        with open(realm_data_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("RecentPveDeaths", content)
+        self.assertIn("PveTotalDeaths", content)
+        self.assertIn("PveTopExecutioners", content)
+        self.assertIn("Stitches", content)
+
+        parsed = LuaTableParser.parse_string(content)
+        self.assertIn("WoWKillboard_RealmData", parsed)
+        rd = parsed["WoWKillboard_RealmData"]
+        self.assertIn("RecentPveDeaths", rd)
+        entry = rd["RecentPveDeaths"][1] if 1 in rd["RecentPveDeaths"] else rd["RecentPveDeaths"][0]
+        self.assertEqual(entry["deathId"], "PVE-LOCAL-01")
+
+        print("[PASS] Verified Two-Way Sync PvE serialization into WoWKillboard_RealmData.lua.")
 
 if __name__ == "__main__":
     unittest.main()

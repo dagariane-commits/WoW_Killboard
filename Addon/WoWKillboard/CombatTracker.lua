@@ -686,6 +686,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     -- Only proceed if there was at least one attacker, or if the local player died (fatal fall / environment)
     if #attackersList == 0 then
         if playerGUID and victimGUID == playerGUID then
+            CT.SessionStats.pveDeaths = (CT.SessionStats.pveDeaths or 0) + 1
             local pClass = select(2, UnitClass("player"))
             KB.Killmail:RecordPveDeath({
                 timestamp = now,
@@ -741,6 +742,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
                 victimInfo.class = pClass or "UNKNOWN"
                 victimInfo.faction = UnitFactionGroup("player") or "Unknown"
                 victimInfo.guild = GetGuildInfo("player") or "None"
+                CT.SessionStats.pveDeaths = (CT.SessionStats.pveDeaths or 0) + 1
             end
 
             local location = KB.Utils.GetPlayerLocation()

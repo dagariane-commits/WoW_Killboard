@@ -88,6 +88,99 @@ function LB:Rebuild()
             end
         end
     end
+
+    -- 3. Rebuild PvE Aggregates (Wilderness Bestiary & Hazard Telemetry)
+    LB.PveAggregates = {
+        monsters = {},
+        victims = {},
+        zones = {},
+        totalDeaths = 0,
+        deaths = {},
+    }
+
+    local seenPve = {}
+    local function IndexPve(pd)
+        if not pd or type(pd) ~= "table" then return end
+        local dId = pd.deathId or pd.death_id or (pd.victim and pd.npc and (tostring(pd.victim.name or "") .. tostring(pd.npc.name or "") .. tostring(pd.timestamp or 0)))
+        if dId and seenPve[dId] then return end
+        if dId then seenPve[dId] = true end
+
+        local nName = (pd.npc and pd.npc.name) or pd.npc_name or "Unknown Entity"
+        local nSpell = (pd.npc and pd.npc.spell) or pd.npc_spell or "Combat Strike"
+        local nDmg = tonumber((pd.npc and pd.npc.damage) or pd.npc_damage or 0) or 0
+        local nId = tonumber((pd.npc and pd.npc.id) or pd.npc_id or 0) or 0
+        local vName = (pd.victim and pd.victim.name) or pd.victim_name or "Unknown"
+        local vClass = (pd.victim and pd.victim.class) or pd.victim_class or "WARRIOR"
+        local vLevel = tonumber((pd.victim and pd.victim.level) or pd.victim_level or 0) or 0
+        local vGuild = (pd.victim and pd.victim.guild) or pd.victim_guild or "None"
+        local vFaction = (pd.victim and pd.victim.faction) or pd.victim_faction or "Unknown"
+        local zName = (pd.location and pd.location.zone) or pd.zone or "Azeroth"
+        local subZone = (pd.location and pd.location.subZone) or pd.subzone or ""
+        local ts = tonumber(pd.timestamp or 0) or 0
+
+        local cleanRecord = {
+            deathId = dId or ("PVE-" .. tostring(ts)),
+            timestamp = ts,
+            npc = { name = nName, spell = nSpell, damage = nDmg, id = nId },
+            victim = { name = vName, class = vClass, level = vLevel, guild = vGuild, faction = vFaction },
+            location = { zone = zName, subZone = subZone },
+        }
+
+        table.insert(LB.PveAggregates.deaths, cleanRecord)
+        LB.PveAggregates.totalDeaths = LB.PveAggregates.totalDeaths + 1
+
+        -- Monster Aggregation
+        local m = LB.PveAggregates.monsters[nName] or {
+            name = nName,
+            kills = 0,
+            topSpell = nSpell,
+            maxDamage = nDmg,
+            zone = zName,
+            id = nId,
+        }
+        m.kills = m.kills + 1
+        if nDmg > (m.maxDamage or 0) then
+            m.maxDamage = nDmg
+            if nSpell and nSpell ~= "Combat Strike" then m.topSpell = nSpell end
+        end
+        LB.PveAggregates.monsters[nName] = m
+
+        -- Victim Aggregation
+        local v = LB.PveAggregates.victims[vName] or {
+            name = vName,
+            class = vClass,
+            level = vLevel,
+            guild = vGuild,
+            deaths = 0,
+        }
+        v.deaths = v.deaths + 1
+        LB.PveAggregates.victims[vName] = v
+
+        -- Zone Aggregation
+        LB.PveAggregates.zones[zName] = (LB.PveAggregates.zones[zName] or 0) + 1
+    end
+
+    -- Index local SavedVariables PvE deaths
+    if WoWKillboardDB and WoWKillboardDB.pveDeaths then
+        for _, pd in pairs(WoWKillboardDB.pveDeaths) do
+            IndexPve(pd)
+        end
+    end
+
+    -- Index two-way synced PvE deaths
+    if rData then
+        local pveList = rData.RecentPveDeaths or rData.PveDeaths
+        if pveList and type(pveList) == "table" then
+            for _, pd in ipairs(pveList) do
+                IndexPve(pd)
+            end
+        end
+    end
+
+    -- Sort deaths descending by timestamp
+    table.sort(LB.PveAggregates.deaths, function(a, b)
+        return (a.timestamp or 0) > (b.timestamp or 0)
+    end)
 end
 
 -- Index a single killmail into a target bucket
@@ -452,5 +545,143 @@ function LB:GetModeSummary(mode)
         soloPct = soloPct,
         alliancePct = aPct,
         hordePct = hPct,
+    }
+end
+
+-- =========================================================================
+-- PvE Bestiary & Wilderness Mortality Query API
+-- =========================================================================
+
+-- Retrieve recent PvE wilderness deaths, optionally filtered
+function LB:GetRecentPveDeaths(limit, filterType)
+    limit = limit or 40
+    filterType = (filterType or "ALL"):upper()
+    local list = {}
+    local deaths = (LB.PveAggregates and LB.PveAggregates.deaths) or {}
+
+    for _, pd in ipairs(deaths) do
+        local match = true
+        if filterType == "ELITES" or filterType == "BG" then
+            -- Elite or high damage NPCs
+            local dmg = (pd.npc and pd.npc.damage) or 0
+            match = (dmg >= 1000)
+        elseif filterType == "BOSSES" or filterType == "DUEL" then
+            local nName = (pd.npc and pd.npc.name) or ""
+            match = (nName:find("Baron") or nName:find("Ragnaros") or nName:find("Onyxia") or (pd.npc and pd.npc.damage and pd.npc.damage >= 5000))
+        elseif filterType == "ENVIRONMENT" or filterType == "ARENA" then
+            local nName = (pd.npc and pd.npc.name) or ""
+            match = (nName:find("Environmental") or nName:find("Falling") or nName:find("Drowning") or nName:find("Lava") or nName:find("Fatigue") or nName:find("Slime"))
+        end
+
+        if match then
+            table.insert(list, pd)
+            if #list >= limit then break end
+        end
+    end
+
+    return list
+end
+
+-- Retrieve Top Deadly NPCs ranked by mortal body count
+function LB:GetTopDeadlyNpcs(limit)
+    limit = limit or 15
+    local list = {}
+    local monsters = (LB.PveAggregates and LB.PveAggregates.monsters) or {}
+
+    for _, m in pairs(monsters) do
+        table.insert(list, m)
+    end
+
+    table.sort(list, function(a, b)
+        if (a.kills or 0) ~= (b.kills or 0) then
+            return (a.kills or 0) > (b.kills or 0)
+        end
+        return (a.maxDamage or 0) > (b.maxDamage or 0)
+    end)
+
+    local res = {}
+    for i = 1, math.min(limit, #list) do
+        table.insert(res, list[i])
+    end
+    return res
+end
+
+-- Retrieve Top Deadly Zones ranked by mortal casualties
+function LB:GetTopPveZones(limit)
+    limit = limit or 10
+    local list = {}
+    local zones = (LB.PveAggregates and LB.PveAggregates.zones) or {}
+
+    for zName, count in pairs(zones) do
+        table.insert(list, { zone = zName, deaths = count })
+    end
+
+    table.sort(list, function(a, b)
+        return (a.deaths or 0) > (b.deaths or 0)
+    end)
+
+    local res = {}
+    for i = 1, math.min(limit, #list) do
+        table.insert(res, list[i])
+    end
+    return res
+end
+
+-- Retrieve Top Fallen Mortals (Players executed most frequently by wilderness)
+function LB:GetTopPveVictims(limit)
+    limit = limit or 15
+    local list = {}
+    local victims = (LB.PveAggregates and LB.PveAggregates.victims) or {}
+
+    for _, v in pairs(victims) do
+        table.insert(list, v)
+    end
+
+    table.sort(list, function(a, b)
+        return (a.deaths or 0) > (b.deaths or 0)
+    end)
+
+    local res = {}
+    for i = 1, math.min(limit, #list) do
+        table.insert(res, list[i])
+    end
+    return res
+end
+
+-- Retrieve high-level summary of PvE statistics
+function LB:GetPveSummary()
+    local deaths = (LB.PveAggregates and LB.PveAggregates.deaths) or {}
+    local monsters = (LB.PveAggregates and LB.PveAggregates.monsters) or {}
+    local zones = (LB.PveAggregates and LB.PveAggregates.zones) or {}
+
+    local topM = nil
+    local topMKills = 0
+    for _, m in pairs(monsters) do
+        if (m.kills or 0) > topMKills then
+            topMKills = m.kills
+            topM = m.name
+        end
+    end
+
+    local topZ = nil
+    local topZDeaths = 0
+    for zName, count in pairs(zones) do
+        if count > topZDeaths then
+            topZDeaths = count
+            topZ = zName
+        end
+    end
+
+    local mCount = 0
+    for _ in pairs(monsters) do mCount = mCount + 1 end
+
+    local total = (LB.PveAggregates and LB.PveAggregates.totalDeaths) or #deaths
+    return {
+        totalDeaths = total,
+        uniqueMonsters = mCount,
+        topMonster = topM or "None Encountered",
+        topMonsterKills = topMKills,
+        deadliestZone = topZ or "Unknown",
+        deadliestZoneDeaths = topZDeaths,
     }
 end
