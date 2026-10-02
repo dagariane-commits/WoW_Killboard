@@ -6279,7 +6279,7 @@ function UI:ShowSettingsModal()
 
     if not UI.SettingsDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(480, 500)
+        dlg:SetSize(480, 440)
         dlg:SetPoint("CENTER", 0, 20)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(120)
@@ -6441,42 +6441,6 @@ function UI:ShowSettingsModal()
             end
             SafePrint("|cff00ccff[WoWKB]|r Saving combat records and reloading UI...")
             ReloadUI()
-        end)
-
-        y = y - 62
-
-        -- SECTION 5: DATABASE MANAGEMENT
-        local s5Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        s5Title:SetPoint("TOPLEFT", 24, y)
-        s5Title:SetText("|cffffd1005. Database Management|r")
-
-        local resetDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        resetDesc:SetPoint("TOPLEFT", 24, y - 18)
-        resetDesc:SetText("Wipe local combat records, cached realm totals, and session stats to 0.")
-
-        local resetBtn = UI:CreateButton(dlg, 180, 24, "|cffff3333Reset Local Database|r")
-        resetBtn:SetPoint("TOPLEFT", 24, y - 36)
-        resetBtn:SetScript("OnClick", function()
-            if InCombatLockdown and InCombatLockdown() then
-                SafePrint("|cffff9900[WoWKB]|r Cannot reset database during combat.")
-                return
-            end
-            WoWKillboardDB = { kills = {}, stats = {}, pveDeaths = {}, RealmData = { RealmTotalCarnage = 0, SoloRatio = 0, FactionSplit = { Alliance = 50, Horde = 50 }, DeadliestZones = {}, TopGankers24h = {} } }
-            if WoWKillboard_RealmData then
-                WoWKillboard_RealmData.RealmTotalCarnage = 0
-                WoWKillboard_RealmData.SoloRatio = 0
-                WoWKillboard_RealmData.DeadliestZones = {}
-                WoWKillboard_RealmData.TopGankers24h = {}
-            end
-            if KB.CombatTracker and KB.CombatTracker.SessionStats then
-                KB.CombatTracker.SessionStats.kills = 0
-                KB.CombatTracker.SessionStats.deaths = 0
-                KB.CombatTracker.SessionStats.damageDone = 0
-                KB.CombatTracker.SessionStats.healingDone = 0
-            end
-            if KB.Leaderboard then KB.Leaderboard:Rebuild() end
-            if KB.UI then KB.UI:RefreshIfVisible() end
-            SafePrint("|cff00ff00[WoWKB]|r Local database and cached realm statistics reset to 0.")
         end)
 
         -- Bottom Done Button
