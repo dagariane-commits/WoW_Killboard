@@ -237,6 +237,22 @@ class DesktopCompanionApp:
         btn_box = tk.Frame(bottom_bar, bg=BG_MAIN)
         btn_box.pack(side=tk.RIGHT)
 
+        shortcut_btn = tk.Button(
+            btn_box,
+            text="📌 Desktop Icon",
+            font=("Segoe UI", 8),
+            fg=TEXT_MAIN,
+            bg=BTN_BG,
+            activebackground=BTN_HOVER,
+            activeforeground=TEXT_MAIN,
+            relief=tk.FLAT,
+            padx=10,
+            pady=4,
+            cursor="hand2",
+            command=self._on_create_shortcut
+        )
+        shortcut_btn.pack(side=tk.LEFT, padx=(0, 6))
+
         sync_btn = tk.Button(
             btn_box,
             text="⚡ Sync Now",
@@ -251,7 +267,7 @@ class DesktopCompanionApp:
             cursor="hand2",
             command=self._on_manual_sync
         )
-        sync_btn.pack(side=tk.LEFT, padx=(0, 8))
+        sync_btn.pack(side=tk.LEFT, padx=(0, 6))
 
         web_btn = tk.Button(
             btn_box,
@@ -348,6 +364,21 @@ class DesktopCompanionApp:
         else:
             self.append_log("[Startup] Failed to configure Windows Auto-Start.", tag="kill")
 
+    def _on_create_shortcut(self):
+        _w = _get_watcher_mod()
+        desktop = os.path.join(os.environ.get("USERPROFILE", ""), "Desktop")
+        target_installed = os.path.join(_w.get_install_dir(), "WoWKillboardSync.exe") if hasattr(_w, "get_install_dir") else ""
+        exe_to_link = target_installed if os.path.exists(target_installed) else os.path.abspath(sys.argv[0])
+        shortcut_path = os.path.join(desktop, "WoW Killboard.lnk")
+        if hasattr(_w, "create_windows_shortcut"):
+            ok = _w.create_windows_shortcut(exe_to_link, shortcut_path)
+            if ok:
+                self.append_log(f"[Shortcut] Desktop shortcut created: {shortcut_path}", tag="sync")
+            else:
+                self.append_log("[Shortcut] Could not create Desktop shortcut.", tag="kill")
+        else:
+            self.append_log("[Shortcut] Shortcut creation unsupported on this platform.", tag="muted")
+
     def _on_manual_sync(self):
         self.append_log("[Sync] Manual sync triggered by user...", tag="blue")
         if self.on_sync_request:
@@ -407,9 +438,151 @@ class DesktopCompanionApp:
         text = f"Kills Synced: {self.kills_synced_count}  |  Accounts: {acc_count}  |  Last Sync: {self.last_sync_time}"
         self.metrics_lbl.config(text=text)
 
+def check_and_prompt_install(root, curr_exe: str) -> bool:
+    """Checks if app is running from Downloads/temp, and if so, offers to install to AppData/Programs."""
+    _w = _get_watcher_mod()
+    if not hasattr(_w, "get_install_dir"):
+        return True
+
+    install_dir = _w.get_install_dir()
+    curr_dir = os.path.dirname(os.path.abspath(curr_exe))
+
+    # If already running from install dir, proceed directly
+    if curr_dir.lower() == install_dir.lower():
+        return True
+
+    cfg = _w.load_config() if hasattr(_w, "load_config") else {}
+    if cfg.get("run_portable", False):
+        return True
+
+    # If not running from Downloads or Temp or Desktop, proceed directly
+    if not ("downloads" in curr_dir.lower() or "temp" in curr_dir.lower()):
+        return True
+
+    # Build modal setup dialog
+    setup_win = tk.Toplevel(root)
+    setup_win.title("WoW Killboard — Setup & Installation")
+    setup_win.geometry("540x360")
+    setup_win.resizable(False, False)
+    setup_win.configure(bg=BG_MAIN)
+    setup_win.grab_set()
+
+    # Center dialog on screen
+    setup_win.update_idletasks()
+    sw = setup_win.winfo_screenwidth()
+    sh = setup_win.winfo_screenheight()
+    x = max(0, (sw - 540) // 2)
+    y = max(0, (sh - 360) // 2)
+    setup_win.geometry(f"540x360+{x}+{y}")
+
+    result = {"proceed": False}
+
+    header = tk.Frame(setup_win, bg=BG_CARD, padx=16, pady=12, highlightthickness=1, highlightbackground=BORDER_COLOR)
+    header.pack(fill=tk.X, padx=14, pady=(14, 10))
+
+    brand = tk.Label(header, text="⚔️ WoW KILLBOARD COMPANION SETUP", font=("Segoe UI", 12, "bold"), fg=TEXT_GOLD, bg=BG_CARD)
+    brand.pack(anchor="w")
+
+    sub = tk.Label(header, text="Dedicated Windows Desktop Installation", font=("Segoe UI", 8), fg=TEXT_MUTED, bg=BG_CARD)
+    sub.pack(anchor="w")
+
+    body_card = tk.Frame(setup_win, bg=BG_CARD, padx=16, pady=14, highlightthickness=1, highlightbackground=BORDER_COLOR)
+    body_card.pack(fill=tk.BOTH, expand=True, padx=14, pady=(0, 10))
+
+    q_lbl = tk.Label(body_card, text="Install WoW Killboard Desktop Companion to your PC?", font=("Segoe UI", 10, "bold"), fg=TEXT_MAIN, bg=BG_CARD, wraplength=480, justify=tk.LEFT)
+    q_lbl.pack(anchor="w", pady=(0, 8))
+
+    points = [
+        "• Installs cleanly to AppData\\Local\\Programs\\WoWKillboard",
+        "• Creates a Desktop shortcut icon (WoW Killboard)",
+        "• Adds an entry to your Windows Start Menu",
+        "• Keeps your Downloads folder clean and free of logs"
+    ]
+    for pt in points:
+        p_lbl = tk.Label(body_card, text=pt, font=("Segoe UI", 8), fg="#cbd5e1", bg=BG_CARD)
+        p_lbl.pack(anchor="w", pady=2)
+
+    remember_var = tk.BooleanVar(value=False)
+    rem_check = tk.Checkbutton(
+        body_card,
+        text="Remember my choice (don't ask again)",
+        variable=remember_var,
+        font=("Segoe UI", 8),
+        fg=TEXT_MUTED,
+        bg=BG_CARD,
+        activebackground=BG_CARD,
+        activeforeground=TEXT_GOLD,
+        selectcolor=BG_MAIN
+    )
+    rem_check.pack(anchor="w", pady=(8, 0))
+
+    btn_row = tk.Frame(setup_win, bg=BG_MAIN, padx=14, pady=(0, 14))
+    btn_row.pack(fill=tk.X)
+
+    def do_install():
+        target = _w.install_application_to_pc(curr_exe)
+        setup_win.destroy()
+        import subprocess
+        subprocess.Popen([target])
+        root.destroy()
+        sys.exit(0)
+
+    def do_portable():
+        if remember_var.get() and hasattr(_w, "save_config"):
+            _w.save_config({"run_portable": True})
+        result["proceed"] = True
+        setup_win.destroy()
+
+    inst_btn = tk.Button(
+        btn_row,
+        text="🚀 Install & Launch (Recommended)",
+        font=("Segoe UI", 9, "bold"),
+        fg="#047857",
+        bg="#d1fae5",
+        activebackground="#a7f3d0",
+        activeforeground="#047857",
+        relief=tk.FLAT,
+        padx=14,
+        pady=6,
+        cursor="hand2",
+        command=do_install
+    )
+    inst_btn.pack(side=tk.LEFT)
+
+    port_btn = tk.Button(
+        btn_row,
+        text="⚡ Run Portably",
+        font=("Segoe UI", 9),
+        fg=TEXT_MUTED,
+        bg=BTN_BG,
+        activebackground=BTN_HOVER,
+        activeforeground=TEXT_MAIN,
+        relief=tk.FLAT,
+        padx=12,
+        pady=6,
+        cursor="hand2",
+        command=do_portable
+    )
+    port_btn.pack(side=tk.RIGHT)
+
+    setup_win.wait_window()
+    return result["proceed"]
+
 def launch_gui(watcher_instance, target_files, target_apis):
     """Launches the Tkinter Desktop Companion application."""
     root = tk.Tk()
+    root.withdraw()
+
+    curr_exe = os.path.abspath(sys.argv[0])
+    should_proceed = check_and_prompt_install(root, curr_exe)
+    if not should_proceed:
+        try:
+            root.destroy()
+        except Exception:
+            pass
+        return
+
+    root.deiconify()
     
     def handle_sync():
         if watcher_instance:
