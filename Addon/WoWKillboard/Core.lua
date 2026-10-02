@@ -238,7 +238,8 @@ function KB:Initialize()
     -- Create Minimap Button
     KB:CreateMinimapButton()
 
-    SafePrint(string.format("|cff00ccffWoW Killboard v%s|r loaded. Type |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r to open dashboard.", KB.Version))
+    SafePrint(string.format("|cff00ccff[WKB]|r |cffffd100Frontline War Room v%s (Beta)|r loaded.", KB.Version))
+    SafePrint("|cff00ff00Welcome to Early Community Testing!|r Type |cffffd100/kb|r to open your war room. Report feedback on CurseForge.")
 end
 
 -- Slash Commands (Support /killboard, /wowkb, and /kb)
