@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cataloged and organized 6 high-resolution UI and platform screenshots into `assets/curseforge/` (`01_live_killfeed_tactical_intel.png`, `02_defenders_of_azeroth_leaderboard.png`, `03_vanguard_rally_war_horn.png`, `04_zone_intel_conflict_hotspots.png`, `05_apex_bestiary_pve_hazards.png`, `06_global_web_killboard_portal.png`) with exact gallery caption mappings.
 - **In-Game Community Beta Tester Login Greeting (`Core.lua`)**:
   - Implemented stylized two-line startup message greeting players (`[WKB] Frontline War Room v1.0.0 (Beta) loaded. Welcome to Early Community Testing! Type /kb to open your war room. Report feedback on CurseForge.`).
+
+### Changed
+- **Settings Dialog Cleanup & Professional Polish (`UI.lua`)**:
+  - Removed developer debug Section 5 (`Reset Local Database`) from the user-facing settings dialog to prevent accidental data loss for CurseForge players.
+  - Resized dialog from `(480, 500)` to `(480, 440)` for clean visual proportions and spacing.
+- **Comprehensive Database Reset Command Hardening (`Core.lua`)**:
+  - Hardened `/kb reset` slash command to execute an exhaustive wipe across all SavedVariables (`WoWKillboardDB`, `WoWKillboardDebtLedger`, `WoWKillboardBounties`, `WoWKillboardDistress`, `WoWKillboardEvents`), in-memory `WoWKillboard_RealmData`, and active `SessionStats`.
 - **In-Game Addon PvE Ruleset Parity & Auto-Detection (`Utils.lua`, `UI.lua`, `Leaderboard.lua`, `CombatTracker.lua`)**:
   - **Ruleset Detection Engine (`Utils.lua`)**:
     - Added `U.GetRealmRuleset()` to check `WoWKillboardDB.campaignRuleset` with automatic detection from `GetRealmName()` (`"pve"`, `"normal"` -> `PVE`; `"hardcore"`, `"hc"` -> `HARDCORE`; `"rp"` -> `RP`; default `PVP`).

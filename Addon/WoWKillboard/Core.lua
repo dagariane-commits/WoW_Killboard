@@ -255,10 +255,36 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         KB:SyncRealmData()
         if KB.UI then KB.UI:Toggle() end
     elseif cmd == "reset" then
-        WoWKillboardDB = { kills = {}, stats = {} }
-        if KB.Leaderboard then KB.Leaderboard:Rebuild() end
-        if KB.UI then KB.UI:RefreshIfVisible() end
-        SafePrint("|cff00ccff[WoWKB]|r Database has been reset.")
+        if InCombatLockdown and InCombatLockdown() then
+            SafePrint("|cffff9900[WKB]|r Cannot reset database during combat.")
+            return
+        end
+        WoWKillboardDB = { kills = {}, stats = {}, pveDeaths = {} }
+        WoWKillboardDebtLedger = {}
+        WoWKillboardBounties = {}
+        WoWKillboardDistress = {}
+        WoWKillboardEvents = {}
+        if WoWKillboard_RealmData then
+            WoWKillboard_RealmData.RecentKills = {}
+            WoWKillboard_RealmData.RecentPveDeaths = {}
+            WoWKillboard_RealmData.Bounties = {}
+            WoWKillboard_RealmData.RealmTotalCarnage = 0
+            WoWKillboard_RealmData.SoloRatio = 0
+            WoWKillboard_RealmData.DeadliestZones = {}
+            WoWKillboard_RealmData.TopGankers24h = {}
+            WoWKillboard_RealmData.PveTotalDeaths = 0
+            WoWKillboard_RealmData.PveTopExecutioners = {}
+            WoWKillboard_RealmData.PveTopVictims = {}
+        end
+        if KB.CombatTracker and KB.CombatTracker.SessionStats then
+            KB.CombatTracker.SessionStats.kills = 0
+            KB.CombatTracker.SessionStats.deaths = 0
+            KB.CombatTracker.SessionStats.damageDone = 0
+            KB.CombatTracker.SessionStats.healingDone = 0
+        end
+        if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
+        if KB.UI and KB.UI.RefreshIfVisible then KB.UI:RefreshIfVisible() end
+        SafePrint("|cff00ff00[WKB]|r Complete local database, bounties, distress beacons, and cached realm statistics reset to 0.")
     elseif cmd == "stats" then
         local s = KB.CombatTracker.SessionStats
         local st = WoWKillboardDB and WoWKillboardDB.stats or {}
