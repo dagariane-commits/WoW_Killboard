@@ -30,6 +30,21 @@ TEXT_CYAN = "#38bdf8"     # Information blue
 BTN_BG = "#1e293b"        # Button background
 BTN_HOVER = "#334155"     # Button hover background
 
+def _get_watcher_mod():
+    """Resolves the watcher module regardless of whether executed as package, standalone script, or PyInstaller frozen bundle."""
+    try:
+        import sync.watcher as w
+        return w
+    except ImportError:
+        pass
+    try:
+        import watcher as w
+        return w
+    except ImportError:
+        pass
+    import __main__ as w
+    return w
+
 class DesktopCompanionApp:
     def __init__(self, root, watcher_instance, target_files, target_apis, on_sync_request=None, on_folder_change=None):
         self.root = root
@@ -201,8 +216,8 @@ class DesktopCompanionApp:
         bottom_bar.pack(fill=tk.X, padx=12, pady=(0, 10))
 
         # Left: Windows Auto-Start Checkbox
-        from sync.watcher import is_windows_startup_enabled, set_windows_startup
-        self.startup_var = tk.BooleanVar(value=is_windows_startup_enabled())
+        _w = _get_watcher_mod()
+        self.startup_var = tk.BooleanVar(value=_w.is_windows_startup_enabled() if hasattr(_w, "is_windows_startup_enabled") else False)
 
         startup_check = tk.Checkbutton(
             bottom_bar,
@@ -255,8 +270,8 @@ class DesktopCompanionApp:
         web_btn.pack(side=tk.LEFT)
 
     def _get_discovered_path_summary(self) -> str:
-        from sync.watcher import find_all_wow_roots
-        roots = find_all_wow_roots()
+        _w = _get_watcher_mod()
+        roots = _w.find_all_wow_roots() if hasattr(_w, "find_all_wow_roots") else []
         if roots:
             return f"Root Directory: {roots[0]}  ({len(self.target_files)} active account files monitored)"
         return "No World of Warcraft directory detected automatically. Click 'Select Folder' to configure."
@@ -272,8 +287,8 @@ class DesktopCompanionApp:
             ("Modern Retail", "_retail_")
         ]
 
-        from sync.watcher import find_all_wow_roots
-        roots = find_all_wow_roots()
+        _w = _get_watcher_mod()
+        roots = _w.find_all_wow_roots() if hasattr(_w, "find_all_wow_roots") else []
 
         for name, folder in flavors:
             detected = False
@@ -311,10 +326,10 @@ class DesktopCompanionApp:
     def _on_choose_folder(self):
         chosen = filedialog.askdirectory(title="Select your World of Warcraft Directory")
         if chosen and os.path.exists(chosen):
-            from sync.watcher import normalize_wow_root, save_config, find_all_saved_variables
-            norm = normalize_wow_root(chosen)
-            save_config({"wow_path": norm})
-            self.target_files = find_all_saved_variables()
+            _w = _get_watcher_mod()
+            norm = _w.normalize_wow_root(chosen)
+            _w.save_config({"wow_path": norm})
+            self.target_files = _w.find_all_saved_variables()
             if self.watcher:
                 self.watcher.filepaths = self.target_files
             self.install_path_lbl.config(text=self._get_discovered_path_summary())
@@ -324,9 +339,9 @@ class DesktopCompanionApp:
                 self.on_folder_change(norm)
 
     def _on_toggle_startup(self):
-        from sync.watcher import set_windows_startup
+        _w = _get_watcher_mod()
         enable = self.startup_var.get()
-        success = set_windows_startup(enable)
+        success = _w.set_windows_startup(enable) if hasattr(_w, "set_windows_startup") else False
         if success:
             msg = "[Startup] Windows Auto-Start ENABLED. WoW Killboard will start with Windows." if enable else "[Startup] Windows Auto-Start DISABLED."
             self.append_log(msg, tag="sync" if enable else "muted")
@@ -411,7 +426,7 @@ def launch_gui(watcher_instance, target_files, target_apis):
     )
 
     # Register log hook with watcher
-    from sync.watcher import register_log_hook
+    _w = _get_watcher_mod()
     def on_watcher_log(formatted_msg):
         # Strip out initial timestamp if present
         if formatted_msg.startswith("[") and "]" in formatted_msg:
@@ -421,7 +436,8 @@ def launch_gui(watcher_instance, target_files, target_apis):
             clean_msg = formatted_msg
         app.append_log(clean_msg)
 
-    register_log_hook(on_watcher_log)
+    if hasattr(_w, "register_log_hook"):
+        _w.register_log_hook(on_watcher_log)
 
     # Initial greeting log
     app.append_log(f"WoW Killboard Desktop Companion v{getattr(watcher_instance, 'version', '1.0.0')} initialized.", tag="gold")
