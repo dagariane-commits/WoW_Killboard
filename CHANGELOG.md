@@ -5,6 +5,14 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.96] - 2026-10-02
+
+### Changed
+- **Campaign Ruleset Toggle Button Redesign (`Addon/WoWKillboard/UI.lua`)**:
+  - Replaced ambiguous plain text `[ PvP ]` / `[ PvE ]` box with an authentic dual-segment toggle switch: `Mode: [● PvP] PvE` (when in PvP mode) and `Mode: PvP [● PvE]` (when in PvE mode).
+  - Added dynamic state borders and colored backdrops: glowing crimson for Contested PvP and glowing emerald green for Wilderness PvE.
+  - Added gold hover state animation and comprehensive tooltip explaining exactly what each mode tracks (player kills & duels vs. creature executions & deadly monster rankings) and how to toggle between them.
+
 ## [1.4.95] - 2026-10-02
 
 ### Added
