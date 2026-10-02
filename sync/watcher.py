@@ -17,6 +17,14 @@ import urllib.request
 import urllib.error
 import ssl
 
+try:
+    from sync import gui as sync_gui
+except ImportError:
+    try:
+        import gui as sync_gui
+    except ImportError:
+        sync_gui = None
+
 SYNC_VERSION = "1.0.0-beta.7"
 
 def safe_urlopen(req, timeout=5):
@@ -1418,8 +1426,14 @@ def main():
     else:
         # Default Desktop Companion GUI mode (like Warcraft Logs / Raider.IO)
         try:
-            from sync.gui import launch_gui
-            launch_gui(watcher, target_files, target_apis)
+            if sync_gui and hasattr(sync_gui, "launch_gui"):
+                sync_gui.launch_gui(watcher, target_files, target_apis)
+            else:
+                try:
+                    from sync.gui import launch_gui
+                except ImportError:
+                    from gui import launch_gui
+                launch_gui(watcher, target_files, target_apis)
         except Exception as e:
             log_event(f"[GUI] Could not launch graphical desktop companion ({e}). Falling back to console mode.")
             watcher.run_daemon()

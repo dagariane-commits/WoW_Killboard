@@ -107,5 +107,5 @@ WoWKillboard_RealmData = {
         deaths = 1,
         zone = "Elwynn Forest",
     },
-    LastSync = 1790977990,
+    LastSync = 1790978596,
 }
