@@ -17,7 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Live Telemetry Stream**: Color-coded combat activity feed displaying real-time kill syncs, 2-way realm data injections, and heartbeats.
     - **Quick Metrics**: Real-time counter of total kills synced, monitored accounts, and last sync timestamp.
     - **One-Click Windows Startup**: Integrated checkbox directly configuring `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
-    - **Quick Actions**: "⚡ Sync Now" and "🌐 Open Web Killboard" buttons.
+    - **Quick Actions**: "📌 Desktop Icon", "⚡ Sync Now", and "🌐 Open Web Killboard" buttons.
+  - **Smart Self-Installer & AppData Directory Isolation (`sync/watcher.py`, `sync/gui.py`, `WoWKillboardSync.exe`)**:
+    - Isolated application logs (`wowkb_sync.log`) and persistent configs (`wowkb_sync_config.json`) to `%LOCALAPPDATA%\WoWKillboard\`, completely eliminating loose file clutter in Downloads and Desktop folders.
+    - Implemented a smart self-installer prompt when run from Downloads: automatically copies the binary to `%LOCALAPPDATA%\Programs\WoWKillboard\`, generates a clean Desktop shortcut (`WoW Killboard.lnk`) and Windows Start Menu entry, and relaunches the permanent instance.
   - Full CLI backward compatibility: `--cli` / `--console` flag allows headless/terminal execution for scripts and automated runners.
   - Updated web download cards in `app.js` with First-Run Windows Defender SmartScreen instructions.
 

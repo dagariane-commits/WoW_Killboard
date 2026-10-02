@@ -61,14 +61,97 @@ def unregister_log_hook(fn):
     if fn in LOG_HOOKS:
         LOG_HOOKS.remove(fn)
 
+def get_app_data_dir() -> str:
+    """Returns the persistent application data directory (%LOCALAPPDATA%/WoWKillboard or ~/.wowkillboard)."""
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or os.path.expanduser("~")
+        d = os.path.join(base, "WoWKillboard")
+    else:
+        d = os.path.join(os.path.expanduser("~"), ".wowkillboard")
+    try:
+        os.makedirs(d, exist_ok=True)
+    except Exception:
+        pass
+    return d
+
+def get_install_dir() -> str:
+    """Returns the target permanent installation folder (%LOCALAPPDATA%/Programs/WoWKillboard)."""
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or os.path.expanduser("~")
+        return os.path.join(base, "Programs", "WoWKillboard")
+    return os.path.join(os.path.expanduser("~"), ".local", "bin", "WoWKillboard")
+
+def create_windows_shortcut(target_exe: str, shortcut_path: str, description: str = "WoW Killboard Desktop Companion") -> bool:
+    """Creates a Windows .lnk shortcut using WScript.Shell via PowerShell."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import subprocess
+        work_dir = os.path.dirname(os.path.abspath(target_exe))
+        ps_script = f"""
+$ws = New-Object -ComObject WScript.Shell
+$s = $ws.CreateShortcut('{shortcut_path}')
+$s.TargetPath = '{target_exe}'
+$s.WorkingDirectory = '{work_dir}'
+$s.Description = '{description}'
+$s.Save()
+"""
+        res = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_script],
+            capture_output=True,
+            text=True,
+            creationflags=0x08000000 if sys.platform == "win32" else 0
+        )
+        return os.path.exists(shortcut_path)
+    except Exception:
+        return False
+
+def install_application_to_pc(current_exe: str) -> str:
+    """Installs the running executable into %LOCALAPPDATA%/Programs/WoWKillboard, creating Desktop & Start Menu shortcuts."""
+    import shutil
+    install_dir = get_install_dir()
+    os.makedirs(install_dir, exist_ok=True)
+    target_exe = os.path.join(install_dir, "WoWKillboardSync.exe")
+
+    # If running script directly (not compiled exe)
+    if current_exe.endswith(".py"):
+        target_exe = current_exe
+
+    # If different paths, copy executable
+    if os.path.abspath(current_exe).lower() != os.path.abspath(target_exe).lower():
+        try:
+            shutil.copy2(current_exe, target_exe)
+        except Exception as e:
+            log_event(f"[Installer] Error copying executable to install dir: {e}")
+
+    # Create Desktop Shortcut
+    desktop = os.path.join(os.environ.get("USERPROFILE", ""), "Desktop")
+    if os.path.exists(desktop):
+        create_windows_shortcut(target_exe, os.path.join(desktop, "WoW Killboard.lnk"))
+
+    # Create Start Menu Shortcut
+    appdata = os.environ.get("APPDATA", "")
+    start_menu = os.path.join(appdata, r"Microsoft\Windows\Start Menu\Programs")
+    if os.path.exists(start_menu):
+        create_windows_shortcut(target_exe, os.path.join(start_menu, "WoW Killboard.lnk"))
+
+    # Clean up orphan wowkb_sync.log in Downloads if exists
+    try:
+        downloads_log = os.path.join(os.path.dirname(current_exe), "wowkb_sync.log")
+        if os.path.exists(downloads_log) and "downloads" in downloads_log.lower():
+            os.remove(downloads_log)
+    except Exception:
+        pass
+
+    return target_exe
+
 def log_event(msg: str):
-    """Logs message to standard output, persistent wowkb_sync.log, and any active GUI hooks."""
+    """Logs message to standard output, persistent AppData wowkb_sync.log, and any active GUI hooks."""
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     formatted = f"[{timestamp}] {msg}"
     print(formatted)
     try:
-        base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-        log_path = os.path.join(base_dir, "wowkb_sync.log")
+        log_path = os.path.join(get_app_data_dir(), "wowkb_sync.log")
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(formatted + "\n")
     except Exception:
@@ -1099,9 +1182,8 @@ def normalize_wow_root(p: str) -> str:
     return p
 
 def save_config(config_dict: dict):
-    """Persists settings to wowkb_sync_config.json in the executable directory."""
-    base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    config_file = os.path.join(base_dir, "wowkb_sync_config.json")
+    """Persists settings to wowkb_sync_config.json in the AppData directory."""
+    config_file = os.path.join(get_app_data_dir(), "wowkb_sync_config.json")
     try:
         existing = {}
         if os.path.exists(config_file):
@@ -1114,9 +1196,8 @@ def save_config(config_dict: dict):
         log_event(f"[Config] Error writing config file: {e}")
 
 def load_config() -> dict:
-    """Reads settings from wowkb_sync_config.json."""
-    base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    config_file = os.path.join(base_dir, "wowkb_sync_config.json")
+    """Reads settings from wowkb_sync_config.json in the AppData directory."""
+    config_file = os.path.join(get_app_data_dir(), "wowkb_sync_config.json")
     if os.path.exists(config_file):
         try:
             with open(config_file, "r", encoding="utf-8") as f:
@@ -1143,18 +1224,22 @@ def is_windows_startup_enabled() -> bool:
         return False
 
 def set_windows_startup(enable: bool) -> bool:
-    """Enables or disables automatic startup on Windows boot."""
+    """Enables or disables automatic startup on Windows boot (preferring installed location)."""
     if sys.platform != "win32":
         return False
     try:
         import winreg
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
         if enable:
-            exe_path = os.path.abspath(sys.argv[0])
-            if exe_path.endswith(".py"):
-                cmd = f'"{sys.executable}" "{exe_path}"'
+            target_installed = os.path.join(get_install_dir(), "WoWKillboardSync.exe")
+            if os.path.exists(target_installed):
+                cmd = f'"{target_installed}"'
             else:
-                cmd = f'"{exe_path}"'
+                exe_path = os.path.abspath(sys.argv[0])
+                if exe_path.endswith(".py"):
+                    cmd = f'"{sys.executable}" "{exe_path}"'
+                else:
+                    cmd = f'"{exe_path}"'
             winreg.SetValueEx(key, "WoWKillboardSync", 0, winreg.REG_SZ, cmd)
         else:
             try:
