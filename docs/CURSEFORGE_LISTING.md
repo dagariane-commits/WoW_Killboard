@@ -111,6 +111,7 @@ Upload the 5 screenshots located in [`assets/curseforge/`](file:///c:/Users/SQUI
 | `03_vanguard_rally_war_horn.png` | **Vanguard Rally (Faction War Horn)** | 1-click faction defense beacon with automated raid invites and GPS coordination. |
 | `04_zone_intel_conflict_hotspots.png` | **Zone Intel & Conflict Hotspots** | Territory danger index and mortality heatmaps tracking active warzones. |
 | `05_apex_bestiary_pve_hazards.png` | **Apex Bestiary & Wilderness Hazards** | PvE casualty tracking, lethal mob executioners, and environmental hazards. |
+| `06_global_web_killboard_portal.png` | **Global Web Killboard Platform** | Live cloud killboard, Most Wanted outlaws, recent combat feed, and guild statistics. |
 
 ---
 
