@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.83] - 2026-10-01
 
 ### Added
+- **CurseForge Author Portal Submission Kit & Asset Catalog (`docs/CURSEFORGE_LISTING.md`, `assets/curseforge/`)**:
+  - Authored comprehensive, copy-paste ready CurseForge publication kit with project metadata, tagline, full formatted Markdown description, and slash commands reference.
+  - Cataloged and organized 5 high-resolution in-game UI screenshots into `assets/curseforge/` (`01_live_killfeed_tactical_intel.png`, `02_defenders_of_azeroth_leaderboard.png`, `03_vanguard_rally_war_horn.png`, `04_zone_intel_conflict_hotspots.png`, `05_apex_bestiary_pve_hazards.png`) with exact gallery caption mappings.
 - **In-Game Addon PvE Ruleset Parity & Auto-Detection (`Utils.lua`, `UI.lua`, `Leaderboard.lua`, `CombatTracker.lua`)**:
   - **Ruleset Detection Engine (`Utils.lua`)**:
     - Added `U.GetRealmRuleset()` to check `WoWKillboardDB.campaignRuleset` with automatic detection from `GetRealmName()` (`"pve"`, `"normal"` -> `PVE`; `"hardcore"`, `"hc"` -> `HARDCORE`; `"rp"` -> `RP`; default `PVP`).
