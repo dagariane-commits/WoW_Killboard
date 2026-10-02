@@ -4596,18 +4596,21 @@ function loadUploadView() {
               </span>
               <span style="font-size:0.75rem; color:#10b981; font-weight:700;">Zero-Touch</span>
             </div>
-            <h3 style="font-size:1.15rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">WoWKillboardSync.exe</h3>
+            <h3 style="font-size:1.15rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">WoWKillboardSync.exe (Desktop Companion)</h3>
             <p style="font-size:0.8rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
-              Standalone desktop companion (like Warcraft Logs or Raider.IO). Runs quietly in your system tray, auto-detects all WoW clients across drives C:, D:, and E:, and streams killmails to Render Cloud in real-time.
+              Standalone desktop application (like Warcraft Logs or Raider.IO). Opens a sleek graphical dashboard, auto-detects all WoW clients across drives C:, D:, and E:, and streams combat telemetry to wowkillboard.com in real-time.
             </p>
             <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
-              &bull; Zero Python or setup required<br>
-              &bull; Deterministic battle deduplication<br>
-              &bull; Dual-sync to local & cloud servers
+              &bull; Native graphical dashboard (Zero terminal/CMD required)<br>
+              &bull; One-click Windows startup & automatic background sync<br>
+              &bull; Real-time combat activity stream & two-way realm telemetry<br>
+              <div style="margin-top: 6px; color:#cbd5e1; font-size:0.72rem; line-height:1.35; background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:4px; border-left:2px solid var(--wow-gold);">
+                <strong style="color:var(--wow-gold);">First Run:</strong> If Windows Defender SmartScreen shows <em>"Windows protected your PC"</em>, click <strong>More info</strong> &rarr; <strong>Run anyway</strong>.
+              </div>
             </div>
           </div>
           <div style="padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#cbd5e1;">
-            Located in: <code style="color:var(--wow-gold); font-size:0.72rem; word-break:break-all;">WoW_Killboard/dist/WoWKillboardSync.exe</code>
+            Direct download: <a href="/WoWKillboardSync.exe" download style="color:var(--wow-gold); font-weight:700; text-decoration:underline;">Download WoWKillboardSync.exe</a>
           </div>
         </div>
 

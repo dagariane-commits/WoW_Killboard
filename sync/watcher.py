@@ -41,8 +41,20 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+LOG_HOOKS = []
+
+def register_log_hook(fn):
+    """Registers a callback hook to receive formatted log events."""
+    if fn not in LOG_HOOKS:
+        LOG_HOOKS.append(fn)
+
+def unregister_log_hook(fn):
+    """Removes a callback hook."""
+    if fn in LOG_HOOKS:
+        LOG_HOOKS.remove(fn)
+
 def log_event(msg: str):
-    """Logs message to both standard output and persistent wowkb_sync.log."""
+    """Logs message to standard output, persistent wowkb_sync.log, and any active GUI hooks."""
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     formatted = f"[{timestamp}] {msg}"
     print(formatted)
@@ -53,6 +65,11 @@ def log_event(msg: str):
             f.write(formatted + "\n")
     except Exception:
         pass
+    for hook in list(LOG_HOOKS):
+        try:
+            hook(formatted)
+        except Exception:
+            pass
 
 
 class LuaTableParser:
@@ -250,6 +267,8 @@ class KillboardWatcher:
             self.api_urls = ["https://wowkillboard.com", "http://127.0.0.1:8080"]
         self.api_url = ", ".join(self.api_urls)
         self.filepath = self.filepaths[0] if self.filepaths else ""
+        self.running = True
+        self.version = SYNC_VERSION
 
         self.file_mtimes = {}
         self.last_manual_syncs = {}
@@ -1027,7 +1046,7 @@ class KillboardWatcher:
         last_discovery = time.time()
         last_realm_sync = time.time()
 
-        while True:
+        while getattr(self, "running", True):
             try:
                 # 1. Process all monitored files
                 for p in list(self.filepaths):
@@ -1304,7 +1323,21 @@ def print_startup_banner():
     print("      (Tip: Run with --startup to enable, or --no-startup to disable)")
     print("=" * 70)
 
+def ensure_console_for_cli():
+    """If running in windowed/noconsole mode but CLI was requested, attach to calling shell."""
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            if ctypes.windll.kernel32.AttachConsole(-1) != 0:
+                sys.stdout = open("CONOUT$", "w", encoding="utf-8", errors="replace")
+                sys.stderr = open("CONOUT$", "w", encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 def main():
+    if any(arg in sys.argv for arg in ("--cli", "--console", "--once", "--startup", "--no-startup", "-h", "--help")):
+        ensure_console_for_cli()
+
     parser = argparse.ArgumentParser(description="WoWKillboard Desktop Sync Agent")
     parser.add_argument("--file", "-f", default="", help="Path to WoWKillboard.lua (monitors ALL clients if omitted)")
     parser.add_argument("--api", "-a", default="", help="Web Killboard API URL (defaults to production)")
@@ -1314,9 +1347,12 @@ def main():
     parser.add_argument("--startup", action="store_true", help="Register WoWKillboardSync to run automatically on Windows boot")
     parser.add_argument("--no-startup", "--remove-startup", action="store_true", help="Remove WoWKillboardSync from Windows startup")
     parser.add_argument("--set-wow", default="", help="Save a custom World of Warcraft folder path to configuration")
+    parser.add_argument("--cli", "--console", action="store_true", help="Run in terminal CLI mode without desktop GUI")
+    parser.add_argument("--no-gui", action="store_true", help="Disable graphical desktop companion window")
     args = parser.parse_args()
 
-    print_startup_banner()
+    if args.cli or getattr(args, 'no_gui', False) or args.once:
+        print_startup_banner()
 
     if args.startup:
         if set_windows_startup(True):
@@ -1377,8 +1413,16 @@ def main():
     if args.once:
         watcher.process_file()
         watcher.sync_realm_data_to_client()
-    else:
+    elif args.cli or getattr(args, 'no_gui', False):
         watcher.run_daemon()
+    else:
+        # Default Desktop Companion GUI mode (like Warcraft Logs / Raider.IO)
+        try:
+            from sync.gui import launch_gui
+            launch_gui(watcher, target_files, target_apis)
+        except Exception as e:
+            log_event(f"[GUI] Could not launch graphical desktop companion ({e}). Falling back to console mode.")
+            watcher.run_daemon()
 
 if __name__ == "__main__":
     try:

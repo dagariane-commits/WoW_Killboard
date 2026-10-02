@@ -5,6 +5,22 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.97] - 2026-10-02
+
+### Added
+- **Desktop Companion Graphical Dashboard (`sync/gui.py`, `sync/watcher.py`, `Build_Desktop_Sync_EXE.bat`, `WoWKillboardSync.exe`)**:
+  - Engineered a native Tkinter desktop companion GUI application (matching Warcraft Logs Uploader and Raider.IO Client design standards).
+  - Recompiled `WoWKillboardSync.exe` in `--noconsole` windowed mode: double-clicking the application launches a sleek, dark-themed tactical dashboard instead of a black CMD command prompt.
+  - Dashboard features:
+    - **Header**: Branded `⚔️ WoW KILLBOARD` logo, version badge, and live status pill (`● LIVE & MONITORING`).
+    - **WoW Detection Card**: Displays detected WoW root path and active flavor badges (`✓ Forever Beta`, `✓ Classic Era`, `✓ Anniversary`, `✓ Modern Retail`) with a native folder picker dialog.
+    - **Live Telemetry Stream**: Color-coded combat activity feed displaying real-time kill syncs, 2-way realm data injections, and heartbeats.
+    - **Quick Metrics**: Real-time counter of total kills synced, monitored accounts, and last sync timestamp.
+    - **One-Click Windows Startup**: Integrated checkbox directly configuring `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
+    - **Quick Actions**: "⚡ Sync Now" and "🌐 Open Web Killboard" buttons.
+  - Full CLI backward compatibility: `--cli` / `--console` flag allows headless/terminal execution for scripts and automated runners.
+  - Updated web download cards in `app.js` with First-Run Windows Defender SmartScreen instructions.
+
 ## [1.4.96] - 2026-10-02
 
 ### Changed
