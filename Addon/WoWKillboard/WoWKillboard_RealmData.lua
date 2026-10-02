@@ -29,12 +29,12 @@ WoWKillboard_RealmData = {
             isSolo = false,
             killId = "KB-021f2688",
             killer = {
-                class = "UNKNOWN",
+                class = "PALADIN",
                 damageDone = 0,
-                faction = "Unknown",
-                guild = "None",
+                faction = "Alliance",
+                guild = "REDACTION",
                 healingDone = 0,
-                level = 0,
+                level = 21,
                 name = "Tinaomi",
                 partySize = 1,
             },
@@ -107,5 +107,5 @@ WoWKillboard_RealmData = {
         deaths = 1,
         zone = "Elwynn Forest",
     },
-    LastSync = 1790972686,
+    LastSync = 1790977990,
 }
