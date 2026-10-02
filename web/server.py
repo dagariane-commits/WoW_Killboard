@@ -14,8 +14,12 @@ import time
 import sqlite3
 import urllib.request
 import urllib.error
+import urllib.parse
+import logging
 from flask import Flask, request, jsonify, send_from_directory, render_template_string
 from flask_cors import CORS
+
+logger = logging.getLogger("WoWKillboard")
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(APP_DIR, "static")
@@ -1177,9 +1181,7 @@ def post_kill():
     except sqlite3.OperationalError as e:
         logger.error(f"[DB Error] sqlite3.OperationalError: {e}")
         return jsonify({
-            "error": "Database write error (database file or directory is readonly)",
-            "detail": str(e),
-            "tip": "Run on server: sudo chown -R $USER:$USER /opt/wowkillboard && sudo chmod -R 777 /opt/wowkillboard/web"
+            "error": "Database write error. The database file or directory is temporarily unavailable."
         }), 500
 
     if k_id:
@@ -1213,12 +1215,14 @@ def upload_saved_variables():
         try:
             parsed = LuaTableParser.parse_string(raw_text)
         except Exception as e:
-            return jsonify({"error": f"Failed to parse Lua SavedVariables: {str(e)}"}), 400
+            logger.warning(f"Failed to parse Lua SavedVariables: {e}")
+            return jsonify({"error": "Failed to parse Lua SavedVariables: invalid syntax or malformed table format."}), 400
     else:
         try:
             parsed = json.loads(raw_text)
         except Exception as e:
-            return jsonify({"error": f"Failed to parse JSON content: {str(e)}"}), 400
+            logger.warning(f"Failed to parse JSON content: {e}")
+            return jsonify({"error": "Failed to parse JSON content: invalid JSON payload."}), 400
 
     kills_to_ingest = []
     if isinstance(parsed, dict):
@@ -1428,8 +1432,15 @@ def admin_deploy():
     import subprocess
     try:
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        pull_res = subprocess.run(
-            ["git", "-c", "safe.directory=*", "pull", "origin", "main"],
+        fetch_res = subprocess.run(
+            ["git", "-c", "safe.directory=*", "fetch", "origin", "main"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        reset_res = subprocess.run(
+            ["git", "-c", "safe.directory=*", "reset", "--hard", "origin/main"],
             cwd=repo_root,
             capture_output=True,
             text=True,
@@ -1437,13 +1448,14 @@ def admin_deploy():
         )
         return jsonify({
             "success": True,
-            "message": "Git pull executed successfully.",
-            "stdout": pull_res.stdout,
-            "stderr": pull_res.stderr,
-            "returncode": pull_res.returncode
+            "message": "Git fetch and reset executed successfully.",
+            "stdout": fetch_res.stdout + "\n" + reset_res.stdout,
+            "stderr": fetch_res.stderr + "\n" + reset_res.stderr,
+            "returncode": reset_res.returncode
         }), 200
     except Exception as e:
-        return jsonify({"error": f"Deploy execution failed: {str(e)}"}), 500
+        logger.error(f"Deploy execution failed: {e}")
+        return jsonify({"error": "Deploy execution failed. Internal server error."}), 500
 
 # ----------------- Stats & Telemetry API -----------------
 
@@ -2082,7 +2094,8 @@ def claim_character():
             """, (name, realm, f"Player-CLAIM-{name}", char_class, "Unknown", level, faction, guild, now_ts))
             conn.commit()
     except sqlite3.OperationalError as e:
-        return jsonify({"error": f"Database write error: {str(e)}. Server database or directory permissions may be read-only."}), 500
+        logger.error(f"Database write error in claim_character: {e}")
+        return jsonify({"error": "Database write error. Server database is temporarily unable to process writes."}), 500
 
     return jsonify({
         "success": True,
@@ -2123,7 +2136,8 @@ def verify_claim():
             else:
                 return jsonify({"error": "Invalid verification code"}), 400
     except sqlite3.OperationalError as e:
-        return jsonify({"error": f"Database write error: {str(e)}. Server database or directory permissions may be read-only."}), 500
+        logger.error(f"Database write error in verify_claim: {e}")
+        return jsonify({"error": "Database write error. Server database is temporarily unable to process writes."}), 500
 
 @app.route("/api/auth/release-claim", methods=["POST"])
 def release_claim():
@@ -2150,7 +2164,8 @@ def release_claim():
             conn.execute("DELETE FROM character_claims WHERE LOWER(character_name) = LOWER(?)", (name,))
             conn.commit()
     except sqlite3.OperationalError as e:
-        return jsonify({"error": f"Database write error: {str(e)}. Server database or directory permissions may be read-only."}), 500
+        logger.error(f"Database write error in release_claim: {e}")
+        return jsonify({"error": "Database write error. Server database is temporarily unable to process writes."}), 500
 
     return jsonify({"success": True, "message": f"Claim on '{name}' released successfully"})
 
@@ -2257,7 +2272,8 @@ def auth_bnet_callback():
 
         return redirect(f"/?bnet_user={urllib.parse.quote(battletag)}&bnet_chars={urllib.parse.quote(','.join(discovered[:10]))}")
     except Exception as e:
-        return redirect(f"/?bnet_error=exception&detail={urllib.parse.quote(str(e)[:100])}")
+        logger.error(f"Battle.net OAuth callback exception: {e}")
+        return redirect("/?bnet_error=exception")
 
 @app.route("/api/character/<name>", methods=["GET"])
 
@@ -3178,9 +3194,35 @@ def pay_debt():
 
 # ----------------- Discord Webhook & Guild Operations Engine -----------------
 
+def validate_discord_webhook(url: str) -> bool:
+    """Strictly validates that a URL is a legitimate Discord webhook endpoint to prevent SSRF."""
+    if not url or not isinstance(url, str):
+        return False
+    try:
+        parsed = urllib.parse.urlparse(url.strip())
+        if parsed.scheme != "https":
+            return False
+        hostname = (parsed.hostname or "").lower()
+        allowed_hosts = {
+            "discord.com", "www.discord.com",
+            "discordapp.com", "www.discordapp.com",
+            "canary.discord.com", "ptb.discord.com"
+        }
+        if hostname not in allowed_hosts:
+            return False
+        # Path must strictly follow /api/webhooks/<webhook_id>/<webhook_token>
+        path_segments = [seg for seg in parsed.path.strip("/").split("/") if seg]
+        if len(path_segments) < 3:
+            return False
+        if path_segments[0] != "api" or path_segments[1] != "webhooks":
+            return False
+        return True
+    except Exception:
+        return False
+
 def send_discord_webhook(webhook_url: str, payload: dict) -> bool:
     """Dispatches rich embed notifications to a configured Discord channel webhook."""
-    if not webhook_url or not webhook_url.startswith("http"):
+    if not validate_discord_webhook(webhook_url):
         return False
     try:
         data = json.dumps(payload).encode("utf-8")
@@ -3196,7 +3238,7 @@ def send_discord_webhook(webhook_url: str, payload: dict) -> bool:
         with urllib.request.urlopen(req, timeout=5) as response:
             return response.status in (200, 204)
     except Exception as e:
-        print(f"[Discord Webhook Error]: {e}")
+        logger.warning(f"[Discord Webhook Error]: {e}")
         return False
 
 def get_discord_config_for_guild(guild_name: str = None) -> dict:
@@ -3426,6 +3468,9 @@ def set_discord_config():
     if not webhook_url:
         return jsonify({"error": "Missing webhook_url"}), 400
 
+    if not validate_discord_webhook(webhook_url):
+        return jsonify({"error": "Invalid Discord webhook URL. URL must start with https://discord.com/api/webhooks/ or https://discordapp.com/api/webhooks/."}), 400
+
     with get_db() as conn:
         conn.execute("""
             INSERT OR REPLACE INTO guild_discord_configs (
@@ -3476,6 +3521,9 @@ def test_discord_webhook():
 
     if not webhook_url:
         return jsonify({"error": "No webhook URL provided or configured"}), 400
+
+    if not validate_discord_webhook(webhook_url):
+        return jsonify({"error": "Invalid Discord webhook URL. URL must start with https://discord.com/api/webhooks/ or https://discordapp.com/api/webhooks/."}), 400
 
     payload = {
         "content": "🔔 **WoW Killboard Tactical Defense — Discord Webhook Test Connection**",
@@ -4151,6 +4199,7 @@ if __name__ == "__main__":
     else:
         init_db()
     port = int(os.environ.get("PORT", 8080))
-    print(f"[*] WoW Killboard Web Server running at http://127.0.0.1:{port}")
-    app.run(host="0.0.0.0", port=port, debug=True)
+    debug_mode = os.environ.get("FLASK_DEBUG", "0").lower() in ("1", "true", "yes")
+    print(f"[*] WoW Killboard Web Server running at http://127.0.0.1:{port} (debug={debug_mode})")
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
 

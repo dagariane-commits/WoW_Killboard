@@ -716,7 +716,7 @@ function formatDuration(sec) {
 
 function colorizeClass(name, cls) {
   const color = CLASS_COLORS[(cls || "").toUpperCase()] || CLASS_COLORS.UNKNOWN;
-  return `<span style="color: ${color}; font-weight: 700;">${name || "Unknown"}</span>`;
+  return `<span style="color: ${color}; font-weight: 700;">${escapeHtml(name || "Unknown")}</span>`;
 }
 
 // Live Combat Toast Alert System (1:1 Addon Parity)
@@ -1070,14 +1070,16 @@ let legendsTabType = "PLAYERS"; // "PLAYERS" or "GUILDS"
 let benchmarkPlayerCache = {};
 
 function getBenchmarkPlayerName() {
-  return sessionStorage.getItem("wowkb_benchmark_player") || 
-         localStorage.getItem("wowkb_account_username") || 
-         localStorage.getItem("wowkb_user_character") || "";
+  const raw = sessionStorage.getItem("wowkb_benchmark_player") || 
+              localStorage.getItem("wowkb_account_username") || 
+              localStorage.getItem("wowkb_user_character") || "";
+  return String(raw).trim().slice(0, 32);
 }
 
 function setBenchmarkPlayer(name) {
-  if (name && name.trim()) {
-    sessionStorage.setItem("wowkb_benchmark_player", name.trim());
+  if (name && typeof name === "string" && name.trim()) {
+    const clean = name.trim().slice(0, 32);
+    sessionStorage.setItem("wowkb_benchmark_player", clean);
   } else {
     sessionStorage.removeItem("wowkb_benchmark_player");
   }
@@ -1850,7 +1852,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
               <div>
                 <div style="font-size:0.68rem; color:var(--wow-gold, #f59e0b); font-weight:800; letter-spacing:0.5px;">CHAMPION BENCHMARK COMPARISON</div>
                 <div style="font-size:0.95rem; font-weight:700;">
-                  <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(bmName)}')">${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}</span>
+                  <span class="clickable-player" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(bmName)}'))">${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}</span>
                   <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
                 </div>
               </div>
@@ -1932,11 +1934,11 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
     `;
 
     if (killers.length === 0) {
-      html += `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No combatant kills logged for mode [${currentMode}].</td></tr>`;
+      html += `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No combatant kills logged for mode [${escapeHtml(currentMode)}].</td></tr>`;
     } else {
       killers.forEach((p, idx) => {
         const guildHtml = (p.guild && p.guild !== 'None')
-          ? `<span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(p.guild)}')">${escapeHtml(p.guild)}</span>`
+          ? `<span class="clickable-guild" onclick="openGuildProfile(decodeURIComponent('${encodeURIComponent(p.guild)}'))">${escapeHtml(p.guild)}</span>`
           : '-';
 
         const pctBadge = getWowLogsPercentileBadge(p.percentile);
@@ -1948,7 +1950,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           <tr ${rowClass} style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
             <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${escapeHtml(p.name)}')">
+              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(p.name)}'))">
                 ${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)} ${youBadge}
               </span>
             </td>
@@ -1970,14 +1972,14 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         const bmPct = (benchmarkProfile && benchmarkProfile.percentile) ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 };
         const pctBadge = getWowLogsPercentileBadge(bmPct);
         const bmGuildHtml = (bmGuild && bmGuild !== 'None')
-          ? `<span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(bmGuild)}')">${escapeHtml(bmGuild)}</span>`
+          ? `<span class="clickable-guild" onclick="openGuildProfile(decodeURIComponent('${encodeURIComponent(bmGuild)}'))">${escapeHtml(bmGuild)}</span>`
           : '-';
 
         html += `
           <tr style="border-top: 2px dashed rgba(245, 158, 11, 0.4); background: rgba(212, 163, 41, 0.08);" class="current-player-row">
             <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#&gt;15</td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile('${escapeHtml(bmName)}')">
+              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(bmName)}'))">
                 ${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}
                 <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
               </span>
@@ -2806,7 +2808,7 @@ async function openCharacterProfile(charName) {
       renderHeaderAuthBadge();
     }
   } catch (err) {
-    body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Error retrieving character profile: ${err.message}</div>`;
+    body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Error retrieving character profile: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -2884,7 +2886,7 @@ async function loadPersonalArmoryView(charName) {
       </div>
     `;
   } catch (err) {
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load armory profile: ${err.message}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load armory profile: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -3003,7 +3005,7 @@ async function openGuildProfile(guildName) {
       ${killsHtml}
     `;
   } catch (err) {
-    body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Error retrieving guild profile: ${err.message}</div>`;
+    body.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Error retrieving guild profile: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -3053,14 +3055,14 @@ async function loadGuildsView() {
 
     guilds.forEach((g, idx) => {
       const topMemberHtml = g.topMember 
-        ? `<span class="clickable-player" onclick="openCharacterProfile('${g.topMember.name}')">${colorizeClass(g.topMember.name, g.topMember.class)}</span> <small style="color:#10b981;">(${g.topMember.kills}k)</small>`
+        ? `<span class="clickable-player" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(g.topMember.name)}'))">${colorizeClass(g.topMember.name, g.topMember.class)}</span> <small style="color:#10b981;">(${g.topMember.kills}k)</small>`
         : '-';
 
       html += `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
           <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
-          <td><span class="clickable-guild" onclick="openGuildProfile('${g.guild}')">&lt;${g.guild}&gt;</span></td>
-          <td style="color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${g.faction || 'Neutral'}</td>
+          <td><span class="clickable-guild" onclick="openGuildProfile(decodeURIComponent('${encodeURIComponent(g.guild)}'))">&lt;${escapeHtml(g.guild)}&gt;</span></td>
+          <td style="color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${escapeHtml(g.faction || 'Neutral')}</td>
           <td style="color: #e2e8f0;">${g.members_count || 1}</td>
           <td style="color: #10b981; font-weight: 700;">${g.kills}</td>
           <td style="color: #ef4444; font-weight: 700;">${g.deaths || 0}</td>
@@ -3078,7 +3080,7 @@ async function loadGuildsView() {
     `;
     container.innerHTML = html;
   } catch (err) {
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load guild leaderboards: ${err.message}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load guild leaderboards: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -3235,7 +3237,7 @@ async function fetchArmoryDataAndRender() {
             <div class="armory-lastseen-txt" title="Last confirmed combat zone">
               ${lastSeenText}
             </div>
-            <button class="armory-dossier-btn" onclick="openCharacterProfile('${c.name}')">
+            <button class="armory-dossier-btn" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(c.name)}'))">
               Profile &rarr;
             </button>
           </div>
@@ -3246,7 +3248,7 @@ async function fetchArmoryDataAndRender() {
     gridContainer.innerHTML = cardsHtml;
   } catch (err) {
     if (gridContainer) {
-      gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#ef4444;">Failed to load Armory records: ${err.message}</div>`;
+      gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#ef4444;">Failed to load Armory records: ${escapeHtml(err.message)}</div>`;
     }
   }
 }
@@ -3367,7 +3369,7 @@ async function loadDeadlyNpcsView() {
     const deathsData = await deathsRes.json();
     renderDeadlyNpcsView(lbData, deathsData.deaths || []);
   } catch (err) {
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Deadly NPCs: ${err.message}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Deadly NPCs: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -3605,7 +3607,7 @@ function loadPortalView() {
   if (!container) return;
 
   const currentAuth = sessionStorage.getItem("wowkb_auth_type");
-  const storedAccount = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "";
+  const storedAccount = (localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "").trim();
 
   if (storedAccount && (currentAuth === "account" || currentAuth === "officer" || currentAuth === "character") && portalAccessMode !== "guest") {
     portalAccessMode = "character";
@@ -3614,10 +3616,12 @@ function loadPortalView() {
   // Right card: Character Dossier & In-Game Claim
   let rightCardContent = "";
   if (storedAccount) {
-    const userCls = (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase();
-    const userLvl = localStorage.getItem("wowkb_user_level") || 60;
-    const userFaction = localStorage.getItem("wowkb_user_faction") || "Alliance";
+    const rawCls = (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase();
+    const userCls = CLASS_COLORS[rawCls] ? rawCls : "WARRIOR";
+    const userLvl = parseInt(localStorage.getItem("wowkb_user_level") || "60", 10) || 60;
+    const userFaction = ((localStorage.getItem("wowkb_user_faction") || "Alliance").toLowerCase() === "horde") ? "Horde" : "Alliance";
     const userClsColor = CLASS_COLORS[userCls] || CLASS_COLORS.UNKNOWN;
+    const encodedAccount = encodeURIComponent(storedAccount);
     rightCardContent = `
       <div class="signedin-account-card">
         <div style="display:flex; align-items:center; gap:12px;">
@@ -3635,7 +3639,7 @@ function loadPortalView() {
           </div>
         </div>
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px;">
-          <button class="dramatic-gate-btn officer" onclick="openCharacterProfile('${escapeHtml(storedAccount)}')">
+          <button class="dramatic-gate-btn officer" onclick="openCharacterProfile(decodeURIComponent('${encodedAccount}'))">
             <span>Inspect Combat Profile</span>
             <span>&rarr;</span>
           </button>
@@ -4960,7 +4964,7 @@ async function loadKnownCharacters() {
     if (countEl) countEl.innerText = knownCharactersCache.length;
     renderKnownCharactersList(knownCharactersCache);
   } catch (err) {
-    listEl.innerHTML = `<div style="text-align:center; padding:20px; color:#ef4444;">Failed to load characters: ${err.message}</div>`;
+    listEl.innerHTML = `<div style="text-align:center; padding:20px; color:#ef4444;">Failed to load characters: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -5248,37 +5252,89 @@ function renderHeaderAuthBadge() {
   if (!badge) return;
 
   const authType = sessionStorage.getItem("wowkb_auth_type");
-  const username = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || sessionStorage.getItem("wowkb_character_name");
-  const cls = (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase();
+  const rawUsername = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || sessionStorage.getItem("wowkb_character_name");
+  const rawCls = (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase();
+  const cls = CLASS_COLORS[rawCls] ? rawCls : "WARRIOR";
   const clsColor = CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN;
-  const lvl = localStorage.getItem("wowkb_user_level") || 60;
-  const faction = (localStorage.getItem("wowkb_user_faction") || "Alliance").toLowerCase();
+  const lvl = parseInt(localStorage.getItem("wowkb_user_level") || "60", 10) || 60;
+  const faction = ((localStorage.getItem("wowkb_user_faction") || "Alliance").toLowerCase() === "horde") ? "horde" : "alliance";
   const isAlliance = (faction === "alliance");
   const factionIcon = isAlliance ? "/static/icons/factions/alliance.jpg" : "/static/icons/factions/horde.jpg";
 
-  if (authType && username) {
-    const displayName = escapeHtml(username);
-    badge.innerHTML = `
-      <div class="header-user-pill" style="display:flex; align-items:center; gap:8px;">
-        <img src="${factionIcon}" style="width:20px; height:20px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'};" alt="${faction}">
-        <div style="border:1px solid ${clsColor}; border-radius:3px; overflow:hidden; width:20px; height:20px;">
-          <img src="/static/icons/classes/${cls.toLowerCase()}.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/static/icons/classes/warrior.jpg'" alt="${cls}">
-        </div>
-        <span class="clickable-player" onclick="openCharacterProfile('${displayName}')" style="cursor:pointer;" title="View Profile">
-          <strong style="color:${clsColor};">${displayName}</strong>
-          <span style="font-size:0.75rem; color:#94a3b8;">(${lvl})</span>
-        </span>
-        <button class="header-switch-btn" onclick="openCharacterLinkModal()" title="Switch or Claim Character" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; border-radius:4px; padding:2px 8px; font-size:0.72rem; cursor:pointer;">Switch</button>
-        <button class="header-signout-btn" onclick="handleHeaderSignOut()" title="Sign out">Sign Out</button>
-      </div>
-    `;
+  badge.textContent = "";
+
+  if (authType && rawUsername) {
+    const username = rawUsername.trim();
+    const pill = document.createElement("div");
+    pill.className = "header-user-pill";
+    pill.style.cssText = "display:flex; align-items:center; gap:8px;";
+
+    const fImg = document.createElement("img");
+    fImg.src = factionIcon;
+    fImg.style.cssText = `width:20px; height:20px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'};`;
+    fImg.alt = faction;
+    pill.appendChild(fImg);
+
+    const cWrap = document.createElement("div");
+    cWrap.style.cssText = `border:1px solid ${clsColor}; border-radius:3px; overflow:hidden; width:20px; height:20px;`;
+    const cImg = document.createElement("img");
+    cImg.src = `/static/icons/classes/${cls.toLowerCase()}.jpg`;
+    cImg.style.cssText = "width:100%; height:100%; object-fit:cover;";
+    cImg.onerror = function() { this.src = '/static/icons/classes/warrior.jpg'; };
+    cImg.alt = cls;
+    cWrap.appendChild(cImg);
+    pill.appendChild(cWrap);
+
+    const playerSpan = document.createElement("span");
+    playerSpan.className = "clickable-player";
+    playerSpan.style.cursor = "pointer";
+    playerSpan.title = "View Profile";
+    playerSpan.onclick = () => openCharacterProfile(username);
+
+    const strongName = document.createElement("strong");
+    strongName.style.color = clsColor;
+    strongName.textContent = username;
+    playerSpan.appendChild(strongName);
+
+    const lvlSpan = document.createElement("span");
+    lvlSpan.style.cssText = "font-size:0.75rem; color:#94a3b8; margin-left:4px;";
+    lvlSpan.textContent = `(${lvl})`;
+    playerSpan.appendChild(lvlSpan);
+
+    pill.appendChild(playerSpan);
+
+    const switchBtn = document.createElement("button");
+    switchBtn.className = "header-switch-btn";
+    switchBtn.title = "Switch or Claim Character";
+    switchBtn.style.cssText = "background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; border-radius:4px; padding:2px 8px; font-size:0.72rem; cursor:pointer;";
+    switchBtn.textContent = "Switch";
+    switchBtn.onclick = () => openCharacterLinkModal();
+    pill.appendChild(switchBtn);
+
+    const signoutBtn = document.createElement("button");
+    signoutBtn.className = "header-signout-btn";
+    signoutBtn.title = "Sign out";
+    signoutBtn.textContent = "Sign Out";
+    signoutBtn.onclick = () => handleHeaderSignOut();
+    pill.appendChild(signoutBtn);
+
+    badge.appendChild(pill);
   } else {
-    badge.innerHTML = `
-      <button class="header-signin-btn" onclick="openCharacterLinkModal()">
-        <span class="btn-text-desktop">Select / Claim Character</span>
-        <span class="btn-text-mobile">⚔️ Claim Hero</span>
-      </button>
-    `;
+    const signInBtn = document.createElement("button");
+    signInBtn.className = "header-signin-btn";
+    signInBtn.onclick = () => openCharacterLinkModal();
+
+    const spanDesktop = document.createElement("span");
+    spanDesktop.className = "btn-text-desktop";
+    spanDesktop.textContent = "Select / Claim Character";
+    signInBtn.appendChild(spanDesktop);
+
+    const spanMobile = document.createElement("span");
+    spanMobile.className = "btn-text-mobile";
+    spanMobile.textContent = "⚔️ Claim Hero";
+    signInBtn.appendChild(spanMobile);
+
+    badge.appendChild(signInBtn);
   }
 }
 
@@ -5906,7 +5962,7 @@ async function loadPveBountiesView() {
     const deaths = deathsRes.ok ? (await deathsRes.json()).deaths || [] : [];
     renderPveBountiesView(lb, deaths);
   } catch (err) {
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Wanted Monsters: ${err.message}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Wanted Monsters: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -6107,7 +6163,7 @@ async function loadPveZonesView() {
     `;
     container.innerHTML = html;
   } catch (e) {
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Zone Mortality: ${e.message}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Zone Mortality: ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -6385,7 +6441,7 @@ async function loadWarroomView() {
 
     container.innerHTML = html;
   } catch (err) {
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Warroom: ${err.message}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Warroom: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -6604,7 +6660,7 @@ async function loadDefenseView() {
       </div>
     `;
   } catch (err) {
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load defense platform: ${err.message}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load defense platform: ${escapeHtml(err.message)}</div>`;
   }
 }
 
