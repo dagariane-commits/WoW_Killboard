@@ -46,7 +46,7 @@ Before submitting any pull request, you **must** pass all local verification tes
    ```powershell
    python tests/validate_lua.py
    ```
-   *All 10 Lua files must return `[PASS]`.*
+   *All 13 Lua files must return `[PASS]`.*
 
 2. **Pipeline, Parser & API Unit Tests**:
    ```powershell

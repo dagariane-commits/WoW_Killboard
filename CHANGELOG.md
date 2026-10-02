@@ -5,6 +5,24 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.85] - 2026-10-02
+
+### Security & Privacy
+- **Complete Git Tree & Contributor History Sanitization**:
+  - Rewrote 100% of all 169 historical commits across the entire repository using `git-filter-repo`.
+  - Replaced all historical Author and Committer metadata with author pseudonym `Dagariane <dagariane@gmail.com>`.
+  - Sanitized historical commit messages to purge legacy corporate/real-name identifiers.
+  - Purged contributor attribution so GitHub graphs and commit logs solely reflect `Dagariane`.
+
+### Added
+- **GitHub Advanced Security Code Scanning (`.github/workflows/codeql.yml`)**:
+  - Configured GitHub Advanced Security CodeQL automated vulnerability scanning.
+  - Configured matrix analysis for Python backend and JavaScript/TypeScript frontend.
+  - Automated triggers on all pushes to `main`, pull requests, and weekly scheduled security audits.
+- **Continuous Integration Verification Suite (`.github/workflows/ci.yml`)**:
+  - Implemented automated GitHub Actions CI workflow running Python 3.12.
+  - Automatically executes `tests/validate_lua.py` (syntax & taint structure check across all 13 Lua modules) and `python -m unittest discover tests` (20-point test suite) on every push and PR.
+
 ## [1.4.84] - 2026-10-01
 
 ### Security & Privacy

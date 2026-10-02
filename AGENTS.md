@@ -67,7 +67,7 @@ flowchart TD
 - Verify that no protected Blizzard execution paths are modified.
 
 ### Step 4: Automated Verification
-- Run `python tests/validate_lua.py` — Confirm all 10 Lua files return `[PASS]`.
+- Run `python tests/validate_lua.py` — Confirm all 13 Lua files return `[PASS]`.
 - Run `python -m unittest discover tests` — Confirm all pipeline and API unit tests pass.
 
 ### Step 5: Multi-Client Deployment & Package Build
