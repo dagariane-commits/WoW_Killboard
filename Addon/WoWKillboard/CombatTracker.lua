@@ -1736,10 +1736,38 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
         if cName:lower():find(playerName:lower(), 1, true) then return true end
         return false
     end
-    local cleanWinner = winnerName:match("^([^-]+)") or winnerName
-    local cleanLoser = loserName:match("^([^-]+)") or loserName
+    local function ExtractNameAndRealm(raw)
+        if not raw then return "", "" end
+        raw = raw:match("^%s*(.-)%s*$") -- trim
+        -- Check hyphen (e.g. Tinaomi-Elianco)
+        local n, r = raw:match("^([^-]+)%-(.+)$")
+        if n and r then
+            return n:match("^%s*(.-)%s*$"), r:match("^%s*(.-)%s*$")
+        end
+        -- Check space (e.g. Tinaomi Elianco)
+        n, r = raw:match("^([%S]+)%s+(.+)$")
+        if n and r then
+            return n:match("^%s*(.-)%s*$"), r:match("^%s*(.-)%s*$")
+        end
+        return raw, ""
+    end
+
+    local cleanWinner = ExtractNameAndRealm(winnerName)
+    local cleanLoser = ExtractNameAndRealm(loserName)
     local isPlayerWinner = MatchesPlayer(winnerName) or MatchesPlayer(cleanWinner)
     local isPlayerLoser = MatchesPlayer(loserName) or MatchesPlayer(cleanLoser)
+
+    if isPlayerWinner then
+        winnerName = playerName
+    else
+        winnerName = cleanWinner
+    end
+
+    if isPlayerLoser then
+        loserName = playerName
+    else
+        loserName = cleanLoser
+    end
 
     -- If neither winner nor loser is the local player, this is an ambient spectator duel
     -- Do not record stranger duels into the local player's killmail feed or duel statistics

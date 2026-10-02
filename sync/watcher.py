@@ -15,6 +15,21 @@ import re
 import argparse
 import urllib.request
 import urllib.error
+import ssl
+
+SYNC_VERSION = "1.0.0-beta.6"
+
+def safe_urlopen(req, timeout=5):
+    """Executes urllib.request.urlopen with User-Agent and resilient SSL context (protects against clock-skew and expired certs)."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    if isinstance(req, str):
+        req = urllib.request.Request(req, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
+    elif isinstance(req, urllib.request.Request):
+        if not req.has_header("User-Agent"):
+            req.add_header("User-Agent", f"WoWKillboardSync/{SYNC_VERSION}")
+    return urllib.request.urlopen(req, timeout=timeout, context=ctx)
 
 # Ensure UTF-8 console output across all Windows terminals
 if sys.platform == "win32":
@@ -402,9 +417,9 @@ class KillboardWatcher:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"}
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"}
                 )
-                with urllib.request.urlopen(req, timeout=5) as response:
+                with safe_urlopen(req, timeout=5) as response:
                     if response.status in (200, 201):
                         any_success = True
             except Exception as e:
@@ -427,6 +442,20 @@ class KillboardWatcher:
                     pass
             return 0
 
+        def _strip_realm(n):
+            if not n or n == "Unknown":
+                return n
+            n = str(n).strip()
+            # If name has space or hyphen, take first word as character name
+            if " " in n:
+                n = n.split()[0]
+            if "-" in n:
+                n = n.split("-")[0]
+            return n.strip()
+
+        k_name = _strip_realm(killer_data.get("name") or data.get("killer_name") or data.get("name") or "Unknown")
+        v_name = _strip_realm(victim_data.get("name") or data.get("victim_name") or "Unknown")
+
         k_raw_lvl = killer_data.get("level") if killer_data.get("level") is not None else (data.get("killer_level") if data.get("killer_level") is not None else data.get("level"))
         v_raw_lvl = victim_data.get("level") if victim_data.get("level") is not None else data.get("victim_level")
 
@@ -447,7 +476,7 @@ class KillboardWatcher:
             "attackers": data.get("attackers", []),
             "totalDamage": data.get("totalDamage", 0),
             "killer": {
-                "name": killer_data.get("name") or data.get("killer_name") or data.get("name") or "Unknown",
+                "name": k_name,
                 "level": _clean_lvl(k_raw_lvl),
                 "class": killer_data.get("class") or data.get("killer_class") or data.get("class") or "WARRIOR",
                 "guild": killer_data.get("guild") or data.get("killer_guild") or data.get("guild") or "None",
@@ -457,7 +486,7 @@ class KillboardWatcher:
                 "healingDone": killer_data.get("healingDone") or data.get("killer_healingDone") or 0,
             },
             "victim": {
-                "name": victim_data.get("name") or data.get("victim_name") or "Unknown",
+                "name": v_name,
                 "level": _clean_lvl(v_raw_lvl),
                 "class": victim_data.get("class") or data.get("victim_class") or "ROGUE",
                 "guild": victim_data.get("guild") or data.get("victim_guild") or "None",
@@ -480,10 +509,10 @@ class KillboardWatcher:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"},
                     method="POST"
                 )
-                with urllib.request.urlopen(req, timeout=5) as resp:
+                with safe_urlopen(req, timeout=5) as resp:
                     if resp.status in (200, 201):
                         any_success = True
             except urllib.error.HTTPError as e:
@@ -529,10 +558,10 @@ class KillboardWatcher:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"},
                     method="POST"
                 )
-                urllib.request.urlopen(req, timeout=5)
+                safe_urlopen(req, timeout=5)
             except Exception:
                 pass
 
@@ -552,10 +581,10 @@ class KillboardWatcher:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"},
                     method="POST"
                 )
-                urllib.request.urlopen(req, timeout=5)
+                safe_urlopen(req, timeout=5)
             except Exception:
                 pass
 
@@ -566,10 +595,10 @@ class KillboardWatcher:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(stats).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"},
                     method="POST"
                 )
-                urllib.request.urlopen(req, timeout=5)
+                safe_urlopen(req, timeout=5)
             except Exception:
                 pass
 
@@ -581,10 +610,10 @@ class KillboardWatcher:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(data).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"},
                     method="POST"
                 )
-                with urllib.request.urlopen(req, timeout=5) as resp:
+                with safe_urlopen(req, timeout=5) as resp:
                     print(f"[Watcher] [SOS] Broadcasted Call for Backup SOS beacon for {data.get('character_name')} in {data.get('zone')} to {endpoint}!")
                     if resp.status in (200, 201):
                         any_success = True
@@ -600,10 +629,10 @@ class KillboardWatcher:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(data).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"},
                     method="POST"
                 )
-                with urllib.request.urlopen(req, timeout=5) as resp:
+                with safe_urlopen(req, timeout=5) as resp:
                     print(f"[Watcher] [EVENT] Broadcasted Guild Event: {data.get('title')} in {data.get('zone')} to {endpoint}!")
                     if resp.status in (200, 201):
                         any_success = True
@@ -623,10 +652,10 @@ class KillboardWatcher:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"},
                     method="POST"
                 )
-                with urllib.request.urlopen(req, timeout=5) as resp:
+                with safe_urlopen(req, timeout=5) as resp:
                     if resp.status in (200, 201):
                         log_event(f"[Watcher] [CLAIM] Verified ownership for '{character_name}' on {endpoint} via in-game token {code}!")
                         any_success = True
@@ -652,10 +681,10 @@ class KillboardWatcher:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(bug_data).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json", "User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"},
                     method="POST"
                 )
-                with urllib.request.urlopen(req, timeout=8) as resp:
+                with safe_urlopen(req, timeout=8) as resp:
                     if resp.status in (200, 201):
                         res_json = json.loads(resp.read().decode("utf-8"))
                         diag = res_json.get("diagnosis", {})
@@ -680,7 +709,7 @@ class KillboardWatcher:
                 url = f"{endpoint}/api/realm/summary"
                 try:
                     req = urllib.request.Request(url, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
-                    with urllib.request.urlopen(req, timeout=4) as resp:
+                    with safe_urlopen(req, timeout=4) as resp:
                         if resp.status == 200:
                             summary = json.loads(resp.read().decode("utf-8"))
                 except Exception:
@@ -691,7 +720,7 @@ class KillboardWatcher:
                 url_kills = f"{endpoint}/api/kills?limit=60"
                 try:
                     req = urllib.request.Request(url_kills, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
-                    with urllib.request.urlopen(req, timeout=5) as resp:
+                    with safe_urlopen(req, timeout=5) as resp:
                         if resp.status == 200:
                             k_data = json.loads(resp.read().decode("utf-8"))
                             recent_kills = k_data.get("kills", [])
@@ -703,7 +732,7 @@ class KillboardWatcher:
                 url_bnt = f"{endpoint}/api/bounties"
                 try:
                     req = urllib.request.Request(url_bnt, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
-                    with urllib.request.urlopen(req, timeout=4) as resp:
+                    with safe_urlopen(req, timeout=4) as resp:
                         if resp.status == 200:
                             b_data = json.loads(resp.read().decode("utf-8"))
                             if isinstance(b_data, list):
@@ -718,7 +747,7 @@ class KillboardWatcher:
                 url_pve = f"{endpoint}/api/pve/deaths?limit=60"
                 try:
                     req = urllib.request.Request(url_pve, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
-                    with urllib.request.urlopen(req, timeout=4) as resp:
+                    with safe_urlopen(req, timeout=4) as resp:
                         if resp.status == 200:
                             pve_resp = json.loads(resp.read().decode("utf-8"))
                             if isinstance(pve_resp, list):
@@ -733,7 +762,7 @@ class KillboardWatcher:
                 url_pve_lb = f"{endpoint}/api/pve/leaderboard"
                 try:
                     req = urllib.request.Request(url_pve_lb, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
-                    with urllib.request.urlopen(req, timeout=4) as resp:
+                    with safe_urlopen(req, timeout=4) as resp:
                         if resp.status == 200:
                             pve_leaderboard = json.loads(resp.read().decode("utf-8"))
                 except Exception:
@@ -1117,7 +1146,7 @@ def resolve_api_endpoints(cli_arg: str = None, force_local: bool = False, force_
     endpoints = [DEFAULT_PROD_URL]
     try:
         req = urllib.request.Request(f"{DEFAULT_LOCAL_URL}/api/health", headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
-        with urllib.request.urlopen(req, timeout=0.6) as resp:
+        with safe_urlopen(req, timeout=0.6) as resp:
             if resp.status in (200, 201):
                 endpoints.append(DEFAULT_LOCAL_URL)
     except Exception:

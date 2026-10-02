@@ -425,7 +425,9 @@ def health_check():
     })
 
 @app.route("/")
-def index():
+@app.route("/character")
+@app.route("/character/<path:subpath>")
+def index(subpath=None):
     return send_from_directory(STATIC_DIR, "index.html")
 
 @app.route("/feedback")

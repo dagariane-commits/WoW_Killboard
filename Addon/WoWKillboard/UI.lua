@@ -793,7 +793,7 @@ function UI:CreateMainWindow()
     end)
     medallion:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
     medallion:SetScript("OnMouseDown", function()
-        UI:ShowCharacterWebLink(UnitName("player"))
+        UI:ShowCharacterWebLink((UnitName("player")), select(2, UnitClass("player")), UnitLevel("player"), UnitFactionGroup("player"))
     end)
     -- Template-Free Character Web Profile Link Button (Positioned cleanly on Left next to Medallion)
     local webBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
@@ -805,7 +805,7 @@ function UI:CreateMainWindow()
     webLabel:SetText("|cff00e5ffWeb Profile|r")
     webBtn.Label = webLabel
     webBtn:SetScript("OnClick", function()
-        UI:ShowCharacterWebLink(UnitName("player"))
+        UI:ShowCharacterWebLink((UnitName("player")), select(2, UnitClass("player")), UnitLevel("player"), UnitFactionGroup("player"))
     end)
     webBtn:SetScript("OnEnter", function(self)
         local t = UI:GetTheme()
@@ -4572,27 +4572,45 @@ function UI:ShowCharacterWebLink(charName, className, level, faction)
         return
     end
 
-    local isPlayer = (not charName) or (charName == UnitName("player"))
-    charName = charName or UnitName("player") or "Player"
+    local validClasses = {
+        WARRIOR = true, PALADIN = true, HUNTER = true, ROGUE = true, PRIEST = true,
+        DEATHKNIGHT = true, SHAMAN = true, MAGE = true, WARLOCK = true, MONK = true,
+        DRUID = true, DEMONHUNTER = true, EVOKER = true,
+    }
+
+    local pName = (UnitName("player"))
+    local isPlayer = (not charName) or (charName == pName)
+
+    if charName then
+        charName = (charName:match("^([^- %s]+)") or charName)
+    else
+        charName = pName or "Player"
+    end
 
     if isPlayer then
         local _, classFilename = UnitClass("player")
-        className = className or classFilename or "WARRIOR"
+        if not className or not validClasses[tostring(className):upper()] then
+            className = classFilename or "WARRIOR"
+        end
         level = level or UnitLevel("player") or 60
         faction = faction or UnitFactionGroup("player") or "Alliance"
-    elseif UnitExists("target") and UnitName("target") == charName then
+    elseif UnitExists("target") and (UnitName("target")) == charName then
         local _, classFilename = UnitClass("target")
-        className = className or classFilename or "WARRIOR"
+        if not className or not validClasses[tostring(className):upper()] then
+            className = classFilename or "WARRIOR"
+        end
         level = level or UnitLevel("target") or 60
         faction = faction or UnitFactionGroup("target") or "Alliance"
     else
-        className = className or "WARRIOR"
+        if not className or not validClasses[tostring(className):upper()] then
+            className = "WARRIOR"
+        end
         level = level or 60
         faction = faction or "Alliance"
     end
 
     local domain = (KB.Config and KB.Config.WebDomain) or KB.WebDomain or "wowkillboard.com"
-    local rawUrl = string.format("https://%s/character?name=%s&class=%s&level=%d&faction=%s", domain, charName, className, level, faction)
+    local rawUrl = string.format("https://%s/character?name=%s&character=%s&class=%s&level=%d&faction=%s", domain, charName, charName, className, level, faction)
 
     if not UI.WebLinkDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")

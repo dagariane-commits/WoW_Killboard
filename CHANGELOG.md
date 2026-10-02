@@ -5,6 +5,30 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.89] - 2026-10-02
+
+### Fixed
+- **Duel Combat Telemetry & Connected Realm Parsing (`CombatTracker.lua`, `sync/watcher.py`)**:
+  - Implemented `ExtractNameAndRealm(raw)` regex in `CT:OnDuelCompleted()` to strip hyphenated or space-delimited connected realm strings from `CHAT_MSG_SYSTEM` duel announcements (e.g. `Tinaomi Elianco` -> `Tinaomi`, `Dagariane Squick` -> `Dagariane`).
+  - Enforced canonical `playerName` for the local combatant in duel outcome tracking.
+  - Added `_strip_realm()` defensive parsing in `sync/watcher.py:upload_kill()` to ensure combatants sent to the REST API are cleanly separated from realm tags.
+- **Character Web Link Generation & Lua Multi-Return Fix (`UI.lua`, `Core.lua`)**:
+  - Remediated multi-return leakage where `UI:ShowCharacterWebLink(UnitName("player"))` passed the player's realm name (`Squick`) as the class parameter (`class=Squick`).
+  - Wrapped `(UnitName("player"))` and `(UnitName("target"))` in parentheses across UI medallion, web button, and slash commands.
+  - Added valid WoW class table validation (`WARRIOR`, `PALADIN`, `HUNTER`, etc.) in `UI:ShowCharacterWebLink()` to prevent non-class strings from entering query strings.
+  - Formatted generated URLs with both `name=` and `character=` parameters for universal client-side compatibility.
+- **Web Platform Deep Linking & Profile Auto-Modal (`web/server.py`, `web/static/app.js`)**:
+  - Added `@app.route("/character")` and `@app.route("/character/<path:subpath>")` routes in Flask returning `index.html` to support direct external browser navigation.
+  - Enhanced frontend URL parser in `app.js` to recognize `?name=`, `?character=`, `?char=`, `?player=`, and `/character/<name>` path segments.
+  - Added strict class validation before persisting to `localStorage` to eliminate profile corruption.
+  - Configured automatic `openCharacterProfile()` modal trigger on entry via character web links.
+- **Desktop Sync Resilience & Cloudflare/SSL Compatibility (`sync/watcher.py`)**:
+  - Implemented `safe_urlopen()` wrapper with custom `User-Agent: WoWKillboardSync/{SYNC_VERSION}` and SSL context handling, eliminating Python 3.12 SSL certificate verification errors and Cloudflare 403 request drops.
+
+### Infrastructure & Deployment
+- **Multi-Client Local Deployment**: Synchronized updated addon files across all 4 local client installations (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+- **Binary & Package Rebuild**: Recompiled `dist/WoWKillboardSync.exe` via PyInstaller, mirrored to root and `web/static`, and regenerated `WoWKillboard-v1.0.0.zip`.
+
 ## [1.4.88] - 2026-10-02
 
 ### Changed
