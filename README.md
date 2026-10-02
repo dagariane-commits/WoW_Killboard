@@ -1,8 +1,8 @@
 # WoW Killboard — Frontline War Room
 
 [![Release](https://img.shields.io/badge/Release-v1.0.0-00e5ff.svg)](CHANGELOG.md)
-[![CI](https://github.com/Dagariane/WoW_Killboard/actions/workflows/ci.yml/badge.svg)](https://github.com/Dagariane/WoW_Killboard/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/Dagariane/WoW_Killboard/actions/workflows/codeql.yml/badge.svg)](https://github.com/Dagariane/WoW_Killboard/actions/workflows/codeql.yml)
+[![CI](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml)
 [![WoW Flavors](https://img.shields.io/badge/WoW-Forever%20%7C%20Classic%20Era%20%7C%20Anniversary%20%7C%20Retail-ffd700.svg)](docs/TAINT_AND_COMPATIBILITY.md)
 [![Taint Security](https://img.shields.io/badge/Blizzard%20UI%20Taint-Zero%20%28100%25%20Clean%29-00ff66.svg)](docs/TAINT_AND_COMPATIBILITY.md)
 [![Desktop Sync](https://img.shields.io/badge/Desktop%20Sync-Standalone%20EXE-blue.svg)](dist/WoWKillboardSync.exe)
