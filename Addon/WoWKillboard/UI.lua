@@ -1969,133 +1969,135 @@ function UI:RenderLiveFeed()
     end
 
     for idx, km in ipairs(kills) do
-        local row = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
-        row:SetSize(820, 36)
-        row:SetPoint("TOPLEFT", 0, yOffset)
-        local isEven = (idx % 2 == 0)
-        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
-        row:SetBackdrop(theme.rowBackdrop)
-        row:SetBackdropColor(unpack(baseBg))
-        row:SetBackdropBorderColor(unpack(theme.rowBorder))
+        if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
+            local row = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
+            row:SetSize(820, 36)
+            row:SetPoint("TOPLEFT", 0, yOffset)
+            local isEven = (idx % 2 == 0)
+            local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+            row:SetBackdrop(theme.rowBackdrop)
+            row:SetBackdropColor(unpack(baseBg))
+            row:SetBackdropBorderColor(unpack(theme.rowBorder))
 
-        -- Left Accent Bar (Colored by engagement category)
-        local accent = row:CreateTexture(nil, "ARTWORK")
-        accent:SetPoint("TOPLEFT", 0, 0)
-        accent:SetPoint("BOTTOMLEFT", 0, 0)
-        accent:SetWidth(4)
+            -- Left Accent Bar (Colored by engagement category)
+            local accent = row:CreateTexture(nil, "ARTWORK")
+            accent:SetPoint("TOPLEFT", 0, 0)
+            accent:SetPoint("BOTTOMLEFT", 0, 0)
+            accent:SetWidth(4)
 
-        local badgeStr = ""
-        if km.isDuel then
-            accent:SetColorTexture(1.0, 0.84, 0.0, 1.0) -- Gold
-            badgeStr = "|cffffd700[DUEL]|r"
-        elseif km.isBattleground then
-            accent:SetColorTexture(0.3, 0.65, 1.0, 1.0) -- Soft Blue
-            badgeStr = string.format("|cff69ccf0[BG x%d]|r", km.attackersCount or 1)
-        elseif km.isSolo then
-            accent:SetColorTexture(0.0, 1.0, 0.4, 1.0) -- Emerald
-            badgeStr = "|cff00ff66[SOLO]|r"
-        else
-            accent:SetColorTexture(1.0, 0.6, 0.0, 1.0) -- Orange
-            local attCount = km.attackersCount or 2
-            if attCount > 1 then
-                badgeStr = string.format("|cffffaa00[GANG x%d]|r", attCount)
+            local badgeStr = ""
+            if km.isDuel then
+                accent:SetColorTexture(1.0, 0.84, 0.0, 1.0) -- Gold
+                badgeStr = "|cffffd700[DUEL]|r"
+            elseif km.isBattleground then
+                accent:SetColorTexture(0.3, 0.65, 1.0, 1.0) -- Soft Blue
+                badgeStr = string.format("|cff69ccf0[BG x%d]|r", km.attackersCount or 1)
+            elseif km.isSolo then
+                accent:SetColorTexture(0.0, 1.0, 0.4, 1.0) -- Emerald
+                badgeStr = "|cff00ff66[SOLO]|r"
             else
-                badgeStr = "|cffffaa00[ASSIST]|r"
+                accent:SetColorTexture(1.0, 0.6, 0.0, 1.0) -- Orange
+                local attCount = km.attackersCount or 2
+                if attCount > 1 then
+                    badgeStr = string.format("|cffffaa00[GANG x%d]|r", attCount)
+                else
+                    badgeStr = "|cffffaa00[ASSIST]|r"
+                end
             end
+
+            -- Category Badge
+            local badgeText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            badgeText:SetPoint("LEFT", 12, 0)
+            badgeText:SetText(badgeStr)
+            badgeText:SetShadowOffset(1, -1)
+            badgeText:SetShadowColor(0, 0, 0, 1)
+
+            -- Killer Class Icon
+            local kIcon = UI:CreateClassIcon(row, km.killer.class, 22)
+            kIcon:SetPoint("LEFT", 78, 0)
+
+            -- Killer Level Pill
+            local kLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            kLvl:SetPoint("LEFT", kIcon, "RIGHT", 4, 0)
+            local kLvlVal = km.killer.level or 0
+            kLvl:SetText((kLvlVal > 0) and string.format("|cffffd100%d|r", kLvlVal) or "|cff8899aa??|r")
+            kLvl:SetShadowOffset(1, -1)
+            kLvl:SetShadowColor(0, 0, 0, 1)
+
+            -- Action Verb Separator (Center)
+            local actionVerb = km.isDuel and "defeated" or "destroyed"
+            local sep = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            sep:SetPoint("LEFT", 305, 0)
+            sep:SetText(string.format("|cffe2d4c0%s|r", actionVerb))
+            sep:SetShadowOffset(1, -1)
+            sep:SetShadowColor(0, 0, 0, 1)
+
+            -- Killer Name & Guild (Bounded cleanly before separator)
+            local killerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            killerStr:SetPoint("LEFT", kLvl, "RIGHT", 5, 0)
+            killerStr:SetPoint("RIGHT", sep, "LEFT", -6, 0)
+            killerStr:SetJustifyH("LEFT")
+            killerStr:SetWordWrap(false)
+            local kGuildStr = (km.killer.guild and km.killer.guild ~= "None" and km.killer.guild ~= "") and string.format(" |cffc0a080<%s>|r", km.killer.guild) or ""
+            killerStr:SetText(KB.Utils.ColorizeByClass(km.killer.name, km.killer.class) .. kGuildStr)
+            killerStr:SetShadowOffset(1, -1)
+            killerStr:SetShadowColor(0, 0, 0, 1)
+
+            -- Victim Class Icon
+            local vIcon = UI:CreateClassIcon(row, km.victim.class, 22)
+            vIcon:SetPoint("LEFT", 365, 0)
+
+            -- Victim Level Pill
+            local vLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            vLvl:SetPoint("LEFT", vIcon, "RIGHT", 4, 0)
+            local vLvlVal = km.victim.level or 0
+            vLvl:SetText((vLvlVal > 0) and string.format("|cffffd100%d|r", vLvlVal) or "|cff8899aa??|r")
+            vLvl:SetShadowOffset(1, -1)
+            vLvl:SetShadowColor(0, 0, 0, 1)
+
+            -- Location & Timestamp (Right-Aligned)
+            local infoStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            infoStr:SetPoint("RIGHT", -12, 0)
+            local locName = km.isBattleground and (km.battlegroundName or "Battleground") or (km.location and km.location.zone or "Azeroth")
+            infoStr:SetText(string.format("|cffcbd5e1%s|r  |cff64748b||r  |cffa0aab8%s|r", locName, KB.Utils.FormatTimeAgo(km.timestamp)))
+            infoStr:SetShadowOffset(1, -1)
+            infoStr:SetShadowColor(0, 0, 0, 1)
+
+            -- Victim Name & Guild (Bounded cleanly before location info)
+            local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            victimStr:SetPoint("LEFT", vLvl, "RIGHT", 5, 0)
+            victimStr:SetPoint("RIGHT", infoStr, "LEFT", -10, 0)
+            victimStr:SetJustifyH("LEFT")
+            victimStr:SetWordWrap(false)
+            local vGuildStr = (km.victim.guild and km.victim.guild ~= "None" and km.victim.guild ~= "") and string.format(" |cffc0a080<%s>|r", km.victim.guild) or ""
+            victimStr:SetText(KB.Utils.ColorizeByClass(km.victim.name, km.victim.class) .. vGuildStr)
+            victimStr:SetShadowOffset(1, -1)
+            victimStr:SetShadowColor(0, 0, 0, 1)
+
+            -- Interactive Hover
+            row:SetScript("OnEnter", function(self)
+                local t = UI:GetTheme()
+                if t and t.btnHoverBg then
+                    self:SetBackdropColor(unpack(t.btnHoverBg))
+                    self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
+                end
+            end)
+            row:SetScript("OnLeave", function(self)
+                local t = UI:GetTheme()
+                self:SetBackdropColor(unpack(baseBg))
+                if t and t.rowBorder then
+                    self:SetBackdropBorderColor(unpack(t.rowBorder))
+                end
+            end)
+
+            -- Click handler to open killmail detail
+            local targetKM = km
+            row:SetScript("OnClick", function()
+                UI:ShowKillDetail(targetKM)
+            end)
+
+            yOffset = yOffset - 40
         end
-
-        -- Category Badge
-        local badgeText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        badgeText:SetPoint("LEFT", 12, 0)
-        badgeText:SetText(badgeStr)
-        badgeText:SetShadowOffset(1, -1)
-        badgeText:SetShadowColor(0, 0, 0, 1)
-
-        -- Killer Class Icon
-        local kIcon = UI:CreateClassIcon(row, km.killer.class, 22)
-        kIcon:SetPoint("LEFT", 78, 0)
-
-        -- Killer Level Pill
-        local kLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        kLvl:SetPoint("LEFT", kIcon, "RIGHT", 4, 0)
-        local kLvlVal = km.killer.level or 0
-        kLvl:SetText((kLvlVal > 0) and string.format("|cffffd100%d|r", kLvlVal) or "|cff8899aa??|r")
-        kLvl:SetShadowOffset(1, -1)
-        kLvl:SetShadowColor(0, 0, 0, 1)
-
-        -- Action Verb Separator (Center)
-        local actionVerb = km.isDuel and "defeated" or "destroyed"
-        local sep = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        sep:SetPoint("LEFT", 305, 0)
-        sep:SetText(string.format("|cffe2d4c0%s|r", actionVerb))
-        sep:SetShadowOffset(1, -1)
-        sep:SetShadowColor(0, 0, 0, 1)
-
-        -- Killer Name & Guild (Bounded cleanly before separator)
-        local killerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        killerStr:SetPoint("LEFT", kLvl, "RIGHT", 5, 0)
-        killerStr:SetPoint("RIGHT", sep, "LEFT", -6, 0)
-        killerStr:SetJustifyH("LEFT")
-        killerStr:SetWordWrap(false)
-        local kGuildStr = (km.killer.guild and km.killer.guild ~= "None" and km.killer.guild ~= "") and string.format(" |cffc0a080<%s>|r", km.killer.guild) or ""
-        killerStr:SetText(KB.Utils.ColorizeByClass(km.killer.name, km.killer.class) .. kGuildStr)
-        killerStr:SetShadowOffset(1, -1)
-        killerStr:SetShadowColor(0, 0, 0, 1)
-
-        -- Victim Class Icon
-        local vIcon = UI:CreateClassIcon(row, km.victim.class, 22)
-        vIcon:SetPoint("LEFT", 365, 0)
-
-        -- Victim Level Pill
-        local vLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        vLvl:SetPoint("LEFT", vIcon, "RIGHT", 4, 0)
-        local vLvlVal = km.victim.level or 0
-        vLvl:SetText((vLvlVal > 0) and string.format("|cffffd100%d|r", vLvlVal) or "|cff8899aa??|r")
-        vLvl:SetShadowOffset(1, -1)
-        vLvl:SetShadowColor(0, 0, 0, 1)
-
-        -- Location & Timestamp (Right-Aligned)
-        local infoStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        infoStr:SetPoint("RIGHT", -12, 0)
-        local locName = km.isBattleground and (km.battlegroundName or "Battleground") or km.location.zone
-        infoStr:SetText(string.format("|cffcbd5e1%s|r  |cff64748b||r  |cffa0aab8%s|r", locName, KB.Utils.FormatTimeAgo(km.timestamp)))
-        infoStr:SetShadowOffset(1, -1)
-        infoStr:SetShadowColor(0, 0, 0, 1)
-
-        -- Victim Name & Guild (Bounded cleanly before location info)
-        local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        victimStr:SetPoint("LEFT", vLvl, "RIGHT", 5, 0)
-        victimStr:SetPoint("RIGHT", infoStr, "LEFT", -10, 0)
-        victimStr:SetJustifyH("LEFT")
-        victimStr:SetWordWrap(false)
-        local vGuildStr = (km.victim.guild and km.victim.guild ~= "None" and km.victim.guild ~= "") and string.format(" |cffc0a080<%s>|r", km.victim.guild) or ""
-        victimStr:SetText(KB.Utils.ColorizeByClass(km.victim.name, km.victim.class) .. vGuildStr)
-        victimStr:SetShadowOffset(1, -1)
-        victimStr:SetShadowColor(0, 0, 0, 1)
-
-        -- Interactive Hover
-        row:SetScript("OnEnter", function(self)
-            local t = UI:GetTheme()
-            if t and t.btnHoverBg then
-                self:SetBackdropColor(unpack(t.btnHoverBg))
-                self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
-            end
-        end)
-        row:SetScript("OnLeave", function(self)
-            local t = UI:GetTheme()
-            self:SetBackdropColor(unpack(baseBg))
-            if t and t.rowBorder then
-                self:SetBackdropBorderColor(unpack(t.rowBorder))
-            end
-        end)
-
-        -- Click handler to open killmail detail
-        local targetKM = km
-        row:SetScript("OnClick", function()
-            UI:ShowKillDetail(targetKM)
-        end)
-
-        yOffset = yOffset - 40
     end
 
     UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)

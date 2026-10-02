@@ -752,10 +752,16 @@ class KillboardWatcher:
                     with open(fp, "r", encoding="utf-8", errors="ignore") as f:
                         content = f.read()
                     parsed = LuaTableParser.parse_string(content)
-                    db_kills = parsed.get("WoWKillboardDB", {})
-                    if isinstance(db_kills, dict):
+                    raw_db = parsed.get("WoWKillboardDB", {})
+                    if isinstance(raw_db, dict):
+                        # SavedVariables stores kills under the "kills" key
+                        db_kills = raw_db.get("kills") if isinstance(raw_db.get("kills"), dict) else raw_db
                         for kid, km in db_kills.items():
+                            if kid in ("kills", "pveDeaths", "settings", "sessionStats", "campaignRuleset", "RealmData"):
+                                continue
                             if kid not in known_kill_ids and isinstance(km, dict):
+                                if not isinstance(km.get("killer"), dict) or not isinstance(km.get("victim"), dict):
+                                    continue
                                 km_copy = dict(km)
                                 if "killId" not in km_copy:
                                     km_copy["killId"] = kid
@@ -797,17 +803,25 @@ class KillboardWatcher:
                 except Exception:
                     pass
 
-        # Ensure all recent kills strictly conform to Guardrail 4 solo purity
+        # Ensure all recent kills strictly conform to valid schema and Guardrail 4 solo purity
+        sanitized_recent_kills = []
         for rk in recent_kills:
-            if isinstance(rk, dict) and not rk.get("isDuel"):
+            if not isinstance(rk, dict):
+                continue
+            k_data = rk.get("killer")
+            v_data = rk.get("victim")
+            if not isinstance(k_data, dict) or not k_data.get("name") or not isinstance(v_data, dict) or not v_data.get("name"):
+                continue
+            if not rk.get("isDuel"):
                 tot_dmg = rk.get("totalDamage", 0) or 0
-                k_data = rk.get("killer", {}) if isinstance(rk.get("killer"), dict) else {}
                 k_dmg = k_data.get("damageDone", 0) or 0
                 att_count = rk.get("attackersCount", 1) or 1
                 if tot_dmg <= 0 or k_dmg <= 0 or att_count > 1 or rk.get("isBattleground") or rk.get("isArena"):
                     rk["isSolo"] = False
                     if att_count < 2:
                         rk["attackersCount"] = 2
+            sanitized_recent_kills.append(rk)
+        recent_kills = sanitized_recent_kills
 
         # Sort recent kills descending by timestamp and cap at 60
         recent_kills.sort(key=lambda x: x.get("timestamp", 0) if isinstance(x, dict) else 0, reverse=True)

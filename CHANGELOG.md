@@ -5,6 +5,24 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.86] - 2026-10-02
+
+### Fixed
+- **Defensive In-Game Killmail Aggregation & Null Guarding (`Leaderboard.lua`, `UI.lua`, `Core.lua`)**:
+  - Remediated runtime Lua error `Leaderboard.lua:192: attempt to index field 'killer' (a nil value)`.
+  - Added strict nil and type validations in `LB:IndexKillmail()`, `LB:Rebuild()`, `LB:GetRecentKills()`, `LB:GetModeSummary()`, and `LB:MatchesMode()`, ensuring `km`, `km.killer`, `km.killer.name`, `km.victim`, and `km.victim.name` exist before indexing.
+  - Defensively guarded `km.location` zone indexing across leaderboard and UI modules.
+  - Hardened feed row creation in `UI:PopulateFeed()` and player career sync in `Core:SyncRealmData()`.
+- **SavedVariables Sub-Table Isolation in Desktop Sync (`sync/watcher.py`)**:
+  - Isolated the `WoWKillboardDB.kills` sub-table during local SavedVariables merging, preventing reserved non-kill keys (`pveDeaths`, `settings`, `sessionStats`, `campaignRuleset`, `RealmData`) from being treated as kill records.
+  - Enforced schema sanitization on all `recent_kills` before serialization into `WoWKillboard_RealmData.lua`, guaranteeing only records with valid killer and victim tables are written.
+- **Purged Corrupted Realm Data (`Addon/WoWKillboard/WoWKillboard_RealmData.lua`)**:
+  - Cleared malformed placeholder kill entry with `killId = "pveDeaths"`.
+
+### Infrastructure & Deployment
+- **Multi-Client Local Deployment**: Synchronized updated addon files across all 4 local client installations (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+- **Binary & Package Rebuild**: Recompiled `WoWKillboardSync.exe` via PyInstaller and regenerated `WoWKillboard-v1.0.0.zip`.
+
 ## [1.4.85] - 2026-10-02
 
 ### Security & Privacy

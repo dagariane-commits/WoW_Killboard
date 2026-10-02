@@ -165,24 +165,26 @@ function KB:SyncRealmData()
     local imported = 0
     if rData.RecentKills then
         for _, km in ipairs(rData.RecentKills) do
-            local kId = km.killId or (km.killer and km.victim and (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0)))
-            local isMe = false
-            if km.killer and km.killer.name and IsPlayerMatch(km.killer.name) then
-                isMe = true
-            elseif km.victim and km.victim.name and IsPlayerMatch(km.victim.name) then
-                isMe = true
-            elseif km.attackers then
-                for _, att in pairs(km.attackers) do
-                    if att.name and IsPlayerMatch(att.name) then
-                        isMe = true
-                        break
+            if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
+                local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
+                local isMe = false
+                if IsPlayerMatch(km.killer.name) then
+                    isMe = true
+                elseif IsPlayerMatch(km.victim.name) then
+                    isMe = true
+                elseif km.attackers then
+                    for _, att in pairs(km.attackers) do
+                        if att and att.name and IsPlayerMatch(att.name) then
+                            isMe = true
+                            break
+                        end
                     end
                 end
-            end
 
-            if isMe and kId and not WoWKillboardDB.kills[kId] then
-                WoWKillboardDB.kills[kId] = km
-                imported = imported + 1
+                if isMe and kId and not WoWKillboardDB.kills[kId] then
+                    WoWKillboardDB.kills[kId] = km
+                    imported = imported + 1
+                end
             end
         end
     end
