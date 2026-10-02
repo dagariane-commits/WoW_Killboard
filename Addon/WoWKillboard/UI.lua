@@ -35,8 +35,30 @@ local hlSubTab = "PLAYERS"   -- "PLAYERS" (Player Ranks), "GUILDS" (Guild Ranks)
 local ribbonMode = "REALM"   -- "REALM" or "SESSION" (Defaults to REALM for immediate telemetry visibility)
 local marksSubTab = "ACTIVE" -- "ACTIVE" (Execution List), "RECORDS" (Hall of Fame), "DEBTORS" (The Marked Debts)
 
+local pveHlSubTab = "PREDATORS" -- "PREDATORS" (Monsters & Elites), "VICTIMS" (Fallen Mortals), "ZONES" (Deadliest Zones)
+
 local tabButtons = {}
 local filterButtons = {}
+
+function UI:GetRuleset()
+    if KB.Utils and KB.Utils.GetRealmRuleset then
+        return KB.Utils.GetRealmRuleset()
+    end
+    if WoWKillboardDB and WoWKillboardDB.campaignRuleset then
+        return tostring(WoWKillboardDB.campaignRuleset):upper()
+    end
+    local realm = (GetRealmName and GetRealmName()) or ""
+    if realm:lower():find("pve") or realm:lower():find("normal") then return "PVE" end
+    return "PVP"
+end
+
+function UI:IsPve()
+    if KB.Utils and KB.Utils.IsPveRuleset then
+        return KB.Utils.IsPveRuleset()
+    end
+    local r = UI:GetRuleset()
+    return (r == "PVE" or r == "HARDCORE")
+end
 
 -- Standard Blizzard Class Coordinates (safe fallback for all WoW versions)
 local CLASS_ICON_TEXTURE = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
@@ -833,6 +855,45 @@ function UI:CreateMainWindow()
     end)
     UI.WireButton = wireBtn
 
+    -- Template-Free Campaign Ruleset Toggle Button (PvE vs PvP Ruleset)
+    local rulesetBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    rulesetBtn:SetSize(76, 20)
+    rulesetBtn:SetPoint("LEFT", wireBtn, "RIGHT", 6, 0)
+    rulesetBtn:EnableMouse(true)
+    local rulesetLabel = rulesetBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    rulesetLabel:SetPoint("CENTER", 0, 0)
+    rulesetLabel:SetText("|cffef4444[ PvP ]|r")
+    rulesetBtn.Label = rulesetLabel
+    rulesetBtn:SetScript("OnClick", function()
+        WoWKillboardDB = WoWKillboardDB or {}
+        local cur = UI:GetRuleset()
+        local nextR = (cur == "PVE") and "PVP" or "PVE"
+        WoWKillboardDB.campaignRuleset = nextR
+        SafePrint(string.format("|cff00ccff[WoWKB]|r Switched campaign ruleset to: |cffffd100[%s]|r", nextR))
+        UI:Refresh()
+    end)
+    rulesetBtn:SetScript("OnEnter", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnHoverBg then
+            self:SetBackdropColor(unpack(t.btnHoverBg))
+            self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
+        end
+        local cur = UI:GetRuleset()
+        local rDesc = (cur == "PVE")
+            and "Active Ruleset: |cff10b981[PvE Normal]|r\nTracking wilderness mortality, executioner monsters, and militia bounties.\n\nClick to switch to Contested World PvP."
+            or "Active Ruleset: |cffef4444[Contested PvP]|r\nTracking open-world player kills, bounties, and faction war.\n\nClick to switch to Wilderness PvE Casualties."
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Campaign Ruleset Toggle|r", rDesc)
+    end)
+    rulesetBtn:SetScript("OnLeave", function(self)
+        local t = UI:GetTheme()
+        if t and t.btnBg then
+            self:SetBackdropColor(unpack(t.btnBg))
+            self:SetBackdropBorderColor(unpack(t.btnBorder))
+        end
+        UI:HidePrivateTooltip()
+    end)
+    UI.RulesetButton = rulesetBtn
+
     -- Authentic Classic Dialog Arched Header Crest (Centered at top)
     local headerPlate = mainFrame:CreateTexture(nil, "ARTWORK", nil, 1)
     headerPlate:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
@@ -1263,77 +1324,233 @@ function UI:Refresh()
 
     local kd = (myDeaths > 0) and string.format("%.2f", myKills / myDeaths) or tostring(myKills)
 
-    if UI.RibbonToggleBtn and UI.RibbonToggleBtn.Label then
-        if ribbonMode == "REALM" then
-            UI.RibbonToggleBtn.Label:SetText("|cffffd100[ Realm Stats ]|r |cff64748bCareer|r")
+    if UI.RulesetButton and UI.RulesetButton.Label then
+        if UI:IsPve() then
+            UI.RulesetButton.Label:SetText("|cff10b981[ PvE ]|r")
         else
-            UI.RibbonToggleBtn.Label:SetText("|cff64748bRealm|r |cffffd100[ Career Stats ]|r")
+            UI.RulesetButton.Label:SetText("|cffef4444[ PvP ]|r")
         end
     end
 
-    if UI.StatCards then
-        if ribbonMode == "REALM" then
-            local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData) or {}
-            local rCarnage = rData.RealmTotalCarnage or totalKillsCount or 0
-            local rSolo = rData.SoloRatio or 0.0
-            local fSplit = rData.FactionSplit or { Alliance = 50.0, Horde = 50.0 }
+    local isPveMode = UI:IsPve()
 
+    -- Dynamic Tab Configuration (Adapts names & widths seamlessly between PvE & PvP rulesets)
+    local tabOrder = { "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES" }
+    local pveTabDefs = {
+        FEED        = { text = "Casualties",         w = 86 },
+        LEADERBOARD = { text = "Deadly Hazards",     w = 120 },
+        BOUNTIES    = { text = "Wanted Monsters",    w = 128 },
+        RALLIES     = { text = "Rescue Beacons",     w = 116 },
+        ZONES       = { text = "Zone Mortality",     w = 106 },
+    }
+    local pvpTabDefs = {
+        FEED        = { text = "Intel",              w = 68 },
+        LEADERBOARD = { text = "Defender of Azeroth", w = 142 },
+        BOUNTIES    = { text = "The Marked",         w = 95 },
+        RALLIES     = { text = "Manhunt",            w = 78 },
+        ZONES       = { text = "Zone Intel",         w = 84 },
+    }
+    local tabDefs = isPveMode and pveTabDefs or pvpTabDefs
+    local prevTab = nil
+    for _, tid in ipairs(tabOrder) do
+        local btn = tabButtons and tabButtons[tid]
+        local def = tabDefs[tid]
+        if btn and def then
+            btn:SetWidth(def.w)
+            if btn.Label then btn.Label:SetText(def.text) end
+            btn:ClearAllPoints()
+            if not prevTab then
+                btn:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -124)
+            else
+                btn:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
+            end
+            prevTab = btn
+        end
+    end
+
+    -- Dynamic Filter Pills Configuration
+    local filterOrder = { "ARENA", "DUEL", "BG", "WORLD" }
+    local pvePills = {
+        ARENA = { text = "Hazards", w = 68, disabled = false, color = {0.85, 0.45, 0.20}, tooltip = "Environmental, Falling, Lava, and Drowning Mortalities" },
+        DUEL  = { text = "Bosses",  w = 60, disabled = false, color = {0.95, 0.25, 0.25}, tooltip = "Dungeon and Raid Boss Executions" },
+        BG    = { text = "Elites",  w = 54, disabled = false, color = {1.0, 0.84, 0.0},  tooltip = "Elite Monster Casualties" },
+        WORLD = { text = "All",     w = 46, disabled = false, color = {0.2, 0.85, 0.3},  tooltip = "All Recorded Wilderness Mortalities" },
+    }
+    local pvpPills = {
+        ARENA = { text = "Arenas", w = 58, disabled = true,  color = {0.5, 0.5, 0.5},   tooltip = "Arenas (Coming Soon - Season Records Pending)" },
+        DUEL  = { text = "Duels",  w = 52, disabled = false, color = {1.0, 0.84, 0.0},  tooltip = "Sanctioned 1v1 Duels" },
+        BG    = { text = "BGs",    w = 48, disabled = false, color = {0.3, 0.65, 1.0},  tooltip = "Battleground Engagements" },
+        WORLD = { text = "World",  w = 54, disabled = false, color = {0.2, 0.85, 0.3},  tooltip = "Open World PvP Engagements" },
+    }
+    local pillDefs = isPveMode and pvePills or pvpPills
+    local prevPill = nil
+    for _, fid in ipairs(filterOrder) do
+        local pill = filterButtons and filterButtons[fid]
+        local pDef = pillDefs[fid]
+        if pill and pDef then
+            pill:SetWidth(pDef.w)
+            if pill.Label then pill.Label:SetText(pDef.text) end
+            pill.BaseColor = pDef.color
+            pill.isDisabled = pDef.disabled
+            pill.tooltipText = pDef.tooltip
+            pill:ClearAllPoints()
+            if not prevPill then
+                pill:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -14, -125)
+            else
+                pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
+            end
+            prevPill = pill
+
+            local modeId = fid
+            if pDef.disabled then
+                pill:SetScript("OnClick", function() end)
+            else
+                pill:SetScript("OnClick", function()
+                    currentMode = modeId
+                    UI:Refresh()
+                end)
+            end
+            pill:SetScript("OnEnter", function(self)
+                if self.tooltipText then
+                    local tColor = self.isDisabled and "|cff888888" or "|cffffd100"
+                    UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, tColor .. (self.Label and self.Label:GetText() or "") .. "|r", self.tooltipText)
+                end
+            end)
+            pill:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+        end
+    end
+
+    if isPveMode then
+        if UI.RibbonToggleBtn and UI.RibbonToggleBtn.Label then
+            if ribbonMode == "REALM" then
+                UI.RibbonToggleBtn.Label:SetText("|cffffd100[ Realm Bestiary ]|r |cff64748bPersonal|r")
+            else
+                UI.RibbonToggleBtn.Label:SetText("|cff64748bRealm|r |cffffd100[ Personal Record ]|r")
+            end
+        end
+
+        local pveSummary = KB.Leaderboard and KB.Leaderboard.GetPveSummary and KB.Leaderboard:GetPveSummary() or {
+            totalDeaths = 0,
+            uniqueMonsters = 0,
+            topMonster = "None Encountered",
+            topMonsterKills = 0,
+            deadliestZone = "Unknown",
+            deadliestZoneDeaths = 0,
+        }
+        local myPveDeaths = s.pveDeaths or 0
+        if WoWKillboardDB and WoWKillboardDB.pveDeaths then
+            local pName = UnitName("player")
+            local localMyD = 0
+            for _, pd in pairs(WoWKillboardDB.pveDeaths) do
+                if pd.victim and pd.victim.name and pName and (pd.victim.name:lower() == pName:lower()) then
+                    localMyD = localMyD + 1
+                end
+            end
+            myPveDeaths = math.max(myPveDeaths, localMyD)
+        end
+
+        if UI.StatCards then
             if UI.StatCards.KD then
-                if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100REALM TOTAL CARNAGE|r") end
+                if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffff4444WILDERNESS CASUALTIES|r") end
                 if UI.StatCards.KD.ValueLabel then
                     UI.StatCards.KD.ValueLabel:SetText(string.format(
-                        "|cffffd100%d|r |cff94a3b8Realm|r  |cff64748b||r  |cffffffff%d|rK / |cffff4444%d|rD |cff38bdf8(You)|r",
-                        rCarnage, myKills, myDeaths
+                        "|cffffd100%d|r |cff94a3b8Realm Fallen|r  |cff64748b||r  |cffff4444%d|r |cffcbd5e1Deaths (You)|r",
+                        pveSummary.totalDeaths or 0, myPveDeaths
                     ))
                 end
             end
             if UI.StatCards.DUELS then
-                if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cff10b9811v1 SOLO KILL RATIO|r") end
-                if UI.StatCards.DUELS.ValueLabel then UI.StatCards.DUELS.ValueLabel:SetText(string.format("|cff10b981%.1f%%|r |cff94a3b8Solo Encounters|r", rSolo)) end
+                if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cffffb82eAPEX EXECUTIONER|r") end
+                if UI.StatCards.DUELS.ValueLabel then
+                    UI.StatCards.DUELS.ValueLabel:SetText(string.format(
+                        "|cffff4444%s|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Mortal Kills|r",
+                        pveSummary.topMonster or "None Encountered", pveSummary.topMonsterKills or 0
+                    ))
+                end
             end
             if UI.StatCards.BGS then
-                if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffFACTION WAR SPLIT|r") end
-                if UI.StatCards.BGS.ValueLabel then UI.StatCards.BGS.ValueLabel:SetText(string.format("|cff3b82f6A: %.1f%%|r  |cff64748b||r  |cffef4444H: %.1f%%|r", fSplit.Alliance or 50, fSplit.Horde or 50)) end
-            end
-        else
-            if UI.StatCards.KD then
-                if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100CAREER COMBAT K/D|r") end
-                if UI.StatCards.KD.ValueLabel then
-                    UI.StatCards.KD.ValueLabel:SetText(string.format(
-                        "|cffffffff%d|rK / |cffff4444%d|rD |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8All-Time Logged|r",
-                        myKills, myDeaths, totalKillsCount
+                if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffZONE DANGER INDEX|r") end
+                if UI.StatCards.BGS.ValueLabel then
+                    UI.StatCards.BGS.ValueLabel:SetText(string.format(
+                        "|cffffd100%s|r  |cff64748b||r  |cffef4444%d|r |cff94a3b8Casualties|r",
+                        pveSummary.deadliestZone or "Azeroth", pveSummary.deadliestZoneDeaths or 0
                     ))
                 end
             end
-            if UI.StatCards.DUELS then
-                if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cffffb82e1v1 DUELS RECORD|r") end
-                if UI.StatCards.DUELS.ValueLabel then
-                    if dTot > 0 then
-                        UI.StatCards.DUELS.ValueLabel:SetText(string.format(
-                            "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
-                            dW, dL, dRate, totalDuelsCount
-                        ))
-                    else
-                        UI.StatCards.DUELS.ValueLabel:SetText(string.format(
-                            "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
-                            totalDuelsCount
+        end
+    else
+        if UI.RibbonToggleBtn and UI.RibbonToggleBtn.Label then
+            if ribbonMode == "REALM" then
+                UI.RibbonToggleBtn.Label:SetText("|cffffd100[ Realm Stats ]|r |cff64748bCareer|r")
+            else
+                UI.RibbonToggleBtn.Label:SetText("|cff64748bRealm|r |cffffd100[ Career Stats ]|r")
+            end
+        end
+
+        if UI.StatCards then
+            if ribbonMode == "REALM" then
+                local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData) or {}
+                local rCarnage = rData.RealmTotalCarnage or totalKillsCount or 0
+                local rSolo = rData.SoloRatio or 0.0
+                local fSplit = rData.FactionSplit or { Alliance = 50.0, Horde = 50.0 }
+
+                if UI.StatCards.KD then
+                    if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100REALM TOTAL CARNAGE|r") end
+                    if UI.StatCards.KD.ValueLabel then
+                        UI.StatCards.KD.ValueLabel:SetText(string.format(
+                            "|cffffd100%d|r |cff94a3b8Realm|r  |cff64748b||r  |cffffffff%d|rK / |cffff4444%d|rD |cff38bdf8(You)|r",
+                            rCarnage, myKills, myDeaths
                         ))
                     end
                 end
-            end
-            if UI.StatCards.BGS then
-                if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffBATTLEGROUNDS RECORD|r") end
-                if UI.StatCards.BGS.ValueLabel then
-                    if bgTot > 0 then
-                        UI.StatCards.BGS.ValueLabel:SetText(string.format(
-                            "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b||r  |cff00e5ff%d|r |cff94a3b8Logged|r",
-                            bgW, bgL, bgRate, totalBgsCount
+                if UI.StatCards.DUELS then
+                    if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cff10b9811v1 SOLO KILL RATIO|r") end
+                    if UI.StatCards.DUELS.ValueLabel then UI.StatCards.DUELS.ValueLabel:SetText(string.format("|cff10b981%.1f%%|r |cff94a3b8Solo Encounters|r", rSolo)) end
+                end
+                if UI.StatCards.BGS then
+                    if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffFACTION WAR SPLIT|r") end
+                    if UI.StatCards.BGS.ValueLabel then UI.StatCards.BGS.ValueLabel:SetText(string.format("|cff3b82f6A: %.1f%%|r  |cff64748b||r  |cffef4444H: %.1f%%|r", fSplit.Alliance or 50, fSplit.Horde or 50)) end
+                end
+            else
+                if UI.StatCards.KD then
+                    if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100CAREER COMBAT K/D|r") end
+                    if UI.StatCards.KD.ValueLabel then
+                        UI.StatCards.KD.ValueLabel:SetText(string.format(
+                            "|cffffffff%d|rK / |cffff4444%d|rD |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8All-Time Logged|r",
+                            myKills, myDeaths, totalKillsCount
                         ))
-                    else
-                        UI.StatCards.BGS.ValueLabel:SetText(string.format(
-                            "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b||r  |cff00e5ff%d|r |cff94a3b8Logged|r",
-                            totalBgsCount
-                        ))
+                    end
+                end
+                if UI.StatCards.DUELS then
+                    if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cffffb82e1v1 DUELS RECORD|r") end
+                    if UI.StatCards.DUELS.ValueLabel then
+                        if dTot > 0 then
+                            UI.StatCards.DUELS.ValueLabel:SetText(string.format(
+                                "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
+                                dW, dL, dRate, totalDuelsCount
+                            ))
+                        else
+                            UI.StatCards.DUELS.ValueLabel:SetText(string.format(
+                                "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
+                                totalDuelsCount
+                            ))
+                        end
+                    end
+                end
+                if UI.StatCards.BGS then
+                    if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffBATTLEGROUNDS RECORD|r") end
+                    if UI.StatCards.BGS.ValueLabel then
+                        if bgTot > 0 then
+                            UI.StatCards.BGS.ValueLabel:SetText(string.format(
+                                "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b||r  |cff00e5ff%d|r |cff94a3b8Logged|r",
+                                bgW, bgL, bgRate, totalBgsCount
+                            ))
+                        else
+                            UI.StatCards.BGS.ValueLabel:SetText(string.format(
+                                "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b||r  |cff00e5ff%d|r |cff94a3b8Logged|r",
+                                totalBgsCount
+                            ))
+                        end
                     end
                 end
             end
@@ -1415,20 +1632,38 @@ function UI:Refresh()
         region:Hide()
     end
 
-    if activeTab == "FEED" or activeTab == "BG_METRICS" then
-        activeTab = "FEED"
-        UI:RenderLiveFeed()
-    elseif activeTab == "LEADERBOARD" then
-        UI:RenderLeaderboard()
-    elseif activeTab == "BOUNTIES" then
-        UI:RenderBounties()
-    elseif activeTab == "RALLIES" then
-        UI:RenderRallies()
-    elseif activeTab == "ZONES" then
-        UI:RenderZones()
+    if isPveMode then
+        if activeTab == "FEED" or activeTab == "BG_METRICS" then
+            activeTab = "FEED"
+            UI:RenderPveFeed()
+        elseif activeTab == "LEADERBOARD" then
+            UI:RenderPveLeaderboard()
+        elseif activeTab == "BOUNTIES" then
+            UI:RenderPveBounties()
+        elseif activeTab == "RALLIES" then
+            UI:RenderPveRallies()
+        elseif activeTab == "ZONES" then
+            UI:RenderPveZones()
+        else
+            activeTab = "FEED"
+            UI:RenderPveFeed()
+        end
     else
-        activeTab = "FEED"
-        UI:RenderLiveFeed()
+        if activeTab == "FEED" or activeTab == "BG_METRICS" then
+            activeTab = "FEED"
+            UI:RenderLiveFeed()
+        elseif activeTab == "LEADERBOARD" then
+            UI:RenderLeaderboard()
+        elseif activeTab == "BOUNTIES" then
+            UI:RenderBounties()
+        elseif activeTab == "RALLIES" then
+            UI:RenderRallies()
+        elseif activeTab == "ZONES" then
+            UI:RenderZones()
+        else
+            activeTab = "FEED"
+            UI:RenderLiveFeed()
+        end
     end
 end
 
@@ -1864,6 +2099,827 @@ function UI:RenderLiveFeed()
     end
 
     UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
+end
+
+-- =========================================================================
+-- PvE BESTIARY & WILDERNESS MORTALITY VIEWS
+-- =========================================================================
+
+-- 1B. Render PvE Bestiary & Wilderness Mortality Feed (Casualties)
+function UI:RenderPveFeed()
+    local deaths = KB.Leaderboard:GetRecentPveDeaths(40, currentMode)
+    local theme = UI:GetTheme()
+
+    -- 1. The Apex Bestiary Header (Deadliest Monsters & Hazards)
+    local bwTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    bwTitle:SetPoint("TOPLEFT", 10, -8)
+    bwTitle:SetText(" |cffff4444THE APEX BESTIARY|r  -  |cffff8844Deadliest Monsters & Hazards|r")
+    bwTitle:SetShadowOffset(1, -1)
+    bwTitle:SetShadowColor(0, 0, 0, 1)
+
+    local bwSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    bwSub:SetPoint("TOPLEFT", bwTitle, "BOTTOMLEFT", 0, -2)
+    bwSub:SetText("|cffb8a080Top executioners of mortal adventurers | Hunt down apex threats across Azeroth.|r")
+    bwSub:SetShadowOffset(1, -1)
+    bwSub:SetShadowColor(0, 0, 0, 1)
+
+    local seeBountiesBtn = UI:CreateButton(UI.ContentFrame, 130, 22, "Wanted Monsters ->")
+    seeBountiesBtn:SetPoint("TOPRIGHT", -10, -8)
+    seeBountiesBtn:SetScript("OnClick", function()
+        activeTab = "BOUNTIES"
+        UI:Refresh()
+    end)
+
+    -- Gather Top 10 Apex Monsters
+    local topNpcs = KB.Leaderboard:GetTopDeadlyNpcs(10) or {}
+    local fallbackMonsters = {
+        { name = "Hogger", zone = "Elwynn Forest", kills = 0, maxDamage = 180, icon = "Interface\\Icons\\Achievement_Boss_Hogger" },
+        { name = "Defias Pillager", zone = "Westfall", kills = 0, maxDamage = 240, icon = "Interface\\Icons\\Spell_Fire_Fireball02" },
+        { name = "Son of Arugal", zone = "Silverpine Forest", kills = 0, maxDamage = 560, icon = "Interface\\Icons\\Ability_Racial_BearForm" },
+        { name = "Mor'Ladim", zone = "Duskwood", kills = 0, maxDamage = 820, icon = "Interface\\Icons\\Spell_Shadow_DeathScream" },
+        { name = "Stitches", zone = "Duskwood", kills = 0, maxDamage = 950, icon = "Interface\\Icons\\INV_Misc_MonsterHead_03" },
+        { name = "Southshore Guard", zone = "Hillsbrad", kills = 0, maxDamage = 1200, icon = "Interface\\Icons\\INV_Shield_06" },
+        { name = "Tarren Mill Deathguard", zone = "Hillsbrad", kills = 0, maxDamage = 1200, icon = "Interface\\Icons\\INV_Shield_04" },
+        { name = "Devilsaur", zone = "Un'Goro Crater", kills = 0, maxDamage = 2200, icon = "Interface\\Icons\\Ability_Hunter_Pet_Devilsaur" },
+        { name = "Scarlet Crusader", zone = "Western Plaguelands", kills = 0, maxDamage = 1450, icon = "Interface\\Icons\\Spell_Holy_SealOfSacrifice" },
+        { name = "High General Abbendis", zone = "Eastern Plaguelands", kills = 0, maxDamage = 3100, icon = "Interface\\Icons\\INV_Sword_39" },
+    }
+
+    local displayMonsters = {}
+    for _, m in ipairs(topNpcs) do
+        table.insert(displayMonsters, m)
+    end
+    for _, fb in ipairs(fallbackMonsters) do
+        if #displayMonsters >= 10 then break end
+        local already = false
+        for _, dm in ipairs(displayMonsters) do
+            if dm.name == fb.name then already = true; break end
+        end
+        if not already then
+            table.insert(displayMonsters, fb)
+        end
+    end
+
+    -- Render 10 Apex Executioner Cards in a 2x5 Grid
+    for idx = 1, 10 do
+        local col = (idx - 1) % 5
+        local r = math.floor((idx - 1) / 5)
+        local cardX = 10 + (col * 164)
+        local cardY = -48 - (r * 118)
+
+        local m = displayMonsters[idx]
+        local card = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        card:SetSize(154, 110)
+        card:SetPoint("TOPLEFT", cardX, cardY)
+        card:SetBackdrop(theme.rowBackdrop)
+
+        if m then
+            local killsCount = m.kills or 0
+            local maxDmg = m.maxDamage or 0
+            local isHighThreat = killsCount > 0 or maxDmg > 500
+            local borderColor = isHighThreat and { 0.85, 0.28, 0.18, 0.95 } or { 0.45, 0.35, 0.22, 0.85 }
+            local bgColor = isHighThreat and { 0.14, 0.04, 0.04, 0.96 } or { 0.06, 0.06, 0.08, 0.96 }
+
+            card:SetBackdropColor(unpack(bgColor))
+            card:SetBackdropBorderColor(unpack(borderColor))
+
+            local stamp = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            stamp:SetPoint("TOPLEFT", 6, -6)
+            stamp:SetText(string.format("|cffff4444#%d THREAT|r", idx))
+            stamp:SetShadowOffset(1, -1)
+            stamp:SetShadowColor(0, 0, 0, 1)
+
+            local casLabel = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            casLabel:SetPoint("TOPRIGHT", -6, -6)
+            casLabel:SetText(string.format("|cffffd100%d|r |cff94a3b8Kills|r", killsCount))
+            casLabel:SetShadowOffset(1, -1)
+            casLabel:SetShadowColor(0, 0, 0, 1)
+
+            local icon = card:CreateTexture(nil, "ARTWORK")
+            icon:SetSize(24, 24)
+            icon:SetPoint("TOPLEFT", 6, -26)
+            local iconTex = m.icon or "Interface\\Icons\\INV_Misc_MonsterHead_02"
+            if not iconTex or iconTex == "" then
+                iconTex = "Interface\\Icons\\INV_Misc_MonsterClaw_04"
+            end
+            icon:SetTexture(iconTex)
+
+            local nameStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            nameStr:SetPoint("TOPLEFT", icon, "TOPRIGHT", 5, 0)
+            nameStr:SetPoint("RIGHT", card, "RIGHT", -6, 0)
+            nameStr:SetJustifyH("LEFT")
+            nameStr:SetWordWrap(false)
+            nameStr:SetText(string.format("|cffff5533%s|r", m.name or "Hazard"))
+            nameStr:SetShadowOffset(1, -1)
+            nameStr:SetShadowColor(0, 0, 0, 1)
+
+            local zStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            zStr:SetPoint("TOPLEFT", nameStr, "BOTTOMLEFT", 0, -2)
+            zStr:SetPoint("RIGHT", card, "RIGHT", -6, 0)
+            zStr:SetJustifyH("LEFT")
+            zStr:SetWordWrap(false)
+            zStr:SetText(string.format("|cff38bdf8%s|r", m.zone or "Wilderness"))
+            zStr:SetShadowOffset(1, -1)
+            zStr:SetShadowColor(0, 0, 0, 1)
+
+            local dmgStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            dmgStr:SetPoint("TOPLEFT", 6, -58)
+            dmgStr:SetPoint("RIGHT", -6, 0)
+            dmgStr:SetJustifyH("LEFT")
+            dmgStr:SetWordWrap(false)
+            dmgStr:SetText(string.format("|cffef4444Max Strike: %d dmg|r", maxDmg))
+            dmgStr:SetShadowOffset(1, -1)
+            dmgStr:SetShadowColor(0, 0, 0, 1)
+
+            local viewBtn = UI:CreateButton(card, 142, 20, "|cffffd100View Bestiary|r")
+            viewBtn:SetPoint("BOTTOM", 0, 6)
+            viewBtn:SetScript("OnClick", function()
+                activeTab = "LEADERBOARD"
+                UI:Refresh()
+            end)
+        end
+    end
+
+    -- Divider Line
+    local divLine = UI.ContentFrame:CreateTexture(nil, "BACKGROUND")
+    divLine:SetSize(820, 1)
+    divLine:SetPoint("TOPLEFT", 0, -288)
+    divLine:SetColorTexture(0.35, 0.28, 0.16, 0.8)
+
+    -- 2. Mortal Casualties Header
+    local feedTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    feedTitle:SetPoint("TOPLEFT", 10, -298)
+    feedTitle:SetText(" |cffff8844MORTAL CASUALTIES & WILDERNESS HAZARDS|r")
+    feedTitle:SetShadowOffset(1, -1)
+    feedTitle:SetShadowColor(0, 0, 0, 1)
+
+    local feedSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    feedSub:SetPoint("TOPLEFT", feedTitle, "BOTTOMLEFT", 0, -2)
+    feedSub:SetText("|cffb8a080Live log of adventurer deaths, lethal creatures, fatal falls, and environmental hazards.|r")
+    feedSub:SetShadowOffset(1, -1)
+    feedSub:SetShadowColor(0, 0, 0, 1)
+
+    -- Telemetry KPI Plate
+    local pveSum = KB.Leaderboard and KB.Leaderboard.GetPveSummary and KB.Leaderboard:GetPveSummary() or { totalDeaths = 0, topMonster = "None", topMonsterKills = 0, deadliestZone = "Azeroth", deadliestZoneDeaths = 0 }
+    local kpiPlate = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    kpiPlate:SetSize(820, 26)
+    kpiPlate:SetPoint("TOPLEFT", 0, -336)
+    kpiPlate:SetBackdrop(theme.rowBackdrop)
+    kpiPlate:SetBackdropColor(0.04, 0.04, 0.05, 0.95)
+    kpiPlate:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.85)
+
+    local kpiText = kpiPlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    kpiText:SetPoint("CENTER", 0, 0)
+    kpiText:SetText(string.format(
+        "CASUALTY REGISTRY: |cffffffff%d|r   |cff64748b||r   APEX EXECUTIONER: |cffff4444%s (%d Kills)|r   |cff64748b||r   DEADLIEST REGION: |cffffd100%s (%d Fallen)|r   |cff64748b||r   FILTER: |cffffd100[%s]|r",
+        pveSum.totalDeaths, pveSum.topMonster or "None", pveSum.topMonsterKills or 0, pveSum.deadliestZone or "Azeroth", pveSum.deadliestZoneDeaths or 0, currentMode
+    ))
+    kpiText:SetShadowOffset(1, -1)
+    kpiText:SetShadowColor(0, 0, 0, 1)
+
+    local yOffset = -368
+
+    if #deaths == 0 then
+        if not UI.EmptyPveFeedText then
+            UI.EmptyPveFeedText = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            UI.EmptyPveFeedText:SetJustifyH("CENTER")
+            UI.EmptyPveFeedText:SetSpacing(4)
+        end
+        UI.EmptyPveFeedText:SetPoint("TOP", UI.ContentFrame, "TOP", 0, yOffset - 16)
+        local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Azeroth"
+        UI.EmptyPveFeedText:SetText(string.format(
+            "|cffffd100* WILDERNESS SURVEILLANCE RADAR ONLINE|r\n\n" ..
+            "|cffcbd5e1Current Sector:|r |cffffffff%s|r   |cff64748b||r   |cffcbd5e1Filter Mode:|r |cffffd100[%s]|r\n" ..
+            "|cffcbd5e1Mortality Engine Status:|r |cff10b981ARMED & RECORDING CASUALTIES|r |cff94a3b8(Zero casualties in this filter)|r\n\n" ..
+            "|cff94a3b8Wilderness casualties to monsters, fatal falls, drowning, or lava\n" ..
+            "are automatically captured upon player release.|r\n\n" ..
+            "|cff00e5ffPvE Telemetry Note:|r |cffccccccExplore dangerous wilderness regions or type |cffffd100/kb help|r for commands.|r",
+            currentZone, currentMode
+        ))
+        UI.EmptyPveFeedText:SetShadowOffset(1, -1)
+        UI.EmptyPveFeedText:SetShadowColor(0, 0, 0, 1)
+        UI.EmptyPveFeedText:Show()
+        UI.ContentFrame:SetHeight(math.abs(yOffset) + 260)
+        return
+    elseif UI.EmptyPveFeedText then
+        UI.EmptyPveFeedText:Hide()
+    end
+
+    for idx, pd in ipairs(deaths) do
+        local row = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
+        row:SetSize(820, 36)
+        row:SetPoint("TOPLEFT", 0, yOffset)
+        local isEven = (idx % 2 == 0)
+        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+        row:SetBackdrop(theme.rowBackdrop)
+        row:SetBackdropColor(unpack(baseBg))
+        row:SetBackdropBorderColor(unpack(theme.rowBorder))
+
+        -- Left Accent Bar
+        local accent = row:CreateTexture(nil, "ARTWORK")
+        accent:SetPoint("TOPLEFT", 0, 0)
+        accent:SetPoint("BOTTOMLEFT", 0, 0)
+        accent:SetWidth(4)
+
+        local nName = (pd.npc and pd.npc.name) or "Unknown Entity"
+        local nSpell = (pd.npc and pd.npc.spell) or "Combat Strike"
+        local nDmg = tonumber((pd.npc and pd.npc.damage) or 0) or 0
+        local vName = (pd.victim and pd.victim.name) or "Unknown"
+        local vClass = (pd.victim and pd.victim.class) or "WARRIOR"
+        local vLevel = tonumber((pd.victim and pd.victim.level) or 0) or 0
+        local vGuild = (pd.victim and pd.victim.guild) or "None"
+        local zName = (pd.location and pd.location.zone) or "Azeroth"
+
+        local badgeStr = ""
+        if nName:find("Falling") or nName:find("Drowning") or nName:find("Lava") or nName:find("Environmental") then
+            accent:SetColorTexture(1.0, 0.5, 0.0, 1.0) -- Orange
+            badgeStr = "|cffff8800[HAZARD]|r"
+        elseif nDmg >= 5000 or nName:find("Baron") or nName:find("Ragnaros") or nName:find("Onyxia") then
+            accent:SetColorTexture(1.0, 0.15, 0.15, 1.0) -- Red
+            badgeStr = "|cffff2222[BOSS]|r"
+        elseif nDmg >= 1000 then
+            accent:SetColorTexture(1.0, 0.84, 0.0, 1.0) -- Gold
+            badgeStr = "|cffffd700[ELITE]|r"
+        else
+            accent:SetColorTexture(0.2, 0.7, 1.0, 1.0) -- Soft Blue
+            badgeStr = "|cff00e5ff[CREATURE]|r"
+        end
+
+        -- Category Badge
+        local badgeText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        badgeText:SetPoint("LEFT", 12, 0)
+        badgeText:SetText(badgeStr)
+        badgeText:SetShadowOffset(1, -1)
+        badgeText:SetShadowColor(0, 0, 0, 1)
+
+        -- Executioner Monster/Hazard Text
+        local monsterStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        monsterStr:SetPoint("LEFT", 88, 0)
+        monsterStr:SetPoint("RIGHT", row, "LEFT", 300, 0)
+        monsterStr:SetJustifyH("LEFT")
+        monsterStr:SetWordWrap(false)
+        local strikeText = (nSpell and nSpell ~= "Combat Strike" and nSpell ~= "") and string.format(" |cffef4444(%s - %d dmg)|r", nSpell, nDmg) or (nDmg > 0 and string.format(" |cffef4444(%d dmg)|r", nDmg) or "")
+        monsterStr:SetText(string.format("|cffff5533%s|r%s", nName, strikeText))
+        monsterStr:SetShadowOffset(1, -1)
+        monsterStr:SetShadowColor(0, 0, 0, 1)
+
+        -- Action Verb Separator (Center)
+        local sep = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        sep:SetPoint("LEFT", 305, 0)
+        sep:SetText("|cffe2d4c0executed|r")
+        sep:SetShadowOffset(1, -1)
+        sep:SetShadowColor(0, 0, 0, 1)
+
+        -- Victim Class Icon
+        local vIcon = UI:CreateClassIcon(row, vClass, 22)
+        vIcon:SetPoint("LEFT", 365, 0)
+
+        -- Victim Level Pill
+        local vLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        vLvl:SetPoint("LEFT", vIcon, "RIGHT", 4, 0)
+        vLvl:SetText((vLevel > 0) and string.format("|cffffd100%d|r", vLevel) or "|cff8899aa??|r")
+        vLvl:SetShadowOffset(1, -1)
+        vLvl:SetShadowColor(0, 0, 0, 1)
+
+        -- Location & Timestamp (Right-Aligned)
+        local infoStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        infoStr:SetPoint("RIGHT", -12, 0)
+        local timeAgoStr = KB.Utils and KB.Utils.FormatTimeAgo and KB.Utils.FormatTimeAgo(pd.timestamp) or "Recently"
+        infoStr:SetText(string.format("|cffcbd5e1%s|r  |cff64748b||r  |cffa0aab8%s|r", zName, timeAgoStr))
+        infoStr:SetShadowOffset(1, -1)
+        infoStr:SetShadowColor(0, 0, 0, 1)
+
+        -- Victim Name & Guild
+        local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        victimStr:SetPoint("LEFT", vLvl, "RIGHT", 5, 0)
+        victimStr:SetPoint("RIGHT", infoStr, "LEFT", -10, 0)
+        victimStr:SetJustifyH("LEFT")
+        victimStr:SetWordWrap(false)
+        local vGuildStr = (vGuild and vGuild ~= "None" and vGuild ~= "") and string.format(" |cffc0a080<%s>|r", vGuild) or ""
+        local vColorName = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(vName, vClass) or vName
+        victimStr:SetText(vColorName .. vGuildStr)
+        victimStr:SetShadowOffset(1, -1)
+        victimStr:SetShadowColor(0, 0, 0, 1)
+
+        -- Row hover effects
+        row:EnableMouse(true)
+        row:SetScript("OnEnter", function(self)
+            local t = UI:GetTheme()
+            if t and t.rowHoverBg then
+                self:SetBackdropColor(unpack(t.rowHoverBg))
+            else
+                self:SetBackdropColor(0.12, 0.12, 0.15, 0.95)
+            end
+            self:SetBackdropBorderColor(1.0, 0.82, 0.0, 0.8)
+        end)
+        row:SetScript("OnLeave", function(self)
+            local t = UI:GetTheme()
+            self:SetBackdropColor(unpack(baseBg))
+            if t and t.rowBorder then
+                self:SetBackdropBorderColor(unpack(t.rowBorder))
+            end
+        end)
+
+        -- Click handler to open death detail
+        local targetPD = pd
+        row:SetScript("OnClick", function()
+            UI:ShowPveDeathDetail(targetPD)
+        end)
+
+        yOffset = yOffset - 40
+    end
+
+    UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
+end
+
+-- 2B. Render PvE Leaderboard Tab (Deadly Hazards & Casualty Registry)
+function UI:RenderPveLeaderboard()
+    local theme = UI:GetTheme()
+
+    local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("|cffff4444DEADLY HAZARDS & CASUALTY REGISTRY|r")
+    title:SetShadowOffset(1, -1)
+    title:SetShadowColor(0, 0, 0, 1)
+
+    local sub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+    sub:SetText("|cffb8a080Rankings of the deadliest monsters, fallen adventurers, and perilous zones across Azeroth.|r")
+    sub:SetShadowOffset(1, -1)
+    sub:SetShadowColor(0, 0, 0, 1)
+
+    -- 3 Column Panes (Apex Executioners, Fallen Mortals, Perilous Regions)
+    local colW = 265
+    local gap = 12
+
+    -- Column 1: Apex Executioners
+    local c1 = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    c1:SetSize(colW, 480)
+    c1:SetPoint("TOPLEFT", 6, -52)
+    c1:SetBackdrop(theme.rowBackdrop)
+    c1:SetBackdropColor(0.04, 0.05, 0.07, 0.95)
+    c1:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.8)
+
+    local c1Title = c1:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    c1Title:SetPoint("TOPLEFT", 10, -8)
+    c1Title:SetText("|cffff5533APEX EXECUTIONERS|r")
+
+    local c1Sub = c1:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    c1Sub:SetPoint("TOPLEFT", c1Title, "BOTTOMLEFT", 0, -2)
+    c1Sub:SetText("|cff94a3b8Deadliest Monsters & Hazards|r")
+
+    local topNpcs = KB.Leaderboard:GetTopDeadlyNpcs(15) or {}
+    local y1 = -38
+    for rank, m in ipairs(topNpcs) do
+        local rRow = CreateFrame("Frame", nil, c1)
+        rRow:SetSize(colW - 16, 26)
+        rRow:SetPoint("TOPLEFT", 8, y1)
+
+        local rNum = rRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rNum:SetPoint("LEFT", 0, 0)
+        local rColor = (rank == 1) and "|cffffd100" or ((rank == 2) and "|cffe2e8f0" or ((rank == 3) and "|cffcd7f32" or "|cff64748b"))
+        rNum:SetText(string.format("%s#%d|r", rColor, rank))
+
+        local rName = rRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rName:SetPoint("LEFT", 30, 0)
+        rName:SetPoint("RIGHT", -60, 0)
+        rName:SetJustifyH("LEFT")
+        rName:SetWordWrap(false)
+        rName:SetText(string.format("|cffffffff%s|r", m.name or "Unknown"))
+
+        local rKills = rRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rKills:SetPoint("RIGHT", 0, 0)
+        rKills:SetText(string.format("|cffff4444%d|r |cff64748bKills|r", m.kills or 0))
+
+        y1 = y1 - 28
+    end
+
+    -- Column 2: Fallen Mortals (Most Casualties)
+    local c2 = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    c2:SetSize(colW, 480)
+    c2:SetPoint("TOPLEFT", c1, "TOPRIGHT", gap, 0)
+    c2:SetBackdrop(theme.rowBackdrop)
+    c2:SetBackdropColor(0.04, 0.05, 0.07, 0.95)
+    c2:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.8)
+
+    local c2Title = c2:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    c2Title:SetPoint("TOPLEFT", 10, -8)
+    c2Title:SetText("|cffffd100FALLEN MORTALS|r")
+
+    local c2Sub = c2:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    c2Sub:SetPoint("TOPLEFT", c2Title, "BOTTOMLEFT", 0, -2)
+    c2Sub:SetText("|cff94a3b8Adventurers Slain in Wilderness|r")
+
+    local topVictims = KB.Leaderboard:GetTopPveVictims(15) or {}
+    local y2 = -38
+    for rank, v in ipairs(topVictims) do
+        local rRow = CreateFrame("Frame", nil, c2)
+        rRow:SetSize(colW - 16, 26)
+        rRow:SetPoint("TOPLEFT", 8, y2)
+
+        local rNum = rRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rNum:SetPoint("LEFT", 0, 0)
+        local rColor = (rank == 1) and "|cffffd100" or ((rank == 2) and "|cffe2e8f0" or ((rank == 3) and "|cffcd7f32" or "|cff64748b"))
+        rNum:SetText(string.format("%s#%d|r", rColor, rank))
+
+        local cIcon = UI:CreateClassIcon(rRow, v.class, 16)
+        cIcon:SetPoint("LEFT", 30, 0)
+
+        local rName = rRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rName:SetPoint("LEFT", cIcon, "RIGHT", 4, 0)
+        rName:SetPoint("RIGHT", -60, 0)
+        rName:SetJustifyH("LEFT")
+        rName:SetWordWrap(false)
+        rName:SetText(KB.Utils.ColorizeByClass(v.name, v.class))
+
+        local rDeaths = rRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rDeaths:SetPoint("RIGHT", 0, 0)
+        rDeaths:SetText(string.format("|cffef4444%d|r |cff64748bDeaths|r", v.deaths or 0))
+
+        y2 = y2 - 28
+    end
+
+    -- Column 3: Perilous Regions
+    local c3 = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    c3:SetSize(colW, 480)
+    c3:SetPoint("TOPLEFT", c2, "TOPRIGHT", gap, 0)
+    c3:SetBackdrop(theme.rowBackdrop)
+    c3:SetBackdropColor(0.04, 0.05, 0.07, 0.95)
+    c3:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.8)
+
+    local c3Title = c3:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    c3Title:SetPoint("TOPLEFT", 10, -8)
+    c3Title:SetText("|cff00e5ffPERILOUS REGIONS|r")
+
+    local c3Sub = c3:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    c3Sub:SetPoint("TOPLEFT", c3Title, "BOTTOMLEFT", 0, -2)
+    c3Sub:SetText("|cff94a3b8Deadliest Zones by Body Count|r")
+
+    local topZones = KB.Leaderboard:GetTopPveZones(12) or {}
+    local y3 = -38
+    for rank, z in ipairs(topZones) do
+        local rRow = CreateFrame("Frame", nil, c3)
+        rRow:SetSize(colW - 16, 26)
+        rRow:SetPoint("TOPLEFT", 8, y3)
+
+        local rNum = rRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rNum:SetPoint("LEFT", 0, 0)
+        local rColor = (rank == 1) and "|cffffd100" or ((rank == 2) and "|cffe2e8f0" or ((rank == 3) and "|cffcd7f32" or "|cff64748b"))
+        rNum:SetText(string.format("%s#%d|r", rColor, rank))
+
+        local rName = rRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rName:SetPoint("LEFT", 30, 0)
+        rName:SetPoint("RIGHT", -60, 0)
+        rName:SetJustifyH("LEFT")
+        rName:SetWordWrap(false)
+        rName:SetText(string.format("|cffffffff%s|r", z.zone or "Unknown"))
+
+        local rCount = rRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rCount:SetPoint("RIGHT", 0, 0)
+        rCount:SetText(string.format("|cffffd100%d|r |cff64748bFallen|r", z.deaths or 0))
+
+        y3 = y3 - 28
+    end
+
+    UI.ContentFrame:SetHeight(560)
+end
+
+-- 3B. Render PvE Bounties Tab (Wanted Monsters & Apex Threats)
+function UI:RenderPveBounties()
+    local theme = UI:GetTheme()
+
+    local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("|cffffd100WANTED MONSTERS & APEX THREATS|r")
+    title:SetShadowOffset(1, -1)
+    title:SetShadowColor(0, 0, 0, 1)
+
+    local sub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+    sub:SetText("|cffb8a080Town militia bounties and dangerous creatures terrorizing the countryside.|r")
+    sub:SetShadowOffset(1, -1)
+    sub:SetShadowColor(0, 0, 0, 1)
+
+    -- Town Militia Notice Banner
+    local noticePlate = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    noticePlate:SetSize(820, 32)
+    noticePlate:SetPoint("TOPLEFT", 0, -42)
+    noticePlate:SetBackdrop(theme.rowBackdrop)
+    noticePlate:SetBackdropColor(0.04, 0.08, 0.05, 0.95)
+    noticePlate:SetBackdropBorderColor(0.1, 0.65, 0.35, 0.85)
+
+    local noticeText = noticePlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    noticeText:SetPoint("CENTER", 0, 0)
+    noticeText:SetText("|cff10b981TOWN MILITIA NOTICE:|r |cffffffffAdventurers who defeat dangerous beasts and elites protect realm settlements. Report sightings to your local garrison.|r")
+    noticeText:SetShadowOffset(1, -1)
+    noticeText:SetShadowColor(0, 0, 0, 1)
+
+    local wantedMonsters = {
+        { name = "Hogger", title = "Chieftain of the Riverpaw Gnolls", level = 11, zone = "Elwynn Forest", reward = "50s", desc = "Infamous gnoll warlord responsible for widespread slaughter of Stormwind guards and fledgling recruits.", icon = "Interface\\Icons\\Achievement_Boss_Hogger" },
+        { name = "Defias Pillager", title = "Outlaw Fire Mage", level = 14, zone = "Westfall (Moonbrook)", reward = "75s", desc = "Deadly long-range pyromancers with devastating Fireball volleys that have claimed countless travelers.", icon = "Interface\\Icons\\Spell_Fire_Fireball02" },
+        { name = "Son of Arugal", title = "Cursed Shadow Worgen", level = 25, zone = "Silverpine Forest", reward = "2g 50s", desc = "Elite shadowstalkers roaming the road between Ambermill and Pyrewood, ambushing traveling mortals.", icon = "Interface\\Icons\\Ability_Racial_BearForm" },
+        { name = "Mor'Ladim", title = "Vengeful Ghostly Knight", level = 35, zone = "Duskwood (Raven Hill)", reward = "5g 00s", desc = "Former paladin Morgan Ladimore, now a relentlessly aggressive phantom wandering Raven Hill Cemetery.", icon = "Interface\\Icons\\Spell_Shadow_DeathScream" },
+        { name = "Stitches", title = "Terror of Darkshire", level = 35, zone = "Duskwood (Darkshire Road)", reward = "6g 50s", desc = "Colossal abomination assembled by Abercrombie, marching relentlessly down the main road to Darkshire.", icon = "Interface\\Icons\\INV_Misc_MonsterHead_03" },
+        { name = "Devilsaur", title = "Apex Jungle Tyrant", level = 55, zone = "Un'Goro Crater", reward = "15g 00s", desc = "Terrifying apex predators possessing surprising stealth, crushing unwary adventurers underfoot.", icon = "Interface\\Icons\\Ability_Hunter_Pet_Devilsaur" },
+    }
+
+    local yOffset = -86
+    for idx, wm in ipairs(wantedMonsters) do
+        local card = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        card:SetSize(820, 68)
+        card:SetPoint("TOPLEFT", 0, yOffset)
+        card:SetBackdrop(theme.rowBackdrop)
+        card:SetBackdropColor(0.05, 0.05, 0.07, 0.95)
+        card:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.85)
+
+        local icon = card:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(42, 42)
+        icon:SetPoint("TOPLEFT", 12, -12)
+        icon:SetTexture(wm.icon or "Interface\\Icons\\INV_Misc_MonsterClaw_04")
+
+        local nameStr = card:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        nameStr:SetPoint("TOPLEFT", icon, "TOPRIGHT", 10, -2)
+        nameStr:SetText(string.format("|cffff5533%s|r  |cff64748b-  %s|r", wm.name, wm.title))
+        nameStr:SetShadowOffset(1, -1)
+        nameStr:SetShadowColor(0, 0, 0, 1)
+
+        local descStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        descStr:SetPoint("TOPLEFT", nameStr, "BOTTOMLEFT", 0, -3)
+        descStr:SetPoint("RIGHT", card, "RIGHT", -180, 0)
+        descStr:SetJustifyH("LEFT")
+        descStr:SetWordWrap(false)
+        descStr:SetText(string.format("|cffcbd5e1%s|r", wm.desc))
+        descStr:SetShadowOffset(1, -1)
+        descStr:SetShadowColor(0, 0, 0, 1)
+
+        local locStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        locStr:SetPoint("TOPLEFT", descStr, "BOTTOMLEFT", 0, -3)
+        locStr:SetText(string.format("|cff38bdf8Location:|r |cffffffff%s|r   |cff64748b||r   |cffffd100Level: %d [Elite]|r", wm.zone, wm.level))
+        locStr:SetShadowOffset(1, -1)
+        locStr:SetShadowColor(0, 0, 0, 1)
+
+        local rewardStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        rewardStr:SetPoint("TOPRIGHT", -14, -14)
+        rewardStr:SetText(string.format("|cffffd100Bounty: %s|r", wm.reward))
+        rewardStr:SetShadowOffset(1, -1)
+        rewardStr:SetShadowColor(0, 0, 0, 1)
+
+        local trackBtn = UI:CreateButton(card, 120, 20, "|cff10b981Track Threat|r")
+        trackBtn:SetPoint("BOTTOMRIGHT", -14, 10)
+        local targetName = wm.name
+        local targetZone = wm.zone
+        trackBtn:SetScript("OnClick", function()
+            SafePrint(string.format("|cff00ccff[WoWKB]|r Tracking Wanted Threat: |cffff5533%s|r in |cffffffff%s|r.", targetName, targetZone))
+        end)
+
+        yOffset = yOffset - 76
+    end
+
+    UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
+end
+
+-- 4B. Render PvE Zones Tab (Zone Mortality & Danger Index)
+function UI:RenderPveZones()
+    local theme = UI:GetTheme()
+
+    local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("|cff00e5ffZONE MORTALITY & DANGER INDEX|r")
+    title:SetShadowOffset(1, -1)
+    title:SetShadowColor(0, 0, 0, 1)
+
+    local sub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+    sub:SetText("|cffb8a080Geographical threat analysis and fatal encounter density across Azeroth.|r")
+    sub:SetShadowOffset(1, -1)
+    sub:SetShadowColor(0, 0, 0, 1)
+
+    local topZones = KB.Leaderboard:GetTopPveZones(15) or {}
+    local fallbackZones = {
+        { zone = "Duskwood", deaths = 0 },
+        { zone = "Westfall", deaths = 0 },
+        { zone = "Silverpine Forest", deaths = 0 },
+        { zone = "Hillsbrad Foothills", deaths = 0 },
+        { zone = "Elwynn Forest", deaths = 0 },
+        { zone = "The Barrens", deaths = 0 },
+        { zone = "Stranglethorn Vale", deaths = 0 },
+        { zone = "Un'Goro Crater", deaths = 0 },
+        { zone = "Eastern Plaguelands", deaths = 0 },
+        { zone = "Western Plaguelands", deaths = 0 },
+    }
+    local displayZones = {}
+    for _, z in ipairs(topZones) do table.insert(displayZones, z) end
+    for _, fb in ipairs(fallbackZones) do
+        if #displayZones >= 12 then break end
+        local already = false
+        for _, dz in ipairs(displayZones) do
+            if dz.zone == fb.zone then already = true; break end
+        end
+        if not already then table.insert(displayZones, fb) end
+    end
+
+    local yOffset = -52
+    for idx, z in ipairs(displayZones) do
+        local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        row:SetSize(820, 36)
+        row:SetPoint("TOPLEFT", 0, yOffset)
+        local isEven = (idx % 2 == 0)
+        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+        row:SetBackdrop(theme.rowBackdrop)
+        row:SetBackdropColor(unpack(baseBg))
+        row:SetBackdropBorderColor(unpack(theme.rowBorder))
+
+        local rNum = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rNum:SetPoint("LEFT", 12, 0)
+        local rColor = (idx == 1) and "|cffffd100" or ((idx == 2) and "|cffe2e8f0" or ((idx == 3) and "|cffcd7f32" or "|cff64748b"))
+        rNum:SetText(string.format("%s#%d|r", rColor, idx))
+
+        local zName = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        zName:SetPoint("LEFT", 50, 0)
+        zName:SetText(string.format("|cffffffff%s|r", z.zone or "Unknown"))
+
+        local dangerStr = (idx <= 3) and "|cffff2222[EXTREME DANGER]|r" or ((idx <= 6) and "|cffff8800[HIGH DANGER]|r" or "|cff00e5ff[MODERATE]|r")
+        local dLabel = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        dLabel:SetPoint("LEFT", 320, 0)
+        dLabel:SetText(dangerStr)
+
+        local countStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        countStr:SetPoint("RIGHT", -16, 0)
+        countStr:SetText(string.format("|cffffd100%d|r |cff94a3b8Mortal Casualties|r", z.deaths or 0))
+
+        yOffset = yOffset - 40
+    end
+
+    UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
+end
+
+-- 5B. Render PvE Rallies Tab (Rescue Beacons & SOS)
+function UI:RenderPveRallies()
+    local theme = UI:GetTheme()
+
+    local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("|cffffaa00RESCUE BEACONS & CALL TO ARMS|r")
+    title:SetShadowOffset(1, -1)
+    title:SetShadowColor(0, 0, 0, 1)
+
+    local sub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+    sub:SetText("|cffb8a080Emergency distress beacons from adventurers pinned down by elites or perilous hazards.|r")
+    sub:SetShadowOffset(1, -1)
+    sub:SetShadowColor(0, 0, 0, 1)
+
+    local sosBtn = UI:CreateButton(UI.ContentFrame, 130, 22, "Broadcast SOS ->")
+    sosBtn:SetPoint("TOPRIGHT", -10, -8)
+    sosBtn:SetScript("OnClick", function()
+        if UI.ShowRallyPrompt then
+            UI:ShowRallyPrompt()
+        else
+            SafePrint("|cff00ccff[WoWKB]|r Type |cffffd100/kb sos|r to broadcast an emergency distress signal.")
+        end
+    end)
+
+    -- Instructions Card
+    local banner = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    banner:SetSize(820, 64)
+    banner:SetPoint("TOPLEFT", 0, -42)
+    banner:SetBackdrop(theme.rowBackdrop)
+    banner:SetBackdropColor(0.08, 0.06, 0.02, 0.95)
+    banner:SetBackdropBorderColor(0.85, 0.65, 0.18, 0.85)
+
+    local bText = banner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    bText:SetPoint("TOPLEFT", 12, -10)
+    bText:SetPoint("BOTTOMRIGHT", -12, 10)
+    bText:SetJustifyH("LEFT")
+    bText:SetText(
+        "|cffffd100* EMERGENCY WILDERNESS BEACON SYSTEM ACTIVE|r\n" ..
+        "|cffcbd5e1If you are trapped by elite spawns, pinned down in high-level caves, or seeking backup for an elite quest,\n" ..
+        "sound the Horn of Valor by typing |cffffd100/kb sos|r. Nearby allies and guildmates will receive your spatial coordinates.|r"
+    )
+
+    -- List of Active Beacons (from WoWKillboardDB.distressBeacons or realm)
+    local beacons = {}
+    if WoWKillboardDB and WoWKillboardDB.distressBeacons then
+        for _, b in pairs(WoWKillboardDB.distressBeacons) do
+            table.insert(beacons, b)
+        end
+    end
+
+    local yOffset = -118
+    if #beacons == 0 then
+        local emptyStr = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        emptyStr:SetPoint("TOP", UI.ContentFrame, "TOP", 0, yOffset - 30)
+        emptyStr:SetJustifyH("CENTER")
+        emptyStr:SetText(
+            "|cff64748bNo active rescue beacons in this sector.|r\n\n" ..
+            "|cff94a3b8All wilderness territories currently report nominal traffic.\n" ..
+            "Use |cffffd100/kb sos <message>|r to broadcast a distress signal to all allies.|r"
+        )
+        UI.ContentFrame:SetHeight(320)
+        return
+    end
+
+    for idx, b in ipairs(beacons) do
+        local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        row:SetSize(820, 40)
+        row:SetPoint("TOPLEFT", 0, yOffset)
+        row:SetBackdrop(theme.rowBackdrop)
+        row:SetBackdropColor(0.06, 0.05, 0.03, 0.95)
+        row:SetBackdropBorderColor(0.85, 0.45, 0.15, 0.75)
+
+        local bIcon = row:CreateTexture(nil, "ARTWORK")
+        bIcon:SetSize(24, 24)
+        bIcon:SetPoint("LEFT", 10, 0)
+        bIcon:SetTexture("Interface\\Icons\\Spell_Holy_SealOfProtection")
+
+        local bName = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        bName:SetPoint("LEFT", bIcon, "RIGHT", 8, 0)
+        bName:SetText(string.format("|cffffaa00%s|r |cffcbd5e1in %s|r", b.character_name or "Ally", b.zone or "Wilderness"))
+
+        local bNote = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        bNote:SetPoint("LEFT", 300, 0)
+        bNote:SetPoint("RIGHT", -120, 0)
+        bNote:SetJustifyH("LEFT")
+        bNote:SetText(string.format("|cff94a3b8\"%s\"|r", b.message or "Requesting immediate backup!"))
+
+        local bTime = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        bTime:SetPoint("RIGHT", -12, 0)
+        bTime:SetText(KB.Utils and KB.Utils.FormatTimeAgo and KB.Utils.FormatTimeAgo(b.timestamp) or "Recently")
+
+        yOffset = yOffset - 46
+    end
+
+    UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
+end
+
+-- PvE Casualty Detail Dialog
+function UI:ShowPveDeathDetail(pd)
+    if not UI.DetailModal or not pd then return end
+    local m = UI.DetailModal
+    m.currentKillmail = nil
+    m.currentPveDeath = pd
+
+    if m.Title then m.Title:SetText("|cffff4444WILDERNESS CASUALTY DOSSIER|r") end
+    if m.KillerCard and m.KillerCard.CardTitle then m.KillerCard.CardTitle:SetText("|cffff5533EXECUTIONER|r") end
+    if m.VictimCard and m.VictimCard.CardTitle then m.VictimCard.CardTitle:SetText("|cffff4444FALLEN MORTAL|r") end
+    if m.KillerCard and m.KillerCard.WebBtn then m.KillerCard.WebBtn:Hide() end
+    if m.VictimCard and m.VictimCard.WebBtn then m.VictimCard.WebBtn:Show() end
+
+    local nName = (pd.npc and pd.npc.name) or "Unknown Entity"
+    local nSpell = (pd.npc and pd.npc.spell) or "Combat Strike"
+    local nDmg = tonumber((pd.npc and pd.npc.damage) or 0) or 0
+    local nId = tonumber((pd.npc and pd.npc.id) or 0) or 0
+
+    local vName = (pd.victim and pd.victim.name) or "Unknown"
+    local vClass = (pd.victim and pd.victim.class) or "WARRIOR"
+    local vLevel = tonumber((pd.victim and pd.victim.level) or 0) or 0
+    local vGuild = (pd.victim and pd.victim.guild) or "None"
+    local vFaction = (pd.victim and pd.victim.faction) or "Unknown"
+
+    local zName = (pd.location and pd.location.zone) or "Azeroth"
+    local subZone = (pd.location and pd.location.subZone) or ""
+    local ts = pd.timestamp or time()
+    local dId = pd.deathId or "PVE-DEATH"
+
+    -- Executioner Monster Card (Left)
+    m.KillerCard.Icon:SetTexture("Interface\\Icons\\INV_Misc_MonsterHead_02")
+    m.KillerCard.Icon:SetTexCoord(0, 1, 0, 1)
+    m.KillerCard.Name:SetText(string.format("|cffff5533%s|r", nName))
+    m.KillerCard.Info:SetText(string.format(
+        "Wilderness Executioner\nStrike: %s\nFatal Damage: %s\nCreature ID: %s",
+        nSpell,
+        (nDmg > 0) and (KB.Utils and KB.Utils.FormatNumber and KB.Utils.FormatNumber(nDmg) or tostring(nDmg)) or "Lethal",
+        (nId > 0) and tostring(nId) or "World Hazard"
+    ))
+
+    -- Victim Card (Right)
+    local vCoords = CLASS_COORDS[(vClass or ""):upper()] or {0, 0.25, 0, 0.25}
+    m.VictimCard.Icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes")
+    m.VictimCard.Icon:SetTexCoord(vCoords[1], vCoords[2], vCoords[3], vCoords[4])
+    local colorName = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(vName, vClass) or vName
+    m.VictimCard.Name:SetText(colorName)
+    local vLvlStr = (vLevel > 0) and tostring(vLevel) or "??"
+    local vGuildStr = (vGuild and vGuild ~= "None") and ("<" .. vGuild .. ">") or "Guildless"
+    m.VictimCard.Info:SetText(string.format(
+        "Level %s %s\n%s\nCasualty Status: Slain\nFaction: %s",
+        vLvlStr, vClass or "UNKNOWN", vGuildStr, vFaction or "Unknown"
+    ))
+
+    -- Details Text
+    local subzoneStr = (subZone ~= "") and (" (" .. subZone .. ")") or ""
+    local timeAgoStr = KB.Utils and KB.Utils.FormatTimeAgo and KB.Utils.FormatTimeAgo(ts) or "Recently"
+    m.DetailsText:SetText(string.format(
+        "|cffffd100Engagement:|r |cffff4444Wilderness PvE Casualty|r  |  |cffef4444Fatal Strike: %s|r\n" ..
+        "|cffffd100Location:|r %s%s\n" ..
+        "|cffffd100Timestamp:|r %s  (|cff888888%s|r)\n" ..
+        "|cffffd100Casualty Record ID:|r %s",
+        nSpell, zName, subzoneStr,
+        date("%Y-%m-%d %H:%M:%S", ts), timeAgoStr, dId
+    ))
+
+    UI:ApplyTheme()
+    m:Show()
+    if m.Raise then m:Raise() end
 end
 
 -- 2. Render Leaderboard Tab (Defender of Azeroth)
@@ -3339,6 +4395,7 @@ function UI:CreateDetailModal()
     local kCardTitle = killerCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     kCardTitle:SetPoint("TOPLEFT", 8, -6)
     kCardTitle:SetText("|cff00ff66KILLER|r")
+    killerCard.CardTitle = kCardTitle
 
     local kIcon = UI:CreateClassIcon(killerCard, "WARRIOR", 28)
     kIcon:SetPoint("TOPLEFT", 8, -24)
@@ -3380,6 +4437,7 @@ function UI:CreateDetailModal()
     local vCardTitle = victimCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     vCardTitle:SetPoint("TOPLEFT", 8, -6)
     vCardTitle:SetText("|cffff4444VICTIM|r")
+    victimCard.CardTitle = vCardTitle
 
     local vIcon = UI:CreateClassIcon(victimCard, "WARRIOR", 28)
     vIcon:SetPoint("TOPLEFT", 8, -24)
@@ -3445,6 +4503,15 @@ function UI:ShowKillDetail(km)
     if not UI.DetailModal or not km then return end
     local m = UI.DetailModal
     m.currentKillmail = km
+    m.currentPveDeath = nil
+
+    if m.Title then m.Title:SetText("|cffffd100KILLMAIL COMBAT RECORD|r") end
+    if m.KillerCard.CardTitle then m.KillerCard.CardTitle:SetText("|cff00ff66KILLER|r") end
+    if m.VictimCard.CardTitle then m.VictimCard.CardTitle:SetText("|cffff4444VICTIM|r") end
+    if m.KillerCard.WebBtn then m.KillerCard.WebBtn:Show() end
+    if m.VictimCard.WebBtn then m.VictimCard.WebBtn:Show() end
+    m.KillerCard.Icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes")
+    m.VictimCard.Icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes")
 
     -- Update Killer Card
     local kCoords = CLASS_COORDS[(km.killer.class or ""):upper()] or {0, 0.25, 0, 0.25}

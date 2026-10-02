@@ -667,10 +667,12 @@ class KillboardWatcher:
         return any_success
 
     def sync_realm_data_to_client(self) -> bool:
-        """Fetches /api/realm/summary, /api/kills, and /api/bounties, merges local kills across accounts, and writes WoWKillboard_RealmData.lua."""
+        """Fetches /api/realm/summary, /api/kills, /api/bounties, /api/pve/deaths, and /api/pve/leaderboard, merges local data across accounts, and writes WoWKillboard_RealmData.lua."""
         summary = None
         recent_kills = []
         active_bounties = []
+        recent_pve_deaths = []
+        pve_leaderboard = None
 
         for endpoint in self.api_urls:
             # 1. Fetch summary
@@ -711,7 +713,33 @@ class KillboardWatcher:
                 except Exception:
                     pass
 
-        # Also merge local kills from all monitored accounts on this machine
+            # 4. Fetch recent PvE wilderness deaths (up to 60)
+            if not recent_pve_deaths:
+                url_pve = f"{endpoint}/api/pve/deaths?limit=60"
+                try:
+                    req = urllib.request.Request(url_pve, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
+                    with urllib.request.urlopen(req, timeout=4) as resp:
+                        if resp.status == 200:
+                            pve_resp = json.loads(resp.read().decode("utf-8"))
+                            if isinstance(pve_resp, list):
+                                recent_pve_deaths = pve_resp
+                            elif isinstance(pve_resp, dict):
+                                recent_pve_deaths = pve_resp.get("deaths", [])
+                except Exception:
+                    pass
+
+            # 5. Fetch PvE Bestiary Leaderboard
+            if not pve_leaderboard:
+                url_pve_lb = f"{endpoint}/api/pve/leaderboard"
+                try:
+                    req = urllib.request.Request(url_pve_lb, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
+                    with urllib.request.urlopen(req, timeout=4) as resp:
+                        if resp.status == 200:
+                            pve_leaderboard = json.loads(resp.read().decode("utf-8"))
+                except Exception:
+                    pass
+
+        # Also merge local kills and PvE deaths from all monitored accounts on this machine
         # (guarantees cross-account sharing even offline or before remote indexing)
         known_kill_ids = set()
         for k in recent_kills:
@@ -754,6 +782,18 @@ class KillboardWatcher:
                                     b_copy["id"] = bid
                                 active_bounties.append(b_copy)
                                 known_bnt_ids.add(bid)
+
+                    # Also merge local PvE deaths if any
+                    local_pve = parsed.get("WoWKillboardDB", {}).get("pveDeaths", {})
+                    if isinstance(local_pve, dict):
+                        known_pve_ids = set(d.get("deathId") or d.get("death_id") for d in recent_pve_deaths if isinstance(d, dict))
+                        for did, pdeath in local_pve.items():
+                            if did not in known_pve_ids and isinstance(pdeath, dict):
+                                pd_copy = dict(pdeath)
+                                if "deathId" not in pd_copy:
+                                    pd_copy["deathId"] = did
+                                recent_pve_deaths.append(pd_copy)
+                                known_pve_ids.add(did)
                 except Exception:
                     pass
 
@@ -811,6 +851,16 @@ class KillboardWatcher:
             cleaned_bounties.append(b_norm)
             known_bnt_ids.add(b_id)
 
+        # Sort recent PvE deaths descending by timestamp and cap at 60
+        recent_pve_deaths.sort(key=lambda x: x.get("timestamp", 0) if isinstance(x, dict) else 0, reverse=True)
+        recent_pve_deaths = recent_pve_deaths[:60]
+
+        pve_summary = pve_leaderboard.get("summary", {}) if isinstance(pve_leaderboard, dict) else {}
+        pve_total = int(pve_summary.get("totalDeaths", len(recent_pve_deaths))) if pve_summary else len(recent_pve_deaths)
+        pve_top_npcs = pve_leaderboard.get("topDeadlyNpcs", []) if isinstance(pve_leaderboard, dict) else []
+        pve_top_victims = pve_leaderboard.get("topFallenPlayers", []) if isinstance(pve_leaderboard, dict) else []
+        pve_danger_zone = pve_summary.get("mostDangerousZone") if pve_summary else None
+
         carnage = int(summary.get("RealmTotalCarnage", len(recent_kills))) if summary else len(recent_kills)
         solo_count = sum(1 for k in recent_kills if isinstance(k, dict) and k.get("isSolo"))
         solo_ratio = round((solo_count / max(1, len(recent_kills))) * 100, 1)
@@ -834,6 +884,11 @@ class KillboardWatcher:
             f"    TopGankers24h = {serialize_to_lua(top_gankers, 1)},",
             f"    RecentKills = {serialize_to_lua(recent_kills, 1)},",
             f"    ActiveBounties = {serialize_to_lua(cleaned_bounties, 1)},",
+            f"    RecentPveDeaths = {serialize_to_lua(recent_pve_deaths, 1)},",
+            f"    PveTotalDeaths = {pve_total},",
+            f"    PveTopExecutioners = {serialize_to_lua(pve_top_npcs, 1)},",
+            f"    PveTopVictims = {serialize_to_lua(pve_top_victims, 1)},",
+            f"    PveDeadliestZone = {serialize_to_lua(pve_danger_zone, 1)},",
             f"    LastSync = {int(time.time())},",
             "}",
         ]
@@ -877,7 +932,7 @@ class KillboardWatcher:
                 pass
 
         if written > 0:
-            log_event(f"[Watcher] [2-WAY SYNC] Injected realm telemetry payload (WoWKillboard_RealmData.lua) with {len(recent_kills)} kills and {len(active_bounties)} bounties into {written} location(s).")
+            log_event(f"[Watcher] [2-WAY SYNC] Injected realm telemetry payload (WoWKillboard_RealmData.lua) with {len(recent_kills)} kills, {len(recent_pve_deaths)} PvE deaths, and {len(active_bounties)} bounties into {written} location(s).")
         return True
 
     def run_daemon(self, poll_interval: float = 2.0):
