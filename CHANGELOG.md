@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Purged Corrupted Realm Data (`Addon/WoWKillboard/WoWKillboard_RealmData.lua`)**:
   - Cleared malformed placeholder kill entry with `killId = "pveDeaths"`.
 
+### Security & Hardening
+- **CodeQL Alert #1 Resolution — Full Server-Side Request Forgery (`web/server.py:3229`)**:
+  - Reconstructed Discord webhook dispatch endpoints using a hardcoded `https://discord.com/api/webhooks/` prefix with strictly validated numeric snowflake IDs (`\d+`) and alphanumeric tokens (`[A-Za-z0-9_-]+`).
+  - Added strict scheme and hostname verification via `urllib.parse.urlsplit` before executing HTTP requests, completely breaking SSRF dataflow taint.
+- **CodeQL Alert #11 Resolution — Client-Side Cross-Site Scripting (`web/static/app.js:3693`)**:
+  - Refactored `loadPortalView()` to use a 100% static HTML template skeleton for the masthead and dual-card selection grid.
+  - Active champion dossier and officer claim controls are rendered using pure DOM creation (`document.createElement`, `textContent`, and safe closure listeners), preventing any dataflow from `localStorage` into `.innerHTML`.
+  - Populated administrative secret input via direct property assignment rather than template string interpolation.
+
 ### Infrastructure & Deployment
 - **Multi-Client Local Deployment**: Synchronized updated addon files across all 4 local client installations (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
 - **Binary & Package Rebuild**: Recompiled `WoWKillboardSync.exe` via PyInstaller and regenerated `WoWKillboard-v1.0.0.zip`.

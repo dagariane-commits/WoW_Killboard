@@ -34,5 +34,5 @@ WoWKillboard_RealmData = {
     PveTopExecutioners = {},
     PveTopVictims = {},
     PveDeadliestZone = nil,
-    LastSync = 1790955611,
+    LastSync = 1790955966,
 }

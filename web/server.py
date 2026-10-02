@@ -9,6 +9,7 @@ bounty board, and Oathbreaker Debt Ledger.
 
 import os
 import sys
+import re
 import json
 import time
 import sqlite3
@@ -3194,40 +3195,41 @@ def pay_debt():
 
 # ----------------- Discord Webhook & Guild Operations Engine -----------------
 
-def validate_discord_webhook(url: str) -> bool:
-    """Strictly validates that a URL is a legitimate Discord webhook endpoint to prevent SSRF."""
+DISCORD_WEBHOOK_PATTERN = re.compile(
+    r"^https://(?:(?:canary|ptb)\.)?discord(?:app)?\.com/api/webhooks/(\d+)/([A-Za-z0-9_-]+)/?$"
+)
+
+def sanitize_discord_webhook(url: str) -> str:
+    """Strictly validates and reconstructs a Discord webhook URL from trusted components.
+    Guarantees that the scheme and host are hardcoded to https://discord.com/api/webhooks/
+    with strictly validated numeric ID and alphanumeric token."""
     if not url or not isinstance(url, str):
-        return False
-    try:
-        parsed = urllib.parse.urlparse(url.strip())
-        if parsed.scheme != "https":
-            return False
-        hostname = (parsed.hostname or "").lower()
-        allowed_hosts = {
-            "discord.com", "www.discord.com",
-            "discordapp.com", "www.discordapp.com",
-            "canary.discord.com", "ptb.discord.com"
-        }
-        if hostname not in allowed_hosts:
-            return False
-        # Path must strictly follow /api/webhooks/<webhook_id>/<webhook_token>
-        path_segments = [seg for seg in parsed.path.strip("/").split("/") if seg]
-        if len(path_segments) < 3:
-            return False
-        if path_segments[0] != "api" or path_segments[1] != "webhooks":
-            return False
-        return True
-    except Exception:
-        return False
+        return ""
+    m = DISCORD_WEBHOOK_PATTERN.match(url.strip())
+    if not m:
+        return ""
+    wh_id = str(int(m.group(1)))
+    wh_token = m.group(2)
+    if not re.fullmatch(r"^[A-Za-z0-9_-]+$", wh_token):
+        return ""
+    return f"https://discord.com/api/webhooks/{wh_id}/{wh_token}"
+
+def validate_discord_webhook(url: str) -> bool:
+    """Strictly validates that a URL is a legitimate Discord webhook endpoint."""
+    return bool(sanitize_discord_webhook(url))
 
 def send_discord_webhook(webhook_url: str, payload: dict) -> bool:
     """Dispatches rich embed notifications to a configured Discord channel webhook."""
-    if not validate_discord_webhook(webhook_url):
+    safe_url = sanitize_discord_webhook(webhook_url)
+    if not safe_url:
+        return False
+    parsed = urllib.parse.urlsplit(safe_url)
+    if parsed.scheme != "https" or parsed.netloc != "discord.com":
         return False
     try:
         data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
-            webhook_url,
+            safe_url,
             data=data,
             headers={
                 "Content-Type": "application/json",
@@ -3468,7 +3470,8 @@ def set_discord_config():
     if not webhook_url:
         return jsonify({"error": "Missing webhook_url"}), 400
 
-    if not validate_discord_webhook(webhook_url):
+    safe_webhook_url = sanitize_discord_webhook(webhook_url)
+    if not safe_webhook_url:
         return jsonify({"error": "Invalid Discord webhook URL. URL must start with https://discord.com/api/webhooks/ or https://discordapp.com/api/webhooks/."}), 400
 
     with get_db() as conn:
@@ -3476,7 +3479,7 @@ def set_discord_config():
             INSERT OR REPLACE INTO guild_discord_configs (
                 guild_name, webhook_url, alerts_enabled, events_enabled
             ) VALUES (?, ?, ?, ?)
-        """, (guild_name, webhook_url, alerts_enabled, events_enabled))
+        """, (guild_name, safe_webhook_url, alerts_enabled, events_enabled))
         conn.commit()
 
     return jsonify({"status": "ok", "message": f"Discord configuration saved for {guild_name}"})
@@ -3522,7 +3525,8 @@ def test_discord_webhook():
     if not webhook_url:
         return jsonify({"error": "No webhook URL provided or configured"}), 400
 
-    if not validate_discord_webhook(webhook_url):
+    safe_webhook_url = sanitize_discord_webhook(webhook_url)
+    if not safe_webhook_url:
         return jsonify({"error": "Invalid Discord webhook URL. URL must start with https://discord.com/api/webhooks/ or https://discordapp.com/api/webhooks/."}), 400
 
     payload = {
@@ -3540,7 +3544,7 @@ def test_discord_webhook():
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         }]
     }
-    success = send_discord_webhook(webhook_url, payload)
+    success = send_discord_webhook(safe_webhook_url, payload)
 # ----------------- Tactical Intel & Gank Sighting Wire API -----------------
 
 @app.route("/api/intel/sighting", methods=["POST"])

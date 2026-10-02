@@ -3613,83 +3613,6 @@ function loadPortalView() {
     portalAccessMode = "character";
   }
 
-  // Right card: Character Dossier & In-Game Claim
-  let rightCardContent = "";
-  if (storedAccount) {
-    const rawCls = (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase();
-    const userCls = CLASS_COLORS[rawCls] ? rawCls : "WARRIOR";
-    const userLvl = parseInt(localStorage.getItem("wowkb_user_level") || "60", 10) || 60;
-    const userFaction = ((localStorage.getItem("wowkb_user_faction") || "Alliance").toLowerCase() === "horde") ? "Horde" : "Alliance";
-    const userClsColor = CLASS_COLORS[userCls] || CLASS_COLORS.UNKNOWN;
-    const encodedAccount = encodeURIComponent(storedAccount);
-    rightCardContent = `
-      <div class="signedin-account-card">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div class="officer-sigil-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </div>
-          <div>
-            <div style="font-weight:800; font-size:1.0rem; color:#fff;">
-              Active Champion: <span style="color:${userClsColor};">${escapeHtml(storedAccount)}</span>
-              <span style="font-size:0.75rem; color:#94a3b8;">(Lvl ${userLvl} ${userCls.charAt(0) + userCls.slice(1).toLowerCase()})</span>
-            </div>
-            <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">
-              ${escapeHtml(userFaction)} Vanguard &bull; Certified Combatant
-            </div>
-          </div>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px;">
-          <button class="dramatic-gate-btn officer" onclick="openCharacterProfile(decodeURIComponent('${encodedAccount}'))">
-            <span>Inspect Combat Profile</span>
-            <span>&rarr;</span>
-          </button>
-          <div style="display:flex; justify-content:center; gap:16px; margin-top:6px;">
-            <button class="gate-signout-link" onclick="openCharacterLinkModal()" style="color:var(--accent-cyan); background:none; border:none; cursor:pointer; font-size:0.8rem;">Switch / Claim Character</button>
-            <button class="gate-signout-link" onclick="portalSignOut()" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:0.8rem;">Release Champion</button>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    rightCardContent = `
-      <div style="display:flex; flex-direction:column; gap:14px; width:100%; justify-content:space-between; flex:1;">
-        <div style="font-size:0.86rem; color:#94a3b8; line-height:1.5;">
-          Select your character directly from the live combat ledger or authenticate ownership using in-game claim tokens. Zero email, password, or third-party accounts.
-        </div>
-        <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,0,0.18); border-radius:6px; padding:12px 14px; font-size:0.8rem; color:#cbd5e1; display:flex; flex-direction:column; gap:6px;">
-          <div style="color:var(--wow-gold); font-weight:700;">In-Game Identity Claim:</div>
-          <div>1. Click below to select your character name.</div>
-          <div>2. Run <code style="color:var(--accent-cyan); background:rgba(0,229,255,0.1); padding:2px 6px; border-radius:3px;">/kb claim</code> in World of Warcraft.</div>
-          <div>3. Sync agent automatically secures your ownership token.</div>
-        </div>
-        <button type="button" class="dramatic-gate-btn officer" onclick="openCharacterLinkModal()">
-          <span>⚔️ Select / Claim Character</span>
-          <span>&rarr;</span>
-        </button>
-      </div>
-    `;
-  }
-
-  // Left card: Immediate Live Combat Feed
-  const leftCardContent = `
-    <div style="display:flex; flex-direction:column; gap:14px; width:100%; justify-content:space-between; flex:1;">
-      <div style="font-size:0.86rem; color:#94a3b8; line-height:1.5;">
-        Step immediately into the live frontline combat feed. Real-time killmail dispatches, verified 1v1 solo duels, bounty alerts, and battleground casualties.
-      </div>
-      <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(0,229,255,0.18); border-radius:6px; padding:12px 14px; font-size:0.8rem; color:#cbd5e1; display:flex; flex-direction:column; gap:6px;">
-        <div style="color:var(--accent-cyan); font-weight:700;">Zero-Barrier Frontline Intel:</div>
-        <div>✔ 100% Free &amp; Open Access — Zero signup required</div>
-        <div>✔ Certified 1v1 Solo Kills &amp; Gang Gank clustering</div>
-        <div>✔ Public Blood Bounty Hunting and Gold Ledgers</div>
-        <div>✔ Real-time Cross-Client PvP Radar &amp; War Rallies</div>
-      </div>
-      <button type="button" class="dramatic-gate-btn guest" onclick="switchTab('INTEL')">
-        <span>⚔️ Enter Live Frontline Feed</span>
-        <span>&rarr;</span>
-      </button>
-    </div>
-  `;
-
   container.innerHTML = `
     <div class="portal-container dramatic-flow">
       <!-- Dramatic Hero Masthead -->
@@ -3729,11 +3652,26 @@ function loadPortalView() {
               Direct access to live combat casualties, real-time killmails, solo duel certifications, and battleground intelligence.
             </p>
           </div>
-          ${leftCardContent}
+          <div style="display:flex; flex-direction:column; gap:14px; width:100%; justify-content:space-between; flex:1;">
+            <div style="font-size:0.86rem; color:#94a3b8; line-height:1.5;">
+              Step immediately into the live frontline combat feed. Real-time killmail dispatches, verified 1v1 solo duels, bounty alerts, and battleground casualties.
+            </div>
+            <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(0,229,255,0.18); border-radius:6px; padding:12px 14px; font-size:0.8rem; color:#cbd5e1; display:flex; flex-direction:column; gap:6px;">
+              <div style="color:var(--accent-cyan); font-weight:700;">Zero-Barrier Frontline Intel:</div>
+              <div>✔ 100% Free &amp; Open Access — Zero signup required</div>
+              <div>✔ Certified 1v1 Solo Kills &amp; Gang Gank clustering</div>
+              <div>✔ Public Blood Bounty Hunting and Gold Ledgers</div>
+              <div>✔ Real-time Cross-Client PvP Radar &amp; War Rallies</div>
+            </div>
+            <button type="button" class="dramatic-gate-btn guest" onclick="switchTab('INTEL')">
+              <span>⚔️ Enter Live Frontline Feed</span>
+              <span>&rarr;</span>
+            </button>
+          </div>
         </div>
 
         <!-- Card 2: Combat Identity & In-Game Claim -->
-        <div class="dramatic-gate-card officer">
+        <div class="dramatic-gate-card officer" id="portal-card-officer">
           <div>
             <div class="gate-card-badge officer">COMBAT IDENTITY</div>
             <div class="gate-card-icon">
@@ -3744,11 +3682,113 @@ function loadPortalView() {
               View your personalized combat record, Classic military rank, and placed bounties. Link or claim ownership directly from World of Warcraft.
             </p>
           </div>
-          ${rightCardContent}
+          <div id="portal-officer-slot"></div>
         </div>
       </div>
     </div>
   `;
+
+  const officerSlot = document.getElementById("portal-officer-slot");
+  if (!officerSlot) return;
+
+  if (storedAccount) {
+    const rawCls = (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase();
+    const userCls = CLASS_COLORS[rawCls] ? rawCls : "WARRIOR";
+    const userLvl = parseInt(localStorage.getItem("wowkb_user_level") || "60", 10) || 60;
+    const userFaction = ((localStorage.getItem("wowkb_user_faction") || "Alliance").toLowerCase() === "horde") ? "Horde" : "Alliance";
+    const userClsColor = CLASS_COLORS[userCls] || CLASS_COLORS.UNKNOWN;
+
+    const signedInCard = document.createElement("div");
+    signedInCard.className = "signedin-account-card";
+
+    const topRow = document.createElement("div");
+    topRow.style.cssText = "display:flex; align-items:center; gap:12px;";
+
+    const badgeDiv = document.createElement("div");
+    badgeDiv.className = "officer-sigil-badge";
+    badgeDiv.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+    const textDiv = document.createElement("div");
+    const nameLine = document.createElement("div");
+    nameLine.style.cssText = "font-weight:800; font-size:1.0rem; color:#fff;";
+    nameLine.textContent = "Active Champion: ";
+
+    const champSpan = document.createElement("span");
+    champSpan.style.color = userClsColor;
+    champSpan.textContent = storedAccount;
+    nameLine.appendChild(champSpan);
+
+    const lvlSpan = document.createElement("span");
+    lvlSpan.style.cssText = "font-size:0.75rem; color:#94a3b8; margin-left:4px;";
+    lvlSpan.textContent = `(Lvl ${userLvl} ${userCls.charAt(0) + userCls.slice(1).toLowerCase()})`;
+    nameLine.appendChild(lvlSpan);
+
+    const subLine = document.createElement("div");
+    subLine.style.cssText = "font-size:0.75rem; color:#94a3b8; margin-top:2px;";
+    subLine.textContent = `${userFaction} Vanguard • Certified Combatant`;
+
+    textDiv.appendChild(nameLine);
+    textDiv.appendChild(subLine);
+    topRow.appendChild(badgeDiv);
+    topRow.appendChild(textDiv);
+
+    const actionDiv = document.createElement("div");
+    actionDiv.style.cssText = "display:flex; flex-direction:column; gap:8px; margin-top:16px;";
+
+    const inspectBtn = document.createElement("button");
+    inspectBtn.type = "button";
+    inspectBtn.className = "dramatic-gate-btn officer";
+    inspectBtn.addEventListener("click", () => openCharacterProfile(storedAccount));
+    inspectBtn.innerHTML = `<span>Inspect Combat Profile</span><span>&rarr;</span>`;
+
+    const linksRow = document.createElement("div");
+    linksRow.style.cssText = "display:flex; justify-content:center; gap:16px; margin-top:6px;";
+
+    const switchBtn = document.createElement("button");
+    switchBtn.type = "button";
+    switchBtn.className = "gate-signout-link";
+    switchBtn.style.cssText = "color:var(--accent-cyan); background:none; border:none; cursor:pointer; font-size:0.8rem;";
+    switchBtn.textContent = "Switch / Claim Character";
+    switchBtn.addEventListener("click", openCharacterLinkModal);
+
+    const releaseBtn = document.createElement("button");
+    releaseBtn.type = "button";
+    releaseBtn.className = "gate-signout-link";
+    releaseBtn.style.cssText = "color:#ef4444; background:none; border:none; cursor:pointer; font-size:0.8rem;";
+    releaseBtn.textContent = "Release Champion";
+    releaseBtn.addEventListener("click", portalSignOut);
+
+    linksRow.appendChild(switchBtn);
+    linksRow.appendChild(releaseBtn);
+
+    actionDiv.appendChild(inspectBtn);
+    actionDiv.appendChild(linksRow);
+
+    signedInCard.appendChild(topRow);
+    signedInCard.appendChild(actionDiv);
+    officerSlot.appendChild(signedInCard);
+  } else {
+    const guestSlot = document.createElement("div");
+    guestSlot.style.cssText = "display:flex; flex-direction:column; gap:14px; width:100%; justify-content:space-between; flex:1;";
+    guestSlot.innerHTML = `
+      <div style="font-size:0.86rem; color:#94a3b8; line-height:1.5;">
+        Select your character directly from the live combat ledger or authenticate ownership using in-game claim tokens. Zero email, password, or third-party accounts.
+      </div>
+      <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,0,0.18); border-radius:6px; padding:12px 14px; font-size:0.8rem; color:#cbd5e1; display:flex; flex-direction:column; gap:6px;">
+        <div style="color:var(--wow-gold); font-weight:700;">In-Game Identity Claim:</div>
+        <div>1. Click below to select your character name.</div>
+        <div>2. Run <code style="color:var(--accent-cyan); background:rgba(0,229,255,0.1); padding:2px 6px; border-radius:3px;">/kb claim</code> in World of Warcraft.</div>
+        <div>3. Sync agent automatically secures your ownership token.</div>
+      </div>
+    `;
+    const claimBtn = document.createElement("button");
+    claimBtn.type = "button";
+    claimBtn.className = "dramatic-gate-btn officer";
+    claimBtn.addEventListener("click", openCharacterLinkModal);
+    claimBtn.innerHTML = `<span>⚔️ Select / Claim Character</span><span>&rarr;</span>`;
+    guestSlot.appendChild(claimBtn);
+    officerSlot.appendChild(guestSlot);
+  }
 }
 
 // ----------------- WoW Forever Realm Server Configuration -----------------
@@ -4664,7 +4704,7 @@ function loadUploadView() {
           Completely reset all combat records, kills, bounties, and leaderboards back to zero. Protected by the administrative secret key.
         </p>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <input type="password" id="admin-reset-key" value="${localStorage.getItem("wowkb_admin_key") || ""}" placeholder="Enter Administrative Secret Key" style="background:#020617; border:1px solid #475569; color:#fff; padding:7px 12px; border-radius:4px; font-size:0.8rem; width:260px;">
+          <input type="password" id="admin-reset-key" value="" placeholder="Enter Administrative Secret Key" style="background:#020617; border:1px solid #475569; color:#fff; padding:7px 12px; border-radius:4px; font-size:0.8rem; width:260px;">
           <button style="background:#dc2626; color:#fff; border:none; border-radius:4px; padding:8px 18px; font-weight:800; font-size:0.78rem; cursor:pointer;" onclick="handleAdminResetSubmit()">
             Reset Master Database
           </button>
@@ -4680,6 +4720,11 @@ function loadUploadView() {
       `}
     </div>
   `;
+
+  const adminKeyEl = document.getElementById("admin-reset-key");
+  if (adminKeyEl) {
+    adminKeyEl.value = localStorage.getItem("wowkb_admin_key") || "";
+  }
 }
 
 function promptAdminAccess() {
