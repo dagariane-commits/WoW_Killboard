@@ -7072,6 +7072,20 @@ document.addEventListener("DOMContentLoaded", () => {
     switchTab("INTEL");
   }
 
+  // Native Privacy-Preserving Analytics Pageview Beacon
+  try {
+    fetch("/api/analytics/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "pageview",
+        path: window.location.pathname + window.location.search,
+        source: "web",
+        referrer: document.referrer || ""
+      })
+    }).catch(() => {});
+  } catch (e) {}
+
   // Polling update every 6 seconds
   setInterval(() => {
     if (currentTab === "FEED" || currentTab === "INTEL") {
@@ -7082,4 +7096,215 @@ document.addEventListener("DOMContentLoaded", () => {
     checkGlobalSosBeacons();
   }, 6000);
 });
+
+// ----------------- Platform & CurseForge Analytics Dashboard -----------------
+
+async function openAnalyticsModal() {
+  const modal = document.getElementById("analytics-modal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  await loadAnalyticsDashboard();
+}
+
+function closeAnalyticsModal() {
+  const modal = document.getElementById("analytics-modal");
+  if (modal) modal.style.display = "none";
+}
+
+async function loadAnalyticsDashboard() {
+  const body = document.getElementById("analytics-modal-body");
+  if (!body) return;
+  body.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:30px;">Aggregating telemetry records from database...</div>`;
+  try {
+    const res = await fetch("/api/analytics/summary");
+    if (!res.ok) {
+      body.innerHTML = `<div style="text-align:center; color:#ef4444; padding:30px;">Failed to retrieve analytics data.</div>`;
+      return;
+    }
+    const data = await res.json();
+    body.innerHTML = renderAnalyticsDashboardHtml(data);
+  } catch (err) {
+    body.innerHTML = `<div style="text-align:center; color:#ef4444; padding:30px;">Error loading analytics: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderAnalyticsDashboardHtml(data) {
+  const s24 = data.summary_24h || {};
+  const s7 = data.summary_7d || {};
+  const live = data.live_visitors_15m || 0;
+
+  return `
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <!-- Top Metric Cards -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+        <div class="stat-card" style="padding:16px;">
+          <span class="stat-label">Live Active Visitors</span>
+          <span class="stat-val" style="color:var(--accent-cyan); font-size:1.8rem; display:flex; align-items:center; gap:6px;">
+            <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
+            ${live}
+          </span>
+          <span style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">Active in last 15 mins</span>
+        </div>
+
+        <div class="stat-card" style="padding:16px;">
+          <span class="stat-label">Site Pageviews (24h)</span>
+          <span class="stat-val" style="color:#10b981; font-size:1.8rem;">${s24.pageviews || 0}</span>
+          <span style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">${s24.uniques || 0} unique visitors</span>
+        </div>
+
+        <div class="stat-card" style="padding:16px;">
+          <span class="stat-label">CurseForge Views (24h)</span>
+          <span class="stat-val" style="color:#fb923c; font-size:1.8rem;">${s24.curseforge_views || 0}</span>
+          <span style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">Tracked via description badge</span>
+        </div>
+
+        <div class="stat-card" style="padding:16px;">
+          <span class="stat-label">CurseForge Referrals</span>
+          <span class="stat-val" style="color:var(--wow-gold); font-size:1.8rem;">${s24.curseforge_clicks || 0}</span>
+          <span style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">Clicks to CurseForge Hub</span>
+        </div>
+
+        <div class="stat-card" style="padding:16px;">
+          <span class="stat-label">Total Addon Downloads</span>
+          <span class="stat-val" style="color:#a855f7; font-size:1.8rem;">${(s24.addon_downloads || 0) + (s24.sync_downloads || 0)}</span>
+          <span style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">${s24.addon_downloads || 0} Addon Zip &bull; ${s24.sync_downloads || 0} Sync App</span>
+        </div>
+      </div>
+
+      <!-- CurseForge Integration & Tracking Badges Section -->
+      <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3 style="color:#fb923c; font-size:1.05rem; margin:0 0 4px 0; display:flex; align-items:center; gap:8px;">
+              <span>🔥 CurseForge Page Analytics &amp; Embed Badge</span>
+            </h3>
+            <p style="color:#94a3b8; font-size:0.8rem; margin:0; max-width:650px;">
+              CurseForge does not permit custom JavaScript scripts in addon descriptions. To track pageviews and unique visitors directly on your CurseForge page, embed this live telemetry SVG badge into your project description markdown:
+            </p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <img src="/api/badge/status.svg" alt="Preview Badge" style="height:20px; border-radius:3px;">
+          </div>
+        </div>
+
+        <div style="margin-top:14px; background:#07090e; border:1px solid #1e293b; border-radius:6px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <span style="font-size:0.75rem; font-weight:700; color:var(--wow-gold);">Markdown Snippet for CurseForge Description:</span>
+            <div style="display:flex; gap:8px;">
+              <button class="dossier-btn primary" style="padding:4px 12px; font-size:0.75rem;" onclick="copyCurseForgeBadgeSnippet(this)">📋 Copy SVG Badge Markdown</button>
+              <button class="dossier-btn outline" style="padding:4px 12px; font-size:0.75rem;" onclick="copyCurseForgePixelSnippet(this)">Copy Invisible 1x1 Pixel</button>
+            </div>
+          </div>
+          <code id="cf-badge-snippet-code" style="font-family:monospace; font-size:0.75rem; color:#38bdf8; background:#0f172a; padding:8px; border-radius:4px; overflow-x:auto; user-select:all;">[![WoW Killboard Status](https://wowkillboard.com/api/badge/status.svg)](https://wowkillboard.com)</code>
+          <div style="font-size:0.7rem; color:#64748b;">
+            💡 <strong>How it works</strong>: When players view your CurseForge project page, CurseForge renders the badge directly from your server, recording the view, referrer, and unique visitor count in real time!
+          </div>
+        </div>
+      </div>
+
+      <!-- 7-Day Performance & Historical Breakdown -->
+      <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:18px;">
+        <h3 style="color:var(--accent-cyan); font-size:1.05rem; margin:0 0 12px 0;">7-Day Telemetry Breakdown</h3>
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:left;">
+            <thead>
+              <tr style="border-bottom:1px solid #1e293b; color:#94a3b8; height:30px;">
+                <th style="padding-left:8px;">Date</th>
+                <th>Site Pageviews</th>
+                <th>Unique Visitors</th>
+                <th>CurseForge Views</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(data.daily_history || []).map(d => `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04); height:32px;">
+                  <td style="color:#fff; font-weight:700; padding-left:8px;">${d.date}</td>
+                  <td style="color:#10b981;">${d.pageviews}</td>
+                  <td style="color:var(--accent-cyan);">${d.uniques}</td>
+                  <td style="color:#fb923c;">${d.curseforge_views}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Top Referrers & Top Pages Grid -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <!-- Top Referrers -->
+        <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:16px;">
+          <h4 style="color:var(--wow-gold); font-size:0.9rem; margin:0 0 10px 0;">Top Traffic Sources (7 Days)</h4>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            ${(data.top_referrers && data.top_referrers.length > 0) ? data.top_referrers.map(r => `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
+                <span style="color:#cbd5e1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:240px;" title="${escapeHtml(r.referrer)}">${escapeHtml(r.referrer)}</span>
+                <span style="color:#10b981; font-weight:700;">${r.count}</span>
+              </div>
+            `).join("") : '<div style="color:#64748b; font-size:0.75rem;">No external referrers logged yet. Direct visits only.</div>'}
+          </div>
+        </div>
+
+        <!-- Top Pages Viewed -->
+        <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:16px;">
+          <h4 style="color:var(--accent-cyan); font-size:0.9rem; margin:0 0 10px 0;">Top Visited URLs (7 Days)</h4>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            ${(data.top_pages && data.top_pages.length > 0) ? data.top_pages.map(p => `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
+                <span style="color:#cbd5e1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:240px;" title="${escapeHtml(p.path)}">${escapeHtml(p.path)}</span>
+                <span style="color:var(--accent-cyan); font-weight:700;">${p.count}</span>
+              </div>
+            `).join("") : '<div style="color:#64748b; font-size:0.75rem;">No page records logged yet.</div>'}
+          </div>
+        </div>
+      </div>
+
+      <!-- Third-Party Analytics Options (Cloudflare & Google Analytics) -->
+      <div style="background:#07090e; border:1px dashed #334155; border-radius:8px; padding:14px;">
+        <div style="font-weight:700; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Additional Analytics Tools Available:</div>
+        <div style="font-size:0.75rem; color:#94a3b8; line-height:1.5;">
+          &bull; <strong>CurseForge Author Portal</strong>: Log into <a href="https://authors.curseforge.com/" target="_blank" rel="noopener" style="color:#fb923c;">authors.curseforge.com</a> &rarr; Projects &rarr; WoW Killboard &rarr; Analytics to view official unique downloads, points, and earnings.<br>
+          &bull; <strong>Cloudflare Web Analytics</strong>: In your Cloudflare Dashboard &rarr; Analytics &amp; Logs &rarr; Web Analytics, enable 1-click free privacy-first traffic tracking (zero cookies, zero performance penalty).
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function copyCurseForgeBadgeSnippet(btn) {
+  const snippet = `[![WoW Killboard Status](https://wowkillboard.com/api/badge/status.svg)](https://wowkillboard.com)`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(snippet).then(() => {
+      if (btn) {
+        const orig = btn.innerText;
+        btn.innerText = "✓ Copied to Clipboard!";
+        btn.style.color = "#10b981";
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.color = "";
+        }, 2000);
+      }
+    });
+  } else {
+    prompt("Copy CurseForge Markdown Snippet:", snippet);
+  }
+}
+
+function copyCurseForgePixelSnippet(btn) {
+  const snippet = `![WoW Killboard Telemetry](https://wowkillboard.com/api/analytics/pixel.png?source=curseforge)`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(snippet).then(() => {
+      if (btn) {
+        const orig = btn.innerText;
+        btn.innerText = "✓ Copied to Clipboard!";
+        btn.style.color = "#10b981";
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.color = "";
+        }, 2000);
+      }
+    });
+  } else {
+    prompt("Copy Invisible Tracking Pixel Snippet:", snippet);
+  }
+}
 

@@ -5,6 +5,18 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.90] - 2026-10-02
+
+### Added
+- **Native Privacy-Preserving Web & CurseForge Analytics Engine (`web/server.py`, `web/static/app.js`, `web/static/index.html`, `tests/test_pipeline.py`)**:
+  - Implemented zero-dependency, GDPR-compliant `analytics_events` database schema recording pageviews, unique daily visitors (salted SHA-256 hash, zero raw IP storage), referral sources, downloads, and CurseForge views.
+  - Created dynamic Shields.io-style SVG telemetry badge (`/api/badge/status.svg`) for live embedding into CurseForge project description markdown.
+  - Created 1x1 transparent tracking pixel endpoint (`/api/analytics/pixel.png?source=curseforge`) for script-free external pageview tracking.
+  - Added automated event tracking across product downloads (`/download`, `/WoWKillboard-v1.0.0.zip`, `/WoWKillboardSync.exe`) and CurseForge outbound redirects (`/curseforge`).
+  - Implemented `GET /api/analytics/summary` reporting live active users (15m window), 24-hour and 7-day volume, top referrers, top visited URLs, and daily historical telemetry.
+  - Built interactive Tactical Analytics Dashboard modal in `app.js` and `index.html` featuring live stat cards, 1-click Markdown badge copy utilities, 7-day trend breakdown, and top referrer leaderboards.
+  - Added end-to-end pipeline verification test `test_22_analytics_and_curseforge_telemetry`.
+
 ## [1.4.89] - 2026-10-02
 
 ### Fixed

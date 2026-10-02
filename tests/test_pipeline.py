@@ -1458,6 +1458,51 @@ WoWKillboardDB = {
                 with open(repo_realm_data, "w", encoding="utf-8") as f:
                     f.write(orig_content)
 
+    def test_22_analytics_and_curseforge_telemetry(self):
+        """Verify web platform analytics, CurseForge tracking pixel, and SVG badge generation."""
+        # 1. Post pageview beacon
+        res = self.client.post("/api/analytics/event", json={
+            "type": "pageview",
+            "path": "/character?name=Dagariane",
+            "source": "web",
+            "referrer": "https://www.curseforge.com/wow/addons/wkb"
+        })
+        self.assertEqual(res.status_code, 200)
+
+        # 2. CurseForge tracking pixel
+        res_pixel = self.client.get("/api/analytics/pixel.png?source=curseforge")
+        self.assertEqual(res_pixel.status_code, 200)
+        self.assertEqual(res_pixel.mimetype, "image/png")
+        self.assertGreater(len(res_pixel.data), 0)
+
+        # 3. Dynamic SVG status badge
+        res_badge = self.client.get("/api/badge/status.svg")
+        self.assertEqual(res_badge.status_code, 200)
+        self.assertEqual(res_badge.mimetype, "image/svg+xml")
+        self.assertIn(b"WoW Killboard", res_badge.data)
+
+        # 4. CurseForge redirect tracking
+        res_cf = self.client.get("/curseforge")
+        self.assertEqual(res_cf.status_code, 302)
+
+        # 5. Addon download tracking
+        res_dl = self.client.get("/download")
+        self.assertIn(res_dl.status_code, (200, 302))
+
+        # 6. Analytics summary query
+        res_summary = self.client.get("/api/analytics/summary")
+        self.assertEqual(res_summary.status_code, 200)
+        summary = res_summary.get_json()
+        self.assertIn("summary_24h", summary)
+        self.assertIn("summary_7d", summary)
+        self.assertIn("top_referrers", summary)
+        self.assertIn("daily_history", summary)
+        self.assertGreaterEqual(summary["summary_24h"]["pageviews"], 1)
+        self.assertGreaterEqual(summary["summary_24h"]["curseforge_views"], 2) # 1 pixel + 1 badge
+        self.assertGreaterEqual(summary["summary_24h"]["curseforge_clicks"], 1)
+
+        print("[PASS] Verified Web Platform Analytics, CurseForge Tracking Pixel, and SVG Badge Telemetry.")
+
 if __name__ == "__main__":
     unittest.main()
 
