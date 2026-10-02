@@ -32,12 +32,12 @@ Blizzard uses client interface numbers in the `.toc` file to notify users if an 
 
 The `WoWKillboard.toc` manifest includes multi-client declarations:
 ```text
-## Interface: 11503, 11504, 110002
+## Interface: 11506, 11507, 110007, 16001
 ## Title: WoW Killboard
-## Notes: Comprehensive PvP combat intelligence, in-game leaderboard, and bounty escrow platform.
+## Notes: Community killboard tracking PvP kills, 1v1 duels, battlegrounds, bounties, and PvE deaths.
 ## Version: 1.0.0
 ## Author: Dagariane
-## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties
+## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties, WoWKillboardDistress, WoWKillboardEvents
 ```
 
 ### Packaging Script
@@ -53,9 +53,15 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
 ### A. CurseForge / Overwolf
 1. Log into the [CurseForge Author Portal](https://authors.curseforge.com/).
 2. Create New Project -> Category: `PvP` / `Combat` / `Information`.
-3. Upload `WoWKillboard-v1.0.0.zip`.
-4. Supported Flavors: Select `WoW Classic`, `Classic Era`, and `Mainline`.
-5. Upload promotional banner (`assets/curseforge/logo.png`) and in-game UI screenshots.
+3. Description template:
+   > Hey everyone! I'm just a dude who used AI to help create my very first World of Warcraft addon.
+   >
+   > **WoW Killboard** is a community killboard that tracks your open-world PvP kills, certified 1v1 duels, battleground stats, blood bounties, and wilderness PvE deaths. It works across WoW Forever, Classic Era, Anniversary, and Retail.
+   >
+   > I really hope you like it! Please drop your feedback, feature ideas, or bug reports on CurseForge or our website so I can continue enhancing it.
+4. Upload `WoWKillboard-v1.0.0.zip`.
+5. Supported Flavors: Select `WoW Classic`, `Classic Era`, and `Mainline`.
+6. Upload promotional banner (`assets/curseforge/logo.png`) and in-game UI screenshots.
 
 ### B. Wago.io
 1. Access [Wago Addons](https://addons.wago.io/).

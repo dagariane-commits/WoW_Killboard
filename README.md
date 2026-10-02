@@ -8,7 +8,11 @@
 [![Desktop Sync](https://img.shields.io/badge/Desktop%20Sync-Standalone%20EXE-blue.svg)](dist/WoWKillboardSync.exe)
 [![License](https://img.shields.io/badge/License-GPLv3-lightgrey.svg)](LICENSE)
 
-An enterprise-grade World of Warcraft PvP combat intelligence suite, frontline running leaderboard, blood bounty escrow platform, and real-time war telemetry network, capturing the raw, brutal darkness of the Alliance vs. Horde conflict across **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and modern **Retail** clients.
+Hey everyone! I'm just a dude who used AI to help create my very first World of Warcraft addon.
+
+**WoW Killboard** is a community killboard for WoW that tracks open-world PvP kills, certified 1v1 duels, battleground stats, blood bounties, and wilderness PvE deaths across **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and modern **Retail** clients.
+
+I really hope you like it! It's currently in early beta, so please test it out, give me your feedback, and let me know what you'd like to see added so I can keep making it better.
 
 ---
 

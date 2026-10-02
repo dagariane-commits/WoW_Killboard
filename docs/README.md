@@ -1,6 +1,6 @@
-# WoW Killboard — Technical Wiki & Knowledge Base
+# WoW Killboard — Project Documentation & Wiki
 
-Welcome to the official developer and operator documentation for **WoW Killboard [Frontline War Room]** — an open-source, enterprise-grade combat telemetry, in-game leaderboard, blood bounty escrow platform, and real-time war intelligence network, capturing the raw, brutal darkness of the Alliance vs. Horde conflict across **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and **Retail**.
+Welcome to the documentation for **WoW Killboard**! This wiki details how the in-game Lua addon, the desktop sync tool, and the web platform work together to track open-world PvP combat, 1v1 duels, battleground stats, bounties, and wilderness mortality across **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and modern **Retail**.
 
 ---
 

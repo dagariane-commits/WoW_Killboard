@@ -11,26 +11,8 @@ WoWKillboard_RealmData = {
     TopGankers24h = {},
     RecentKills = {},
     ActiveBounties = {},
-    RecentPveDeaths = {
-        {
-            deathId = "PVE-LOCAL-01",
-            timestamp = 1715000000,
-            npc = {
-                name = "Stitches",
-                damage = 1450,
-                spell = "Cleave",
-            },
-            victim = {
-                name = "CasualtyOne",
-                class = "WARRIOR",
-                level = 32,
-            },
-            location = {
-                zone = "Duskwood",
-            },
-        },
-    },
-    PveTotalDeaths = 1,
+    RecentPveDeaths = {},
+    PveTotalDeaths = 0,
     PveTopExecutioners = {},
     PveTopVictims = {},
     PveDeadliestZone = nil,

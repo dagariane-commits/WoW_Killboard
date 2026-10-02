@@ -1,6 +1,6 @@
 ## Interface: 11506, 11507, 110007, 16001
 ## Title: |cff00ccffWoW Killboard|r |cffffd100[Frontline War Room]|r
-## Notes: World PvP & Battleground Intelligence, Live Killmail Feed, Blood Bounties, Traitor's Gibbet, War Horn, and Running Leaderboards.
+## Notes: Community killboard tracking PvP kills, 1v1 duels, battlegrounds, bounties, and PvE deaths.
 ## Author: Dagariane
 ## Version: 1.0.0
 ## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties, WoWKillboardDistress, WoWKillboardEvents
