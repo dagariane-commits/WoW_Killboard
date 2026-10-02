@@ -90,6 +90,7 @@ CT.LastKillTime = 0
 CT.LastLifetimeHK = nil
 CT.RecentEngagedEnemies = {}
 CT.LastHostileNpc = nil
+CT.ActiveDuelOpponent = nil
 local activeEnemyTarget = nil
 
 -- Get current instance & BG metadata
@@ -1859,6 +1860,19 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
     end
 
     local function ResolveDuelCombatant(charName, cleanName, defaultGuid)
+        -- 0. Check Active Duel Opponent cache
+        if CT.ActiveDuelOpponent and (CT.ActiveDuelOpponent.name == charName or CT.ActiveDuelOpponent.name == cleanName) then
+            return {
+                guid = CT.ActiveDuelOpponent.guid or defaultGuid,
+                name = charName,
+                level = (CT.ActiveDuelOpponent.level and CT.ActiveDuelOpponent.level > 0 and CT.ActiveDuelOpponent.level <= 85) and CT.ActiveDuelOpponent.level or 0,
+                class = CT.ActiveDuelOpponent.class or "UNKNOWN",
+                guild = CT.ActiveDuelOpponent.guild or "None",
+                faction = CT.ActiveDuelOpponent.faction or UnitFactionGroup("player") or "Unknown",
+                partySize = 1,
+            }
+        end
+
         -- 1. Check UnitScanner Cache & Known Characters Directory
         local info = KB.UnitScanner and (KB.UnitScanner:GetUnitInfoByName(charName) or KB.UnitScanner:GetUnitInfoByName(cleanName))
         if info and info.level and info.level > 0 and info.level <= 85 and info.class and info.class ~= "UNKNOWN" then
@@ -2022,6 +2036,14 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
     else
         victimInfo = ResolveDuelCombatant(loserName, cleanLoser, "DUEL_LOSER")
     end
+
+    -- Canonical Faction Inheritance: In WoW, duels can ONLY be fought between members of the same faction
+    if killerInfo.faction == "Unknown" and victimInfo.faction ~= "Unknown" then
+        killerInfo.faction = victimInfo.faction
+    elseif victimInfo.faction == "Unknown" and killerInfo.faction ~= "Unknown" then
+        victimInfo.faction = killerInfo.faction
+    end
+    CT.ActiveDuelOpponent = nil
 
     local location = KB.Utils.GetPlayerLocation()
 
@@ -2215,6 +2237,24 @@ frame:SetScript("OnEvent", function(self, event, ...)
             end
         end
 
+    elseif event == "DUEL_REQUESTED" then
+        local challenger = ...
+        if challenger and KB.Utils.CanAccess(challenger) then
+            local cName = tostring(challenger):match("^([^-]+)") or tostring(challenger)
+            if UnitExists("target") and (UnitName("target") == cName or UnitName("target"):match("^" .. cName)) then
+                local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+                CT.ActiveDuelOpponent = {
+                    name = cName,
+                    guid = UnitGUID("target"),
+                    level = UnitLevel("target") or (tInfo and tInfo.level or 0),
+                    class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
+                    guild = (not InCombatLockdown() and GetGuildInfo("target")) or (tInfo and tInfo.guild or "None"),
+                    faction = UnitFactionGroup("player") or "Unknown",
+                    lastSeen = time(),
+                }
+            end
+        end
+
     elseif event == "PLAYER_DEAD" then
         local playerGUID = UnitGUID("player")
         if playerGUID then
@@ -2267,6 +2307,12 @@ frame:SetScript("OnEvent", function(self, event, ...)
                         }
                         if tGuid then
                             CT.RecentEngagedEnemies[tGuid] = activeEnemyTarget
+                        end
+                        -- If attackable player is from the same faction, they are an active duel opponent!
+                        local pFaction = UnitFactionGroup("player")
+                        local tFaction = UnitFactionGroup("target") or (tInfo and tInfo.faction)
+                        if pFaction and tFaction and pFaction == tFaction and UnitCanAttack and UnitCanAttack("player", "target") then
+                            CT.ActiveDuelOpponent = activeEnemyTarget
                         end
                     end
                 else
@@ -2413,4 +2459,5 @@ frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
+frame:RegisterEvent("DUEL_REQUESTED")
 

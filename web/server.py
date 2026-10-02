@@ -403,6 +403,21 @@ def init_db():
         except Exception:
             pass
 
+        # Canonical Duel Same-Faction Self-Healing: In WoW, duels can only occur within the same faction
+        try:
+            conn.execute("""
+                UPDATE kills 
+                SET killer_faction = victim_faction 
+                WHERE is_duel = 1 AND (killer_faction = 'Unknown' OR killer_faction IS NULL) AND victim_faction != 'Unknown' AND victim_faction IS NOT NULL
+            """)
+            conn.execute("""
+                UPDATE kills 
+                SET victim_faction = killer_faction 
+                WHERE is_duel = 1 AND (victim_faction = 'Unknown' OR victim_faction IS NULL) AND killer_faction != 'Unknown' AND killer_faction IS NOT NULL
+            """)
+        except Exception:
+            pass
+
         # Native Privacy-Preserving Analytics & CurseForge Telemetry Table
         conn.execute("""
             CREATE TABLE IF NOT EXISTS analytics_events (
@@ -1137,6 +1152,28 @@ def ingest_kill_data(data, conn):
     data["attackersCount"] = attackers_count
 
     v = data.get("victim", {})
+
+    # In WoW, duels can only occur within the exact same faction
+    if is_duel:
+        if k.get("faction") in ("Unknown", None, "") and v.get("faction") not in ("Unknown", None, ""):
+            k["faction"] = v.get("faction")
+        elif v.get("faction") in ("Unknown", None, "") and k.get("faction") not in ("Unknown", None, ""):
+            v["faction"] = k.get("faction")
+
+    # Cross-reference known characters directory if killer attributes are unknown
+    k_name = k.get("name")
+    if k_name:
+        c_row = conn.execute("SELECT class, level, guild, faction FROM characters WHERE name = ?", (k_name,)).fetchone()
+        if c_row:
+            if k.get("class") in ("UNKNOWN", None, "") and c_row["class"] and c_row["class"] != "UNKNOWN":
+                k["class"] = c_row["class"]
+            if (not k.get("level") or k.get("level") == 0) and c_row["level"] and c_row["level"] > 0:
+                k["level"] = c_row["level"]
+            if k.get("guild") in ("None", None, "") and c_row["guild"] and c_row["guild"] != "None":
+                k["guild"] = c_row["guild"]
+            if k.get("faction") in ("Unknown", None, "") and c_row["faction"] and c_row["faction"] != "Unknown":
+                k["faction"] = c_row["faction"]
+
     loc = data.get("location", {})
     loc_zone = loc.get("zone", "Unknown")
     loc_subzone = loc.get("subZone", "")
@@ -1715,7 +1752,15 @@ def get_leaderboard():
     with get_db() as conn:
         # Top Killers
         top_killers_query = f"""
-            SELECT killer_name AS name, killer_class AS class, killer_guild AS guild, killer_faction AS faction,
+            SELECT killer_name AS name,
+                   COALESCE(NULLIF(killer_class, 'UNKNOWN'), (SELECT class FROM characters WHERE name = kills.killer_name), 'UNKNOWN') AS class,
+                   COALESCE(NULLIF(killer_guild, 'None'), (SELECT guild FROM characters WHERE name = kills.killer_name), 'None') AS guild,
+                   CASE 
+                       WHEN killer_faction != 'Unknown' AND killer_faction IS NOT NULL THEN killer_faction
+                       WHEN (SELECT faction FROM characters WHERE name = kills.killer_name) IS NOT NULL AND (SELECT faction FROM characters WHERE name = kills.killer_name) != 'Unknown' THEN (SELECT faction FROM characters WHERE name = kills.killer_name)
+                       WHEN is_duel = 1 AND victim_faction != 'Unknown' AND victim_faction IS NOT NULL THEN victim_faction
+                       ELSE 'Unknown'
+                   END AS faction,
                    COUNT(*) AS kills, SUM(is_solo) AS solo_kills
             FROM kills {where}
             GROUP BY killer_name
@@ -1735,7 +1780,15 @@ def get_leaderboard():
 
         # Top Solo Hunters
         top_solo_query = f"""
-            SELECT killer_name AS name, killer_class AS class, killer_guild AS guild, killer_faction AS faction,
+            SELECT killer_name AS name,
+                   COALESCE(NULLIF(killer_class, 'UNKNOWN'), (SELECT class FROM characters WHERE name = kills.killer_name), 'UNKNOWN') AS class,
+                   COALESCE(NULLIF(killer_guild, 'None'), (SELECT guild FROM characters WHERE name = kills.killer_name), 'None') AS guild,
+                   CASE 
+                       WHEN killer_faction != 'Unknown' AND killer_faction IS NOT NULL THEN killer_faction
+                       WHEN (SELECT faction FROM characters WHERE name = kills.killer_name) IS NOT NULL AND (SELECT faction FROM characters WHERE name = kills.killer_name) != 'Unknown' THEN (SELECT faction FROM characters WHERE name = kills.killer_name)
+                       WHEN is_duel = 1 AND victim_faction != 'Unknown' AND victim_faction IS NOT NULL THEN victim_faction
+                       ELSE 'Unknown'
+                   END AS faction,
                    SUM(is_solo) AS solo_kills, COUNT(*) AS total_kills
             FROM kills {where}
             GROUP BY killer_name
@@ -2503,6 +2556,31 @@ def get_character_profile(name):
                 char_data = {"name": name, "class": "WARRIOR", "level": 60, "guild": "Vanguard Frontier", "faction": "Alliance"}
         else:
             char_data = dict(char_row)
+
+        # Cross-reference richer details from characters directory if available
+        dir_info = conn.execute("SELECT class, level, guild, faction FROM characters WHERE name = ?", (name,)).fetchone()
+        if dir_info:
+            if char_data.get("class") in ("UNKNOWN", None, "") and dir_info["class"] and dir_info["class"] != "UNKNOWN":
+                char_data["class"] = dir_info["class"]
+            if (not char_data.get("level") or char_data.get("level") == 0) and dir_info["level"] and dir_info["level"] > 0:
+                char_data["level"] = dir_info["level"]
+            if char_data.get("guild") in ("None", None, "") and dir_info["guild"] and dir_info["guild"] != "None":
+                char_data["guild"] = dir_info["guild"]
+            if char_data.get("faction") in ("Unknown", None, "") and dir_info["faction"] and dir_info["faction"] != "Unknown":
+                char_data["faction"] = dir_info["faction"]
+
+        # Duel same-faction fallback: in WoW, duels can ONLY be fought within the same faction
+        if char_data.get("faction") in ("Unknown", None, ""):
+            duel_fac = conn.execute("""
+                SELECT CASE 
+                    WHEN killer_name = ? AND victim_faction != 'Unknown' AND victim_faction IS NOT NULL THEN victim_faction
+                    WHEN victim_name = ? AND killer_faction != 'Unknown' AND killer_faction IS NOT NULL THEN killer_faction
+                END FROM kills 
+                WHERE (killer_name = ? OR victim_name = ?) AND is_duel = 1 AND (killer_faction != 'Unknown' OR victim_faction != 'Unknown')
+                LIMIT 1
+            """, (name, name, name, name)).fetchone()
+            if duel_fac and duel_fac[0]:
+                char_data["faction"] = duel_fac[0]
 
         # Total Kills & breakdown
         kills_stat = conn.execute("""

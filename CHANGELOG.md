@@ -5,6 +5,18 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.92] - 2026-10-02
+
+### Fixed
+- **Duel Opponent Telemetry & Same-Faction Inheritance (`CombatTracker.lua`, `web/server.py`)**:
+  - Implemented automatic same-faction inheritance for 1v1 duels: in World of Warcraft, duels can only be initiated between members of the same faction. If a combatant's faction is unknown, it immediately inherits the duel partner's confirmed faction (e.g. Tinaomi automatically resolved to Alliance).
+  - Added self-healing database migration in `init_db()` to update legacy duel records in `kills` where faction was marked as 'Unknown'.
+  - Added `CT.ActiveDuelOpponent` caching in `CombatTracker.lua`:
+    - Registered `DUEL_REQUESTED` event to immediately scan and store the challenger's class, level, and guild upon duel challenge.
+    - Updated `PLAYER_TARGET_CHANGED` to detect and cache same-faction attackable players (`UnitCanAttack("player", "target")`) as active duel opponents during the fight.
+    - Added Step 0 in `ResolveDuelCombatant()` to pull from `CT.ActiveDuelOpponent` so duel killmails retain full combatant attributes even if the target is dropped upon knockout.
+  - Upgraded `/api/leaderboard` (`top_killers_query`, `top_solo_query`) and `/api/character/<name>` to dynamically resolve missing class, guild, and faction from the `characters` directory and duel partner context.
+
 ## [1.4.91] - 2026-10-02
 
 ### Fixed
