@@ -1339,7 +1339,7 @@ function UI:Refresh()
     local pveTabDefs = {
         FEED        = { text = "Casualties",         w = 86 },
         LEADERBOARD = { text = "Deadly Hazards",     w = 120 },
-        BOUNTIES    = { text = "Wanted Monsters",    w = 128 },
+        BOUNTIES    = { text = "Notorious Elites",   w = 120 },
         RALLIES     = { text = "Rescue Beacons",     w = 116 },
         ZONES       = { text = "Zone Mortality",     w = 106 },
     }
@@ -2125,7 +2125,7 @@ function UI:RenderPveFeed()
     bwSub:SetShadowOffset(1, -1)
     bwSub:SetShadowColor(0, 0, 0, 1)
 
-    local seeBountiesBtn = UI:CreateButton(UI.ContentFrame, 130, 22, "Wanted Monsters ->")
+    local seeBountiesBtn = UI:CreateButton(UI.ContentFrame, 130, 22, "Notorious Elites ->")
     seeBountiesBtn:SetPoint("TOPRIGHT", -10, -8)
     seeBountiesBtn:SetScript("OnClick", function()
         activeTab = "BOUNTIES"
@@ -2586,23 +2586,23 @@ function UI:RenderPveLeaderboard()
     UI.ContentFrame:SetHeight(560)
 end
 
--- 3B. Render PvE Bounties Tab (Wanted Monsters & Apex Threats)
+-- 3B. Render PvE Bounties Tab (Notorious Elites & Apex Threats)
 function UI:RenderPveBounties()
     local theme = UI:GetTheme()
 
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("|cffffd100WANTED MONSTERS & APEX THREATS|r")
+    title:SetText("|cffffd100NOTORIOUS ELITES & APEX THREATS|r")
     title:SetShadowOffset(1, -1)
     title:SetShadowColor(0, 0, 0, 1)
 
     local sub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
-    sub:SetText("|cffb8a080Town militia bounties and dangerous creatures terrorizing the countryside.|r")
+    sub:SetText("|cffb8a080Lethal world elites, roaming death patrols, and notorious creatures terrorizing Azeroth.|r")
     sub:SetShadowOffset(1, -1)
     sub:SetShadowColor(0, 0, 0, 1)
 
-    -- Town Militia Notice Banner
+    -- Apex Intel Notice Banner
     local noticePlate = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
     noticePlate:SetSize(820, 32)
     noticePlate:SetPoint("TOPLEFT", 0, -42)
@@ -2612,21 +2612,21 @@ function UI:RenderPveBounties()
 
     local noticeText = noticePlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     noticeText:SetPoint("CENTER", 0, 0)
-    noticeText:SetText("|cff10b981TOWN MILITIA NOTICE:|r |cffffffffAdventurers who defeat dangerous beasts and elites protect realm settlements. Report sightings to your local garrison.|r")
+    noticeText:SetText("|cff38bdf8APEX INTEL:|r |cffffffffBeware roaming elites on major roads and borders. Casualty counts reflect confirmed player deaths recorded on this realm.|r")
     noticeText:SetShadowOffset(1, -1)
     noticeText:SetShadowColor(0, 0, 0, 1)
 
-    local wantedMonsters = {
-        { name = "Hogger", title = "Chieftain of the Riverpaw Gnolls", level = 11, zone = "Elwynn Forest", reward = "50s", desc = "Infamous gnoll warlord responsible for widespread slaughter of Stormwind guards and fledgling recruits.", icon = "Interface\\Icons\\Achievement_Boss_Hogger" },
-        { name = "Defias Pillager", title = "Outlaw Fire Mage", level = 14, zone = "Westfall (Moonbrook)", reward = "75s", desc = "Deadly long-range pyromancers with devastating Fireball volleys that have claimed countless travelers.", icon = "Interface\\Icons\\Spell_Fire_Fireball02" },
-        { name = "Son of Arugal", title = "Cursed Shadow Worgen", level = 25, zone = "Silverpine Forest", reward = "2g 50s", desc = "Elite shadowstalkers roaming the road between Ambermill and Pyrewood, ambushing traveling mortals.", icon = "Interface\\Icons\\Ability_Racial_BearForm" },
-        { name = "Mor'Ladim", title = "Vengeful Ghostly Knight", level = 35, zone = "Duskwood (Raven Hill)", reward = "5g 00s", desc = "Former paladin Morgan Ladimore, now a relentlessly aggressive phantom wandering Raven Hill Cemetery.", icon = "Interface\\Icons\\Spell_Shadow_DeathScream" },
-        { name = "Stitches", title = "Terror of Darkshire", level = 35, zone = "Duskwood (Darkshire Road)", reward = "6g 50s", desc = "Colossal abomination assembled by Abercrombie, marching relentlessly down the main road to Darkshire.", icon = "Interface\\Icons\\INV_Misc_MonsterHead_03" },
-        { name = "Devilsaur", title = "Apex Jungle Tyrant", level = 55, zone = "Un'Goro Crater", reward = "15g 00s", desc = "Terrifying apex predators possessing surprising stealth, crushing unwary adventurers underfoot.", icon = "Interface\\Icons\\Ability_Hunter_Pet_Devilsaur" },
+    local notoriousElites = {
+        { name = "Hogger", title = "Chieftain of the Riverpaw Gnolls", level = 11, classification = "ELITE BOSS", zone = "Elwynn Forest", abilities = "Vicious Bite, Enrage", desc = "Infamous gnoll warlord responsible for widespread slaughter of Stormwind guards and fledgling recruits.", icon = "Interface\\Icons\\Achievement_Boss_Hogger" },
+        { name = "Defias Pillager", title = "Outlaw Bandit Pyromancer", level = 14, classification = "LETHAL CASTER", zone = "Westfall (Moonbrook)", abilities = "Fireball (240 Burst DMG)", desc = "Deadly long-range pyromancers with devastating Fireball volleys that have claimed countless travelers.", icon = "Interface\\Icons\\Spell_Fire_Fireball02" },
+        { name = "Son of Arugal", title = "Cursed Shadow Worgen", level = 25, classification = "ELITE PATROL", zone = "Silverpine Forest", abilities = "Shadow Bolt, Rend", desc = "Elite shadowstalkers roaming the road between Ambermill and Pyrewood, ambushing traveling mortals.", icon = "Interface\\Icons\\Ability_Racial_BearForm" },
+        { name = "Mor'Ladim", title = "Vengeful Ghostly Knight", level = 35, classification = "ELITE UNDEAD", zone = "Duskwood (Raven Hill)", abilities = "Cleave, Mortal Strike", desc = "Former paladin Morgan Ladimore, now a relentlessly aggressive phantom wandering Raven Hill Cemetery.", icon = "Interface\\Icons\\Spell_Shadow_DeathScream" },
+        { name = "Stitches", title = "Terror of Darkshire", level = 35, classification = "ELITE ABOMINATION", zone = "Duskwood (Darkshire Road)", abilities = "Aura of Rot, Slam", desc = "Colossal abomination assembled by Abercrombie, marching relentlessly down the main road to Darkshire.", icon = "Interface\\Icons\\INV_Misc_MonsterHead_03" },
+        { name = "Devilsaur", title = "Apex Jungle Tyrant", level = 55, classification = "APEX PREDATOR", zone = "Un'Goro Crater", abilities = "Trample, Terrifying Roar", desc = "Terrifying apex predators possessing surprising stealth, crushing unwary adventurers underfoot.", icon = "Interface\\Icons\\Ability_Hunter_Pet_Devilsaur" },
     }
 
     local yOffset = -86
-    for idx, wm in ipairs(wantedMonsters) do
+    for idx, wm in ipairs(notoriousElites) do
         local card = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
         card:SetSize(820, 68)
         card:SetPoint("TOPLEFT", 0, yOffset)
@@ -2647,7 +2647,7 @@ function UI:RenderPveBounties()
 
         local descStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         descStr:SetPoint("TOPLEFT", nameStr, "BOTTOMLEFT", 0, -3)
-        descStr:SetPoint("RIGHT", card, "RIGHT", -180, 0)
+        descStr:SetPoint("RIGHT", card, "RIGHT", -190, 0)
         descStr:SetJustifyH("LEFT")
         descStr:SetWordWrap(false)
         descStr:SetText(string.format("|cffcbd5e1%s|r", wm.desc))
@@ -2656,22 +2656,30 @@ function UI:RenderPveBounties()
 
         local locStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         locStr:SetPoint("TOPLEFT", descStr, "BOTTOMLEFT", 0, -3)
-        locStr:SetText(string.format("|cff38bdf8Location:|r |cffffffff%s|r   |cff64748b||r   |cffffd100Level: %d [Elite]|r", wm.zone, wm.level))
+        locStr:SetText(string.format("|cff38bdf8Zone:|r |cffffffff%s|r   |cff64748b||r   |cffffd100Lvl %d [%s]|r   |cff64748b||r   |cffea580cSpells:|r |cffffffff%s|r", wm.zone, wm.level, wm.classification, wm.abilities))
         locStr:SetShadowOffset(1, -1)
         locStr:SetShadowColor(0, 0, 0, 1)
 
-        local rewardStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        rewardStr:SetPoint("TOPRIGHT", -14, -14)
-        rewardStr:SetText(string.format("|cffffd100Bounty: %s|r", wm.reward))
-        rewardStr:SetShadowOffset(1, -1)
-        rewardStr:SetShadowColor(0, 0, 0, 1)
+        -- Real Telemetry lookup
+        local recorded = (KB.Leaderboard and KB.Leaderboard.PveAggregates and KB.Leaderboard.PveAggregates.monsters and KB.Leaderboard.PveAggregates.monsters[wm.name])
+        local kills = recorded and (recorded.kills or 0) or 0
 
-        local trackBtn = UI:CreateButton(card, 120, 20, "|cff10b981Track Threat|r")
-        trackBtn:SetPoint("BOTTOMRIGHT", -14, 10)
+        local killsStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        killsStr:SetPoint("TOPRIGHT", -14, -14)
+        if kills > 0 then
+            killsStr:SetText(string.format("|cffff4444%d|r |cffffffffPlayer Deaths|r", kills))
+        else
+            killsStr:SetText("|cff64748b0 Realm Deaths|r")
+        end
+        killsStr:SetShadowOffset(1, -1)
+        killsStr:SetShadowColor(0, 0, 0, 1)
+
+        local targetBtn = UI:CreateButton(card, 120, 20, "|cff38bdf8Target Macro|r")
+        targetBtn:SetPoint("BOTTOMRIGHT", -14, 10)
         local targetName = wm.name
         local targetZone = wm.zone
-        trackBtn:SetScript("OnClick", function()
-            SafePrint(string.format("|cff00ccff[WoWKB]|r Tracking Wanted Threat: |cffff5533%s|r in |cffffffff%s|r.", targetName, targetZone))
+        targetBtn:SetScript("OnClick", function()
+            SafePrint(string.format("|cff00ccff[WoWKB]|r Notorious Elite: |cffff5533%s|r in |cffffffff%s|r. Use |cffffd100/target %s|r when in area.", targetName, targetZone, targetName))
         end)
 
         yOffset = yOffset - 76
