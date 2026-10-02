@@ -431,7 +431,7 @@ def feedback_page():
 def static_files(path):
     return send_from_directory(STATIC_DIR, path)
 
-GOOGLE_DRIVE_DOWNLOAD_URL = "https://drive.google.com/drive/folders/1j3_jS91Q9OJvVLzria0IDUKJIAHR9JRE?usp=sharing"
+CURSEFORGE_PROJECT_URL = "https://www.curseforge.com/wow/addons/wkb-frontline-war-room"
 
 @app.route("/WoWKillboard-v1.0.0.zip")
 @app.route("/download")
@@ -445,13 +445,15 @@ def download_addon():
     if os.path.exists(zip_path):
         return send_from_directory(root_dir, "WoWKillboard-v1.0.0.zip", as_attachment=True)
     from flask import redirect
-    return redirect(GOOGLE_DRIVE_DOWNLOAD_URL)
+    return redirect(CURSEFORGE_PROJECT_URL)
 
+@app.route("/curseforge")
+@app.route("/curse")
 @app.route("/drive")
 @app.route("/gdrive")
-def download_gdrive():
+def download_curseforge():
     from flask import redirect
-    return redirect(GOOGLE_DRIVE_DOWNLOAD_URL)
+    return redirect(CURSEFORGE_PROJECT_URL)
 
 @app.route("/WoWKillboardSync.exe")
 @app.route("/download/sync")

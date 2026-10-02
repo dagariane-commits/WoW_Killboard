@@ -4535,8 +4535,8 @@ function loadUploadView() {
           <a href="/WoWKillboard-v1.0.0.zip" download style="display: inline-flex; align-items: center; gap: 6px; background: var(--wow-gold); color: #000; font-weight: 800; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none; text-transform: uppercase;">
             <span>⬇ Direct Download (.zip)</span>
           </a>
-          <a href="https://drive.google.com/drive/folders/1j3_jS91Q9OJvVLzria0IDUKJIAHR9JRE?usp=sharing" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(66, 133, 244, 0.2); border: 1px solid #4285f4; color: #93c5fd; font-weight: 700; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none;">
-            <span>☁ Google Drive Mirror</span>
+          <a href="https://www.curseforge.com/wow/addons/wkb-frontline-war-room" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(241, 100, 54, 0.2); border: 1px solid #f16436; color: #fb923c; font-weight: 700; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none;">
+            <span>🔥 CurseForge Hub</span>
           </a>
         </div>
       </div>

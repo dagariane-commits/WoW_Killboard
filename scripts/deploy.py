@@ -55,36 +55,9 @@ def rebuild_zip():
     shutil.copy2(zip_path, static_zip)
     print(f"[BUILD] Mirrored distribution package to web/static: {static_zip}")
 
-def sync_to_gdrive_folder():
-    gdrive_dir = os.path.join(BASE_DIR, "WoW KB Beta")
-    os.makedirs(gdrive_dir, exist_ok=True)
-    
-    # 1. Copy zip
-    zip_path = os.path.join(BASE_DIR, "WoWKillboard-v1.0.0.zip")
-    if os.path.exists(zip_path):
-        shutil.copy2(zip_path, os.path.join(gdrive_dir, "WoWKillboard-v1.0.0.zip"))
-        
-    # 2. Copy exe
-    exe_path = os.path.join(BASE_DIR, "WoWKillboardSync.exe")
-    if os.path.exists(exe_path):
-        shutil.copy2(exe_path, os.path.join(gdrive_dir, "WoWKillboardSync.exe"))
-        
-    # 3. Copy README.txt
-    readme_txt = os.path.join(BASE_DIR, "README_GOOGLE_DRIVE.txt")
-    if os.path.exists(readme_txt):
-        shutil.copy2(readme_txt, os.path.join(gdrive_dir, "README.txt"))
-        
-    # 4. Copy README.md
-    readme_md = os.path.join(BASE_DIR, "README_GOOGLE_DRIVE.md")
-    if os.path.exists(readme_md):
-        shutil.copy2(readme_md, os.path.join(gdrive_dir, "README.md"))
-        
-    print(f"[GDRIVE] Synced complete distribution suite to: {gdrive_dir}")
-
 if __name__ == "__main__":
     print("=== Starting Multi-Client Deployment & Package Build ===")
     deploy_to_clients()
     rebuild_zip()
-    sync_to_gdrive_folder()
     print("=== Multi-Client Deployment Complete ===")
 

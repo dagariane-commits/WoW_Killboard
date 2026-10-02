@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resized dialog from `(480, 500)` to `(480, 440)` for clean visual proportions and spacing.
 - **Comprehensive Database Reset Command Hardening (`Core.lua`)**:
   - Hardened `/kb reset` slash command to execute an exhaustive wipe across all SavedVariables (`WoWKillboardDB`, `WoWKillboardDebtLedger`, `WoWKillboardBounties`, `WoWKillboardDistress`, `WoWKillboardEvents`), in-memory `WoWKillboard_RealmData`, and active `SessionStats`.
+- **Decommissioning of Google Drive Mirror in Favor of CurseForge Hub (`web/`, `scripts/deploy.py`)**:
+  - Replaced temporary Google Drive mirror buttons across `web/static/index.html` and `web/static/app.js` with direct links to the official CurseForge project hub and secure direct downloads.
+  - Removed `sync_to_gdrive_folder()` and deprecated local `WoW KB Beta` folder from `scripts/deploy.py`.
+  - Updated server redirect routes (`/curseforge`, `/gdrive`, `/download`) in `web/server.py` to route to CurseForge and direct HTTPS releases.
 - **In-Game Addon PvE Ruleset Parity & Auto-Detection (`Utils.lua`, `UI.lua`, `Leaderboard.lua`, `CombatTracker.lua`)**:
   - **Ruleset Detection Engine (`Utils.lua`)**:
     - Added `U.GetRealmRuleset()` to check `WoWKillboardDB.campaignRuleset` with automatic detection from `GetRealmName()` (`"pve"`, `"normal"` -> `PVE`; `"hardcore"`, `"hc"` -> `HARDCORE`; `"rp"` -> `RP`; default `PVP`).
