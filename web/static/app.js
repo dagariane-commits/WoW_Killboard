@@ -2817,7 +2817,7 @@ function closeCharacterModal() {
 }
 
 function copyCharacterProfileLink(charName, btn) {
-  const url = `${window.location.origin}/?character=${encodeURIComponent(charName)}`;
+  const url = `${window.location.origin}/character?name=${encodeURIComponent(charName)}`;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {
       if (btn) {
@@ -7027,10 +7027,21 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSidebar();
   checkGlobalSosBeacons();
 
-  // Handle external character web links (?character=Name or ?char=Name or ?player=Name)
+  // Handle external character web links (?name=Name or ?character=Name or /character/Name)
   const urlParams = new URLSearchParams(window.location.search);
-  const charParam = urlParams.get("character") || urlParams.get("char") || urlParams.get("player");
-  const classParam = urlParams.get("class");
+  let pathChar = null;
+  const pathMatch = window.location.pathname.match(/\/character\/([^/?#]+)/i);
+  if (pathMatch) {
+    pathChar = decodeURIComponent(pathMatch[1]);
+  }
+  const rawChar = urlParams.get("name") || urlParams.get("character") || urlParams.get("char") || urlParams.get("player") || pathChar;
+  const charParam = rawChar ? decodeURIComponent(rawChar).trim().split(/[\s-]+/)[0] : null;
+
+  const VALID_CLASSES = ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "MONK", "DRUID", "DEMONHUNTER", "EVOKER"];
+  let classParam = urlParams.get("class");
+  if (classParam && !VALID_CLASSES.includes(classParam.toUpperCase())) {
+    classParam = null;
+  }
   const levelParam = urlParams.get("level");
   const factionParam = urlParams.get("faction");
 
@@ -7050,7 +7061,7 @@ document.addEventListener("DOMContentLoaded", () => {
     switchTab("INTEL");
     setTimeout(() => {
       openCharacterProfile(charParam);
-    }, 250);
+    }, 200);
   } else {
     // Direct zero-barrier landing on the live combat feed
     sessionStorage.setItem("wowkb_has_entered_feed", "1");

@@ -751,7 +751,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     elseif cmd == "profile" or cmd == "web" or cmd == "url" or cmd == "link" then
         local pTarget = arg and arg:match("^%s*(.-)%s*$")
         if not pTarget or pTarget == "" then
-            pTarget = (UnitExists("target") and UnitIsPlayer("target")) and UnitName("target") or UnitName("player")
+            pTarget = (UnitExists("target") and UnitIsPlayer("target")) and (UnitName("target")) or (UnitName("player"))
         end
         if KB.UI and KB.UI.ShowCharacterWebLink then
             KB.UI:ShowCharacterWebLink(pTarget)
