@@ -855,15 +855,36 @@ function UI:CreateMainWindow()
     end)
     UI.WireButton = wireBtn
 
-    -- Template-Free Campaign Ruleset Toggle Button (PvE vs PvP Ruleset)
+    -- Template-Free Campaign Ruleset Toggle Button (Dual-Segment Switch: Mode: ● PvP  ○ PvE)
     local rulesetBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    rulesetBtn:SetSize(76, 20)
+    rulesetBtn:SetSize(118, 20)
     rulesetBtn:SetPoint("LEFT", wireBtn, "RIGHT", 6, 0)
     rulesetBtn:EnableMouse(true)
+    rulesetBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+
     local rulesetLabel = rulesetBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     rulesetLabel:SetPoint("CENTER", 0, 0)
-    rulesetLabel:SetText("|cffef4444[ PvP ]|r")
     rulesetBtn.Label = rulesetLabel
+
+    function UI:UpdateRulesetButton()
+        if not (UI.RulesetButton and UI.RulesetButton.Label) then return end
+        local isPve = UI:IsPve()
+        if isPve then
+            UI.RulesetButton:SetBackdropColor(0.03, 0.10, 0.05, 0.95)
+            UI.RulesetButton:SetBackdropBorderColor(0.20, 0.75, 0.35, 0.9)
+            UI.RulesetButton.Label:SetText("|cffffd100Mode:|r |cff64748bPvP|r |cff10b981[● PvE]|r")
+        else
+            UI.RulesetButton:SetBackdropColor(0.14, 0.04, 0.04, 0.95)
+            UI.RulesetButton:SetBackdropBorderColor(0.85, 0.25, 0.25, 0.9)
+            UI.RulesetButton.Label:SetText("|cffffd100Mode:|r |cffef4444[● PvP]|r |cff64748bPvE|r")
+        end
+    end
+
     rulesetBtn:SetScript("OnClick", function()
         WoWKillboardDB = WoWKillboardDB or {}
         local cur = UI:GetRuleset()
@@ -873,26 +894,21 @@ function UI:CreateMainWindow()
         UI:Refresh()
     end)
     rulesetBtn:SetScript("OnEnter", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnHoverBg then
-            self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
-        end
+        self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
         local cur = UI:GetRuleset()
-        local rDesc = (cur == "PVE")
-            and "Active Ruleset: |cff10b981[PvE Normal]|r\nTracking wilderness mortality, executioner monsters, and militia bounties.\n\nClick to switch to Contested World PvP."
-            or "Active Ruleset: |cffef4444[Contested PvP]|r\nTracking open-world player kills, bounties, and faction war.\n\nClick to switch to Wilderness PvE Casualties."
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Campaign Ruleset Toggle|r", rDesc)
+        local isPve = (cur == "PVE")
+        local title = isPve and "|cff10b981Campaign Mode: Wilderness PvE|r" or "|cffef4444Campaign Mode: Contested PvP|r"
+        local rDesc = isPve
+            and "Currently displaying |cff10b981Wilderness Casualties|r, deadly creature executions, and monster rankings.\n\n|cffffd100▶ Left-Click:|r Toggle to |cffef4444Contested PvP|r (player kills, 1v1 duels, bounties, and battlegrounds)."
+            or "Currently displaying |cffef4444Contested PvP|r (open-world kills, 1v1 duels, battlegrounds, and bounties).\n\n|cffffd100▶ Left-Click:|r Toggle to |cff10b981Wilderness PvE|r (creature executions, environmental deaths, and NPC rankings)."
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, title, rDesc)
     end)
     rulesetBtn:SetScript("OnLeave", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnBg then
-            self:SetBackdropColor(unpack(t.btnBg))
-            self:SetBackdropBorderColor(unpack(t.btnBorder))
-        end
+        UI:UpdateRulesetButton()
         UI:HidePrivateTooltip()
     end)
     UI.RulesetButton = rulesetBtn
+    UI:UpdateRulesetButton()
 
     -- Authentic Classic Dialog Arched Header Crest (Centered at top)
     local headerPlate = mainFrame:CreateTexture(nil, "ARTWORK", nil, 1)
@@ -1324,12 +1340,8 @@ function UI:Refresh()
 
     local kd = (myDeaths > 0) and string.format("%.2f", myKills / myDeaths) or tostring(myKills)
 
-    if UI.RulesetButton and UI.RulesetButton.Label then
-        if UI:IsPve() then
-            UI.RulesetButton.Label:SetText("|cff10b981[ PvE ]|r")
-        else
-            UI.RulesetButton.Label:SetText("|cffef4444[ PvP ]|r")
-        end
+    if UI.UpdateRulesetButton then
+        UI:UpdateRulesetButton()
     end
 
     local isPveMode = UI:IsPve()
