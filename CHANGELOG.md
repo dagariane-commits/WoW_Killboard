@@ -23,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented automated GitHub Actions CI workflow running Python 3.12.
   - Automatically executes `tests/validate_lua.py` (syntax & taint structure check across all 13 Lua modules) and `python -m unittest discover tests` (20-point test suite) on every push and PR.
 
+### Fixed
+- **CodeQL Security Vulnerability Remediation (12 Alerts Resolved)**:
+  - **Full Server-Side Request Forgery (SSRF - Critical)**: Hardened `send_discord_webhook()`, `set_discord_config()`, and `/api/discord/test` with strict `validate_discord_webhook()` enforcement (HTTPS only, official Discord domain whitelist, and `/api/webhooks/` path structure validation).
+  - **Client-Side Cross-Site Scripting (DOM XSS - High)**:
+    - Escaped player names in `colorizeClass()` with `escapeHtml()`.
+    - Refactored `renderHeaderAuthBadge()` to use pure DOM methods (`document.createElement`, `textContent`, and native closures) eliminating `innerHTML` sink.
+    - Sanitized inputs and click parameters in `loadPortalView()` and `renderLegendsView()` using strict integer casting, `escapeHtml()`, and `encodeURIComponent()`.
+    - Escaped all dynamic error messages (`err.message`, `e.message`) across all frontend views.
+  - **Flask Debug Mode Execution (High)**: Disabled default `debug=True` in `app.run()`, securing production against remote code execution (gated on explicit `FLASK_DEBUG` default `False`).
+  - **Information Exposure Through Exceptions (7 Alerts - Medium)**: Eliminated all instances of raw exception reflection (`str(e)`) across `/api/kills`, `/api/upload`, `/api/admin/deploy`, `/api/auth/claim-character`, `/api/auth/verify-claim`, `/api/auth/release-claim`, and `/api/auth/bnet/callback`. All errors are routed to server-side `logger.error` with generic client responses.
+
 ## [1.4.84] - 2026-10-01
 
 ### Security & Privacy
