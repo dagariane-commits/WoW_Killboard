@@ -5,6 +5,21 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.88] - 2026-10-02
+
+### Changed
+- **Replaced 'Wanted Monsters' with 'Notorious Elites & Apex Threats' (`UI.lua`, `web/static/app.js`, `docs/ARCHITECTURE.md`)**:
+  - Removed fictional gold and silver "bounties" on monsters across both the in-game addon and web platform.
+  - Renamed tab from `Wanted Monsters` to `Notorious Elites`.
+  - Replaced fake monetary rewards with real mortality telemetry: confirmed player deaths caused by each elite monster on the realm.
+  - Replaced town militia notice banners with authentic Apex Intel advisories on roaming patrols and dangerous routes.
+  - Added real monster ability breakdowns (e.g. Hogger's *Vicious Bite & Enrage*, Defias Pillager's *Fireball (240 Burst DMG)*, Son of Arugal's *Shadow Bolt & Rend*, Mor'Ladim's *Cleave & Mortal Strike*, Stitches' *Aura of Rot & Slam*, Devilsaur's *Trample & Terrifying Roar*).
+  - Replaced fictional chat tracking button with `/target` macro utility.
+
+### Infrastructure & Deployment
+- **Multi-Client Local Deployment**: Synchronized updated addon files across all 4 local client installations (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`).
+- **Distribution Package**: Regenerated `WoWKillboard-v1.0.0.zip`.
+
 ## [1.4.87] - 2026-10-02
 
 ### Changed

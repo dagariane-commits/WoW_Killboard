@@ -5836,14 +5836,14 @@ function updateNavigationLabels() {
   if (isPve) {
     if (navIntel) navIntel.innerText = "Casualties";
     if (navLegends) navLegends.innerText = "Deadly Hazards";
-    if (navBounties) navBounties.innerText = "Wanted Monsters";
+    if (navBounties) navBounties.innerText = "Notorious Elites";
     if (navHazards) navHazards.innerText = "Bestiary";
     if (navRallies) navRallies.innerText = "Rescue Beacons";
     if (navZones) navZones.innerText = "Zone Mortality";
 
     if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Casualties";
     if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Deadly Hazards";
-    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "Wanted Monsters";
+    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "Notorious Elites";
     if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Bestiary";
     if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Rescue Beacons";
     if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Mortality";
@@ -5854,10 +5854,10 @@ function updateNavigationLabels() {
       `;
     }
 
-    if (mwTitle) mwTitle.innerHTML = "AZEROTH'S MOST WANTED &mdash; APEX PREDATORS &amp; ELITES";
+    if (mwTitle) mwTitle.innerHTML = "NOTORIOUS ELITES &mdash; APEX PREDATORS";
     if (mwSub) mwSub.innerHTML = "Notorious Beasts &amp; Executioners Responsible for Mortal Casualties &bull; Track realm hazards";
     if (mwBtn) {
-      mwBtn.innerHTML = "View Wanted Monsters &rarr;";
+      mwBtn.innerHTML = "View Notorious Elites &rarr;";
       mwBtn.onclick = () => switchTab('BOUNTIES');
     }
   } else if (isHc) {
@@ -5996,7 +5996,7 @@ function reloadActiveView() {
 async function loadPveBountiesView() {
   const container = document.getElementById("main-content-area");
   if (!container) return;
-  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering Wanted Monster contracts &amp; apex predators...</div>`;
+  container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering Notorious Elites &amp; apex threat telemetry...</div>`;
 
   try {
     const [lbRes, deathsRes] = await Promise.all([
@@ -6007,7 +6007,7 @@ async function loadPveBountiesView() {
     const deaths = deathsRes.ok ? (await deathsRes.json()).deaths || [] : [];
     renderPveBountiesView(lb, deaths);
   } catch (err) {
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Wanted Monsters: ${escapeHtml(err.message)}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Notorious Elites: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -6018,23 +6018,18 @@ function renderPveBountiesView(lbData, deaths) {
   const npcs = (lbData && lbData.topDeadlyNpcs) || [];
 
   const monsterRoster = [
-    { name: "Hogger", title: "Gnoll Chieftain", level: "11+", classification: "ELITE BOSS", zone: "Elwynn Forest", spell: "Vicious Bite", baseCopper: 5000, desc: "Terror of the Forest. High damage output against early questers." },
-    { name: "Defias Pillager", title: "Bandit Sorcerer", level: "14-15", classification: "HUMANOID", zone: "Westfall", spell: "Fireball (240 DMG)", baseCopper: 2500, desc: "Lethal burst damage from Moonbrook tower roofs. Extreme range." },
-    { name: "Son of Arugal", title: "Shadow Fang Worgen", level: "25+", classification: "ELITE PATROL", zone: "Silverpine Forest", spell: "Shadow Bolt / Rend", baseCopper: 10000, desc: "Roaming death machine. Wanders the main road ambushing level 12-14 mortals." },
-    { name: "Mor'Ladim", title: "Restless Skeletal Knight", level: "35+", classification: "ELITE UNDEAD", zone: "Duskwood", spell: "Cleave / Mortal Strike", baseCopper: 25000, desc: "Cemetery executioner. Patrolling Raven Hill Cemetery with stealth-like aggro radius." },
-    { name: "Stitches", title: "Embalmer's Construct", level: "35+", classification: "ELITE ABOMINATION", zone: "Duskwood", spell: "Aura of Rot / Slam", baseCopper: 30000, desc: "Marching abomination down the Duskwood highway towards Darkshire." }
+    { name: "Hogger", title: "Chieftain of the Riverpaw Gnolls", level: "11+", classification: "ELITE BOSS", zone: "Elwynn Forest", spell: "Vicious Bite, Enrage", desc: "Terror of the Forest. High physical damage output against fledgling questers." },
+    { name: "Defias Pillager", title: "Outlaw Bandit Pyromancer", level: "14-15", classification: "LETHAL CASTER", zone: "Westfall", spell: "Fireball (240 Burst DMG)", desc: "Lethal burst damage from Moonbrook tower roofs. Extreme range pyromancy." },
+    { name: "Son of Arugal", title: "Shadow Fang Worgen", level: "25+", classification: "ELITE PATROL", zone: "Silverpine Forest", spell: "Shadow Bolt / Rend", desc: "Roaming death machine. Wanders the main road ambushing traveling mortals." },
+    { name: "Mor'Ladim", title: "Restless Skeletal Knight", level: "35+", classification: "ELITE UNDEAD", zone: "Duskwood", spell: "Cleave / Mortal Strike", desc: "Cemetery executioner. Patrolling Raven Hill Cemetery with wide stealth-like aggro radius." },
+    { name: "Stitches", title: "Embalmer's Construct", level: "35+", classification: "ELITE ABOMINATION", zone: "Duskwood", spell: "Aura of Rot / Slam", desc: "Colossal construct assembled by Abercrombie, marching relentlessly down the main road towards Darkshire." },
+    { name: "Devilsaur", title: "Apex Jungle Tyrant", level: "55+", classification: "APEX PREDATOR", zone: "Un'Goro Crater", spell: "Trample / Terrifying Roar", desc: "Stealthy apex predator crushing unwary leatherworkers and adventurers across the crater basin." }
   ];
 
   const cards = monsterRoster.map(m => {
     const liveMatch = npcs.find(n => n.npc_name.toLowerCase() === m.name.toLowerCase());
-    const kills = liveMatch ? liveMatch.kills : (m.name === "Hogger" ? 3 : (m.name === "Defias Pillager" ? 2 : 1));
-    const copper = m.baseCopper * Math.max(1, kills);
-    let rewardText = "";
-    if (copper >= 10000) rewardText = `${(copper / 10000).toFixed(copper % 10000 === 0 ? 0 : 1)}g`;
-    else if (copper >= 100) rewardText = `${Math.floor(copper / 100)}s ${copper % 100 > 0 ? (copper % 100) + 'c' : ''}`.trim();
-    else rewardText = `${copper}c`;
-
-    return { ...m, kills, rewardText };
+    const kills = liveMatch ? liveMatch.kills : 0;
+    return { ...m, kills };
   });
 
   let html = `
@@ -6042,7 +6037,7 @@ function renderPveBountiesView(lbData, deaths) {
       <div style="background: rgba(14, 165, 233, 0.08); border-left: 4px solid #38bdf8; border-radius: 6px; padding: 14px 18px; font-size: 0.85rem; color: #cbd5e1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
           <strong style="color: #38bdf8; font-size:0.95rem;">🛡️ PvE Ruleset Active:</strong>
-          <span>Player-vs-Player Marks of Spite are disabled on <strong>WoW Forever [PvE]</strong>. Showing realm-wide <strong>Monster Execution Bounties</strong> and lethal wilderness hazards.</span>
+          <span>Showing realm-wide <strong>Notorious Elites &amp; Apex Threats</strong>. Casualties reflect confirmed player deaths recorded on this realm.</span>
         </div>
         <span class="feed-count-pill" style="border-color:#38bdf8; color:#38bdf8;">PvE Campaign</span>
       </div>
@@ -6050,14 +6045,14 @@ function renderPveBountiesView(lbData, deaths) {
       <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
         <div>
           <h2 class="wow-gold-header" style="font-size: 1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
-            Azeroth's Most Wanted &mdash; Apex Predators &amp; Hazardous Elites
+            Notorious Elites &mdash; Apex Predators &amp; Hazardous World Bosses
           </h2>
           <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">
-            Town militia execution contracts for lethal beasts and rogue elites responsible for mortal deaths.
+            Lethal roaming patrols and hazardous creatures responsible for mortal casualties across Azeroth.
           </div>
         </div>
         <span style="font-size:0.8rem; font-family:var(--font-tactical); color:var(--accent-gold); font-weight:700;">
-          ${cards.length} Wanted Targets Active
+          ${cards.length} Apex Threats Cataloged
         </span>
       </div>
 
@@ -6075,8 +6070,8 @@ function renderPveBountiesView(lbData, deaths) {
                 </div>
               </div>
               <div style="text-align:right;">
-                <span style="color:var(--accent-gold); font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${c.rewardText}</span>
-                <div><span class="bounty-faction-pill neutral" style="border-color:#ef4444; color:#f87171;">MILITIA BOUNTY</span></div>
+                <span style="color:${c.kills > 0 ? '#ef4444' : '#94a3b8'}; font-weight:800; font-size:1.05rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${c.kills > 0 ? c.kills + ' Mortal Deaths' : '0 Fatalities'}</span>
+                <div><span class="bounty-faction-pill neutral" style="border-color:#38bdf8; color:#38bdf8;">${escapeHtml(c.classification)}</span></div>
               </div>
             </div>
 
@@ -6086,12 +6081,12 @@ function renderPveBountiesView(lbData, deaths) {
                 <strong style="color:#e2e8f0;">${escapeHtml(c.zone)}</strong>
               </div>
               <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                <span style="color:#94a3b8;">Lethal Spell:</span>
+                <span style="color:#94a3b8;">Lethal Spells:</span>
                 <span style="color:#f87171; font-family:monospace; font-weight:600;">${escapeHtml(c.spell)}</span>
               </div>
               <div style="display:flex; justify-content:space-between;">
                 <span style="color:#94a3b8;">Confirmed Slain:</span>
-                <strong style="color:#ef4444; font-family:var(--font-tactical);">${c.kills} Mortals</strong>
+                <strong style="color:${c.kills > 0 ? '#ef4444' : '#94a3b8'}; font-family:var(--font-tactical);">${c.kills} Mortals</strong>
               </div>
             </div>
 
@@ -6100,9 +6095,9 @@ function renderPveBountiesView(lbData, deaths) {
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
-              <span style="font-size:0.68rem; color:#64748b;">Issued by: Town Council</span>
-              <button class="bounty-action-btn" onclick="switchTab('HAZARDS')" style="background:rgba(239, 68, 68, 0.2); border:1px solid #ef4444; color:#fca5a5; padding:4px 10px; font-size:0.75rem; border-radius:4px; cursor:pointer;">
-                Execution Intel &rarr;
+              <span style="font-size:0.68rem; color:#64748b;">Threat Level: ${escapeHtml(c.level)}</span>
+              <button class="bounty-action-btn" onclick="switchTab('HAZARDS')" style="background:rgba(56, 189, 248, 0.15); border:1px solid #38bdf8; color:#7dd3fc; padding:4px 10px; font-size:0.75rem; border-radius:4px; cursor:pointer;">
+                View Bestiary &rarr;
               </button>
             </div>
           </div>
