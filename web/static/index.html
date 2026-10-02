@@ -66,6 +66,7 @@
         <button id="nav-rallies" class="nav-btn" onclick="switchTab('RALLIES')">Manhunt</button>
         <button id="nav-zones" class="nav-btn" onclick="switchTab('ZONES')">Zone Intel</button>
         <button id="nav-upload" class="nav-btn" onclick="switchTab('UPLOAD')">Upload</button>
+        <button id="nav-analytics" class="nav-btn" onclick="openAnalyticsModal()" title="View Web Traffic &amp; CurseForge Telemetry">📊 Analytics</button>
       </nav>
     </div>
   </header>
@@ -130,6 +131,10 @@
       <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 6px;">
         <button class="mobile-nav-item" onclick="openAddonDossierModal(); toggleMobileDrawer(false);">
           <span>How the Addon Works &amp; Download</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" onclick="openAnalyticsModal(); toggleMobileDrawer(false);" style="color: var(--accent-cyan);">
+          <span>📊 Traffic &amp; CurseForge Analytics</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" onclick="openBugReportsModal(); toggleMobileDrawer(false);" style="color: #ef4444;">
@@ -673,6 +678,36 @@
       <div style="overflow-y: auto; padding: 16px 20px; flex: 1;" id="bug-reports-list">
         <div style="text-align: center; color: #94a3b8; padding: 30px;">
           Loading combat dispatches...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Platform & CurseForge Analytics Modal -->
+  <div class="modal-overlay" id="analytics-modal" style="display: none;" onclick="if(event.target===this) closeAnalyticsModal()">
+    <div class="modal-card modal-card-lg" style="max-height: 88vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="officer-sigil-badge" style="background: rgba(0, 229, 255, 0.15); border-color: var(--accent-cyan);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div>
+            <strong style="color: var(--accent-cyan); font-family: var(--font-tactical); font-size: 1.15rem; letter-spacing: 0.6px;">TRAFFIC &amp; CURSEFORGE TELEMETRY</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.4px;">PAGEVIEWS &bull; UNIQUE OPERATIVES &bull; CURSEFORGE TRACKING BADGE &bull; CONVERSIONS</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="dossier-btn outline" style="padding: 4px 10px; font-size: 0.75rem;" onclick="loadAnalyticsDashboard()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span>Refresh</span>
+          </button>
+          <button class="modal-close" onclick="closeAnalyticsModal()">&times;</button>
+        </div>
+      </div>
+
+      <div style="overflow-y: auto; padding: 16px 20px; flex: 1;" id="analytics-modal-body">
+        <div style="text-align: center; color: #94a3b8; padding: 30px;">
+          Aggregating telemetry records...
         </div>
       </div>
     </div>

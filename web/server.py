@@ -17,7 +17,8 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import logging
-from flask import Flask, request, jsonify, send_from_directory, render_template_string
+import hashlib
+from flask import Flask, request, jsonify, send_from_directory, render_template_string, Response
 from flask_cors import CORS
 
 logger = logging.getLogger("WoWKillboard")
@@ -401,10 +402,65 @@ def init_db():
             """)
         except Exception:
             pass
+
+        # Native Privacy-Preserving Analytics & CurseForge Telemetry Table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS analytics_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp INTEGER NOT NULL,
+                event_type TEXT NOT NULL,
+                path TEXT,
+                source TEXT DEFAULT 'web',
+                referrer TEXT,
+                visitor_hash TEXT,
+                user_agent TEXT,
+                meta_json TEXT
+            )
+        """)
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_analytics_ts ON analytics_events(timestamp)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_analytics_source ON analytics_events(source)")
+        except Exception:
+            pass
         conn.commit()
 
 # Ensure database tables and schema are initialized on startup (e.g. under Gunicorn / Docker / Render)
 init_db()
+
+# ----------------- Analytics & CurseForge Telemetry Engine -----------------
+PIXEL_PNG = (
+    b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01'
+    b'\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4'
+    b'\x00\x00\x00\x00IEND\xaeB`\x82'
+)
+ANALYTICS_SALT = os.environ.get("ANALYTICS_SALT", "wowkb_analytics_telemetry_salt")
+
+def get_visitor_hash(ip: str, user_agent: str) -> str:
+    # Anonymized, GDPR-compliant daily visitor hash (resets daily, zero raw IP stored)
+    day = time.strftime("%Y-%m-%d")
+    raw = f"{ip}_{user_agent}_{day}_{ANALYTICS_SALT}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+def log_analytics_event(event_type: str, path: str = "", source: str = "web", referrer: str = None, meta: dict = None):
+    try:
+        ip = request.headers.get("CF-Connecting-IP") or request.headers.get("X-Forwarded-For") or request.remote_addr or "127.0.0.1"
+        if "," in ip:
+            ip = ip.split(",")[0].strip()
+        ua = request.headers.get("User-Agent", "")[:255]
+        ref = (referrer or request.headers.get("Referer") or "")[:500]
+        vis_hash = get_visitor_hash(ip, ua)
+        now = int(time.time())
+        meta_str = json.dumps(meta) if meta else None
+
+        with get_db() as conn:
+            conn.execute("""
+                INSERT INTO analytics_events (timestamp, event_type, path, source, referrer, visitor_hash, user_agent, meta_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (now, event_type, path[:255], source[:64], ref, vis_hash, ua, meta_str))
+            conn.commit()
+    except Exception as e:
+        logger.debug(f"Analytics logging failed: {e}")
 
 @app.after_request
 def add_cache_control_headers(response):
@@ -423,6 +479,139 @@ def health_check():
         "version": "1.4.65",
         "db": "ready"
     })
+
+# ----------------- Analytics REST & CurseForge Badges -----------------
+
+@app.route("/api/analytics/pixel.png")
+def analytics_pixel():
+    """1x1 Transparent Image Beacon for CurseForge Project Descriptions and external blogs."""
+    src = request.args.get("source", "curseforge")
+    log_analytics_event("curseforge_pixel", path=request.path, source=src)
+    resp = Response(PIXEL_PNG, mimetype="image/png")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
+@app.route("/api/badge/status.svg")
+def badge_status():
+    """Dynamic Shields.io-style SVG Telemetry Badge for CurseForge markdown descriptions."""
+    src = request.args.get("source", "curseforge")
+    log_analytics_event("curseforge_badge", path=request.path, source=src)
+    svg = """<svg xmlns="http://www.w3.org/2000/svg" width="166" height="20" role="img" aria-label="WoW Killboard: Online">
+  <linearGradient id="b" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+  <clipPath id="a"><rect width="166" height="20" rx="3" fill="#fff"/></clipPath>
+  <g clip-path="url(#a)">
+    <rect width="108" height="20" fill="#1e293b"/>
+    <rect x="108" width="58" height="20" fill="#0284c7"/>
+    <rect width="166" height="20" fill="url(#b)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
+    <text x="550" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)">WoW Killboard</text>
+    <text x="550" y="140" transform="scale(.1)">WoW Killboard</text>
+    <text x="1360" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)">Online</text>
+    <text x="1360" y="140" transform="scale(.1)">Online</text>
+  </g>
+</svg>"""
+    resp = Response(svg, mimetype="image/svg+xml")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return resp
+
+@app.route("/api/analytics/event", methods=["POST"])
+def analytics_event():
+    """Client-side Telemetry Beacon sent from web/static/app.js."""
+    data = request.json or {}
+    ev_type = data.get("type", "pageview")
+    path = data.get("path", "/")
+    source = data.get("source", "web")
+    referrer = data.get("referrer", "")
+    meta = data.get("meta", {})
+    log_analytics_event(ev_type, path=path, source=source, referrer=referrer, meta=meta)
+    return jsonify({"success": True}), 200
+
+@app.route("/api/analytics/summary", methods=["GET"])
+def analytics_summary():
+    """Aggregated Performance, Traffic & CurseForge Telemetry Summary."""
+    now = int(time.time())
+    t_15m = now - 900
+    t_24h = now - 86400
+    t_7d = now - 604800
+
+    with get_db() as conn:
+        live_res = conn.execute("""
+            SELECT COUNT(DISTINCT visitor_hash) FROM analytics_events 
+            WHERE timestamp >= ? AND event_type IN ('pageview', 'curseforge_pixel', 'curseforge_badge')
+        """, (t_15m,)).fetchone()[0]
+
+        def get_window_stats(since_ts):
+            pv = conn.execute("SELECT COUNT(*) FROM analytics_events WHERE timestamp >= ? AND event_type = 'pageview'", (since_ts,)).fetchone()[0]
+            uniques = conn.execute("SELECT COUNT(DISTINCT visitor_hash) FROM analytics_events WHERE timestamp >= ? AND event_type = 'pageview'", (since_ts,)).fetchone()[0]
+            cf_views = conn.execute("SELECT COUNT(*) FROM analytics_events WHERE timestamp >= ? AND event_type IN ('curseforge_pixel', 'curseforge_badge')", (since_ts,)).fetchone()[0]
+            cf_uniques = conn.execute("SELECT COUNT(DISTINCT visitor_hash) FROM analytics_events WHERE timestamp >= ? AND event_type IN ('curseforge_pixel', 'curseforge_badge')", (since_ts,)).fetchone()[0]
+            cf_clicks = conn.execute("SELECT COUNT(*) FROM analytics_events WHERE timestamp >= ? AND event_type = 'curseforge_redirect'", (since_ts,)).fetchone()[0]
+            dl_addon = conn.execute("SELECT COUNT(*) FROM analytics_events WHERE timestamp >= ? AND event_type = 'download_addon'", (since_ts,)).fetchone()[0]
+            dl_sync = conn.execute("SELECT COUNT(*) FROM analytics_events WHERE timestamp >= ? AND event_type = 'download_sync'", (since_ts,)).fetchone()[0]
+            return {
+                "pageviews": pv,
+                "uniques": uniques,
+                "curseforge_views": cf_views,
+                "curseforge_uniques": cf_uniques,
+                "curseforge_clicks": cf_clicks,
+                "addon_downloads": dl_addon,
+                "sync_downloads": dl_sync
+            }
+
+        stats_24h = get_window_stats(t_24h)
+        stats_7d = get_window_stats(t_7d)
+        stats_all = get_window_stats(0)
+
+        # Top referrers (last 7d)
+        ref_rows = conn.execute("""
+            SELECT referrer, COUNT(*) as cnt 
+            FROM analytics_events 
+            WHERE timestamp >= ? AND referrer IS NOT NULL AND referrer != ''
+            GROUP BY referrer 
+            ORDER BY cnt DESC 
+            LIMIT 8
+        """, (t_7d,)).fetchall()
+        top_referrers = [{"referrer": r["referrer"], "count": r["cnt"]} for r in ref_rows]
+
+        # Top pages (last 7d)
+        page_rows = conn.execute("""
+            SELECT path, COUNT(*) as cnt 
+            FROM analytics_events 
+            WHERE timestamp >= ? AND event_type = 'pageview' AND path IS NOT NULL AND path != ''
+            GROUP BY path 
+            ORDER BY cnt DESC 
+            LIMIT 8
+        """, (t_7d,)).fetchall()
+        top_pages = [{"path": r["path"], "count": r["cnt"]} for r in page_rows]
+
+        # 7-day daily breakdown
+        daily_breakdown = []
+        for i in range(6, -1, -1):
+            day_start = now - (i * 86400) - (now % 86400)
+            day_end = day_start + 86400
+            day_label = time.strftime("%b %d", time.gmtime(day_start))
+            d_pv = conn.execute("SELECT COUNT(*) FROM analytics_events WHERE timestamp >= ? AND timestamp < ? AND event_type = 'pageview'", (day_start, day_end)).fetchone()[0]
+            d_unq = conn.execute("SELECT COUNT(DISTINCT visitor_hash) FROM analytics_events WHERE timestamp >= ? AND timestamp < ? AND event_type = 'pageview'", (day_start, day_end)).fetchone()[0]
+            d_cf = conn.execute("SELECT COUNT(*) FROM analytics_events WHERE timestamp >= ? AND timestamp < ? AND event_type IN ('curseforge_pixel', 'curseforge_badge')", (day_start, day_end)).fetchone()[0]
+            daily_breakdown.append({
+                "date": day_label,
+                "pageviews": d_pv,
+                "uniques": d_unq,
+                "curseforge_views": d_cf
+            })
+
+        return jsonify({
+            "live_visitors_15m": live_res,
+            "summary_24h": stats_24h,
+            "summary_7d": stats_7d,
+            "summary_all_time": stats_all,
+            "top_referrers": top_referrers,
+            "top_pages": top_pages,
+            "daily_history": daily_breakdown
+        }), 200
 
 @app.route("/")
 @app.route("/character")
@@ -444,6 +633,7 @@ CURSEFORGE_PROJECT_URL = "https://www.curseforge.com/wow/addons/wkb"
 @app.route("/download")
 @app.route("/addon.zip")
 def download_addon():
+    log_analytics_event("download_addon", path=request.path, source="web")
     root_dir = os.path.dirname(APP_DIR)
     zip_path = os.path.join(root_dir, "WoWKillboard-v1.0.0.zip")
     static_zip = os.path.join(STATIC_DIR, "WoWKillboard-v1.0.0.zip")
@@ -459,6 +649,7 @@ def download_addon():
 @app.route("/drive")
 @app.route("/gdrive")
 def download_curseforge():
+    log_analytics_event("curseforge_redirect", path="/curseforge", source="web")
     from flask import redirect
     return redirect(CURSEFORGE_PROJECT_URL)
 
@@ -466,6 +657,7 @@ def download_curseforge():
 @app.route("/download/sync")
 @app.route("/sync.exe")
 def download_sync_exe():
+    log_analytics_event("download_sync", path=request.path, source="web")
     root_dir = os.path.dirname(APP_DIR)
     exe_path = os.path.join(root_dir, "WoWKillboardSync.exe")
     dist_exe = os.path.join(root_dir, "dist", "WoWKillboardSync.exe")
