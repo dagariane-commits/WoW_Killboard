@@ -232,7 +232,7 @@ class KillboardWatcher:
         elif isinstance(api_urls, str) and api_urls:
             self.api_urls = [api_urls.rstrip("/")]
         else:
-            self.api_urls = ["http://13.216.102.148", "http://127.0.0.1:8080"]
+            self.api_urls = ["https://wowkillboard.com", "http://13.216.102.148", "http://127.0.0.1:8080"]
         self.api_url = ", ".join(self.api_urls)
         self.filepath = self.filepaths[0] if self.filepaths else ""
 
