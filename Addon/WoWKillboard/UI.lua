@@ -2794,7 +2794,7 @@ function UI:RenderPveRallies()
     bText:SetText(
         "|cffffd100* EMERGENCY WILDERNESS BEACON SYSTEM ACTIVE|r\n" ..
         "|cffcbd5e1If you are trapped by elite spawns, pinned down in high-level caves, or seeking backup for an elite quest,\n" ..
-        "sound the Horn of Valor by typing |cffffd100/kb sos|r. Nearby allies and guildmates will receive your spatial coordinates.|r"
+        "sound the War Horn by typing |cffffd100/kb sos|r. Nearby allies and guildmates will receive your spatial coordinates.|r"
     )
 
     -- List of Active Beacons (from WoWKillboardDB.distressBeacons or realm)
@@ -4581,7 +4581,7 @@ function UI:ShowCharacterWebLink(charName, className, level, faction)
         faction = faction or "Alliance"
     end
 
-    local domain = (KB.Config and KB.Config.WebDomain) or KB.WebDomain or "13.216.102.148"
+    local domain = (KB.Config and KB.Config.WebDomain) or KB.WebDomain or "wowkillboard.com"
     local rawUrl = string.format("https://%s/character?name=%s&class=%s&level=%d&faction=%s", domain, charName, className, level, faction)
 
     if not UI.WebLinkDialog then
@@ -4951,7 +4951,7 @@ function UI:ShowWelcomeModal(isManual)
         eb:SetFontObject("GameFontHighlightSmall")
         eb:SetAutoFocus(false)
         eb:EnableMouse(true)
-        eb:SetText("http://13.216.102.148/feedback")
+        eb:SetText("https://wowkillboard.com/feedback")
         eb:SetScript("OnEditFocusGained", function(self)
             self:HighlightText()
         end)
@@ -5038,9 +5038,9 @@ function UI:ShowWelcomeModal(isManual)
     end
 
     local dlg = UI.WelcomeDialog
-    local domain = (KB.WebDomain and KB.WebDomain ~= "") and KB.WebDomain or "13.216.102.148"
+    local domain = (KB.WebDomain and KB.WebDomain ~= "") and KB.WebDomain or "wowkillboard.com"
     if dlg.FeedbackUrlEditBox then
-        dlg.FeedbackUrlEditBox:SetText(string.format("http://%s/feedback", domain))
+        dlg.FeedbackUrlEditBox:SetText(string.format("https://%s/feedback", domain))
     end
     dlg:Show()
     if dlg.Raise then dlg:Raise() end

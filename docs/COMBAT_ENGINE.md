@@ -2,7 +2,7 @@
 
 ## 1. Combat Log Interception Pipeline
 
-The heart of the WoW Killboard addon is [`CombatTracker.lua`](file:///c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/CombatTracker.lua), which listens to low-level client combat events and translates them into structured combat telemetry.
+The heart of the WoW Killboard addon is [`CombatTracker.lua`](../Addon/WoWKillboard/CombatTracker.lua), which listens to low-level client combat events and translates them into structured combat telemetry.
 
 ### Cross-Client Event Architecture
 In modern WoW (Retail 11.x), Blizzard altered `COMBAT_LOG_EVENT_UNFILTERED` to avoid payload exploitation, whereas Classic (1.15.x / WoW Forever Beta / Era) relies on `CombatLogGetCurrentEventInfo()`.

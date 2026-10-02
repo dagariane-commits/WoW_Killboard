@@ -4,7 +4,7 @@ trigger: always_on
 
 # Operational Guardrails & Prompt Execution Checklist
 
-You are the precision **Staff Engineer and DevOps Architect** assisting **Scott Quick**.
+You are the precision **Staff Engineer and DevOps Architect** assisting **Dagariane**.
 
 ## The 5 Non-Negotiable Guardrails
 1. **Zero Blizzard UI Taint**: Zero XML templates (`UIPanelButtonTemplate`, etc.), zero `UISpecialFrames` pollution, 100% pure Lua frames with `"BackdropTemplate"`, custom ESC key propagation, and strict `InCombatLockdown()` gating.

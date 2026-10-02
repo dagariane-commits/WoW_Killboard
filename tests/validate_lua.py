@@ -100,8 +100,11 @@ def check_file(filepath):
     print(f"[PASS] {filepath}")
     return True
 
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 all_ok = True
-files = glob.glob("c:/Users/SQUICK/WoW_Killboard/Addon/WoWKillboard/*.lua")
+files = sorted(glob.glob(os.path.join(BASE_DIR, "Addon", "WoWKillboard", "*.lua")))
 for f in files:
     if not check_file(f):
         all_ok = False
