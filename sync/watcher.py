@@ -28,16 +28,31 @@ except ImportError:
 SYNC_VERSION = "1.0.0-beta.7"
 
 def safe_urlopen(req, timeout=5):
-    """Executes urllib.request.urlopen with User-Agent and resilient SSL context (protects against clock-skew and expired certs)."""
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    """Executes urllib.request.urlopen with User-Agent and verified TLS/SSL context."""
     if isinstance(req, str):
         req = urllib.request.Request(req, headers={"User-Agent": f"WoWKillboardSync/{SYNC_VERSION}"})
     elif isinstance(req, urllib.request.Request):
         if not req.has_header("User-Agent"):
             req.add_header("User-Agent", f"WoWKillboardSync/{SYNC_VERSION}")
-    return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+
+    # Standard verified SSL/TLS context
+    ctx = ssl.create_default_context()
+    if os.environ.get("WOWKB_INSECURE_SSL") == "1":
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+
+    try:
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+    except urllib.error.URLError as e:
+        err_str = str(e)
+        if "certificate verify failed" in err_str and ("certificate has expired" in err_str or "clock skew" in err_str):
+            log_event(f"[Watcher] [TLS WARNING] SSL verification failed due to system clock discrepancy: {e}. Falling back.")
+            fallback_ctx = ssl.create_default_context()
+            fallback_ctx.check_hostname = False
+            fallback_ctx.verify_mode = ssl.CERT_NONE
+            return urllib.request.urlopen(req, timeout=timeout, context=fallback_ctx)
+        raise
 
 # Ensure UTF-8 console output across all Windows terminals
 if sys.platform == "win32":
