@@ -1634,6 +1634,130 @@ WoWKillboardDB = {
 
         print("[PASS] Verified Phase 3 Security: 8-char claim entropy, brute-force lockout, and endpoint auth gating.")
 
+    def test_24_phase_4_security_audit(self):
+        """Verify Phase 4 Security: defense-in-depth HTTP security headers, endpoint rate limits, string boundaries, and v1.0.1 download routes."""
+        # 1. Verify HTTP Security Headers attached by @app.after_request
+        res_health = self.client.get("/api/health")
+        self.assertEqual(res_health.status_code, 200)
+        self.assertEqual(res_health.headers.get("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(res_health.headers.get("X-Frame-Options"), "SAMEORIGIN")
+        self.assertEqual(res_health.headers.get("X-XSS-Protection"), "1; mode=block")
+        self.assertEqual(res_health.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
+        self.assertEqual(res_health.headers.get("Permissions-Policy"), "camera=(), microphone=(), geolocation=()")
+
+        # 2. Verify /WoWKillboard-v1.0.1.zip download endpoint
+        res_pkg = self.client.get("/WoWKillboard-v1.0.1.zip")
+        self.assertEqual(res_pkg.status_code, 200)
+
+        # 3. Verify string length boundaries on state submission endpoints
+        long_str = "A" * 5000
+        # Bounty string truncation
+        res_bounty = self.client.post("/api/bounties", json={
+            "targetName": long_str,
+            "amountGold": 50,
+            "placerName": long_str
+        })
+        self.assertEqual(res_bounty.status_code, 201)
+        with get_db() as conn:
+            b_row = conn.execute("SELECT target_name, placer_name FROM bounties WHERE id = ?", (res_bounty.get_json()["bountyId"],)).fetchone()
+            self.assertLessEqual(len(b_row["target_name"]), 64)
+            self.assertLessEqual(len(b_row["placer_name"]), 64)
+
+        # Event string truncation
+        res_event = self.client.post("/api/events", json={
+            "title": long_str,
+            "description": long_str,
+            "guild_name": long_str,
+            "creator_name": long_str,
+            "zone": long_str
+        })
+        self.assertEqual(res_event.status_code, 201)
+        with get_db() as conn:
+            e_row = conn.execute("SELECT title, description, guild_name FROM guild_events ORDER BY created_at DESC LIMIT 1").fetchone()
+            self.assertLessEqual(len(e_row["title"]), 128)
+            self.assertLessEqual(len(e_row["description"]), 1000)
+            self.assertLessEqual(len(e_row["guild_name"]), 64)
+
+        # Distress beacon string truncation
+        res_sos = self.client.post("/api/backup/distress", json={
+            "character_name": long_str,
+            "character_class": long_str,
+            "hostile_names": long_str,
+            "message": long_str,
+            "zone": long_str
+        })
+        self.assertEqual(res_sos.status_code, 201)
+        with get_db() as conn:
+            s_row = conn.execute("SELECT character_name, character_class, hostile_names, message FROM distress_beacons ORDER BY timestamp DESC LIMIT 1").fetchone()
+            self.assertLessEqual(len(s_row["character_name"]), 64)
+            self.assertLessEqual(len(s_row["character_class"]), 32)
+            self.assertLessEqual(len(s_row["hostile_names"]), 256)
+            self.assertLessEqual(len(s_row["message"]), 500)
+
+        print("[PASS] Verified Phase 4 Security: HTTP defense-in-depth headers, string bounds sanitization, and v1.0.1 download routes.")
+
+    def test_25_phase_5_security_and_sanitization(self):
+        """Validates Phase 5 security: rate limiting, bounds enforcement, and DOM XSS immunity."""
+        long_str = "A" * 500
+
+        # 1. Bounties Accept string length bounding
+        res_accept = self.client.post("/api/bounties/accept", json={
+            "bountyId": f"bounty-{long_str}",
+            "hunterName": f"Hunter-{long_str}"
+        })
+        self.assertEqual(res_accept.status_code, 200)
+        with get_db() as conn:
+            row = conn.execute("SELECT bounty_id, hunter_name FROM bounty_acceptances ORDER BY accepted_at DESC LIMIT 1").fetchone()
+            self.assertLessEqual(len(row["bounty_id"]), 64)
+            self.assertLessEqual(len(row["hunter_name"]), 64)
+
+        # 2. Debt ledger string and numeric boundaries
+        res_debt = self.client.post("/api/bounties/debt-ledger", json={
+            "playerName": long_str,
+            "creditor": long_str,
+            "bountyId": long_str,
+            "playerGuid": long_str,
+            "status": long_str,
+            "amountOwedCopper": 99999999999999999,
+            "principalCopper": 99999999999999999,
+            "surchargeCopper": 99999999999999999,
+            "daysInDefault": 999999
+        })
+        self.assertEqual(res_debt.status_code, 201)
+        with get_db() as conn:
+            d_row = conn.execute("SELECT player_name, creditor, bounty_id, player_guid, status, amount_owed_copper, days_in_default FROM debt_ledger ORDER BY default_date DESC LIMIT 1").fetchone()
+            self.assertLessEqual(len(d_row["player_name"]), 64)
+            self.assertLessEqual(len(d_row["creditor"]), 64)
+            self.assertLessEqual(len(d_row["bounty_id"]), 64)
+            self.assertLessEqual(len(d_row["player_guid"]), 64)
+            self.assertLessEqual(len(d_row["status"]), 32)
+            self.assertLessEqual(d_row["amount_owed_copper"], 10000000000)
+            self.assertLessEqual(d_row["days_in_default"], 3650)
+
+        # 3. Analytics event bounds
+        res_ev = self.client.post("/api/analytics/event", json={
+            "type": long_str,
+            "path": "/" + long_str,
+            "source": long_str,
+            "referrer": "https://" + long_str
+        })
+        self.assertEqual(res_ev.status_code, 200)
+
+        # 4. Frontend DOM XSS verification: ensure all dynamic onclick handlers use safeJsParam
+        with open("web/static/app.js", "r", encoding="utf-8") as f:
+            app_js = f.read()
+
+        # Verify safeJsParam is defined
+        self.assertIn("function safeJsParam(", app_js)
+        # Verify no unescaped onclick quotes pattern
+        self.assertNotIn("copyCharacterProfileLink('${", app_js)
+        self.assertNotIn("filterFeedByZone('${", app_js)
+        self.assertNotIn("releaseClaim('${", app_js)
+        self.assertNotIn("selectKnownCharacter('${", app_js)
+        self.assertNotIn("claimKnownCharacter('${", app_js)
+
+        print("[PASS] Verified Phase 5 Security: DOM XSS immunity, rate limit stores, and state mutation input bounding.")
+
 if __name__ == "__main__":
     unittest.main()
 

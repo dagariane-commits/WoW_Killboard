@@ -103,12 +103,17 @@ def create_windows_shortcut(target_exe: str, shortcut_path: str, description: st
     try:
         import subprocess
         work_dir = os.path.dirname(os.path.abspath(target_exe))
+        # Sanitize single quotes to prevent PowerShell syntax breakage or command injection
+        s_target = target_exe.replace("'", "''")
+        s_shortcut = shortcut_path.replace("'", "''")
+        s_work = work_dir.replace("'", "''")
+        s_desc = description.replace("'", "''")
         ps_script = f"""
 $ws = New-Object -ComObject WScript.Shell
-$s = $ws.CreateShortcut('{shortcut_path}')
-$s.TargetPath = '{target_exe}'
-$s.WorkingDirectory = '{work_dir}'
-$s.Description = '{description}'
+$s = $ws.CreateShortcut('{s_shortcut}')
+$s.TargetPath = '{s_target}'
+$s.WorkingDirectory = '{s_work}'
+$s.Description = '{s_desc}'
 $s.Save()
 """
         res = subprocess.run(

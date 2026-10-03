@@ -100,6 +100,7 @@ fi
 chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
 
 echo -e "${GREEN}[6/7] Installing systemd daemon service: wowkillboard.service...${NC}"
+ADMIN_KEY=$(openssl rand -hex 16 2>/dev/null || python3 -c 'import secrets; print(secrets.token_hex(16))')
 cat <<EOF > /etc/systemd/system/wowkillboard.service
 [Unit]
 Description=WoW Killboard — Frontline Combat & Marks of Spite Platform
@@ -113,6 +114,7 @@ WorkingDirectory=${APP_DIR}
 Environment="PYTHONUNBUFFERED=1"
 Environment="PORT=8080"
 Environment="DB_PATH=${APP_DIR}/data/killboard.db"
+Environment="ADMIN_SECRET_KEY=${ADMIN_KEY}"
 ExecStart=${APP_DIR}/venv/bin/python web/server.py
 Restart=always
 RestartSec=5s

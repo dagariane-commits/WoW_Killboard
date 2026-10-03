@@ -119,8 +119,8 @@ Upload the screenshots located in [`assets/curseforge/`](assets/curseforge/) in 
 
 1. Navigate to the **File** tab on your newly created CurseForge project.
 2. Click **Upload File**.
-3. Select `WoWKillboard-v1.0.0.zip` (located in the project root: `WoWKillboard-v1.0.0.zip`).
-4. Set **Display Name**: `WKB v1.0.0 (Early Beta)`
+3. Select `WoWKillboard-v1.0.1.zip` (located in the project root: `WoWKillboard-v1.0.1.zip`).
+4. Set **Display Name**: `WKB v1.0.1 (Early Beta)`
 5. Set **Release Type**: `Beta` (or `Release` if you prefer).
 6. Under **Supported Game Versions**, select:
    - `World of Warcraft Classic` (Classic Era `1.15.x`)

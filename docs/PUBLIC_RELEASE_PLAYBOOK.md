@@ -13,7 +13,7 @@ flowchart TD
     S1["1. Register Domain\n(e.g. wowkillboard.com via Cloudflare)"] --> S2["2. Point DNS A-Record\nMap @ and api to <YOUR_VPS_PUBLIC_IP>"]
     S2 --> S3["3. Automatic HTTPS / SSL\nCaddy provisions Let's Encrypt certificate"]
     S3 --> S4["4. Update In-Game URLs\nSet KB.WebDomain in Config.lua & recompile Sync.exe"]
-    S4 --> S5["5. Rebuild & Submit\nWoWKillboard-v1.0.0.zip to CurseForge"]
+    S4 --> S5["5. Rebuild & Submit\nWoWKillboard-v1.0.1.zip to CurseForge"]
 ```
 
 ### Why Domain First?
@@ -36,7 +36,7 @@ The `WoWKillboard.toc` manifest includes multi-client declarations:
 ## Interface: 11506, 11507, 110007, 16001
 ## Title: WoW Killboard
 ## Notes: Community killboard tracking PvP kills, 1v1 duels, battlegrounds, bounties, and PvE deaths.
-## Version: 1.0.0
+## Version: 1.0.1
 ## Author: Dagariane
 ## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties, WoWKillboardDistress, WoWKillboardEvents
 ```
@@ -44,7 +44,7 @@ The `WoWKillboard.toc` manifest includes multi-client declarations:
 ### Packaging Script
 Run [`package_addon.bat`](package_addon.bat) or PowerShell:
 ```powershell
-Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.0.zip" -Force
+Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.1.zip" -Force
 ```
 
 ---
@@ -60,7 +60,7 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
    > **WoW Killboard** is a community killboard that tracks your open-world PvP kills, certified 1v1 duels, battleground stats, blood bounties, and wilderness PvE deaths. It works across WoW Forever, Classic Era, Anniversary, and Retail.
    >
    > I really hope you like it! Please drop your feedback, feature ideas, or bug reports on CurseForge or our website so I can continue enhancing it.
-4. Upload `WoWKillboard-v1.0.0.zip`.
+4. Upload `WoWKillboard-v1.0.1.zip`.
 5. Supported Flavors: Select `WoW Classic`, `Classic Era`, and `Mainline`.
 6. Upload promotional banner (`assets/curseforge/logo.png`) and in-game UI screenshots.
 

@@ -1657,11 +1657,11 @@ function renderFeed(kills) {
     const victimGuildName = (km.victim.guild && km.victim.guild !== 'None') ? km.victim.guild : '';
 
     const killerGuildHtml = killerGuildName
-      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(killerGuildName)})">&lt;${killerGuildName}&gt;</span>`
+      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(killerGuildName)})">&lt;${escapeHtml(killerGuildName)}&gt;</span>`
       : `<span class="km-guild-none">&lt;Unguilded&gt;</span>`;
 
     const victimGuildHtml = victimGuildName
-      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(victimGuildName)})">&lt;${victimGuildName}&gt;</span>`
+      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(victimGuildName)})">&lt;${escapeHtml(victimGuildName)}&gt;</span>`
       : `<span class="km-guild-none">&lt;Unguilded&gt;</span>`;
 
     const subzoneOrCoords = km.location.subZone ? km.location.subZone : `${(km.location.x || 0).toFixed(1)}, ${(km.location.y || 0).toFixed(1)}`;
@@ -1676,10 +1676,10 @@ function renderFeed(kills) {
     const bountyTag = isBounty ? `<span class="km-bounty-claimed-tag">💰 BOUNTY CLAIMED${bountyGoldVal > 0 ? ` (${formatNumber(bountyGoldVal)}g)` : ''}</span>` : "";
 
     html += `
-      <div class="killmail-row ${modeClass} ${victorClass} ${bountyRowClass}" onclick="openKillModal('${km.killId}')" title="${rowTooltip}">
+      <div class="killmail-row ${modeClass} ${victorClass} ${bountyRowClass}" onclick="openKillModal(${safeJsParam(km.killId)})" title="${escapeHtml(rowTooltip)}">
         <div class="km-left-meta">
-          <span class="km-zone-name">${km.location.zone}</span>
-          <span class="km-subzone-text">${subzoneOrCoords}</span>
+          <span class="km-zone-name">${escapeHtml(km.location.zone)}</span>
+          <span class="km-subzone-text">${escapeHtml(subzoneOrCoords)}</span>
         </div>
 
         <div class="km-combatants-center">
@@ -2239,7 +2239,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
               ${(leaderboards.topHunters && leaderboards.topHunters.length > 0) 
                 ? leaderboards.topHunters.map((h, i) => `
                   <div class="leader-item">
-                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(h.hunter_name)})">${h.hunter_name}</span></span>
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(h.hunter_name)})">${escapeHtml(h.hunter_name)}</span></span>
                     <span style="text-align:right;">
                       <span style="color:#10b981; font-weight:700;">${h.claimed_count} Claimed</span>
                       <small style="color:var(--accent-gold); margin-left:6px;">(${h.total_gold}g)</small>
@@ -2261,7 +2261,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
               ${(leaderboards.highestBounties && leaderboards.highestBounties.length > 0)
                 ? leaderboards.highestBounties.map((b, i) => `
                   <div class="leader-item">
-                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(b.target_name)})">${b.target_name}</span></span>
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(b.target_name)})">${escapeHtml(b.target_name)}</span></span>
                     <span style="text-align:right;">
                       <span style="color:var(--accent-gold); font-weight:800;">${b.amount_gold}g</span>
                       <small style="color:${b.status === 'CLAIMED' ? '#10b981' : '#f59e0b'}; margin-left:6px;">[${b.status}]</small>
@@ -2283,7 +2283,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
               ${(leaderboards.longestOutstanding && leaderboards.longestOutstanding.length > 0)
                 ? leaderboards.longestOutstanding.map((o, i) => `
                   <div class="leader-item">
-                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(o.target_name)})">${o.target_name}</span></span>
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(o.target_name)})">${escapeHtml(o.target_name)}</span></span>
                     <span style="text-align:right;">
                       <span style="color:#f97316; font-weight:700;">Survived ${formatDuration(o.elapsed_seconds)}</span>
                       <small style="color:var(--accent-gold); margin-left:6px;">(${o.amount_gold}g)</small>
@@ -2305,10 +2305,10 @@ function renderBountiesView(bounties, debts, leaderboards) {
               ${(leaderboards.fastestCollected && leaderboards.fastestCollected.length > 0)
                 ? leaderboards.fastestCollected.map((f, i) => `
                   <div class="leader-item">
-                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(f.target_name)})">${f.target_name}</span></span>
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(f.target_name)})">${escapeHtml(f.target_name)}</span></span>
                     <span style="text-align:right;">
                       <span style="color:var(--accent-cyan); font-weight:700;">${formatDuration(f.duration_seconds)}</span>
-                      <small style="color:#94a3b8; margin-left:4px;">by ${f.hunter_name || 'Hunter'}</small>
+                      <small style="color:#94a3b8; margin-left:4px;">by ${escapeHtml(f.hunter_name || 'Hunter')}</small>
                     </span>
                   </div>
                 `).join('')
@@ -2340,13 +2340,13 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <div class="debt-header">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="debt-badge">BLOOD DEBTOR</span>
-              <strong style="color:#fff; font-size:1.05rem;" class="clickable-player" onclick="openCharacterProfile(${safeJsParam(d.player_name)})">${d.player_name}</strong>
+              <strong style="color:#fff; font-size:1.05rem;" class="clickable-player" onclick="openCharacterProfile(${safeJsParam(d.player_name)})">${escapeHtml(d.player_name)}</strong>
               <span class="debt-welcher-tag">DEBT WELCHER</span>
             </div>
             <span style="color:var(--accent-red); font-weight:800; font-size:1.1rem;">${formatCopper(d.amount_owed_copper)} Owed</span>
           </div>
           <div style="font-size:0.8rem; color:#cbd5e1; margin-top:4px;">
-            Defaulted on bounty owed to <strong style="color:var(--accent-cyan);">${d.creditor}</strong> &bull; In default for <strong style="color:#f87171;">${d.days_in_default} days</strong>.
+            Defaulted on bounty owed to <strong style="color:var(--accent-cyan);">${escapeHtml(d.creditor)}</strong> &bull; In default for <strong style="color:#f87171;">${d.days_in_default} days</strong>.
           </div>
           <div style="font-size:0.72rem; color:#f87171; margin-top:6px; display:flex; align-items:center; gap:6px;">
             <span>Marked KILL ON SIGHT realm-wide. Any citizen or bounty hunter may execute this target without penalty until bounty debt is paid.</span>
@@ -2395,10 +2395,10 @@ function openKillModal(killId) {
   const killerGuildName = (km.killer.guild && km.killer.guild !== 'None') ? km.killer.guild : '';
   const victimGuildName = (km.victim.guild && km.victim.guild !== 'None') ? km.victim.guild : '';
   const killerGuild = killerGuildName 
-    ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(killerGuildName)})">&lt;${killerGuildName}&gt;</span>` 
+    ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(killerGuildName)})">&lt;${escapeHtml(killerGuildName)}&gt;</span>` 
     : '<span style="color:#64748b;">&lt;Unguilded&gt;</span>';
   const victimGuild = victimGuildName 
-    ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(victimGuildName)})">&lt;${victimGuildName}&gt;</span>` 
+    ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(victimGuildName)})">&lt;${escapeHtml(victimGuildName)}&gt;</span>` 
     : '<span style="color:#64748b;">&lt;Unguilded&gt;</span>';
 
   // Infer Killer Spec from attack spells or class default
@@ -2625,7 +2625,7 @@ function closeModal() {
 function buildCharacterDossierHtml(data) {
   const stats = data.stats || {};
   const guildText = (data.currentGuild && data.currentGuild !== 'None') 
-    ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(data.currentGuild)})">&lt;${data.currentGuild}&gt;</span>` 
+    ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(data.currentGuild)})">&lt;${escapeHtml(data.currentGuild)}&gt;</span>` 
     : '<span style="color:#64748b;">No Guild</span>';
 
   const factionColor = data.faction === 'Alliance' ? '#3b82f6' : (data.faction === 'Horde' ? '#ef4444' : '#94a3b8');
@@ -2642,8 +2642,8 @@ function buildCharacterDossierHtml(data) {
             return `
               <div class="timeline-row">
                 <div>
-                  <span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(g.guild_name)})">&lt;${g.guild_name}&gt;</span>
-                  <span style="font-size:0.7rem; color:${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; margin-left:6px;">(${g.faction || 'Neutral'})</span>
+                  <span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(g.guild_name)})">&lt;${escapeHtml(g.guild_name)}&gt;</span>
+                  <span style="font-size:0.7rem; color:${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; margin-left:6px;">(${escapeHtml(g.faction || 'Neutral')})</span>
                 </div>
                 <span style="color:#94a3b8; font-size:0.75rem;">${firstSeenStr} — ${lastSeenStr}</span>
               </div>
@@ -2665,10 +2665,10 @@ function buildCharacterDossierHtml(data) {
               <div>
                 <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(k.victim_name)})">${colorizeClass(k.victim_name, k.victim_class)}</span>
                 <small style="color:#64748b;">(Lvl ${k.victim_level && k.victim_level > 0 ? k.victim_level : '??'})</small>
-                ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(k.victim_guild)})">&lt;${k.victim_guild}&gt;</span>` : ''}
+                ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(k.victim_guild)})">&lt;${escapeHtml(k.victim_guild)}&gt;</span>` : ''}
               </div>
               <div style="text-align:right; color:#94a3b8;">
-                <span>${k.zone}</span> &bull; <span>${timeAgo(k.timestamp)}</span>
+                <span>${escapeHtml(k.zone)}</span> &bull; <span>${timeAgo(k.timestamp)}</span>
               </div>
             </div>
           `).join("")}
@@ -2688,10 +2688,10 @@ function buildCharacterDossierHtml(data) {
               <div>
                 Killed by: <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(d.killer_name)})">${colorizeClass(d.killer_name, d.killer_class)}</span>
                 <small style="color:#64748b;">(Lvl ${d.killer_level && d.killer_level > 0 ? d.killer_level : '??'})</small>
-                ${d.killer_guild && d.killer_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(d.killer_guild)})">&lt;${d.killer_guild}&gt;</span>` : ''}
+                ${d.killer_guild && d.killer_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(d.killer_guild)})">&lt;${escapeHtml(d.killer_guild)}&gt;</span>` : ''}
               </div>
               <div style="text-align:right; color:#94a3b8;">
-                <span>${d.zone}</span> &bull; <span>${timeAgo(d.timestamp)}</span>
+                <span>${escapeHtml(d.zone)}</span> &bull; <span>${timeAgo(d.timestamp)}</span>
               </div>
             </div>
           `).join("")}
@@ -2707,19 +2707,19 @@ function buildCharacterDossierHtml(data) {
       <div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <div style="font-size:1.4rem; font-weight:800;">${colorizeClass(data.name, data.class)}</div>
-          ${data.rankTitle ? `<span class="armory-rank-pill">${data.rankTitle}</span>` : ''}
+          ${data.rankTitle ? `<span class="armory-rank-pill">${escapeHtml(data.rankTitle)}</span>` : ''}
           ${data.percentile ? `
-            <span class="armory-percentile-pill" title="${data.percentile.cohortLabel} (${data.percentile.totalInCohort} active combatants)">
+            <span class="armory-percentile-pill" title="${escapeHtml(data.percentile.cohortLabel)} (${data.percentile.totalInCohort} active combatants)">
               ⭐ Top ${data.percentile.topPct}% (${data.percentile.percentile}th Percentile)
             </span>
           ` : ''}
         </div>
         <div style="font-size:0.85rem; color:#94a3b8; margin-top:4px;">
-          Level ${data.level} ${data.spec ? data.spec + ' ' : ''}${data.class} &bull; <span style="color:${factionColor}; font-weight:700;">${data.faction}</span> &bull; ${guildText}
+          Level ${data.level} ${data.spec ? escapeHtml(data.spec) + ' ' : ''}${escapeHtml(data.class)} &bull; <span style="color:${factionColor}; font-weight:700;">${escapeHtml(data.faction)}</span> &bull; ${guildText}
         </div>
         ${data.percentile ? `
           <div style="font-size:0.75rem; color:#cbd5e1; margin-top:4px;">
-            Class Standing: <strong style="color:var(--wow-gold);">${data.percentile.cohortLabel}</strong> &bull; Ranked <strong style="color:#10b981;">#${data.percentile.rank}</strong> of ${data.percentile.totalInCohort} active combatants
+            Class Standing: <strong style="color:var(--wow-gold);">${escapeHtml(data.percentile.cohortLabel)}</strong> &bull; Ranked <strong style="color:#10b981;">#${data.percentile.rank}</strong> of ${data.percentile.totalInCohort} active combatants
           </div>
         ` : ''}
         ${data.bloodDebtor ? `
@@ -2728,13 +2728,13 @@ function buildCharacterDossierHtml(data) {
 
               <div>
                 <div style="font-weight:800; color:#ef4444; letter-spacing:0.5px;">REPUTATION: BLOOD DEBTOR (KILL ON SIGHT)</div>
-                <div style="font-size:0.75rem; color:#fca5a5;">Defaulted on ${formatCopper(data.bloodDebtor.amountOwedCopper)} bounty debt owed to ${data.bloodDebtor.creditor} (${data.bloodDebtor.daysInDefault} days in default). Marked KOS server-wide across all name & guild changes.</div>
+                <div style="font-size:0.75rem; color:#fca5a5;">Defaulted on ${formatCopper(data.bloodDebtor.amountOwedCopper)} bounty debt owed to ${escapeHtml(data.bloodDebtor.creditor)} (${data.bloodDebtor.daysInDefault} days in default). Marked KOS server-wide across all name & guild changes.</div>
               </div>
             </div>
           </div>
         ` : `
           <div style="margin-top:6px;">
-            <span class="reputation-badge-honorable">${data.reputation || 'HONORABLE COMBATANT'} &bull; DEBT-FREE</span>
+            <span class="reputation-badge-honorable">${escapeHtml(data.reputation || 'HONORABLE COMBATANT')} &bull; DEBT-FREE</span>
           </div>
         `}
         ${(data.isKos || data.deserter || data.activeBountyGold > 0) ? `
@@ -2746,7 +2746,7 @@ function buildCharacterDossierHtml(data) {
         ` : ''}
       </div>
       <div class="armory-group">
-        <button class="armory-btn" style="cursor:pointer; background:#1e293b; color:#38bdf8;" onclick="copyCharacterProfileLink('${escapeHtml(data.name)}', this)">📋 Copy Link</button>
+        <button class="armory-btn" style="cursor:pointer; background:#1e293b; color:#38bdf8;" onclick="copyCharacterProfileLink(${safeJsParam(data.name)}, this)">📋 Copy Link</button>
       </div>
     </div>
 
@@ -2934,7 +2934,7 @@ async function openGuildProfile(guildName) {
   if (!modal || !body) return;
 
   title.innerText = `Guild Intelligence: <${guildName}>`;
-  body.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">Gathering battlefield records for <${guildName}>...</div>`;
+  body.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8;">Gathering battlefield records for &lt;${escapeHtml(guildName)}&gt;...</div>`;
   modal.style.display = "flex";
 
   try {
@@ -2991,10 +2991,10 @@ async function openGuildProfile(guildName) {
                   <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(k.killer_name)})">${colorizeClass(k.killer_name, k.killer_class)}</span>
                   slayed
                   <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(k.victim_name)})">${colorizeClass(k.victim_name, k.victim_class)}</span>
-                  ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(k.victim_guild)})">&lt;${k.victim_guild}&gt;</span>` : ''}
+                  ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(k.victim_guild)})">&lt;${escapeHtml(k.victim_guild)}&gt;</span>` : ''}
                 </div>
                 <div style="text-align:right; color:#94a3b8;">
-                  <span>${k.zone}</span> &bull; <span>${timeAgo(k.timestamp)}</span>
+                  <span>${escapeHtml(k.zone)}</span> &bull; <span>${timeAgo(k.timestamp)}</span>
                 </div>
               </div>
             `).join("")}
@@ -3006,7 +3006,7 @@ async function openGuildProfile(guildName) {
     body.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:16px; border-radius:8px; border:1px solid #1e293b;">
         <div>
-          <div style="font-size:1.4rem; font-weight:800; color:var(--accent-gold);">&lt;${data.guild}&gt;</div>
+          <div style="font-size:1.4rem; font-weight:800; color:var(--accent-gold);">&lt;${escapeHtml(data.guild)}&gt;</div>
           <div style="font-size:0.85rem; color:#94a3b8; margin-top:2px;">
             Faction: <strong style="color:${factionColor};">${data.faction}</strong> &bull; Active Combatants: <strong style="color:#fff;">${data.memberCount}</strong>
           </div>
@@ -3209,11 +3209,11 @@ async function fetchArmoryDataAndRender() {
       const symbol = CLASS_SYMBOLS[cls] || "👤";
       const factionColor = c.faction === "Alliance" ? "var(--alliance-blue)" : (c.faction === "Horde" ? "var(--horde-red)" : "#94a3b8");
       const guildHtml = (c.guild && c.guild !== "None")
-        ? `<span class="armory-card-guild" onclick="openGuildProfile(${safeJsParam(c.guild)})">&lt;${c.guild}&gt;</span>`
+        ? `<span class="armory-card-guild" onclick="openGuildProfile(${safeJsParam(c.guild)})">&lt;${escapeHtml(c.guild)}&gt;</span>`
         : `<span style="font-size:0.75rem; color:#64748b;">No Guild</span>`;
 
       const lastSeen = c.lastSeen || {};
-      const lastSeenText = lastSeen.zone ? `${lastSeen.zone} &bull; ${timeAgo(lastSeen.timestamp)}` : "Unknown";
+      const lastSeenText = lastSeen.zone ? `${escapeHtml(lastSeen.zone)} &bull; ${timeAgo(lastSeen.timestamp)}` : "Unknown";
 
       cardsHtml += `
         <div class="armory-card" style="border-top: 3px solid ${clsColor};">
@@ -3227,15 +3227,15 @@ async function fetchArmoryDataAndRender() {
                   ${colorizeClass(c.name, cls)}
                 </div>
                 <div class="armory-card-meta">
-                  Level ${c.level} ${c.spec ? c.spec + ' ' : ''}${c.class} &bull; <span style="color:${factionColor}; font-weight:700;">${c.faction}</span>
+                  Level ${c.level} ${c.spec ? escapeHtml(c.spec) + ' ' : ''}${escapeHtml(c.class)} &bull; <span style="color:${factionColor}; font-weight:700;">${escapeHtml(c.faction || 'Neutral')}</span>
                 </div>
                 ${guildHtml}
               </div>
             </div>
 
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
-              ${c.rankTitle ? `<div class="armory-rank-pill" style="margin-top:0;">${c.rankTitle}</div>` : ''}
-              ${c.percentile ? `<div class="armory-percentile-pill" title="${c.percentile.cohortLabel} (${c.percentile.totalInCohort} active combatants)">⭐ Top ${c.percentile.topPct}% (${c.percentile.percentile}th Pct)</div>` : ''}
+              ${c.rankTitle ? `<div class="armory-rank-pill" style="margin-top:0;">${escapeHtml(c.rankTitle)}</div>` : ''}
+              ${c.percentile ? `<div class="armory-percentile-pill" title="${escapeHtml(c.percentile.cohortLabel)} (${c.percentile.totalInCohort} active combatants)">⭐ Top ${c.percentile.topPct}% (${c.percentile.percentile}th Pct)</div>` : ''}
             </div>
 
             <div class="armory-tags-row">
@@ -3412,7 +3412,7 @@ function renderDeadlyNpcsView(lbData, deaths) {
   const npcs = lbData.topDeadlyNpcs || [];
   const topVictims = lbData.topFallenPlayers || [];
   const deadZone = summary.mostDangerousZone || { zone: "None", deaths: 0 };
-  const deadZoneStr = deadZone.zone !== "None" ? `${deadZone.zone} (${deadZone.deaths} Slain)` : "None";
+  const deadZoneStr = deadZone.zone !== "None" ? `${escapeHtml(deadZone.zone)} (${deadZone.deaths} Slain)` : "None";
 
   let html = `
     <div class="deadly-npcs-container">
@@ -3462,11 +3462,11 @@ function renderDeadlyNpcsView(lbData, deaths) {
                     <div class="npc-rank-badge ${rankClass}">#${idx + 1}</div>
                     <span class="npc-skull-icon"></span>
                     <div>
-                      <div class="npc-name">${npc.npc_name}</div>
+                      <div class="npc-name">${escapeHtml(npc.npc_name)}</div>
                       <div class="npc-subtext">
-                        <span>${npc.zone || 'Azeroth'}</span>
+                        <span>${escapeHtml(npc.zone || 'Azeroth')}</span>
                         &bull;
-                        <span class="npc-spell-badge">${npc.npc_spell || 'Combat'}</span>
+                        <span class="npc-spell-badge">${escapeHtml(npc.npc_spell || 'Combat')}</span>
                         ${npc.last_kill ? `&bull; <span>Last slain: ${timeAgo(npc.last_kill)}</span>` : ''}
                       </div>
                     </div>
@@ -3495,7 +3495,7 @@ function renderDeadlyNpcsView(lbData, deaths) {
               ${topVictims.length === 0 ? '<div style="padding:20px; text-align:center; color:#64748b; font-size:0.8rem;">No casualties logged.</div>' : topVictims.map((v, i) => {
                 const badge = renderClassBadge(v.victim_class, 18);
                 const nameSpan = colorizeClass(v.victim_name, v.victim_class);
-                const guildPart = (v.victim_guild && v.victim_guild !== 'None') ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(v.victim_guild)})">&lt;${v.victim_guild}&gt;</span>` : '';
+                const guildPart = (v.victim_guild && v.victim_guild !== 'None') ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(v.victim_guild)})">&lt;${escapeHtml(v.victim_guild)}&gt;</span>` : '';
                 return `
                   <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:0.8rem;">
                     <div style="display:flex; align-items:center; gap:8px;">
@@ -3537,10 +3537,10 @@ function renderDeadlyNpcsView(lbData, deaths) {
                           <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(d.victim_name)})">${vSpan}</span>
                           <span style="color:#64748b; font-size:0.72rem;">(Lvl ${d.victim_level})</span>
                           <span style="color:#94a3b8; font-size:0.75rem;">slain by</span>
-                          <strong style="color:#f87171;">${d.npc_name}</strong>
+                          <strong style="color:#f87171;">${escapeHtml(d.npc_name)}</strong>
                         </div>
                         <div style="font-size:0.68rem; color:#64748b; margin-top:1px;">
-                          <span>${locStr}</span> &bull; <span>${d.npc_spell || 'Combat'}</span>
+                          <span>${escapeHtml(locStr)}</span> &bull; <span>${escapeHtml(d.npc_spell || 'Combat')}</span>
                         </div>
                       </div>
                     </div>
@@ -3892,7 +3892,7 @@ function openServerSelectorModal() {
   grid.innerHTML = Object.values(FOREVER_SERVERS).map(s => {
     const isAct = s.id === activeSrv;
     return `
-      <div class="server-card ${isAct ? 'active' : ''}" onclick="handleSelectForeverServer('${s.id}')">
+      <div class="server-card ${isAct ? 'active' : ''}" onclick="handleSelectForeverServer(${safeJsParam(s.id)})">
         <div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <span class="server-card-badge" style="background:${s.badgeBg}; border:1px solid ${s.badgeBorder}; color:${s.badgeColor};">
@@ -4536,7 +4536,7 @@ async function loadZonesView() {
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-family:var(--font-tactical); font-weight:800; font-size:0.95rem; color:${idx === 0 ? '#ffd100' : 'var(--wow-gold)'};">#${idx + 1}</span>
-                <span style="font-weight:700; font-size:0.95rem; color:#f8fafc; cursor:pointer;" onclick="filterFeedByZone('${escapeHtml(z.zone)}')" title="Click to filter feed for ${escapeHtml(z.zone)}">${escapeHtml(z.zone)}</span>
+                <span style="font-weight:700; font-size:0.95rem; color:#f8fafc; cursor:pointer;" onclick="filterFeedByZone(${safeJsParam(z.zone)})" title="Click to filter feed for ${escapeHtml(z.zone)}">${escapeHtml(z.zone)}</span>
               </div>
               <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-family:var(--font-tactical); font-size:0.75rem; font-weight:800; color:${threatColor}; background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:3px; border:1px solid ${threatColor};">${threatLabel}</span>
@@ -5101,14 +5101,14 @@ function renderKnownCharactersList(chars) {
             actionBtnHtml = `
               <div style="display:flex; gap:6px;">
                 <button class="pill-btn active" style="background:#10b981; color:#fff; font-size:0.75rem; padding:4px 10px;" disabled>✓ Selected</button>
-                <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.72rem; padding:4px 8px; cursor:pointer;" onclick="releaseClaim('${escapeHtml(c.name)}')">Unlink</button>
+                <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.72rem; padding:4px 8px; cursor:pointer;" onclick="releaseClaim(${safeJsParam(c.name)})">Unlink</button>
               </div>
             `;
           } else {
             actionBtnHtml = `
               <div style="display:flex; gap:6px;">
-                <button class="pill-btn" style="background:#10b981; color:#fff; font-weight:700; font-size:0.75rem; padding:5px 12px; border:none; cursor:pointer;" onclick="selectKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Select &rarr;</button>
-                <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.72rem; padding:5px 8px; cursor:pointer;" onclick="releaseClaim('${escapeHtml(c.name)}')">Unlink</button>
+                <button class="pill-btn" style="background:#10b981; color:#fff; font-weight:700; font-size:0.75rem; padding:5px 12px; border:none; cursor:pointer;" onclick="selectKnownCharacter(${safeJsParam(c.name)}, ${safeJsParam(cls)}, ${c.level || 60}, ${safeJsParam(c.faction || 'Alliance')}, ${safeJsParam(c.guild || 'None')}, ${safeJsParam(c.realm || 'WoW Forever')})">Select &rarr;</button>
+                <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.72rem; padding:5px 8px; cursor:pointer;" onclick="releaseClaim(${safeJsParam(c.name)})">Unlink</button>
               </div>
             `;
           }
@@ -5123,8 +5123,8 @@ function renderKnownCharactersList(chars) {
           const code = c.claim_code || "";
           actionBtnHtml = `
             <div style="display:flex; gap:6px;">
-              <button class="pill-btn" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#fff; font-weight:700; font-size:0.72rem; padding:5px 10px; border:none; cursor:pointer;" onclick="showClaimCodeModal('${escapeHtml(c.name)}', '${escapeHtml(code)}')">Verify Code</button>
-              <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.72rem; padding:5px 8px; cursor:pointer;" title="Cancel pending claim" onclick="releaseClaim('${escapeHtml(c.name)}')">Cancel</button>
+              <button class="pill-btn" style="background:linear-gradient(135deg, #d97706 0%, #b45309 100%); color:#fff; font-weight:700; font-size:0.72rem; padding:5px 10px; border:none; cursor:pointer;" onclick="showClaimCodeModal(${safeJsParam(c.name)}, ${safeJsParam(code)})">Verify Code</button>
+              <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.72rem; padding:5px 8px; cursor:pointer;" title="Cancel pending claim" onclick="releaseClaim(${safeJsParam(c.name)})">Cancel</button>
             </div>
           `;
         } else {
@@ -5138,14 +5138,14 @@ function renderKnownCharactersList(chars) {
         actionBtnHtml = `
           <div style="display:flex; gap:6px;">
             <button class="pill-btn active" style="background:#10b981; color:#fff; font-size:0.75rem; padding:4px 10px;" disabled>✓ Selected</button>
-            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.72rem; padding:5px 10px; border:none; cursor:pointer;" onclick="claimKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Claim Champion &rarr;</button>
+            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.72rem; padding:5px 10px; border:none; cursor:pointer;" onclick="claimKnownCharacter(${safeJsParam(c.name)}, ${safeJsParam(cls)}, ${c.level || 60}, ${safeJsParam(c.faction || 'Alliance')}, ${safeJsParam(c.guild || 'None')}, ${safeJsParam(c.realm || 'WoW Forever')})">Claim Champion &rarr;</button>
           </div>
         `;
       } else {
         actionBtnHtml = `
           <div style="display:flex; gap:6px;">
-            <button class="pill-btn" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.2); font-size:0.75rem; padding:5px 10px; cursor:pointer;" onclick="selectKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Select</button>
-            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.75rem; padding:5px 12px; border:none; cursor:pointer;" onclick="claimKnownCharacter('${escapeHtml(c.name)}', '${cls}', ${c.level || 60}, '${escapeHtml(c.faction || 'Alliance')}', '${escapeHtml(c.guild || 'None')}', '${escapeHtml(c.realm || 'WoW Forever')}')">Claim Champion &rarr;</button>
+            <button class="pill-btn" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.2); font-size:0.75rem; padding:5px 10px; cursor:pointer;" onclick="selectKnownCharacter(${safeJsParam(c.name)}, ${safeJsParam(cls)}, ${c.level || 60}, ${safeJsParam(c.faction || 'Alliance')}, ${safeJsParam(c.guild || 'None')}, ${safeJsParam(c.realm || 'WoW Forever')})">Select</button>
+            <button class="pill-btn" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:700; font-size:0.75rem; padding:5px 12px; border:none; cursor:pointer;" onclick="claimKnownCharacter(${safeJsParam(c.name)}, ${safeJsParam(cls)}, ${c.level || 60}, ${safeJsParam(c.faction || 'Alliance')}, ${safeJsParam(c.guild || 'None')}, ${safeJsParam(c.realm || 'WoW Forever')})">Claim Champion &rarr;</button>
           </div>
         `;
       }
@@ -6591,26 +6591,26 @@ async function loadDefenseView() {
                 <div class="distress-body">
                   <div style="font-size:1.1rem; font-weight:800;">
                     <span style="color:${classColor};" class="clickable-player" onclick="openCharacterProfile(${safeJsParam(b.character_name)})">${escapeHtml(b.character_name)}</span>
-                    <span style="font-size:0.8rem; color:#94a3b8; font-weight:normal;">(Lvl ${b.character_level} ${b.character_class})</span>
+                    <span style="font-size:0.8rem; color:#94a3b8; font-weight:normal;">(Lvl ${b.character_level} ${escapeHtml(b.character_class)})</span>
                   </div>
                   <div>
-                    Guild: <strong style="color:var(--accent-gold);">${b.guild_name && b.guild_name !== 'None' ? '&lt;' + b.guild_name + '&gt;' : 'Unaligned'}</strong>
-                    &bull; Faction: <span style="color:${b.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700;">${b.faction}</span>
+                    Guild: <strong style="color:var(--accent-gold);">${b.guild_name && b.guild_name !== 'None' ? '&lt;' + escapeHtml(b.guild_name) + '&gt;' : 'Unaligned'}</strong>
+                    &bull; Faction: <span style="color:${b.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; font-weight:700;">${escapeHtml(b.faction || 'Neutral')}</span>
                   </div>
                   <div>
-                    📍 Location: <strong style="color:#fff;">${b.zone}</strong> ${b.subzone ? '(' + b.subzone + ')' : ''}
+                    📍 Location: <strong style="color:#fff;">${escapeHtml(b.zone)}</strong> ${b.subzone ? '(' + escapeHtml(b.subzone) + ')' : ''}
                     <code style="color:var(--accent-cyan); font-size:0.75rem; margin-left:4px;">(${b.coord_x.toFixed(1)}, ${b.coord_y.toFixed(1)})</code>
                   </div>
                   <div class="distress-threat">
                     <span style="color:#f87171; font-weight:700;">⚠️ Threat Level: ${b.hostile_count} Hostile(s)</span><br>
-                    <span style="color:#e2e8f0; font-size:0.75rem;">${b.hostile_names}</span>
+                    <span style="color:#e2e8f0; font-size:0.75rem;">${escapeHtml(b.hostile_names)}</span>
                   </div>
                 </div>
                 <div class="distress-actions">
                   <button class="nav-btn active" style="flex:1; font-size:0.75rem; padding:6px 10px; background:var(--accent-cyan); color:#000; font-weight:700;" onclick="copyWhisperCommand(${safeJsParam(b.character_name)})">
                     📋 Whisper Auto-Invite
                   </button>
-                  <button class="nav-btn" style="font-size:0.75rem; padding:6px 10px;" onclick="resolveDistressBeacon('${b.id}')">
+                  <button class="nav-btn" style="font-size:0.75rem; padding:6px 10px;" onclick="resolveDistressBeacon(${safeJsParam(b.id)})">
                     ✅ Clear
                   </button>
                 </div>
@@ -6636,18 +6636,18 @@ async function loadDefenseView() {
             <div class="event-card">
               <div class="event-card-header">
                 <div>
-                  <h3 style="color:var(--accent-cyan); font-size:1rem; margin-bottom:2px;">${e.title}</h3>
+                  <h3 style="color:var(--accent-cyan); font-size:1rem; margin-bottom:2px;">${escapeHtml(e.title)}</h3>
                   <div style="font-size:0.75rem; color:#94a3b8;">
-                    Guild: <strong style="color:var(--accent-gold);">&lt;${e.guild_name}&gt;</strong> &bull; Lead: <strong>${e.creator_name}</strong>
+                    Guild: <strong style="color:var(--accent-gold);">&lt;${escapeHtml(e.guild_name)}&gt;</strong> &bull; Lead: <strong>${escapeHtml(e.creator_name)}</strong>
                   </div>
                 </div>
                 <span style="font-size:0.7rem; background:rgba(0,229,255,0.15); color:var(--accent-cyan); border:1px solid var(--accent-cyan); padding:2px 6px; border-radius:4px; font-weight:700;">
-                  ${e.time_str}
+                  ${escapeHtml(e.time_str)}
                 </span>
               </div>
-              <p style="font-size:0.8rem; color:#cbd5e1; margin:8px 0;">${e.description}</p>
+              <p style="font-size:0.8rem; color:#cbd5e1; margin:8px 0;">${escapeHtml(e.description)}</p>
               <div style="font-size:0.75rem; color:#94a3b8; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1e293b; padding-top:8px; margin-top:8px;">
-                <span>📍 Rally Zone: <strong style="color:#fff;">${e.zone}</strong></span>
+                <span>📍 Rally Zone: <strong style="color:#fff;">${escapeHtml(e.zone)}</strong></span>
                 <button class="nav-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="copyWhisperCommand(${safeJsParam(e.creator_name)}, 'invite')">
                   Join / Whisper
                 </button>
@@ -6682,7 +6682,7 @@ async function loadDefenseView() {
           </div>
           <div>
             <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Target Guild Tag / Scope:</label>
-            <input type="text" id="discord-guild-name" class="search-input" style="width:100%;" placeholder="e.g. Vanguard Brigade or default" value="${discordCfg && discordCfg.guild_name ? discordCfg.guild_name : 'default'}">
+            <input type="text" id="discord-guild-name" class="search-input" style="width:100%;" placeholder="e.g. Vanguard Brigade or default" value="${escapeHtml(discordCfg && discordCfg.guild_name ? discordCfg.guild_name : 'default')}">
           </div>
         </div>
 
@@ -6869,7 +6869,7 @@ async function checkGlobalSosBeacons() {
           <span style="font-size:1.4rem;">🚨</span>
           <div>
             <div style="font-size:0.95rem; font-weight:800; color:#fff;">
-              CALL FOR BACKUP: <span style="color:#f87171;">${topB.character_name}</span> is Taking Fire in ${topB.zone}!
+              CALL FOR BACKUP: <span style="color:#f87171;">${escapeHtml(topB.character_name)}</span> is Taking Fire in ${escapeHtml(topB.zone)}!
             </div>
             <div style="font-size:0.75rem; color:#cbd5e1;">
               Engaged by ${topB.hostile_count} hostile(s) &bull; Coordinates: (${topB.coord_x.toFixed(1)}, ${topB.coord_y.toFixed(1)}) &bull; Auto-Invite is LIVE

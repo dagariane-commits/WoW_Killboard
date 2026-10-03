@@ -38,6 +38,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Flask DoS Memory Exhaustion Mitigation (`web/server.py`)**: Configured `MAX_CONTENT_LENGTH = 16MB`, protecting lightweight VPS environments from Out-Of-Memory (OOM) crashes caused by unbounded incoming upload payloads.
   - **Zero-PII Architecture Enforcement & OAuth Retirement (`web/server.py`)**: Retired legacy Battle.net OAuth endpoints that captured BattleTags in favor of the 100% anonymous, Blizzard-compliant in-game `/kb claim` verification token architecture.
   - **Vulnerability Disclosure Update (`CONTRIBUTING.md`)**: Replaced personal email reference with official GitHub Private Security Advisory guidelines.
+- **Phase 5 Security & Sanitization Hardening (`server.py`, `app.js`, `test_pipeline.py`)**:
+  - **Inline Event Handler Hardening & Apostrophe Resiliency (`web/static/app.js`)**: Migrated all remaining inline DOM event handlers to `safeJsParam()`, eradicating JavaScript syntax crashes and potential script execution breakouts when interacting with entities or zones containing single quotes/apostrophes (e.g., `Un'Goro Crater`, `Blade's Edge Mountains`, or fantasy champion names):
+    - Sanitized `copyCharacterProfileLink`, `filterFeedByZone`, `openKillModal`, `handleSelectForeverServer`, `releaseClaim`, `selectKnownCharacter`, `showClaimCodeModal`, and `claimKnownCharacter`.
+  - **Residual DOM XSS Sink Neutralization (`web/static/app.js`)**: Wrapped all remaining user/entity interpolations in `escapeHtml()`, neutralizing potential DOM XSS vectors in `data.rankTitle`, `data.percentile.cohortLabel`, `data.spec`, `data.class`, `data.faction`, `data.bloodDebtor.creditor`, `data.reputation`, `c.rankTitle`, and `deadZone.zone`.
+  - **Complete REST State Mutation Rate Limiting (`web/server.py`)**: Expanded in-memory sliding-window IP rate limiting across all remaining un-throttled POST endpoints with automatic unit test bypass:
+    - `POST /api/upload` (30 req/min)
+    - `POST /api/kills` (120 req/min)
+    - `POST /api/bounties/accept` (20 req/min)
+    - `POST /api/bounties/debt-ledger` (10 req/min)
+    - `POST /api/backup/resolve/<beacon_id>` (20 req/min)
+    - `POST /api/feuds/<feud_id>/accept` (10 req/min)
+    - `POST /api/discord/test` (5 req/min)
+    - `POST /api/analytics/event` (60 req/min)
+  - **Payload Length & Numeric Range Sanitization (`web/server.py`)**: Applied defensive string truncations (32-64 chars) and numeric boundaries across all state mutation endpoints to prevent database bloat and oversized payload ingestion.
+  - **Pipeline Test Expansion (`tests/test_pipeline.py`)**: Added `test_25_phase_5_security_and_sanitization` ensuring 100% automated coverage across all 25 pipeline and security tests.
+- **Phase 4 Deep Security Audit & Sanitization Hardening (`server.py`, `app.js`, `watcher.py`, `deploy.py`, `setup_vps.sh`, documentation)**:
+  - **Comprehensive DOM XSS Eradication (`web/static/app.js`)**: Sanitized all remaining unescaped innerHTML template interpolations using `escapeHtml()` across the entire web platform:
+    - Guild profile modal: sanitized raw `guildName` in the loading banner, active members table, recent victories, and guild title.
+    - Character dossier modal: sanitized `data.currentGuild`, `g.guild_name`, `k.victim_guild`, `k.zone`, `d.killer_guild`, `d.zone`.
+    - Killmail modal: sanitized `killerGuildName` and `victimGuildName` inside `<...>` badges.
+    - Bounty leaderboards & Outlaws: sanitized `b.target_name`, `o.target_name`, `f.target_name`, and `f.hunter_name`.
+    - Blood Debtor Ledger: sanitized `d.player_name` and `d.creditor`.
+    - Armory directory cards: sanitized `c.guild`, `lastSeen.zone`, `c.spec`, and `c.class`.
+    - Apex Predators & Fallen Mortals PvE stream: sanitized `npc.npc_name`, `npc.zone`, `npc.npc_spell`, `v.victim_guild`, `d.npc_name`, `locStr`, and `d.npc_spell`.
+    - Vanguard Rally & Distress Hub: sanitized `b.character_class`, `b.guild_name`, `b.zone`, `b.subzone`, `b.hostile_names`, `topB.character_name`, and `topB.zone` in both cards and the live broadcast marquee ticker.
+    - Guild Events: sanitized `e.title`, `e.guild_name`, `e.creator_name`, `e.time_str`, `e.description`, and `e.zone`.
+    - Discord Gateway: sanitized `discordCfg.guild_name` input attribute value.
+  - **Defense-in-Depth HTTP Security Headers (`web/server.py`)**: Attached standard defensive HTTP security headers to all responses in `@app.after_request`:
+    - `X-Content-Type-Options: nosniff` (prevents MIME sniffing)
+    - `X-Frame-Options: SAMEORIGIN` (mitigates clickjacking)
+    - `X-XSS-Protection: 1; mode=block`
+    - `Referrer-Policy: strict-origin-when-cross-origin`
+    - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+  - **REST API Denial-of-Service & State Flooding Defense (`web/server.py`)**: Added sliding-window IP rate limiting and string length constraints across all user-facing state submission endpoints:
+    - `POST /api/bounties` (20 req/min, target max 64 chars, gold bounds)
+    - `POST /api/backup/distress` (15 req/min, character/zone/message length bounds)
+    - `POST /api/events` (10 req/min, title/desc/zone length bounds)
+    - `POST /api/intel/sighting` (30 req/min, scout/target/notes bounds)
+    - `POST /api/feuds/challenge` (10 req/min, challenger/target/score bounds)
+  - **PowerShell Path Injection Hardening (`sync/watcher.py`)**: Sanitized single-quote escaping (`replace("'", "''")`) in `create_windows_shortcut` to prevent PowerShell command breaking or syntax errors on paths with apostrophes.
+  - **Dynamic Multi-Version Packaging (`scripts/deploy.py`, `web/server.py`)**: Upgraded `scripts/deploy.py` to dynamically parse the version from `WoWKillboard.toc` (`1.0.1`) and simultaneously package and mirror `WoWKillboard-v1.0.1.zip` alongside the legacy `WoWKillboard-v1.0.0.zip`. Added `@app.route("/WoWKillboard-v1.0.1.zip")` with priority fallback.
+  - **Zero Documentation Drift (`README.md`, `docs/*`, `AGENTS.md`, `.agent/rules/standard_operating_procedure.md`)**: Updated all release package references and release badges to explicitly cite `v1.0.1` and `WoWKillboard-v1.0.1.zip`.
+  - **VPS Production Key Generation (`deploy/setup_vps.sh`)**: Added automated cryptographic random generation (`openssl rand -hex 16`) for `ADMIN_SECRET_KEY` during Linux VPS bootstrap installer.
 - **Phase 3 Security & Protocol Hardening (`server.py`, `Reinforcements.lua`, `Sync.lua`, `app.js`, `test_pipeline.py`)**:
   - **Character Claim Brute-Force Lockout (`web/server.py`)**: Upgraded in-game claim code generation from 4 hex characters to 8 cryptographically random hex characters (`secrets.token_hex(4).upper()`, $4.29 \times 10^9$ combinations). Enforced attempt tracking with a 5-failure threshold and a 15-minute lockout window, complemented by an IP-based sliding window rate limiter (10 attempts/min) to eradicate automated character hijacking.
   - **State Mutation Authorization Gating (`web/server.py`)**: Gated `/api/debt/pay`, `/api/kos/blacklist`, `/api/kos/pardon`, and `/api/events/<event_id>/cancel` behind timing-safe `ADMIN_SECRET_KEY` validation or verified character claim ownership tokens, preventing unauthorized ledger settlements and arbitrary KOS branding.
