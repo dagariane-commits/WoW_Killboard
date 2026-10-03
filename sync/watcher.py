@@ -1210,47 +1210,41 @@ def load_config() -> dict:
             pass
     return {}
 
+def get_startup_dir() -> str:
+    appdata = os.environ.get("APPDATA", "")
+    return os.path.join(appdata, r"Microsoft\Windows\Start Menu\Programs\Startup")
+
 def is_windows_startup_enabled() -> bool:
-    """Checks whether WoWKillboardSync is registered in Windows CurrentVersion/Run."""
+    """Checks whether WoWKillboardSync is registered in the user Startup folder."""
     if sys.platform != "win32":
         return False
-    try:
-        import winreg
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_READ)
-        try:
-            val, _ = winreg.QueryValueEx(key, "WoWKillboardSync")
-            winreg.CloseKey(key)
-            return bool(val)
-        except FileNotFoundError:
-            winreg.CloseKey(key)
-            return False
-    except Exception:
-        return False
+    startup_dir = get_startup_dir()
+    for ext in (".url", ".lnk"):
+        if os.path.exists(os.path.join(startup_dir, f"WoW Killboard{ext}")):
+            return True
+    return False
 
 def set_windows_startup(enable: bool) -> bool:
-    """Enables or disables automatic startup on Windows boot (preferring installed location)."""
+    """Enables or disables automatic startup on Windows boot via the user Startup folder."""
     if sys.platform != "win32":
         return False
     try:
-        import winreg
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
+        startup_dir = get_startup_dir()
+        os.makedirs(startup_dir, exist_ok=True)
+        shortcut_url = os.path.join(startup_dir, "WoW Killboard.url")
+        shortcut_lnk = os.path.join(startup_dir, "WoW Killboard.lnk")
+
         if enable:
             target_installed = os.path.join(get_install_dir(), "WoWKillboardSync.exe")
-            if os.path.exists(target_installed):
-                cmd = f'"{target_installed}"'
-            else:
-                exe_path = os.path.abspath(sys.argv[0])
-                if exe_path.endswith(".py"):
-                    cmd = f'"{sys.executable}" "{exe_path}"'
-                else:
-                    cmd = f'"{exe_path}"'
-            winreg.SetValueEx(key, "WoWKillboardSync", 0, winreg.REG_SZ, cmd)
+            target = target_installed if os.path.exists(target_installed) else os.path.abspath(sys.argv[0])
+            create_windows_shortcut(target, shortcut_url, "WoW Killboard Desktop Companion")
         else:
-            try:
-                winreg.DeleteValue(key, "WoWKillboardSync")
-            except FileNotFoundError:
-                pass
-        winreg.CloseKey(key)
+            for s in (shortcut_url, shortcut_lnk):
+                if os.path.exists(s):
+                    try:
+                        os.remove(s)
+                    except Exception:
+                        pass
         return True
     except Exception as e:
         log_event(f"[Startup] Failed to configure Windows startup: {e}")
