@@ -4603,7 +4603,7 @@ function loadUploadView() {
             <span>⚔️</span> <span>Need the WoW Killboard Addon?</span>
           </div>
           <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 3px;">
-            Download the lightweight, zero-taint addon package (v1.0.0) for World PvP &amp; Battlegrounds.
+            Download the lightweight, zero-taint addon package (v1.0.1) for World PvP &amp; Battlegrounds.
           </div>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -4618,54 +4618,54 @@ function loadUploadView() {
 
       <!-- Ingestion Channels Grid -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;">
-        <!-- Option 1: Desktop Companion Binary -->
-        <div style="background: #0a0e16; border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 20px; display:flex; flex-direction:column; justify-content:space-between;">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <span style="font-size:0.68rem; font-weight:800; color:var(--wow-gold); background:rgba(212, 163, 41, 0.12); border:1px solid var(--wow-gold); padding:2px 8px; border-radius:4px;">
-                AUTOMATIC &bull; REAL-TIME
-              </span>
-              <span style="font-size:0.75rem; color:#10b981; font-weight:700;">Zero-Touch</span>
-            </div>
-            <h3 style="font-size:1.15rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">WoWKillboardSync.exe (Desktop Companion)</h3>
-            <p style="font-size:0.8rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
-              Standalone desktop application (like Warcraft Logs or Raider.IO). Opens a sleek graphical dashboard, auto-detects all WoW clients across drives C:, D:, and E:, and streams combat telemetry to wowkillboard.com in real-time.
-            </p>
-            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
-              &bull; Native graphical dashboard (Zero terminal/CMD required)<br>
-              &bull; One-click Windows startup & automatic background sync<br>
-              &bull; Real-time combat activity stream & two-way realm telemetry<br>
-              <div style="margin-top: 6px; color:#cbd5e1; font-size:0.72rem; line-height:1.35; background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:4px; border-left:2px solid var(--wow-gold);">
-                <strong style="color:var(--wow-gold);">First Run:</strong> If Windows Defender SmartScreen shows <em>"Windows protected your PC"</em>, click <strong>More info</strong> &rarr; <strong>Run anyway</strong>.
-              </div>
-            </div>
-          </div>
-          <div style="padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#cbd5e1;">
-            Direct download: <a href="/WoWKillboardSync.exe" download style="color:var(--wow-gold); font-weight:700; text-decoration:underline;">Download WoWKillboardSync.exe</a>
-          </div>
-        </div>
-
-        <!-- Option 2: Pure Browser Drag & Drop -->
+        <!-- Option 1: Pure Browser Drag & Drop (Recommended) -->
         <div style="background: #0a0e16; border: 2px solid var(--wow-gold); border-radius: 8px; padding: 20px; display:flex; flex-direction:column; justify-content:space-between; box-shadow: 0 0 18px rgba(212, 163, 41, 0.15);">
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <span style="font-size:0.68rem; font-weight:800; color:#10b981; background:rgba(16, 185, 129, 0.15); border:1px solid #10b981; padding:2px 8px; border-radius:4px;">
-                ZERO DOWNLOAD &bull; BROWSER UPLOAD
+                ZERO DOWNLOAD &bull; RECOMMENDED
               </span>
-              <span style="font-size:0.75rem; color:var(--wow-gold); font-weight:700;">Manual Upload</span>
+              <span style="font-size:0.75rem; color:var(--wow-gold); font-weight:700;">Browser Upload</span>
             </div>
             <h3 style="font-size:1.15rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">Drag & Drop Uploader</h3>
             <p style="font-size:0.8rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
               No .exe or background processes needed. Whenever you finish a play session, simply drag your SavedVariables file into the dropzone below. Safe against out-of-order uploads.
             </p>
             <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
-              &bull; 100% Client-side file reading<br>
+              &bull; 100% Client-side file reading (Zero software installed)<br>
               &bull; Anti-tamper battle validation<br>
               &bull; Instant leaderboard & bounty recalculation
             </div>
           </div>
           <div style="padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#cbd5e1;">
             Supported formats: <strong style="color:#fff;">.lua</strong> (WoWKillboard.lua), <strong style="color:#fff;">.json</strong>, <strong style="color:#fff;">.txt</strong>
+          </div>
+        </div>
+
+        <!-- Option 2: Desktop Companion Binary (Optional) -->
+        <div style="background: #0a0e16; border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 20px; display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <span style="font-size:0.68rem; font-weight:800; color:var(--wow-gold); background:rgba(212, 163, 41, 0.12); border:1px solid var(--wow-gold); padding:2px 8px; border-radius:4px;">
+                OPTIONAL &bull; AUTOMATIC SYNC
+              </span>
+              <span style="font-size:0.75rem; color:#10b981; font-weight:700;">Background Companion</span>
+            </div>
+            <h3 style="font-size:1.15rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">WoWKillboardSync.exe (Desktop Companion)</h3>
+            <p style="font-size:0.8rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
+              Optional desktop helper (like Warcraft Logs or Raider.IO). Opens a graphical dashboard, auto-detects all WoW clients across drives C:, D:, and E:, and streams combat telemetry to wowkillboard.com when you reload or logout.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
+              &bull; Native graphical dashboard (Zero terminal/CMD required)<br>
+              &bull; One-click Windows startup & automatic background sync<br>
+              &bull; Real-time combat activity stream & two-way realm telemetry<br>
+              <div style="margin-top: 6px; color:#cbd5e1; font-size:0.72rem; line-height:1.35; background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:4px; border-left:2px solid var(--wow-gold);">
+                <strong style="color:var(--wow-gold);">First Run:</strong> If Windows Defender SmartScreen shows <em>"Windows protected your PC"</em>, click <strong>More info</strong> &rarr; <strong>Run anyway</strong>. (On Windows 11 Smart App Control: Right-click the downloaded file &rarr; <strong>Properties</strong> &rarr; check <strong>Unblock</strong> &rarr; OK).
+              </div>
+            </div>
+          </div>
+          <div style="padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#cbd5e1;">
+            Direct download: <a href="/WoWKillboardSync.exe" download style="color:var(--wow-gold); font-weight:700; text-decoration:underline;">Download WoWKillboardSync.exe</a>
           </div>
         </div>
       </div>

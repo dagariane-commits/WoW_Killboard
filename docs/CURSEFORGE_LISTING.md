@@ -74,28 +74,36 @@ WKB is built to run smoothly in the background:
 
 ---
 
+### Visual Themes (Classic Stone & ElvUI Dark)
+WKB includes two built-in visual styles:
+- **Classic WoW Theme (Default)**: Authentic Blizzard dialog stone backgrounds, gold borders, and warm parchment styling.
+- **ElvUI Minimalist Theme**: Sleek dark charcoal/black backdrops with high-contrast accents.
+- **Switch Anytime**: Toggle instantly in Settings or with `/kb theme` (or right-click the minimap skull button). *Note: As a solo hobbyist project, styling will continue to refine and evolve with your feedback!*
+
+---
+
 ### In-Game Slash Commands
 
 | Command | Action |
 | :--- | :--- |
 | `/kb` or `/killboard` | Open or close the main interface |
 | `/kb config` | Open settings, alerts, and sound preferences |
+| `/kb theme` | Switch between Classic WoW and ElvUI Dark themes |
 | `/kb sos [reason]` | Send an SOS call to nearby allies with your location |
 | `/kb stats` | Print your session kill/death stats to chat |
 | `/kb reset` | Reset your local combat session history |
 
 ---
 
-### Currently in Development
-Here is what we are working on for upcoming updates:
-- Direct addon-to-addon sharing between party and guild members.
-- Guild scoreboards and guild vs. guild rivalry stats.
-- Optional web sync for viewing character profiles and Discord kill alerts.
+### Web Killboard & Community Uploads
+- **Web Portal**: Visit [wowkillboard.com](https://wowkillboard.com) to view realm leaderboards, outlaws, and combat dossiers.
+- **Zero-Install Web Uploader**: Drag and drop your `SavedVariables/WoWKillboard.lua` file at [wowkillboard.com/upload](https://wowkillboard.com/upload) directly in your browser. No desktop software or background processes required!
 
 ---
 
-### Feedback & Bug Reports
-Since this is an early release, your feedback is very helpful. If you run into any issues, have suggestions, or want to report a bug, please leave a comment on this project page or visit our GitHub tracker.
+### Compatibility & Feedback
+- **Game Versions**: Hands-on testing has primarily been focused in WoW Forever (Classic Beta). The codebase is structured for cross-client parity across Classic Era, Anniversary, and Retail as well. If you encounter any flavor-specific quirks, please let me know!
+- **Feedback & Bug Reports**: Since this is an active community release, your feedback is very helpful. If you run into any issues, have suggestions, or want to report a bug, please leave a comment on this project page or visit our GitHub tracker.
 ```
 
 ---
@@ -120,8 +128,8 @@ Upload the screenshots located in [`assets/curseforge/`](assets/curseforge/) in 
 1. Navigate to the **File** tab on your newly created CurseForge project.
 2. Click **Upload File**.
 3. Select `WoWKillboard-v1.0.1.zip` (located in the project root: `WoWKillboard-v1.0.1.zip`).
-4. Set **Display Name**: `WKB v1.0.1 (Early Beta)`
-5. Set **Release Type**: `Beta` (or `Release` if you prefer).
+4. Set **Display Name**: `WKB v1.0.1 (Community Release)`
+5. Set **Release Type**: `Release` (or `Beta` if you prefer).
 6. Under **Supported Game Versions**, select:
    - `World of Warcraft Classic` (Classic Era `1.15.x`)
    - `Classic Beta` / `Classic Anniversary`

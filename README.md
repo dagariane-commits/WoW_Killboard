@@ -12,6 +12,8 @@ Hey everyone! I'm just a dude who used AI to help create my very first World of 
 
 **WoW Killboard** is a community killboard for WoW that tracks open-world PvP kills, certified 1v1 duels, battleground stats, blood bounties, and wilderness PvE deaths across **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and modern **Retail** clients.
 
+*(Note: Hands-on testing has primarily been focused in WoW Forever Beta. The code is written with parity in mind for Classic Era, Anniversary, and Retail as well, but multi-version testing is ongoing!)*
+
 I really hope you like it! It's currently in early beta, so please test it out, give me your feedback, and let me know what you'd like to see added so I can keep making it better.
 
 ---
@@ -30,7 +32,7 @@ Comprehensive technical documentation is maintained in the [`docs/`](docs/) dire
 - ☁️ **[Dedicated Linux VPS Deployment](docs/DEPLOYMENT_VPS.md)** — AWS Lightsail runbook, automated SSL/TLS via Caddy, and backup automation.
 - 🗺️ **[Forward Strategic Roadmap](docs/ROADMAP.md)** — Phased roadmap covering public launch, guild war rooms, and ranked seasons.
 - 🚀 **[Public Release & Distribution Playbook](docs/PUBLIC_RELEASE_PLAYBOOK.md)** — Guide for packaging, CurseForge/Wago distribution, and hosting.
-- 📝 **[Semantic Version Change Log](CHANGELOG.md)** — Full changelog trail from initial prototype to v1.0.0 release.
+- 📝 **[Semantic Version Change Log](CHANGELOG.md)** — Full changelog trail from initial prototype to v1.0.1 release.
 - 🤝 **[Contributing Guidelines](CONTRIBUTING.md)** — Development standards and PR checklist for open-source contributors.
 - ⚖️ **[Legal, Safety & Compliance Guide](docs/LEGAL_AND_COMPLIANCE.md)** — Authorship, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
 
@@ -270,7 +272,10 @@ You do not need to install or run any executable on your PC:
 For players who prefer automated background syncing without manually dragging files:
 1. Download [`WoWKillboardSync.exe`](WoWKillboardSync.exe).
 2. The companion monitors `SavedVariables/WoWKillboard.lua` across drives C:, D:, and E: and automatically syncs when you `/reload` or log out of WoW.
-3. **Security & SmartScreen Notice**: Because the companion is an independent open-source tool without an enterprise certificate, Windows SmartScreen will display an unrecognized app notice on first launch (Click **More info** → **Run anyway**). The companion is open-source, contains zero command execution, and has been verified clean across 66+ security vendors on [VirusTotal](https://www.virustotal.com).
+3. **Security & SmartScreen Notice**: Because the companion is an independent open-source tool without an enterprise certificate, Windows may prompt on first run:
+   - **Windows Defender SmartScreen**: Click **More info** → **Run anyway**.
+   - **Windows 11 Smart App Control**: If blocked with no "Run anyway" button, right-click `WoWKillboardSync.exe` in Downloads → select **Properties** → check the **"Unblock"** checkbox at the bottom → click **OK**, then double-click to launch.
+   - The companion is fully open-source, contains zero shell execution, and has been verified clean across 66+ security vendors on [VirusTotal](https://www.virustotal.com).
 
 ### 3. Running the Local Web Server (For Developers)
 ```bash

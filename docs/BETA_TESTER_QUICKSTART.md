@@ -1,6 +1,6 @@
-# WoW Killboard — Early Beta Tester Quickstart Guide
+# WoW Killboard — Community Release Quickstart Guide
 
-Welcome to the **WoW Killboard** Early Beta! This guide gets you up and running in under 2 minutes.
+Welcome to **WoW Killboard**! This guide gets you up and running in under 2 minutes.
 
 ---
 
@@ -8,12 +8,12 @@ Welcome to the **WoW Killboard** Early Beta! This guide gets you up and running 
 
 ```mermaid
 flowchart LR
-    S1["1. Install Addon\nExtract to Interface\\AddOns"] --> S2["2. Run Sync Agent\nDouble-click WoWKillboardSync.exe"]
+    S1["1. Install Addon\nExtract to Interface\\AddOns"] --> S2["2. Sync to Web\nBrowser Drag & Drop OR Optional App"]
     S2 --> S3["3. Slay & View Live\nEngage in combat & view Killboard"]
 ```
 
-### Step 1: Install the In-Game Addon
-1. Download **`WoWKillboard-v1.0.1.zip`**.
+### Step 1: Install the In-Game Addon (100% Pure Lua)
+1. Download **`WoWKillboard-v1.0.1.zip`** (or install via CurseForge: search `wkb`).
 2. Extract the `WoWKillboard` folder directly into your World of Warcraft AddOns directory:
    - **WoW Forever / Classic Beta**: `World of Warcraft\_classic_beta_\Interface\AddOns\`
    - **Classic Era**: `World of Warcraft\_classic_era_\Interface\AddOns\`
@@ -21,12 +21,22 @@ flowchart LR
    - **Modern Retail**: `World of Warcraft\_retail_\Interface\AddOns\`
 3. Launch World of Warcraft. On your character selection screen, ensure **WoW Killboard** is checked in the **AddOns** menu.
 
-### Step 2: Launch the Desktop Companion App (Zero Python Required)
-1. Download **`WoWKillboardSync.exe`**.
-2. Double-click to launch it. The sleek dark-themed **Desktop Companion Dashboard** opens immediately.
-3. When prompted, click **"🚀 Install & Launch"** to install cleanly to your PC, creating a **Desktop shortcut** and Start Menu icon while keeping your Downloads folder completely clean.
-4. The companion automatically discovers your WoW installation across drives `C:`, `D:`, and `E:`.
-5. Check **"Start with Windows"** if you'd like it to monitor automatically in the background. Whenever you `/reload` or log out, your combat kills, Marks of Spite, and battle statistics are instantly synchronized to the realm killboard!
+### Step 2: Synchronize to the Web Killboard
+
+#### Method A: Web Drag-and-Drop (Zero Installation • Recommended)
+No downloads or background processes required:
+1. Open the [WoW Killboard Web Uploader](https://wowkillboard.com/upload) in your browser.
+2. Drag and drop your `SavedVariables\WoWKillboard.lua` file directly into the upload area:
+   `World of Warcraft\<flavor>\WTF\Account\<AccountName>\SavedVariables\WoWKillboard.lua`
+3. Your combat history and leaderboards update immediately.
+
+#### Method B: Optional Desktop Companion App (`WoWKillboardSync.exe`)
+For automated background syncing whenever you reload or log out:
+1. Download **`WoWKillboardSync.exe`** from GitHub Releases.
+2. Double-click to launch it. The companion automatically discovers your WoW installation across drives `C:`, `D:`, and `E:`.
+3. **Windows Security Notice**: Because this is an open-source tool without an enterprise certificate, Windows may prompt on first run:
+   - **Windows Defender SmartScreen**: Click **More info** → **Run anyway**.
+   - **Windows 11 Smart App Control**: If blocked with no "Run anyway" button, right-click `WoWKillboardSync.exe` in Downloads → select **Properties** → check the **"Unblock"** checkbox at the bottom → click **OK**, then double-click to launch.
 
 ### Step 3: Slay & Track Live
 - In-Game Commands:
@@ -76,7 +86,7 @@ flowchart LR
 5. In the web modal, click **"⚡ Check Verification Status"** to receive instant confirmation (`🛡️ Verified Owner`).
 
 ### Q: Does the desktop sync require Python installed?
-**No.** `WoWKillboardSync.exe` is a standalone, self-contained Windows binary. No Python, terminal, or environment setup is needed.
+**No.** `WoWKillboardSync.exe` is a standalone, self-contained Windows binary. No Python, terminal, or environment setup is needed. You can also skip the desktop app entirely by using the browser uploader at [wowkillboard.com/upload](https://wowkillboard.com/upload).
 
 ### Q: Why didn't my kill immediately appear on the web platform?
 World of Warcraft only writes `SavedVariables` to disk when you **log out**, **exit the game**, or type **`/reload`**. Simply type `/reload` after a battle to push your kills immediately to the server.
