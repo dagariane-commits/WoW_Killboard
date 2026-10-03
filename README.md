@@ -258,10 +258,19 @@ WoW_Killboard/
    - `/kb bug <description>` or `/kb report` — Submit in-game telemetry & bug dispatch directly to the AI Diagnostician (or click `[Report Bug]` in header).
    - `/killboard reset` — Clear local kill database.
 
-### 2. Standalone Desktop Sync (Zero-Python)
-1. Launch [`WoWKillboardSync.exe`](WoWKillboardSync.exe).
-2. The agent automatically detects your WoW installation and begins monitoring `SavedVariables/WoWKillboard.lua`.
-3. Whenever you reload (`/reload`) or log out of WoW, new combat kills and bounties sync automatically to the web platform.
+### 2. Synchronizing with the Web Killboard
+
+#### Method A: Web Drag-and-Drop (Zero Installation • Recommended)
+You do not need to install or run any executable on your PC:
+1. Open the [WoW Killboard Web Uploader](https://wowkillboard.com/upload) in your browser.
+2. Drag and drop your `SavedVariables\WoWKillboard.lua` file into the upload zone (located in `WTF\Account\<AccountName>\SavedVariables\WoWKillboard.lua`).
+3. Your combat history, bounties, and leaderboards update immediately.
+
+#### Method B: Optional Desktop Companion (`WoWKillboardSync.exe`)
+For players who prefer automated background syncing without manually dragging files:
+1. Download [`WoWKillboardSync.exe`](WoWKillboardSync.exe).
+2. The companion monitors `SavedVariables/WoWKillboard.lua` across drives C:, D:, and E: and automatically syncs when you `/reload` or log out of WoW.
+3. **Security & SmartScreen Notice**: Because the companion is an independent open-source tool without an enterprise certificate, Windows SmartScreen will display an unrecognized app notice on first launch (Click **More info** → **Run anyway**). The companion is open-source, contains zero command execution, and has been verified clean across 66+ security vendors on [VirusTotal](https://www.virustotal.com).
 
 ### 3. Running the Local Web Server (For Developers)
 ```bash
