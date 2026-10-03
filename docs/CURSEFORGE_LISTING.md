@@ -32,15 +32,13 @@ In-game combat tracker, live kill feed, 1v1 fight detection, local bounties, and
 
 ```markdown
 # WKB (WoW Killboard) - Combat Tracker & Leaderboard
-Early Beta / Community Testing Release
+Community Release
 
-Welcome to the early beta of WKB (WoW Killboard). We are actively testing combat tracking, UI responsiveness, and stability across Classic and Retail. We welcome your bug reports, feedback, and feature suggestions.
-
-WKB brings a dedicated killboard and combat tracker directly into your World of Warcraft client. Whether you are fighting in the open world, running battlegrounds, or keeping tabs on dangerous world elites, WKB logs your fights, tracks true 1v1 encounters, manages local bounties, and keeps a running leaderboard right inside the game.
+Welcome to the release of WKB (WoW Killboard). WKB brings a dedicated killboard and combat tracker directly into your World of Warcraft client. Whether you are fighting in the open world, running battlegrounds, or keeping tabs on dangerous world elites, WKB logs your fights, tracks true 1v1 encounters, manages local bounties, and keeps a running leaderboard right inside the game.
 
 ---
 
-### What Works in This Build
+### What Works in This Release
 
 #### 1. Live Kill Feed & Fights
 - **Kill Tracking**: Logs attacker and victim levels, classes, killing blows, and zone locations.
