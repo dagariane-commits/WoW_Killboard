@@ -7022,13 +7022,19 @@ function openBrandKosModal() {
 
   fetch("/api/kos/blacklist", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "X-Owner-Token": getOwnerToken()
+    },
     body: JSON.stringify({
       entity_name: target.trim(),
       entity_type: "GUILD",
-      reason: reason.trim()
+      reason: reason.trim(),
+      owner_token: getOwnerToken()
     })
-  }).then(res => res.json()).then(d => {
+  }).then(async res => {
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || "Failed to brand entity");
     alert(d.message || "Entity consigned to KOS Blacklist!");
     loadFeudsView();
   }).catch(e => alert("Error blacklisting entity: " + e.message));

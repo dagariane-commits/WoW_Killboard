@@ -373,6 +373,12 @@ function RF:OnWhisper(msg, sender)
 
     local cleanMsg = msg:lower():match("^%s*(.-)%s*$")
     if AUTO_INVITE_KEYWORDS[cleanMsg] then
+        -- Anti-spam debounce: limit whisper replies to once every 30 seconds per sender
+        local now = time()
+        RF.InvitedWhisperers = RF.InvitedWhisperers or {}
+        if (now - (RF.InvitedWhisperers[sender] or 0)) < 30 then return end
+        RF.InvitedWhisperers[sender] = now
+
         EnsureRaidConversion()
         InvitePlayer(sender)
         local loc = RF:GetBeaconLocationStr()

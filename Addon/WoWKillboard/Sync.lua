@@ -154,16 +154,31 @@ function S:BroadcastSighting(sighting)
 end
 
 
+-- Delimiter-preserving tokenizer to prevent column shifting on empty fields (::)
+local function ParseMessageParts(message)
+    if not message then return {} end
+    if _G.strsplit then
+        return { _G.strsplit(":", message) }
+    end
+    local parts = {}
+    local start = 1
+    local sep_start, sep_end = string.find(message, ":", start, true)
+    while sep_start do
+        table.insert(parts, string.sub(message, start, sep_start - 1))
+        start = sep_end + 1
+        sep_start, sep_end = string.find(message, ":", start, true)
+    end
+    table.insert(parts, string.sub(message, start))
+    return parts
+end
+
 -- Parse incoming peer message
 function S:OnAddonMessage(prefix, message, channel, sender)
     if prefix ~= KB.Prefix then return end
     local myName = UnitName("player")
     if sender == myName or sender:find("^" .. myName .. "-") then return end
 
-    local parts = {}
-    for part in string.gmatch(message, "[^:]+") do
-        table.insert(parts, part)
-    end
+    local parts = ParseMessageParts(message)
 
     local msgType = parts[1]
 
@@ -328,9 +343,13 @@ end
 frame:SetScript("OnEvent", function(self, event, ...)
     if event == "CHAT_MSG_ADDON" then
         local prefix, message, channel, sender = ...
-        S:OnAddonMessage(prefix, message, channel, sender)
+        pcall(function()
+            S:OnAddonMessage(prefix, message, channel, sender)
+        end)
     elseif event == "PLAYER_ENTERING_WORLD" then
-        S:Init()
+        pcall(function()
+            S:Init()
+        end)
     end
 end)
 

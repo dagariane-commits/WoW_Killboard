@@ -1578,6 +1578,62 @@ WoWKillboardDB = {
 
         print("[PASS] Verified Character Directory Ingestion, Duel Faction Inheritance, and Past Kill Backfilling.")
 
+    def test_23_phase3_security_hardening(self):
+        """Verify Phase 3 security hardening: 8-char claim entropy, brute-force lockout, and endpoint auth."""
+        # 1. Verify 8-hex-digit claim code entropy (KB-XXXXXXXX)
+        res_claim = self.client.post("/api/auth/claim-character", json={
+            "name": "SecTester",
+            "realm": "WoW Forever",
+            "owner_token": "tok_sectest_123"
+        })
+        self.assertEqual(res_claim.status_code, 200)
+        claim_code = res_claim.get_json()["claim_code"]
+        self.assertTrue(claim_code.startswith("KB-"))
+        self.assertEqual(len(claim_code), 11, "Claim code must be KB- plus 8 hex characters")
+
+        # 2. Verify brute-force lockout after 5 failed attempts
+        for attempt in range(1, 5):
+            res_bad = self.client.post("/api/auth/verify-claim", json={
+                "name": "SecTester",
+                "code": f"KB-BAD000{attempt}"
+            })
+            self.assertEqual(res_bad.status_code, 400)
+            self.assertIn("attempt(s) remaining", res_bad.get_json()["error"])
+
+        # 5th failed attempt locks out the claim
+        res_lock = self.client.post("/api/auth/verify-claim", json={
+            "name": "SecTester",
+            "code": "KB-BAD0005"
+        })
+        self.assertEqual(res_lock.status_code, 403)
+        self.assertIn("locked for 15 minutes", res_lock.get_json()["error"])
+
+        # Subsequent attempts are rejected with 429 lockout
+        res_locked = self.client.post("/api/auth/verify-claim", json={
+            "name": "SecTester",
+            "code": claim_code
+        })
+        self.assertEqual(res_locked.status_code, 429)
+
+        # 3. Verify state mutation authorization gating when TESTING=False
+        try:
+            app.config["TESTING"] = False
+            # Unauthenticated debt clearance
+            res_debt_unauth = self.client.post("/api/debt/pay", json={"playerName": "DeadbeatDan"})
+            self.assertEqual(res_debt_unauth.status_code, 403)
+
+            # Unauthenticated KOS blacklist
+            res_kos_unauth = self.client.post("/api/kos/blacklist", json={"entity_name": "InnocentGuild"})
+            self.assertEqual(res_kos_unauth.status_code, 403)
+
+            # Unauthenticated KOS pardon
+            res_pardon_unauth = self.client.post("/api/kos/pardon", json={"entity_name": "InnocentGuild"})
+            self.assertEqual(res_pardon_unauth.status_code, 403)
+        finally:
+            app.config["TESTING"] = True
+
+        print("[PASS] Verified Phase 3 Security: 8-char claim entropy, brute-force lockout, and endpoint auth gating.")
+
 if __name__ == "__main__":
     unittest.main()
 
