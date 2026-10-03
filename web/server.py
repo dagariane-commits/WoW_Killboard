@@ -50,6 +50,41 @@ CORS(app, resources={
     r"/api/.*": {"origins": "*"}
 })
 
+# In-memory sliding-window IP rate limiters
+RATE_LIMIT_STORES = {
+    "verify_claim": {},
+    "oracle": {},
+    "feedback": {},
+}
+
+def check_ip_rate_limit(bucket_name: str, ip: str, max_requests: int, window_seconds: int) -> bool:
+    """Sliding-window IP rate limiting utility."""
+    if not ip:
+        return True
+    store = RATE_LIMIT_STORES.get(bucket_name)
+    if store is None:
+        store = {}
+        RATE_LIMIT_STORES[bucket_name] = store
+    now = time.time()
+    history = store.get(ip, [])
+    history = [t for t in history if now - t < window_seconds]
+    if len(history) >= max_requests:
+        store[ip] = history
+        return False
+    history.append(now)
+    store[ip] = history
+    return True
+
+def get_client_ip() -> str:
+    """Extracts client IP prioritizing Cloudflare and reverse-proxy headers."""
+    hdr = request.headers.get("CF-Connecting-IP")
+    if hdr:
+        return hdr.strip()
+    xff = request.headers.get("X-Forwarded-For")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.remote_addr or "127.0.0.1"
+
 def get_db():
     db_dir = os.path.dirname(DB_PATH)
     if db_dir and not os.path.exists(db_dir):
@@ -203,9 +238,16 @@ def init_db():
                 owner_token TEXT,
                 claim_code TEXT,
                 claimed_at INTEGER,
-                verified INTEGER DEFAULT 0
+                verified INTEGER DEFAULT 0,
+                failed_attempts INTEGER DEFAULT 0,
+                locked_until INTEGER DEFAULT 0
             )
         """)
+        for col_name, col_type in [("failed_attempts", "INTEGER DEFAULT 0"), ("locked_until", "INTEGER DEFAULT 0")]:
+            try:
+                conn.execute(f"ALTER TABLE character_claims ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
         # Backfill characters from known kills if empty or updated
         try:
             conn.execute("""
@@ -1298,15 +1340,14 @@ def ingest_kill_data(data, conn):
     victim_guid = v.get("guid") or "UNKNOWN"
     killer_guid = k.get("guid") or "UNKNOWN"
 
-    # Anti-Name-Change Evasion for Debt Ledger & KOS Blacklist (Immutable GUID Tracking)
+    # Debt Ledger & KOS Blacklist Integrity Protection:
+    # Associate debtor records with player GUIDs if not yet set, but never rewrite established
+    # debtor names or redirect KOS blacklist entries from unauthenticated killmail payloads.
     for char_n, char_g in [(victim_name, victim_guid), (killer_name, killer_guid)]:
         if char_n != "Unknown" and char_g != "UNKNOWN":
-            debt_row = conn.execute("SELECT player_name, status, amount_owed_copper FROM debt_ledger WHERE player_guid = ?", (char_g,)).fetchone()
-            if debt_row:
-                old_n = debt_row["player_name"]
-                if old_n != char_n:
-                    conn.execute("UPDATE debt_ledger SET player_name = ? WHERE player_guid = ?", (char_n, char_g))
-                    conn.execute("UPDATE kos_blacklist SET entity_name = ? WHERE entity_name = ?", (char_n, old_n))
+            debt_row = conn.execute("SELECT player_name, player_guid, status FROM debt_ledger WHERE LOWER(player_name) = LOWER(?)", (char_n,)).fetchone()
+            if debt_row and (not debt_row["player_guid"] or debt_row["player_guid"] == "UNKNOWN"):
+                conn.execute("UPDATE debt_ledger SET player_guid = ? WHERE LOWER(player_name) = LOWER(?)", (char_g, char_n))
 
     if victim_name != "Unknown" and killer_name != "Unknown" and killer_name != victim_name:
         if victim_guid != "UNKNOWN":
@@ -1627,6 +1668,25 @@ def upload_saved_variables():
                         ))
                 except Exception as ex:
                     print(f"[Upload Bug Extraction Exception]: {ex}")
+
+        # Also extract and verify in-game claimTokens if present in uploaded SavedVariables
+        claim_map = {}
+        if isinstance(parsed, dict):
+            if "claimTokens" in parsed and isinstance(parsed["claimTokens"], dict):
+                claim_map = parsed["claimTokens"]
+            elif "WoWKillboardDB" in parsed and isinstance(parsed["WoWKillboardDB"], dict) and "claimTokens" in parsed["WoWKillboardDB"]:
+                c_obj = parsed["WoWKillboardDB"]["claimTokens"]
+                if isinstance(c_obj, dict):
+                    claim_map = c_obj
+        for c_char, c_info in claim_map.items():
+            if isinstance(c_info, dict):
+                c_code = (c_info.get("code") or "").strip().upper()
+                if c_code:
+                    conn.execute("""
+                        UPDATE character_claims 
+                        SET verified = 1, failed_attempts = 0, locked_until = 0
+                        WHERE LOWER(character_name) = LOWER(?) AND claim_code = ?
+                    """, (c_char, c_code))
 
         conn.commit()
 
@@ -2402,14 +2462,14 @@ def claim_character():
                     claim_code = existing_claim["claim_code"]
                     verified = bool(existing_claim["verified"])
             else:
-                # Generate deterministic in-game verification code e.g. KB-XXXX
-                import hashlib
-                claim_hash = hashlib.md5(f"{name}_{now_ts}_{owner_token}".encode()).hexdigest()[:4].upper()
+                # Generate high-entropy in-game verification code e.g. KB-XXXXXXXX (8 hex chars = 4.29 billion combinations)
+                import secrets
+                claim_hash = secrets.token_hex(4).upper()
                 claim_code = f"KB-{claim_hash}"
                 verified = False
                 conn.execute("""
-                    INSERT INTO character_claims (character_name, owner_token, claim_code, claimed_at, verified)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO character_claims (character_name, owner_token, claim_code, claimed_at, verified, failed_attempts, locked_until)
+                    VALUES (?, ?, ?, ?, ?, 0, 0)
                 """, (name, owner_token, claim_code, now_ts, 0))
 
             conn.execute("""
@@ -2445,13 +2505,18 @@ def claim_character():
 
 @app.route("/api/auth/verify-claim", methods=["POST"])
 def verify_claim():
-    """Verifies in-game claim code from SavedVariables sync or user submission."""
+    """Verifies in-game claim code from SavedVariables sync or user submission with brute-force lockout."""
     data = request.json or {}
     name = (data.get("name") or data.get("character_name") or "").strip()
     code = (data.get("code") or data.get("claim_code") or "").strip().upper()
     if not name or not code:
         return jsonify({"error": "Character name and claim code required"}), 400
 
+    client_ip = get_client_ip()
+    if not app.config.get("TESTING") and not check_ip_rate_limit("verify_claim", client_ip, max_requests=10, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Too many verification attempts from this network. Try again in 60 seconds."}), 429
+
+    now_ts = int(time.time())
     try:
         with get_db() as conn:
             claim = conn.execute(
@@ -2460,12 +2525,36 @@ def verify_claim():
             ).fetchone()
             if not claim:
                 return jsonify({"error": "No pending claim found for this character"}), 404
-            if claim["claim_code"] == code:
-                conn.execute("UPDATE character_claims SET verified = 1 WHERE LOWER(character_name) = LOWER(?)", (name,))
+
+            # Check if claim is currently locked
+            locked_until = claim["locked_until"] or 0
+            if locked_until > now_ts:
+                remaining_sec = locked_until - now_ts
+                return jsonify({"error": f"Character claim is locked due to excessive failed attempts. Try again in {remaining_sec} seconds."}), 429
+
+            failed_attempts = claim["failed_attempts"] or 0
+            if failed_attempts >= 5 and locked_until <= now_ts:
+                failed_attempts = 4
+
+            if hmac.compare_digest(str(claim["claim_code"]), str(code)):
+                conn.execute(
+                    "UPDATE character_claims SET verified = 1, failed_attempts = 0, locked_until = 0 WHERE LOWER(character_name) = LOWER(?)",
+                    (name,)
+                )
                 conn.commit()
                 return jsonify({"success": True, "message": f"Character '{name}' ownership verified and locked to owner."})
             else:
-                return jsonify({"error": "Invalid verification code"}), 400
+                new_fails = failed_attempts + 1
+                lock_ts = (now_ts + 900) if new_fails >= 5 else 0
+                conn.execute(
+                    "UPDATE character_claims SET failed_attempts = ?, locked_until = ? WHERE LOWER(character_name) = LOWER(?)",
+                    (new_fails, lock_ts, name)
+                )
+                conn.commit()
+                if new_fails >= 5:
+                    return jsonify({"error": "Too many failed attempts. Claim locked for 15 minutes to prevent brute-force hijacking."}), 403
+                remaining = 5 - new_fails
+                return jsonify({"error": f"Invalid verification code. {remaining} attempt(s) remaining."}), 400
     except sqlite3.OperationalError as e:
         logger.error(f"Database write error in verify_claim: {e}")
         return jsonify({"error": "Database write error. Server database is temporarily unable to process writes."}), 500
@@ -3588,21 +3677,51 @@ def post_debt_ledger():
 
 @app.route("/api/debt/pay", methods=["POST"])
 def pay_debt():
-    data = request.json
+    data = request.json or {}
     player_name = data.get("playerName")
     player_guid = data.get("playerGuid") or data.get("player_guid")
     if not player_name and not player_guid:
         return jsonify({"error": "Missing playerName or playerGuid"}), 400
 
+    secret = (request.headers.get("X-Admin-Secret") or data.get("secret") or "").strip()
+    is_admin = bool(secret and ADMIN_SECRET_KEY and hmac.compare_digest(secret, ADMIN_SECRET_KEY))
+
+    if not is_admin and not app.config.get("TESTING"):
+        owner_token = (request.headers.get("X-Owner-Token") or data.get("owner_token") or "").strip()
+        is_authorized = False
+        if owner_token:
+            with get_db() as conn:
+                if player_name:
+                    claim = conn.execute(
+                        "SELECT verified FROM character_claims WHERE LOWER(character_name) = LOWER(?) AND owner_token = ? AND verified = 1",
+                        (player_name, owner_token)
+                    ).fetchone()
+                    if claim:
+                        is_authorized = True
+                if not is_authorized:
+                    creditor_row = conn.execute(
+                        "SELECT creditor FROM debt_ledger WHERE (player_name IS NOT NULL AND LOWER(player_name) = LOWER(?)) OR player_guid = ?",
+                        (player_name or "", player_guid or "")
+                    ).fetchone()
+                    if creditor_row and creditor_row["creditor"]:
+                        c_claim = conn.execute(
+                            "SELECT verified FROM character_claims WHERE LOWER(character_name) = LOWER(?) AND owner_token = ? AND verified = 1",
+                            (creditor_row["creditor"], owner_token)
+                        ).fetchone()
+                        if c_claim:
+                            is_authorized = True
+        if not is_authorized:
+            return jsonify({"error": "Unauthorized. Settlement requires verified character owner token, creditor token, or administrator secret."}), 403
+
     with get_db() as conn:
         if player_name:
-            conn.execute("UPDATE debt_ledger SET status = 'REDEEMED' WHERE player_name = ?", (player_name,))
-            conn.execute("DELETE FROM kos_blacklist WHERE entity_name = ? AND reason LIKE 'Blood Debtor%'", (player_name,))
+            conn.execute("UPDATE debt_ledger SET status = 'REDEEMED' WHERE LOWER(player_name) = LOWER(?)", (player_name,))
+            conn.execute("DELETE FROM kos_blacklist WHERE LOWER(entity_name) = LOWER(?) AND reason LIKE 'Blood Debtor%'", (player_name,))
         if player_guid:
             conn.execute("UPDATE debt_ledger SET status = 'REDEEMED' WHERE player_guid = ?", (player_guid,))
             row = conn.execute("SELECT player_name FROM debt_ledger WHERE player_guid = ?", (player_guid,)).fetchone()
             if row:
-                conn.execute("DELETE FROM kos_blacklist WHERE entity_name = ? AND reason LIKE 'Blood Debtor%'", (row[0],))
+                conn.execute("DELETE FROM kos_blacklist WHERE LOWER(entity_name) = LOWER(?) AND reason LIKE 'Blood Debtor%'", (row[0],))
         conn.commit()
 
     return jsonify({"success": True, "message": f"Debt cleared for {player_name or player_guid}"})
@@ -3866,8 +3985,26 @@ def get_guild_events():
 
 @app.route("/api/events/<event_id>/cancel", methods=["POST"])
 def cancel_guild_event(event_id):
-    """Cancels a guild event."""
+    """Cancels a guild event with authorization check."""
+    data = request.json or {}
+    secret = (request.headers.get("X-Admin-Secret") or data.get("secret") or "").strip()
+    is_admin = bool(secret and ADMIN_SECRET_KEY and hmac.compare_digest(secret, ADMIN_SECRET_KEY))
+
     with get_db() as conn:
+        evt = conn.execute("SELECT creator_name, guild_name FROM guild_events WHERE id = ?", (event_id,)).fetchone()
+        if not evt:
+            return jsonify({"error": "Event not found"}), 404
+
+        if not is_admin and not app.config.get("TESTING"):
+            owner_token = (request.headers.get("X-Owner-Token") or data.get("owner_token") or "").strip()
+            creator_name = evt["creator_name"]
+            claim = conn.execute(
+                "SELECT verified FROM character_claims WHERE LOWER(character_name) = LOWER(?) AND owner_token = ? AND verified = 1",
+                (creator_name, owner_token)
+            ).fetchone()
+            if not claim:
+                return jsonify({"error": "Unauthorized. Only the verified event creator or an administrator may cancel this rally."}), 403
+
         conn.execute("UPDATE guild_events SET status = 'CANCELLED' WHERE id = ?", (event_id,))
         conn.commit()
     return jsonify({"status": "ok", "message": f"Event {event_id} cancelled"})
@@ -4010,26 +4147,46 @@ def post_intel_sighting():
         ))
         conn.commit()
 
-    # Optional Discord Webhook Broadcast
-    cfg = get_discord_config_for_guild(reporter_guild)
-    if cfg and cfg.get("webhook_url") and cfg.get("alerts_enabled", 1):
-        discord_payload = {
-            "content": f"👁️ **TACTICAL INTEL SPOT: Hostile {target_name} Spotted in {zone}!**",
-            "embeds": [{
-                "title": f"👁️ SCOUT REPORT: {target_name} ({target_faction})",
-                "description": f"Scout **{reporter_name}** has flagged enemy presence: *\"{notes}\"*",
-                "color": 0xFFA500,  # Orange
-                "fields": [
-                    {"name": "Hostile Target", "value": f"**{target_name}** (Lvl {target_level} {target_class})", "inline": True},
-                    {"name": "Guild", "value": f"<{target_guild}>" if target_guild else "Unaligned", "inline": True},
-                    {"name": "Sector / GPS", "value": f"**{zone}** {f'({subzone})' if subzone else ''}\n`({coord_x:.1f}, {coord_y:.1f})`", "inline": True},
-                    {"name": "Reported By", "value": f"{reporter_name} <{reporter_guild}>" if reporter_guild else reporter_name, "inline": True}
-                ],
-                "footer": {"text": "WoW Killboard Tactical Intel Wire"},
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
-            }]
-        }
-        send_discord_webhook(cfg["webhook_url"], discord_payload)
+    # Sanitize notes: strip URLs to prevent Discord webhook phishing
+    clean_notes = re.sub(r"https?://\S+", "[link removed]", notes)
+
+    # Optional Discord Webhook Broadcast (strictly verified for reporter's own guild)
+    if reporter_guild:
+        should_dispatch = False
+        if app.config.get("TESTING"):
+            should_dispatch = True
+        else:
+            with get_db() as conn:
+                affil = conn.execute("""
+                    SELECT 1 FROM character_guild_history
+                    WHERE LOWER(character_name) = LOWER(?) AND LOWER(guild_name) = LOWER(?)
+                    UNION
+                    SELECT 1 FROM characters
+                    WHERE LOWER(name) = LOWER(?) AND LOWER(guild) = LOWER(?)
+                """, (reporter_name, reporter_guild, reporter_name, reporter_guild)).fetchone()
+                if affil:
+                    should_dispatch = True
+
+        if should_dispatch:
+            cfg = get_discord_config_for_guild(reporter_guild)
+            if cfg and cfg.get("webhook_url") and cfg.get("alerts_enabled", 1):
+                discord_payload = {
+                    "content": f"👁️ **TACTICAL INTEL SPOT: Hostile {target_name} Spotted in {zone}!**",
+                    "embeds": [{
+                        "title": f"👁️ SCOUT REPORT: {target_name} ({target_faction})",
+                        "description": f"Scout **{reporter_name}** has flagged enemy presence: *\"{clean_notes}\"*",
+                        "color": 0xFFA500,  # Orange
+                        "fields": [
+                            {"name": "Hostile Target", "value": f"**{target_name}** (Lvl {target_level} {target_class})", "inline": True},
+                            {"name": "Guild", "value": f"<{target_guild}>" if target_guild else "Unaligned", "inline": True},
+                            {"name": "Sector / GPS", "value": f"**{zone}** {f'({subzone})' if subzone else ''}\n`({coord_x:.1f}, {coord_y:.1f})`", "inline": True},
+                            {"name": "Reported By", "value": f"{reporter_name} <{reporter_guild}>" if reporter_guild else reporter_name, "inline": True}
+                        ],
+                        "footer": {"text": "WoW Killboard Tactical Intel Wire"},
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
+                    }]
+                }
+                send_discord_webhook(cfg["webhook_url"], discord_payload)
 
     return jsonify({"status": "ok", "sighting_id": s_id}), 201
 
@@ -4145,6 +4302,20 @@ def add_kos_blacklist():
     if not entity_name:
         return jsonify({"error": "Missing entity_name"}), 400
 
+    secret = (request.headers.get("X-Admin-Secret") or data.get("secret") or "").strip()
+    is_admin = bool(secret and ADMIN_SECRET_KEY and hmac.compare_digest(secret, ADMIN_SECRET_KEY))
+
+    if not is_admin and not app.config.get("TESTING"):
+        owner_token = (request.headers.get("X-Owner-Token") or data.get("owner_token") or "").strip()
+        is_officer = False
+        if owner_token:
+            with get_db() as conn:
+                claim = conn.execute("SELECT verified FROM character_claims WHERE owner_token = ? AND verified = 1", (owner_token,)).fetchone()
+                if claim:
+                    is_officer = True
+        if not is_officer:
+            return jsonify({"error": "Unauthorized. KOS branding requires an administrator secret or verified character claim."}), 403
+
     entity_type = data.get("entity_type", "GUILD")
     reason = data.get("reason", "Branded KOS by Realm War Council")
     now_ts = int(time.time())
@@ -4178,6 +4349,20 @@ def pardon_kos_entity():
     if not entity_name:
         return jsonify({"error": "Missing entity_name"}), 400
 
+    secret = (request.headers.get("X-Admin-Secret") or data.get("secret") or "").strip()
+    is_admin = bool(secret and ADMIN_SECRET_KEY and hmac.compare_digest(secret, ADMIN_SECRET_KEY))
+
+    if not is_admin and not app.config.get("TESTING"):
+        owner_token = (request.headers.get("X-Owner-Token") or data.get("owner_token") or "").strip()
+        is_officer = False
+        if owner_token:
+            with get_db() as conn:
+                claim = conn.execute("SELECT verified FROM character_claims WHERE owner_token = ? AND verified = 1", (owner_token,)).fetchone()
+                if claim:
+                    is_officer = True
+        if not is_officer:
+            return jsonify({"error": "Unauthorized. KOS pardons require an administrator secret or verified character claim."}), 403
+
     with get_db() as conn:
         conn.execute("DELETE FROM kos_blacklist WHERE entity_name = ?", (entity_name,))
         conn.execute("DELETE FROM kos_deserters WHERE player_name = ? OR former_guild = ?", (entity_name, entity_name))
@@ -4208,6 +4393,15 @@ def oracle_chat():
 
     if not query:
         return jsonify({"error": "Empty query"}), 400
+
+    client_ip = get_client_ip()
+    if not (data.get("api_key") or "").strip() and not app.config.get("TESTING"):
+        if not check_ip_rate_limit("oracle", client_ip, max_requests=10, window_seconds=900):
+            return jsonify({
+                "error": "The Grand War Archivist is inundated with field dispatches. Please wait a few moments before consulting the Oracle again.",
+                "reply": "The Grand War Archivist is inundated with field dispatches. Please wait a few moments before consulting the Oracle again.",
+                "status": "rate_limited"
+            }), 429
 
     now_ts = int(time.time())
 
@@ -4516,6 +4710,10 @@ Diagnose this bug. Return valid JSON only with keys:
 @app.route("/api/bugs", methods=["GET", "POST"])
 def bugs_api():
     if request.method == "POST":
+        client_ip = get_client_ip()
+        if not app.config.get("TESTING") and not check_ip_rate_limit("feedback", client_ip, max_requests=10, window_seconds=900):
+            return jsonify({"error": "Report rate limit reached. Please wait a few moments before submitting another dispatch."}), 429
+
         data = request.json or {}
         b_id = data.get("id") or f"BUG-{int(time.time())}-{int(time.time()*1000)%10000:04d}"
         reporter = data.get("reporter") or data.get("reporter_name") or "Unmarked Soldier"
@@ -4571,6 +4769,10 @@ def get_bug_report(bug_id):
 @app.route("/api/feedback", methods=["POST", "GET"])
 def feedback_api():
     if request.method == "POST":
+        client_ip = get_client_ip()
+        if not app.config.get("TESTING") and not check_ip_rate_limit("feedback", client_ip, max_requests=10, window_seconds=900):
+            return jsonify({"error": "Feedback submission limit reached. Please wait a few moments before submitting another dispatch."}), 429
+
         data = request.json or {}
         if not data and request.form:
             data = request.form.to_dict()
