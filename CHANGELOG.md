@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.99] - 2026-10-03
 
+### Added
+- **Live Peer Version Discovery & In-Game Update Alerts (`Addon/WoWKillboard/Sync.lua`, `Core.lua`)**:
+  - Implemented silent peer-to-peer version exchange via `C_ChatInfo.SendAddonMessage` (`VER:<version>`) across Guild, Party, and Raid channels with 15s debouncing.
+  - Added semantic version comparator (`S:CompareVersions`) to safely detect newer releases from group members without touching external web sockets.
+  - Enforced single-notice-per-session rate limiting and strict combat lockdown gating (`InCombatLockdown()` / `PLAYER_REGEN_ENABLED`) for zero Blizzard UI taint.
+- **In-Game "What's New" & Changelog Dialog (`Addon/WoWKillboard/UI.lua`, `Core.lua`)**:
+  - Created 100% taint-free pure Lua modal (`UI:ShowChangelogModal`) with `BackdropTemplate`, ESC key dismissal (`SetPropagateKeyboardInput`), and version indicator (`Installed` vs `Latest Available`).
+  - Registered `/kb changelog`, `/kb update`, `/kb whatsnew`, and `/whatsnew` quick slash commands.
+  - Automatically opens upon first login after upgrading to a new addon release (`lastSeenChangelogVersion ~= KB.Version`).
+  - Integrated 1-click copy boxes for CurseForge App (`search 'wkb'`) and web companion download links.
+- **Companion Sync & REST Version Ingestion (`web/server.py`, `sync/watcher.py`, `WoWKillboard_RealmData.lua`)**:
+  - Added `LatestVersion` and `Changelog` telemetry to `GET /api/realm/summary` and added dedicated `GET /api/version` endpoint.
+  - Updated desktop companion watcher (`watcher.py`) to serialize `LatestVersion` and `Changelog` arrays into `WoWKillboard_RealmData.lua`.
+  - Wired `KB:SyncRealmData()` in `Core.lua` to dynamically ingest latest version metadata on client initialization.
+
 ### Changed
 - **Option 1 Release Strategy & Distribution Alignment (`README.md`, `docs/BETA_TESTER_QUICKSTART.md`, `docs/CURSEFORGE_LISTING.md`, `web/static/app.js`)**:
   - Positioned pure in-game Lua addon plus Browser Drag-and-Drop (`/upload`) as the primary zero-installation experience.

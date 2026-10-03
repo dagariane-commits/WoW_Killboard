@@ -157,6 +157,14 @@ function KB:SyncRealmData()
             KB.Leaderboard:Rebuild()
         end
     end
+
+    if rData.LatestVersion and type(rData.LatestVersion) == "string" then
+        if KB.Sync and KB.Sync.CompareVersions then
+            if KB.Sync:CompareVersions(rData.LatestVersion, KB.Version) > 0 then
+                KB.LatestKnownVersion = rData.LatestVersion
+            end
+        end
+    end
     return true
 end
 
@@ -761,9 +769,14 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             SafePrint("  |cffffd100[4. World PvP Yell]:|r /y Another one for the Blood Ledger! Check kill stats & bounties at wowkillboard.com (search \"wkb\" on CurseForge App).")
             SafePrint("  |cff38bdf8[5. Direct Link]:|r Search \"wkb\" in CurseForge App or visit https://www.curseforge.com/wow/addons/wkb")
         end
+    elseif cmd == "changelog" or cmd == "update" or cmd == "whatsnew" or cmd == "notes" then
+        if KB.UI and KB.UI.ShowChangelogModal then
+            KB.UI:ShowChangelogModal(true)
+        end
     else
         SafePrint("|cff00ccffWoW Killboard: Frontline War Room Commands:|r")
         SafePrint("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
+        SafePrint("  |cffffd100/kb changelog|r or |cffffd100/kb update|r - Open What's New & Version Changelog")
         SafePrint("  |cffffd100/kb promo|r or |cffffd100/kb macro|r - Open Promotional In-Game Macros & Community Sharing Hub")
         SafePrint("  |cffffd100/kb welcome|r or |cffffd100/kb beta|r - Open Early Preview & Feedback Guide")
         SafePrint("  |cffffd100/kb feedback|r or |cffffd100/kb bug|r - Submit feedback or report an issue")
@@ -998,6 +1011,17 @@ SlashCmdList["WOWKB_WELCOME"] = function()
     end
 end
 
+-- Dedicated Quick-Slash Commands for Changelog & Updates
+SLASH_WOWKB_CHANGELOG1 = "/wowkbchangelog"
+SLASH_WOWKB_CHANGELOG2 = "/kbchangelog"
+SLASH_WOWKB_CHANGELOG3 = "/kbupdate"
+SLASH_WOWKB_CHANGELOG4 = "/whatsnew"
+SlashCmdList["WOWKB_CHANGELOG"] = function()
+    if KB.UI and KB.UI.ShowChangelogModal then
+        KB.UI:ShowChangelogModal(true)
+    end
+end
+
 SLASH_WOWKB_FEEDBACK1 = "/wowkbfeedback"
 SLASH_WOWKB_FEEDBACK2 = "/kbfeedback"
 SlashCmdList["WOWKB_FEEDBACK"] = function(msg)
@@ -1128,18 +1152,22 @@ coreFrame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
         KB:SyncRealmData()
         -- Wait 2.5s for fonts, world loading, and SavedVariables to settle
-        if C_Timer and C_Timer.After then
-            C_Timer.After(2.5, function()
-                local s = WoWKillboardSettings or {}
-                if not s.hasSeenBetaWelcome then
-                    TriggerWelcomeModal(false)
-                end
-            end)
-        else
+        local function CheckPostLoginModals()
             local s = WoWKillboardSettings or {}
             if not s.hasSeenBetaWelcome then
                 TriggerWelcomeModal(false)
+            elseif s.lastSeenChangelogVersion ~= KB.Version then
+                s.lastSeenChangelogVersion = KB.Version
+                if not InCombatLockdown() and KB.UI and KB.UI.ShowChangelogModal then
+                    KB.UI:ShowChangelogModal(false)
+                end
             end
+        end
+
+        if C_Timer and C_Timer.After then
+            C_Timer.After(2.5, CheckPostLoginModals)
+        else
+            CheckPostLoginModals()
         end
     elseif event == "PLAYER_REGEN_ENABLED" then
         if pendingWelcome then

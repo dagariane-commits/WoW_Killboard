@@ -153,6 +153,74 @@ function S:BroadcastSighting(sighting)
     end
 end
 
+-- Compare two semantic version strings (e.g., "1.0.1" vs "1.0.2")
+-- Returns 1 if v1 > v2, -1 if v1 < v2, 0 if v1 == v2
+function S:CompareVersions(v1, v2)
+    if not v1 or not v2 then return 0 end
+    if v1 == v2 then return 0 end
+    local function parse(v)
+        local parts = {}
+        for num in string.gmatch(tostring(v), "%d+") do
+            table.insert(parts, tonumber(num) or 0)
+        end
+        while #parts < 3 do table.insert(parts, 0) end
+        return parts
+    end
+    local p1 = parse(v1)
+    local p2 = parse(v2)
+    local maxLen = math.max(#p1, #p2)
+    for i = 1, maxLen do
+        local n1 = p1[i] or 0
+        local n2 = p2[i] or 0
+        if n1 > n2 then return 1 end
+        if n1 < n2 then return -1 end
+    end
+    return 0
+end
+
+-- Broadcast current addon version to guild and group (debounced)
+local lastVersionBroadcast = 0
+function S:BroadcastVersion()
+    if not KB.DefaultSettings or not KB.DefaultSettings.p2pSyncEnabled then return end
+    if not KB.Version then return end
+    local now = time()
+    if now - lastVersionBroadcast < 15 then return end
+    lastVersionBroadcast = now
+
+    local payload = "VER:" .. tostring(KB.Version)
+    if IsInGuild and IsInGuild() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    end
+    if IsInGroup and IsInGroup() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, (IsInRaid and IsInRaid()) and "RAID" or "PARTY")
+    end
+end
+
+-- Process peer version notification with rate limiting and combat lockdown gating
+function S:CheckPeerVersion(peerVer, sender)
+    if not peerVer or type(peerVer) ~= "string" then return end
+    if not peerVer:match("^%d+%.%d+") then return end
+
+    if S:CompareVersions(peerVer, KB.Version) > 0 then
+        KB.LatestKnownVersion = peerVer
+        if not S.hasNotifiedNewVersion then
+            if InCombatLockdown and InCombatLockdown() then
+                S.pendingNewVersion = peerVer
+            else
+                S.hasNotifiedNewVersion = true
+                local msg = string.format(
+                    "|cff00ccff[WoWKB]|r |cffffd100A newer version of WoW Killboard is available!|r (|cff00ff00v%s|r) — Type |cffffffff/kb changelog|r or update via CurseForge (search 'wkb').",
+                    peerVer
+                )
+                if KB.Utils and KB.Utils.SafePrint then
+                    KB.Utils.SafePrint(msg)
+                elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+                    DEFAULT_CHAT_FRAME:AddMessage(msg)
+                end
+            end
+        end
+    end
+end
 
 -- Delimiter-preserving tokenizer to prevent column shifting on empty fields (::)
 local function ParseMessageParts(message)
@@ -337,6 +405,10 @@ function S:OnAddonMessage(prefix, message, channel, sender)
         if KB.IntelScanner and KB.IntelScanner.OnIncomingSighting then
             KB.IntelScanner:OnIncomingSighting(sighting)
         end
+
+    elseif msgType == "VER" and #parts >= 2 then
+        local peerVer = parts[2]
+        S:CheckPeerVersion(peerVer, sender)
     end
 end
 
@@ -349,9 +421,26 @@ frame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "PLAYER_ENTERING_WORLD" then
         pcall(function()
             S:Init()
+            if C_Timer and C_Timer.After then
+                C_Timer.After(4.0, function() S:BroadcastVersion() end)
+            end
         end)
+    elseif event == "GROUP_ROSTER_UPDATE" then
+        pcall(function()
+            if C_Timer and C_Timer.After then
+                C_Timer.After(3.0, function() S:BroadcastVersion() end)
+            end
+        end)
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        if S.pendingNewVersion and not S.hasNotifiedNewVersion then
+            local peerVer = S.pendingNewVersion
+            S.pendingNewVersion = nil
+            S:CheckPeerVersion(peerVer, "Deferred")
+        end
     end
 end)
 
 frame:RegisterEvent("CHAT_MSG_ADDON")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+frame:RegisterEvent("PLAYER_REGEN_ENABLED")
