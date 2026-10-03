@@ -13,7 +13,7 @@ flowchart LR
 ```
 
 ### Step 1: Install the In-Game Addon
-1. Download **`WoWKillboard-v1.0.0.zip`**.
+1. Download **`WoWKillboard-v1.0.1.zip`**.
 2. Extract the `WoWKillboard` folder directly into your World of Warcraft AddOns directory:
    - **WoW Forever / Classic Beta**: `World of Warcraft\_classic_beta_\Interface\AddOns\`
    - **Classic Era**: `World of Warcraft\_classic_era_\Interface\AddOns\`

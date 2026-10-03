@@ -28,7 +28,7 @@
 6. **Mandatory Automated Verification**:
    - Always run `python tests/validate_lua.py` (Must return `[PASS]` for all Lua files).
    - Always run `python -m unittest discover tests` (Must return `OK`).
-   - Always run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.0.zip`.
+   - Always run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.1.zip` and `WoWKillboard-v1.0.0.zip`.
 
 ---
 
@@ -70,7 +70,7 @@ Invoke-RestMethod -Uri "https://wowkillboard.com/api/admin/reset" -Method Post -
   - `D:\World of Warcraft\_classic_era_\Interface\AddOns\WoWKillboard\`
   - `D:\World of Warcraft\_anniversary_\Interface\AddOns\WoWKillboard\`
   - `D:\World of Warcraft\_retail_\Interface\AddOns\WoWKillboard\`
-- **Distribution Package**: `WoWKillboard-v1.0.0.zip`
+- **Distribution Package**: `WoWKillboard-v1.0.1.zip` (with legacy fallback `WoWKillboard-v1.0.0.zip`)
 
 ---
 
@@ -112,4 +112,4 @@ Invoke-RestMethod -Uri "https://wowkillboard.com/api/admin/reset" -Method Post -
 1. **Domain Registration**: Register domain (e.g., `wowkillboard.com` via Cloudflare).
 2. **Point DNS**: Add A-Record for `@` and `api` to `<YOUR_VPS_PUBLIC_IP>`.
 3. **SSL & URL Update**: Update `KB.WebDomain` in `Config.lua` and `DEFAULT_PROD_URL` in `watcher.py`, rebuild `WoWKillboardSync.exe`.
-4. **Publish to CurseForge**: Upload `WoWKillboard-v1.0.0.zip` to CurseForge Author Portal under `PvP / Combat / Information`.
+4. **Publish to CurseForge**: Upload `WoWKillboard-v1.0.1.zip` to CurseForge Author Portal under `PvP / Combat / Information`.

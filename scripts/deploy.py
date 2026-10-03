@@ -42,18 +42,36 @@ def deploy_to_clients():
             print(f"[SKIP] Target directory not found: {target}")
     return synced
 
+def get_addon_version():
+    toc_path = os.path.join(ADDON_SRC, "WoWKillboard.toc")
+    if os.path.exists(toc_path):
+        with open(toc_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("## Version:"):
+                    return line.split(":", 1)[1].strip()
+    return "1.0.1"
+
 def rebuild_zip():
-    zip_path = os.path.join(BASE_DIR, "WoWKillboard-v1.0.0.zip")
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+    version = get_addon_version()
+    zip_names = [f"WoWKillboard-v{version}.zip", "WoWKillboard-v1.0.0.zip"]
+    
+    primary_zip = os.path.join(BASE_DIR, zip_names[0])
+    with zipfile.ZipFile(primary_zip, "w", zipfile.ZIP_DEFLATED) as z:
         for root, dirs, files in os.walk(ADDON_SRC):
             for fname in files:
                 full_path = os.path.join(root, fname)
                 rel_path = os.path.relpath(full_path, ADDON_SRC)
                 z.write(full_path, os.path.join("WoWKillboard", rel_path))
-    print(f"[BUILD] Rebuilt distribution package: {zip_path} ({os.path.getsize(zip_path)} bytes)")
-    static_zip = os.path.join(BASE_DIR, "web", "static", "WoWKillboard-v1.0.0.zip")
-    shutil.copy2(zip_path, static_zip)
-    print(f"[BUILD] Mirrored distribution package to web/static: {static_zip}")
+    print(f"[BUILD] Rebuilt distribution package: {primary_zip} ({os.path.getsize(primary_zip)} bytes)")
+
+    # Mirror to web/static and build backward-compatible legacy zip
+    for z_name in zip_names:
+        root_target = os.path.join(BASE_DIR, z_name)
+        if root_target != primary_zip:
+            shutil.copy2(primary_zip, root_target)
+        static_target = os.path.join(BASE_DIR, "web", "static", z_name)
+        shutil.copy2(primary_zip, static_target)
+        print(f"[BUILD] Mirrored {z_name} to root and web/static")
 
 if __name__ == "__main__":
     print("=== Starting Multi-Client Deployment & Package Build ===")

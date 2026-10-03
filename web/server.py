@@ -55,10 +55,25 @@ RATE_LIMIT_STORES = {
     "verify_claim": {},
     "oracle": {},
     "feedback": {},
+    "events": {},
+    "distress": {},
+    "intel": {},
+    "feuds": {},
+    "bounties": {},
+    "upload": {},
+    "post_kill": {},
+    "bounty_accept": {},
+    "resolve_beacon": {},
+    "accept_feud": {},
+    "debt_ledger": {},
+    "discord_test": {},
+    "analytics": {},
 }
 
 def check_ip_rate_limit(bucket_name: str, ip: str, max_requests: int, window_seconds: int) -> bool:
     """Sliding-window IP rate limiting utility."""
+    if app.config.get("TESTING"):
+        return True
     if not ip:
         return True
     store = RATE_LIMIT_STORES.get(bucket_name)
@@ -529,6 +544,13 @@ def log_analytics_event(event_type: str, path: str = "", source: str = "web", re
 
 @app.after_request
 def add_cache_control_headers(response):
+    # Defense-in-depth security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+
     # Enforce no-cache for HTML, CSS, and JS so users always receive fresh UI changes
     if request.path.endswith(".html") or request.path == "/" or request.path.endswith(".js") or request.path.endswith(".css"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -585,12 +607,15 @@ def badge_status():
 @app.route("/api/analytics/event", methods=["POST"])
 def analytics_event():
     """Client-side Telemetry Beacon sent from web/static/app.js."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("analytics", client_ip, max_requests=60, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded"}), 429
     data = request.json or {}
-    ev_type = data.get("type", "pageview")
-    path = data.get("path", "/")
-    source = data.get("source", "web")
-    referrer = data.get("referrer", "")
-    meta = data.get("meta", {})
+    ev_type = str(data.get("type", "pageview"))[:32]
+    path = str(data.get("path", "/"))[:256]
+    source = str(data.get("source", "web"))[:32]
+    referrer = str(data.get("referrer", ""))[:256]
+    meta = data.get("meta", {}) if isinstance(data.get("meta"), dict) else {}
     log_analytics_event(ev_type, path=path, source=source, referrer=referrer, meta=meta)
     return jsonify({"success": True}), 200
 
@@ -694,18 +719,27 @@ def static_files(path):
 
 CURSEFORGE_PROJECT_URL = "https://www.curseforge.com/wow/addons/wkb"
 
+@app.route("/WoWKillboard-v1.0.1.zip")
 @app.route("/WoWKillboard-v1.0.0.zip")
 @app.route("/download")
 @app.route("/addon.zip")
 def download_addon():
     log_analytics_event("download_addon", path=request.path, source="web")
     root_dir = os.path.dirname(APP_DIR)
-    zip_path = os.path.join(root_dir, "WoWKillboard-v1.0.0.zip")
-    static_zip = os.path.join(STATIC_DIR, "WoWKillboard-v1.0.0.zip")
-    if os.path.exists(static_zip):
-        return send_from_directory(STATIC_DIR, "WoWKillboard-v1.0.0.zip", as_attachment=True)
-    if os.path.exists(zip_path):
-        return send_from_directory(root_dir, "WoWKillboard-v1.0.0.zip", as_attachment=True)
+    # Check for specific requested file if path has specific version
+    req_file = os.path.basename(request.path)
+    if req_file in ("WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+        for d in (STATIC_DIR, root_dir):
+            target = os.path.join(d, req_file)
+            if os.path.exists(target):
+                return send_from_directory(d, req_file, as_attachment=True)
+
+    # General download (/download, /addon.zip): serve v1.0.1, fallback to v1.0.0
+    for pkg in ("WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+        for d in (STATIC_DIR, root_dir):
+            target = os.path.join(d, pkg)
+            if os.path.exists(target):
+                return send_from_directory(d, pkg, as_attachment=True)
     from flask import redirect
     return redirect(CURSEFORGE_PROJECT_URL)
 
@@ -1470,6 +1504,9 @@ def ingest_kill_data(data, conn):
 
 @app.route("/api/kills", methods=["POST"])
 def post_kill():
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("post_kill", client_ip, max_requests=120, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 120 kill dispatches per minute."}), 429
     data = request.json
     if not data or ("killId" not in data and "kill_id" not in data):
         return jsonify({"error": "Invalid payload: missing killId"}), 400
@@ -1495,6 +1532,9 @@ def upload_saved_variables():
     Ingests raw SavedVariables (WoWKillboard.lua) or JSON combat logs idempotently.
     Commutative and safe across arbitrary upload timestamps from multiple players.
     """
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("upload", client_ip, max_requests=30, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 30 uploads per minute."}), 429
     raw_text = ""
     if "file" in request.files:
         f = request.files["file"]
@@ -3073,6 +3113,10 @@ def get_bounties_leaderboards():
 
 @app.route("/api/bounties", methods=["POST"])
 def create_bounty():
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("bounties", client_ip, max_requests=20, window_seconds=60):
+        return jsonify({"error": "Too many requests. Please wait before placing more bounties."}), 429
+
     data = request.json or {}
     if data.get("is_instance") or data.get("isBattleground") or data.get("isArena"):
         return jsonify({"error": "Blood bounties can only be placed upon the open battlefields of Azeroth (Open World PvP only)."}), 400
@@ -3081,7 +3125,8 @@ def create_bounty():
     if not target or target.strip() == "" or target.strip().lower() == "unknown":
         return jsonify({"error": "Invalid target name"}), 400
 
-    target_guid = data.get("targetGuid") or data.get("target_guid") or "UNKNOWN"
+    target = str(target).strip()[:64]
+    target_guid = str(data.get("targetGuid") or data.get("target_guid") or "UNKNOWN").strip()[:64]
     copper = int(data.get("amountCopper") or data.get("amount_copper") or 0)
     gold = int(data.get("amountGold") or data.get("amount_gold") or (copper // 10000 if copper else 0))
     if copper <= 0 and gold > 0:
@@ -3089,11 +3134,14 @@ def create_bounty():
     if copper <= 0:
         return jsonify({"error": "Mark amount must be greater than 0"}), 400
 
-    placer = data.get("placerName") or data.get("placer_name") or "Anonymous"
-    t_class = data.get("targetClass") or data.get("target_class") or "UNKNOWN"
-    t_faction = data.get("targetFaction") or data.get("target_faction") or "Unknown"
+    copper = max(0, min(copper, 1000000000))
+    gold = max(0, min(gold, 100000))
 
-    b_id = data.get("id") or f"BNT-{int(time.time()*1000)}"
+    placer = str(data.get("placerName") or data.get("placer_name") or "Anonymous").strip()[:64]
+    t_class = str(data.get("targetClass") or data.get("target_class") or "UNKNOWN").strip()[:32]
+    t_faction = str(data.get("targetFaction") or data.get("target_faction") or "Unknown").strip()[:32]
+
+    b_id = str(data.get("id") or f"BNT-{int(time.time()*1000)}").strip()[:64]
 
     with get_db() as conn:
         conn.execute("""
@@ -3190,11 +3238,14 @@ def get_most_wanted():
 
 @app.route("/api/bounties/accept", methods=["POST"])
 def accept_bounty():
-    data = request.json
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("bounty_accept", client_ip, max_requests=20, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 20 bounty acceptances per minute."}), 429
+    data = request.json or {}
     if not data or "bountyId" not in data or "hunterName" not in data:
         return jsonify({"error": "Missing bountyId or hunterName"}), 400
-    b_id = data["bountyId"]
-    hunter = data["hunterName"]
+    b_id = str(data["bountyId"]).strip()[:64]
+    hunter = str(data["hunterName"]).strip()[:64]
     with get_db() as conn:
         conn.execute("""
             INSERT OR REPLACE INTO bounty_acceptances (bounty_id, hunter_name, accepted_at)
@@ -3641,15 +3692,23 @@ def get_debt_ledger():
 
 @app.route("/api/bounties/debt-ledger", methods=["POST"])
 def post_debt_ledger():
-    data = request.json
-    player_name = data.get("playerName")
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("debt_ledger", client_ip, max_requests=10, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 10 debt ledger entries per minute."}), 429
+    data = request.json or {}
+    player_name = str(data.get("playerName", "")).strip()[:64]
     if not player_name:
         return jsonify({"error": "Missing playerName"}), 400
 
-    player_guid = data.get("playerGuid") or data.get("player_guid")
-    status = data.get("status", "BLOOD_DEBTOR")
-    amount_owed = int(data.get("amountOwedCopper", 0))
+    player_guid = str(data.get("playerGuid") or data.get("player_guid") or "").strip()[:64]
+    status = str(data.get("status", "BLOOD_DEBTOR")).strip()[:32]
+    amount_owed = max(0, min(int(data.get("amountOwedCopper", 0)), 10000000000))
     amount_gold = amount_owed // 10000
+    creditor = str(data.get("creditor", "BountyPool")).strip()[:64]
+    principal = max(0, min(int(data.get("principalCopper", 0)), 10000000000))
+    surcharge = max(0, min(int(data.get("surchargeCopper", 0)), 10000000000))
+    days_in_default = max(1, min(int(data.get("daysInDefault", 1)), 3650))
+    bounty_id = str(data.get("bountyId", "")).strip()[:64]
 
     with get_db() as conn:
         conn.execute("""
@@ -3658,9 +3717,9 @@ def post_debt_ledger():
                 surcharge_copper, status, default_date, days_in_default, bounty_id, player_guid
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            player_name, data.get("creditor", "BountyPool"), amount_owed,
-            data.get("principalCopper", 0), data.get("surchargeCopper", 0), status,
-            int(time.time()), data.get("daysInDefault", 1), data.get("bountyId", ""),
+            player_name, creditor, amount_owed,
+            principal, surcharge, status,
+            int(time.time()), days_in_default, bounty_id,
             player_guid
         ))
 
@@ -3792,33 +3851,38 @@ def get_discord_config_for_guild(guild_name: str = None) -> dict:
 @app.route("/api/backup/distress", methods=["POST"])
 def post_distress_beacon():
     """Receives in-game Call for Backup (SOS / War Horn / Vanguard Rally) distress beacons and broadcasts to Discord."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("distress", client_ip, max_requests=15, window_seconds=60):
+        return jsonify({"error": "Too many requests. Please wait before broadcasting distress signals."}), 429
+
     data = request.json or {}
     if data.get("is_instance") or data.get("isArena"):
         return jsonify({"error": "The War Horn cannot be sounded inside PvE dungeons, raids, or competitive arenas."}), 400
 
-    beacon_id = data.get("id") or f"SOS-{int(time.time())}-{data.get('character_name', 'Unknown')}"
+    beacon_id = str(data.get("id") or f"SOS-{int(time.time())}-{data.get('character_name', 'Unknown')}")[:64]
     char_name = data.get("character_name")
     if not char_name:
         return jsonify({"error": "Missing character_name"}), 400
 
-    char_class = data.get("character_class", "WARRIOR")
-    char_level = int(data.get("character_level") or 60)
-    guild_name = data.get("guild_name", "None")
-    faction = data.get("faction", "Unknown")
-    zone = data.get("zone", "Wilderness")
-    subzone = data.get("subzone", "")
+    char_name = str(char_name).strip()[:64]
+    char_class = str(data.get("character_class", "WARRIOR")).strip()[:32]
+    char_level = max(1, min(int(data.get("character_level") or 60), 90))
+    guild_name = str(data.get("guild_name", "None")).strip()[:64]
+    faction = str(data.get("faction", "Unknown")).strip()[:32]
+    zone = str(data.get("zone", "Wilderness")).strip()[:128]
+    subzone = str(data.get("subzone", "")).strip()[:128]
     coord_x = float(data.get("coord_x", 0.0))
     coord_y = float(data.get("coord_y", 0.0))
-    hostile_count = int(data.get("hostile_count", 1))
-    hostile_names = data.get("hostile_names", "Hostiles")
+    hostile_count = max(1, min(int(data.get("hostile_count", 1)), 100))
+    hostile_names = str(data.get("hostile_names", "Hostiles")).strip()[:256]
     ts = int(data.get("timestamp") or time.time())
-    status = data.get("status", "ACTIVE")
+    status = str(data.get("status", "ACTIVE")).strip()[:32]
 
     # Rich Rally metadata
-    group_type = (data.get("group_type") or data.get("groupType") or "PARTY").upper()
-    content_type = (data.get("content_type") or data.get("contentType") or ("BG" if data.get("isBattleground") else "WORLD")).upper()
-    min_level = int(data.get("min_level") or data.get("minLevel") or 1)
-    max_level = int(data.get("max_level") or data.get("maxLevel") or 60)
+    group_type = str(data.get("group_type") or data.get("groupType") or "PARTY").upper()[:32]
+    content_type = str(data.get("content_type") or data.get("contentType") or ("BG" if data.get("isBattleground") else "WORLD")).upper()[:32]
+    min_level = max(1, min(int(data.get("min_level") or data.get("minLevel") or 1), 90))
+    max_level = max(1, min(int(data.get("max_level") or data.get("maxLevel") or 60), 90))
     
     # Format roles
     raw_roles = data.get("roles")
@@ -3829,13 +3893,13 @@ def post_distress_beacon():
         if raw_roles.get("dps"): r_list.append("DPS")
         roles_str = ",".join(r_list) if r_list else "ALL"
     elif isinstance(raw_roles, list):
-        roles_str = ",".join(str(r).upper() for r in raw_roles)
+        roles_str = ",".join(str(r).upper() for r in raw_roles)[:64]
     elif isinstance(raw_roles, str) and raw_roles.strip():
-        roles_str = raw_roles.strip().upper()
+        roles_str = raw_roles.strip().upper()[:64]
     else:
         roles_str = "TANK,HEAL,DPS"
 
-    message = (data.get("message") or data.get("notes") or "").strip()
+    message = str(data.get("message") or data.get("notes") or "").strip()[:500]
 
     with get_db() as conn:
         conn.execute("""
@@ -3905,6 +3969,10 @@ def get_distress_beacons():
 @app.route("/api/backup/resolve/<beacon_id>", methods=["POST"])
 def resolve_distress_beacon(beacon_id):
     """Marks a distress beacon as resolved."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("resolve_beacon", client_ip, max_requests=20, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 20 beacon resolutions per minute."}), 429
+    beacon_id = str(beacon_id).strip()[:64]
     with get_db() as conn:
         row = conn.execute("SELECT * FROM distress_beacons WHERE id = ?", (beacon_id,)).fetchone()
         if not row:
@@ -3925,17 +3993,22 @@ def resolve_distress_beacon(beacon_id):
 @app.route("/api/events", methods=["POST"])
 def create_guild_event():
     """Creates a guild event/rally and announces it to Discord."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("events", client_ip, max_requests=10, window_seconds=60):
+        return jsonify({"error": "Too many requests. Please wait before creating more events."}), 429
+
     data = request.json or {}
     title = data.get("title")
     if not title:
         return jsonify({"error": "Missing title"}), 400
 
-    evt_id = data.get("id") or f"EVT-{int(time.time())}-{data.get('creator_name', 'Player')}"
-    desc = data.get("description", "Guild PvP Rally and Frontline Operations")
-    guild_name = data.get("guild_name", "Vanguard Brigade")
-    creator = data.get("creator_name", "Officer")
-    zone = data.get("zone", "World PvP Zone")
-    time_str = data.get("time_str", "NOW")
+    title = str(title).strip()[:128]
+    evt_id = str(data.get("id") or f"EVT-{int(time.time())}-{data.get('creator_name', 'Player')}")[:64]
+    desc = str(data.get("description", "Guild PvP Rally and Frontline Operations")).strip()[:1000]
+    guild_name = str(data.get("guild_name", "Vanguard Brigade")).strip()[:64]
+    creator = str(data.get("creator_name", "Officer")).strip()[:64]
+    zone = str(data.get("zone", "World PvP Zone")).strip()[:128]
+    time_str = str(data.get("time_str", "NOW")).strip()[:32]
     created_at = int(time.time())
 
     with get_db() as conn:
@@ -4078,6 +4151,9 @@ def get_discord_config():
 @app.route("/api/discord/test", methods=["POST"])
 def test_discord_webhook():
     """Sends an immediate test ping embed to the Discord webhook."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("discord_test", client_ip, max_requests=5, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 5 webhook tests per minute."}), 429
     data = request.json or {}
     webhook_url = data.get("webhook_url")
     if not webhook_url:
@@ -4113,26 +4189,31 @@ def test_discord_webhook():
 @app.route("/api/intel/sighting", methods=["POST"])
 def post_intel_sighting():
     """Receives tactical scout/gank sightings from the field and broadcasts to the war network."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("intel", client_ip, max_requests=30, window_seconds=60):
+        return jsonify({"error": "Too many requests. Please wait before transmitting more scout intel."}), 429
+
     data = request.json or {}
     if data.get("is_instance") or data.get("isBattleground") or data.get("isArena"):
         return jsonify({"error": "Intel sightings can only be recorded in the Open World."}), 400
 
-    s_id = data.get("id") or f"SPT-{int(time.time()*1000)}"
-    reporter_name = data.get("reporter_name", "Scout")
-    reporter_guild = data.get("reporter_guild", "")
+    s_id = str(data.get("id") or f"SPT-{int(time.time()*1000)}")[:64]
+    reporter_name = str(data.get("reporter_name", "Scout")).strip()[:64]
+    reporter_guild = str(data.get("reporter_guild", "")).strip()[:64]
     target_name = data.get("target_name")
     if not target_name:
         return jsonify({"error": "Missing target_name"}), 400
 
-    target_class = data.get("target_class", "WARRIOR")
-    target_level = int(data.get("target_level", 60))
-    target_guild = data.get("target_guild", "")
-    target_faction = data.get("target_faction", "Unknown")
-    zone = data.get("zone", "Azeroth")
-    subzone = data.get("subzone", "")
+    target_name = str(target_name).strip()[:64]
+    target_class = str(data.get("target_class", "WARRIOR")).strip()[:32]
+    target_level = max(1, min(int(data.get("target_level", 60)), 90))
+    target_guild = str(data.get("target_guild", "")).strip()[:64]
+    target_faction = str(data.get("target_faction", "Unknown")).strip()[:32]
+    zone = str(data.get("zone", "Azeroth")).strip()[:128]
+    subzone = str(data.get("subzone", "")).strip()[:128]
     coord_x = float(data.get("coord_x", 0.0))
     coord_y = float(data.get("coord_y", 0.0))
-    notes = data.get("notes", "Hostile spotted")
+    notes = str(data.get("notes", "Hostile spotted")).strip()[:500]
     ts = int(data.get("timestamp") or time.time())
 
     with get_db() as conn:
@@ -4209,20 +4290,24 @@ def get_intel_sightings():
 @app.route("/api/feuds/challenge", methods=["POST"])
 def create_blood_feud():
     """Declares a Head-to-Head Blood Feud between two guilds or characters."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("feuds", client_ip, max_requests=10, window_seconds=60):
+        return jsonify({"error": "Too many requests. Please wait before challenging more feuds."}), 429
+
     data = request.json or {}
-    feud_id = data.get("id") or f"FEUD-{int(time.time()*1000)}"
-    feud_type = data.get("feud_type", "GUILD")
-    c_name = data.get("challenger_name", "Challenger")
-    c_guild = data.get("challenger_guild", "")
-    c_faction = data.get("challenger_faction", "Unknown")
-    t_name = data.get("target_name", "Target")
-    t_guild = data.get("target_guild", "")
-    t_faction = data.get("target_faction", "Unknown")
-    target_score = int(data.get("target_score", 100))
-    roe_min_lvl = int(data.get("roe_min_level", 55))
+    feud_id = str(data.get("id") or f"FEUD-{int(time.time()*1000)}")[:64]
+    feud_type = str(data.get("feud_type", "GUILD")).upper()[:32]
+    c_name = str(data.get("challenger_name", "Challenger")).strip()[:64]
+    c_guild = str(data.get("challenger_guild", "")).strip()[:64]
+    c_faction = str(data.get("challenger_faction", "Unknown")).strip()[:32]
+    t_name = str(data.get("target_name", "Target")).strip()[:64]
+    t_guild = str(data.get("target_guild", "")).strip()[:64]
+    t_faction = str(data.get("target_faction", "Unknown")).strip()[:32]
+    target_score = max(1, min(int(data.get("target_score", 100)), 10000))
+    roe_min_lvl = max(1, min(int(data.get("roe_min_level", 55)), 90))
     roe_underdog = 1 if data.get("roe_underdog_bonus", True) else 0
-    roe_zone = data.get("roe_zone", "").strip()
-    status = data.get("status", "ACTIVE")
+    roe_zone = str(data.get("roe_zone", "")).strip()[:128]
+    status = str(data.get("status", "ACTIVE")).strip()[:32]
     now_ts = int(time.time())
     expires_at = now_ts + (86400 * 30)  # 30 day contest window
 
@@ -4255,6 +4340,10 @@ def get_blood_feuds():
 @app.route("/api/feuds/<feud_id>/accept", methods=["POST"])
 def accept_blood_feud(feud_id):
     """Accepts a pending Blood Feud challenge."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("accept_feud", client_ip, max_requests=10, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 10 feud acceptances per minute."}), 429
+    feud_id = str(feud_id).strip()[:64]
     with get_db() as conn:
         row = conn.execute("SELECT * FROM blood_feuds WHERE id = ?", (feud_id,)).fetchone()
         if not row:
