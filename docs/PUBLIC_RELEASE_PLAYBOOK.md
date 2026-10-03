@@ -10,7 +10,7 @@ Before submitting the addon archive to CurseForge, execute the release sequence 
 
 ```mermaid
 flowchart TD
-    S1["1. Register Domain\n(e.g. wowkillboard.com via Cloudflare)"] --> S2["2. Point DNS A-Record\nMap @ and api to 13.216.102.148"]
+    S1["1. Register Domain\n(e.g. wowkillboard.com via Cloudflare)"] --> S2["2. Point DNS A-Record\nMap @ and api to <YOUR_VPS_PUBLIC_IP>"]
     S2 --> S3["3. Automatic HTTPS / SSL\nCaddy provisions Let's Encrypt certificate"]
     S3 --> S4["4. Update In-Game URLs\nSet KB.WebDomain in Config.lua & recompile Sync.exe"]
     S4 --> S5["5. Rebuild & Submit\nWoWKillboard-v1.0.0.zip to CurseForge"]
@@ -27,8 +27,9 @@ flowchart TD
 
 ### The Interface Number Reference
 Blizzard uses client interface numbers in the `.toc` file to notify users if an addon is out of date:
-- **Classic Era / WoW Forever (1.15.x)**: `11503` / `11504`
-- **Retail (11.x)**: `110002`
+- **Classic Era / Anniversary (1.15.x)**: `11506`, `11507`
+- **Forever Beta**: `16001`
+- **Retail (11.x)**: `110007`
 
 The `WoWKillboard.toc` manifest includes multi-client declarations:
 ```text

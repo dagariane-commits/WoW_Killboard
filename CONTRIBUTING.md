@@ -79,4 +79,4 @@ Before submitting any pull request, you **must** pass all local verification tes
 ## 4. Reporting Issues & Security Vulnerabilities
 
 - **Bug Reports**: Open an issue detailing your client flavor (`Classic Era`, `Forever Beta`, `Retail`), the exact Lua error stack trace, and reproduction steps.
-- **Security Vulnerabilities**: For potential exploits regarding gold transactions or anti-win-trade heuristics, please email `dagariane@gmail.com` directly rather than filing public issues.
+- **Security Vulnerabilities**: For potential security vulnerabilities or exploit disclosures, please open a private security advisory on GitHub ([Security Advisories](https://github.com/dagariane-commits/WoW_Killboard/security/advisories)) or file a confidential report via the `/feedback` portal rather than posting in public discussion threads.

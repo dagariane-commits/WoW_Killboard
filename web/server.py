@@ -18,6 +18,7 @@ import urllib.error
 import urllib.parse
 import logging
 import hashlib
+import hmac
 from flask import Flask, request, jsonify, send_from_directory, render_template_string, Response
 from flask_cors import CORS
 
@@ -40,7 +41,11 @@ except ImportError:
         LuaTableParser = None
 
 app = Flask(__name__, static_folder=STATIC_DIR)
-CORS(app)
+# Restrict administrative CORS to trusted origin; open public read APIs
+CORS(app, resources={
+    r"/api/admin/.*": {"origins": ["https://wowkillboard.com", "http://localhost:8080", "http://127.0.0.1:8080"]},
+    r"/api/.*": {"origins": "*"}
+})
 
 def get_db():
     db_dir = os.path.dirname(DB_PATH)
@@ -49,7 +54,7 @@ def get_db():
     if os.path.exists(DB_PATH):
         try:
             if not os.access(DB_PATH, os.W_OK):
-                os.chmod(DB_PATH, 0o666)
+                os.chmod(DB_PATH, 0o660)
         except OSError:
             pass
     conn = sqlite3.connect(DB_PATH, timeout=15.0)
@@ -1635,19 +1640,21 @@ def admin_reset():
     Requires ADMIN_SECRET_KEY.
     """
     req_secret = None
-    if request.is_json:
+    if request.is_json and request.json:
         req_secret = request.json.get("secret")
     if not req_secret:
-        req_secret = request.args.get("secret") or request.form.get("secret")
+        auth_hdr = request.headers.get("Authorization", "")
+        if auth_hdr.startswith("Bearer "):
+            req_secret = auth_hdr[7:].strip()
 
-    if req_secret != ADMIN_SECRET_KEY:
+    if not req_secret or not hmac.compare_digest(str(req_secret), str(ADMIN_SECRET_KEY)):
         return jsonify({"error": "Unauthorized: Invalid administrative secret key."}), 403
 
     target = None
-    if request.is_json:
+    if request.is_json and request.json:
         target = request.json.get("target")
     if not target:
-        target = request.args.get("target") or request.form.get("target") or "all"
+        target = "all"
 
     if target == "pve":
         with get_db() as conn:
@@ -1664,7 +1671,7 @@ def admin_reset():
         "message": "All combat tables, leaderboards, and telemetry ledgers have been completely reset."
     }), 200
 
-@app.route("/api/admin/deploy", methods=["POST", "GET"])
+@app.route("/api/admin/deploy", methods=["POST"])
 def admin_deploy():
     """
     Administrative Endpoint: Pulls latest git commits from origin/main.
@@ -1672,12 +1679,14 @@ def admin_deploy():
     Requires ADMIN_SECRET_KEY.
     """
     req_secret = None
-    if request.is_json:
+    if request.is_json and request.json:
         req_secret = request.json.get("secret")
     if not req_secret:
-        req_secret = request.args.get("secret") or request.form.get("secret")
+        auth_hdr = request.headers.get("Authorization", "")
+        if auth_hdr.startswith("Bearer "):
+            req_secret = auth_hdr[7:].strip()
 
-    if req_secret != ADMIN_SECRET_KEY:
+    if not req_secret or not hmac.compare_digest(str(req_secret), str(ADMIN_SECRET_KEY)):
         return jsonify({"error": "Unauthorized: Invalid administrative secret key."}), 403
 
     import subprocess
@@ -3958,6 +3967,12 @@ def set_discord_config():
     alerts_enabled = 1 if data.get("alerts_enabled", True) else 0
     events_enabled = 1 if data.get("events_enabled", True) else 0
 
+    req_secret = data.get("secret")
+    if not req_secret:
+        auth_hdr = request.headers.get("Authorization", "")
+        if auth_hdr.startswith("Bearer "):
+            req_secret = auth_hdr[7:].strip()
+
     if not webhook_url:
         return jsonify({"error": "Missing webhook_url"}), 400
 
@@ -3966,6 +3981,12 @@ def set_discord_config():
         return jsonify({"error": "Invalid Discord webhook URL. URL must start with https://discord.com/api/webhooks/ or https://discordapp.com/api/webhooks/."}), 400
 
     with get_db() as conn:
+        existing = conn.execute("SELECT webhook_url FROM guild_discord_configs WHERE guild_name = ?", (guild_name,)).fetchone()
+        if existing and existing["webhook_url"]:
+            # Overwriting an existing configuration requires administrative authorization
+            if not req_secret or not hmac.compare_digest(str(req_secret), str(ADMIN_SECRET_KEY)):
+                return jsonify({"error": "Unauthorized: Overwriting an existing guild webhook requires administrative authorization."}), 403
+
         conn.execute("""
             INSERT OR REPLACE INTO guild_discord_configs (
                 guild_name, webhook_url, alerts_enabled, events_enabled
