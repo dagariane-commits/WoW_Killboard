@@ -499,8 +499,11 @@ class DesktopCompanionApp:
         def do_install():
             target = _w.install_application_to_pc(curr_exe)
             setup_win.destroy()
-            import subprocess
-            subprocess.Popen([target])
+            if hasattr(os, "startfile"):
+                os.startfile(target)
+            else:
+                import subprocess
+                subprocess.Popen([target])
             self.root.destroy()
             sys.exit(0)
 

@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Guaranteed all broadcast strings stay strictly under World of Warcraft's 255-character chat message limit.
 
 ### Security & Sanitization
+- **Companion Binary False-Positive Remediation & PE Metadata Hardening (`sync/watcher.py`, `sync/gui.py`, `sync/version_info.txt`, `assets/icon.ico`, `Build_Desktop_Sync_EXE.bat`)**:
+  - **PowerShell Subprocess Purge**: Completely eradicated hidden PowerShell invocations (`subprocess.run(["powershell", ...])`) from shortcut creation in `watcher.py`. Replaced with 100% pure Python binary `.lnk` generation via `pylnk3` and native `.url` shell fallback, neutralizing heuristic flags (`BehavesLike.Win64.Backdoor.wc`).
+  - **Process Launch Hardening (`sync/gui.py`)**: Migrated post-installation executable launch from `subprocess.Popen` to native Windows `os.startfile()`.
+  - **Embedded Windows PE Version Information (`sync/version_info.txt`)**: Integrated full `VSVersionInfo` resource table into PyInstaller build: Company Name (`WoW Killboard Project`), File Description (`WoW Killboard Desktop Companion & Synchronization Agent`), Product Name, Legal Copyright, and File Version (`1.0.1.0`), eliminating anonymous stripped PE heuristic penalties.
+  - **Multi-Resolution Windows Icon Resource (`assets/icon.ico`)**: Generated and embedded multi-layer application icon (256x256 down to 16x16) into executable PE resource section.
+  - **Recompiled Standalone Binary**: Recompiled `WoWKillboardSync.exe` (SHA-256: `07019315279a3b7ee652ddbb683116dbd353991e4dc3c73a5b1325d80e616340`), mirrored to root and `web/static`.
 - **Full-Scope Security Audit Remediation & Hardening (`server.py`, `app.js`, `Core.lua`, `CONTRIBUTING.md`)**:
   - **Administrative Access Control (`web/server.py`)**: Gated `/api/admin/reset` and `/api/admin/deploy` strictly behind timing-safe `hmac.compare_digest` validation. Disallowed passing secrets in URL query parameters (`?secret=...`), requiring JSON body or `Authorization: Bearer <token>`. Restricted administrative CORS routes to trusted origins.
   - **Database Permissions**: Tightened SQLite runtime file permissions to `0o660`, eradicating world-writable permissions.
