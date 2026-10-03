@@ -144,16 +144,16 @@ To wipe all combat records, leaderboards, and character claims back to zero for 
 
 #### Option 1: From Local Windows PowerShell (No SSH Needed)
 ```powershell
-Invoke-RestMethod -Uri "https://wowkillboard.com/api/admin/reset" -Method Post -ContentType "application/json" -Body '{"secret":"wowkb_archivist_secret"}'
+Invoke-RestMethod -Uri "https://wowkillboard.com/api/admin/reset" -Method Post -ContentType "application/json" -Body '{"secret":"<YOUR_ADMIN_SECRET_KEY>"}'
 ```
 
 #### Option 2: Inside the Lightsail Terminal
 ```bash
-curl -X POST http://localhost:8080/api/admin/reset -H "Content-Type: application/json" -d '{"secret":"wowkb_archivist_secret"}'
+curl -X POST http://localhost:8080/api/admin/reset -H "Content-Type: application/json" -d '{"secret":"<YOUR_ADMIN_SECRET_KEY>"}'
 ```
 
 #### Option 3: Directly from the Website
-Scroll to the footer at `https://wowkillboard.com`, click **Admin Console**, enter `wowkb_archivist_secret`, and click **[Reset Master Database]**.
+Scroll to the footer at `https://wowkillboard.com`, click **Admin Console**, enter your configured `ADMIN_SECRET_KEY`, and click **[Reset Master Database]**.
 
 ### Database Backups
 Automated backups run daily at 03:30 AM via `/usr/local/bin/wowkillboard-backup.sh`. Backups older than 14 days are automatically pruned.

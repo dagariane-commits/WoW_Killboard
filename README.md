@@ -194,7 +194,7 @@ flowchart TD
 WoW_Killboard/
 ├── Addon/
 │   └── WoWKillboard/
-│       ├── WoWKillboard.toc         # Multi-client TOC descriptor (11503, 11504, 110002)
+│       ├── WoWKillboard.toc         # Multi-client TOC descriptor (11506, 11507, 110007, 16001)
 │       ├── Config.lua               # Constants, sound IDs, class colors
 │       ├── Utils.lua                # FNV-1a hash generator, formatters, GPS resolution
 │       ├── UnitScanner.lua          # Proximity level/class/guild cache & KOS sirens

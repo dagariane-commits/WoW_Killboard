@@ -40,7 +40,7 @@ The production VPS instance on AWS Lightsail:
 | **Cloud Provider** | AWS Lightsail (Ubuntu 24.04 LTS) |
 | **Instance Name** | `wowkillboard-vps` |
 | **Instance Plan** | General Purpose (1 GB RAM, 2 vCPUs, 40 GB SSD) |
-| **Static IPv4 Address** | **`13.216.102.148`** (Permanently attached) |
+| **Static IPv4 Address** | **`<YOUR_VPS_PUBLIC_IP>`** (e.g. `198.51.100.42`) |
 | **Firewall Rules** | Port 22 (SSH), Port 80 (HTTP), Port 443 (HTTPS) all open |
 | **Domain Status** | Live with Cloudflare Universal SSL on **`https://wowkillboard.com/`** |
 | **Service Daemon** | systemd: `wowkillboard.service` (Flask REST API + SQLite) |
@@ -55,7 +55,7 @@ cd /opt/wowkillboard && sudo git fetch origin main && sudo git reset --hard orig
 ### Remote Database Reset Command:
 To wipe all tables (`kills`, `bounties`, `characters`, `character_claims`, etc.) back to 0:
 ```powershell
-Invoke-RestMethod -Uri "https://wowkillboard.com/api/admin/reset" -Method Post -ContentType "application/json" -Body '{"secret":"wowkb_archivist_secret"}'
+Invoke-RestMethod -Uri "https://wowkillboard.com/api/admin/reset" -Method Post -ContentType "application/json" -Body '{"secret":"<YOUR_ADMIN_SECRET_KEY>"}'
 ```
 
 ---
@@ -110,6 +110,6 @@ Invoke-RestMethod -Uri "https://wowkillboard.com/api/admin/reset" -Method Post -
 
 ## 5. Next Steps for Release (Domain & CurseForge)
 1. **Domain Registration**: Register domain (e.g., `wowkillboard.com` via Cloudflare).
-2. **Point DNS**: Add A-Record for `@` and `api` to `13.216.102.148`.
+2. **Point DNS**: Add A-Record for `@` and `api` to `<YOUR_VPS_PUBLIC_IP>`.
 3. **SSL & URL Update**: Update `KB.WebDomain` in `Config.lua` and `DEFAULT_PROD_URL` in `watcher.py`, rebuild `WoWKillboardSync.exe`.
 4. **Publish to CurseForge**: Upload `WoWKillboard-v1.0.0.zip` to CurseForge Author Portal under `PvP / Combat / Information`.

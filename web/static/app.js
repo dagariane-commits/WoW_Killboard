@@ -47,6 +47,11 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
+function safeJsParam(str) {
+  if (str === null || str === undefined) return "''";
+  return `decodeURIComponent('${encodeURIComponent(String(str))}')`;
+}
+
 function getClassIconSvg(cls) {
   cls = (cls || "").toUpperCase();
   switch (cls) {
@@ -612,7 +617,7 @@ function renderMostWanted(outlaws) {
       }
 
       // Contracts are accepted exclusively in-game in World of Warcraft; website displays tactical dossier link
-      const btnHtml = `<button class="wanted-btn compact" onclick="openCharacterProfile('${escapeHtml(b.target_name)}')" title="Inspect Outlaw Dossier (Marks Accepted In-Game Only)">Target Intel &rarr;</button>`;
+      const btnHtml = `<button class="wanted-btn compact" onclick="openCharacterProfile(${safeJsParam(b.target_name)})" title="Inspect Outlaw Dossier (Marks Accepted In-Game Only)">Target Intel &rarr;</button>`;
 
       let targetFaction = (b.target_faction || "").trim();
       if (!targetFaction && cls) {
@@ -638,7 +643,7 @@ function renderMostWanted(outlaws) {
           </div>
           <div class="wanted-name-row">
             <span class="wanted-level-badge">Lv ${targetLevel}</span>
-            <div class="wanted-name" onclick="openCharacterProfile('${b.target_name}')" title="${b.target_name}">
+            <div class="wanted-name" onclick="openCharacterProfile(${safeJsParam(b.target_name)})" title="${b.target_name}">
               ${colorizeClass(b.target_name, cls)}
             </div>
           </div>
@@ -873,7 +878,7 @@ function renderPveFeed(deaths) {
           <!-- Fallen Player Victim -->
           <div class="combatant-block" style="display:flex; align-items:center; gap:12px; text-align:right;">
             <div>
-              <div style="font-weight:800; font-size:1.1rem; cursor:pointer;" onclick="openCharacterProfile('${escapeHtml(d.victim_name)}')">
+              <div style="font-weight:800; font-size:1.1rem; cursor:pointer;" onclick="openCharacterProfile(${safeJsParam(d.victim_name)})">
                 <span style="color:${vColor};">${escapeHtml(d.victim_name)}</span> <span style="font-size:0.75rem; color:#94a3b8;">(${vLvl})</span>
               </div>
               <div style="font-size:0.72rem; color:#cbd5e1;">&lt;${escapeHtml(d.victim_guild || 'Unguilded')}&gt;</div>
@@ -1001,7 +1006,7 @@ function renderSidebarActivity(data) {
           <div class="sidebar-rank-item ${factionClass}">
             <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
               <span class="rank-badge">#${i + 1}</span>
-              <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(c.name)}')" style="white-space:nowrap;">${colorizeClass(c.name, c.class)}</span>
+              <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(c.name)})" style="white-space:nowrap;">${colorizeClass(c.name, c.class)}</span>
             </div>
             <span style="color:#10b981; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${c.kills} kills</span>
           </div>
@@ -1025,7 +1030,7 @@ function renderSidebarActivity(data) {
           <div class="sidebar-rank-item ${factionClass}">
             <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
               <span class="rank-badge">#${i + 1}</span>
-              <span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')" style="font-weight:700; color:var(--text-main); white-space:nowrap;">&lt;${escapeHtml(g.guild)}&gt;</span>
+              <span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(g.guild)})" style="font-weight:700; color:var(--text-main); white-space:nowrap;">&lt;${escapeHtml(g.guild)}&gt;</span>
             </div>
             <span style="color:${isPve ? '#ef4444' : 'var(--accent-gold)'}; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${countVal} ${countSuffix}</span>
           </div>
@@ -1400,7 +1405,7 @@ async function renderStats(kills) {
             </div>
             <div>
               <div class="operative-title-row">
-                <span class="operative-name" style="cursor:pointer;" onclick="openCharacterProfile('${escapeHtml(accountUser)}')">${escapeHtml(accountUser)}</span>
+                <span class="operative-name" style="cursor:pointer;" onclick="openCharacterProfile(${safeJsParam(accountUser)})">${escapeHtml(accountUser)}</span>
                 <span class="operative-rank-tag">${escapeHtml(uRank)}</span>
                 <span class="operative-percentile-pill" title="${escapeHtml(pct.cohortLabel)} (${pct.totalInCohort} combatants)">
                   Top ${pct.topPct}% (${pct.percentile}th Pct)
@@ -1413,7 +1418,7 @@ async function renderStats(kills) {
             </div>
           </div>
           <div class="operative-hero-actions">
-            <button class="operative-action-btn" onclick="openCharacterProfile('${escapeHtml(accountUser)}')">
+            <button class="operative-action-btn" onclick="openCharacterProfile(${safeJsParam(accountUser)})">
               <span>View Full Armory Profile</span>
               <span>&rarr;</span>
             </button>
@@ -1652,11 +1657,11 @@ function renderFeed(kills) {
     const victimGuildName = (km.victim.guild && km.victim.guild !== 'None') ? km.victim.guild : '';
 
     const killerGuildHtml = killerGuildName
-      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile('${killerGuildName}')">&lt;${killerGuildName}&gt;</span>`
+      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(killerGuildName)})">&lt;${killerGuildName}&gt;</span>`
       : `<span class="km-guild-none">&lt;Unguilded&gt;</span>`;
 
     const victimGuildHtml = victimGuildName
-      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile('${victimGuildName}')">&lt;${victimGuildName}&gt;</span>`
+      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(victimGuildName)})">&lt;${victimGuildName}&gt;</span>`
       : `<span class="km-guild-none">&lt;Unguilded&gt;</span>`;
 
     const subzoneOrCoords = km.location.subZone ? km.location.subZone : `${(km.location.x || 0).toFixed(1)}, ${(km.location.y || 0).toFixed(1)}`;
@@ -1680,7 +1685,7 @@ function renderFeed(kills) {
         <div class="km-combatants-center">
           <div class="km-combatant-col killer">
             <div class="km-player-row">
-              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.killer.name}')">${killerSpan}</span>
+              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.killer.name)})">${killerSpan}</span>
               <span class="km-lvl">${killerLvlStr}</span>
               ${killerBadge}
             </div>
@@ -1696,7 +1701,7 @@ function renderFeed(kills) {
           <div class="km-combatant-col victim">
             <div class="km-player-row">
               ${victimBadge}
-              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile('${km.victim.name}')">${victimSpan}</span>
+              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.victim.name)})">${victimSpan}</span>
               <span class="km-lvl">${victimLvlStr}</span>
             </div>
             <div class="km-guild-sub">
@@ -1804,13 +1809,13 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
     } else {
       guilds.forEach((g, idx) => {
         const topMemberHtml = g.topMember 
-          ? `<span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(g.topMember.name)}')">${colorizeClass(g.topMember.name, g.topMember.class)}</span> <small style="color:#10b981;">(${g.topMember.kills}k)</small>`
+          ? `<span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(g.topMember.name)})">${colorizeClass(g.topMember.name, g.topMember.class)}</span> <small style="color:#10b981;">(${g.topMember.kills}k)</small>`
           : '-';
 
         html += `
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
             <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
-            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.guild)}')">&lt;${escapeHtml(g.guild)}&gt;</span></td>
+            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(g.guild)})">&lt;${escapeHtml(g.guild)}&gt;</span></td>
             <td style="padding: 6px 10px; color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(g.faction || 'Neutral')}</td>
             <td style="padding: 6px 10px; color: #e2e8f0; white-space: nowrap;">${g.members_count || 1}</td>
             <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${g.kills}</td>
@@ -1878,7 +1883,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
               <div>
                 <div style="font-size:0.68rem; color:var(--wow-gold, #f59e0b); font-weight:800; letter-spacing:0.5px;">CHAMPION BENCHMARK COMPARISON</div>
                 <div style="font-size:0.95rem; font-weight:700;">
-                  <span class="clickable-player" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(bmName)}'))">${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}</span>
+                  <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(bmName)})">${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}</span>
                   <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
                 </div>
               </div>
@@ -1964,7 +1969,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
     } else {
       killers.forEach((p, idx) => {
         const guildHtml = (p.guild && p.guild !== 'None')
-          ? `<span class="clickable-guild" onclick="openGuildProfile(decodeURIComponent('${encodeURIComponent(p.guild)}'))">${escapeHtml(p.guild)}</span>`
+          ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(p.guild)})">${escapeHtml(p.guild)}</span>`
           : '-';
 
         const pctBadge = getWowLogsPercentileBadge(p.percentile);
@@ -1976,7 +1981,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           <tr ${rowClass} style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
             <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(p.name)}'))">
+              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(${safeJsParam(p.name)})">
                 ${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)} ${youBadge}
               </span>
             </td>
@@ -1998,14 +2003,14 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         const bmPct = (benchmarkProfile && benchmarkProfile.percentile) ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 };
         const pctBadge = getWowLogsPercentileBadge(bmPct);
         const bmGuildHtml = (bmGuild && bmGuild !== 'None')
-          ? `<span class="clickable-guild" onclick="openGuildProfile(decodeURIComponent('${encodeURIComponent(bmGuild)}'))">${escapeHtml(bmGuild)}</span>`
+          ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(bmGuild)})">${escapeHtml(bmGuild)}</span>`
           : '-';
 
         html += `
           <tr style="border-top: 2px dashed rgba(245, 158, 11, 0.4); background: rgba(212, 163, 41, 0.08);" class="current-player-row">
             <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#&gt;15</td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(bmName)}'))">
+              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(${safeJsParam(bmName)})">
                 ${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}
                 <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
               </span>
@@ -2120,7 +2125,7 @@ function renderSingleBountyCard(b, isSupporter) {
         <div style="display:flex; align-items:center; gap:8px;">
           ${renderClassBadge(b.target_class, 22)}
           <div>
-            <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(b.target_name)}')" style="color:#fff; font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${escapeHtml(b.target_name)}</span>
+            <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(b.target_name)})" style="color:#fff; font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${escapeHtml(b.target_name)}</span>
             <div style="font-size:0.68rem; color:#cbd5e1;">Level ${displayTargetLevel} ${escapeHtml(b.target_class || 'Combatant')}</div>
           </div>
         </div>
@@ -2234,7 +2239,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
               ${(leaderboards.topHunters && leaderboards.topHunters.length > 0) 
                 ? leaderboards.topHunters.map((h, i) => `
                   <div class="leader-item">
-                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile('${h.hunter_name}')">${h.hunter_name}</span></span>
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(h.hunter_name)})">${h.hunter_name}</span></span>
                     <span style="text-align:right;">
                       <span style="color:#10b981; font-weight:700;">${h.claimed_count} Claimed</span>
                       <small style="color:var(--accent-gold); margin-left:6px;">(${h.total_gold}g)</small>
@@ -2256,7 +2261,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
               ${(leaderboards.highestBounties && leaderboards.highestBounties.length > 0)
                 ? leaderboards.highestBounties.map((b, i) => `
                   <div class="leader-item">
-                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile('${b.target_name}')">${b.target_name}</span></span>
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(b.target_name)})">${b.target_name}</span></span>
                     <span style="text-align:right;">
                       <span style="color:var(--accent-gold); font-weight:800;">${b.amount_gold}g</span>
                       <small style="color:${b.status === 'CLAIMED' ? '#10b981' : '#f59e0b'}; margin-left:6px;">[${b.status}]</small>
@@ -2278,7 +2283,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
               ${(leaderboards.longestOutstanding && leaderboards.longestOutstanding.length > 0)
                 ? leaderboards.longestOutstanding.map((o, i) => `
                   <div class="leader-item">
-                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile('${o.target_name}')">${o.target_name}</span></span>
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(o.target_name)})">${o.target_name}</span></span>
                     <span style="text-align:right;">
                       <span style="color:#f97316; font-weight:700;">Survived ${formatDuration(o.elapsed_seconds)}</span>
                       <small style="color:var(--accent-gold); margin-left:6px;">(${o.amount_gold}g)</small>
@@ -2300,7 +2305,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
               ${(leaderboards.fastestCollected && leaderboards.fastestCollected.length > 0)
                 ? leaderboards.fastestCollected.map((f, i) => `
                   <div class="leader-item">
-                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile('${f.target_name}')">${f.target_name}</span></span>
+                    <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(f.target_name)})">${f.target_name}</span></span>
                     <span style="text-align:right;">
                       <span style="color:var(--accent-cyan); font-weight:700;">${formatDuration(f.duration_seconds)}</span>
                       <small style="color:#94a3b8; margin-left:4px;">by ${f.hunter_name || 'Hunter'}</small>
@@ -2335,7 +2340,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <div class="debt-header">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="debt-badge">BLOOD DEBTOR</span>
-              <strong style="color:#fff; font-size:1.05rem;" class="clickable-player" onclick="openCharacterProfile('${d.player_name}')">${d.player_name}</strong>
+              <strong style="color:#fff; font-size:1.05rem;" class="clickable-player" onclick="openCharacterProfile(${safeJsParam(d.player_name)})">${d.player_name}</strong>
               <span class="debt-welcher-tag">DEBT WELCHER</span>
             </div>
             <span style="color:var(--accent-red); font-weight:800; font-size:1.1rem;">${formatCopper(d.amount_owed_copper)} Owed</span>
@@ -2390,10 +2395,10 @@ function openKillModal(killId) {
   const killerGuildName = (km.killer.guild && km.killer.guild !== 'None') ? km.killer.guild : '';
   const victimGuildName = (km.victim.guild && km.victim.guild !== 'None') ? km.victim.guild : '';
   const killerGuild = killerGuildName 
-    ? `<span class="clickable-guild" onclick="openGuildProfile('${killerGuildName}')">&lt;${killerGuildName}&gt;</span>` 
+    ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(killerGuildName)})">&lt;${killerGuildName}&gt;</span>` 
     : '<span style="color:#64748b;">&lt;Unguilded&gt;</span>';
   const victimGuild = victimGuildName 
-    ? `<span class="clickable-guild" onclick="openGuildProfile('${victimGuildName}')">&lt;${victimGuildName}&gt;</span>` 
+    ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(victimGuildName)})">&lt;${victimGuildName}&gt;</span>` 
     : '<span style="color:#64748b;">&lt;Unguilded&gt;</span>';
 
   // Infer Killer Spec from attack spells or class default
@@ -2486,7 +2491,7 @@ function openKillModal(killId) {
             ${renderRoleBadge(killerRole)}
           </div>
           <div style="font-size:1.35rem; font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:var(--font-cinzel, Cinzel, serif);">
-            <span class="clickable-player" onclick="openCharacterProfile('${km.killer.name}')">${colorizeClass(km.killer.name, km.killer.class)}</span>
+            <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(km.killer.name)})">${colorizeClass(km.killer.name, km.killer.class)}</span>
           </div>
           <div style="font-size:0.8rem; color:#e2e8f0; margin-top:2px;">
             Level ${km.killer.level && km.killer.level > 0 ? km.killer.level : '??'} ${killerSpec.name} ${km.killer.class}
@@ -2509,7 +2514,7 @@ function openKillModal(killId) {
         <div style="min-width:0; flex:1;">
           <div style="font-size:0.68rem; color:#ef4444; font-weight:800; letter-spacing:0.5px; margin-bottom:2px;">SLAIN COMBATANT</div>
           <div style="font-size:1.35rem; font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:var(--font-cinzel, Cinzel, serif);">
-            <span class="clickable-player" onclick="openCharacterProfile('${km.victim.name}')">${colorizeClass(km.victim.name, km.victim.class)}</span>
+            <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(km.victim.name)})">${colorizeClass(km.victim.name, km.victim.class)}</span>
           </div>
           <div style="font-size:0.8rem; color:#e2e8f0; margin-top:2px;">
             Level ${km.victim.level && km.victim.level > 0 ? km.victim.level : '??'} ${km.victim.class}
@@ -2560,7 +2565,7 @@ function openKillModal(killId) {
                 </div>
                 <div style="display:flex; flex-direction:column; line-height:1.2; min-width:0;">
                   <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                    <span class="clickable-player" style="font-weight:700;" onclick="openCharacterProfile('${att.name}')">${colorizeClass(att.name, attCls)}</span>
+                    <span class="clickable-player" style="font-weight:700;" onclick="openCharacterProfile(${safeJsParam(att.name)})">${colorizeClass(att.name, attCls)}</span>
                     <span class="attacker-spec-tag">[${attSpec.name}]</span>
                     ${renderRoleBadge(attRole)}
                     ${isKiller ? '<span class="final-blow-badge">★ FINAL BLOW</span>' : '<span class="squad-assist-badge">🛡️ SQUAD ASSIST</span>'}
@@ -2620,7 +2625,7 @@ function closeModal() {
 function buildCharacterDossierHtml(data) {
   const stats = data.stats || {};
   const guildText = (data.currentGuild && data.currentGuild !== 'None') 
-    ? `<span class="clickable-guild" onclick="openGuildProfile('${data.currentGuild}')">&lt;${data.currentGuild}&gt;</span>` 
+    ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(data.currentGuild)})">&lt;${data.currentGuild}&gt;</span>` 
     : '<span style="color:#64748b;">No Guild</span>';
 
   const factionColor = data.faction === 'Alliance' ? '#3b82f6' : (data.faction === 'Horde' ? '#ef4444' : '#94a3b8');
@@ -2637,7 +2642,7 @@ function buildCharacterDossierHtml(data) {
             return `
               <div class="timeline-row">
                 <div>
-                  <span class="clickable-guild" onclick="openGuildProfile('${g.guild_name}')">&lt;${g.guild_name}&gt;</span>
+                  <span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(g.guild_name)})">&lt;${g.guild_name}&gt;</span>
                   <span style="font-size:0.7rem; color:${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; margin-left:6px;">(${g.faction || 'Neutral'})</span>
                 </div>
                 <span style="color:#94a3b8; font-size:0.75rem;">${firstSeenStr} — ${lastSeenStr}</span>
@@ -2658,9 +2663,9 @@ function buildCharacterDossierHtml(data) {
           ${data.recentKills.map(k => `
             <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
               <div>
-                <span class="clickable-player" onclick="openCharacterProfile('${k.victim_name}')">${colorizeClass(k.victim_name, k.victim_class)}</span>
+                <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(k.victim_name)})">${colorizeClass(k.victim_name, k.victim_class)}</span>
                 <small style="color:#64748b;">(Lvl ${k.victim_level && k.victim_level > 0 ? k.victim_level : '??'})</small>
-                ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile('${k.victim_guild}')">&lt;${k.victim_guild}&gt;</span>` : ''}
+                ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(k.victim_guild)})">&lt;${k.victim_guild}&gt;</span>` : ''}
               </div>
               <div style="text-align:right; color:#94a3b8;">
                 <span>${k.zone}</span> &bull; <span>${timeAgo(k.timestamp)}</span>
@@ -2681,9 +2686,9 @@ function buildCharacterDossierHtml(data) {
           ${data.recentDeaths.map(d => `
             <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
               <div>
-                Killed by: <span class="clickable-player" onclick="openCharacterProfile('${d.killer_name}')">${colorizeClass(d.killer_name, d.killer_class)}</span>
+                Killed by: <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(d.killer_name)})">${colorizeClass(d.killer_name, d.killer_class)}</span>
                 <small style="color:#64748b;">(Lvl ${d.killer_level && d.killer_level > 0 ? d.killer_level : '??'})</small>
-                ${d.killer_guild && d.killer_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile('${d.killer_guild}')">&lt;${d.killer_guild}&gt;</span>` : ''}
+                ${d.killer_guild && d.killer_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(d.killer_guild)})">&lt;${d.killer_guild}&gt;</span>` : ''}
               </div>
               <div style="text-align:right; color:#94a3b8;">
                 <span>${d.zone}</span> &bull; <span>${timeAgo(d.timestamp)}</span>
@@ -2960,7 +2965,7 @@ async function openGuildProfile(guildName) {
               <tbody>
                 ${data.members.map(m => `
                   <tr style="border-bottom:1px solid rgba(255,255,255,0.04); height:32px;">
-                    <td style="padding-left:12px;"><span class="clickable-player" onclick="openCharacterProfile('${m.name}')">${colorizeClass(m.name, m.class)}</span></td>
+                    <td style="padding-left:12px;"><span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(m.name)})">${colorizeClass(m.name, m.class)}</span></td>
                     <td style="color:#94a3b8;">${m.level || 60}</td>
                     <td style="color:#10b981; font-weight:700;">${m.kills}</td>
                     <td style="color:#00e5ff; font-weight:700;">${m.solo_kills || 0}</td>
@@ -2983,10 +2988,10 @@ async function openGuildProfile(guildName) {
             ${data.recentKills.map(k => `
               <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid #1e293b;">
                 <div>
-                  <span class="clickable-player" onclick="openCharacterProfile('${k.killer_name}')">${colorizeClass(k.killer_name, k.killer_class)}</span>
+                  <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(k.killer_name)})">${colorizeClass(k.killer_name, k.killer_class)}</span>
                   slayed
-                  <span class="clickable-player" onclick="openCharacterProfile('${k.victim_name}')">${colorizeClass(k.victim_name, k.victim_class)}</span>
-                  ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile('${k.victim_guild}')">&lt;${k.victim_guild}&gt;</span>` : ''}
+                  <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(k.victim_name)})">${colorizeClass(k.victim_name, k.victim_class)}</span>
+                  ${k.victim_guild && k.victim_guild !== 'None' ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(k.victim_guild)})">&lt;${k.victim_guild}&gt;</span>` : ''}
                 </div>
                 <div style="text-align:right; color:#94a3b8;">
                   <span>${k.zone}</span> &bull; <span>${timeAgo(k.timestamp)}</span>
@@ -3081,13 +3086,13 @@ async function loadGuildsView() {
 
     guilds.forEach((g, idx) => {
       const topMemberHtml = g.topMember 
-        ? `<span class="clickable-player" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(g.topMember.name)}'))">${colorizeClass(g.topMember.name, g.topMember.class)}</span> <small style="color:#10b981;">(${g.topMember.kills}k)</small>`
+        ? `<span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(g.topMember.name)})">${colorizeClass(g.topMember.name, g.topMember.class)}</span> <small style="color:#10b981;">(${g.topMember.kills}k)</small>`
         : '-';
 
       html += `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); height: 38px;">
           <td style="color: var(--accent-gold); font-weight: 800;">#${idx + 1}</td>
-          <td><span class="clickable-guild" onclick="openGuildProfile(decodeURIComponent('${encodeURIComponent(g.guild)}'))">&lt;${escapeHtml(g.guild)}&gt;</span></td>
+          <td><span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(g.guild)})">&lt;${escapeHtml(g.guild)}&gt;</span></td>
           <td style="color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'};">${escapeHtml(g.faction || 'Neutral')}</td>
           <td style="color: #e2e8f0;">${g.members_count || 1}</td>
           <td style="color: #10b981; font-weight: 700;">${g.kills}</td>
@@ -3204,7 +3209,7 @@ async function fetchArmoryDataAndRender() {
       const symbol = CLASS_SYMBOLS[cls] || "👤";
       const factionColor = c.faction === "Alliance" ? "var(--alliance-blue)" : (c.faction === "Horde" ? "var(--horde-red)" : "#94a3b8");
       const guildHtml = (c.guild && c.guild !== "None")
-        ? `<span class="armory-card-guild" onclick="openGuildProfile('${c.guild}')">&lt;${c.guild}&gt;</span>`
+        ? `<span class="armory-card-guild" onclick="openGuildProfile(${safeJsParam(c.guild)})">&lt;${c.guild}&gt;</span>`
         : `<span style="font-size:0.75rem; color:#64748b;">No Guild</span>`;
 
       const lastSeen = c.lastSeen || {};
@@ -3218,7 +3223,7 @@ async function fetchArmoryDataAndRender() {
                 ${renderClassBadge(c.class, 28)}
               </div>
               <div class="armory-card-info">
-                <div class="armory-card-name" onclick="openCharacterProfile('${c.name}')">
+                <div class="armory-card-name" onclick="openCharacterProfile(${safeJsParam(c.name)})">
                   ${colorizeClass(c.name, cls)}
                 </div>
                 <div class="armory-card-meta">
@@ -3263,7 +3268,7 @@ async function fetchArmoryDataAndRender() {
             <div class="armory-lastseen-txt" title="Last confirmed combat zone">
               ${lastSeenText}
             </div>
-            <button class="armory-dossier-btn" onclick="openCharacterProfile(decodeURIComponent('${encodeURIComponent(c.name)}'))">
+            <button class="armory-dossier-btn" onclick="openCharacterProfile(${safeJsParam(c.name)})">
               Profile &rarr;
             </button>
           </div>
@@ -3490,14 +3495,14 @@ function renderDeadlyNpcsView(lbData, deaths) {
               ${topVictims.length === 0 ? '<div style="padding:20px; text-align:center; color:#64748b; font-size:0.8rem;">No casualties logged.</div>' : topVictims.map((v, i) => {
                 const badge = renderClassBadge(v.victim_class, 18);
                 const nameSpan = colorizeClass(v.victim_name, v.victim_class);
-                const guildPart = (v.victim_guild && v.victim_guild !== 'None') ? `<span class="clickable-guild" onclick="openGuildProfile('${v.victim_guild}')">&lt;${v.victim_guild}&gt;</span>` : '';
+                const guildPart = (v.victim_guild && v.victim_guild !== 'None') ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(v.victim_guild)})">&lt;${v.victim_guild}&gt;</span>` : '';
                 return `
                   <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:0.8rem;">
                     <div style="display:flex; align-items:center; gap:8px;">
                       <span style="color:#64748b; font-size:0.75rem; font-weight:700; width:18px;">#${i + 1}</span>
                       ${badge}
                       <div>
-                        <span class="clickable-player" onclick="openCharacterProfile('${v.victim_name}')">${nameSpan}</span>
+                        <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(v.victim_name)})">${nameSpan}</span>
                         <div style="font-size:0.68rem; color:#64748b;">${guildPart}</div>
                       </div>
                     </div>
@@ -3529,7 +3534,7 @@ function renderDeadlyNpcsView(lbData, deaths) {
                       ${badge}
                       <div>
                         <div>
-                          <span class="clickable-player" onclick="openCharacterProfile('${d.victim_name}')">${vSpan}</span>
+                          <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(d.victim_name)})">${vSpan}</span>
                           <span style="color:#64748b; font-size:0.72rem;">(Lvl ${d.victim_level})</span>
                           <span style="color:#94a3b8; font-size:0.75rem;">slain by</span>
                           <strong style="color:#f87171;">${d.npc_name}</strong>
@@ -6460,7 +6465,7 @@ async function loadWarroomView() {
                 ${guilds.map(g => `
                   <div style="display:flex; justify-content:space-between; align-items:center; background:#0f121a; padding:10px 14px; border-radius:6px; border-left:4px solid #dc2626;">
                     <div>
-                      <strong style="color:#fff; font-size:0.95rem;" class="clickable-guild" onclick="openGuildProfile('${escapeHtml(g.entity_name)}')">&lt;${escapeHtml(g.entity_name)}&gt;</strong>
+                      <strong style="color:#fff; font-size:0.95rem;" class="clickable-guild" onclick="openGuildProfile(${safeJsParam(g.entity_name)})">&lt;${escapeHtml(g.entity_name)}&gt;</strong>
                       <span style="font-size:0.75rem; color:#94a3b8; margin-left:8px;">${escapeHtml(g.reason)}</span>
                     </div>
                     <span style="font-size:0.72rem; color:#f87171; background:rgba(220,38,38,0.2); padding:3px 8px; border-radius:4px; font-weight:800;">
@@ -6492,7 +6497,7 @@ async function loadWarroomView() {
                     <span class="days-pill">${d.days_remaining} Days Remaining</span>
                   </div>
                   <div style="font-size:1rem; font-weight:800; color:#fff; margin:4px 0;">
-                    <span class="clickable-player" onclick="openCharacterProfile('${escapeHtml(d.player_name)}')">${escapeHtml(d.player_name)}</span>
+                    <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(d.player_name)})">${escapeHtml(d.player_name)}</span>
                   </div>
                   <div style="font-size:0.75rem; color:#cbd5e1;">
                     Former Guild: <strong style="color:#f87171;">&lt;${escapeHtml(d.former_guild)}&gt;</strong>
@@ -6585,7 +6590,7 @@ async function loadDefenseView() {
                 </div>
                 <div class="distress-body">
                   <div style="font-size:1.1rem; font-weight:800;">
-                    <span style="color:${classColor};" class="clickable-player" onclick="openCharacterProfile('${b.character_name}')">${b.character_name}</span>
+                    <span style="color:${classColor};" class="clickable-player" onclick="openCharacterProfile(${safeJsParam(b.character_name)})">${escapeHtml(b.character_name)}</span>
                     <span style="font-size:0.8rem; color:#94a3b8; font-weight:normal;">(Lvl ${b.character_level} ${b.character_class})</span>
                   </div>
                   <div>
@@ -6602,7 +6607,7 @@ async function loadDefenseView() {
                   </div>
                 </div>
                 <div class="distress-actions">
-                  <button class="nav-btn active" style="flex:1; font-size:0.75rem; padding:6px 10px; background:var(--accent-cyan); color:#000; font-weight:700;" onclick="copyWhisperCommand('${b.character_name}')">
+                  <button class="nav-btn active" style="flex:1; font-size:0.75rem; padding:6px 10px; background:var(--accent-cyan); color:#000; font-weight:700;" onclick="copyWhisperCommand(${safeJsParam(b.character_name)})">
                     📋 Whisper Auto-Invite
                   </button>
                   <button class="nav-btn" style="font-size:0.75rem; padding:6px 10px;" onclick="resolveDistressBeacon('${b.id}')">
@@ -6643,7 +6648,7 @@ async function loadDefenseView() {
               <p style="font-size:0.8rem; color:#cbd5e1; margin:8px 0;">${e.description}</p>
               <div style="font-size:0.75rem; color:#94a3b8; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1e293b; padding-top:8px; margin-top:8px;">
                 <span>📍 Rally Zone: <strong style="color:#fff;">${e.zone}</strong></span>
-                <button class="nav-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="copyWhisperCommand('${e.creator_name}', 'invite')">
+                <button class="nav-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="copyWhisperCommand(${safeJsParam(e.creator_name)}, 'invite')">
                   Join / Whisper
                 </button>
               </div>
@@ -6872,8 +6877,8 @@ async function checkGlobalSosBeacons() {
           </div>
         </div>
         <div style="display:flex; gap:8px;">
-          <button class="nav-btn active" style="background:var(--accent-cyan); color:#000; font-weight:700; font-size:0.75rem; padding:4px 10px;" onclick="copyWhisperCommand('${topB.character_name}')">
-            📋 Whisper '/w ${topB.character_name} backup'
+          <button class="nav-btn active" style="background:var(--accent-cyan); color:#000; font-weight:700; font-size:0.75rem; padding:4px 10px;" onclick="copyWhisperCommand(${safeJsParam(topB.character_name)})">
+            📋 Whisper '/w ${escapeHtml(topB.character_name)} backup'
           </button>
           <button class="nav-btn" style="font-size:0.75rem; padding:4px 10px;" onclick="switchTab('DEFENSE')">
             View Defense Hub

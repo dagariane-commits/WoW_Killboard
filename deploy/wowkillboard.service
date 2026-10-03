@@ -8,8 +8,10 @@ User=wowkillboard
 Group=wowkillboard
 WorkingDirectory=/opt/wowkillboard
 Environment="PYTHONUNBUFFERED=1"
-Environment="WOWKB_DB_PATH=/opt/wowkillboard/data/killboard.db"
-ExecStart=/opt/wowkillboard/venv/bin/python web/server.py --port 8080
+Environment="PORT=8080"
+Environment="DB_PATH=/opt/wowkillboard/data/killboard.db"
+Environment="ADMIN_SECRET_KEY=CHANGE_TO_SECURE_RANDOM_SECRET_KEY"
+ExecStart=/opt/wowkillboard/venv/bin/python web/server.py
 Restart=always
 RestartSec=5s
 

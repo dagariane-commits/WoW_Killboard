@@ -68,47 +68,7 @@ function KB:SanitizeKillHistory()
                 end
             end
 
-            -- 2. Retroactive healing for Slama kill (where Dagariane killed Slama with Druid assist)
-            local vName = km.victim and km.victim.name and km.victim.name:lower() or ""
-            local kName = km.killer and km.killer.name and km.killer.name:lower() or ""
-            if vName == "slama" and kName == "dagariane" then
-                local hasDruid = false
-                local nonSelfAttackers = {}
-                local selfCount = 0
-                for _, att in ipairs(km.attackers or {}) do
-                    local aName = att.name and att.name:lower() or ""
-                    if aName:find("druid") then
-                        hasDruid = true
-                    end
-                    if aName == "dagariane" then
-                        selfCount = selfCount + 1
-                        if selfCount == 1 then
-                            table.insert(nonSelfAttackers, att)
-                        else
-                            modified = true
-                        end
-                    else
-                        table.insert(nonSelfAttackers, att)
-                    end
-                end
-                if not hasDruid then
-                    table.insert(nonSelfAttackers, {
-                        name = "Druid Ally",
-                        class = "DRUID",
-                        level = 20,
-                        faction = "Alliance",
-                        damage = 0,
-                        spell = "Entangling Roots / Healing Touch",
-                        isPlayer = true,
-                    })
-                    modified = true
-                end
-                km.attackers = nonSelfAttackers
-                km.attackersCount = #nonSelfAttackers
-                km.isSolo = false
-            end
-
-            -- 3. Strict Guardrail 4 Solo Purity & 0-Damage Sanitization:
+            -- 2. Strict Guardrail 4 Solo Purity & 0-Damage Sanitization:
             -- A kill is NEVER certified solo if totalDamage <= 0, killerDamage <= 0, or multiple attackers exist
             if not km.isDuel then
                 local kDmg = (km.killer and km.killer.damageDone) or 0

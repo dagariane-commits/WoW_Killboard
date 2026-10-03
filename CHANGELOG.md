@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Guaranteed all broadcast strings stay strictly under World of Warcraft's 255-character chat message limit.
 
 ### Security & Sanitization
+- **Full-Scope Security Audit Remediation & Hardening (`server.py`, `app.js`, `Core.lua`, `CONTRIBUTING.md`)**:
+  - **Administrative Access Control (`web/server.py`)**: Gated `/api/admin/reset` and `/api/admin/deploy` strictly behind timing-safe `hmac.compare_digest` validation. Disallowed passing secrets in URL query parameters (`?secret=...`), requiring JSON body or `Authorization: Bearer <token>`. Restricted administrative CORS routes to trusted origins.
+  - **Database Permissions**: Tightened SQLite runtime file permissions to `0o660`, eradicating world-writable permissions.
+  - **Discord Webhook Takeover Prevention (`web/server.py`)**: Hardened `POST /api/discord/config`: updating or overwriting an existing guild's configured webhook now mandates administrative authentication.
+  - **Stored XSS Elimination (`web/static/app.js`)**: Implemented `safeJsParam()` utility leveraging `decodeURIComponent(encodeURIComponent(...))` across all 50+ inline DOM click handlers (`openGuildProfile`, `openCharacterProfile`, `copyWhisperCommand`), preventing malicious character or guild names from breaking out of script literals.
+  - **Developer Debug Patch Purge (`Addon/WoWKillboard/Core.lua`)**: Removed legacy character-specific patch (`slama`/`dagariane`) from `KB:SanitizeKillHistory()`, standardizing on generic heuristic combat log sanitization.
+  - **Vulnerability Disclosure Update (`CONTRIBUTING.md`)**: Replaced personal email reference with official GitHub Private Security Advisory guidelines.
 - **Pre-Release Distribution Sanitization (`WoWKillboard_RealmData.lua`, `Core.lua`)**:
   - Purged all hardcoded developer testing data, character names (`Tinaomi`, `Dagariane`, `Cuthbridge`), and personal player GUIDs from `WoWKillboard_RealmData.lua`, leaving a pristine, neutral template for fresh user downloads.
   - Hardened `/kb reset` with a strict confirmation guardrail (`/kb reset confirm`), preventing accidental data loss if a player mistypes the command during normal play.
@@ -590,7 +597,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added red `[Reset Local Database]` button that wipes local combat records (`WoWKillboardDB.kills`), resets cached realm telemetry (`WoWKillboard_RealmData.RealmTotalCarnage = 0`), resets active session stats to zero, and immediately refreshes the interface without requiring combat reload.
 - **Web Admin Console Direct Access (`index.html`, `app.js`)**:
   - Linked `Admin Console` directly in the site footer navigation rail.
-  - Clicking prompts for the secret key (`wowkb_archivist_secret`), unlocks the Master War Archivist Administration console, and smoothly scrolls to the `[Reset Master Database]` panel.
+  - Clicking prompts for the secret key (`<YOUR_ADMIN_SECRET_KEY>`), unlocks the Master War Archivist Administration console, and smoothly scrolls to the `[Reset Master Database]` panel.
 
 ## [1.4.66] - 2026-09-29
 
@@ -835,7 +842,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - **Purged Hardcoded Admin Secret (`app.js`, `server.py`, `test_pipeline.py`)**:
   - Eradicated `valor2026` from public client-side JavaScript (`app.js`), preventing unauthorized users from discovering the key in browser DevTools.
-  - Replaced legacy default secret key with project-isolated fallback (`wowkb_archivist_secret`) and updated automated pipeline tests.
+  - Replaced legacy default secret key with project-isolated environment variable (`ADMIN_SECRET_KEY`) and updated automated pipeline tests.
 - **Forensic Secret & Credential Audit**:
   - Executed automated forensic static analysis across all files and git commit history: confirmed zero AWS keys (`AKIA`), zero Stripe keys (`sk_live`/`pk_live`), zero private key blocks (`BEGIN PRIVATE KEY`), zero SSH keys, zero PayPal/banking tokens, and zero credit card numbers.
 
