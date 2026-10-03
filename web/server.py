@@ -4192,7 +4192,7 @@ def test_discord_webhook():
             "color": 0x00FF66,  # Green
             "fields": [
                 {"name": "Status", "value": "ONLINE & READY", "inline": True},
-                {"name": "Platform", "value": "WoW Killboard v1.0.0", "inline": True},
+                {"name": "Platform", "value": "WoW Killboard v1.0.1", "inline": True},
                 {"name": "Network", "value": "Frontline War Room", "inline": True}
             ],
             "footer": {"text": "WoW Killboard | Frontline War Room"},

@@ -5,6 +5,18 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.99] - 2026-10-03
+
+### Changed
+- **Option 1 Release Strategy & Distribution Alignment (`README.md`, `docs/BETA_TESTER_QUICKSTART.md`, `docs/CURSEFORGE_LISTING.md`, `web/static/app.js`)**:
+  - Positioned pure in-game Lua addon plus Browser Drag-and-Drop (`/upload`) as the primary zero-installation experience.
+  - Re-ordered upload channels on `wowkillboard.com/upload` so the zero-install Browser Drag & Drop uploader is the prominent primary card, with the desktop companion (`WoWKillboardSync.exe`) clearly designated as an optional automated helper.
+  - Updated CurseForge listing submission kit with explicit documentation for dual UI themes (Classic Stone & Gold vs ElvUI Dark) and clarified that hands-on testing has primarily been focused in WoW Forever (`_classic_beta_`) while maintaining structural codebase parity across Classic Era, Anniversary, and Retail.
+- **Windows 11 Smart App Control (SAC) Unblock Guidance (`README.md`, `docs/BETA_TESTER_QUICKSTART.md`, `web/static/app.js`)**:
+  - Documented specific first-run bypass instructions for Windows 11 22H2+ Smart App Control: when unsigned binaries lack the SmartScreen "Run anyway" button, users can right-click `WoWKillboardSync.exe` &rarr; **Properties** &rarr; check **"Unblock"** &rarr; **OK**.
+- **Packaging & Server Telemetry Version Synchronization (`package_addon.bat`, `web/server.py`, `web/static/app.js`)**:
+  - Synchronized all distribution references to `v1.0.1` across `package_addon.bat`, Discord webhook platform embeds, and web app download badges.
+
 ## [1.4.98] - 2026-10-02
 
 ### Added
