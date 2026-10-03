@@ -6396,14 +6396,45 @@ function UI:GetDefaultChatChannel()
     end
 end
 
-function UI:SendChatBroadcast(lines)
+UI.shareOverrideChannel = nil
+
+function UI:GetActiveShareChannel()
+    if UI.shareOverrideChannel then
+        return UI.shareOverrideChannel
+    end
+    return UI:GetDefaultChatChannel()
+end
+
+function UI:CycleShareChannel()
+    local cur = UI:GetActiveShareChannel()
+    if cur == "GUILD" then
+        if IsInGroup and IsInGroup() then
+            UI.shareOverrideChannel = "PARTY"
+        else
+            UI.shareOverrideChannel = "SAY"
+        end
+    elseif cur == "PARTY" or cur == "RAID" or cur == "INSTANCE_CHAT" then
+        UI.shareOverrideChannel = "SAY"
+    else
+        if IsInGuild and IsInGuild() then
+            UI.shareOverrideChannel = "GUILD"
+        elseif IsInGroup and IsInGroup() then
+            UI.shareOverrideChannel = "PARTY"
+        else
+            UI.shareOverrideChannel = "SAY"
+        end
+    end
+    return UI:GetActiveShareChannel()
+end
+
+function UI:SendChatBroadcast(lines, targetChannel)
     if InCombatLockdown and InCombatLockdown() then
         SafePrint("|cffff9900[WoWKB]|r Cannot share to chat during combat.")
         return
     end
     if not lines or #lines == 0 then return end
 
-    local channel = UI:GetDefaultChatChannel()
+    local channel = targetChannel or UI:GetActiveShareChannel()
     for _, text in ipairs(lines) do
         if SendChatMessage then
             SendChatMessage(text, channel)
@@ -6412,98 +6443,353 @@ function UI:SendChatBroadcast(lines)
         end
     end
     SafePrint(string.format("|cff00e5ff[WoWKB]|r Shared %d line(s) to |cffffd100/%s|r chat.", #lines, channel:lower()))
-    SafePrint("|cff38bdf8[WoWKB]|r CurseForge Link: |cffffff00https://www.curseforge.com/wow/addons/wkb|r (Search |cffffd100wkb|r)")
+end
+
+function UI:GetShareData(category)
+    local title = "Broadcast Intel"
+    local compact = ""
+    local detailedLines = {}
+
+    if category == "WANTED" then
+        title = "Most Wanted Bounties"
+        local outlaws = {}
+        if WoWKillboardBounties then
+            for _, b in pairs(WoWKillboardBounties) do
+                if b.status == (KB.STATUS and KB.STATUS.ACTIVE or "ACTIVE") then
+                    table.insert(outlaws, b)
+                end
+            end
+            table.sort(outlaws, function(a, b)
+                return (a.amountCopper or 0) > (b.amountCopper or 0)
+            end)
+        end
+        if #outlaws == 0 then
+            compact = "[WoWKB] No active Marks of Spite currently recorded. (wowkillboard.com)"
+            detailedLines = {
+                "== [WoWKB] The Blood Ledger: Azeroth's Most Wanted ==",
+                "No active outlaw bounties currently registered.",
+                "Track bounties at: wowkillboard.com (CurseForge: 'wkb')"
+            }
+        else
+            local parts = {}
+            for i = 1, math.min(3, #outlaws) do
+                local b = outlaws[i]
+                local gold = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
+                table.insert(parts, string.format("#%d %s (%dg)", i, b.targetName, gold))
+            end
+            compact = string.format("[WoWKB Most Wanted] %s - wowkillboard.com", table.concat(parts, " | "))
+
+            detailedLines = { "== [WoWKB] The Blood Ledger: Azeroth's Most Wanted ==" }
+            for i = 1, math.min(5, #outlaws) do
+                local b = outlaws[i]
+                local gold = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
+                local fac = b.targetFaction and (" (" .. b.targetFaction .. ")") or ""
+                table.insert(detailedLines, string.format("#%d %s - %s%s | Reward: %dg", i, b.targetName, b.targetClass or "Unknown", fac, gold))
+            end
+            table.insert(detailedLines, "Track & claim bounties: wowkillboard.com (CurseForge: 'wkb')")
+        end
+
+    elseif category == "CHAMPIONS" then
+        local mode = currentMode or "ALL"
+        title = string.format("Top Champions [%s]", mode)
+        local killers = KB.Leaderboard and KB.Leaderboard.GetTopKillers and KB.Leaderboard:GetTopKillers(mode, 5) or {}
+        if #killers == 0 then
+            compact = string.format("[WoWKB] No recorded PvP champions in [%s] yet. (wowkillboard.com)", mode)
+            detailedLines = {
+                string.format("== [WoWKB] Defender of Azeroth: Top Champions [%s] ==", mode),
+                "No champions recorded for this category yet.",
+                "Track ranks at: wowkillboard.com (CurseForge: 'wkb')"
+            }
+        else
+            local parts = {}
+            for i = 1, math.min(3, #killers) do
+                local p = killers[i]
+                table.insert(parts, string.format("#%d %s (%dk)", i, p.name, p.kills))
+            end
+            compact = string.format("[WoWKB Champions (%s)] %s - wowkillboard.com", mode, table.concat(parts, " | "))
+
+            detailedLines = { string.format("== [WoWKB] Defender of Azeroth: Top Champions [%s] ==", mode) }
+            for i, p in ipairs(killers) do
+                local kd = (p.deaths and p.deaths > 0) and string.format("%.2f", p.kills / p.deaths) or tostring(p.kills)
+                local guildStr = (p.guild and p.guild ~= "None") and (" <" .. p.guild .. ">") or ""
+                table.insert(detailedLines, string.format("#%d %s%s (%s) - %d Kills (K/D: %s)", i, p.name, guildStr, p.class or "Unknown", p.kills, kd))
+            end
+            table.insert(detailedLines, "Track PvP ranks: wowkillboard.com (CurseForge: 'wkb')")
+        end
+
+    elseif category == "GUILDS" then
+        local mode = currentMode or "ALL"
+        title = string.format("Top War Guilds [%s]", mode)
+        local guilds = KB.Leaderboard and KB.Leaderboard.GetTopGuilds and KB.Leaderboard:GetTopGuilds(mode, 5) or {}
+        if #guilds == 0 then
+            compact = string.format("[WoWKB] No recorded War Guilds in [%s] yet. (wowkillboard.com)", mode)
+            detailedLines = {
+                string.format("== [WoWKB] Defender of Azeroth: Top War Guilds [%s] ==", mode),
+                "No guilds recorded for this category yet.",
+                "Track guild wars at: wowkillboard.com (CurseForge: 'wkb')"
+            }
+        else
+            local parts = {}
+            for i = 1, math.min(3, #guilds) do
+                local g = guilds[i]
+                table.insert(parts, string.format("#%d <%s> (%dk)", i, g.guild, g.kills))
+            end
+            compact = string.format("[WoWKB War Guilds (%s)] %s - wowkillboard.com", mode, table.concat(parts, " | "))
+
+            detailedLines = { string.format("== [WoWKB] Defender of Azeroth: Top War Guilds [%s] ==", mode) }
+            for i, g in ipairs(guilds) do
+                table.insert(detailedLines, string.format("#%d <%s> - %d Certified Kills", i, g.guild, g.kills))
+            end
+            table.insert(detailedLines, "Track guild wars: wowkillboard.com (CurseForge: 'wkb')")
+        end
+
+    elseif category == "GANKERS" then
+        title = "Top Gankers (24h)"
+        local gankers = (WoWKillboard_RealmData and WoWKillboard_RealmData.TopGankers24h) or (WoWKillboardDB and WoWKillboardDB.RealmData and WoWKillboardDB.RealmData.TopGankers24h) or {}
+        if #gankers == 0 then
+            compact = "[WoWKB] No recorded 24h gankers currently listed. (wowkillboard.com)"
+            detailedLines = {
+                "== [WoWKB] Defender of Azeroth: Top Gankers (24h) ==",
+                "No active gankers recorded in the last 24 hours.",
+                "Track 24h gankers at: wowkillboard.com (CurseForge: 'wkb')"
+            }
+        else
+            local parts = {}
+            for i = 1, math.min(3, #gankers) do
+                local g = gankers[i]
+                table.insert(parts, string.format("#%d %s (%dk)", i, g.name or "Unknown", g.kills or 0))
+            end
+            compact = string.format("[WoWKB Top Gankers 24h] %s - wowkillboard.com", table.concat(parts, " | "))
+
+            detailedLines = { "== [WoWKB] Defender of Azeroth: Top Gankers (24h) ==" }
+            for i = 1, math.min(5, #gankers) do
+                local g = gankers[i]
+                local guildStr = (g.guild and g.guild ~= "" and g.guild ~= "None") and (" <" .. g.guild .. ">") or ""
+                table.insert(detailedLines, string.format("#%d %s%s (%s) - %d Kills", i, g.name or "Unknown", guildStr, g.class or "Unknown", g.kills or 0))
+            end
+            table.insert(detailedLines, "Track 24h gankers: wowkillboard.com (CurseForge: 'wkb')")
+        end
+    end
+
+    return title, compact, detailedLines
+end
+
+function UI:EnsureShareDialog()
+    if UI.ShareDialog then return end
+
+    local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    dlg:SetSize(580, 480)
+    dlg:SetPoint("CENTER", 0, 20)
+    dlg:SetFrameStrata("DIALOG")
+    dlg:SetFrameLevel(125)
+    dlg:EnableMouse(true)
+    dlg:SetClampedToScreen(true)
+    dlg:SetMovable(true)
+
+    local theme = UI:GetTheme()
+    dlg:SetBackdrop(theme.modalBackdrop or {
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 },
+    })
+    dlg:SetBackdropColor(unpack(theme.modalBg or { 0.06, 0.08, 0.12, 0.98 }))
+    dlg:SetBackdropBorderColor(unpack(theme.modalBorder or { 0.85, 0.68, 0.22, 1.0 }))
+
+    -- Header Drag Bar
+    local header = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+    header:SetPoint("TOPLEFT", 1, -1)
+    header:SetPoint("TOPRIGHT", -1, -1)
+    header:SetHeight(28)
+    header:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8" })
+    header:SetBackdropColor(0.12, 0.09, 0.06, 0.98)
+    header:EnableMouse(true)
+    header:RegisterForDrag("LeftButton")
+    header:SetScript("OnDragStart", function() if not InCombatLockdown() then dlg:StartMoving() end end)
+    header:SetScript("OnDragStop", function() dlg:StopMovingOrSizing() end)
+
+    local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("LEFT", 12, 0)
+    title:SetText("|cffffd100WoW KILLBOARD  -  SHARE INTEL PREVIEW|r")
+
+    local closeX = CreateFrame("Button", nil, header)
+    closeX:SetSize(22, 22)
+    closeX:SetPoint("RIGHT", -4, 0)
+    local closeXText = closeX:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    closeXText:SetPoint("CENTER", 0, 0)
+    closeXText:SetText("|cffff4444X|r")
+    closeX:SetScript("OnClick", function() dlg:Hide() end)
+
+    local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sub:SetPoint("TOPLEFT", 16, -34)
+    sub:SetText("|cff38bdf8Review before broadcasting. Click inside any box to copy (Ctrl+C).|r")
+
+    -- Category Label & Channel Selector Row
+    local catLabel = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    catLabel:SetPoint("TOPLEFT", 16, -56)
+    catLabel:SetText("|cffffd100Target: Intel Broadcast|r")
+    dlg.CategoryLabel = catLabel
+
+    local chBtn = UI:CreateButton(dlg, 190, 22, "Channel: /guild (Change)")
+    chBtn:SetPoint("TOPRIGHT", -16, -54)
+    chBtn:SetScript("OnClick", function()
+        local nextCh = UI:CycleShareChannel()
+        chBtn.Label:SetText("Channel: /" .. nextCh:lower() .. " (Change)")
+        if dlg.BtnSendCompact then
+            dlg.BtnSendCompact.Label:SetText("Send 1-Line to /" .. nextCh:lower())
+        end
+        if dlg.BtnSendDetailed then
+            dlg.BtnSendDetailed.Label:SetText("Send Full to /" .. nextCh:lower())
+        end
+    end)
+    dlg.ChannelBtn = chBtn
+
+    -- Section 1: Compact (1-Line) Box
+    local s1Label = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    s1Label:SetPoint("TOPLEFT", 16, -82)
+    s1Label:SetText("|cff10b9811. Compact Broadcast (1 Line - Recommended for Low Chat Spam)|r")
+
+    local box1 = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+    box1:SetPoint("TOPLEFT", 16, -98)
+    box1:SetPoint("TOPRIGHT", -16, -98)
+    box1:SetHeight(38)
+    box1:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+    })
+    box1:SetBackdropColor(0.02, 0.04, 0.08, 0.95)
+    box1:SetBackdropBorderColor(0.18, 0.65, 0.40, 0.9)
+
+    local eb1 = CreateFrame("EditBox", nil, box1)
+    eb1:SetPoint("TOPLEFT", 8, -4)
+    eb1:SetPoint("BOTTOMRIGHT", -8, 4)
+    eb1:SetFontObject("GameFontHighlightSmall")
+    eb1:SetMultiLine(false)
+    eb1:SetAutoFocus(false)
+    eb1:EnableMouse(true)
+    eb1:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+    eb1:SetScript("OnMouseUp", function(self) self:HighlightText() end)
+    eb1:SetScript("OnEscapePressed", function() dlg:Hide() end)
+    dlg.CompactEb = eb1
+
+    local btnSendCompact = UI:CreateButton(dlg, 200, 24, "Send 1-Line to Chat", "GameFontHighlightSmall")
+    btnSendCompact:SetPoint("TOPLEFT", 16, -140)
+    btnSendCompact:SetScript("OnClick", function()
+        local text = eb1:GetText()
+        if text and text ~= "" then
+            UI:SendChatBroadcast({ text }, UI:GetActiveShareChannel())
+            dlg:Hide()
+        end
+    end)
+    dlg.BtnSendCompact = btnSendCompact
+
+    -- Section 2: Detailed (Multi-Line) Box
+    local s2Label = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    s2Label:SetPoint("TOPLEFT", 16, -172)
+    s2Label:SetText("|cffffd1002. Detailed Report (Full Multi-Line Breakdown)|r")
+
+    local box2 = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+    box2:SetPoint("TOPLEFT", 16, -188)
+    box2:SetPoint("TOPRIGHT", -16, -188)
+    box2:SetHeight(180)
+    box2:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+    })
+    box2:SetBackdropColor(0.02, 0.04, 0.08, 0.95)
+    box2:SetBackdropBorderColor(0.85, 0.68, 0.22, 0.7)
+
+    local eb2 = CreateFrame("EditBox", nil, box2)
+    eb2:SetPoint("TOPLEFT", 8, -6)
+    eb2:SetPoint("BOTTOMRIGHT", -8, 6)
+    eb2:SetFontObject("GameFontHighlightSmall")
+    eb2:SetMultiLine(true)
+    eb2:SetAutoFocus(false)
+    eb2:EnableMouse(true)
+    eb2:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+    eb2:SetScript("OnMouseUp", function(self) self:HighlightText() end)
+    eb2:SetScript("OnEscapePressed", function() dlg:Hide() end)
+    dlg.DetailedEb = eb2
+
+    local btnSendDetailed = UI:CreateButton(dlg, 200, 24, "Send Full Report to Chat", "GameFontHighlightSmall")
+    btnSendDetailed:SetPoint("TOPLEFT", 16, -372)
+    btnSendDetailed:SetScript("OnClick", function()
+        if dlg.currentDetailedLines and #dlg.currentDetailedLines > 0 then
+            UI:SendChatBroadcast(dlg.currentDetailedLines, UI:GetActiveShareChannel())
+            dlg:Hide()
+        end
+    end)
+    dlg.BtnSendDetailed = btnSendDetailed
+
+    -- Tip & Close Button
+    local tipFs = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    tipFs:SetPoint("BOTTOMLEFT", 16, 18)
+    tipFs:SetText("Tip: Hit Ctrl+C to copy manually for Discord/whispers without chat spam.")
+
+    local closeBtn = UI:CreateButton(dlg, 100, 26, "Close", "GameFontHighlightSmall")
+    closeBtn:SetPoint("BOTTOMRIGHT", -16, 14)
+    closeBtn:SetScript("OnClick", function() dlg:Hide() end)
+
+    -- ESC key handler
+    dlg:SetScript("OnKeyDown", function(self, key)
+        if key == "ESCAPE" then
+            self:SetPropagateKeyboardInput(false)
+            self:Hide()
+        else
+            self:SetPropagateKeyboardInput(true)
+        end
+    end)
+
+    UI.ShareDialog = dlg
+end
+
+function UI:ShowShareModal(category)
+    if InCombatLockdown and InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot open share preview during combat.")
+        return
+    end
+
+    UI:EnsureShareDialog()
+    local dlg = UI.ShareDialog
+
+    local title, compact, detailedLines = UI:GetShareData(category or "WANTED")
+    dlg.currentCategory = category or "WANTED"
+    dlg.currentDetailedLines = detailedLines
+    dlg.currentCompactText = compact
+
+    dlg.CategoryLabel:SetText("|cffffd100Target: " .. title .. "|r")
+    dlg.CompactEb:SetText(compact)
+    dlg.DetailedEb:SetText(table.concat(detailedLines, "\n"))
+
+    local ch = UI:GetActiveShareChannel()
+    dlg.ChannelBtn.Label:SetText("Channel: /" .. ch:lower() .. " (Change)")
+    dlg.BtnSendCompact.Label:SetText("Send 1-Line to /" .. ch:lower())
+    dlg.BtnSendDetailed.Label:SetText("Send Full to /" .. ch:lower())
+
+    dlg:Show()
+    if dlg.Raise then dlg:Raise() end
 end
 
 function UI:ShareWantedToChat()
-    local outlaws = {}
-    if WoWKillboardBounties then
-        for _, b in pairs(WoWKillboardBounties) do
-            if b.status == (KB.STATUS and KB.STATUS.ACTIVE or "ACTIVE") then
-                table.insert(outlaws, b)
-            end
-        end
-        table.sort(outlaws, function(a, b)
-            return (a.amountCopper or 0) > (b.amountCopper or 0)
-        end)
-    end
-    if #outlaws == 0 then
-        SafePrint("|cffff9900[WoWKB]|r No active Marks of Spite to share.")
-        return
-    end
-
-    local lines = {
-        "== [WoWKB] The Blood Ledger: Azeroth's Most Wanted =="
-    }
-    local count = math.min(5, #outlaws)
-    for i = 1, count do
-        local b = outlaws[i]
-        local gold = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
-        local fac = b.targetFaction and (" (" .. b.targetFaction .. ")") or ""
-        table.insert(lines, string.format("#%d %s - %s%s | Reward: %dg", i, b.targetName, b.targetClass or "Unknown", fac, gold))
-    end
-    table.insert(lines, "Track & claim bounties: https://www.curseforge.com/wow/addons/wkb (search 'wkb' on CurseForge)")
-    UI:SendChatBroadcast(lines)
+    UI:ShowShareModal("WANTED")
 end
 
 function UI:ShareHitlistToChat()
-    UI:ShareWantedToChat()
+    UI:ShowShareModal("WANTED")
 end
 
 function UI:ShareChampionsToChat()
-    local killers = KB.Leaderboard and KB.Leaderboard.GetTopKillers and KB.Leaderboard:GetTopKillers(currentMode or "ALL", 5) or {}
-    if #killers == 0 then
-        SafePrint("|cffff9900[WoWKB]|r No recorded PvP champions to share.")
-        return
-    end
-
-    local lines = {
-        string.format("== [WoWKB] Defender of Azeroth: Top Champions [%s] ==", currentMode or "ALL")
-    }
-    for i, p in ipairs(killers) do
-        local kd = (p.deaths and p.deaths > 0) and string.format("%.2f", p.kills / p.deaths) or tostring(p.kills)
-        local guildStr = (p.guild and p.guild ~= "None") and (" <" .. p.guild .. ">") or ""
-        table.insert(lines, string.format("#%d %s%s (%s) - %d Kills (K/D: %s)", i, p.name, guildStr, p.class or "Unknown", p.kills, kd))
-    end
-    table.insert(lines, "Track PvP ranks & duels: https://www.curseforge.com/wow/addons/wkb (search 'wkb' on CurseForge)")
-    UI:SendChatBroadcast(lines)
+    UI:ShowShareModal("CHAMPIONS")
 end
 
 function UI:ShareGuildsToChat()
-    local guilds = KB.Leaderboard and KB.Leaderboard.GetTopGuilds and KB.Leaderboard:GetTopGuilds(currentMode or "ALL", 5) or {}
-    if #guilds == 0 then
-        SafePrint("|cffff9900[WoWKB]|r No recorded PvP guilds to share.")
-        return
-    end
-
-    local lines = {
-        string.format("== [WoWKB] Defender of Azeroth: Top War Guilds [%s] ==", currentMode or "ALL")
-    }
-    for i, g in ipairs(guilds) do
-        table.insert(lines, string.format("#%d <%s> - %d Certified Kills", i, g.guild, g.kills))
-    end
-    table.insert(lines, "Track guild wars & rankings: https://www.curseforge.com/wow/addons/wkb (search 'wkb' on CurseForge)")
-    UI:SendChatBroadcast(lines)
+    UI:ShowShareModal("GUILDS")
 end
 
 function UI:ShareGankersToChat()
-    local gankers = (WoWKillboard_RealmData and WoWKillboard_RealmData.TopGankers24h) or (WoWKillboardDB and WoWKillboardDB.RealmData and WoWKillboardDB.RealmData.TopGankers24h) or {}
-    if #gankers == 0 then
-        SafePrint("|cffff9900[WoWKB]|r No recorded 24h gankers to share.")
-        return
-    end
-
-    local lines = {
-        "== [WoWKB] Defender of Azeroth: Top Gankers (24h) =="
-    }
-    local count = math.min(5, #gankers)
-    for i = 1, count do
-        local g = gankers[i]
-        local guildStr = (g.guild and g.guild ~= "" and g.guild ~= "None") and (" <" .. g.guild .. ">") or ""
-        table.insert(lines, string.format("#%d %s%s (%s) - %d Kills", i, g.name or "Unknown", guildStr, g.class or "Unknown", g.kills or 0))
-    end
-    table.insert(lines, "Track 24h gankers & PvP ladder: https://www.curseforge.com/wow/addons/wkb (search 'wkb' on CurseForge)")
-    UI:SendChatBroadcast(lines)
+    UI:ShowShareModal("GANKERS")
 end
 
 -- =========================================================================
