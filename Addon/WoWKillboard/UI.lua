@@ -1709,6 +1709,12 @@ function UI:RenderLiveFeed()
     shareWantedBtn:SetScript("OnClick", function()
         UI:ShareWantedToChat()
     end)
+    shareWantedBtn:SetScript("OnEnter", function(self)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "Share Most Wanted", "Broadcasts active bounty contracts with the CurseForge addon link to group or guild chat.")
+    end)
+    shareWantedBtn:SetScript("OnLeave", function()
+        UI:HidePrivateTooltip()
+    end)
 
     -- Gather Active Outlaws sorted by highest Mark value
     if KB.BountyEngine and KB.BountyEngine.InitDB then KB.BountyEngine:InitDB() end
@@ -3009,9 +3015,18 @@ function UI:RenderLeaderboard()
     shareBtn:SetScript("OnClick", function()
         if hlSubTab == "PLAYERS" then
             UI:ShareChampionsToChat()
-        else
+        elseif hlSubTab == "GUILDS" then
             UI:ShareGuildsToChat()
+        else
+            UI:ShareGankersToChat()
         end
+    end)
+    shareBtn:SetScript("OnEnter", function(self)
+        local tipTitle = (hlSubTab == "PLAYERS") and "Share Champions" or ((hlSubTab == "GUILDS") and "Share Guilds" or "Share Gankers")
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, tipTitle, "Broadcasts realm rankings with the CurseForge addon link to group or guild chat.")
+    end)
+    shareBtn:SetScript("OnLeave", function()
+        UI:HidePrivateTooltip()
     end)
 
     local yOffset = -72
@@ -3580,6 +3595,12 @@ function UI:RenderBounties()
     shareWantedBtn:SetPoint("RIGHT", placeBtn, "LEFT", -6, 0)
     shareWantedBtn:SetScript("OnClick", function()
         UI:ShareWantedToChat()
+    end)
+    shareWantedBtn:SetScript("OnEnter", function(self)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "Share Most Wanted", "Broadcasts active bounty contracts with the CurseForge addon link to group or guild chat.")
+    end)
+    shareWantedBtn:SetScript("OnLeave", function()
+        UI:HidePrivateTooltip()
     end)
 
     -- Subtitle
@@ -6391,6 +6412,7 @@ function UI:SendChatBroadcast(lines)
         end
     end
     SafePrint(string.format("|cff00e5ff[WoWKB]|r Shared %d line(s) to |cffffd100/%s|r chat.", #lines, channel:lower()))
+    SafePrint("|cff38bdf8[WoWKB]|r CurseForge Link: |cffffff00https://www.curseforge.com/wow/addons/wkb|r (Search |cffffd100wkb|r)")
 end
 
 function UI:ShareWantedToChat()
@@ -6420,6 +6442,7 @@ function UI:ShareWantedToChat()
         local fac = b.targetFaction and (" (" .. b.targetFaction .. ")") or ""
         table.insert(lines, string.format("#%d %s - %s%s | Reward: %dg", i, b.targetName, b.targetClass or "Unknown", fac, gold))
     end
+    table.insert(lines, "Track & claim bounties: https://www.curseforge.com/wow/addons/wkb (search 'wkb' on CurseForge)")
     UI:SendChatBroadcast(lines)
 end
 
@@ -6442,6 +6465,7 @@ function UI:ShareChampionsToChat()
         local guildStr = (p.guild and p.guild ~= "None") and (" <" .. p.guild .. ">") or ""
         table.insert(lines, string.format("#%d %s%s (%s) - %d Kills (K/D: %s)", i, p.name, guildStr, p.class or "Unknown", p.kills, kd))
     end
+    table.insert(lines, "Track PvP ranks & duels: https://www.curseforge.com/wow/addons/wkb (search 'wkb' on CurseForge)")
     UI:SendChatBroadcast(lines)
 end
 
@@ -6458,6 +6482,27 @@ function UI:ShareGuildsToChat()
     for i, g in ipairs(guilds) do
         table.insert(lines, string.format("#%d <%s> - %d Certified Kills", i, g.guild, g.kills))
     end
+    table.insert(lines, "Track guild wars & rankings: https://www.curseforge.com/wow/addons/wkb (search 'wkb' on CurseForge)")
+    UI:SendChatBroadcast(lines)
+end
+
+function UI:ShareGankersToChat()
+    local gankers = (WoWKillboard_RealmData and WoWKillboard_RealmData.TopGankers24h) or (WoWKillboardDB and WoWKillboardDB.RealmData and WoWKillboardDB.RealmData.TopGankers24h) or {}
+    if #gankers == 0 then
+        SafePrint("|cffff9900[WoWKB]|r No recorded 24h gankers to share.")
+        return
+    end
+
+    local lines = {
+        "== [WoWKB] Defender of Azeroth: Top Gankers (24h) =="
+    }
+    local count = math.min(5, #gankers)
+    for i = 1, count do
+        local g = gankers[i]
+        local guildStr = (g.guild and g.guild ~= "" and g.guild ~= "None") and (" <" .. g.guild .. ">") or ""
+        table.insert(lines, string.format("#%d %s%s (%s) - %d Kills", i, g.name or "Unknown", guildStr, g.class or "Unknown", g.kills or 0))
+    end
+    table.insert(lines, "Track 24h gankers & PvP ladder: https://www.curseforge.com/wow/addons/wkb (search 'wkb' on CurseForge)")
     UI:SendChatBroadcast(lines)
 end
 

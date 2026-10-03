@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced promotional chat macros in `UI:ShowPromoModal()` with explicit calls to action: search `wkb` in the CurseForge App or visit `https://www.curseforge.com/wow/addons/wkb`.
   - Added dedicated 5th 1-click copy box for the direct CurseForge link.
   - Updated in-game login chat banner and welcome modal to promote `wkb` on CurseForge.
+  - Embedded direct CurseForge links (`https://www.curseforge.com/wow/addons/wkb`) and search instructions (`search 'wkb' on CurseForge`) into all in-game chat broadcasts (`UI:ShareWantedToChat`, `UI:ShareChampionsToChat`, `UI:ShareGuildsToChat`, and `UI:ShareGankersToChat`).
+  - Added zero-taint private tooltips (`UI:ShowPrivateTooltip` / `UI:HidePrivateTooltip`) to "Share Wanted", "Share Champions", "Share Guilds", and "Share Gankers" buttons across the Live Feed, Defender of Azeroth leaderboard, and Blood Ledger bounty tabs.
+  - Added local chat confirmation link printout (`UI:SendChatBroadcast`) so broadcasting players can easily verify and click/copy the URL from their local chat log.
+  - Guaranteed all broadcast strings stay strictly under World of Warcraft's 255-character chat message limit.
 
 ### Security & Sanitization
 - **Pre-Release Distribution Sanitization (`WoWKillboard_RealmData.lua`, `Core.lua`)**:
