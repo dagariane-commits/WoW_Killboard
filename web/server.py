@@ -19,7 +19,7 @@ import urllib.parse
 import logging
 import hashlib
 import hmac
-from flask import Flask, request, jsonify, send_from_directory, render_template_string, Response
+from flask import Flask, request, jsonify, send_from_directory, render_template_string, Response, redirect
 from flask_cors import CORS
 
 logger = logging.getLogger("WoWKillboard")
@@ -717,7 +717,18 @@ def feedback_page():
 def static_files(path):
     return send_from_directory(STATIC_DIR, path)
 
-CURSEFORGE_PROJECT_URL = "https://www.curseforge.com/wow/addons/wkb"
+CURSEFORGE_PROJECT_URL = os.environ.get(
+    "CURSEFORGE_PROJECT_URL",
+    "https://www.curseforge.com/wow/addons/wkb"
+)
+CURSEFORGE_FILES_URL = os.environ.get(
+    "CURSEFORGE_FILES_URL",
+    "https://www.curseforge.com/wow/addons/wkb/files"
+)
+GITHUB_RELEASE_SYNC_URL = os.environ.get(
+    "GITHUB_RELEASE_SYNC_URL",
+    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboardSync.exe"
+)
 
 @app.route("/WoWKillboard-v1.0.1.zip")
 @app.route("/WoWKillboard-v1.0.0.zip")
@@ -725,6 +736,10 @@ CURSEFORGE_PROJECT_URL = "https://www.curseforge.com/wow/addons/wkb"
 @app.route("/addon.zip")
 def download_addon():
     log_analytics_event("download_addon", path=request.path, source="web")
+    # In production, offload large addon archive bandwidth to CurseForge CloudFront CDN
+    if not app.config.get("TESTING") and not os.environ.get("SERVE_LOCAL_BINARIES"):
+        return redirect(CURSEFORGE_PROJECT_URL, code=302)
+
     root_dir = os.path.dirname(APP_DIR)
     # Check for specific requested file if path has specific version
     req_file = os.path.basename(request.path)
@@ -740,8 +755,7 @@ def download_addon():
             target = os.path.join(d, pkg)
             if os.path.exists(target):
                 return send_from_directory(d, pkg, as_attachment=True)
-    from flask import redirect
-    return redirect(CURSEFORGE_PROJECT_URL)
+    return redirect(CURSEFORGE_PROJECT_URL, code=302)
 
 @app.route("/curseforge")
 @app.route("/curse")
@@ -749,14 +763,17 @@ def download_addon():
 @app.route("/gdrive")
 def download_curseforge():
     log_analytics_event("curseforge_redirect", path="/curseforge", source="web")
-    from flask import redirect
-    return redirect(CURSEFORGE_PROJECT_URL)
+    return redirect(CURSEFORGE_PROJECT_URL, code=302)
 
 @app.route("/WoWKillboardSync.exe")
 @app.route("/download/sync")
 @app.route("/sync.exe")
 def download_sync_exe():
     log_analytics_event("download_sync", path=request.path, source="web")
+    # In production, offload 12MB-15MB companion executable streaming to GitHub Releases Fastly CDN
+    if not app.config.get("TESTING") and not os.environ.get("SERVE_LOCAL_BINARIES"):
+        return redirect(GITHUB_RELEASE_SYNC_URL, code=302)
+
     root_dir = os.path.dirname(APP_DIR)
     exe_path = os.path.join(root_dir, "WoWKillboardSync.exe")
     dist_exe = os.path.join(root_dir, "dist", "WoWKillboardSync.exe")
@@ -767,8 +784,7 @@ def download_sync_exe():
         return send_from_directory(root_dir, "WoWKillboardSync.exe", as_attachment=True)
     if os.path.exists(dist_exe):
         return send_from_directory(os.path.join(root_dir, "dist"), "WoWKillboardSync.exe", as_attachment=True)
-    from flask import redirect
-    return redirect(GOOGLE_DRIVE_DOWNLOAD_URL)
+    return redirect(GITHUB_RELEASE_SYNC_URL, code=302)
 
 
 # ----------------- StreamBox (OBS Overlay) -----------------
