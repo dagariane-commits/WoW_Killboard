@@ -31,79 +31,31 @@ In-game combat tracker, live kill feed, 1v1 fight detection, local bounties, and
 *Copy and paste the markdown block below into the CurseForge Project Description editor:*
 
 ```markdown
-# WKB (WoW Killboard) - Combat Tracker & Leaderboard
-Community Release
+# WoW Killboard (WKB)
 
-Welcome to the release of WKB (WoW Killboard). WKB brings a dedicated killboard and combat tracker directly into your World of Warcraft client. Whether you are fighting in the open world, running battlegrounds, or keeping tabs on dangerous world elites, WKB logs your fights, tracks true 1v1 encounters, manages local bounties, and keeps a running leaderboard right inside the game.
+**WoW Killboard** brings a dedicated combat tracker, live kill feed, and leaderboard directly into your World of Warcraft client. Track your open-world battles, log certified 1v1 encounters, see who is dominating your zone, and view real-time leaderboards right inside the game.
 
----
+### Key Features
+* **Live Combat Tracking:** Automatically logs attacker and victim levels, classes, killing blows, and fight locations.
+* **1v1 Solo Detection:** Accurately distinguishes certified 1v1 solo fights from group ganks.
+* **In-Game Leaderboards:** Track your kills, deaths, K/D ratio, and kill streaks without opening a browser.
+* **Zone Danger Intel:** See active conflict hotspots and high-value enemy outlaws operating in your zone.
+* **Call for Backup (`/warhorn`):** Sound an emergency SOS beacon to nearby allies or guildmates with your location.
+* **PvE Elites & Hazards:** Toggle to PvE mode to track deaths to lethal world bosses/elites (Hogger, Son of Arugal, Stitches) and environmental hazards.
+* **Two Visual Themes:** Switch between authentic **Classic WoW Stone** (default) and **ElvUI Minimalist Dark** right in settings.
 
-### What Works in This Release
+### How to Use
+* Type **/kb** or **/killboard** (or click the minimap skull) to open the dashboard.
+* Type **/kb theme** (or right-click the minimap skull) to toggle between Classic and Dark visual themes.
+* Type **/warhorn** to call for backup when jumped in open-world PvP.
+* Type **/kb config** to adjust audio cues, alerts, and display options.
 
-#### 1. Live Kill Feed & Fights
-- **Kill Tracking**: Logs attacker and victim levels, classes, killing blows, and zone locations.
-- **Solo Kill Detection**: Automatically separates genuine 1v1 fights from group ganks.
-- **Most Wanted Outlaws**: See high-value targets operating in your current zone.
-- **Audio Cues**: Simple sound alerts for kills and deaths.
-
-#### 2. In-Game Leaderboards
-- **Honor Rankings**: Track your running kills, deaths, K/D ratio, and estimated honor without leaving the game.
-- **Streak & Nemesis Tracking**: Check your current kill streaks and see who kills you most frequently on the enemy faction.
-- **Quick Filters**: Filter stats across All, World PvP, Battlegrounds, Arenas, and Duels.
-
-#### 3. Call for Backup & Defense Grouping
-- **Call for Help**: Getting jumped while questing? Send an SOS beacon to nearby allies or guildmates with your location.
-- **Group Muster**: Quickly invite responding players into a group or raid to fight back.
-
-#### 4. Zone Activity
-- **Danger Meter**: Shows which zones currently have the highest player mortality.
-- **Hotspot Tracking**: See where the heaviest fights are taking place.
-
-#### 5. PvE Elites & World Hazards
-- **Quick Mode Switch**: Toggle between PvP and PvE tracking right from the top header.
-- **Deadly Elites**: Track deaths to famous world bosses and dangerous quest elites (Hogger, Son of Arugal, Mor'Ladim, Stitches, Devilsaurs).
-- **Environmental Deaths**: Logs deaths from falling, drowning, lava, and fatigue.
-
----
-
-### Clean & Stable Interface
-WKB is built to run smoothly in the background:
-- Lightweight interface that never touches or interferes with standard Blizzard action bars or nameplates.
-- Safely closes with the Escape key like standard menus.
-- Designed to remain stable in active combat without freezing your game or throwing interface errors.
-
----
-
-### Visual Themes (Classic Stone & ElvUI Dark)
-WKB includes two built-in visual styles:
-- **Classic WoW Theme (Default)**: Authentic Blizzard dialog stone backgrounds, gold borders, and warm parchment styling.
-- **ElvUI Minimalist Theme**: Sleek dark charcoal/black backdrops with high-contrast accents.
-- **Switch Anytime**: Toggle instantly in Settings or with `/kb theme` (or right-click the minimap skull button). *Note: As a solo hobbyist project, styling will continue to refine and evolve with your feedback!*
-
----
-
-### In-Game Slash Commands
-
-| Command | Action |
-| :--- | :--- |
-| `/kb` or `/killboard` | Open or close the main interface |
-| `/kb config` | Open settings, alerts, and sound preferences |
-| `/kb theme` | Switch between Classic WoW and ElvUI Dark themes |
-| `/kb sos [reason]` | Send an SOS call to nearby allies with your location |
-| `/kb stats` | Print your session kill/death stats to chat |
-| `/kb reset` | Reset your local combat session history |
-
----
-
-### Web Killboard & Community Uploads
-- **Web Portal**: Visit [wowkillboard.com](https://wowkillboard.com) to view realm leaderboards, outlaws, and combat dossiers.
-- **Zero-Install Web Uploader**: Drag and drop your `SavedVariables/WoWKillboard.lua` file at [wowkillboard.com/upload](https://wowkillboard.com/upload) directly in your browser. No desktop software or background processes required!
-
----
+### Optional Web Leaderboards
+Visit **[wowkillboard.com](https://wowkillboard.com)** to check out realm-wide leaderboards, outlaws, and character dossiers. You can sync your stats by dragging and dropping your `WoWKillboard.lua` file directly at **[wowkillboard.com/upload](https://wowkillboard.com/upload)** — 100% browser-based with zero background software needed.
 
 ### Compatibility & Feedback
-- **Game Versions**: Hands-on testing has primarily been focused in WoW Forever (Classic Beta). The codebase is structured for cross-client parity across Classic Era, Anniversary, and Retail as well. If you encounter any flavor-specific quirks, please let me know!
-- **Feedback & Bug Reports**: Since this is an active community release, your feedback is very helpful. If you run into any issues, have suggestions, or want to report a bug, please leave a comment on this project page or visit our GitHub tracker.
+* **Game Flavors:** Hands-on testing has primarily been focused in **WoW Forever (Classic Beta)**. The codebase is written with parity in mind for **Classic Era**, **Anniversary**, and **Retail** as well.
+* **Community Driven:** I'm an indie hobbyist learning and building this for fun. If you run into any quirks or have suggestions, please leave a comment!
 ```
 
 ---
