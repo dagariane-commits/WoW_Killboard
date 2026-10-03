@@ -41,6 +41,9 @@ except ImportError:
         LuaTableParser = None
 
 app = Flask(__name__, static_folder=STATIC_DIR)
+# Restrict maximum incoming request payload size to 16MB (prevents memory exhaustion DoS / OOM crashes)
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+
 # Restrict administrative CORS to trusted origin; open public read APIs
 CORS(app, resources={
     r"/api/admin/.*": {"origins": ["https://wowkillboard.com", "http://localhost:8080", "http://127.0.0.1:8080"]},
@@ -2499,109 +2502,20 @@ def release_claim():
 
 @app.route("/api/auth/bnet", methods=["GET"])
 def auth_bnet():
-    """Redirects user to Blizzard Battle.net OAuth authorize endpoint."""
-    client_id = os.environ.get("BLIZZARD_CLIENT_ID", "").strip()
-    client_secret = os.environ.get("BLIZZARD_CLIENT_SECRET", "").strip()
-    region = os.environ.get("BLIZZARD_REGION", "us").strip()
-
-    if not client_id or not client_secret:
-        return jsonify({
-            "status": "config_needed",
-            "message": "Battle.net OAuth requires BLIZZARD_CLIENT_ID and BLIZZARD_CLIENT_SECRET environment variables. You can claim or select any character immediately in the War Room character selector modal!",
-            "instructions": "Register an application at https://develop.battle.net to obtain credentials, or select your character from the active Killboard directory."
-        }), 200
-
-    import urllib.parse
+    """
+    Deprecated / Retired Endpoint:
+    In adherence to the Zero-PII Privacy Standard (docs/LEGAL_AND_COMPLIANCE.md),
+    all character ownership claims are authenticated securely in-game via '/kb claim'
+    cryptographic verification tokens rather than harvesting external BattleTags.
+    """
     from flask import redirect
-    redirect_uri = request.host_url.rstrip("/") + "/api/auth/bnet/callback"
-    state = f"bnet_{int(time.time())}"
-    bnet_auth_url = (
-        f"https://oauth.battle.net/authorize?"
-        f"client_id={urllib.parse.quote(client_id)}&"
-        f"scope=wow.profile&"
-        f"response_type=code&"
-        f"redirect_uri={urllib.parse.quote(redirect_uri)}&"
-        f"state={state}"
-    )
-    return redirect(bnet_auth_url)
+    return redirect("/?notice=zero_pii_ingame_claim")
 
 @app.route("/api/auth/bnet/callback", methods=["GET"])
 def auth_bnet_callback():
-    """Handles OAuth 2.0 callback from Blizzard Battle.net, extracts characters, and persists."""
-    code = request.args.get("code")
-    client_id = os.environ.get("BLIZZARD_CLIENT_ID", "").strip()
-    client_secret = os.environ.get("BLIZZARD_CLIENT_SECRET", "").strip()
-    region = os.environ.get("BLIZZARD_REGION", "us").strip()
-
-    if not code or not client_id or not client_secret:
-        from flask import redirect
-        return redirect("/?bnet_error=missing_code_or_credentials")
-
-    import urllib.parse
-    import requests
+    """Deprecated / Retired OAuth callback endpoint."""
     from flask import redirect
-    redirect_uri = request.host_url.rstrip("/") + "/api/auth/bnet/callback"
-
-    try:
-        token_resp = requests.post(
-            "https://oauth.battle.net/oauth/token",
-            data={
-                "grant_type": "authorization_code",
-                "code": code,
-                "redirect_uri": redirect_uri
-            },
-            auth=(client_id, client_secret),
-            timeout=10
-        )
-        if token_resp.status_code != 200:
-            return redirect(f"/?bnet_error=token_failed&detail={urllib.parse.quote(token_resp.text[:100])}")
-
-        token_data = token_resp.json()
-        access_token = token_data.get("access_token")
-
-        user_resp = requests.get(
-            "https://oauth.battle.net/oauth/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"},
-            timeout=10
-        )
-        battletag = user_resp.json().get("battletag", "Player") if user_resp.status_code == 200 else "Player"
-
-        chars_resp = requests.get(
-            f"https://{region}.battle.net/profile/user/wow?namespace=profile-{region}&locale=en_US",
-            headers={"Authorization": f"Bearer {access_token}"},
-            timeout=10
-        )
-
-        discovered = []
-        now_ts = int(time.time())
-        if chars_resp.status_code == 200:
-            profile_data = chars_resp.json()
-            with get_db() as conn:
-                for acct in profile_data.get("wow_accounts", []):
-                    for ch in acct.get("characters", []):
-                        ch_name = ch.get("name")
-                        ch_realm = ch.get("realm", {}).get("name", "WoW Forever")
-                        ch_class = ch.get("playable_class", {}).get("name", "WARRIOR").upper()
-                        ch_faction = ch.get("faction", {}).get("name", "Alliance")
-                        ch_lvl = ch.get("level", 60)
-                        if ch_name:
-                            discovered.append(ch_name)
-                            conn.execute("""
-                                INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                ON CONFLICT(name) DO UPDATE SET
-                                    realm = excluded.realm,
-                                    class = excluded.class,
-                                    level = excluded.level,
-                                    faction = excluded.faction,
-                                    last_seen = excluded.last_seen
-                            """, (ch_name, ch_realm, f"Player-BNET-{ch_name}", ch_class, "Unknown", ch_lvl, ch_faction, "None", now_ts))
-                conn.commit()
-
-        return redirect(f"/?bnet_user={urllib.parse.quote(battletag)}&bnet_chars={urllib.parse.quote(','.join(discovered[:10]))}")
-    except Exception as e:
-        logger.error(f"Battle.net OAuth callback exception: {e}")
-        return redirect("/?bnet_error=exception")
+    return redirect("/?notice=zero_pii_ingame_claim")
 
 @app.route("/api/character/<name>", methods=["GET"])
 
