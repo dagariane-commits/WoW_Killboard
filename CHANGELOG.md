@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added dedicated 5th 1-click copy box for the direct CurseForge link.
   - Updated in-game login chat banner and welcome modal to promote `wkb` on CurseForge.
 
+### Security & Sanitization
+- **Pre-Release Distribution Sanitization (`WoWKillboard_RealmData.lua`, `Core.lua`)**:
+  - Purged all hardcoded developer testing data, character names (`Tinaomi`, `Dagariane`, `Cuthbridge`), and personal player GUIDs from `WoWKillboard_RealmData.lua`, leaving a pristine, neutral template for fresh user downloads.
+  - Hardened `/kb reset` with a strict confirmation guardrail (`/kb reset confirm`), preventing accidental data loss if a player mistypes the command during normal play.
+  - Verified absence of hardcoded personal paths (`C:\Users\...`), private tokens, or unvetted globals across all distribution archives.
+
 ## [1.4.97] - 2026-10-02
 
 ### Added

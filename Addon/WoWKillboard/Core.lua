@@ -264,6 +264,11 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             SafePrint("|cffff9900[WKB]|r Cannot reset database during combat.")
             return
         end
+        if arg ~= "confirm" then
+            SafePrint("|cffff3333[WoWKB Warning]|r Resetting will wipe all local unsynced kills, duels, and combat stats.")
+            SafePrint("  To permanently reset local records, type: |cffffd100/kb reset confirm|r")
+            return
+        end
         WoWKillboardDB = { kills = {}, stats = {}, pveDeaths = {} }
         WoWKillboardDebtLedger = {}
         WoWKillboardBounties = {}
@@ -614,7 +619,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
 
         SafePrint(string.format("|cff00ff00[WoWKB Stress]|r Injected |cffffd100%d|r kills in |cffffffff%.2f ms|r. Total DB: |cff00ccff%d|r kills. Addon Mem: |cffffffff%.1f KB|r (+%.1f KB). Zero UI taint.",
             injected, elapsed, totalKills, finalMem, memDelta))
-        SafePrint("  Use |cffffd100/kb|r to view your feed or |cffffd100/kb reset|r to purge stress records.")
+        SafePrint("  Use |cffffd100/kb|r to view your feed or |cffffd100/kb reset confirm|r to purge stress records.")
 
     elseif cmd == "testdeath" then
         local pName = UnitName("player") or "Hero"
@@ -825,7 +830,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/kb sync|r or |cffffd100/kb reload|r - Flush combat SavedVariables to disk to sync with website")
         SafePrint("  |cffffd100/kb stats|r - Review current combat session battle statistics")
         SafePrint("  |cffffd100/kb bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
-        SafePrint("  |cffffd100/kb reset|r - Clear local battle records")
+        SafePrint("  |cffffd100/kb reset confirm|r - Clear local battle records")
     end
 end
 
