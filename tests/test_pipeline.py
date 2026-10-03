@@ -1645,9 +1645,22 @@ WoWKillboardDB = {
         self.assertEqual(res_health.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
         self.assertEqual(res_health.headers.get("Permissions-Policy"), "camera=(), microphone=(), geolocation=()")
 
-        # 2. Verify /WoWKillboard-v1.0.1.zip download endpoint
+        # 2. Verify /WoWKillboard-v1.0.1.zip download endpoint (local file serving under TESTING)
         res_pkg = self.client.get("/WoWKillboard-v1.0.1.zip")
         self.assertEqual(res_pkg.status_code, 200)
+
+        # Verify CDN-first 302 redirects under production mode (TESTING=False)
+        try:
+            app.config["TESTING"] = False
+            res_cdn_addon = self.client.get("/download")
+            self.assertEqual(res_cdn_addon.status_code, 302)
+            self.assertIn("curseforge.com", res_cdn_addon.headers.get("Location", ""))
+
+            res_cdn_exe = self.client.get("/WoWKillboardSync.exe")
+            self.assertEqual(res_cdn_exe.status_code, 302)
+            self.assertIn("github.com", res_cdn_exe.headers.get("Location", ""))
+        finally:
+            app.config["TESTING"] = True
 
         # 3. Verify string length boundaries on state submission endpoints
         long_str = "A" * 5000
