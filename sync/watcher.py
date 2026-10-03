@@ -97,29 +97,18 @@ def get_install_dir() -> str:
     return os.path.join(os.path.expanduser("~"), ".local", "bin", "WoWKillboard")
 
 def create_windows_shortcut(target_exe: str, shortcut_path: str, description: str = "WoW Killboard Desktop Companion") -> bool:
-    """Creates a Windows .lnk shortcut using pure Python binary generation (zero subprocess, zero PowerShell)."""
+    """Creates a Windows shell shortcut without external process spawning or binary injection."""
     if sys.platform != "win32":
         return False
     try:
-        import pylnk3
-        work_dir = os.path.dirname(os.path.abspath(target_exe))
-        pylnk3.for_file(
-            target_exe,
-            shortcut_path,
-            work_dir=work_dir,
-            description=description
-        )
-        return os.path.exists(shortcut_path)
+        clean_target = os.path.abspath(target_exe)
+        base_path = os.path.splitext(shortcut_path)[0]
+        url_path = base_path + ".url"
+        with open(url_path, "w", encoding="utf-8") as f:
+            f.write(f"[InternetShortcut]\nURL=file:///{clean_target.replace(os.sep, '/')}\nIconIndex=0\nIconFile={clean_target}\n")
+        return os.path.exists(url_path)
     except Exception:
-        # Failsafe fallback: pure INI format Windows shell shortcut
-        try:
-            url_path = os.path.splitext(shortcut_path)[0] + ".url"
-            clean_target = os.path.abspath(target_exe).replace("\\", "/")
-            with open(url_path, "w", encoding="utf-8") as f:
-                f.write(f"[InternetShortcut]\nURL=file:///{clean_target}\nIconIndex=0\nIconFile={target_exe}\n")
-            return os.path.exists(url_path)
-        except Exception:
-            return False
+        return False
 
 def install_application_to_pc(current_exe: str) -> str:
     """Installs the running executable into %LOCALAPPDATA%/Programs/WoWKillboard, creating Desktop & Start Menu shortcuts."""

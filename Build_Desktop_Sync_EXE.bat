@@ -5,7 +5,7 @@ echo ===================================================
 echo   Compiling WoWKillboardSync.exe with PyInstaller
 echo ===================================================
 echo.
-pyinstaller --onefile --noconsole --name WoWKillboardSync --clean --icon assets\icon.ico --version-file sync\version_info.txt --hidden-import=gui --hidden-import=sync.gui --hidden-import=pylnk3 sync\watcher.py
+pyinstaller --onefile --noconsole --name WoWKillboardSync --clean --icon assets\icon.ico --version-file sync\version_info.txt --hidden-import=gui --hidden-import=sync.gui sync\watcher.py
 echo.
 echo [*] Copying compiled binary to root and web/static...
 copy /y dist\WoWKillboardSync.exe WoWKillboardSync.exe >nul
