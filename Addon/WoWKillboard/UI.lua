@@ -6450,8 +6450,39 @@ function UI:GetShareData(category)
     local compact = ""
     local detailedLines = {}
 
+    local function ResolveFaction(f, name)
+        if f and f ~= "" and f ~= "Unknown" and f ~= "UNKNOWN" then
+            local s = tostring(f):lower()
+            if s == "horde" then return "Horde" end
+            if s == "alliance" then return "Alliance" end
+            return f
+        end
+        if name and UnitName and name == UnitName("player") and UnitFactionGroup then
+            local myFac = UnitFactionGroup("player")
+            if myFac and myFac ~= "" then
+                local s = tostring(myFac):lower()
+                if s == "horde" then return "Horde" end
+                if s == "alliance" then return "Alliance" end
+                return myFac
+            end
+        end
+        if name and KB.UnitScanner and KB.UnitScanner.Cache then
+            for _, u in pairs(KB.UnitScanner.Cache) do
+                if u.name and u.name:lower() == name:lower() and u.faction and u.faction ~= "Unknown" then
+                    local s = tostring(u.faction):lower()
+                    if s == "horde" then return "Horde" end
+                    if s == "alliance" then return "Alliance" end
+                    return u.faction
+                end
+            end
+        end
+        return "Contested"
+    end
+
+    local cta = "See all the stats at wowkillboard.com or download the app"
+
     if category == "WANTED" then
-        title = "Most Wanted Bounties"
+        title = "Most Wanted Outlaws"
         local outlaws = {}
         if WoWKillboardBounties then
             for _, b in pairs(WoWKillboardBounties) do
@@ -6464,110 +6495,115 @@ function UI:GetShareData(category)
             end)
         end
         if #outlaws == 0 then
-            compact = "[WoWKB] No active Marks of Spite currently recorded. (wowkillboard.com)"
+            compact = string.format("[WoWKB: Most Wanted Outlaws] No active outlaw bounties currently registered — %s", cta)
             detailedLines = {
-                "== [WoWKB] The Blood Ledger: Azeroth's Most Wanted ==",
+                "== [WoWKB] Most Wanted Outlaws ==",
                 "No active outlaw bounties currently registered.",
-                "Track bounties at: wowkillboard.com (CurseForge: 'wkb')"
+                cta
             }
         else
             local parts = {}
             for i = 1, math.min(3, #outlaws) do
                 local b = outlaws[i]
                 local gold = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
-                table.insert(parts, string.format("#%d %s (%dg)", i, b.targetName, gold))
+                local fac = ResolveFaction(b.targetFaction, b.targetName)
+                table.insert(parts, string.format("#%d %s (%s - %dg)", i, b.targetName, fac, gold))
             end
-            compact = string.format("[WoWKB Most Wanted] %s - wowkillboard.com", table.concat(parts, " | "))
+            compact = string.format("[WoWKB: Most Wanted Outlaws] %s — %s", table.concat(parts, " | "), cta)
 
-            detailedLines = { "== [WoWKB] The Blood Ledger: Azeroth's Most Wanted ==" }
+            detailedLines = { "== [WoWKB] Most Wanted Outlaws ==" }
             for i = 1, math.min(5, #outlaws) do
                 local b = outlaws[i]
                 local gold = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
-                local fac = b.targetFaction and (" (" .. b.targetFaction .. ")") or ""
-                table.insert(detailedLines, string.format("#%d %s - %s%s | Reward: %dg", i, b.targetName, b.targetClass or "Unknown", fac, gold))
+                local fac = ResolveFaction(b.targetFaction, b.targetName)
+                table.insert(detailedLines, string.format("#%d %s [%s] | Bounty: %dg", i, b.targetName, fac, gold))
             end
-            table.insert(detailedLines, "Track & claim bounties: wowkillboard.com (CurseForge: 'wkb')")
+            table.insert(detailedLines, cta)
         end
 
     elseif category == "CHAMPIONS" then
         local mode = currentMode or "ALL"
-        title = string.format("Top Champions [%s]", mode)
+        local modeLabel = (mode == "ALL") and "All PvP" or mode
+        title = string.format("Top PvP Champions - %s", modeLabel)
         local killers = KB.Leaderboard and KB.Leaderboard.GetTopKillers and KB.Leaderboard:GetTopKillers(mode, 5) or {}
         if #killers == 0 then
-            compact = string.format("[WoWKB] No recorded PvP champions in [%s] yet. (wowkillboard.com)", mode)
+            compact = string.format("[WoWKB: Top PvP Champions - %s] No recorded champions in this category yet — %s", modeLabel, cta)
             detailedLines = {
-                string.format("== [WoWKB] Defender of Azeroth: Top Champions [%s] ==", mode),
+                string.format("== [WoWKB] Top PvP Champions [%s] ==", modeLabel),
                 "No champions recorded for this category yet.",
-                "Track ranks at: wowkillboard.com (CurseForge: 'wkb')"
+                cta
             }
         else
             local parts = {}
             for i = 1, math.min(3, #killers) do
                 local p = killers[i]
-                table.insert(parts, string.format("#%d %s (%dk)", i, p.name, p.kills))
+                local fac = ResolveFaction(p.faction, p.name)
+                table.insert(parts, string.format("#%d %s (%s - %d kills)", i, p.name, fac, p.kills))
             end
-            compact = string.format("[WoWKB Champions (%s)] %s - wowkillboard.com", mode, table.concat(parts, " | "))
+            compact = string.format("[WoWKB: Top PvP Champions - %s] %s — %s", modeLabel, table.concat(parts, " | "), cta)
 
-            detailedLines = { string.format("== [WoWKB] Defender of Azeroth: Top Champions [%s] ==", mode) }
+            detailedLines = { string.format("== [WoWKB] Top PvP Champions [%s] ==", modeLabel) }
             for i, p in ipairs(killers) do
+                local fac = ResolveFaction(p.faction, p.name)
                 local kd = (p.deaths and p.deaths > 0) and string.format("%.2f", p.kills / p.deaths) or tostring(p.kills)
-                local guildStr = (p.guild and p.guild ~= "None") and (" <" .. p.guild .. ">") or ""
-                table.insert(detailedLines, string.format("#%d %s%s (%s) - %d Kills (K/D: %s)", i, p.name, guildStr, p.class or "Unknown", p.kills, kd))
+                table.insert(detailedLines, string.format("#%d %s [%s] - %d Kills (K/D: %s)", i, p.name, fac, p.kills, kd))
             end
-            table.insert(detailedLines, "Track PvP ranks: wowkillboard.com (CurseForge: 'wkb')")
+            table.insert(detailedLines, cta)
         end
 
     elseif category == "GUILDS" then
         local mode = currentMode or "ALL"
-        title = string.format("Top War Guilds [%s]", mode)
+        local modeLabel = (mode == "ALL") and "All PvP" or mode
+        title = string.format("Top War Guilds - %s", modeLabel)
         local guilds = KB.Leaderboard and KB.Leaderboard.GetTopGuilds and KB.Leaderboard:GetTopGuilds(mode, 5) or {}
         if #guilds == 0 then
-            compact = string.format("[WoWKB] No recorded War Guilds in [%s] yet. (wowkillboard.com)", mode)
+            compact = string.format("[WoWKB: Top War Guilds - %s] No recorded War Guilds in this category yet — %s", modeLabel, cta)
             detailedLines = {
-                string.format("== [WoWKB] Defender of Azeroth: Top War Guilds [%s] ==", mode),
+                string.format("== [WoWKB] Top War Guilds [%s] ==", modeLabel),
                 "No guilds recorded for this category yet.",
-                "Track guild wars at: wowkillboard.com (CurseForge: 'wkb')"
+                cta
             }
         else
             local parts = {}
             for i = 1, math.min(3, #guilds) do
                 local g = guilds[i]
-                table.insert(parts, string.format("#%d <%s> (%dk)", i, g.guild, g.kills))
+                table.insert(parts, string.format("#%d <%s> (%d kills)", i, g.guild, g.kills))
             end
-            compact = string.format("[WoWKB War Guilds (%s)] %s - wowkillboard.com", mode, table.concat(parts, " | "))
+            compact = string.format("[WoWKB: Top War Guilds - %s] %s — %s", modeLabel, table.concat(parts, " | "), cta)
 
-            detailedLines = { string.format("== [WoWKB] Defender of Azeroth: Top War Guilds [%s] ==", mode) }
+            detailedLines = { string.format("== [WoWKB] Top War Guilds [%s] ==", modeLabel) }
             for i, g in ipairs(guilds) do
                 table.insert(detailedLines, string.format("#%d <%s> - %d Certified Kills", i, g.guild, g.kills))
             end
-            table.insert(detailedLines, "Track guild wars: wowkillboard.com (CurseForge: 'wkb')")
+            table.insert(detailedLines, cta)
         end
 
     elseif category == "GANKERS" then
         title = "Top Gankers (24h)"
         local gankers = (WoWKillboard_RealmData and WoWKillboard_RealmData.TopGankers24h) or (WoWKillboardDB and WoWKillboardDB.RealmData and WoWKillboardDB.RealmData.TopGankers24h) or {}
         if #gankers == 0 then
-            compact = "[WoWKB] No recorded 24h gankers currently listed. (wowkillboard.com)"
+            compact = string.format("[WoWKB: Top Gankers 24h] No active 24h gankers currently listed — %s", cta)
             detailedLines = {
-                "== [WoWKB] Defender of Azeroth: Top Gankers (24h) ==",
+                "== [WoWKB] Top Gankers (24h) ==",
                 "No active gankers recorded in the last 24 hours.",
-                "Track 24h gankers at: wowkillboard.com (CurseForge: 'wkb')"
+                cta
             }
         else
             local parts = {}
             for i = 1, math.min(3, #gankers) do
                 local g = gankers[i]
-                table.insert(parts, string.format("#%d %s (%dk)", i, g.name or "Unknown", g.kills or 0))
+                local fac = ResolveFaction(g.faction, g.name)
+                table.insert(parts, string.format("#%d %s (%s - %d kills)", i, g.name or "Unknown", fac, g.kills or 0))
             end
-            compact = string.format("[WoWKB Top Gankers 24h] %s - wowkillboard.com", table.concat(parts, " | "))
+            compact = string.format("[WoWKB: Top Gankers 24h] %s — %s", table.concat(parts, " | "), cta)
 
-            detailedLines = { "== [WoWKB] Defender of Azeroth: Top Gankers (24h) ==" }
+            detailedLines = { "== [WoWKB] Top Gankers (24h) ==" }
             for i = 1, math.min(5, #gankers) do
                 local g = gankers[i]
-                local guildStr = (g.guild and g.guild ~= "" and g.guild ~= "None") and (" <" .. g.guild .. ">") or ""
-                table.insert(detailedLines, string.format("#%d %s%s (%s) - %d Kills", i, g.name or "Unknown", guildStr, g.class or "Unknown", g.kills or 0))
+                local fac = ResolveFaction(g.faction, g.name)
+                table.insert(detailedLines, string.format("#%d %s [%s] - %d Kills", i, g.name or "Unknown", fac, g.kills or 0))
             end
-            table.insert(detailedLines, "Track 24h gankers: wowkillboard.com (CurseForge: 'wkb')")
+            table.insert(detailedLines, cta)
         end
     end
 
