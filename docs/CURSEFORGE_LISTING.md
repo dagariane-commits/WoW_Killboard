@@ -21,7 +21,7 @@ This kit contains the exact copy, category settings, screenshot captions, and fi
 ## 2. Short Summary (Tagline)
 
 ```text
-Frontline PvP & PvE Combat Intelligence, Live Killmail Feed, Blood Bounties, Apex Bestiary, Faction War Horn, and In-Game Leaderboards with zero UI taint.
+In-game combat tracker, live kill feed, 1v1 fight detection, local bounties, and leaderboards for Classic and Retail.
 ```
 
 ---
@@ -31,71 +31,73 @@ Frontline PvP & PvE Combat Intelligence, Live Killmail Feed, Blood Bounties, Ape
 *Copy and paste the markdown block below into the CurseForge Project Description editor:*
 
 ```markdown
-# ⚔️ WoW Killboard — Frontline Combat Intelligence & War Room
+# WKB (WoW Killboard) - Combat Tracker & Leaderboard
+Early Beta / Community Testing Release
 
-**WoW Killboard** transforms your World of Warcraft client into a high-octane PvP & PvE tactical operations center. Engineered for true faction loyalty, competitive ranking, and open-world survival, WoW Killboard captures every lethal engagement with microsecond precision, provides certified 1v1 duel validation, streams live killfeeds, and manages server-wide bounty contracts.
+Welcome to the early beta of WKB (WoW Killboard). We are actively testing combat tracking, UI responsiveness, and stability across Classic and Retail. We welcome your bug reports, feedback, and feature suggestions.
 
-Built from the ground up under a strict **Zero Blizzard UI Taint** architecture, WoW Killboard uses 100% anonymous pure Lua frames and `"BackdropTemplate"` to guarantee zero "Action Blocked" popups and rock-solid combat frame rate stability.
-
----
-
-### 🔥 Core Features
-
-#### 1. 📡 Tactical Intel & Live Killmail Feed
-- **Cryptographic Kill Tracking**: Every kill is recorded with attacker/victim levels, classes, guild affiliations, killing blows, and GPS coordinates.
-- **Certified 1v1 Solo Detection**: Proprietary 15-second temporal clustering algorithm distinguishes certified solo 1v1 victories from gang ganks.
-- **Most Wanted Outlaws**: Live bounty cards highlight high-value targets operating in your active warzone.
-- **Micro-Inspect Sound Cues**: Distinctive Alliance and Horde audio cues announce frontline kills and enemy defeats.
-
-#### 2. 🏆 Defenders of Azeroth (In-Game Leaderboards)
-- **Faction Honor Rankings**: Track running kills, deaths, K/D ratios, and estimated honor without opening external web browsers.
-- **Streak & Nemesis Tracking**: View your current kill streaks and pinpoint your personal Nemesis across the battlefield.
-- **Multi-Mode Filter Pills**: Instantly filter combat data across **All**, **World PvP**, **Battlegrounds**, **Arenas**, and **Duels**.
-
-#### 3. 📯 Vanguard Rally & Faction War Horn
-- **One-Click Call for Backup**: Under attack in the open world? Send a faction-wide SOS beacon broadcasting your exact zone and coordinates.
-- **Automated Raid Muster**: Rally friendly combatants into an instant defense vanguard with automated raid invites.
-- **Tactical Distress Radar**: Displays distance and bearing to allies requesting urgent reinforcements.
-
-#### 4. 🗺️ Zone Intel & Conflict Hotspots
-- **Frontline Danger Index**: Live heatmaps categorize zones into Extreme, High, and Moderate threat levels based on real-time mortality.
-- **Territory Mortality Metrics**: See where the faction conflict is fiercest (Stranglethorn Vale, Hillsbrad Foothills, Blackrock Mountain).
-
-#### 5. 🛡️ Dual-Engine: The Apex Bestiary & PvE Casualties
-- **Instant Mode Switching**: Easily toggle between `[ ⚔️ PvP ]` and `[ 🛡️ PvE ]` rulesets with a single header click.
-- **The Apex Bestiary**: Track deaths caused by legendary world elites (Hogger, Son of Arugal, Mor'Ladim, Stitches, Devilsaurs).
-- **Environmental Hazard Tracking**: Full forensic logging for lethal falls, drowning, lava, and wilderness traps.
-- **Rescue Beacons**: Request help from nearby players when overwhelmed by high-density elite packs.
+WKB brings a dedicated killboard and combat tracker directly into your World of Warcraft client. Whether you are fighting in the open world, running battlegrounds, or keeping tabs on dangerous world elites, WKB logs your fights, tracks true 1v1 encounters, manages local bounties, and keeps a running leaderboard right inside the game.
 
 ---
 
-### 🛡️ Zero UI Taint Guarantee
-- **Zero XML Panel Templates**: Never inherits from `BasicFrameTemplateWithInset` or `UIPanelButtonTemplate`.
-- **Zero `UISpecialFrames` Pollution**: Key listeners safely intercept the `ESCAPE` key without tainting protected Blizzard frames.
-- **Combat Lockdown Gating**: Strictly adheres to `InCombatLockdown()` routines to ensure zero protected action blocks during arena or raid combat.
+### What Works in This Build
+
+#### 1. Live Kill Feed & Fights
+- **Kill Tracking**: Logs attacker and victim levels, classes, killing blows, and zone locations.
+- **Solo Kill Detection**: Automatically separates genuine 1v1 fights from group ganks.
+- **Most Wanted Outlaws**: See high-value targets operating in your current zone.
+- **Audio Cues**: Simple sound alerts for kills and deaths.
+
+#### 2. In-Game Leaderboards
+- **Honor Rankings**: Track your running kills, deaths, K/D ratio, and estimated honor without leaving the game.
+- **Streak & Nemesis Tracking**: Check your current kill streaks and see who kills you most frequently on the enemy faction.
+- **Quick Filters**: Filter stats across All, World PvP, Battlegrounds, Arenas, and Duels.
+
+#### 3. Call for Backup & Defense Grouping
+- **Call for Help**: Getting jumped while questing? Send an SOS beacon to nearby allies or guildmates with your location.
+- **Group Muster**: Quickly invite responding players into a group or raid to fight back.
+
+#### 4. Zone Activity
+- **Danger Meter**: Shows which zones currently have the highest player mortality.
+- **Hotspot Tracking**: See where the heaviest fights are taking place.
+
+#### 5. PvE Elites & World Hazards
+- **Quick Mode Switch**: Toggle between PvP and PvE tracking right from the top header.
+- **Deadly Elites**: Track deaths to famous world bosses and dangerous quest elites (Hogger, Son of Arugal, Mor'Ladim, Stitches, Devilsaurs).
+- **Environmental Deaths**: Logs deaths from falling, drowning, lava, and fatigue.
 
 ---
 
-### ⌨️ Slash Commands
+### Clean & Stable Interface
+WKB is built to run smoothly in the background:
+- Lightweight interface that never touches or interferes with standard Blizzard action bars or nameplates.
+- Safely closes with the Escape key like standard menus.
+- Designed to remain stable in active combat without freezing your game or throwing interface errors.
+
+---
+
+### In-Game Slash Commands
 
 | Command | Action |
 | :--- | :--- |
-| `/kb` or `/killboard` | Toggle the main WoW Killboard interface |
-| `/kb config` | Open the tactical settings and audio preferences |
-| `/kb sos [reason]` | Broadcast an urgent Vanguard Rally beacon to friendly faction players |
-| `/kb reset` | Reset saved combat database (prompts for confirmation) |
-| `/kb stats` | Print running session kills and K/D ratio to chat |
+| `/kb` or `/killboard` | Open or close the main interface |
+| `/kb config` | Open settings, alerts, and sound preferences |
+| `/kb sos [reason]` | Send an SOS call to nearby allies with your location |
+| `/kb stats` | Print your session kill/death stats to chat |
+| `/kb reset` | Reset your local combat session history |
 
 ---
 
-### 🌐 Cross-Client Parity & Optional Web Platform
-- **Supported Client Flavors**:
-  - **WoW Classic Beta & WoW Forever** (`1.15.x`)
-  - **Classic Era** (`1.15.x`)
-  - **20th Anniversary Edition** (`1.15.x`)
-  - **Modern Retail** (`11.x`)
-- **Companion Desktop Sync & Web Killboard**:
-  Players who want their combat kills streamed to a public web killboard and Discord war room can optionally use the standalone, zero-install `WoWKillboardSync.exe`. No Python or complex setup required!
+### Currently in Development
+Here is what we are working on for upcoming updates:
+- Direct addon-to-addon sharing between party and guild members.
+- Guild scoreboards and guild vs. guild rivalry stats.
+- Optional web sync for viewing character profiles and Discord kill alerts.
+
+---
+
+### Feedback & Bug Reports
+Since this is an early release, your feedback is very helpful. If you run into any issues, have suggestions, or want to report a bug, please leave a comment on this project page or visit our GitHub tracker.
 ```
 
 ---
