@@ -1057,6 +1057,20 @@ class KillboardWatcher:
         h_split = float(faction_split.get("Horde", 50))
         deadliest_zones = summary.get("DeadliestZones", []) if summary else []
         top_gankers = summary.get("TopGankers24h", []) if summary else []
+        latest_ver = summary.get("LatestVersion", "1.0.1") if summary else "1.0.1"
+        changelog = summary.get("Changelog", [
+            "Interactive Anti-Spam Share Modal with Faction tags",
+            "Concise 1-Line Chat Broadcasts (<200 chars)",
+            "Live Peer Version Discovery across Guild & Party",
+            "PvE Apex Predator Telemetry & Monster Casualties",
+            "Windows 11 Smart App Control Unblock Compatibility",
+        ]) if summary else [
+            "Interactive Anti-Spam Share Modal with Faction tags",
+            "Concise 1-Line Chat Broadcasts (<200 chars)",
+            "Live Peer Version Discovery across Guild & Party",
+            "PvE Apex Predator Telemetry & Monster Casualties",
+            "Windows 11 Smart App Control Unblock Compatibility",
+        ]
 
         lua_lines = [
             "-- WoWKillboard_RealmData.lua",
@@ -1077,6 +1091,8 @@ class KillboardWatcher:
             f"    PveTopExecutioners = {serialize_to_lua(pve_top_npcs, 1)},",
             f"    PveTopVictims = {serialize_to_lua(pve_top_victims, 1)},",
             f"    PveDeadliestZone = {serialize_to_lua(pve_danger_zone, 1)},",
+            f"    LatestVersion = \"{latest_ver}\",",
+            f"    Changelog = {serialize_to_lua(changelog, 1)},",
             f"    LastSync = {int(time.time())},",
             "}",
         ]

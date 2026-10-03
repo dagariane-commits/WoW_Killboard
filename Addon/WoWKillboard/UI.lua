@@ -5261,6 +5261,195 @@ function UI:ShowPromoModal()
 end
 
 -- ============================================================================
+-- Template-Free "What's New" & In-Game Changelog Dialog (100% Taint-Free)
+-- ============================================================================
+function UI:ShowChangelogModal(isManual)
+    if InCombatLockdown and InCombatLockdown() then
+        if isManual then
+            SafePrint("|cffff9900[WoWKB]|r Cannot open Changelog window during combat.")
+        end
+        return
+    end
+
+    if not UI.ChangelogDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(660, 540)
+        dlg:SetPoint("CENTER", 0, 20)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(118)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+        dlg:SetMovable(true)
+
+        dlg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
+        dlg:SetBackdropColor(0.06, 0.08, 0.12, 0.98)
+        dlg:SetBackdropBorderColor(0.85, 0.68, 0.22, 1.0)
+
+        -- Header Drag Bar
+        local header = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        header:SetPoint("TOPLEFT", 1, -1)
+        header:SetPoint("TOPRIGHT", -1, -1)
+        header:SetHeight(28)
+        header:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8" })
+        header:SetBackdropColor(0.12, 0.09, 0.06, 0.98)
+        header:EnableMouse(true)
+        header:RegisterForDrag("LeftButton")
+        header:SetScript("OnDragStart", function() if not InCombatLockdown() then dlg:StartMoving() end end)
+        header:SetScript("OnDragStop", function() dlg:StopMovingOrSizing() end)
+        dlg.Header = header
+
+        local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("LEFT", 12, 0)
+        title:SetText("|cffffd100WoW KILLBOARD  -  WHAT'S NEW & UPDATE LOG|r")
+        dlg.Title = title
+
+        -- Close [X] Button
+        local closeX = CreateFrame("Button", nil, header)
+        closeX:SetSize(22, 22)
+        closeX:SetPoint("RIGHT", -4, 0)
+        local closeXText = closeX:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        closeXText:SetPoint("CENTER", 0, 0)
+        closeXText:SetText("|cffff4444X|r")
+        closeX:SetScript("OnClick", function() dlg:Hide() end)
+
+        -- Subtitle: Version Indicator
+        local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        sub:SetPoint("TOPLEFT", 16, -34)
+        dlg.VersionSub = sub
+
+        -- Inset Content Box (Scrollable / Structured text)
+        local inset = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        inset:SetPoint("TOPLEFT", 16, -56)
+        inset:SetPoint("TOPRIGHT", -16, -56)
+        inset:SetHeight(320)
+        inset:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        inset:SetBackdropColor(0.02, 0.03, 0.05, 0.95)
+        inset:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.9)
+        dlg.Inset = inset
+
+        local function AddLogHeader(parent, yOffset, text, color)
+            local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            fs:SetPoint("TOPLEFT", 14, yOffset)
+            fs:SetText(string.format("|c%s%s|r", color or "ffffd100", text))
+            return fs
+        end
+
+        local function AddLogBullet(parent, yOffset, tag, body)
+            local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            fs:SetPoint("TOPLEFT", 18, yOffset)
+            fs:SetPoint("RIGHT", parent, "RIGHT", -14, 0)
+            fs:SetJustifyH("LEFT")
+            fs:SetWordWrap(true)
+            fs:SetText(string.format("|cff38bdf8* %s:|r |cffcbd5e1%s|r", tag, body))
+            return fs
+        end
+
+        AddLogHeader(inset, -10, "Version 1.0.1  (Current Release)", "ffffd100")
+        AddLogBullet(inset, -28, "Interactive Share Modal", "Share buttons open a preview modal (like /kb promo) so you can review broadcasts before posting to /guild, /party, or /say.")
+        AddLogBullet(inset, -66, "Concise 1-Line Leaderboards", "Broadcasts output top 3 players with explicit [Horde] / [Alliance] tags and web CTA, strictly under 200 characters.")
+        AddLogBullet(inset, -104, "Live Peer Version Discovery", "Silently discovers newer versions via P2P gossip in guild & groups without touching external web sockets.")
+        AddLogBullet(inset, -142, "PvE Apex Predator Telemetry", "Deadliest wilderness creatures and hazard casualties tracked seamlessly on PvE realms.")
+        AddLogBullet(inset, -180, "Windows 11 SAC Guidance", "Full instructions for Smart App Control 'Unblock' in File Properties for zero-barrier desktop sync.")
+
+        AddLogHeader(inset, -222, "Version 1.0.0  (Launch Foundation)", "ff10b981")
+        local baseFs = inset:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        baseFs:SetPoint("TOPLEFT", 18, -240)
+        baseFs:SetPoint("RIGHT", inset, "RIGHT", -14, 0)
+        baseFs:SetJustifyH("LEFT")
+        baseFs:SetWordWrap(true)
+        baseFs:SetText("|cff94a3b8* Dual UI themes (Classic Stone & ElvUI Dark via /kb theme)\n* Certified 1v1 solo kill engine with 15s gang-clustering\n* Cross-client parity across Forever Beta, Era, Anniversary & Retail\n* Blood Ledger in-game bounties & KOS debtor blacklists|r")
+
+        -- Links Box: CurseForge & Web Download
+        local linkTitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        linkTitle:SetPoint("TOPLEFT", 16, -386)
+        linkTitle:SetText("|cffffd100Download & Update Links (Click inside & press Ctrl+C to copy):|r")
+
+        local function CreateCopyLink(parent, x, y, width, label, url)
+            local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            lbl:SetPoint("TOPLEFT", x, y)
+            lbl:SetText(string.format("|cff38bdf8%s|r", label))
+
+            local box = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+            box:SetPoint("TOPLEFT", x, y - 16)
+            box:SetSize(width, 22)
+            box:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+            })
+            box:SetBackdropColor(0.02, 0.04, 0.08, 0.95)
+            box:SetBackdropBorderColor(0.25, 0.35, 0.50, 0.9)
+
+            local eb = CreateFrame("EditBox", nil, box)
+            eb:SetPoint("TOPLEFT", 6, 0)
+            eb:SetPoint("BOTTOMRIGHT", -6, 0)
+            eb:SetFontObject("GameFontHighlightSmall")
+            eb:SetAutoFocus(false)
+            eb:EnableMouse(true)
+            eb:SetText(url)
+            eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+            eb:SetScript("OnMouseUp", function(self) self:HighlightText() end)
+            eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+            return eb
+        end
+
+        dlg.CfEditBox = CreateCopyLink(dlg, 16, -406, 305, "CurseForge App (Search 'wkb'):", "https://www.curseforge.com/wow/addons/wkb")
+        dlg.WebEditBox = CreateCopyLink(dlg, 335, -406, 305, "Web Platform & Desktop Sync:", "https://wowkillboard.com/download")
+
+        -- Bottom Row Buttons
+        local promoBtn = UI:CreateButton(dlg, 180, 26, "|cffffd100[📢] Promo Macros (/kb promo)|r", "GameFontHighlightSmall")
+        promoBtn:SetPoint("BOTTOMLEFT", 16, 14)
+        promoBtn:SetScript("OnClick", function()
+            dlg:Hide()
+            if UI.ShowPromoModal then UI:ShowPromoModal() end
+        end)
+
+        local openKbBtn = UI:CreateButton(dlg, 180, 26, "|cff10b981Open Killboard (/kb)|r", "GameFontHighlightSmall")
+        openKbBtn:SetPoint("LEFT", promoBtn, "RIGHT", 10, 0)
+        openKbBtn:SetScript("OnClick", function()
+            dlg:Hide()
+            if UI.Toggle then UI:Toggle() end
+        end)
+
+        local gotItBtn = UI:CreateButton(dlg, 120, 26, "Got It!", "GameFontHighlightSmall")
+        gotItBtn:SetPoint("BOTTOMRIGHT", -16, 14)
+        gotItBtn:SetScript("OnClick", function() dlg:Hide() end)
+
+        -- ESC handler
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                self:SetPropagateKeyboardInput(false)
+                self:Hide()
+            else
+                self:SetPropagateKeyboardInput(true)
+            end
+        end)
+
+        UI.ChangelogDialog = dlg
+    end
+
+    local dlg = UI.ChangelogDialog
+    local latest = KB.LatestKnownVersion or (WoWKillboard_RealmData and WoWKillboard_RealmData.LatestVersion) or KB.Version
+    if KB.Version == latest then
+        dlg.VersionSub:SetText(string.format("|cff10b981Installed: v%s (Up to date)|r  |  |cff888888Cross-Client Unified Architecture|r", KB.Version))
+    else
+        dlg.VersionSub:SetText(string.format("|cffff9900Installed: v%s|r  |  |cff00ff00New Version Available: v%s!|r  |  |cff38bdf8Update via CurseForge|r", KB.Version, latest))
+    end
+
+    dlg:Show()
+    if dlg.Raise then dlg:Raise() end
+end
+
+-- ============================================================================
 -- Template-Free Bug Report & AI Diagnostics Dispatch Dialog
 -- ============================================================================
 function UI:ShowBugReportModal()

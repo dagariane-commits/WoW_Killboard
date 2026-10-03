@@ -19,5 +19,13 @@ WoWKillboard_RealmData = {
         deaths = 0,
         zone = "None",
     },
+    LatestVersion = "1.0.1",
+    Changelog = {
+        "Interactive Anti-Spam Share Modal with Faction tags",
+        "Concise 1-Line Chat Broadcasts (<200 chars)",
+        "Live Peer Version Discovery across Guild & Party",
+        "PvE Apex Predator Telemetry & Monster Casualties",
+        "Windows 11 Smart App Control Unblock Compatibility",
+    },
     LastSync = 0,
 }

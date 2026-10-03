@@ -3696,8 +3696,36 @@ def get_realm_summary():
             },
             "DeadliestZones": deadliest_zones,
             "TopGankers24h": top_gankers,
+            "LatestVersion": "1.0.1",
+            "DownloadUrl": "https://wowkillboard.com/download",
+            "CurseForgeUrl": "https://www.curseforge.com/wow/addons/wkb",
+            "Changelog": [
+                "Interactive Anti-Spam Share Modal with Faction tags",
+                "Concise 1-Line Chat Broadcasts (<200 chars)",
+                "Live Peer Version Discovery across Guild & Party",
+                "PvE Apex Predator Telemetry & Monster Casualties",
+                "Windows 11 Smart App Control Unblock Compatibility"
+            ],
             "timestamp": now
         })
+
+@app.route("/api/version", methods=["GET"])
+def get_version_info():
+    """Returns official current addon release version, download endpoints, and changelog summary."""
+    return jsonify({
+        "status": "ok",
+        "version": "1.0.1",
+        "release_tag": "v1.0.1",
+        "download_url": "https://wowkillboard.com/download",
+        "curseforge_url": "https://www.curseforge.com/wow/addons/wkb",
+        "changelog": [
+            "Interactive Anti-Spam Share Modal with Faction tags",
+            "Concise 1-Line Chat Broadcasts (<200 chars)",
+            "Live Peer Version Discovery across Guild & Party",
+            "PvE Apex Predator Telemetry & Monster Casualties",
+            "Windows 11 Smart App Control Unblock Compatibility"
+        ]
+    })
 
 @app.route("/api/bounties/debt-ledger", methods=["GET"])
 def get_debt_ledger():
