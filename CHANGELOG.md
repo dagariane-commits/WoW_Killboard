@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Re-ordered upload channels on `wowkillboard.com/upload` so the zero-install Browser Drag & Drop uploader is the prominent primary card, with the desktop companion (`WoWKillboardSync.exe`) clearly designated as an optional automated helper.
   - Updated CurseForge listing submission kit with explicit documentation for dual UI themes (Classic Stone & Gold vs ElvUI Dark) and clarified that hands-on testing has primarily been focused in WoW Forever (`_classic_beta_`) while maintaining structural codebase parity across Classic Era, Anniversary, and Retail.
   - Streamlined CurseForge description copy from a verbose multi-table technical spec into a punchy, readable layout modeled after *Talents Forever* (concise key features, immediate slash commands, and accessible community voice).
+- **Interactive Share Preview & Anti-Spam Pop-out Modal (`Addon/WoWKillboard/UI.lua`)**:
+  - Replaced direct, blind chat dumping (7 lines per click) across "Share Wanted", "Share Champions", "Share Guilds", and "Share Gankers" with a safe, interactive pop-out dialog (`UI:ShowShareModal`).
+  - Added visual inspection for both **Compact 1-Line Broadcast (low spam, fit for party/guild chat)** and **Detailed Multi-Line Breakdown**.
+  - Added 1-click clipboard copying (`Ctrl+C` text auto-highlighting), dynamic channel cycling (`/guild`, `/party`, `/say`), and explicit user-driven send confirmation.
 - **Windows 11 Smart App Control (SAC) Unblock Guidance (`README.md`, `docs/BETA_TESTER_QUICKSTART.md`, `web/static/app.js`)**:
   - Documented specific first-run bypass instructions for Windows 11 22H2+ Smart App Control: when unsigned binaries lack the SmartScreen "Run anyway" button, users can right-click `WoWKillboardSync.exe` &rarr; **Properties** &rarr; check **"Unblock"** &rarr; **OK**.
 - **Packaging & Server Telemetry Version Synchronization (`package_addon.bat`, `web/server.py`, `web/static/app.js`)**:
