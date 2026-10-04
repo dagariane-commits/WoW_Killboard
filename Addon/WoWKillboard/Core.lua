@@ -316,9 +316,10 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             if KB.Sync and KB.Sync.BroadcastEvent then
                 KB.Sync:BroadcastEvent(evt)
             end
-            if IsInGuild() then
-                SendChatMessage(string.format("[WoWKillboard Event] [PvP] %s in %s! Announced by %s. Time: %s.",
-                    evt.title, evt.zone, myName, evt.time_str), "GUILD")
+            local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+            if IsInGuild() and (s.enableGuildBroadcasts ~= false) then
+                SendChatMessage(string.format("[WoWKB Alert] Event scheduled: %s in %s. Time: %s. Lead: %s.",
+                    evt.title, evt.zone, evt.time_str, myName), "GUILD")
             end
             SafePrint(string.format("|cff00ccff[WoWKB Event]|r Created Guild Rally: |cffffd100%s|r in |cffffffff%s|r!", evt.title, evt.zone))
         else
@@ -371,6 +372,38 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             KB.UI:TestKillBanner()
             SafePrint("|cff00ff00[WoWKB]|r Frontline Kill Banner test preview triggered!")
         end
+    elseif cmd == "testchat" or cmd == "testbroadcast" then
+        local pName = UnitName("player") or "Dagariane"
+        local _, pClass = UnitClass("player")
+        pClass = pClass or "PALADIN"
+        local pLevel = UnitLevel("player") or 23
+        local cTitle = (KB.Utils and KB.Utils.GetClassTitle) and KB.Utils.GetClassTitle(pClass) or "Paladin"
+        local loc = (KB.Utils and KB.Utils.GetPlayerLocation) and KB.Utils.GetPlayerLocation() or { zone = "Stormwind City", subZone = "Sentinel Hill", x = 66.7, y = 42.4 }
+        local zone = (loc.zone and loc.zone ~= "" and loc.zone ~= "Unknown Zone") and loc.zone or "Stormwind City"
+        local subzone = (loc.subZone and loc.subZone ~= "") and loc.subZone or "Sentinel Hill"
+        local x = (loc.x and loc.x > 0) and loc.x or 66.7
+        local y = (loc.y and loc.y > 0) and loc.y or 42.4
+
+        SafePrint("|cffffd100[WoWKB]|r --- Standardized Military/Tactical Chat Telemetry ---")
+        SafePrint(string.format("|cff00e5ff[Format A - Local/Yell]:|r [WoWKB] Under attack: %s (%.1f, %.1f) vs Defias Pillager!", zone, x, y))
+        SafePrint(string.format("|cff00e5ff[Format B - Guild/Party]:|r [WoWKB] PvP Alert: %s engaged in %s (%.1f, %.1f) by 1 Hostile. Auto-invite: whisper 'invite'", pName, zone, x, y))
+        SafePrint(string.format("|cff00e5ff[Format C - Casualty]:|r [WoWKB] Casualty: %s (Lvl %d %s) killed by Defias Pillager (Fireball) in %s.", pName, pLevel, cTitle, subzone))
+    elseif cmd == "chat" or cmd == "broadcast" then
+        local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+        s.enableChatBroadcasts = not s.enableChatBroadcasts
+        SafePrint(string.format("|cff00e5ff[WoWKB]|r Chat Broadcasts (Yell/Say): %s.", s.enableChatBroadcasts and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED (Opt-in)|r"))
+    elseif cmd == "guild" then
+        local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+        s.enableGuildBroadcasts = (s.enableGuildBroadcasts == false)
+        SafePrint(string.format("|cff00e5ff[WoWKB]|r Guild Broadcasts: %s.", s.enableGuildBroadcasts and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED|r"))
+    elseif cmd == "coords" then
+        local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+        s.includeCoordinates = (s.includeCoordinates == false)
+        SafePrint(string.format("|cff00e5ff[WoWKB]|r Include Coordinates: %s.", s.includeCoordinates and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED|r"))
+    elseif cmd == "autoinvite" then
+        local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+        s.enableWhisperAutoInvite = (s.enableWhisperAutoInvite == false)
+        SafePrint(string.format("|cff00e5ff[WoWKB]|r Whisper Auto-Invite: %s.", s.enableWhisperAutoInvite and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED|r"))
     elseif cmd == "theme" then
         if KB.UI and KB.UI.CycleTheme then
             KB.UI:CycleTheme()

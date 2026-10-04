@@ -7419,7 +7419,7 @@ function UI:ShowSettingsModal()
 
     if not UI.SettingsDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(480, 440)
+        dlg:SetSize(500, 570)
         dlg:SetPoint("CENTER", 0, 20)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(120)
@@ -7486,7 +7486,7 @@ function UI:ShowSettingsModal()
         closeBtn.Label = closeLabel
         closeBtn:SetScript("OnClick", function() dlg:Hide() end)
 
-        local y = -62
+        local y = -60
 
         -- SECTION 1: INTERFACE THEME
         local s1Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -7494,11 +7494,11 @@ function UI:ShowSettingsModal()
         s1Title:SetText("|cffffd1001. Interface Theme|r")
 
         local themeDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        themeDesc:SetPoint("TOPLEFT", 24, y - 18)
+        themeDesc:SetPoint("TOPLEFT", 24, y - 16)
         themeDesc:SetText("Choose between classic Warcraft stone or modern ElvUI dark style.")
 
-        local themeBtn = UI:CreateButton(dlg, 190, 24, "Toggle Theme")
-        themeBtn:SetPoint("TOPLEFT", 24, y - 36)
+        local themeBtn = UI:CreateButton(dlg, 190, 22, "Toggle Theme")
+        themeBtn:SetPoint("TOPLEFT", 24, y - 34)
         themeBtn:SetScript("OnClick", function()
             UI:CycleTheme()
             local cur = UI:GetTheme()
@@ -7508,7 +7508,7 @@ function UI:ShowSettingsModal()
         end)
         dlg.themeBtn = themeBtn
 
-        y = y - 76
+        y = y - 68
 
         -- SECTION 2: COMBAT ALERTS & RADAR
         local s2Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -7516,17 +7516,17 @@ function UI:ShowSettingsModal()
         s2Title:SetText("|cffffd1002. Combat Alerts & Kill Banners|r")
 
         local alertsDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        alertsDesc:SetPoint("TOPLEFT", 24, y - 18)
+        alertsDesc:SetPoint("TOPLEFT", 24, y - 16)
         alertsDesc:SetText("Calibrate screen positioning, kill banner scale, sound, and HUD.")
 
-        local calibBtn = UI:CreateButton(dlg, 190, 24, "Calibrate Alerts & Banners")
-        calibBtn:SetPoint("TOPLEFT", 24, y - 36)
+        local calibBtn = UI:CreateButton(dlg, 190, 22, "Calibrate Alerts & Banners")
+        calibBtn:SetPoint("TOPLEFT", 24, y - 34)
         calibBtn:SetScript("OnClick", function()
             dlg:Hide()
             UI:ShowAlertsConfig()
         end)
 
-        local soundBtn = UI:CreateButton(dlg, 140, 24, "Sound: Enabled")
+        local soundBtn = UI:CreateButton(dlg, 140, 22, "Sound: Enabled")
         soundBtn:SetPoint("LEFT", calibBtn, "RIGHT", 10, 0)
         soundBtn:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
@@ -7536,19 +7536,88 @@ function UI:ShowSettingsModal()
         end)
         dlg.soundBtn = soundBtn
 
-        y = y - 76
+        y = y - 68
 
-        -- SECTION 3: DEATH MARK PROMPT (MARK OF SPITE)
+        -- SECTION 3: TACTICAL CHAT & BROADCAST TELEMETRY
         local s3Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         s3Title:SetPoint("TOPLEFT", 24, y)
-        s3Title:SetText("|cffffd1003. Mark of Spite Death Prompt|r")
+        s3Title:SetText("|cffffd1003. Tactical Chat & Broadcast Telemetry|r")
+
+        local s3Desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        s3Desc:SetPoint("TOPLEFT", 24, y - 16)
+        s3Desc:SetText("Configure public callouts, guild defense alerts, GPS coords & auto-invites.")
+
+        -- Row 1: Chat Broadcasts & Guild Broadcasts
+        local chatBroadcastBtn = UI:CreateButton(dlg, 220, 22, "Chat (Yell/Say): OFF")
+        chatBroadcastBtn:SetPoint("TOPLEFT", 24, y - 34)
+        chatBroadcastBtn:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings or {}
+            s.enableChatBroadcasts = not s.enableChatBroadcasts
+            chatBroadcastBtn.Label:SetText(s.enableChatBroadcasts and "|cff00ff00Chat (Yell/Say): ON|r" or "|cffff3333Chat (Yell/Say): OFF|r")
+            SafePrint(string.format("|cff00e5ff[WoWKB]|r Chat Broadcasts (Yell/Say) is now %s.", s.enableChatBroadcasts and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED (Opt-in)|r"))
+        end)
+        chatBroadcastBtn:SetScript("OnEnter", function(self)
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Chat Broadcasts (Yell/Say)|r", "Broadcasts public defense callouts via /yell during open world PvP engagements. [Default: Off / Opt-in]")
+        end)
+        chatBroadcastBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+        dlg.chatBroadcastBtn = chatBroadcastBtn
+
+        local guildBroadcastBtn = UI:CreateButton(dlg, 220, 22, "Guild Broadcasts: ON")
+        guildBroadcastBtn:SetPoint("LEFT", chatBroadcastBtn, "RIGHT", 10, 0)
+        guildBroadcastBtn:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings or {}
+            s.enableGuildBroadcasts = (s.enableGuildBroadcasts == false)
+            guildBroadcastBtn.Label:SetText(s.enableGuildBroadcasts and "|cff00ff00Guild Broadcasts: ON|r" or "|cffff3333Guild Broadcasts: OFF|r")
+            SafePrint(string.format("|cff00e5ff[WoWKB]|r Guild Broadcasts is now %s.", s.enableGuildBroadcasts and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED|r"))
+        end)
+        guildBroadcastBtn:SetScript("OnEnter", function(self)
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Guild Broadcasts|r", "Dispatches tactical defense alerts and casualties to your Guild chat channel. [Default: On]")
+        end)
+        guildBroadcastBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+        dlg.guildBroadcastBtn = guildBroadcastBtn
+
+        -- Row 2: Include Coordinates & Whisper Auto-Invite
+        local coordsBtn = UI:CreateButton(dlg, 220, 22, "Coordinates: ON")
+        coordsBtn:SetPoint("TOPLEFT", 24, y - 60)
+        coordsBtn:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings or {}
+            s.includeCoordinates = (s.includeCoordinates == false)
+            coordsBtn.Label:SetText(s.includeCoordinates and "|cff00ff00Coordinates: ON|r" or "|cffff3333Coordinates: OFF|r")
+            SafePrint(string.format("|cff00e5ff[WoWKB]|r Include Coordinates is now %s.", s.includeCoordinates and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED|r"))
+        end)
+        coordsBtn:SetScript("OnEnter", function(self)
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Include Coordinates|r", "Appends real-time map GPS coordinates (e.g. 66.7, 42.4) to chat callouts. [Default: On]")
+        end)
+        coordsBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+        dlg.coordsBtn = coordsBtn
+
+        local autoInviteBtn = UI:CreateButton(dlg, 220, 22, "Auto-Invite: ON")
+        autoInviteBtn:SetPoint("LEFT", coordsBtn, "RIGHT", 10, 0)
+        autoInviteBtn:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings or {}
+            s.enableWhisperAutoInvite = (s.enableWhisperAutoInvite == false)
+            autoInviteBtn.Label:SetText(s.enableWhisperAutoInvite and "|cff00ff00Auto-Invite: ON|r" or "|cffff3333Auto-Invite: OFF|r")
+            SafePrint(string.format("|cff00e5ff[WoWKB]|r Whisper Auto-Invite is now %s.", s.enableWhisperAutoInvite and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED|r"))
+        end)
+        autoInviteBtn:SetScript("OnEnter", function(self)
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Whisper Auto-Invite|r", "Automatically adds friendly allies to your squad when they whisper 'invite' or 'rally'. [Default: On]")
+        end)
+        autoInviteBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+        dlg.autoInviteBtn = autoInviteBtn
+
+        y = y - 96
+
+        -- SECTION 4: DEATH MARK PROMPT (MARK OF SPITE)
+        local s4Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        s4Title:SetPoint("TOPLEFT", 24, y)
+        s4Title:SetText("|cffffd1004. Mark of Spite Death Prompt|r")
 
         local deathDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        deathDesc:SetPoint("TOPLEFT", 24, y - 18)
+        deathDesc:SetPoint("TOPLEFT", 24, y - 16)
         deathDesc:SetText("Offer to declare an execution contract when slain in open combat.\n(Prompts are automatically suppressed in Battlegrounds and Arenas).")
 
-        local deathPromptBtn = UI:CreateButton(dlg, 220, 24, "Death Prompt: Enabled")
-        deathPromptBtn:SetPoint("TOPLEFT", 24, y - 48)
+        local deathPromptBtn = UI:CreateButton(dlg, 220, 22, "Death Prompt: Enabled")
+        deathPromptBtn:SetPoint("TOPLEFT", 24, y - 44)
         deathPromptBtn:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             s.ignoreDeathBounties = not s.ignoreDeathBounties
@@ -7558,21 +7627,21 @@ function UI:ShowSettingsModal()
         end)
         dlg.deathPromptBtn = deathPromptBtn
 
-        y = y - 90
+        y = y - 78
 
-        -- SECTION 4: DATA EXPORT & DESKTOP SYNC
-        local s4Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        s4Title:SetPoint("TOPLEFT", 24, y)
-        s4Title:SetText("|cffffd1004. Data Export & Desktop Sync|r")
+        -- SECTION 5: DATA EXPORT & DESKTOP SYNC
+        local s5Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        s5Title:SetPoint("TOPLEFT", 24, y)
+        s5Title:SetText("|cffffd1005. Data Export & Desktop Sync|r")
 
-        local exportBtn = UI:CreateButton(dlg, 160, 24, "Export Data / JSON")
-        exportBtn:SetPoint("TOPLEFT", 24, y - 24)
+        local exportBtn = UI:CreateButton(dlg, 160, 22, "Export Data / JSON")
+        exportBtn:SetPoint("TOPLEFT", 24, y - 22)
         exportBtn:SetScript("OnClick", function()
             dlg:Hide()
             UI:ShowExportDialog()
         end)
 
-        local reloadBtn = UI:CreateButton(dlg, 160, 24, "Save & Reload UI")
+        local reloadBtn = UI:CreateButton(dlg, 160, 22, "Save & Reload UI")
         reloadBtn:SetPoint("LEFT", exportBtn, "RIGHT", 10, 0)
         reloadBtn:SetScript("OnClick", function()
             if InCombatLockdown and InCombatLockdown() then
@@ -7599,6 +7668,18 @@ function UI:ShowSettingsModal()
     local s = WoWKillboardSettings or KB.DefaultSettings or {}
     if UI.SettingsDialog.soundBtn and UI.SettingsDialog.soundBtn.Label then
         UI.SettingsDialog.soundBtn.Label:SetText(s.soundAlerts ~= false and "|cff00ff00Sound: ON|r" or "|cffff3333Sound: OFF|r")
+    end
+    if UI.SettingsDialog.chatBroadcastBtn and UI.SettingsDialog.chatBroadcastBtn.Label then
+        UI.SettingsDialog.chatBroadcastBtn.Label:SetText(s.enableChatBroadcasts and "|cff00ff00Chat (Yell/Say): ON|r" or "|cffff3333Chat (Yell/Say): OFF|r")
+    end
+    if UI.SettingsDialog.guildBroadcastBtn and UI.SettingsDialog.guildBroadcastBtn.Label then
+        UI.SettingsDialog.guildBroadcastBtn.Label:SetText((s.enableGuildBroadcasts ~= false) and "|cff00ff00Guild Broadcasts: ON|r" or "|cffff3333Guild Broadcasts: OFF|r")
+    end
+    if UI.SettingsDialog.coordsBtn and UI.SettingsDialog.coordsBtn.Label then
+        UI.SettingsDialog.coordsBtn.Label:SetText((s.includeCoordinates ~= false) and "|cff00ff00Coordinates: ON|r" or "|cffff3333Coordinates: OFF|r")
+    end
+    if UI.SettingsDialog.autoInviteBtn and UI.SettingsDialog.autoInviteBtn.Label then
+        UI.SettingsDialog.autoInviteBtn.Label:SetText((s.enableWhisperAutoInvite ~= false) and "|cff00ff00Auto-Invite: ON|r" or "|cffff3333Auto-Invite: OFF|r")
     end
     if UI.SettingsDialog.deathPromptBtn and UI.SettingsDialog.deathPromptBtn.Label then
         UI.SettingsDialog.deathPromptBtn.Label:SetText(s.ignoreDeathBounties and "|cffff3333Death Prompt: MUTED|r" or "|cff00ff00Death Prompt: ENABLED|r")

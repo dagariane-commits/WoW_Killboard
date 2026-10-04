@@ -43,6 +43,10 @@ KB.DefaultSettings = {
     showCombatWire = true,       -- show floating moveable Combat Wire pop-out window
     combatWirePos = nil,         -- saved position for Combat Wire window: { point, relPoint, x, y }
     hasSeenBetaWelcome = false,  -- shows early beta preview & feedback dialog on first login
+    enableChatBroadcasts = false,   -- Enable Chat Broadcasts (Yell / Say) [Default: Off / Opt-in]
+    enableGuildBroadcasts = true,   -- Enable Guild Broadcasts [Default: On]
+    includeCoordinates = true,      -- Include Coordinates [Default: On]
+    enableWhisperAutoInvite = true,  -- Enable Whisper Auto-Invite [Default: On]
 }
 
 -- Fallback Class Colors (ARGB Hex)

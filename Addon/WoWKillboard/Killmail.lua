@@ -165,7 +165,55 @@ function KM:RecordKill(data)
         KB.UI:RefreshIfVisible()
     end
 
+    -- Standardized Casualty Broadcast (Format C) if local player is victim
+    if killmail.victim.name == UnitName("player") then
+        KM:BroadcastCasualty(killmail.victim, killmail.killer, killmail.location, killmail.finalSpell or "Combat")
+    end
+
     return killmail
+end
+
+-- Standardized Casualty / Death Broadcast (Format C)
+-- Format: [WoWKB] Casualty: <Victim> (Lvl <Level> <Class>) killed by <Killer> (<Spell/Ability>) in <Location>.
+-- Example: [WoWKB] Casualty: Dagariane (Lvl 23 Paladin) killed by Defias Pillager (Fireball) in Sentinel Hill.
+function KM:BroadcastCasualty(victim, killer, location, spell)
+    if not victim or not killer then return end
+
+    local now = time()
+    if (now - (KM.LastCasualtyBroadcastTime or 0)) < 5 then return end
+    KM.LastCasualtyBroadcastTime = now
+
+    local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+    local enableGuild = (s.enableGuildBroadcasts ~= false)
+    local enableChat = (s.enableChatBroadcasts == true)
+
+    local vName = victim.name or UnitName("player") or "Player"
+    local vLevel = (victim.level and victim.level > 0) and victim.level or (UnitLevel("player") or 60)
+    local vClass = (KB.Utils and KB.Utils.GetClassTitle) and KB.Utils.GetClassTitle(victim.class) or (victim.class or "Adventurer")
+    local kName = killer.name or "Hostile Threat"
+    local spellName = (spell and spell ~= "" and spell ~= "UNKNOWN") and spell or "Combat"
+    local locStr = (location and location.subZone and location.subZone ~= "") and location.subZone or ((location and location.zone) or GetZoneText() or "Wilderness")
+
+    local casualtyMsg = string.format("[WoWKB] Casualty: %s (Lvl %s %s) killed by %s (%s) in %s.",
+        vName, tostring(vLevel), vClass, kName, spellName, locStr)
+
+    -- Broadcast to Guild (Default: On)
+    if IsInGuild() and enableGuild then
+        SendChatMessage(casualtyMsg, "GUILD")
+    end
+
+    -- Broadcast to Group/Raid
+    if IsInGroup() then
+        SendChatMessage(casualtyMsg, IsInRaid() and "RAID" or "PARTY")
+    end
+
+    -- Broadcast to Say (Opt-in only)
+    local inInstance = IsInInstance and IsInInstance()
+    if enableChat and not inInstance then
+        pcall(SendChatMessage, casualtyMsg, "SAY")
+    end
+
+    return casualtyMsg
 end
 
 -- Record a validated PvE death (Player executed by an NPC/Monster)
@@ -214,8 +262,13 @@ function KM:RecordPveDeath(data)
 
     -- Console chat feedback
     local victimStr = KB.Utils.ColorizeByClass(string.format("[%d] %s", pveRecord.victim.level, pveRecord.victim.name), pveRecord.victim.class)
-    local chatMsg = string.format("|cffff2020[WoWKB PvE]|r %s was executed by |cffffd700[%s]|r (%s) in %s!", victimStr, pveRecord.npc.name, pveRecord.npc.spell or "Combat", pveRecord.location.zone)
+    local chatMsg = string.format("|cffff2020[WoWKB]|r %s executed by |cffffd700[%s]|r (%s) in %s.", victimStr, pveRecord.npc.name, pveRecord.npc.spell or "Combat", pveRecord.location.zone)
     KB.Utils.SafePrint(chatMsg)
+
+    -- Standardized Casualty Broadcast (Format C) if local player is victim
+    if pveRecord.victim.name == UnitName("player") then
+        KM:BroadcastCasualty(pveRecord.victim, pveRecord.npc, pveRecord.location, pveRecord.npc.spell or "Combat Strike")
+    end
 
     -- Trigger On-Screen Toast Banner for PvE Casualty
     if KB.UI and KB.UI.ShowKillBanner then
