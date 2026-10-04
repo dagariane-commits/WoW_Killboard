@@ -4600,18 +4600,18 @@ function loadUploadView() {
       <div style="background: rgba(212, 163, 41, 0.08); border: 1px solid var(--wow-gold); border-radius: 8px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
         <div>
           <div style="font-weight: 800; font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 8px;">
-            <span>⚔️</span> <span>Need the WoW Killboard Addon?</span>
+            <span>Need the WoW Killboard Addon?</span>
           </div>
           <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 3px;">
-            Download the lightweight, zero-taint addon package (v1.0.1) for World PvP &amp; Battlegrounds.
+            Download the lightweight, zero-taint addon package (v1.0.3) for World PvP &amp; Battlegrounds.
           </div>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <a href="/download" style="display: inline-flex; align-items: center; gap: 6px; background: var(--wow-gold); color: #000; font-weight: 800; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none; text-transform: uppercase;">
-            <span>⬇ Direct Download (.zip)</span>
+          <a href="https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.3.zip" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; background: var(--wow-gold); color: #000; font-weight: 800; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none; text-transform: uppercase;">
+            <span>Direct Download (.zip)</span>
           </a>
           <a href="https://www.curseforge.com/wow/addons/wkb" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(241, 100, 54, 0.2); border: 1px solid #f16436; color: #fb923c; font-weight: 700; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none;">
-            <span>🔥 CurseForge Hub</span>
+            <span>CurseForge Hub</span>
           </a>
         </div>
       </div>
@@ -4665,7 +4665,7 @@ function loadUploadView() {
             </div>
           </div>
           <div style="padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#cbd5e1;">
-            Direct download: <a href="/WoWKillboardSync.exe" download style="color:var(--wow-gold); font-weight:700; text-decoration:underline;">Download WoWKillboardSync.exe</a>
+            Direct download: <a href="https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboardSync.exe" target="_blank" rel="noopener" style="color:var(--wow-gold); font-weight:700; text-decoration:underline;">Download WoWKillboardSync.exe</a>
           </div>
         </div>
       </div>

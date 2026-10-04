@@ -28,8 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented one-time automatic migration flag `WoWKillboardSettings.hasMigratedToElvUI`. Any existing player profiles with legacy `theme = "classic"` are automatically upgraded to `theme = "elvui"` on login, guaranteeing the new minimalist aesthetics render immediately without requiring manual settings resets.
 - **Desktop Companion Synchronizer v1.0.3 (`WoWKillboardSync.exe`)**:
   - Bumped sync engine version and Windows PE executable version resource to `v1.0.3.0` with full multi-realm payload support.
-- **CurseForge & Git Parity (`deploy.py`, `web/server.py`)**:
-  - Updated distribution packaging and web download routes for `WoWKillboard-v1.0.3.zip`.
+- **CurseForge & Git Parity (`deploy.py`, `web/server.py`, `scripts/upload_release.py`)**:
+  - Uploaded official `v1.0.3` release to GitHub Releases with attached assets (`WoWKillboard-v1.0.3.zip` and `WoWKillboardSync.exe`).
+  - Added `scripts/upload_release.py` for automated continuous release asset publishing.
+  - Re-routed all Direct Download buttons in `web/static/index.html`, `web/static/app.js`, and `web/static/feedback.html` directly to authenticated GitHub Releases assets.
+  - Added aggressive `Cache-Control: no-cache, no-store, must-revalidate` headers to `/download`, preventing proxy or browser 302 redirect caching.
+  - Promoted "War Room Operational Specification" modal directly into the top header navigation rail (`#nav-spec`) and mobile navigation drawer (`#m-nav-spec`).
+  - Enforced strict zero-emoji standard across all documentation, UI navigation elements, and markdown artifacts.
 
 ## [1.0.2] - 2026-10-04 (CurseForge Community Release)
 
