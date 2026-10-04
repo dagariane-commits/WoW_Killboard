@@ -1384,7 +1384,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - **Purged Hardcoded Admin Secret (`app.js`, `server.py`, `test_pipeline.py`)**:
-  - Eradicated `valor2026` from public client-side JavaScript (`app.js`), preventing unauthorized users from discovering the key in browser DevTools.
+  - Eradicated legacy hardcoded secret key from public client-side JavaScript (`app.js`), preventing unauthorized users from discovering the key in browser DevTools.
   - Replaced legacy default secret key with project-isolated environment variable (`ADMIN_SECRET_KEY`) and updated automated pipeline tests.
 - **Forensic Secret & Credential Audit**:
   - Executed automated forensic static analysis across all files and git commit history: confirmed zero AWS keys (`AKIA`), zero Stripe keys (`sk_live`/`pk_live`), zero private key blocks (`BEGIN PRIVATE KEY`), zero SSH keys, zero PayPal/banking tokens, and zero credit card numbers.
@@ -1693,7 +1693,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Applied uniformly across both Classic and ElvUI themes in `UI:ApplyTheme()`, resolving missing `WoW Forever` in ElvUI.
 - **Master War Archivist Public Protection (`web/static/app.js`)**:
   - Gated the red "Master War Archivist • Database Administration" reset panel in `loadUploadView()`.
-  - Completely hidden from regular public view by default; revealed only via secret key unlock or administrative URL parameter (`?admin=valor2026`).
+  - Completely hidden from regular public view by default; revealed only via secret key unlock or administrative URL parameter (`?admin=wowkb_archivist_secret`).
 
 ## [1.4.39] - 2026-09-27
 
@@ -1922,7 +1922,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `#nav-upload` to the desktop navigation rail and `#m-nav-upload` to the mobile slide-in drawer.
   - Includes interactive visual dropzone, local SavedVariables file path instructions, copy-paste text fallback, and live telemetry banners.
 - **Master Archivist Administrative Reset Protocol (`POST /api/admin/reset`, `--reset-db`)**:
-  - Engineered administrative database purge system gated by `ADMIN_SECRET_KEY` (`valor2026`).
+  - Engineered administrative database purge system gated by `ADMIN_SECRET_KEY` (`wowkb_archivist_secret`).
   - Added `POST /api/admin/reset` endpoint and `--reset-db` server startup CLI flag to safely drop and re-initialize all 13 SQLite tables for clean state testing.
   - Integrated restricted Master War Archivist reset controls directly into the Web Upload interface with confirmation guards.
 - **Authentic Classic WoW Dialog & Quest Parchment UI Overhaul (`UI.lua`, `Config.lua`)**:
