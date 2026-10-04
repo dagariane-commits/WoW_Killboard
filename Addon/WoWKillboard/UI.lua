@@ -6491,24 +6491,23 @@ function UI:ApplyBannerTheme()
     local isClassic = (theme.id == "classic")
 
     if isClassic then
-        -- Authentic WoW Classic Dialog Box Backdrop & Border
+        -- Authentic WoW Classic Dialog Box Backdrop & Border with dark marble tint (0.85 alpha)
         banner:SetBackdrop({
             bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
             edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
             tile = true,
             tileSize = 32,
             edgeSize = 16,
-            insets = { left = 5, right = 5, top = 5, bottom = 5 },
+            insets = { left = 4, right = 4, top = 4, bottom = 4 },
         })
-        banner:SetBackdropColor(1.0, 1.0, 1.0, 0.95)
+        banner:SetBackdropColor(0.20, 0.18, 0.15, 0.85)
         banner:SetBackdropBorderColor(1.0, 1.0, 1.0, 1.0)
 
         if banner.TopAccent then banner.TopAccent:Hide() end
-        if banner.HeaderPlate then banner.HeaderPlate:Show() end
 
-        if banner.CenterHeader and banner.HeaderPlate then
+        if banner.CenterHeader then
             banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("TOP", banner.HeaderPlate, "TOP", 0, -9)
+            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -6)
             banner.CenterHeader:SetFontObject("GameFontNormal")
             banner.CenterHeader:SetShadowOffset(1, -1)
             banner.CenterHeader:SetShadowColor(0, 0, 0, 1.0)
@@ -6538,11 +6537,10 @@ function UI:ApplyBannerTheme()
         banner:SetBackdropBorderColor(0.55, 0.50, 0.40, 0.90)
 
         if banner.TopAccent then banner.TopAccent:Show() end
-        if banner.HeaderPlate then banner.HeaderPlate:Hide() end
 
         if banner.CenterHeader then
             banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -8)
+            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -6)
             banner.CenterHeader:SetFontObject("GameFontNormal")
             banner.CenterHeader:SetShadowOffset(1, -1)
             banner.CenterHeader:SetShadowColor(0, 0, 0, 1.0)
@@ -6613,37 +6611,31 @@ function UI:InitializeKillBanner()
     topAccent:SetColorTexture(1.0, 0.82, 0.0, 1.0)
     killBanner.TopAccent = topAccent
 
-    -- Authentic Classic Dialog Arched Header Plaque (Centered at top)
-    local headerPlate = killBanner:CreateTexture(nil, "ARTWORK", nil, 1)
-    headerPlate:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
-    headerPlate:SetSize(236, 36)
-    headerPlate:SetPoint("TOP", killBanner, "TOP", 0, 10)
-    killBanner.HeaderPlate = headerPlate
-
     -- Classic Ornate Bronze/Gold Riveted Corner Brackets (matching Quest Log header bar)
+    -- Flush anchor to (0, 0) with crisp antialiased alpha (zero bleed)
     local cornerTL = killBanner:CreateTexture(nil, "OVERLAY", nil, 2)
-    cornerTL:SetSize(22, 22)
-    cornerTL:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 1, -1)
+    cornerTL:SetSize(24, 24)
+    cornerTL:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 0, 0)
     cornerTL:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\corner_bracket.tga")
-    cornerTL:SetTexCoord(0, 0.78, 0, 0.78)
+    cornerTL:SetTexCoord(0, 27/64, 0, 27/64)
 
     local cornerTR = killBanner:CreateTexture(nil, "OVERLAY", nil, 2)
-    cornerTR:SetSize(22, 22)
-    cornerTR:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", -1, -1)
+    cornerTR:SetSize(24, 24)
+    cornerTR:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", 0, 0)
     cornerTR:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\corner_bracket.tga")
-    cornerTR:SetTexCoord(0.78, 0, 0, 0.78)
+    cornerTR:SetTexCoord(27/64, 0, 0, 27/64)
 
     local cornerBL = killBanner:CreateTexture(nil, "OVERLAY", nil, 2)
-    cornerBL:SetSize(22, 22)
-    cornerBL:SetPoint("BOTTOMLEFT", killBanner, "BOTTOMLEFT", 1, 1)
+    cornerBL:SetSize(24, 24)
+    cornerBL:SetPoint("BOTTOMLEFT", killBanner, "BOTTOMLEFT", 0, 0)
     cornerBL:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\corner_bracket.tga")
-    cornerBL:SetTexCoord(0, 0.78, 0.78, 0)
+    cornerBL:SetTexCoord(0, 27/64, 27/64, 0)
 
     local cornerBR = killBanner:CreateTexture(nil, "OVERLAY", nil, 2)
-    cornerBR:SetSize(22, 22)
-    cornerBR:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", -1, 1)
+    cornerBR:SetSize(24, 24)
+    cornerBR:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", 0, 0)
     cornerBR:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\corner_bracket.tga")
-    cornerBR:SetTexCoord(0.78, 0, 0.78, 0)
+    cornerBR:SetTexCoord(27/64, 0, 27/64, 0)
 
     killBanner.Corners = { cornerTL, cornerTR, cornerBL, cornerBR }
 
@@ -6717,26 +6709,26 @@ function UI:InitializeKillBanner()
     -- =========================================================================
     -- Center Section (The Incident: Center Status & Brand)
     -- =========================================================================
-    -- Top tag: 12pt Blizzard Gold (#FFD100) uppercase centered
+    -- Top tag: 12pt Blizzard Gold (#FFD100) uppercase centered inside frame (-6px down from upper inside edge)
     local centerHeader = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -8)
+    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -6)
     centerHeader:SetText("|cffffd100WOWKB COMBAT TELEMETRY|r")
     centerHeader:SetShadowOffset(1, -1)
     centerHeader:SetShadowColor(0, 0, 0, 1.0)
     killBanner.CenterHeader = centerHeader
     killBanner.CenterAction = centerHeader -- backward-compatible alias
 
-    -- Middle: Skull / Death separator 32px x 32px (nudged up by 4px together with location text for balanced spacing)
+    -- Middle: Skull / Death separator 32px x 32px
     local centerIcon = killBanner:CreateTexture(nil, "OVERLAY")
     centerIcon:SetSize(32, 32)
-    centerIcon:SetPoint("CENTER", killBanner, "CENTER", 0, 4)
+    centerIcon:SetPoint("CENTER", killBanner, "CENTER", 0, 6)
     centerIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
     killBanner.CenterIcon = centerIcon
 
     -- Bottom: Location text in 11pt parchment amber (#E6C387 / #D4A359)
-    -- Exactly 4px vertical spacing below skull icon; leaves ~14px clearance to bottom frame edge
+    -- Lifted 4px higher (0 offset from centerIcon bottom instead of -4) so it doesn't touch the bottom border
     local locText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    locText:SetPoint("TOP", centerIcon, "BOTTOM", 0, -4)
+    locText:SetPoint("TOP", centerIcon, "BOTTOM", 0, 0)
     locText:SetJustifyH("CENTER")
     locText:SetWordWrap(false)
     locText:SetShadowOffset(1, -1)
