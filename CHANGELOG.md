@@ -5,6 +5,30 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.102] - 2026-10-04
+
+### Changed
+- **Combat Toast Banner Semantics & Directional Live Kill Feed Redesign (`Addon/WoWKillboard/UI.lua`)**:
+  - **Dynamic Contextual Header (Replaces Static "WOWKB COMBAT TELEMETRY")**:
+    - Replaced generic telemetry phrasing with contextual title in `#FFD100` gold (`WORLD PVP CASUALTY` for PvP encounters, `FALLEN HERO` for Hardcore deaths, or `CASUALTY REPORT` for PvE casualties).
+    - Integrated zone and subzone metadata directly into the header string (e.g. `CASUALTY REPORT  •  WESTFALL (SENTINEL HILL)` or `WORLD PVP CASUALTY  •  STRANGLETHORN VALE`).
+  - **Directional Center Death Action Block**:
+    - Replaced the disconnected floating skull and bottom location text with a unified, vertically centered Death Action Block.
+    - Embedded red death skull (`Interface\TargetingFrame\UI-TargetingFrame-Skull`, vertex colored `#FF3B30` / `1.0, 0.23, 0.19`) anchored at `y = -28` on the inner wood plate.
+    - Directional Action String: anchored directly under the skull with format `slain by [AbilityName]` (e.g., `slain by Fireball`), featuring `#CBD5E1` light silver action prefix and `#FFF1A8` light spell yellow ability highlight.
+  - **Left Block (The Fallen)**:
+    - 36×36 circular Alliance/Horde crest with raised gold medallion ring (`medallion_border.tga`) paired with 36×36 square class icon with native beveled frame (`UI-Achievement-IconFrame`).
+    - Left-aligned text stack centered at `y = -47`: Line 1 `[23] Dagariane` in bold class color with `(2, -2)` black drop shadow; Line 2 `<Forged By Valor>` in `#A0A0A0` muted guild silver with `(1, -1)` shadow.
+  - **Right Block (The Victor / Threat)**:
+    - Right-aligned text stack centered at `y = -47`: Line 1 `[15] Defias Pillager` in `#FF3B30` hostile red with `(2, -2)` drop shadow; Line 2 `Humanoid / Elite` or killer guild/title in `#8B949E` muted gray with `(1, -1)` shadow.
+    - 36×36 threat icon with beveled frame (`UI-Achievement-IconFrame`) and overlaid `#FF3B30` hostile debuff border (`UI-Debuff-Border`).
+  - **Frame Aspect Ratio & Native Plate Fix (Classic Theme)**:
+    - Scaled banner frame to a clean **580px × 78px** height, eliminating vertical stretching and squashing.
+    - Adjusted texture coordinates on all 3 achievement alert slices (`ToastBgLeft`, `ToastBgRight`, `ToastBgMid`) from `0.703125` to `0.609375` (78 / 128), mapping exactly 1:1 with native Blizzard artwork.
+    - Anchored `CenterHeader` directly in the top dark carved groove (`TOP, 0, -11`), ensuring all text, skull, and icons sit squarely on the dark inner plate.
+  - **100% Cross-Theme Parity**:
+    - Synchronized all semantic formatters, action strings, and text alignments across both Classic Forever and ElvUI Minimalist modes.
+
 ## [1.4.101] - 2026-10-04
 
 ### Added
