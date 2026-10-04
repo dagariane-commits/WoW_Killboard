@@ -5156,7 +5156,7 @@ function UI:ShowPromoModal()
 
         local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("LEFT", 12, 0)
-        title:SetText("|cffffd100WoW KILLBOARD  -  PROMOTIONAL CHAT MACROS|r")
+        title:SetText("|cffffd100WoW KILLBOARD  -  COMMUNITY SHARING & MACROS|r")
         dlg.Title = title
 
         local closeX = CreateFrame("Button", nil, header)
@@ -5169,9 +5169,9 @@ function UI:ShowPromoModal()
 
         local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         sub:SetPoint("TOPLEFT", 16, -34)
-        sub:SetText("|cff38bdf8Click inside any macro box to select, press Ctrl+C, then paste into your WoW Macro panel (/m)! Search 'wkb' on CurseForge!|r")
+        sub:SetText("|cff38bdf8Click inside any macro box to select, press Ctrl+C, then paste into your WoW Macro panel (/m)!|r")
 
-        local function CreateMacroEntry(parent, yOffset, labelText, labelColor, macroText, boxHeight)
+        local function CreateMacroEntry(parent, yOffset, labelText, labelColor, boxHeight)
             local h = boxHeight or 44
             local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             lbl:SetPoint("TOPLEFT", 16, yOffset)
@@ -5196,27 +5196,17 @@ function UI:ShowPromoModal()
             eb:SetMultiLine(true)
             eb:SetAutoFocus(false)
             eb:EnableMouse(true)
-            eb:SetText(macroText)
             eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
             eb:SetScript("OnMouseUp", function(self) self:HighlightText() end)
             eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-            return box
+            return eb
         end
 
-        CreateMacroEntry(dlg, -56, "1. General & Trade Channel (City & Zone Recruitment):", "ffffd100",
-            "/1 [WoW Killboard] Track open-world PvP kills, duels, bounties, & death recaps! Live realm stats at wowkillboard.com — search \"wkb\" on CurseForge App or visit https://www.curseforge.com/wow/addons/wkb")
-
-        CreateMacroEntry(dlg, -126, "2. Post-Duel / Friendly Challenge (Say or Whisper):", "ff00e5ff",
-            "/s Gg! Recording duel stats, solo takedowns, and bounty contracts on WoW Killboard. Check out your combat profile at wowkillboard.com or search \"wkb\" on CurseForge!")
-
-        CreateMacroEntry(dlg, -196, "3. Guild & PvP Squad Chat (Recruitment & Linking):", "ff10b981",
-            "/g Hey team! Running WoW Killboard to track our world PvP kills, bounties, & defense calls. Search \"wkb\" on CurseForge or grab at https://www.curseforge.com/wow/addons/wkb!")
-
-        CreateMacroEntry(dlg, -266, "4. Open-World Battle Cry (Yell):", "ffff4444",
-            "/y Another one for the Blood Ledger! Check kill stats & bounties at wowkillboard.com (search \"wkb\" on CurseForge App).")
-
-        CreateMacroEntry(dlg, -336, "5. Direct CurseForge Link (Search 'wkb' in CurseForge App):", "ff38bdf8",
-            "https://www.curseforge.com/wow/addons/wkb", 30)
+        dlg.GeneralEb = CreateMacroEntry(dlg, -56, "1. General & Zone Chat (/1 or /2):", "ffffd100")
+        dlg.DuelEb = CreateMacroEntry(dlg, -126, "2. Post-Duel (Say or Whisper):", "ff00e5ff")
+        dlg.GuildEb = CreateMacroEntry(dlg, -196, "3. Guild & Group Chat (/g or /p):", "ff10b981")
+        dlg.CalloutEb = CreateMacroEntry(dlg, -266, "4. World PvP Callout (/s or /y):", "ffff4444")
+        dlg.LinkEb = CreateMacroEntry(dlg, -336, "5. Direct CurseForge Link (Search 'wkb' in CurseForge App):", "ff38bdf8", 30)
 
         -- Tip Note Box
         local tipBox = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
@@ -5237,7 +5227,7 @@ function UI:ShowPromoModal()
         tipText:SetJustifyH("LEFT")
         tipText:SetJustifyV("TOP")
         tipText:SetWordWrap(true)
-        tipText:SetText("|cffffd100How to create in-game macros & share:|r\n1. Type |cffffff00/macro|r or |cffffff00/m|r in chat to open your Macro panel, click |cff00e5ffNew|r, and paste with |cffffff00Ctrl+V|r.\n2. Drag the macro icon directly to your action bar for 1-click chat broadcast!\n3. Search |cffffff00wkb|r in the |cff38bdf8CurseForge Desktop App|r or visit |cffffff00https://www.curseforge.com/wow/addons/wkb|r!")
+        tipText:SetText("|cffffd100How to use in-game macros:|r\n1. Type |cffffff00/macro|r or |cffffff00/m|r in chat to open your Macro panel, click |cff00e5ffNew|r, and paste with |cffffff00Ctrl+V|r.\n2. Drag the macro icon directly to your action bar for 1-click chat sharing!\n3. Search |cffffff00wkb|r in the |cff38bdf8CurseForge Desktop App|r or visit |cffffff00https://www.curseforge.com/wow/addons/wkb|r.")
 
         local closeBtn = UI:CreateButton(dlg, 120, 26, "Got It!", "GameFontHighlightSmall")
         closeBtn:SetPoint("BOTTOMRIGHT", -16, 14)
@@ -5254,6 +5244,32 @@ function UI:ShowPromoModal()
         end)
 
         UI.PromoDialog = dlg
+    end
+
+    local enemy = "the Horde"
+    if UnitFactionGroup then
+        local f = UnitFactionGroup("player")
+        if f == "Alliance" then
+            enemy = "the Horde"
+        elseif f == "Horde" then
+            enemy = "the Alliance"
+        end
+    end
+
+    if UI.PromoDialog.GeneralEb then
+        UI.PromoDialog.GeneralEb:SetText(string.format("/1 Hey if you like world pvp, check out 'wkb' on CurseForge. Tracks your kills and stats against %s (wowkillboard.com)", enemy))
+    end
+    if UI.PromoDialog.DuelEb then
+        UI.PromoDialog.DuelEb:SetText("/s gg! Tracking duels and world pvp kills with 'wkb' on CurseForge (wowkillboard.com)")
+    end
+    if UI.PromoDialog.GuildEb then
+        UI.PromoDialog.GuildEb:SetText("/g Hey grab 'wkb' on CurseForge if you do world pvp. Tracks our kills, duels, and bounties in guild (wowkillboard.com)")
+    end
+    if UI.PromoDialog.CalloutEb then
+        UI.PromoDialog.CalloutEb:SetText(string.format("/s Anyone hunting around here? Grab 'wkb' on CurseForge so we can track kills and bounties against %s (wowkillboard.com)", enemy))
+    end
+    if UI.PromoDialog.LinkEb then
+        UI.PromoDialog.LinkEb:SetText("https://www.curseforge.com/wow/addons/wkb")
     end
 
     UI.PromoDialog:Show()

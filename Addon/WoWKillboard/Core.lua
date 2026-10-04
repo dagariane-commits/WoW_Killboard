@@ -762,11 +762,16 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         if KB.UI and KB.UI.ShowPromoModal then
             KB.UI:ShowPromoModal()
         else
-            SafePrint("|cff00ccff[WoW Killboard] Promotional Macros for In-Game Sharing:|r")
-            SafePrint("  |cffffd100[1. General/Trade]:|r /1 [WoW Killboard] Track open-world PvP kills, duels, bounties, & death recaps! Live realm stats at wowkillboard.com — search \"wkb\" on CurseForge App or visit https://www.curseforge.com/wow/addons/wkb")
-            SafePrint("  |cffffd100[2. Post-Duel]:|r /s Gg! Recording duel stats, solo takedowns, and bounty contracts on WoW Killboard. Check out your combat profile at wowkillboard.com or search \"wkb\" on CurseForge!")
-            SafePrint("  |cffffd100[3. Guild/Party]:|r /g Hey team! Running WoW Killboard to track our world PvP kills, bounties, & defense calls. Search \"wkb\" on CurseForge or grab at https://www.curseforge.com/wow/addons/wkb!")
-            SafePrint("  |cffffd100[4. World PvP Yell]:|r /y Another one for the Blood Ledger! Check kill stats & bounties at wowkillboard.com (search \"wkb\" on CurseForge App).")
+            local enemy = "the Horde"
+            if UnitFactionGroup then
+                local f = UnitFactionGroup("player")
+                if f == "Alliance" then enemy = "the Horde" elseif f == "Horde" then enemy = "the Alliance" end
+            end
+            SafePrint("|cff00ccff[WoW Killboard] In-Game Chat Macros (search 'wkb' on CurseForge):|r")
+            SafePrint(string.format("  |cffffd100[1. General/Zone]:|r /1 Hey if you like world pvp, check out 'wkb' on CurseForge. Tracks your kills and stats against %s (wowkillboard.com)", enemy))
+            SafePrint("  |cffffd100[2. Post-Duel]:|r /s gg! Tracking duels and world pvp kills with 'wkb' on CurseForge (wowkillboard.com)")
+            SafePrint("  |cffffd100[3. Guild/Squad]:|r /g Hey grab 'wkb' on CurseForge if you do world pvp. Tracks our kills, duels, and bounties in guild (wowkillboard.com)")
+            SafePrint(string.format("  |cffffd100[4. World PvP]:|r /s Anyone hunting around here? Grab 'wkb' on CurseForge so we can track kills and bounties against %s (wowkillboard.com)", enemy))
             SafePrint("  |cff38bdf8[5. Direct Link]:|r Search \"wkb\" in CurseForge App or visit https://www.curseforge.com/wow/addons/wkb")
         end
     elseif cmd == "changelog" or cmd == "update" or cmd == "whatsnew" or cmd == "notes" then

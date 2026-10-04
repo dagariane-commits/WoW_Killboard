@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Standardized compact broadcast formats to explicitly identify the leaderboard, the top 3 combatants with faction affiliations (`Horde` or `Alliance`), and the unified call-to-action: `— See all the stats at wowkillboard.com or download the app`.
   - Added visual inspection for both **Compact 1-Line Broadcast (strictly sized ~180-195 chars to stay well below the 255-char chat limit)** and **Detailed Multi-Line Breakdown**.
   - Added 1-click clipboard copying (`Ctrl+C` text auto-highlighting), dynamic channel cycling (`/guild`, `/party`, `/say`), and explicit user-driven send confirmation.
+- **Authentic, Gamer-Centric In-Game Promotional Macros (`Addon/WoWKillboard/UI.lua`, `Core.lua`)**:
+  - Overhauled `/kb promo` macro generator from generic marketing text to realistic, conversational gamer voice.
+  - Implemented dynamic runtime faction detection: automatically tailors General/Zone chat and open-world callouts to the player's true adversary (`the Horde` when playing Alliance, `the Alliance` when playing Horde).
+  - Streamlined Post-Duel, Guild, and Zone macros to concise, organic player messages (~80-130 characters) that respect chat etiquette and avoid spam flags.
 - **Windows 11 Smart App Control (SAC) Unblock Guidance (`README.md`, `docs/BETA_TESTER_QUICKSTART.md`, `web/static/app.js`)**:
   - Documented specific first-run bypass instructions for Windows 11 22H2+ Smart App Control: when unsigned binaries lack the SmartScreen "Run anyway" button, users can right-click `WoWKillboardSync.exe` &rarr; **Properties** &rarr; check **"Unblock"** &rarr; **OK**.
 - **Packaging & Server Telemetry Version Synchronization (`package_addon.bat`, `web/server.py`, `web/static/app.js`)**:
