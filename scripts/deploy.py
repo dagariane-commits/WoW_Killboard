@@ -23,7 +23,7 @@ WOW_TARGETS = [
     r"D:\World of Warcraft\_classic_era_\Interface\AddOns\WoWKillboard",
     r"D:\World of Warcraft\_anniversary_\Interface\AddOns\WoWKillboard",
     r"D:\World of Warcraft\_retail_\Interface\AddOns\WoWKillboard",
-    # Remote Laptop Clients (SQUICKYoga via Z:)
+    # Remote Laptop Clients (via Z:)
     r"Z:\_classic_beta_\Interface\AddOns\WoWKillboard",
     r"Z:\_classic_era_\Interface\AddOns\WoWKillboard",
     r"Z:\_anniversary_\Interface\AddOns\WoWKillboard",
