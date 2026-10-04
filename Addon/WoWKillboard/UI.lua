@@ -6491,18 +6491,25 @@ function UI:ApplyBannerTheme()
     local isClassic = (theme.id == "classic")
 
     if isClassic then
-        -- Authentic WoW Classic Metallic Frame (Border only; single continuous ParchmentBg fills inner area)
+        -- Frame setup with Blizzard Tooltip/Dialog border
         banner:SetBackdrop({
-            edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = false,
             edgeSize = 16,
             insets = { left = 4, right = 4, top = 4, bottom = 4 },
         })
         banner:SetBackdropColor(0, 0, 0, 0)
-        banner:SetBackdropBorderColor(1.0, 1.0, 1.0, 1.0)
+        banner:SetBackdropBorderColor(0.8, 0.65, 0.3, 1.0) -- bronze/gold trim
 
-        if banner.ParchmentBg then banner.ParchmentBg:Show() end
-        if banner.HeaderStrip then banner.HeaderStrip:Show() end
-        if banner.HeaderDivider then banner.HeaderDivider:Show() end
+        if banner.ParchmentBg then
+            banner.ParchmentBg:ClearAllPoints()
+            banner.ParchmentBg:SetPoint("TOPLEFT", banner, "TOPLEFT", 4, -4)
+            banner.ParchmentBg:SetPoint("BOTTOMRIGHT", banner, "BOTTOMRIGHT", -4, 4)
+            banner.ParchmentBg:SetHorizTile(false)
+            banner.ParchmentBg:SetVertTile(false)
+            banner.ParchmentBg:Show()
+        end
         if banner.TopAccent then banner.TopAccent:Hide() end
 
         if banner.CenterHeader then
@@ -6551,8 +6558,6 @@ function UI:ApplyBannerTheme()
         banner:SetBackdropColor(0.06, 0.08, 0.11, 0.85)
         banner:SetBackdropBorderColor(0.55, 0.50, 0.40, 0.90)
 
-        if banner.HeaderStrip then banner.HeaderStrip:Hide() end
-        if banner.HeaderDivider then banner.HeaderDivider:Hide() end
         if banner.TopAccent then banner.TopAccent:Show() end
 
         if banner.CenterHeader then
@@ -6634,28 +6639,17 @@ function UI:InitializeKillBanner()
         end
     end)
 
-    -- Single Continuous Authentic Blizzard Quest Parchment Texture (Zero center splits/seams)
-    local parchmentBg = killBanner:CreateTexture(nil, "BACKGROUND", nil, -8)
-    parchmentBg:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 4, -4)
-    parchmentBg:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", -4, 4)
-    parchmentBg:SetTexture("Interface\\QuestFrame\\QuestBG")
-    parchmentBg:SetTexCoord(0, 1, 0, 1)
-    killBanner.ParchmentBg = parchmentBg
-
-    -- Top Dark Header Strip Bar (Classic Quest Log top banner ribbon)
-    local headerStrip = killBanner:CreateTexture(nil, "BACKGROUND", nil, -5)
-    headerStrip:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 4, -4)
-    headerStrip:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", -4, -4)
-    headerStrip:SetHeight(20)
-    headerStrip:SetColorTexture(0.11, 0.08, 0.05, 0.95) -- Deep dark wood / leather brown
-    killBanner.HeaderStrip = headerStrip
-
-    local headerDivider = killBanner:CreateTexture(nil, "BACKGROUND", nil, -4)
-    headerDivider:SetPoint("TOPLEFT", headerStrip, "BOTTOMLEFT", 0, 0)
-    headerDivider:SetPoint("TOPRIGHT", headerStrip, "BOTTOMRIGHT", 0, 0)
-    headerDivider:SetHeight(1)
-    headerDivider:SetColorTexture(0.45, 0.35, 0.18, 0.85) -- Chiseled antique bronze / gold divider
-    killBanner.HeaderDivider = headerDivider
+    -- Parchment Texture (MUST fill the entire inner frame)
+    local bg = killBanner:CreateTexture(nil, "BACKGROUND", nil, -7)
+    bg:SetTexture("Interface\\QuestFrame\\QuestBG")
+    bg:SetTexCoord(0, 1, 0, 1)
+    bg:ClearAllPoints()
+    -- Anchor inside the 4px border insets so it covers 100% of the interior:
+    bg:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 4, -4)
+    bg:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", -4, 4)
+    bg:SetHorizTile(false)
+    bg:SetVertTile(false)
+    killBanner.ParchmentBg = bg
 
     -- Thin 2px gold accent border along top edge (#FFD100 / #D4A359) for ElvUI Theme
     local topAccent = killBanner:CreateTexture(nil, "OVERLAY")
