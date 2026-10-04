@@ -21,14 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `Enable Whisper Auto-Invite`: [Default: On] — Automatically invites allies whispering `'invite'` or `'rally'` during defense alerts.
   - Added dedicated slash command controls (`/kb chat`, `/kb guild`, `/kb coords`, `/kb autoinvite`, `/kb testchat`).
 - **Authentic Classic Death Toast Banner Scale & Typography Calibration (`Addon/WoWKillboard/UI.lua`)**:
-  - Scaled up the in-game death toast banner to Blizzard standard proportions: **540px wide × 96px high** with generous internal padding (12px vertical, 18px horizontal).
-  - **42px × 42px Icon Matrix:** Scaled Faction crest (Alliance Lion / Horde Crest) and Class/Threat icons to high-visibility 42×42 dimensions with subtle gold and crimson threat rings.
+  - Scaled up the in-game death toast banner to Blizzard standard proportions: **580px wide × 96px high** with generous internal padding (12px vertical, 18px horizontal).
+  - **Fixed Text Truncation:** Removed rigid `:SetWidth(105)` width clamps and ellipsis limits on victim and killer font strings, allowing combatant names (e.g. `[23] Dagariane` and `[15] Defias Pillager`) and guild/spell sub-texts to render cleanly and completely.
+  - **Removed Square Faction Box:** Eliminated the square `SetBackdrop` frame around the Alliance Lion and Horde Crest icons, rendering a clean circular medallion asset sized at **44×44** to match the visual height and weight of the adjacent class icon.
+  - **Normalized Icon Framing:** Unified border styling across both victim and killer frames with identical 1px border thickness, 1px insets, and 42×42 internal textures, harmonizing the killer's crimson border with the victim's class frame geometry.
+  - **Optimized Vertical Padding & Centering:** Added 4px top margin to the `WOWKB COMBAT TELEMETRY` header (anchor adjusted to `TOP, 0, -16`), and lifted the bottom location string (`Westfall • Sentinel Hill`) to `BOTTOM, 0, 22`, cleanly aligning its baseline with the bottom margin of the icon frames.
+  - **Default Test Calibration:** Calibrated `/kb test` preview scenario to simulate level 23 Dagariane (`<Forged By Valor>`) fallen to level 15 Defias Pillager (`with Fireball`) in `Westfall • Sentinel Hill`.
   - **32px × 32px Death Separator:** Centered prominent crisp white death skull icon (`UI-RaidTargetingIcon_8`).
   - **High-Definition Typography & Shadows:**
-    - Top Header: Bumped `WOWKB COMBAT TELEMETRY` to 12pt Blizzard Gold (`#FFD100`), uppercase centered with drop shadow.
-    - Combatant Names: Bumped `[60] Dagariane` and `[60] Pyromaster` to 16pt Bold with crisp `(2, -2)` black drop shadows.
-    - Sub-text: Bumped `<GuildName>` and `with <Spell>` to 12pt regular in soft muted silver (`#C0C0C0`).
-    - Bottom Location: Bumped `Stormwind City • Dwarven District` to 11pt amber/parchment silver (`#D4A359` / `#CCCCCC`).
+    - Top Header: Bumped `WOWKB COMBAT TELEMETRY` to 12pt Blizzard Gold (`#FFD100`), uppercase centered with drop shadow and 4px top clearance.
+    - Combatant Names: Bumped `[23] Dagariane` and `[15] Defias Pillager` to 16pt Bold with crisp `(2, -2)` black drop shadows.
+    - Sub-text: Rendered `<Forged By Valor>` and `with Fireball` in 12pt regular muted silver (`#C0C0C0`).
+    - Bottom Location: Lifted `Westfall • Sentinel Hill` to 11pt amber/parchment silver (`#D4A359` / `#CCCCCC`).
   - **HUD Floating Text Elimination:** Completely removed floating screen Raid Warnings (`UI:ShowRaidNotice`) from the combat toast flow, confining 100% of telemetry data cleanly inside the framed metallic toast.
 - **Dynamic Kill & Death Toast Alerts with Combat Flavor Phrases (`Addon/WoWKillboard/UI.lua`, `CombatTracker.lua`, `Killmail.lua`, `Sync.lua`)**:
   - Implemented on-screen death and kill toast banner notifications styled after Classic Hardcore and Deathlog announcements.
