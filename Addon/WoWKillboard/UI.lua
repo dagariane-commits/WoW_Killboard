@@ -7084,13 +7084,19 @@ local function GetKillingBlowText(killmail)
             spell = "Melee"
         end
     end
+
     -- High-contrast fatal blow highlight: Gold (#FFC107) or Arcane Cyan (#71D5FF)
     local spellColor = "ffc107"
     local sLower = spell:lower()
     if sLower:find("frost") or sLower:find("ice") or sLower:find("arcane") or sLower:find("water") or sLower:find("cyan") then
         spellColor = "71d5ff"
     end
-    return string.format("slain by |cff%s%s|r", spellColor, spell)
+
+    if spell == "Melee" then
+        return string.format("killed with |cff%sMelee Strike|r", spellColor)
+    else
+        return string.format("killed with |cff%s%s|r", spellColor, spell)
+    end
 end
 
 local function GetKillerSubtitle(killmail, isNpc)
@@ -7253,34 +7259,34 @@ function UI:InitializeKillBanner()
     headerText:SetShadowOffset(1, -1)
     headerText:SetShadowColor(0, 0, 0, 1.0)
 
-    -- Left Side: Victim (Outer Faction Crest + Inner Class Icon)
-    local factionIcon = Content:CreateTexture(nil, "ARTWORK")
-    factionIcon:SetSize(36, 36)
-    factionIcon:SetPoint("LEFT", Content, "LEFT", 14, -4)
-    factionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
+    -- Left Side: Killer / Victor (Outer Faction Crest + Inner Class/Spell Icon)
+    local killerFactionIcon = Content:CreateTexture(nil, "ARTWORK")
+    killerFactionIcon:SetSize(36, 36)
+    killerFactionIcon:SetPoint("LEFT", Content, "LEFT", 14, -4)
+    killerFactionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
 
-    local victimIcon = Content:CreateTexture(nil, "ARTWORK")
-    victimIcon:SetSize(36, 36)
-    victimIcon:SetPoint("LEFT", factionIcon, "RIGHT", 8, 0)
-    victimIcon:SetTexture("Interface\\Icons\\Spell_Holy_RighteousFury")
+    local killerIcon = Content:CreateTexture(nil, "ARTWORK")
+    killerIcon:SetSize(36, 36)
+    killerIcon:SetPoint("LEFT", killerFactionIcon, "RIGHT", 8, 0)
+    killerIcon:SetTexture("Interface\\Icons\\Spell_Holy_RighteousFury")
 
-    local victimName = Content:CreateFontString(nil, "OVERLAY", "GameFontHighlightMedium")
-    victimName:SetPoint("TOPLEFT", victimIcon, "TOPRIGHT", 10, -2)
-    victimName:SetTextColor(0.96, 0.55, 0.73, 1) -- Paladin Pink
-    victimName:SetText("[23] Dagariane")
-    victimName:SetJustifyH("LEFT")
-    victimName:SetShadowOffset(1, -1)
-    victimName:SetShadowColor(0, 0, 0, 1.0)
+    local killerName = Content:CreateFontString(nil, "OVERLAY", "GameFontHighlightMedium")
+    killerName:SetPoint("TOPLEFT", killerIcon, "TOPRIGHT", 10, -2)
+    killerName:SetTextColor(0.96, 0.55, 0.73, 1) -- Paladin Pink
+    killerName:SetText("[24] Dagariane")
+    killerName:SetJustifyH("LEFT")
+    killerName:SetShadowOffset(1, -1)
+    killerName:SetShadowColor(0, 0, 0, 1.0)
 
-    local victimGuild = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    victimGuild:SetPoint("BOTTOMLEFT", victimIcon, "BOTTOMRIGHT", 10, 2)
-    victimGuild:SetTextColor(0.65, 0.65, 0.65, 1)
-    victimGuild:SetText("")
-    victimGuild:SetJustifyH("LEFT")
-    victimGuild:SetShadowOffset(1, -1)
-    victimGuild:SetShadowColor(0, 0, 0, 1.0)
+    local killerSub = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    killerSub:SetPoint("BOTTOMLEFT", killerIcon, "BOTTOMRIGHT", 10, 2)
+    killerSub:SetTextColor(0.65, 0.65, 0.65, 1)
+    killerSub:SetText("<Forged By Valor>")
+    killerSub:SetJustifyH("LEFT")
+    killerSub:SetShadowOffset(1, -1)
+    killerSub:SetShadowColor(0, 0, 0, 1.0)
 
-    -- Center: Death Action
+    -- Center: Incident Action (Directional: Killer killed Victim)
     local skullIcon = Content:CreateTexture(nil, "ARTWORK")
     skullIcon:SetSize(22, 22)
     skullIcon:SetPoint("CENTER", Content, "CENTER", 0, -2)
@@ -7289,36 +7295,36 @@ function UI:InitializeKillBanner()
 
     local actionText = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     actionText:SetPoint("TOP", skullIcon, "BOTTOM", 0, -2)
-    actionText:SetText("slain by |cffffc107Fireball|r")
+    actionText:SetText("killed with |cffffc107Judgement|r")
     actionText:SetShadowOffset(1, -1)
     actionText:SetShadowColor(0, 0, 0, 1.0)
 
-    -- Right Side: Killer (Bilateral Mirror with Left Side: Outer Crest/Insignia + Inner Class/Spell Icon)
-    local killerFactionIcon = Content:CreateTexture(nil, "ARTWORK")
-    killerFactionIcon:SetSize(36, 36)
-    killerFactionIcon:SetPoint("RIGHT", Content, "RIGHT", -14, -4)
-    killerFactionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga")
+    -- Right Side: Victim / Casualty (Bilateral Mirror: Inner Class Icon + Outer Faction Crest)
+    local factionIcon = Content:CreateTexture(nil, "ARTWORK")
+    factionIcon:SetSize(36, 36)
+    factionIcon:SetPoint("RIGHT", Content, "RIGHT", -14, -4)
+    factionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga")
 
-    local killerIcon = Content:CreateTexture(nil, "ARTWORK")
-    killerIcon:SetSize(36, 36)
-    killerIcon:SetPoint("RIGHT", killerFactionIcon, "LEFT", -8, 0)
-    killerIcon:SetTexture("Interface\\Icons\\Ability_Creature_Poison_02")
+    local victimIcon = Content:CreateTexture(nil, "ARTWORK")
+    victimIcon:SetSize(36, 36)
+    victimIcon:SetPoint("RIGHT", factionIcon, "LEFT", -8, 0)
+    victimIcon:SetTexture("Interface\\Icons\\Ability_Backstab")
 
-    local killerName = Content:CreateFontString(nil, "OVERLAY", "GameFontHighlightMedium")
-    killerName:SetPoint("TOPRIGHT", killerIcon, "TOPLEFT", -10, -2)
-    killerName:SetTextColor(1, 0.25, 0.25, 1) -- Red
-    killerName:SetText("[15] Defias Pillager")
-    killerName:SetJustifyH("RIGHT")
-    killerName:SetShadowOffset(1, -1)
-    killerName:SetShadowColor(0, 0, 0, 1.0)
+    local victimName = Content:CreateFontString(nil, "OVERLAY", "GameFontHighlightMedium")
+    victimName:SetPoint("TOPRIGHT", victimIcon, "TOPLEFT", -10, -2)
+    victimName:SetTextColor(1, 0.25, 0.25, 1) -- Red
+    victimName:SetText("[25] Shadowstalker")
+    victimName:SetJustifyH("RIGHT")
+    victimName:SetShadowOffset(1, -1)
+    victimName:SetShadowColor(0, 0, 0, 1.0)
 
-    local killerSub = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    killerSub:SetPoint("BOTTOMRIGHT", killerIcon, "BOTTOMLEFT", -10, 2)
-    killerSub:SetTextColor(0.65, 0.65, 0.65, 1)
-    killerSub:SetText("Humanoid / Elite")
-    killerSub:SetJustifyH("RIGHT")
-    killerSub:SetShadowOffset(1, -1)
-    killerSub:SetShadowColor(0, 0, 0, 1.0)
+    local victimGuild = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    victimGuild:SetPoint("BOTTOMRIGHT", victimIcon, "BOTTOMLEFT", -10, 2)
+    victimGuild:SetTextColor(0.65, 0.65, 0.65, 1)
+    victimGuild:SetText("<Grim Syndicate>")
+    victimGuild:SetJustifyH("RIGHT")
+    victimGuild:SetShadowOffset(1, -1)
+    victimGuild:SetShadowColor(0, 0, 0, 1.0)
 
     -- Store references on Toast
     Toast.ClassicSkin = ClassicSkin
@@ -7329,36 +7335,51 @@ function UI:InitializeKillBanner()
     Toast.Content = Content
 
     Toast.headerText = headerText
-    Toast.factionIcon = factionIcon
-    Toast.victimIcon = victimIcon
-    Toast.victimName = victimName
-    Toast.victimGuild = victimGuild
-    Toast.skullIcon = skullIcon
-    Toast.actionText = actionText
     Toast.killerFactionIcon = killerFactionIcon
     Toast.killerIcon = killerIcon
     Toast.killerName = killerName
     Toast.killerSub = killerSub
+    Toast.skullIcon = skullIcon
+    Toast.actionText = actionText
+    Toast.victimIcon = victimIcon
+    Toast.victimName = victimName
+    Toast.victimGuild = victimGuild
+    Toast.factionIcon = factionIcon
 
     -- Backwards-compatible aliases for ShowKillBanner and external callers
     Toast.CenterHeader = headerText
     Toast.CenterAction = headerText
-    Toast.VictimCrest = factionIcon
-    Toast.VictimIcon = victimIcon
-    Toast.VictimNameText = victimName
-    Toast.VictimSubText = victimGuild
-    Toast.VictimText = victimName
+    Toast.KillerFactionIcon = killerFactionIcon
+    Toast.killerFactionIcon = killerFactionIcon
+    Toast.KillerCrest = killerFactionIcon
+    Toast.killerCrest = killerFactionIcon
+    Toast.KillerIcon = killerIcon
+    Toast.killerIcon = killerIcon
+    Toast.KillerNameText = killerName
+    Toast.killerName = killerName
+    Toast.KillerSubText = killerSub
+    Toast.killerSub = killerSub
+    Toast.KillerText = killerName
+
     Toast.CenterIcon = skullIcon
+    Toast.skullIcon = skullIcon
     Toast.ActionText = actionText
+    Toast.actionText = actionText
     Toast.LocText = actionText
     Toast.ModeTag = actionText
-    Toast.KillerFactionIcon = killerFactionIcon
-    Toast.killerCrest = killerFactionIcon
-    Toast.KillerCrest = killerFactionIcon
-    Toast.KillerIcon = killerIcon
-    Toast.KillerNameText = killerName
-    Toast.KillerSubText = killerSub
-    Toast.KillerText = killerName
+
+    Toast.VictimCrest = factionIcon
+    Toast.victimCrest = factionIcon
+    Toast.VictimFactionIcon = factionIcon
+    Toast.victimFactionIcon = factionIcon
+    Toast.factionIcon = factionIcon
+    Toast.VictimIcon = victimIcon
+    Toast.victimIcon = victimIcon
+    Toast.VictimNameText = victimName
+    Toast.victimName = victimName
+    Toast.VictimSubText = victimGuild
+    Toast.victimGuild = victimGuild
+    Toast.VictimText = victimName
 
     killBanner = Toast
     UI.KillBanner = Toast
@@ -7416,90 +7437,15 @@ function UI:ShowKillBanner(killmail, isTest)
         if not banner then return end
 
         local isNpc = (killmail.npc ~= nil) or (killmail.killer and killmail.killer.faction == "Monster") or (killmail.isPveDeath == true)
+        local isPvp = (not isNpc and not killmail.isPveDeath and killmail.killer and killmail.killer.faction ~= "Monster")
 
-        -- 1. Populate Left Section (Victim Identity)
-        local vCrestTex, vCrestCoords = GetFactionCrestInfo(killmail.victim.faction, killmail.victim.class)
-        banner.VictimCrest:SetTexture(vCrestTex)
-        banner.VictimCrest:SetTexCoord(vCrestCoords[1], vCrestCoords[2], vCrestCoords[3], vCrestCoords[4])
-
-        local vClass = (killmail.victim.class or ""):upper()
-        local vCoords = CLASS_COORDS[vClass] or {0, 0.25, 0, 0.25}
-        banner.VictimIcon:SetTexture(CLASS_ICON_TEXTURE)
-        banner.VictimIcon:SetTexCoord(vCoords[1], vCoords[2], vCoords[3], vCoords[4])
-
-        local vLevelStr = (killmail.victim.level and killmail.victim.level > 0) and tostring(killmail.victim.level) or "??"
-        local vName = killmail.victim.name or "Unknown"
-
-        local isFriendlyVictim = (killmail.victim and (killmail.victim.name == myName or (killmail.victim.faction and killmail.victim.faction == pFaction and killmail.victim.faction ~= "Monster")))
-        if isFriendlyVictim then
-            banner.VictimNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", vLevelStr, vName), killmail.victim.class))
-        else
-            banner.VictimNameText:SetTextColor(1, 0.25, 0.25, 1)
-            banner.VictimNameText:SetText(string.format("[%s] %s", vLevelStr, vName))
-        end
-
-        local theme = UI:GetTheme()
-        local isClassic = (theme.id == "classic")
-
-        -- Dynamic TopAccent Faction Coloring in ElvUI mode
-        if banner.TopAccent and not isClassic then
-            local accentFaction = (killmail.killer and killmail.killer.name == myName and pFaction)
-                or (killmail.victim and killmail.victim.name == myName and pFaction)
-                or (killmail.victim and killmail.victim.faction)
-                or pFaction
-
-            if accentFaction == "Alliance" then
-                banner.TopAccent:SetColorTexture(0.0, 0.47, 1.0, 1.0) -- #0078FF Alliance Blue
-            elseif accentFaction == "Horde" then
-                banner.TopAccent:SetColorTexture(0.77, 0.12, 0.23, 1.0) -- #C41E3A Horde Red
-            else
-                banner.TopAccent:SetColorTexture(1.0, 0.757, 0.027, 1.0) -- #FFC107 Amber Gold
-            end
-        end
-
-        local vGuild = killmail.victim.guild
-        if vGuild and vGuild ~= "" and vGuild ~= "None" then
-            banner.VictimSubText:SetText(string.format("<%s>", vGuild))
-        else
-            banner.VictimSubText:SetText("")
-        end
-
-        -- 2. Populate Center Section (Directional Death Action Block)
-        banner.CenterHeader:SetText(GetEventHeaderText(killmail, isNpc))
-        banner.CenterIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
-        banner.CenterIcon:SetTexCoord(0, 1, 0, 1)
-        banner.CenterIcon:SetVertexColor(1, 0.15, 0.15, 1)
-        if banner.CenterIconShadow then
-            banner.CenterIconShadow:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
-            banner.CenterIconShadow:SetTexCoord(0, 1, 0, 1)
-            banner.CenterIconShadow:SetVertexColor(0.60, 0.05, 0.05, 0.65)
-            banner.CenterIconShadow:Show()
-        end
-        banner.ActionText:SetText(GetKillingBlowText(killmail))
-
-        -- 3. Populate Right Section (The Victor / Threat - Bilateral Mirror)
-        local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
-        local kName = killmail.killer.name or "Threat"
-
-        local isFriendlyKiller = (killmail.killer and (killmail.killer.name == myName or (killmail.killer.faction and killmail.killer.faction == pFaction and killmail.killer.faction ~= "Monster")))
-
-        if isFriendlyKiller then
-            banner.KillerNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", kLevelStr, kName), killmail.killer.class))
-        else
-            banner.KillerNameText:SetTextColor(1, 0.25, 0.25, 1)
-            banner.KillerNameText:SetText(string.format("[%s] %s", kLevelStr, kName))
-        end
-
-        banner.KillerSubText:SetText(GetKillerSubtitle(killmail, isNpc))
-
-        -- Outer Killer Faction / Insignia Crest
+        -- 1. Populate Left Section (Killer / Victor Identity)
         local kCrestTex, kCrestCoords = GetKillerFactionCrestInfo(killmail, isNpc)
         if banner.KillerFactionIcon then
             banner.KillerFactionIcon:SetTexture(kCrestTex)
             banner.KillerFactionIcon:SetTexCoord(kCrestCoords[1], kCrestCoords[2], kCrestCoords[3], kCrestCoords[4])
         end
 
-        -- Inner Killer Class / Spell Icon
         if isNpc then
             local spell = killmail.finalSpell or (killmail.killer and killmail.killer.spell) or ""
             local spellTex = nil
@@ -7531,6 +7477,98 @@ function UI:ShowKillBanner(killmail, isTest)
             local kCoords = CLASS_COORDS[kClass] or {0, 0.25, 0, 0.25}
             banner.KillerIcon:SetTexture(CLASS_ICON_TEXTURE)
             banner.KillerIcon:SetTexCoord(kCoords[1], kCoords[2], kCoords[3], kCoords[4])
+        end
+
+        local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
+        local kName = killmail.killer.name or "Threat"
+        local isFriendlyKiller = (killmail.killer and (killmail.killer.name == myName or (killmail.killer.faction and killmail.killer.faction == pFaction and killmail.killer.faction ~= "Monster")))
+
+        if isFriendlyKiller then
+            banner.KillerNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", kLevelStr, kName), killmail.killer.class))
+        else
+            banner.KillerNameText:SetTextColor(1, 0.25, 0.25, 1)
+            banner.KillerNameText:SetText(string.format("[%s] %s", kLevelStr, kName))
+        end
+
+        banner.KillerSubText:SetText(GetKillerSubtitle(killmail, isNpc))
+
+        -- 2. Populate Center Section (Directional Incident Action Block)
+        banner.CenterHeader:SetText(GetEventHeaderText(killmail, isNpc))
+        banner.CenterIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
+        banner.CenterIcon:SetTexCoord(0, 1, 0, 1)
+        banner.CenterIcon:SetVertexColor(1, 0.15, 0.15, 1)
+        if banner.CenterIconShadow then
+            banner.CenterIconShadow:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
+            banner.CenterIconShadow:SetTexCoord(0, 1, 0, 1)
+            banner.CenterIconShadow:SetVertexColor(0.60, 0.05, 0.05, 0.65)
+            banner.CenterIconShadow:Show()
+        end
+        banner.ActionText:SetText(GetKillingBlowText(killmail))
+
+        -- 3. Populate Right Section (Victim / Casualty Identity)
+        local vCrestTex, vCrestCoords = GetFactionCrestInfo(killmail.victim.faction, killmail.victim.class)
+        banner.VictimCrest:SetTexture(vCrestTex)
+        banner.VictimCrest:SetTexCoord(vCrestCoords[1], vCrestCoords[2], vCrestCoords[3], vCrestCoords[4])
+
+        local vClass = (killmail.victim.class or ""):upper()
+        local vCoords = CLASS_COORDS[vClass] or {0, 0.25, 0, 0.25}
+        banner.VictimIcon:SetTexture(CLASS_ICON_TEXTURE)
+        banner.VictimIcon:SetTexCoord(vCoords[1], vCoords[2], vCoords[3], vCoords[4])
+
+        local vLevelStr = (killmail.victim.level and killmail.victim.level > 0) and tostring(killmail.victim.level) or "??"
+        local vName = killmail.victim.name or "Unknown"
+
+        local isFriendlyVictim = (killmail.victim and (killmail.victim.name == myName or (killmail.victim.faction and killmail.victim.faction == pFaction and killmail.victim.faction ~= "Monster")))
+        if isFriendlyVictim then
+            banner.VictimNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", vLevelStr, vName), killmail.victim.class))
+        else
+            banner.VictimNameText:SetTextColor(1, 0.25, 0.25, 1)
+            banner.VictimNameText:SetText(string.format("[%s] %s", vLevelStr, vName))
+        end
+
+        local vGuild = killmail.victim.guild
+        if vGuild and vGuild ~= "" and vGuild ~= "None" then
+            banner.VictimSubText:SetText(string.format("<%s>", vGuild))
+        else
+            banner.VictimSubText:SetText("")
+        end
+
+        -- 4. Dynamic Winning Faction Border & Accent Coloring (PvP: Blue for Alliance Win, Red for Horde Win)
+        local winningFaction = (killmail.killer and killmail.killer.faction) or ""
+        if (winningFaction == "" or winningFaction == "Unknown") and killmail.killer and killmail.killer.name == myName then
+            winningFaction = pFaction
+        end
+
+        if isPvp and winningFaction == "Alliance" then
+            -- Alliance Victor: Alliance Blue Border (#0078FF)
+            if banner.ClassicSkin then
+                banner.ClassicSkin:SetBackdropBorderColor(0.0, 0.47, 1.0, 1.0)
+                if banner.classicTopAccent then banner.classicTopAccent:SetColorTexture(0.0, 0.47, 1.0, 1.0) end
+            end
+            if banner.ElvSkin then
+                banner.ElvSkin:SetBackdropBorderColor(0.0, 0.47, 1.0, 1.0)
+                if banner.elvTopAccent then banner.elvTopAccent:SetColorTexture(0.0, 0.47, 1.0, 1.0) end
+            end
+        elseif isPvp and winningFaction == "Horde" then
+            -- Horde Victor: Horde Crimson Red Border (#C41E3A / #DC2626)
+            if banner.ClassicSkin then
+                banner.ClassicSkin:SetBackdropBorderColor(0.85, 0.15, 0.15, 1.0)
+                if banner.classicTopAccent then banner.classicTopAccent:SetColorTexture(0.85, 0.15, 0.15, 1.0) end
+            end
+            if banner.ElvSkin then
+                banner.ElvSkin:SetBackdropBorderColor(0.85, 0.15, 0.15, 1.0)
+                if banner.elvTopAccent then banner.elvTopAccent:SetColorTexture(0.85, 0.15, 0.15, 1.0) end
+            end
+        else
+            -- PvE / Non-PvP: Neutral / Classic Aesthetics
+            if banner.ClassicSkin then
+                banner.ClassicSkin:SetBackdropBorderColor(0.78, 0.61, 0.23, 1.0) -- Classic Burnished Gold
+                if banner.classicTopAccent then banner.classicTopAccent:SetColorTexture(1.0, 0.82, 0.0, 1.0) end
+            end
+            if banner.ElvSkin then
+                banner.ElvSkin:SetBackdropBorderColor(0.18, 0.20, 0.23, 1.0) -- Subtle Slate
+                if banner.elvTopAccent then banner.elvTopAccent:SetColorTexture(1.0, 0.757, 0.027, 1.0) end -- Amber Gold
+            end
         end
 
         banner:SetAlpha(1.0)
@@ -7578,13 +7616,17 @@ function UI:ToggleBannerLock(explicitState)
         UI:ApplyBannerTheme()
         local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
 
-        banner.VictimCrest:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
-        banner.VictimCrest:SetTexCoord(0, 1, 0, 1)
-        banner.VictimIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
-        banner.VictimIcon:SetTexCoord(0, 1, 0, 1)
-        banner.VictimNameText:SetText("|cff00ff00[60] Drag Anchor|r")
-        banner.VictimSubText:SetText("|cffb5bac1<Hold Left-Click>|r")
+        -- Left: Drag Anchor (Killer position)
+        if banner.KillerFactionIcon then
+            banner.KillerFactionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
+            banner.KillerFactionIcon:SetTexCoord(0, 1, 0, 1)
+        end
+        banner.KillerIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
+        banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
+        banner.KillerNameText:SetText("|cff00ff00[60] Drag Anchor|r")
+        banner.KillerSubText:SetText("|cffb5bac1<Hold Left-Click>|r")
 
+        -- Center: Reposition Telemetry
         banner.CenterHeader:SetText(string.format("|cffffd100REPOSITION ANCHOR  •  %s (%d, %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -135))
         banner.CenterIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
         banner.CenterIcon:SetTexCoord(0, 1, 0, 1)
@@ -7597,14 +7639,13 @@ function UI:ToggleBannerLock(explicitState)
         end
         banner.ActionText:SetText("|cffe0e0e0drag to|r |cffffb300Move|r")
 
-        banner.KillerNameText:SetText("|cffff3838[60] Reposition|r")
-        banner.KillerSubText:SetText("|cffd6d1c4Anchor / Move|r")
-        banner.KillerIcon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
-        banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
-        if banner.KillerFactionIcon then
-            banner.KillerFactionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga")
-            banner.KillerFactionIcon:SetTexCoord(0, 1, 0, 1)
-        end
+        -- Right: Reposition Info (Victim position)
+        banner.VictimNameText:SetText("|cffff3838[60] Reposition|r")
+        banner.VictimSubText:SetText("|cffd6d1c4Anchor / Move|r")
+        banner.VictimIcon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
+        banner.VictimIcon:SetTexCoord(0, 1, 0, 1)
+        banner.VictimCrest:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga")
+        banner.VictimCrest:SetTexCoord(0, 1, 0, 1)
 
         banner:SetAlpha(1.0)
         banner:Show()
@@ -7615,7 +7656,6 @@ function UI:ToggleBannerLock(explicitState)
         banner:RegisterForDrag()  -- Unregister drag listeners
         banner:Hide()
         local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
-        SafePrint(string.format("|cff00ccff[WoWKB Alert]|r Alert Anchor locked at %s (X: %d, Y: %d). Saved across reloads!", pos.point or "TOP", pos.x or 0, pos.y or -135))
     end
 
     if UI.AlertsDialog and UI.AlertsDialog.UpdateControls then
@@ -7749,7 +7789,7 @@ function UI:TestKillBanner(mode)
                 y = 57.4,
             },
         }
-        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffffd100PvP Victory|r: |cff38bdf8%s|r killed |cffff5555%s|r in Hillsbrad Foothills! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", myName, enemyName))
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cff38bdf8Alliance Victory|r: |cff38bdf8%s|r killed |cffff5555%s|r (|cff0078ffAlliance Blue Border|r)! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", myName, enemyName))
 
     elseif selectedScenario == "pvp_death" then
         local enemySpell = (enemyClass == "MAGE" and "Pyroblast") or
@@ -7791,7 +7831,7 @@ function UI:TestKillBanner(mode)
                 y = 57.4,
             },
         }
-        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff3838PvP Casualty|r: |cffff5555%s|r killed |cff38bdf8%s|r in Hillsbrad Foothills! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", enemyName, myName))
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff3838Horde Victory|r: |cffff5555%s|r killed |cff38bdf8%s|r (|cffff3838Horde Red Border|r)! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", enemyName, myName))
 
     else -- "pve"
         testKM = {
@@ -7833,7 +7873,7 @@ function UI:TestKillBanner(mode)
                 y = 58.3,
             },
         }
-        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff9900PvE Casualty|r: Defias Pillager executed |cff38bdf8%s|r in Westfall! (|cffffd100/kb test [kill|death|pve]|r)", myName))
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff9900PvE Casualty|r: Defias Pillager killed |cff38bdf8%s|r (|cffffd100Classic Gold Border|r)! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", myName))
     end
 
     UI:ShowKillBanner(testKM, true)
