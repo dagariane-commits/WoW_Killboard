@@ -12,15 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented dual-theme rendering for the in-game combat toast banner: authentic **WoW Classic "Forever"** and modern **ElvUI Minimalist**.
   - Calibrated dimensions to **580px × 84px** with balanced vertical margins and centered 40px icon alignments.
   - **Authentic Blizzard Frame Assets & Texture Refinements:**
-    - **Header Plaque Removal:** Eliminated the floating external header ribbon plaque, anchoring `WOWKB COMBAT TELEMETRY` cleanly inside the frame at `TOP, 0, -6` from the upper inside edge.
-    - **Dark Marble Textured Backdrop:** Applied authentic Blizzard textured stone backdrop (`Interface\DialogFrame\UI-DialogBox-Background`) with a rich dark marble tint at 0.85 alpha (`#332E26` RGB `0.20, 0.18, 0.15`), replacing flat black fills.
-    - **Flush Corner Insets & Zero Bleed:** Calibrated frame insets to `4, 4, 4, 4` and regenerated `corner_bracket.tga` with 100% transparent antialiased alpha, ensuring corner brackets anchor flush at `(0, 0)` without grey strips bleeding behind them.
-    - **Elevated Location Baseline:** Lifted `Westfall • Sentinel Hill` by 4px (`locText` anchored at `TOP, centerIcon, "BOTTOM", 0, 0`), ensuring 21px clearance from the bottom edge so it never touches the border.
+    - **Authentic Warm Parchment Backdrop:** Completely replaced modern flat black fill with Blizzard's authentic parchment texture (`Interface\QuestFrame\QuestBG`) at 100% opacity (`SetBackdropColor(1.0, 1.0, 1.0, 1.0)`), matching the warm antique vellum scrolls of the Quest Log and Spellbook.
+    - **Classic Chiseled Dialog Border:** Replaced 1px modern borders and external corner tabs with Blizzard's standard metallic beveled dialog edge (`Interface\DialogFrame\UI-DialogBox-Border`, `edgeSize = 16`, `insets = { left = 4, right = 4, top = 4, bottom = 4 }`).
+    - **Dark Leather/Wood Header Ribbon Strip:** Mounted an inset dark header ribbon strip (`0.11, 0.08, 0.05, 0.95`) with an antique bronze/gold divider line along the top of the toast, housing the `WOWKB COMBAT TELEMETRY` header in Blizzard Gold (`#FFD100`).
+    - **Inverted High-Contrast Quest Typography:** Configured standard Blizzard quest body text color (`#382A1D` dark charcoal / quest brown) with soft shadows (`(1, -1)` alpha 0.4) for subtext (`<Forged By Valor>`, `with Fireball`) and zone locations (`Westfall • Sentinel Hill`), ensuring crisp legibility against light parchment.
+    - **Deep Crimson Threat Text:** Rendered threat names in deep crimson hostile red (`#C41E3A`) with `(2, -2)` black drop shadow.
     - **Medallion Gold Bevel Ring:** Framed high-res circular Alliance/Horde crests in raised gold medallion rings (`medallion_border.tga`).
     - **Metallic Class Button Border:** Wrapped combatant class icons with Blizzard beveled button borders (`Interface\Buttons\UI-Quickslot2`).
     - **Hostile Red Debuff Border:** Wrapped threat/killer icons with standard red debuff borders (`Interface\Buttons\UI-Debuff-Border`).
-    - **Death Skull Separator:** Swapped raid target marker for authentic Blizzard targeting skull (`Interface\TargetingFrame\UI-TargetingFrame-Skull`) in Classic mode.
-    - **Parchment Typography:** Switched subtext to soft parchment silver (`#E0D8C3`) and location text to warm parchment amber (`#E6C387`).
+    - **Death Skull Separator:** Anchored Blizzard targeting skull (`Interface\TargetingFrame\UI-TargetingFrame-Skull`) between combatants at `CENTER, 0, -3` with 6px+ bottom frame clearance for the location text.
   - **Dynamic Theme Synchronization:** Fully integrated with `UI:ApplyBannerTheme()`, `/kb theme`, the settings modal toggle, and `/wowkb move` anchor drag mode.
 - **Standardized Military/Tactical Chat Telemetry (`Addon/WoWKillboard/Reinforcements.lua`, `Killmail.lua`, `IntelScanner.lua`, `Config.lua`, `Core.lua`, `UI.lua`)**:
   - Stripped all melodramatic roleplay phrasing (`"WAR HORN Sounded"`, `"Vanguard under attack"`, `"To arms!"`, `"to muster"`, `"Blood and Honor!"`, and redundant `"1 hostile(s) (Enemy Hostiles)"`).
