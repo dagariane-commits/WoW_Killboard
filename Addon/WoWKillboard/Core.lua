@@ -369,8 +369,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         end
     elseif cmd == "test" then
         if KB.UI and KB.UI.TestKillBanner then
-            KB.UI:TestKillBanner()
-            SafePrint("|cff00ff00[WoWKB]|r Frontline Kill Banner test preview triggered!")
+            KB.UI:TestKillBanner(arg)
         end
     elseif cmd == "testchat" or cmd == "testbroadcast" then
         local pName = UnitName("player") or "Dagariane"
@@ -690,10 +689,13 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             KB.Killmail:RecordKill(testDeath)
         end
 
+        if KB.UI and KB.UI.ShowKillBanner then
+            KB.UI:ShowKillBanner(testDeath, true)
+        end
         if KB.UI and KB.UI.ShowDeathBountyPrompt then
             KB.UI:ShowDeathBountyPrompt(testDeath.killer)
         end
-        SafePrint(string.format("|cffff3333[WoWKB]|r Simulated PvP death against |cffffd100%s|r! Death bounty prompt engaged.", enemyName))
+        SafePrint(string.format("|cffff3333[WoWKB]|r Simulated PvP death against |cffffd100%s|r! Death alert and bounty prompt engaged.", enemyName))
     elseif cmd == "radar" or cmd == "hud" then
         if KB.UI and KB.UI.ToggleRadarHUD then
             KB.UI:ToggleRadarHUD()
@@ -727,13 +729,17 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         elseif tArg == "all" or tArg == "realm" or tArg == "hardcore" then
             WoWKillboardSettings.alertScope = "ALL"
             SafePrint("|cff00ff00[WoWKB]|r Toast scope set to |cffffd100Entire Realm|r (Hardcore broadcast mode: alerts for all realm kills).")
-        elseif tArg == "test" then
+        elseif tArg == "test" or tArg == "pvp" or tArg == "kill" then
             if KB.UI and KB.UI.TestKillBanner then
-                KB.UI:TestKillBanner(false)
+                KB.UI:TestKillBanner(tArg)
+            end
+        elseif tArg == "testdeath" or tArg == "death" then
+            if KB.UI and KB.UI.TestKillBanner then
+                KB.UI:TestKillBanner("death")
             end
         elseif tArg == "testpve" or tArg == "pve" then
             if KB.UI and KB.UI.TestKillBanner then
-                KB.UI:TestKillBanner(true)
+                KB.UI:TestKillBanner("pve")
             end
         else
             local curMode = WoWKillboardSettings.alertMode or "SOUND_AND_BANNER"
@@ -892,7 +898,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/kb claim <code>|r - Register web character ownership verification code")
         SafePrint("  |cffffd100/kb export|r - Open in-game combat export window")
         SafePrint("  |cffffd100/kb move|r - Unlock or lock Kill Banner to reposition on screen")
-        SafePrint("  |cffffd100/kb test|r - Preview Kill Alert Banner with sound and raid warning")
+        SafePrint("  |cffffd100/kb test [kill|death|pvp|pve]|r - Preview Kill Alert Banner (Dag killed X, X killed Dag, or PvE)")
         SafePrint("  |cffffd100/kb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
         SafePrint("  |cffffd100/kb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
         SafePrint("  |cffffd100/kb stress [N]|r - Stress test addon with N (default 25) simulated kills")
@@ -1166,8 +1172,8 @@ end
 
 SLASH_WOWKB_TEST1 = "/wowkbtest"
 SLASH_WOWKB_TEST2 = "/kbtest"
-SlashCmdList["WOWKB_TEST"] = function()
-    if KB.UI and KB.UI.TestKillBanner then KB.UI:TestKillBanner() end
+SlashCmdList["WOWKB_TEST"] = function(msg)
+    if KB.UI and KB.UI.TestKillBanner then KB.UI:TestKillBanner(msg) end
 end
 
 SLASH_WOWKB_ALERTS1 = "/wowkbalerts"

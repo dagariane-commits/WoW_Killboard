@@ -7490,10 +7490,15 @@ function UI:ShowKillBanner(killmail, isTest)
 
         -- Dynamic TopAccent Faction Coloring in ElvUI mode
         if banner.TopAccent and not isClassic then
+            local myFaction = (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
             local vFaction = killmail.victim and killmail.victim.faction
-            if vFaction == "Alliance" then
+            local accentFaction = (killmail.killer and killmail.killer.name == myName and myFaction)
+                or (killmail.victim and killmail.victim.name == myName and myFaction)
+                or vFaction or myFaction
+
+            if accentFaction == "Alliance" then
                 banner.TopAccent:SetColorTexture(0.0, 0.47, 1.0, 1.0) -- #0078FF Alliance Blue
-            elseif vFaction == "Horde" then
+            elseif accentFaction == "Horde" then
                 banner.TopAccent:SetColorTexture(0.77, 0.12, 0.23, 1.0) -- #C41E3A Horde Red
             else
                 banner.TopAccent:SetColorTexture(1.0, 0.757, 0.027, 1.0) -- #FFC107 Amber Gold
@@ -7522,7 +7527,17 @@ function UI:ShowKillBanner(killmail, isTest)
         -- 3. Populate Right Section (The Victor / Threat)
         local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
         local kName = killmail.killer.name or "Threat"
-        banner.KillerNameText:SetText(string.format("|cffff3838[%s] %s|r", kLevelStr, kName))
+
+        local pName = UnitName("player") or "Dagariane"
+        local pFaction = (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
+        local isFriendlyKiller = (killmail.killer and (killmail.killer.name == pName or (killmail.killer.faction and killmail.killer.faction == pFaction and killmail.killer.faction ~= "Monster")))
+
+        if isFriendlyKiller then
+            banner.KillerNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", kLevelStr, kName), killmail.killer.class))
+        else
+            banner.KillerNameText:SetText(string.format("|cffff3838[%s] %s|r", kLevelStr, kName))
+        end
+
         banner.KillerSubText:SetText(string.format("|cffd6d1c4%s|r", GetKillerSubtitle(killmail, isNpc)))
 
         if isNpc then
@@ -7533,6 +7548,24 @@ function UI:ShowKillBanner(killmail, isTest)
             local kCoords = CLASS_COORDS[kClass] or {0, 0.25, 0, 0.25}
             banner.KillerIcon:SetTexture(CLASS_ICON_TEXTURE)
             banner.KillerIcon:SetTexCoord(kCoords[1], kCoords[2], kCoords[3], kCoords[4])
+        end
+
+        if isClassic then
+            if banner.KillerDebuffBorder then
+                if isFriendlyKiller then
+                    banner.KillerDebuffBorder:SetVertexColor(1.0, 0.82, 0.0, 1.0) -- Golden victory trim
+                else
+                    banner.KillerDebuffBorder:SetVertexColor(1.0, 0.23, 0.19, 1.0) -- Crimson hostile threat
+                end
+            end
+        else
+            if banner.KillerIconFrame then
+                if isFriendlyKiller then
+                    banner.KillerIconFrame:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0) -- Golden victory outline
+                else
+                    banner.KillerIconFrame:SetBackdropBorderColor(1.0, 0.231, 0.188, 1.0) -- Crimson hostile outline
+                end
+            end
         end
 
         banner:SetAlpha(1.0)
@@ -7644,22 +7677,152 @@ function UI:ResetBannerPosition()
     end
 end
 
--- Fire Test Banner Preview
-function UI:TestKillBanner(isPveTest)
-    if isPveTest == nil then
-        isPveTest = true -- Default to Westfall • Sentinel Hill scenario for immediate calibration
-    end
+-- Fire Test Banner Preview (Supports: "kill", "death", "pve", "pvp", or automatic 3-stage cycle)
+function UI:TestKillBanner(mode)
     local myName = UnitName("player") or "Dagariane"
     if myName == "Unknown" or myName == "" then myName = "Dagariane" end
     local _, pClass = UnitClass("player")
     pClass = pClass or "PALADIN"
+    local pLevel = UnitLevel("player") or 23
     local pGuild = (GetGuildInfo and GetGuildInfo("player")) or "Forged By Valor"
     local pFaction = (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
 
-    local currentZone = "Westfall"
-    local currentSubZone = "Sentinel Hill"
+    local enemyFaction = (pFaction == "Alliance") and "Horde" or "Alliance"
+    local enemyClass = (enemyFaction == "Horde") and "ROGUE" or "WARRIOR"
+    local enemyName = (enemyFaction == "Horde") and "Shadowstalker" or "Dawnbreaker"
+    local enemyGuild = (enemyFaction == "Horde") and "Grim Syndicate" or "Silver Hand"
+    local enemyLevel = math.max(1, pLevel + 1)
+
+    if UnitExists("target") and UnitIsPlayer("target") then
+        local tName = UnitName("target")
+        if tName and KB.Utils.CanAccess(tName) and tName ~= "" then
+            enemyName = tName
+            local _, tClass = UnitClass("target")
+            if tClass then enemyClass = tClass end
+            local tGuild = GetGuildInfo("target")
+            if tGuild and tGuild ~= "" then enemyGuild = tGuild end
+            local tFaction = UnitFactionGroup("target")
+            if tFaction then enemyFaction = tFaction end
+            local tLevel = UnitLevel("target")
+            if tLevel and tLevel > 0 then enemyLevel = tLevel end
+        end
+    end
+
+    local selectedScenario = nil
+    if type(mode) == "boolean" then
+        selectedScenario = mode and "pve" or "pvp_death"
+    elseif type(mode) == "string" and mode ~= "" then
+        local m = mode:lower():match("^%s*(.-)%s*$")
+        if m == "kill" or m == "dag" or m == "win" or m == "pvp_kill" or m == "victory" or m == "player" then
+            selectedScenario = "pvp_kill"
+        elseif m == "death" or m == "x" or m == "loss" or m == "pvp_death" or m == "die" then
+            selectedScenario = "pvp_death"
+        elseif m == "pve" or m == "npc" or m == "monster" or m == "mob" or m == "pillager" then
+            selectedScenario = "pve"
+        elseif m == "pvp" then
+            UI.lastPvpTestMode = (UI.lastPvpTestMode == "pvp_kill") and "pvp_death" or "pvp_kill"
+            selectedScenario = UI.lastPvpTestMode
+        end
+    end
+
+    if not selectedScenario then
+        -- Cycle: 1 = pvp_kill (Dag killed X), 2 = pvp_death (X killed Dag), 3 = pve (Defias Pillager killed Dag)
+        UI.testCycleIndex = ((UI.testCycleIndex or 0) % 3) + 1
+        if UI.testCycleIndex == 1 then
+            selectedScenario = "pvp_kill"
+        elseif UI.testCycleIndex == 2 then
+            selectedScenario = "pvp_death"
+        else
+            selectedScenario = "pve"
+        end
+    end
+
     local testKM
-    if isPveTest then
+    if selectedScenario == "pvp_kill" then
+        local mySpell = (pClass == "PALADIN" and "Judgement") or
+                        (pClass == "MAGE" and "Fireball") or
+                        (pClass == "ROGUE" and "Eviscerate") or
+                        (pClass == "WARLOCK" and "Shadow Bolt") or
+                        (pClass == "HUNTER" and "Aimed Shot") or
+                        (pClass == "WARRIOR" and "Mortal Strike") or "Combat Strike"
+
+        testKM = {
+            killId = "TEST-PVP-KILL-" .. tostring(time()),
+            timestamp = time(),
+            isSolo = true,
+            isBattleground = false,
+            isArena = false,
+            isDuel = false,
+            isPveDeath = false,
+            attackersCount = 1,
+            finalSpell = mySpell,
+            killer = {
+                name = myName,
+                class = pClass,
+                level = pLevel,
+                guild = pGuild,
+                faction = pFaction,
+                spell = mySpell,
+            },
+            victim = {
+                name = enemyName,
+                class = enemyClass,
+                level = enemyLevel,
+                guild = enemyGuild,
+                faction = enemyFaction,
+                isPlayer = true,
+            },
+            location = {
+                zone = "Hillsbrad Foothills",
+                subZone = "Southshore",
+                x = 50.1,
+                y = 57.4,
+            },
+        }
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffffd100PvP Kill|r: |cff38bdf8%s|r killed |cffff5555%s|r in Hillsbrad Foothills! (|cffffd100/kb test [kill|death|pve]|r)", myName, enemyName))
+
+    elseif selectedScenario == "pvp_death" then
+        local enemySpell = (enemyClass == "MAGE" and "Pyroblast") or
+                           (enemyClass == "ROGUE" and "Ambush") or
+                           (enemyClass == "WARLOCK" and "Shadow Bolt") or
+                           (enemyClass == "WARRIOR" and "Mortal Strike") or "Combat Strike"
+
+        testKM = {
+            killId = "TEST-PVP-DEATH-" .. tostring(time()),
+            timestamp = time(),
+            isSolo = true,
+            isBattleground = false,
+            isArena = false,
+            isDuel = false,
+            isPveDeath = false,
+            attackersCount = 1,
+            finalSpell = enemySpell,
+            killer = {
+                name = enemyName,
+                class = enemyClass,
+                level = math.max(enemyLevel, pLevel + 1),
+                guild = enemyGuild,
+                faction = enemyFaction,
+                spell = enemySpell,
+            },
+            victim = {
+                name = myName,
+                class = pClass,
+                level = pLevel,
+                guild = pGuild,
+                faction = pFaction,
+                isPlayer = true,
+            },
+            location = {
+                zone = "Hillsbrad Foothills",
+                subZone = "Southshore",
+                x = 50.1,
+                y = 57.4,
+            },
+        }
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff3838PvP Death|r: |cffff5555%s|r killed |cff38bdf8%s|r in Hillsbrad Foothills! (|cffffd100/kb test [kill|death|pve]|r)", enemyName, myName))
+
+    else -- "pve"
         testKM = {
             killId = "TEST-PVE-" .. tostring(time()),
             timestamp = time(),
@@ -7699,39 +7862,9 @@ function UI:TestKillBanner(isPveTest)
                 y = 58.3,
             },
         }
-    else
-        testKM = {
-            killId = "TEST-PVP-" .. tostring(time()),
-            timestamp = time(),
-            isSolo = true,
-            isBattleground = false,
-            isArena = false,
-            isDuel = false,
-            attackersCount = 1,
-            finalSpell = "Pyroblast",
-            killer = {
-                name = "Pyromaster",
-                class = "MAGE",
-                level = 60,
-                guild = "Blackout",
-                faction = (pFaction == "Alliance") and "Horde" or "Alliance",
-                spell = "Pyroblast",
-            },
-            victim = {
-                name = myName,
-                class = pClass,
-                level = 23,
-                guild = pGuild,
-                faction = pFaction,
-            },
-            location = {
-                zone = currentZone,
-                subZone = currentSubZone,
-                x = 45.2,
-                y = 47.1,
-            },
-        }
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff9900PvE Casualty|r: Defias Pillager executed |cff38bdf8%s|r in Westfall! (|cffffd100/kb test [kill|death|pve]|r)", myName))
     end
+
     UI:ShowKillBanner(testKM, true)
 end
 

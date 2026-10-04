@@ -5,6 +5,24 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.108] - 2026-10-04
+
+### Added
+- **Multi-Scenario PvP & PvE Kill Banner Test Suite (`Addon/WoWKillboard/UI.lua`, `Core.lua`)**:
+  - **"Dag killed X" (PvP Kill)**: Direct test scenario where Dagariane (Player) defeats an enemy player (`[24] Shadowstalker` in `<Grim Syndicate>`). Displays the Horde crest and yellow Rogue class icon on the Fallen (left), `[23] Dagariane` in Paladin pink on the Victor (right) with golden victory border trim, and directional action `slain by Judgement`.
+  - **"X killed Dag" (PvP Death)**: Direct test scenario where an enemy player (`[25] Shadowstalker`) defeats Dagariane. Displays the Alliance crest and Paladin class icon on the Fallen (left), `[25] Shadowstalker` in Hostile Crimson (`#FF3838`) on the Threat (right) with red hostile border trim, and directional action `slain by Ambush`.
+  - **"Defias Pillager executed Dag" (PvE Casualty)**: Direct test scenario where Defias Pillager defeats Dagariane in Westfall with `slain by Fireball`.
+  - **Flexible Slash & Cycle Subcommands**:
+    - `/kb test` (no args): Automatically cycles across all 3 scenarios (`1/3` PvP Kill $\rightarrow$ `2/3` PvP Death $\rightarrow$ `3/3` PvE Casualty) with descriptive chat status.
+    - `/kb test kill` or `/kb test dag`: Directly previews **Dag killed X** (PvP Kill).
+    - `/kb test death` or `/kb test x`: Directly previews **X killed Dag** (PvP Death).
+    - `/kb test pvp`: Alternates directly between both PvP perspectives.
+    - `/kb test pve`: Directly previews Defias Pillager in Westfall.
+  - **Dynamic In-Game Target Inheritance**: When targeting an active enemy player, `/kb test` dynamically inherits their live name, class, level, guild, and faction into the simulated battle banner.
+  - **Dynamic Friendly vs Hostile Killer Styling**: `UI:ShowKillBanner` now renders friendly and player killers in their authentic class color with golden victory icon trims (`1.0, 0.82, 0.0`), while hostile killers remain in Blizzard Hostile Crimson (`#FF3838`) with red threat borders.
+  - **ElvUI Allegiance Alignment**: Top accent stripe in ElvUI mode dynamically anchors to the player's faction (`#0078FF` Alliance Blue / `#C41E3A` Horde Red), preserving consistent faction identity during victories and defeats.
+  - **Direct `/kb testdeath` Banner Integration**: Added `UI:ShowKillBanner` invocation to `/kb testdeath` alongside the revenge blood bounty popup.
+
 ## [1.4.107] - 2026-10-04
 
 ### Changed
