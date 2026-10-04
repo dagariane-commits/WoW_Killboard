@@ -18,16 +18,23 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ADDON_SRC = os.path.join(BASE_DIR, "Addon", "WoWKillboard")
 
 WOW_TARGETS = [
+    # Local Desktop Clients
     r"D:\World of Warcraft\_classic_beta_\Interface\AddOns\WoWKillboard",
     r"D:\World of Warcraft\_classic_era_\Interface\AddOns\WoWKillboard",
     r"D:\World of Warcraft\_anniversary_\Interface\AddOns\WoWKillboard",
     r"D:\World of Warcraft\_retail_\Interface\AddOns\WoWKillboard",
+    # Remote Laptop Clients (SQUICKYoga via Z:)
+    r"Z:\_classic_beta_\Interface\AddOns\WoWKillboard",
+    r"Z:\_classic_era_\Interface\AddOns\WoWKillboard",
+    r"Z:\_anniversary_\Interface\AddOns\WoWKillboard",
+    r"Z:\_retail_\Interface\AddOns\WoWKillboard",
 ]
 
 def deploy_to_clients():
     synced = 0
     for target in WOW_TARGETS:
-        if os.path.exists(target):
+        parent_dir = os.path.dirname(target)
+        if os.path.exists(parent_dir):
             for root, dirs, files in os.walk(ADDON_SRC):
                 rel_dir = os.path.relpath(root, ADDON_SRC)
                 dest_dir = os.path.join(target, rel_dir) if rel_dir != "." else target
@@ -40,6 +47,17 @@ def deploy_to_clients():
             synced += 1
         else:
             print(f"[SKIP] Target directory not found: {target}")
+
+    # Synchronize desktop companion binary if laptop share is connected
+    laptop_sync_exe = r"Z:\WoWKillboardSync.exe"
+    local_sync_exe = os.path.join(BASE_DIR, "WoWKillboardSync.exe")
+    if os.path.exists("Z:\\") and os.path.exists(local_sync_exe):
+        try:
+            shutil.copy2(local_sync_exe, laptop_sync_exe)
+            print(f"[DEPLOY] Updated companion binary on laptop: {laptop_sync_exe}")
+        except Exception as e:
+            print(f"[WARN] Could not update laptop companion binary (process may be running): {e}")
+
     return synced
 
 def get_addon_version():
