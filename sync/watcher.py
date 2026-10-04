@@ -25,7 +25,7 @@ except ImportError:
     except ImportError:
         sync_gui = None
 
-SYNC_VERSION = "1.0.0-beta.7"
+SYNC_VERSION = "1.0.2"
 
 def safe_urlopen(req, timeout=5):
     """Executes urllib.request.urlopen with User-Agent and verified TLS/SSL context."""

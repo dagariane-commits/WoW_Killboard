@@ -7238,6 +7238,15 @@ function UI:ApplyBannerTheme()
     WoWKB_SetTheme(themeName)
 end
 
+function UI:InitHUDs()
+    if not InCombatLockdown() then
+        if not UI.KillBanner then UI:InitializeKillBanner() end
+        if not UI.RaidNoticeFrame then UI:InitializeRaidNotice() end
+        if not radarHUD and UI.InitializeRadarHUD then UI:InitializeRadarHUD() end
+        if not combatWireHUD and UI.InitializeCombatWire then UI:InitializeCombatWire() end
+    end
+end
+
 function UI:InitializeKillBanner()
     if killBanner or InCombatLockdown() then return end
 
@@ -7483,15 +7492,29 @@ function UI:ShowKillBanner(killmail, isTest)
     if not isTest and killmail.isDuel then return end
     if alertMode == "OFF" and not isTest then return end
 
-    local myName = UnitName("player") or "Dagariane"
+    local myName = UnitName("player") or "Hero"
+    local myLower = myName:lower()
+    local myGUID = UnitGUID("player") or ""
     local pFaction = (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
 
-    -- 2. Scope & Proximity Filter (bypassed if explicit test)
-    if not isTest then
+    local function IsLocalCombatant(entity)
+        if not entity or type(entity) ~= "table" then return false end
+        if myGUID ~= "" and entity.guid and entity.guid == myGUID then return true end
+        if entity.name and type(entity.name) == "string" then
+            local eLower = entity.name:lower()
+            if eLower == myLower or eLower:find("^" .. myLower .. "%-") then
+                return true
+            end
+        end
+        return false
+    end
+
+    local isMyCombat = IsLocalCombatant(killmail.killer) or IsLocalCombatant(killmail.victim)
+
+    -- 2. Scope & Proximity Filter (bypassed if explicit test or if this is the player's own combat)
+    if not isTest and not isMyCombat then
         if alertScope == "MINE" then
-            local isMyCombat = (killmail.killer.name and killmail.killer.name == myName) or
-                               (killmail.victim.name and killmail.victim.name == myName)
-            if not isMyCombat then return end
+            return
         elseif alertScope == "ZONE" then
             local myZone = GetZoneText and GetZoneText() or ""
             local killZone = (killmail.location and killmail.location.zone) or ""
@@ -7509,8 +7532,19 @@ function UI:ShowKillBanner(killmail, isTest)
         end
     end
 
+    -- Optional Raid Notice Dispatch
+    if alertStyle == "BOTH" or alertStyle == "RAID_WARNING" then
+        if not UI.RaidNoticeFrame then
+            UI:InitializeRaidNotice()
+        end
+        local flavor = UI:GetCombatFlavorPhrase(killmail)
+        if flavor and UI.ShowRaidNotice then
+            UI:ShowRaidNotice(flavor)
+        end
+    end
+
     -- 4. Frontline Kill Banner Frame (Frozen Shared 560x84 Layout Across All Themes)
-    if alertStyle == "BOTH" or alertStyle == "BANNER" or alertStyle == "RAID_WARNING" then
+    if alertStyle == "BOTH" or alertStyle == "BANNER" then
         if not UI.KillBanner then
             UI:InitializeKillBanner()
         end
