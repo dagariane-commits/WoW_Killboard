@@ -38,48 +38,42 @@
 
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
-### What Was Just Completed: Combat Toast Banner (`UI.lua`, `Config.lua`)
-- **Native Blizzard Achievement Alert Toast Kit**:
+### What Was Completed:
+- **Native Blizzard Achievement Alert Toast Kit (`UI.lua`, `Config.lua`)**:
   - Replaced hand-crafted parchment and tooltip borders with authentic Blizzard Achievement Alert Toast assets (`Interface\AchievementFrame\UI-Achievement-Alert-Background`).
   - Implemented 3-slice texture mapping across **580px × 88px** with zero corner distortion:
     - `ToastBgLeft` (110×88, texCoords `[0, 0.21484375, 0, 0.703125]`) capturing the left golden corner ornament.
     - `ToastBgRight` (110×88, texCoords `[0.390625, 0.60546875, 0, 0.703125]`) capturing the right golden corner ornament.
     - `ToastBgMid` stretched seamlessly between the left and right slices with dark burnished bronze background.
   - Eliminated conflicting backdrops in Classic mode (`banner:SetBackdrop(nil)`).
-- **Beveled Icon Framing (`UI-Achievement-IconFrame`)**:
-  - Victim class icon: Framed in 48×48 native beveled square frame `Interface\AchievementFrame\UI-Achievement-IconFrame` (`[0, 0.5625, 0, 0.5625]`) centered on the 40×40 icon frame.
-  - Killer threat icon: Wrapped in matching 48×48 beveled square frame on sub-layer 1 plus red hostile debuff border (`UI-Debuff-Border`) on sub-layer 2.
-  - Adjacent circular faction crest: Framed in raised gold medallion border ring (`medallion_border.tga`).
-- **High-Contrast Typography on Bronze Plaque**:
-  - Header: `WOWKB COMBAT TELEMETRY` centered at `TOP, 0, -8` in `GameFontNormalSmall` (`#FFD100` Blizzard Gold with `(1, -1)` black shadow).
-  - Combatant names: `[23] Dagariane` (Class Pink) and `[15] Defias Pillager` (`#FF4040` Hostile Red) with `(2, -2)` black drop shadows.
-  - Subtexts: `<Forged By Valor>` and `with Fireball` in `#CCCCCC` parchment silver with `(1, -1)` black shadow.
-  - Location string: `Westfall • Sentinel Hill` in `#FFD100` Blizzard Gold with `(1, -1)` black shadow centered directly under the 32×32 skull separator.
-- **Dual-Theme Engine**:
-  - Switching `/kb theme` or clicking the Theme button toggles dynamically between:
-    - **Classic Forever**: 3-slice Achievement Alert toast with beveled icon frames.
-    - **ElvUI Minimalist**: Flat dark slate backdrop (`0.06, 0.08, 0.11, 0.85`), 2px top gold accent line, and 1px normalized borders.
+  - Native beveled icon frames (`UI-Achievement-IconFrame`), circular faction medallion rings (`medallion_border.tga`), and high-contrast typography.
+- **Tactical Real-Time Search Box & Multi-Tab Query Filtering (`UI.lua`, `Config.lua`)**:
+  - Built 100% template-free, zero-taint live search input (`UI.SearchBox`) anchored in the navigation bar.
+  - Features magnifying glass icon, placeholder, one-click clear button (`x`), gold focus glow, and real-time query dispatch (`UI.activeSearchQuery`).
+  - Integrated real-time query filtering across **all 5 main tabs in both PvP and PvE rulesets**:
+    - **Feeds**: `RenderLiveFeed` (PvP kills & Most Wanted outlaws) and `RenderPveFeed` (wilderness casualties & Apex Executioners).
+    - **Leaderboards**: `RenderLeaderboard` (Player Ranks, Guild Supremacy, 24h Gankers) and `RenderPveLeaderboard` (Apex Executioners, Fallen Mortals, Perilous Regions).
+    - **Bounties**: `RenderBounties` (Active Marks) and `RenderPveBounties` (Notorious Elites).
+    - **Zones**: `RenderZones` (24h realm hotspots & local skirmishes) and `RenderPveZones` (Zone Mortality danger index).
+    - **Rallies**: `RenderRallies` (Vanguard strike teams) and `RenderPveRallies` (Emergency rescue distress beacons).
+- **Dual-Theme Minimap Button & LibDataBroker Integration (`Core.lua`, `Config.lua`)**:
+  - Registered official `WoWKillboard` Data Object with `LibDataBroker-1.1` for Titan Panel, ChocolateBar, and ElvUI data texts.
+  - Added theme-aware minimap button (`KB:UpdateMinimapTheme`):
+    - **Classic Forever**: Circular Blizzard tracking border (`Interface\Minimap\MiniMap-TrackingBorder`) with antique bronze tooltip styling.
+    - **ElvUI Minimalist**: Matte charcoal 1px black-bordered square frame with crisp silver font tooltips.
+  - Left-Click toggles main dashboard (`/kb`); Right-Click cycles themes dynamically (`/kb theme`).
+- **Combat Detail Modal Polish & Pure-Lua Scrollbar (`UI.lua`, `Config.lua`)**:
+  - Upgraded `UI.DetailModal` to 540×410 with 246×118 combatant portrait cards, native beveled frames (`UI-Achievement-IconFrame`), fatal strike ability info, and multi-attacker breakdown.
+  - Pure-Lua custom vertical scrollbar (`UI.ScrollBar`) on `ContentInset` with auto-show/hide logic and theme-aware rail/thumb textures, avoiding all Blizzard `UIPanelScrollBarTemplate` XML taint.
 
-### Immediate Next Tasks for the Incoming Agent (In-Game Appearance Fine-Tuning):
-1. **Combat Toast Micro-Alignments & UI Scaling**:
-   - Inspect toast layout under various in-game UI scale settings (0.64 to 1.0).
-   - Ensure text baselines and 14px outer margins remain visually balanced across all resolutions.
-2. **Main Dashboard (`UI:ToggleMainWindow` / `/kb`) Visual Polish**:
-   - Review and fine-tune the dual themes for the main dashboard:
-     - **Classic Stone & Gold**: Authentic Blizzard stone backdrop (`UI-DialogBox-Background`), beveled borders (`UI-DialogBox-Border`), gold headers, and dark slate row striping.
-     - **ElvUI Minimalist**: Flat charcoal backdrop, crisp 1px borders, and muted silver accents.
-   - Refine tab navigation (Intel/Casualties, Defender of Azeroth/Deadly Hazards, The Marked/Notorious Elites, Manhunt/Rescue Beacons, Zone Intel/Zone Mortality).
-   - Review filter pills, search box styling, and scrollbar textures.
-3. **Combat Detail Modal (`UI:ShowDetailModal`) Visual Polish**:
-   - Review attacker list cards, spell breakdown rows, and damage telemetry badges.
-   - Ensure the modal scrim (`modal.Scrim` at 78% opacity) provides clean focus without obscuring vital combat context.
-4. **Minimap Icon & LDB Feed**:
-   - Verify circular badge rendering, tooltip styling, and left-click/right-click response.
-5. **Testing Commands**:
-   - `/kb test` — Preview the in-game combat toast banner (defaults to Westfall Defias Pillager scenario).
-   - `/kb theme` or `/kb theme [classic|elvui]` — Toggle active theme.
-   - `/wowkb move` — Unlock banner to reposition with drag anchor.
-   - `/reload` — Reload UI after syncing changes.
+### Immediate In-Game Testing Steps:
+1. `/reload` — Reload UI after synchronization.
+2. `/kb` — Open main dashboard. Test the real-time search box:
+   - Type a character name, guild name, monster name (e.g. `Defias` or `Hogger`), or zone (e.g. `Westfall`).
+   - Switch between tabs (Intel, Defender of Azeroth, The Marked, Manhunt, Zone Intel) and toggle rulesets (PvP vs PvE); observe instant filtering across cards and lists.
+3. `/kb test` — Preview the in-game combat toast banner (defaults to Westfall Defias Pillager scenario).
+4. `/kb theme` — Toggle active theme between Classic Forever and ElvUI Minimalist; observe simultaneous theme updates across the dashboard, combat toast, detail modal, and minimap icon.
+5. `/wowkb move` — Unlock banner to reposition with drag anchor.
 
 ---
 

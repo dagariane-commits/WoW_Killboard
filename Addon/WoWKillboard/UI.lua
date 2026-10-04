@@ -325,6 +325,14 @@ function UI:ApplyTheme()
         end
     end
     if UI.DetailModal then
+        if UI.DetailModal.SolidBg then
+            if theme.id == "classic" then
+                UI.DetailModal.SolidBg:Hide()
+            else
+                UI.DetailModal.SolidBg:Show()
+                UI.DetailModal.SolidBg:SetColorTexture(unpack(theme.solidBg or theme.modalBg))
+            end
+        end
         UI.DetailModal:SetBackdrop(theme.modalBackdrop)
         UI.DetailModal:SetBackdropColor(unpack(theme.modalBg))
         UI.DetailModal:SetBackdropBorderColor(unpack(theme.modalBorder))
@@ -374,10 +382,12 @@ function UI:ApplyTheme()
                 UI.DetailModal.KillerCard:SetBackdrop(theme.cardBackdrop)
                 UI.DetailModal.KillerCard:SetBackdropColor(0.08, 0.14, 0.10, 0.95)
                 UI.DetailModal.KillerCard:SetBackdropBorderColor(0.2, 0.7, 0.3, 0.9)
+                if UI.DetailModal.KillerCard.IconBorder then UI.DetailModal.KillerCard.IconBorder:Show() end
             else
                 UI.DetailModal.KillerCard:SetBackdrop(theme.cardBackdrop)
                 UI.DetailModal.KillerCard:SetBackdropColor(0.08, 0.12, 0.09, 0.95)
                 UI.DetailModal.KillerCard:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+                if UI.DetailModal.KillerCard.IconBorder then UI.DetailModal.KillerCard.IconBorder:Hide() end
             end
         end
         if UI.DetailModal.VictimCard then
@@ -385,10 +395,12 @@ function UI:ApplyTheme()
                 UI.DetailModal.VictimCard:SetBackdrop(theme.cardBackdrop)
                 UI.DetailModal.VictimCard:SetBackdropColor(0.14, 0.08, 0.08, 0.95)
                 UI.DetailModal.VictimCard:SetBackdropBorderColor(0.8, 0.25, 0.25, 0.9)
+                if UI.DetailModal.VictimCard.IconBorder then UI.DetailModal.VictimCard.IconBorder:Show() end
             else
                 UI.DetailModal.VictimCard:SetBackdrop(theme.cardBackdrop)
                 UI.DetailModal.VictimCard:SetBackdropColor(0.12, 0.07, 0.07, 0.95)
                 UI.DetailModal.VictimCard:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+                if UI.DetailModal.VictimCard.IconBorder then UI.DetailModal.VictimCard.IconBorder:Hide() end
             end
         end
         if UI.DetailModal.InfoPanel then
@@ -402,6 +414,30 @@ function UI:ApplyTheme()
                 UI.DetailModal.InfoPanel:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
             end
         end
+    end
+
+    if UI.SearchBox then
+        UI.SearchBox:SetBackdropColor(unpack(theme.searchBg or {0.07, 0.06, 0.04, 0.95}))
+        UI.SearchBox:SetBackdropBorderColor(unpack(theme.searchBorder or {0.55, 0.44, 0.22, 0.95}))
+        if UI.SearchBox.Icon then
+            if theme.id == "classic" then
+                UI.SearchBox.Icon:SetVertexColor(0.85, 0.75, 0.50, 0.8)
+            else
+                UI.SearchBox.Icon:SetVertexColor(0.70, 0.70, 0.70, 0.8)
+            end
+        end
+    end
+
+    if UI.ScrollBar then
+        UI.ScrollBar:SetBackdropColor(unpack(theme.scrollbarRail or {0.05, 0.04, 0.03, 0.85}))
+        UI.ScrollBar:SetBackdropBorderColor(unpack(theme.scrollbarRailBorder or {0.45, 0.35, 0.18, 0.8}))
+        if UI.ScrollBar.Thumb then
+            UI.ScrollBar.Thumb:SetColorTexture(unpack(theme.scrollbarThumb or {0.70, 0.55, 0.22, 0.95}))
+        end
+    end
+
+    if KB.UpdateMinimapTheme then
+        KB:UpdateMinimapTheme()
     end
 
     if UI.KillBanner then
@@ -1156,13 +1192,13 @@ function UI:CreateMainWindow()
     divider:SetColorTexture(0.35, 0.28, 0.16, 0.9)
     UI.Divider = divider
 
-    -- Navigation Bar (Tabs on Left, Filter Pills on Right - Zero Overlap)
+    -- Navigation Bar (Tabs on Left, Filter Pills on Right, Search in Center - Zero Overlap)
     local tabs = {
-        { id = "FEED",        text = "Intel",               w = 68 },
-        { id = "LEADERBOARD", text = "Defender of Azeroth", w = 142 },
-        { id = "BOUNTIES",    text = "The Marked",          w = 95 },
-        { id = "RALLIES",     text = "Manhunt",             w = 78 },
-        { id = "ZONES",       text = "Zone Intel",          w = 84 },
+        { id = "FEED",        text = "Intel",               w = 56 },
+        { id = "LEADERBOARD", text = "Defender of Azeroth", w = 132 },
+        { id = "BOUNTIES",    text = "The Marked",          w = 82 },
+        { id = "RALLIES",     text = "Manhunt",             w = 68 },
+        { id = "ZONES",       text = "Zone Intel",          w = 76 },
     }
 
     tabButtons = {}
@@ -1185,10 +1221,10 @@ function UI:CreateMainWindow()
 
     -- 4-Way Mode Filter Pills (World | BGs | Duels | Arenas [Disabled / Greyed Out])
     local filterConfigs = {
-        { id = "ARENA", text = "Arenas", w = 58, disabled = true, color = {0.5, 0.5, 0.5}, tooltip = "Arenas (Coming Soon - Season Records Pending)" },
-        { id = "DUEL",  text = "Duels",  w = 52, color = {1.0, 0.84, 0.0} },
-        { id = "BG",    text = "BGs",    w = 48, color = {0.3, 0.65, 1.0} },
-        { id = "WORLD", text = "World",  w = 54, color = {0.2, 0.85, 0.3} },
+        { id = "ARENA", text = "Arenas", w = 50, disabled = true, color = {0.5, 0.5, 0.5}, tooltip = "Arenas (Coming Soon - Season Records Pending)" },
+        { id = "DUEL",  text = "Duels",  w = 46, color = {1.0, 0.84, 0.0} },
+        { id = "BG",    text = "BGs",    w = 40, color = {0.3, 0.65, 1.0} },
+        { id = "WORLD", text = "World",  w = 48, color = {0.2, 0.85, 0.3} },
     }
 
     filterButtons = {}
@@ -1221,6 +1257,110 @@ function UI:CreateMainWindow()
         prevPill = pill
     end
 
+    -- Real-Time Tactical Search Input Box (100% Template-Free, Zero XML Taint)
+    local searchBox = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+    searchBox:SetSize(115, 22)
+    searchBox:SetPoint("RIGHT", filterButtons["WORLD"], "LEFT", -8, 0)
+    searchBox:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+    searchBox:SetBackdropColor(0.07, 0.06, 0.04, 0.95)
+    searchBox:SetBackdropBorderColor(0.55, 0.44, 0.22, 0.95)
+    UI.SearchBox = searchBox
+
+    local searchIcon = searchBox:CreateTexture(nil, "ARTWORK")
+    searchIcon:SetSize(12, 12)
+    searchIcon:SetPoint("LEFT", 4, 0)
+    searchIcon:SetTexture("Interface\\Common\\UI-Searchbox-Icon")
+    searchIcon:SetVertexColor(0.85, 0.75, 0.50, 0.8)
+    searchBox.Icon = searchIcon
+
+    local eb = CreateFrame("EditBox", nil, searchBox)
+    eb:SetPoint("LEFT", searchIcon, "RIGHT", 3, 0)
+    eb:SetPoint("RIGHT", searchBox, "RIGHT", -16, 0)
+    eb:SetHeight(18)
+    eb:SetFontObject("GameFontHighlightSmall")
+    eb:SetAutoFocus(false)
+    eb:SetMaxLetters(30)
+    searchBox.EditBox = eb
+
+    local placeholder = searchBox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    placeholder:SetPoint("LEFT", searchIcon, "RIGHT", 4, 0)
+    placeholder:SetText("|cff777777Search...|r")
+    searchBox.Placeholder = placeholder
+
+    local clearBtn = CreateFrame("Button", nil, searchBox)
+    clearBtn:SetSize(14, 14)
+    clearBtn:SetPoint("RIGHT", -3, 0)
+    clearBtn:Hide()
+    local clearLabel = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    clearLabel:SetPoint("CENTER", 0, 0)
+    clearLabel:SetText("|cff999999x|r")
+    clearBtn.Label = clearLabel
+    searchBox.ClearBtn = clearBtn
+
+    clearBtn:SetScript("OnClick", function()
+        eb:SetText("")
+        eb:ClearFocus()
+        UI.activeSearchQuery = nil
+        clearBtn:Hide()
+        placeholder:Show()
+        UI:Refresh()
+    end)
+
+    eb:SetScript("OnEditFocusGained", function(self)
+        placeholder:Hide()
+        local t = UI:GetTheme()
+        if t and t.searchFocusBorder then
+            searchBox:SetBackdropBorderColor(unpack(t.searchFocusBorder))
+        else
+            searchBox:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
+        end
+    end)
+    eb:SetScript("OnEditFocusLost", function(self)
+        local text = self:GetText()
+        if not text or text:match("^%s*$") then
+            placeholder:Show()
+            clearBtn:Hide()
+        else
+            clearBtn:Show()
+        end
+        local t = UI:GetTheme()
+        if t and t.searchBorder then
+            searchBox:SetBackdropBorderColor(unpack(t.searchBorder))
+        end
+    end)
+    eb:SetScript("OnTextChanged", function(self, isUserInput)
+        local raw = self:GetText() or ""
+        local clean = raw:match("^%s*(.-)%s*$")
+        if clean and clean ~= "" then
+            placeholder:Hide()
+            clearBtn:Show()
+            UI.activeSearchQuery = clean:lower()
+        else
+            if not self:HasFocus() then placeholder:Show() end
+            clearBtn:Hide()
+            UI.activeSearchQuery = nil
+        end
+        if isUserInput then
+            UI:Refresh()
+        end
+    end)
+    eb:SetScript("OnEscapePressed", function(self)
+        self:SetText("")
+        self:ClearFocus()
+        UI.activeSearchQuery = nil
+        clearBtn:Hide()
+        placeholder:Show()
+        UI:Refresh()
+    end)
+    eb:SetScript("OnEnterPressed", function(self)
+        self:ClearFocus()
+    end)
+
     -- Dedicated Content Inset Panel (Sunken Vault Plate with Website Battlefield Artwork)
     local inset = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
     inset:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -154)
@@ -1242,23 +1382,71 @@ function UI:CreateMainWindow()
     vignette:SetColorTexture(0.015, 0.02, 0.035, 0.40)
     inset.Vignette = vignette
 
-    -- Scroll Area Container (Anchored securely inside ContentInset)
+    -- Scroll Area Container (Anchored securely inside ContentInset with rail clearance)
     local container = CreateFrame("ScrollFrame", nil, inset)
     container:SetPoint("TOPLEFT", inset, "TOPLEFT", 6, -6)
-    container:SetPoint("BOTTOMRIGHT", inset, "BOTTOMRIGHT", -6, 6)
+    container:SetPoint("BOTTOMRIGHT", inset, "BOTTOMRIGHT", -20, 6)
     container:EnableMouseWheel(true)
+
+    local content = CreateFrame("Frame", nil, container)
+    content:SetSize(810, 390)
+    container:SetScrollChild(content)
+    UI.ContentFrame = content
+    UI.ScrollContainer = container
+
+    -- Template-Free Pure-Lua Scrollbar Slider (Zero XML Taint, Authentic Parity)
+    local scrollBar = CreateFrame("Slider", nil, inset, "BackdropTemplate")
+    scrollBar:SetPoint("TOPRIGHT", inset, "TOPRIGHT", -5, -8)
+    scrollBar:SetPoint("BOTTOMRIGHT", inset, "BOTTOMRIGHT", -5, 8)
+    scrollBar:SetWidth(10)
+    scrollBar:SetOrientation("VERTICAL")
+    scrollBar:SetMinMaxValues(0, 100)
+    scrollBar:SetValue(0)
+    scrollBar:SetValueStep(1)
+    scrollBar:EnableMouse(true)
+    scrollBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 },
+    })
+
+    local thumb = scrollBar:CreateTexture(nil, "OVERLAY")
+    thumb:SetSize(10, 36)
+    thumb:SetColorTexture(0.70, 0.55, 0.22, 0.95)
+    scrollBar:SetThumbTexture(thumb)
+    scrollBar.Thumb = thumb
+    UI.ScrollBar = scrollBar
+
+    scrollBar:SetScript("OnValueChanged", function(self, value)
+        container:SetVerticalScroll(value)
+    end)
+
     container:SetScript("OnMouseWheel", function(self, delta)
         local current = self:GetVerticalScroll()
         local maxScroll = math.max(0, (UI.ContentFrame:GetHeight() or 400) - self:GetHeight())
         local newScroll = math.max(0, math.min(maxScroll, current - (delta * 36)))
         self:SetVerticalScroll(newScroll)
+        if scrollBar:IsShown() then
+            scrollBar:SetValue(newScroll)
+        end
     end)
 
-    local content = CreateFrame("Frame", nil, container)
-    content:SetSize(820, 390)
-    container:SetScrollChild(content)
-    UI.ContentFrame = content
-    UI.ScrollContainer = container
+    function UI:UpdateScrollbar()
+        if not UI.ScrollContainer or not UI.ContentFrame or not UI.ScrollBar then return end
+        local viewHeight = UI.ScrollContainer:GetHeight() or 400
+        local contentHeight = UI.ContentFrame:GetHeight() or 400
+        local maxScroll = math.max(0, contentHeight - viewHeight)
+        if maxScroll > 4 then
+            UI.ScrollBar:SetMinMaxValues(0, maxScroll)
+            UI.ScrollBar:SetValue(math.min(UI.ScrollContainer:GetVerticalScroll() or 0, maxScroll))
+            UI.ScrollBar:Show()
+        else
+            UI.ScrollBar:SetMinMaxValues(0, 0)
+            UI.ScrollBar:SetValue(0)
+            UI.ScrollBar:Hide()
+        end
+    end
 
     -- Detail Modal Frame
     UI:CreateDetailModal()
@@ -1353,18 +1541,18 @@ function UI:Refresh()
     -- Dynamic Tab Configuration (Adapts names & widths seamlessly between PvE & PvP rulesets)
     local tabOrder = { "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES" }
     local pveTabDefs = {
-        FEED        = { text = "Casualties",         w = 86 },
-        LEADERBOARD = { text = "Deadly Hazards",     w = 120 },
-        BOUNTIES    = { text = "Notorious Elites",   w = 120 },
-        RALLIES     = { text = "Rescue Beacons",     w = 116 },
-        ZONES       = { text = "Zone Mortality",     w = 106 },
+        FEED        = { text = "Casualties",         w = 74 },
+        LEADERBOARD = { text = "Deadly Hazards",     w = 104 },
+        BOUNTIES    = { text = "Notorious Elites",   w = 108 },
+        RALLIES     = { text = "Rescue Beacons",     w = 102 },
+        ZONES       = { text = "Zone Mortality",     w = 96 },
     }
     local pvpTabDefs = {
-        FEED        = { text = "Intel",              w = 68 },
-        LEADERBOARD = { text = "Defender of Azeroth", w = 142 },
-        BOUNTIES    = { text = "The Marked",         w = 95 },
-        RALLIES     = { text = "Manhunt",            w = 78 },
-        ZONES       = { text = "Zone Intel",         w = 84 },
+        FEED        = { text = "Intel",              w = 56 },
+        LEADERBOARD = { text = "Defender of Azeroth", w = 132 },
+        BOUNTIES    = { text = "The Marked",         w = 82 },
+        RALLIES     = { text = "Manhunt",            w = 68 },
+        ZONES       = { text = "Zone Intel",         w = 76 },
     }
     local tabDefs = isPveMode and pveTabDefs or pvpTabDefs
     local prevTab = nil
@@ -1387,16 +1575,16 @@ function UI:Refresh()
     -- Dynamic Filter Pills Configuration
     local filterOrder = { "ARENA", "DUEL", "BG", "WORLD" }
     local pvePills = {
-        ARENA = { text = "Hazards", w = 68, disabled = false, color = {0.85, 0.45, 0.20}, tooltip = "Environmental, Falling, Lava, and Drowning Mortalities" },
-        DUEL  = { text = "Bosses",  w = 60, disabled = false, color = {0.95, 0.25, 0.25}, tooltip = "Dungeon and Raid Boss Executions" },
-        BG    = { text = "Elites",  w = 54, disabled = false, color = {1.0, 0.84, 0.0},  tooltip = "Elite Monster Casualties" },
-        WORLD = { text = "All",     w = 46, disabled = false, color = {0.2, 0.85, 0.3},  tooltip = "All Recorded Wilderness Mortalities" },
+        ARENA = { text = "Hazards", w = 60, disabled = false, color = {0.85, 0.45, 0.20}, tooltip = "Environmental, Falling, Lava, and Drowning Mortalities" },
+        DUEL  = { text = "Bosses",  w = 52, disabled = false, color = {0.95, 0.25, 0.25}, tooltip = "Dungeon and Raid Boss Executions" },
+        BG    = { text = "Elites",  w = 48, disabled = false, color = {1.0, 0.84, 0.0},  tooltip = "Elite Monster Casualties" },
+        WORLD = { text = "All",     w = 38, disabled = false, color = {0.2, 0.85, 0.3},  tooltip = "All Recorded Wilderness Mortalities" },
     }
     local pvpPills = {
-        ARENA = { text = "Arenas", w = 58, disabled = true,  color = {0.5, 0.5, 0.5},   tooltip = "Arenas (Coming Soon - Season Records Pending)" },
-        DUEL  = { text = "Duels",  w = 52, disabled = false, color = {1.0, 0.84, 0.0},  tooltip = "Sanctioned 1v1 Duels" },
-        BG    = { text = "BGs",    w = 48, disabled = false, color = {0.3, 0.65, 1.0},  tooltip = "Battleground Engagements" },
-        WORLD = { text = "World",  w = 54, disabled = false, color = {0.2, 0.85, 0.3},  tooltip = "Open World PvP Engagements" },
+        ARENA = { text = "Arenas", w = 50, disabled = true,  color = {0.5, 0.5, 0.5},   tooltip = "Arenas (Coming Soon - Season Records Pending)" },
+        DUEL  = { text = "Duels",  w = 46, disabled = false, color = {1.0, 0.84, 0.0},  tooltip = "Sanctioned 1v1 Duels" },
+        BG    = { text = "BGs",    w = 40, disabled = false, color = {0.3, 0.65, 1.0},  tooltip = "Battleground Engagements" },
+        WORLD = { text = "World",  w = 48, disabled = false, color = {0.2, 0.85, 0.3},  tooltip = "Open World PvP Engagements" },
     }
     local pillDefs = isPveMode and pvePills or pvpPills
     local prevPill = nil
@@ -1434,6 +1622,11 @@ function UI:Refresh()
             end)
             pill:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
         end
+    end
+
+    if UI.SearchBox and filterButtons and filterButtons["WORLD"] then
+        UI.SearchBox:ClearAllPoints()
+        UI.SearchBox:SetPoint("RIGHT", filterButtons["WORLD"], "LEFT", -8, 0)
     end
 
     if isPveMode then
@@ -1681,12 +1874,33 @@ function UI:Refresh()
             UI:RenderLiveFeed()
         end
     end
+
+    if UI.UpdateScrollbar then
+        UI:UpdateScrollbar()
+    end
 end
 
 -- 1. Render Live Killmail Feed (Tactical Intel)
 function UI:RenderLiveFeed()
     local kills = KB.Leaderboard:GetRecentKills(currentMode, 40)
     local theme = UI:GetTheme()
+
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, km in ipairs(kills) do
+            local kName = (km.killer and km.killer.name or ""):lower()
+            local vName = (km.victim and km.victim.name or ""):lower()
+            local kGuild = (km.killer and km.killer.guild or ""):lower()
+            local vGuild = (km.victim and km.victim.guild or ""):lower()
+            local loc = (km.location and km.location.zone or ""):lower()
+            local subLoc = (km.location and km.location.subZone or ""):lower()
+            if kName:find(q, 1, true) or vName:find(q, 1, true) or kGuild:find(q, 1, true) or vGuild:find(q, 1, true) or loc:find(q, 1, true) or subLoc:find(q, 1, true) then
+                table.insert(filtered, km)
+            end
+        end
+        kills = filtered
+    end
 
     -- 1. The Blood Ledger (Azeroth's Most Wanted - Red Font & Parity with Website)
     local mwTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -1761,6 +1975,19 @@ function UI:RenderLiveFeed()
     table.sort(activeOutlaws, function(a, b)
         return (a.amountCopper or 0) > (b.amountCopper or 0)
     end)
+
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filteredOutlaws = {}
+        for _, b in ipairs(activeOutlaws) do
+            local tName = (b.targetName or b.target_name or ""):lower()
+            local pName = (b.placerName or b.placer_name or ""):lower()
+            if tName:find(q, 1, true) or pName:find(q, 1, true) then
+                table.insert(filteredOutlaws, b)
+            end
+        end
+        activeOutlaws = filteredOutlaws
+    end
 
     -- Render 10 Most Wanted Cards in a 2x5 Grid
     for idx = 1, 10 do
@@ -2174,6 +2401,23 @@ function UI:RenderPveFeed()
     local deaths = KB.Leaderboard:GetRecentPveDeaths(40, currentMode)
     local theme = UI:GetTheme()
 
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, pd in ipairs(deaths) do
+            local nName = (pd.npc and pd.npc.name or ""):lower()
+            local nSpell = (pd.npc and pd.npc.spell or ""):lower()
+            local vName = (pd.victim and pd.victim.name or ""):lower()
+            local vGuild = (pd.victim and pd.victim.guild or ""):lower()
+            local loc = (pd.location and pd.location.zone or ""):lower()
+            local subLoc = (pd.location and pd.location.subZone or ""):lower()
+            if nName:find(q, 1, true) or nSpell:find(q, 1, true) or vName:find(q, 1, true) or vGuild:find(q, 1, true) or loc:find(q, 1, true) or subLoc:find(q, 1, true) then
+                table.insert(filtered, pd)
+            end
+        end
+        deaths = filtered
+    end
+
     -- 1. The Apex Bestiary Header (Deadliest Monsters & Hazards)
     local bwTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     bwTitle:SetPoint("TOPLEFT", 10, -8)
@@ -2222,6 +2466,19 @@ function UI:RenderPveFeed()
         if not already then
             table.insert(displayMonsters, fb)
         end
+    end
+
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filteredMonsters = {}
+        for _, m in ipairs(displayMonsters) do
+            local mName = (m.name or ""):lower()
+            local mZone = (m.zone or ""):lower()
+            if mName:find(q, 1, true) or mZone:find(q, 1, true) then
+                table.insert(filteredMonsters, m)
+            end
+        end
+        displayMonsters = filteredMonsters
     end
 
     -- Render 10 Apex Executioner Cards in a 2x5 Grid
@@ -2550,6 +2807,17 @@ function UI:RenderPveLeaderboard()
     c1Sub:SetText("|cff94a3b8Deadliest Monsters & Hazards|r")
 
     local topNpcs = KB.Leaderboard:GetTopDeadlyNpcs(15) or {}
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, m in ipairs(topNpcs) do
+            local mN = (m.name or ""):lower()
+            if mN:find(q, 1, true) then
+                table.insert(filtered, m)
+            end
+        end
+        topNpcs = filtered
+    end
     local y1 = -38
     for rank, m in ipairs(topNpcs) do
         local rRow = CreateFrame("Frame", nil, c1)
@@ -2592,6 +2860,18 @@ function UI:RenderPveLeaderboard()
     c2Sub:SetText("|cff94a3b8Adventurers Slain in Wilderness|r")
 
     local topVictims = KB.Leaderboard:GetTopPveVictims(15) or {}
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, v in ipairs(topVictims) do
+            local vN = (v.name or ""):lower()
+            local vC = (v.class or ""):lower()
+            if vN:find(q, 1, true) or vC:find(q, 1, true) then
+                table.insert(filtered, v)
+            end
+        end
+        topVictims = filtered
+    end
     local y2 = -38
     for rank, v in ipairs(topVictims) do
         local rRow = CreateFrame("Frame", nil, c2)
@@ -2637,6 +2917,17 @@ function UI:RenderPveLeaderboard()
     c3Sub:SetText("|cff94a3b8Deadliest Zones by Body Count|r")
 
     local topZones = KB.Leaderboard:GetTopPveZones(12) or {}
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, z in ipairs(topZones) do
+            local zN = (z.zone or ""):lower()
+            if zN:find(q, 1, true) then
+                table.insert(filtered, z)
+            end
+        end
+        topZones = filtered
+    end
     local y3 = -38
     for rank, z in ipairs(topZones) do
         local rRow = CreateFrame("Frame", nil, c3)
@@ -2703,6 +2994,22 @@ function UI:RenderPveBounties()
         { name = "Stitches", title = "Terror of Darkshire", level = 35, classification = "ELITE ABOMINATION", zone = "Duskwood (Darkshire Road)", abilities = "Aura of Rot, Slam", desc = "Colossal abomination assembled by Abercrombie, marching relentlessly down the main road to Darkshire.", icon = "Interface\\Icons\\INV_Misc_MonsterHead_03" },
         { name = "Devilsaur", title = "Apex Jungle Tyrant", level = 55, classification = "APEX PREDATOR", zone = "Un'Goro Crater", abilities = "Trample, Terrifying Roar", desc = "Terrifying apex predators possessing surprising stealth, crushing unwary adventurers underfoot.", icon = "Interface\\Icons\\Ability_Hunter_Pet_Devilsaur" },
     }
+
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filteredElites = {}
+        for _, wm in ipairs(notoriousElites) do
+            local eN = (wm.name or ""):lower()
+            local eT = (wm.title or ""):lower()
+            local eZ = (wm.zone or ""):lower()
+            local eA = (wm.abilities or ""):lower()
+            local eD = (wm.desc or ""):lower()
+            if eN:find(q, 1, true) or eT:find(q, 1, true) or eZ:find(q, 1, true) or eA:find(q, 1, true) or eD:find(q, 1, true) then
+                table.insert(filteredElites, wm)
+            end
+        end
+        notoriousElites = filteredElites
+    end
 
     local yOffset = -86
     for idx, wm in ipairs(notoriousElites) do
@@ -2807,6 +3114,18 @@ function UI:RenderPveZones()
         if not already then table.insert(displayZones, fb) end
     end
 
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, z in ipairs(displayZones) do
+            local zN = (z.zone or ""):lower()
+            if zN:find(q, 1, true) then
+                table.insert(filtered, z)
+            end
+        end
+        displayZones = filtered
+    end
+
     local yOffset = -52
     for idx, z in ipairs(displayZones) do
         local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
@@ -2892,6 +3211,20 @@ function UI:RenderPveRallies()
         for _, b in pairs(WoWKillboardDB.distressBeacons) do
             table.insert(beacons, b)
         end
+    end
+
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, b in ipairs(beacons) do
+            local bN = (b.character_name or ""):lower()
+            local bZ = (b.zone or ""):lower()
+            local bM = (b.message or ""):lower()
+            if bN:find(q, 1, true) or bZ:find(q, 1, true) or bM:find(q, 1, true) then
+                table.insert(filtered, b)
+            end
+        end
+        beacons = filtered
     end
 
     local yOffset = -118
@@ -2997,12 +3330,18 @@ function UI:ShowPveDeathDetail(pd)
     -- Details Text
     local subzoneStr = (subZone ~= "") and (" (" .. subZone .. ")") or ""
     local timeAgoStr = KB.Utils and KB.Utils.FormatTimeAgo and KB.Utils.FormatTimeAgo(ts) or "Recently"
+    local gpsStr = ""
+    if pd.location and pd.location.x and pd.location.x > 0 then
+        gpsStr = string.format("  (GPS: %.1f, %.1f | MapID: %s)", pd.location.x, pd.location.y, tostring(pd.location.mapId or 0))
+    end
+    local dmgStr = (nDmg > 0) and (KB.Utils and KB.Utils.FormatNumber and KB.Utils.FormatNumber(nDmg) or tostring(nDmg)) or "Lethal"
+
     m.DetailsText:SetText(string.format(
-        "|cffffd100Engagement:|r |cffff4444Wilderness PvE Casualty|r  |  |cffef4444Fatal Strike: %s|r\n" ..
-        "|cffffd100Location:|r %s%s\n" ..
+        "|cffffd100Engagement:|r |cffff4444Wilderness PvE Casualty|r  |  |cffef4444Fatal Strike: %s (%s dmg)|r\n" ..
+        "|cffffd100Location:|r %s%s%s\n" ..
         "|cffffd100Timestamp:|r %s  (|cff888888%s|r)\n" ..
         "|cffffd100Casualty Record ID:|r %s",
-        nSpell, zName, subzoneStr,
+        nSpell, dmgStr, zName, subzoneStr, gpsStr,
         date("%Y-%m-%d %H:%M:%S", ts), timeAgoStr, dId
     ))
 
@@ -3111,6 +3450,20 @@ function UI:RenderLeaderboard()
 
     if hlSubTab == "PLAYERS" then
         local topKillers = KB.Leaderboard:GetTopKillers(currentMode, 15)
+        if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+            local q = UI.activeSearchQuery
+            local filtered = {}
+            for _, p in ipairs(topKillers) do
+                local pN = (p.name or ""):lower()
+                local pG = (p.guild or ""):lower()
+                local pC = (p.class or ""):lower()
+                local pF = (p.faction or ""):lower()
+                if pN:find(q, 1, true) or pG:find(q, 1, true) or pC:find(q, 1, true) or pF:find(q, 1, true) then
+                    table.insert(filtered, p)
+                end
+            end
+            topKillers = filtered
+        end
         local pName = UnitName("player")
         local pRank, pStats, totalPlayers = KB.Leaderboard:GetPlayerRankAndStats(pName, currentMode)
         local playerInTop15 = (pRank and pRank <= 15)
@@ -3433,6 +3786,18 @@ function UI:RenderLeaderboard()
 
     elseif hlSubTab == "GUILDS" then
         local topGuilds = KB.Leaderboard:GetTopGuilds(currentMode, 15)
+        if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+            local q = UI.activeSearchQuery
+            local filtered = {}
+            for _, g in ipairs(topGuilds) do
+                local gN = (g.guild or ""):lower()
+                local gF = (g.faction or ""):lower()
+                if gN:find(q, 1, true) or gF:find(q, 1, true) then
+                    table.insert(filtered, g)
+                end
+            end
+            topGuilds = filtered
+        end
         local myGuild = GetGuildInfo("player")
         local gRank, gStats, totalGuilds = KB.Leaderboard:GetGuildRankAndStats(myGuild, currentMode)
         local guildInTop15 = (gRank and gRank <= 15)
@@ -3567,6 +3932,20 @@ function UI:RenderLeaderboard()
 
     elseif hlSubTab == "GANKERS_24H" then
         local gankers = (WoWKillboard_RealmData and WoWKillboard_RealmData.TopGankers24h) or (WoWKillboardDB and WoWKillboardDB.RealmData and WoWKillboardDB.RealmData.TopGankers24h) or {}
+        if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+            local q = UI.activeSearchQuery
+            local filtered = {}
+            for _, gk in ipairs(gankers) do
+                local gkN = (gk.name or ""):lower()
+                local gkC = (gk.class or ""):lower()
+                local gkZ = (gk.zone or ""):lower()
+                local gkG = (gk.guild or ""):lower()
+                if gkN:find(q, 1, true) or gkC:find(q, 1, true) or gkZ:find(q, 1, true) or gkG:find(q, 1, true) then
+                    table.insert(filtered, gk)
+                end
+            end
+            gankers = filtered
+        end
 
         -- Table Header Row
         local thRow = CreateFrame("Frame", nil, UI.ContentFrame)
@@ -3796,6 +4175,21 @@ function UI:RenderBounties()
         table.sort(activeList, function(a, b)
             return (a.amountCopper or 0) > (b.amountCopper or 0)
         end)
+
+        if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+            local q = UI.activeSearchQuery
+            local filtered = {}
+            for _, b in ipairs(activeList) do
+                local tN = (b.targetName or b.target_name or ""):lower()
+                local pN = (b.placerName or b.placer_name or ""):lower()
+                local tF = (b.targetFaction or b.target_faction or ""):lower()
+                local tC = (b.targetClass or b.target_class or ""):lower()
+                if tN:find(q, 1, true) or pN:find(q, 1, true) or tF:find(q, 1, true) or tC:find(q, 1, true) then
+                    table.insert(filtered, b)
+                end
+            end
+            activeList = filtered
+        end
 
         local hasBounties = (#activeList > 0)
         for _, b in ipairs(activeList) do
@@ -4178,6 +4572,17 @@ function UI:RenderZones()
 
     -- 1. Downloaded Realm Telemetry Zones (via Two-Way Sync)
     local realmZones = (WoWKillboard_RealmData and WoWKillboard_RealmData.DeadliestZones) or (WoWKillboardDB and WoWKillboardDB.RealmData and WoWKillboardDB.RealmData.DeadliestZones) or {}
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, rz in ipairs(realmZones) do
+            local zN = (rz.zone or ""):lower()
+            if zN:find(q, 1, true) then
+                table.insert(filtered, rz)
+            end
+        end
+        realmZones = filtered
+    end
     if #realmZones > 0 then
         local rHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
         rHeader:SetSize(820, 28)
@@ -4229,6 +4634,18 @@ function UI:RenderZones()
     local zones = (KB.Leaderboard.GetTopZones and KB.Leaderboard:GetTopZones(currentMode, 15))
                or (KB.Leaderboard.GetDeadliestZones and KB.Leaderboard:GetDeadliestZones(15))
                or {}
+
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, z in ipairs(zones) do
+            local zN = (z.zone or ""):lower()
+            if zN:find(q, 1, true) then
+                table.insert(filtered, z)
+            end
+        end
+        zones = filtered
+    end
 
     for rank, z in ipairs(zones) do
         local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
@@ -4340,6 +4757,20 @@ function UI:RenderRallies()
     yOffset = yOffset - 26
 
     local rallies = (KB.Reinforcements and KB.Reinforcements.GetOpenRallies) and KB.Reinforcements:GetOpenRallies() or {}
+    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
+        local q = UI.activeSearchQuery
+        local filtered = {}
+        for _, r in ipairs(rallies) do
+            local rN = (r.character_name or ""):lower()
+            local rG = (r.guild_name or ""):lower()
+            local rZ = (r.zone or ""):lower()
+            local rNote = (r.note or r.message or ""):lower()
+            if rN:find(q, 1, true) or rG:find(q, 1, true) or rZ:find(q, 1, true) or rNote:find(q, 1, true) then
+                table.insert(filtered, r)
+            end
+        end
+        rallies = filtered
+    end
 
     if #rallies == 0 then
         local empty = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
@@ -4469,7 +4900,7 @@ function UI:CreateDetailModal()
     local modal = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
     UI.DetailModal = modal
     modal.Scrim = scrim
-    modal:SetSize(520, 360)
+    modal:SetSize(540, 410)
     modal:SetPoint("CENTER", mainFrame, "CENTER", 0, 0)
     modal:SetFrameStrata("DIALOG")
     modal:SetFrameLevel(mainFrame:GetFrameLevel() + 50)
@@ -4526,7 +4957,7 @@ function UI:CreateDetailModal()
 
     -- Left Card: Killer Dossier
     local killerCard = CreateFrame("Frame", nil, modal, "BackdropTemplate")
-    killerCard:SetSize(236, 118)
+    killerCard:SetSize(246, 118)
     killerCard:SetPoint("TOPLEFT", 16, -38)
     killerCard:SetFrameStrata("DIALOG")
     killerCard:SetFrameLevel(modal:GetFrameLevel() + 2)
@@ -4546,6 +4977,13 @@ function UI:CreateDetailModal()
     local kIcon = UI:CreateClassIcon(killerCard, "WARRIOR", 28)
     kIcon:SetPoint("TOPLEFT", 8, -24)
     killerCard.Icon = kIcon
+
+    local kIconBorder = killerCard:CreateTexture(nil, "OVERLAY")
+    kIconBorder:SetTexture("Interface\\AchievementFrame\\UI-Achievement-IconFrame")
+    kIconBorder:SetTexCoord(0, 0.5625, 0, 0.5625)
+    kIconBorder:SetSize(36, 36)
+    kIconBorder:SetPoint("CENTER", kIcon, "CENTER", 0, 0)
+    killerCard.IconBorder = kIconBorder
 
     local kName = killerCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     kName:SetPoint("TOPLEFT", kIcon, "TOPRIGHT", 8, 0)
@@ -4568,7 +5006,7 @@ function UI:CreateDetailModal()
 
     -- Right Card: Victim Dossier
     local victimCard = CreateFrame("Frame", nil, modal, "BackdropTemplate")
-    victimCard:SetSize(236, 118)
+    victimCard:SetSize(246, 118)
     victimCard:SetPoint("TOPRIGHT", -16, -38)
     victimCard:SetFrameStrata("DIALOG")
     victimCard:SetFrameLevel(modal:GetFrameLevel() + 2)
@@ -4588,6 +5026,13 @@ function UI:CreateDetailModal()
     local vIcon = UI:CreateClassIcon(victimCard, "WARRIOR", 28)
     vIcon:SetPoint("TOPLEFT", 8, -24)
     victimCard.Icon = vIcon
+
+    local vIconBorder = victimCard:CreateTexture(nil, "OVERLAY")
+    vIconBorder:SetTexture("Interface\\AchievementFrame\\UI-Achievement-IconFrame")
+    vIconBorder:SetTexCoord(0, 0.5625, 0, 0.5625)
+    vIconBorder:SetSize(36, 36)
+    vIconBorder:SetPoint("CENTER", vIcon, "CENTER", 0, 0)
+    victimCard.IconBorder = vIconBorder
 
     local vName = victimCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     vName:SetPoint("TOPLEFT", vIcon, "TOPRIGHT", 8, 0)
@@ -4690,9 +5135,32 @@ function UI:ShowKillDetail(km)
     local soloStr = km.isSolo and "|cff00ff66Certified Solo Kill|r" or (((km.attackersCount or 1) > 1) and string.format("|cffffaa00Gang Engagement (%d Attackers)|r", km.attackersCount) or "|cffffaa00Assisted Engagement|r")
     local subzoneStr = (km.location.subZone and km.location.subZone ~= "") and (" (" .. km.location.subZone .. ")") or ""
 
+    local fatalSpell = km.finalSpell or (km.killer and km.killer.spell)
+    local fatalSpellStr = (fatalSpell and fatalSpell ~= "" and fatalSpell ~= "Combat Strike") and fatalSpell or "Melee Swing"
+    local fatalLine = string.format("\n|cffffd100Fatal Strike:|r |cffff5533%s|r", fatalSpellStr)
+
+    local attackersStr = ""
+    if km.attackers and #km.attackers > 1 then
+        attackersStr = "\n|cffffd100Attackers Breakdown:|r "
+        local attParts = {}
+        for _, att in ipairs(km.attackers) do
+            local aName = att.name or "Attacker"
+            local aClass = att.class or "UNKNOWN"
+            local aDmg = tonumber(att.damage or 0) or 0
+            local aStr = KB.Utils.ColorizeByClass(aName, aClass)
+            if aDmg > 0 then
+                aStr = aStr .. string.format(" (|cffffd100%s|r)", KB.Utils.FormatNumber(aDmg))
+            end
+            table.insert(attParts, aStr)
+        end
+        attackersStr = attackersStr .. table.concat(attParts, ", ")
+    elseif km.isSolo then
+        attackersStr = "\n|cffffd100Combat Purity:|r |cff00ff66100% Certified Solo Execution|r"
+    end
+
     m.DetailsText:SetText(string.format(
-        "|cffffd100Engagement:|r %s  |  %s\n|cffffd100Location:|r %s%s  (GPS: %.1f, %.1f | MapID: %s)\n|cffffd100Timestamp:|r %s  (|cff888888%s|r)\n|cffffd100Kill ID:|r %s",
-        modeStr, soloStr, km.location.zone or "Unknown", subzoneStr, km.location.x or 0, km.location.y or 0, tostring(km.location.mapId or 0),
+        "|cffffd100Engagement:|r %s  |  %s%s%s\n|cffffd100Location:|r %s%s  (GPS: %.1f, %.1f | MapID: %s)\n|cffffd100Timestamp:|r %s  (|cff888888%s|r)\n|cffffd100Kill ID:|r %s",
+        modeStr, soloStr, fatalLine, attackersStr, km.location.zone or "Unknown", subzoneStr, km.location.x or 0, km.location.y or 0, tostring(km.location.mapId or 0),
         date("%Y-%m-%d %H:%M:%S", km.timestamp), KB.Utils.FormatTimeAgo(km.timestamp), km.killId
     ))
 
@@ -6723,9 +7191,10 @@ function UI:InitializeKillBanner()
     victimClassBorder:SetTexCoord(0, 0.5625, 0, 0.5625)
     killBanner.VictimClassBorder = victimClassBorder
 
-    -- Stacked Victim text: [Lvl] PlayerName in 16pt Bold with (2, -2) black shadow (dropped 2px to align with icon center)
+    -- Stacked Victim text: [Lvl] PlayerName in 16pt Bold with (2, -2) black shadow (bounded before center safe zone)
     local victimNameText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
     victimNameText:SetPoint("TOPLEFT", victimClassFrame, "TOPRIGHT", 8, -4)
+    victimNameText:SetPoint("RIGHT", killBanner, "CENTER", -55, 0)
     victimNameText:SetJustifyH("LEFT")
     victimNameText:SetWordWrap(false)
     victimNameText:SetShadowOffset(2, -2)
@@ -6736,6 +7205,7 @@ function UI:InitializeKillBanner()
     -- Sub-text: <GuildName> in 12pt regular muted silver / quest brown (#382A1D)
     local victimSubText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     victimSubText:SetPoint("BOTTOMLEFT", victimClassFrame, "BOTTOMRIGHT", 8, 2)
+    victimSubText:SetPoint("RIGHT", killBanner, "CENTER", -55, 0)
     victimSubText:SetJustifyH("LEFT")
     victimSubText:SetWordWrap(false)
     victimSubText:SetShadowOffset(1, -1)
@@ -6814,6 +7284,7 @@ function UI:InitializeKillBanner()
     -- Right-aligned [Lvl] KillerName in 16pt Bold hostile crimson (#C41E3A / #FF4040) with (2, -2) black shadow
     local killerNameText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
     killerNameText:SetPoint("TOPRIGHT", killerIconFrame, "TOPLEFT", -8, -4)
+    killerNameText:SetPoint("LEFT", killBanner, "CENTER", 55, 0)
     killerNameText:SetJustifyH("RIGHT")
     killerNameText:SetWordWrap(false)
     killerNameText:SetShadowOffset(2, -2)
@@ -6824,6 +7295,7 @@ function UI:InitializeKillBanner()
     -- Stacked subtext: with Pyroblast or <GuildName> in 12pt regular muted silver / quest brown (#382A1D)
     local killerSubText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     killerSubText:SetPoint("BOTTOMRIGHT", killerIconFrame, "BOTTOMLEFT", -8, 2)
+    killerSubText:SetPoint("LEFT", killBanner, "CENTER", 55, 0)
     killerSubText:SetJustifyH("RIGHT")
     killerSubText:SetWordWrap(false)
     killerSubText:SetShadowOffset(1, -1)

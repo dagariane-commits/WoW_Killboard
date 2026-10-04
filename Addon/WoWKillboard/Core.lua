@@ -1178,8 +1178,70 @@ end
 
 
 -- Lightweight Floating Launcher Button (100% Taint-Free, Zero GameTooltip Touching, Anonymous Frame)
+function KB:UpdateMinimapTheme()
+    local btn = KB.MinimapButton
+    if not btn then return end
+    local curTheme = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "classic"
+    local isClassic = (curTheme == "classic")
+
+    if isClassic then
+        -- Classic Forever Theme: Circular Blizzard minimap border
+        btn:SetBackdrop(nil)
+        if btn.Border then
+            btn.Border:Show()
+            btn.Border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+            btn.Border:SetSize(54, 54)
+            btn.Border:ClearAllPoints()
+            btn.Border:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
+        end
+        if btn.Icon then
+            btn.Icon:SetSize(22, 22)
+            btn.Icon:ClearAllPoints()
+            btn.Icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
+        end
+        if btn.TipFrame then
+            btn.TipFrame:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                tile = true, tileSize = 12, edgeSize = 12,
+                insets = { left = 2, right = 2, top = 2, bottom = 2 }
+            })
+            btn.TipFrame:SetBackdropColor(0.08, 0.07, 0.05, 0.95)
+            btn.TipFrame:SetBackdropBorderColor(0.85, 0.65, 0.20, 0.95)
+        end
+    else
+        -- ElvUI Minimalist Theme: Sleek square 1px black border
+        btn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        btn:SetBackdropColor(0.06, 0.06, 0.06, 1.0)
+        btn:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+        if btn.Border then
+            btn.Border:Hide()
+        end
+        if btn.Icon then
+            btn.Icon:SetSize(28, 28)
+            btn.Icon:ClearAllPoints()
+            btn.Icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
+        end
+        if btn.TipFrame then
+            btn.TipFrame:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+                insets = { left = 0, right = 0, top = 0, bottom = 0 }
+            })
+            btn.TipFrame:SetBackdropColor(0.05, 0.05, 0.05, 0.98)
+            btn.TipFrame:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+        end
+    end
+end
+
 function KB:CreateMinimapButton()
-    local btn = CreateFrame("Button", nil, UIParent)
+    local btn = CreateFrame("Button", nil, UIParent, "BackdropTemplate")
     btn:SetSize(32, 32)
     btn:SetFrameStrata("HIGH")
     btn:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -180, -30)
@@ -1207,6 +1269,10 @@ function KB:CreateMinimapButton()
     border:SetPoint("TOPLEFT", 0, 0)
     border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
 
+    btn.Icon = icon
+    btn.Border = border
+    KB.MinimapButton = btn
+
     btn:SetScript("OnClick", function(self, button)
         if button == "LeftButton" then
             if KB.UI then KB.UI:Toggle() end
@@ -1221,15 +1287,8 @@ function KB:CreateMinimapButton()
     local tipFrame = CreateFrame("Frame", nil, btn, "BackdropTemplate")
     tipFrame:SetSize(220, 64)
     tipFrame:SetPoint("BOTTOMLEFT", btn, "TOPLEFT", 0, 4)
-    tipFrame:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 12, edgeSize = 12,
-        insets = { left = 2, right = 2, top = 2, bottom = 2 }
-    })
-    tipFrame:SetBackdropColor(0.035, 0.045, 0.07, 0.96)
-    tipFrame:SetBackdropBorderColor(0.85, 0.65, 0.20, 0.9)
     tipFrame:Hide()
+    btn.TipFrame = tipFrame
 
     local tipText = tipFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     tipText:SetPoint("CENTER", 0, 0)
@@ -1242,6 +1301,37 @@ function KB:CreateMinimapButton()
         tipFrame:Show()
     end)
     btn:SetScript("OnLeave", function() tipFrame:Hide() end)
+
+    KB:UpdateMinimapTheme()
+
+    -- Optional LibDataBroker Registration for Titan Panel, ElvUI DataTexts, ChocolateBar
+    if LibStub then
+        local ldb = LibStub:GetLibrary("LibDataBroker-1.1", true)
+        if ldb and not KB.LDBDataObject then
+            KB.LDBDataObject = ldb:NewDataObject("WoWKillboard", {
+                type = "data source",
+                text = "WoWKB",
+                icon = "Interface\\Icons\\Achievement_PVP_P_01",
+                OnClick = function(self, button)
+                    if button == "LeftButton" then
+                        if KB.UI then KB.UI:Toggle() end
+                    elseif button == "RightButton" then
+                        local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "classic"
+                        local nextTheme = (cur == "classic") and "elvui" or "classic"
+                        if KB.UI then KB.UI:SetTheme(nextTheme) end
+                    end
+                end,
+                OnTooltipShow = function(tooltip)
+                    local killsCount = (WoWKillboardDB and WoWKillboardDB.kills) and KB.Utils.TableLength(WoWKillboardDB.kills) or 0
+                    local curTheme = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName():upper() or "CLASSIC"
+                    tooltip:AddLine("|cffffd100WoW Killboard|r |cff888888[" .. curTheme .. "]|r")
+                    tooltip:AddLine(string.format("|cff10b981Session Kills Logged: %d|r", killsCount))
+                    tooltip:AddLine("|cff00e5ffLeft-Click:|r Toggle Dashboard")
+                    tooltip:AddLine("|cff00e5ffRight-Click:|r Toggle Theme")
+                end,
+            })
+        end
+    end
 end
 
 -- First-Time Login Early Beta & Feedback Welcome Dialog Trigger
