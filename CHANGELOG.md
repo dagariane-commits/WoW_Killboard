@@ -5,6 +5,28 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.100] - 2026-10-03
+
+### Added
+- **Modal Backdrop Scrim & Dimmer Layer (`Addon/WoWKillboard/UI.lua`)**:
+  - Implemented an anonymous, 78% opacity dark scrim (`modal.Scrim`) covering `mainFrame` at frame level `+40` behind the detail modal (`+50`).
+  - Dims the busy live combat feed to eliminate visual distraction when inspecting Killmail Combat Records or Wilderness Casualty Dossiers.
+  - Added click-to-dismiss behavior on the scrim area while fully isolating background frame interactions and preserving taint-free `ESCAPE` key propagation.
+- **Faction-Skinning for Combat Feed & Casualty Rows (`Addon/WoWKillboard/UI.lua`)**:
+  - Replicated web platform styling across in-game rows: dynamic victor faction detection automatically paints row borders and backgrounds in Alliance Blue (`#3b82f6` / `#0070dd`) or Horde Red (`#dc2626` / `#c41e3a`).
+  - Added matching victor faction left accent bars and interactive hover illumination.
+  - Skinned PvE wilderness casualty rows with victim faction tints and styled executioner/fallen mortal cards in `UI.DetailModal`.
+
+### Fixed
+- **Hostile NPC Death Attribution & Duplicate Death Debouncing (`Addon/WoWKillboard/CombatTracker.lua`)**:
+  - Fixed false `Environmental Hazard (Fatal Impact / Mishap)` reports when dying to hostile NPCs.
+  - Added active hostile NPC tracking in `CT:RecordDamage` (`CT.LastHostileNpc`) for incoming mob damage.
+  - Implemented 3-second death debouncing (`(now - CT.LastPlayerDeathTime) <= 3`) to prevent subsequent `PLAYER_DEAD` events from overwriting legitimate `UNIT_DIED` NPC combat records with empty damage fallback tables.
+  - Expanded PvE fallback resolution to check `CT.LastHostileNpc`, `activeEnemyTarget`, and target unit within a 60-second window before defaulting to environmental mishaps.
+- **Active Combatants Metric Calibration (`web/server.py`)**:
+  - Removed `UNION SELECT name FROM characters` and `COUNT(*) FROM characters` from activity summary queries.
+  - Corrected "Active Characters" metric to strictly count verified combatants with recorded kills or deaths rather than passive scanner-indexed directory names.
+
 ## [1.4.99] - 2026-10-03
 
 ### Added
