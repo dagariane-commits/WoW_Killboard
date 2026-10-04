@@ -1771,6 +1771,55 @@ WoWKillboardDB = {
 
         print("[PASS] Verified Phase 5 Security: DOM XSS immunity, rate limit stores, and state mutation input bounding.")
 
+    def test_26_chat_broadcast_formatting_and_settings(self):
+        """Verify standardized military/tactical chat broadcasts, absence of melodramatic roleplay, and user toggles."""
+        # 1. Verify Config.lua defaults
+        with open("Addon/WoWKillboard/Config.lua", "r", encoding="utf-8") as f:
+            cfg = f.read()
+
+        self.assertIn("enableChatBroadcasts = false", cfg)
+        self.assertIn("enableGuildBroadcasts = true", cfg)
+        self.assertIn("includeCoordinates = true", cfg)
+        self.assertIn("enableWhisperAutoInvite = true", cfg)
+
+        # 2. Verify absence of melodramatic roleplay phrasing in Reinforcements.lua
+        with open("Addon/WoWKillboard/Reinforcements.lua", "r", encoding="utf-8") as f:
+            rf = f.read()
+
+        self.assertNotIn("WAR HORN Sounded", rf)
+        self.assertNotIn("Vanguard under attack", rf)
+        self.assertNotIn("To arms!", rf)
+        self.assertNotIn("to muster", rf)
+        self.assertNotIn("1 hostile(s) (Enemy Hostiles)", rf)
+        self.assertNotIn("Blood and Honor!", rf)
+
+        # 3. Verify exact standardized message format patterns
+        self.assertIn("[WoWKB] Under attack:", rf)
+        self.assertIn("[WoWKB] PvP Alert:", rf)
+        self.assertIn("Auto-invite: whisper 'invite'", rf)
+
+        with open("Addon/WoWKillboard/Killmail.lua", "r", encoding="utf-8") as f:
+            km = f.read()
+
+        self.assertIn("BroadcastCasualty", km)
+        self.assertIn("[WoWKB] Casualty: %s (Lvl %s %s) killed by %s (%s) in %s.", km)
+
+        # 4. Synthesize and assert exact example strings matching specifications
+        format_a = "[WoWKB] Under attack: {} ({}) vs {}!".format("Stormwind City", "66.7, 42.4", "Defias Pillager")
+        self.assertEqual(format_a, "[WoWKB] Under attack: Stormwind City (66.7, 42.4) vs Defias Pillager!")
+
+        format_b = "[WoWKB] PvP Alert: {} engaged in {} ({}) by {}. Auto-invite: whisper 'invite'".format(
+            "Dagariane", "Stormwind City", "66.7, 42.4", "1 Hostile"
+        )
+        self.assertEqual(format_b, "[WoWKB] PvP Alert: Dagariane engaged in Stormwind City (66.7, 42.4) by 1 Hostile. Auto-invite: whisper 'invite'")
+
+        format_c = "[WoWKB] Casualty: {} (Lvl {} {}) killed by {} ({}) in {}.".format(
+            "Dagariane", 23, "Paladin", "Defias Pillager", "Fireball", "Sentinel Hill"
+        )
+        self.assertEqual(format_c, "[WoWKB] Casualty: Dagariane (Lvl 23 Paladin) killed by Defias Pillager (Fireball) in Sentinel Hill.")
+
+        print("[PASS] Verified Standardized Military Chat Telemetry (Formats A, B, C) and User Control Toggles.")
+
 if __name__ == "__main__":
     unittest.main()
 

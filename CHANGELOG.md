@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.100] - 2026-10-03
 
 ### Added
+- **Standardized Military/Tactical Chat Telemetry (`Addon/WoWKillboard/Reinforcements.lua`, `Killmail.lua`, `IntelScanner.lua`, `Config.lua`, `Core.lua`, `UI.lua`)**:
+  - Stripped all melodramatic roleplay phrasing (`"WAR HORN Sounded"`, `"Vanguard under attack"`, `"To arms!"`, `"to muster"`, `"Blood and Honor!"`, and redundant `"1 hostile(s) (Enemy Hostiles)"`).
+  - Standardized all chat broadcasts to functional, concise, single-line military/tactical telemetry with clean `[WoWKB]` or `[WoWKB Alert]` branding:
+    - **Format A (Local / Yell Callout):** `[WoWKB] Under attack: <Zone> (<Coords>) vs <Threat>!` (e.g. `[WoWKB] Under attack: Stormwind City (66.7, 42.4) vs Defias Pillager!`).
+    - **Format B (Guild / Party / Raid Callout):** `[WoWKB] PvP Alert: <Player> engaged in <Zone> (<Coords>) by <ThreatSummary>. Auto-invite: whisper 'invite'` (e.g. `[WoWKB] PvP Alert: Dagariane engaged in Stormwind City (66.7, 42.4) by 1 Hostile. Auto-invite: whisper 'invite'`).
+    - **Format C (Casualty / Death Broadcast):** `[WoWKB] Casualty: <Victim> (Lvl <Level> <Class>) killed by <Killer> (<Spell/Ability>) in <Location>.` (e.g. `[WoWKB] Casualty: Dagariane (Lvl 23 Paladin) killed by Defias Pillager (Fireball) in Sentinel Hill.`).
+  - **User Control Toggles & Addon Settings (`UI:ShowSettingsModal` & `Config.lua`):**
+    - `Enable Chat Broadcasts (Yell / Say)`: [Default: Off / Opt-in] — Dispatches public `/yell` defense callouts only when explicitly opted in by user.
+    - `Enable Guild Broadcasts`: [Default: On] — Routes PvP alerts, casualties, and defense requests to Guild chat.
+    - `Include Coordinates`: [Default: On] — Appends real-time map GPS coordinates (e.g. `(66.7, 42.4)`) to chat callouts.
+    - `Enable Whisper Auto-Invite`: [Default: On] — Automatically invites allies whispering `'invite'` or `'rally'` during defense alerts.
+  - Added dedicated slash command controls (`/kb chat`, `/kb guild`, `/kb coords`, `/kb autoinvite`, `/kb testchat`).
 - **Authentic Classic Death Toast Banner Scale & Typography Calibration (`Addon/WoWKillboard/UI.lua`)**:
   - Scaled up the in-game death toast banner to Blizzard standard proportions: **540px wide × 96px high** with generous internal padding (12px vertical, 18px horizontal).
   - **42px × 42px Icon Matrix:** Scaled Faction crest (Alliance Lion / Horde Crest) and Class/Threat icons to high-visibility 42×42 dimensions with subtle gold and crimson threat rings.

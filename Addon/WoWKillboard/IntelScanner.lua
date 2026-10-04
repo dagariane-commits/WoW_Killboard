@@ -116,22 +116,33 @@ function IS:SpotTarget(notes)
         table.remove(WoWKillboardDB.intelSightings, 1)
     end
 
+    -- User settings
+    local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+    local enableChat = (s.enableChatBroadcasts == true)
+    local enableGuild = (s.enableGuildBroadcasts ~= false)
+    local includeCoords = (s.includeCoordinates ~= false)
+
     -- Format broadcast message
     local guildTag = (targetGuild ~= "" and " <" .. targetGuild .. ">" or "")
     local subzoneTag = (subzone ~= "" and " (" .. subzone .. ")" or "")
-    local broadcastMsg = string.format("[WoWKB Intel] [Spot] Spotted %s (Lvl %d %s)%s in %s%s at (%.1f, %.1f)! %s",
-        targetName, targetLevel, targetClass, guildTag, zone, subzoneTag, x, y, noteText)
+    local coordsStr = includeCoords and string.format(" at (%.1f, %.1f)", x, y) or ""
+    local noteSuffix = (noteText ~= "" and " " .. noteText or "")
+    local broadcastMsg = string.format("[WoWKB Alert] Spotted: %s (Lvl %d %s)%s in %s%s%s.%s",
+        targetName, targetLevel, targetClass, guildTag, zone, subzoneTag, coordsStr, noteSuffix)
 
     -- Local feedback
-    SafePrint(string.format("|cffff8000[WoWKB Intel]|r Reported hostile: |cffff3333%s|r%s in |cffffffff%s|r at (%.1f, %.1f)!",
-        targetName, guildTag, zone, x, y))
+    SafePrint(string.format("|cff00e5ff[WoWKB Alert]|r Reported hostile: |cffff3333%s|r%s in |cffffffff%s|r%s.",
+        targetName, guildTag, zone, coordsStr))
 
     -- Channel broadcasts
-    if IsInGuild() then
+    if IsInGuild() and enableGuild then
         SendChatMessage(broadcastMsg, "GUILD")
     end
     if IsInGroup() then
         SendChatMessage(broadcastMsg, IsInRaid() and "RAID" or "PARTY")
+    end
+    if enableChat and not (IsInInstance and IsInInstance()) then
+        pcall(SendChatMessage, broadcastMsg, "YELL")
     end
 
     -- P2P Addon Wire Broadcast

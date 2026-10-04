@@ -154,6 +154,35 @@ function U.ColorizeByFaction(text, faction)
     return string.format("|cff%s%s|r", colorHex, text)
 end
 
+local CLASS_TITLE_MAP = {
+    ["WARRIOR"]     = "Warrior",
+    ["PALADIN"]     = "Paladin",
+    ["HUNTER"]      = "Hunter",
+    ["ROGUE"]       = "Rogue",
+    ["PRIEST"]      = "Priest",
+    ["DEATHKNIGHT"] = "Death Knight",
+    ["SHAMAN"]      = "Shaman",
+    ["MAGE"]        = "Mage",
+    ["WARLOCK"]     = "Warlock",
+    ["MONK"]        = "Monk",
+    ["DRUID"]       = "Druid",
+    ["DEMONHUNTER"] = "Demon Hunter",
+    ["EVOKER"]      = "Evoker",
+}
+
+-- Return standardized title-cased class name for telemetry
+function U.GetClassTitle(class)
+    if not class or not U.CanAccess(class) or class == "" or class == "UNKNOWN" then
+        return "Adventurer"
+    end
+    local raw = tostring(class):upper():gsub("%s+", "")
+    if CLASS_TITLE_MAP[raw] then
+        return CLASS_TITLE_MAP[raw]
+    end
+    local s = tostring(class)
+    return s:sub(1, 1):upper() .. s:sub(2):lower()
+end
+
 -- Retrieve normalized map coordinates and zone names safely
 function U.GetPlayerLocation()
     local mapId = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")

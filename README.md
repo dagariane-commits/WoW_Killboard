@@ -253,6 +253,8 @@ WoW_Killboard/
    - `/killboard move` or `/wowkb move` — Unlock and reposition Kill Banner anywhere on screen.
    - `/killboard test` or `/wowkb test` — Preview Kill Banner with audio and raid warning.
    - `/killboard theme` — Switch between Classic WoW and ElvUI Minimalist themes.
+   - /killboard chat or /kb chat — Toggle public chat broadcasts (/yell) for open world defense (Opt-in).
+   - /killboard testchat or /kb testchat — Preview standardized military chat telemetry (Formats A, B, C).
    - `/warhorn` or `/kbrally` — Sound the War Horn (open-world emergency distress & auto-invite rally).
    - `/killboard stats` — View current session damage, healing, kills, and K/D.
    - `/killboard sync` or `/kb sync` — Flush combat SavedVariables to disk (`/reload`) to sync immediately with the live website.
