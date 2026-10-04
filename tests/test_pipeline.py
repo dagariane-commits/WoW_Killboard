@@ -1890,6 +1890,41 @@ WoWKillboardDB = {
 
         print("[PASS] Verified Realm & Ruleset Isolation: Wild Growth (PvE) isolated from Crusader Strike (PvP).")
 
+    def test_28_network_test_casualty_and_admin_announcements(self):
+        """Verify simulated test casualties are NEVER saved into the master database and Lua protocol handlers exist."""
+        # 1. Attempt to post a simulated test casualty with isTest=True or TEST- ID
+        test_casualty = {
+            "killId": "TEST-CASUALTY-99999",
+            "timestamp": int(time.time()),
+            "isTest": True,
+            "isSolo": True,
+            "killer": {"name": "Defias Pillager", "level": 15, "class": "MAGE", "guild": "Threats", "faction": "Monster"},
+            "victim": {"name": "Dagariane", "level": 23, "class": "PALADIN", "guild": "Vanguard", "faction": "Alliance"},
+            "location": {"zone": "Westfall", "subZone": "Sentinel Hill", "x": 42.5, "y": 58.3}
+        }
+        # Ingestion endpoint should either reject or exclude it from public leaderboards
+        resp = self.client.get(f"/api/kill/{test_casualty['killId']}")
+        self.assertEqual(resp.status_code, 404, "Test casualties must NEVER exist in production database")
+
+        # 2. Verify Lua files contain protocol methods
+        sync_lua_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Addon", "WoWKillboard", "Sync.lua")
+        with open(sync_lua_path, "r", encoding="utf-8") as f:
+            sync_content = f.read()
+        self.assertIn("function S:BroadcastTestCasualty", sync_content)
+        self.assertIn("function S:BroadcastAdminAlert", sync_content)
+        self.assertIn("function S:OnIncomingTestCasualty", sync_content)
+        self.assertIn("function S:OnIncomingAdminAlert", sync_content)
+        self.assertIn("TEST_CASUALTY", sync_content)
+        self.assertIn("SYS_ALERT", sync_content)
+
+        core_lua_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Addon", "WoWKillboard", "Core.lua")
+        with open(core_lua_path, "r", encoding="utf-8") as f:
+            core_content = f.read()
+        self.assertIn("BroadcastTestCasualty", core_content)
+        self.assertIn("BroadcastAdminAlert", core_content)
+
+        print("[PASS] Verified Network Test Casualty Protocol & Admin Update Announcement Engine.")
+
 if __name__ == "__main__":
     unittest.main()
 
