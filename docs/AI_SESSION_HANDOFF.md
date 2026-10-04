@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 04:35:00 EDT  
-> **Git Status**: Branch `main` (Preparing commit for v1.4.113).  
+> **Last Synchronized**: 2026-10-04 04:50:00 EDT  
+> **Git Status**: Branch `main` (Preparing commit for v1.4.114).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.1` (Community Release).  
 > **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
@@ -39,6 +39,15 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Flipped Toast Orientation to Natural Reading Order ("Player Killed Other Player") & Dynamic Winning Faction Borders (`UI.lua`)**:
+  - **Natural Subject-Verb-Object Layout**: Inverted the toast orientation so the Killer (Threat/Victor) is positioned on the LEFT and the Victim (Casualty) is positioned on the RIGHT. Matches natural Western reading flow: `[Killer] -> killed with [Ability] -> [Victim]`.
+  - **Lethal Action Grammar**: Shifted center action text from passive `"slain by <Spell>"` to active `"killed with |cff<Color><Spell>|r"` (or `"killed with Melee Strike"`).
+  - **Dynamic Winning Faction Border Coloring in PvP**:
+    - **Alliance Victor**: Frame border and top accent transition to **Alliance Blue** (`#0078FF` / `0.0, 0.47, 1.0, 1.0`) across both Classic and ElvUI themes.
+    - **Horde Victor**: Frame border and top accent transition to **Horde Crimson Red** (`#DC2626` / `#C41E3A` / `0.85, 0.15, 0.15, 1.0`) across both Classic and ElvUI themes.
+    - **PvE / Non-PvP**: Frame border preserves authentic **Classic Burnished Gold** (`0.78, 0.61, 0.23, 1.0`) with Blizzard Gold top accent line.
+  - **Reposition Anchor Symmetrical Alignment**: Left side features the green Drag Anchor and right side displays Reposition details in `/kb alert lock`.
+  - **Enhanced Test Mode Chat Feedback (`/kb test [dag|x|pve]`)**: Chat announces the scenario and dynamic border color (`Alliance Blue Border`, `Horde Red Border`, or `Classic Gold Border`).
 - **Bilateral Symmetrical Killer Faction Insignia & Restored High-Res Crests (`UI.lua`)**:
   - Restored high-res circular medallions `crest_alliance.tga` and `crest_horde.tga` across `GetFactionCrestInfo` and `ToggleBannerLock`, resolving the regression to tiny low-res PvP badges.
   - Implemented `killerFactionIcon` (36px × 36px) on the far right of the banner anchored at `RIGHT, Content, RIGHT, -14, -4`, re-anchoring `killerIcon` adjacent to it at `RIGHT, killerFactionIcon, LEFT, -8, 0`.

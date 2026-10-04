@@ -5,6 +5,31 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.114] - 2026-10-04
+
+### Added
+- **Dynamic Winning Faction Border & Accent Colors in PvP (`Addon/WoWKillboard/UI.lua`)**:
+  - **Alliance Victory Aura**: When an Alliance player wins in PvP, the frame perimeter border and top accent stripe dynamically transition to vibrant **Alliance Blue** (`#0078FF` / `0.0, 0.47, 1.0, 1.0`) in both Classic and ElvUI themes.
+  - **Horde Victory Aura**: When a Horde player wins in PvP, the frame perimeter border and top accent stripe dynamically transition to **Horde Crimson Red** (`#DC2626` / `#C41E3A` / `0.85, 0.15, 0.15, 1.0`) in both Classic and ElvUI themes.
+  - **PvE & World Casualties**: In PvE or non-PvP encounters, the frame border preserves warm **Classic Burnished Gold** (`0.78, 0.61, 0.23, 1.0` / `#C79C3A`) with a Blizzard Gold accent line, or dark slate/amber in ElvUI.
+- **Enhanced Test Mode Feedback**:
+  - `/kb test dag`, `/kb test x`, and `/kb test pve` announce the scenario alongside the resulting border color (`Alliance Blue Border`, `Horde Red Border`, `Classic Gold Border`).
+
+### Changed
+- **Flipped Banner Orientation to Natural Reading Order ("Player Killed Other Player") (`Addon/WoWKillboard/UI.lua`)**:
+  - **Left-to-Right Combat Flow**: Inverted the death toast layout to mirror natural Western subject-verb-object reading order: **Killer (Left)** $\rightarrow$ **Incident Action (Center)** $\rightarrow$ **Victim (Right)**.
+  - **Lethal Action Grammar**: Shifted center action text from passive `"slain by <Spell>"` to active `"killed with |cff<Color><Spell>|r"` (or `"killed with Melee Strike"`).
+  - **Surgical Left Anchor (Killer / Victor)**:
+    - `killerFactionIcon` anchored at `LEFT, Content, LEFT, 14, -4` (36px × 36px).
+    - `killerIcon` anchored at `LEFT, killerFactionIcon, RIGHT, 8, 0` (36px × 36px).
+    - `killerName` and `killerSub` left-aligned at `TOPLEFT / BOTTOMLEFT, killerIcon, 10, -2 / 2`.
+  - **Surgical Right Anchor (Victim / Casualty)**:
+    - `factionIcon` (Victim Crest) anchored at `RIGHT, Content, RIGHT, -14, -4` (36px × 36px).
+    - `victimIcon` anchored at `RIGHT, factionIcon, LEFT, -8, 0` (36px × 36px).
+    - `victimName` and `victimGuild` right-aligned at `TOPRIGHT / BOTTOMRIGHT, victimIcon, -10, -2 / 2`.
+- **Reposition Drag Anchor Parity (`UI:ToggleBannerLock`)**:
+  - Re-anchored the interactive reposition test frame to place the drag anchor controls on the left and target info on the right, matching the live banner layout.
+
 ## [1.4.113] - 2026-10-04
 
 ### Added
