@@ -28,7 +28,7 @@ function US:ScanUnit(unit)
     local name, realm = UnitName(unit)
     if not name or not KB.Utils.CanAccess(name) then return end
 
-    realm = (realm and realm ~= "" and KB.Utils.CanAccess(realm)) and realm or GetRealmName()
+    realm = (realm and KB.Utils.CanAccess(realm) and realm ~= "") and realm or GetRealmName()
     realm = KB.Utils.CanAccess(realm) and realm or "UnknownRealm"
     local fullName = name .. "-" .. realm
 
