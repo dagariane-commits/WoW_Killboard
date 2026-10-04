@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Lua Syntax Error in `UI:Refresh` (`Addon/WoWKillboard/UI.lua`)**:
   - Resolved `UI.lua:1513: ')' expected near ','` caused by invalid tuple parentheses syntax (`or (1.0, 0.82, 0.0, "ffd100")`). Replaced with direct `WoWKB.AccentColor()` call, which intrinsically handles default return values.
   - Enhanced `tests/validate_lua.py` with standalone expression tuple detection to automatically catch this syntax error category.
+- **Nil Value Arithmetic Crash in Top Metrics Bar (`Addon/WoWKillboard/UI.lua`)**:
+  - Resolved `UI.lua:1550: attempt to perform arithmetic on a nil value` occurring on addon open (`UI:Refresh()` -> `UI:Toggle()`) due to uninitialized `soloKillsCount`.
+  - Added robust initialization and accumulation for `soloKillsCount` across combat history and integrated `KB.Leaderboard:GetModeSummary()` for pre-calculated, deduplicated realm and local statistics.
+  - Fully guarded all percentage calculations, casualty counts, and faction splits against `nil` values, restoring uninterrupted rendering for the main dashboard and live killfeed.
 
 ### Added
 - **Complete Clean ElvUI Specification Across All Tabs & Dynamic Accent Engine (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Utils.lua`)**:

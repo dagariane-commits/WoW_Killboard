@@ -1330,6 +1330,7 @@ function UI:Refresh()
 
     -- Calculate total activity across the board and reconcile player stats
     local totalKillsCount = 0
+    local soloKillsCount = 0
     local totalDuelsCount = (st.duels and st.duels.total) or 0
     local totalBgsCount = (st.bgs and st.bgs.total) or 0
     local histKills, histDeaths = 0, 0
@@ -1338,6 +1339,9 @@ function UI:Refresh()
         local histWins, histLosses = 0, 0
         local duelKills, bgKills, worldKills = 0, 0, 0
         for _, km in pairs(WoWKillboardDB.kills) do
+            if km.isSolo then
+                soloKillsCount = soloKillsCount + 1
+            end
             if km.isDuel then
                 duelKills = duelKills + 1
                 if pName then
@@ -1513,6 +1517,14 @@ function UI:Refresh()
     local aR, aG, aB, aHex = WoWKB.AccentColor()
     local aCode = "|cff" .. (aHex or "ffd100")
 
+    local modeSummary = KB.Leaderboard and KB.Leaderboard.GetModeSummary and KB.Leaderboard:GetModeSummary(currentMode or "WORLD") or {
+        totalKills = totalKillsCount or 0,
+        soloKills = soloKillsCount or 0,
+        soloPct = (totalKillsCount > 0 and soloKillsCount) and math.floor((soloKillsCount / totalKillsCount) * 100) or 0,
+        alliancePct = 50,
+        hordePct = 50,
+    }
+
     if UI.StatCards then
         -- Segment 1: Total Kills
         if UI.StatCards.KD then
@@ -1522,15 +1534,15 @@ function UI:Refresh()
             end
             if UI.StatCards.KD.PrimaryLabel then
                 UI.StatCards.KD.PrimaryLabel:SetTextColor(1.0, 1.0, 1.0, 1.0)
-                local val = isPveMode and (pveSummary and pveSummary.totalDeaths or totalPveDeaths) or totalKillsCount
+                local val = isPveMode and (pveSummary and pveSummary.totalDeaths or 0) or (modeSummary and modeSummary.totalKills or totalKillsCount or 0)
                 UI.StatCards.KD.PrimaryLabel:SetText(tostring(val))
             end
             if UI.StatCards.KD.SubLabel then
                 UI.StatCards.KD.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
                 if isPveMode then
-                    UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d", myPveDeaths))
+                    UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d", myPveDeaths or 0))
                 else
-                    UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d Kills / %d Deaths", myKills, myDeaths))
+                    UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d Kills / %d Deaths", myKills or 0, myDeaths or 0))
                 end
             end
         end
@@ -1547,8 +1559,8 @@ function UI:Refresh()
                     UI.StatCards.DUELS.PrimaryLabel:SetText(pveSummary and pveSummary.topMonster or "None")
                 else
                     UI.StatCards.DUELS.PrimaryLabel:SetTextColor(74/255, 222/255, 128/255, 1.0) -- Green #4ADE80
-                    local soloPct = (totalKillsCount > 0) and ((soloKillsCount / totalKillsCount) * 100) or 0.0
-                    UI.StatCards.DUELS.PrimaryLabel:SetText(string.format("%.1f%%", soloPct))
+                    local sPct = (modeSummary and modeSummary.soloPct) or ((totalKillsCount > 0 and soloKillsCount) and math.floor((soloKillsCount / totalKillsCount) * 100)) or 0
+                    UI.StatCards.DUELS.PrimaryLabel:SetText(string.format("%d%%", sPct))
                 end
             end
             if UI.StatCards.DUELS.SubLabel then
@@ -1557,7 +1569,8 @@ function UI:Refresh()
                     UI.StatCards.DUELS.SubLabel:SetTextColor(aR, aG, aB, 1.0)
                     UI.StatCards.DUELS.SubLabel:SetText(string.format("%d Kills", pveSummary and pveSummary.topMonsterKills or 0))
                 else
-                    UI.StatCards.DUELS.SubLabel:SetText(string.format("%d Encounters", totalDuelsCount > 0 and totalDuelsCount or soloKillsCount))
+                    local sCount = (modeSummary and modeSummary.soloKills) or soloKillsCount or 0
+                    UI.StatCards.DUELS.SubLabel:SetText(string.format("%d Encounters", sCount))
                 end
             end
         end
@@ -1573,11 +1586,9 @@ function UI:Refresh()
                     UI.StatCards.BGS.PrimaryLabel:SetTextColor(aR, aG, aB, 1.0)
                     UI.StatCards.BGS.PrimaryLabel:SetText(pveSummary and pveSummary.deadliestZone or "Azeroth")
                 else
-                    local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData) or {}
-                    local fSplit = rData.FactionSplit or { Alliance = 50.0, Horde = 50.0 }
-                    local aPct = fSplit.Alliance or 50
-                    local hPct = fSplit.Horde or 50
-                    UI.StatCards.BGS.PrimaryLabel:SetText(string.format("|cff0078ffA: %.0f%%|r  |cffff3838H: %.0f%%|r", aPct, hPct))
+                    local aPct = (modeSummary and modeSummary.alliancePct) or 50
+                    local hPct = (modeSummary and modeSummary.hordePct) or 50
+                    UI.StatCards.BGS.PrimaryLabel:SetText(string.format("|cff0078ffA: %d%%|r  |cffff3838H: %d%%|r", aPct, hPct))
                 end
             end
             if UI.StatCards.BGS.SubLabel then
