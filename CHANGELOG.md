@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **100% Cross-Theme Parity**:
     - Synchronized all semantic formatters, action strings, and text alignments across both Classic Forever and ElvUI Minimalist modes.
 
+### Fixed
+- **Secret String Values Taint Guard (`CombatTracker.lua`, `Utils.lua`, `UnitScanner.lua`, `Core.lua`)**:
+  - Eliminated game-crashing Lua error (`attempt to compare local 'tName' (a secret string value, while execution tainted by 'WoWKillboard')`) triggered during protected execution paths (`TargetLastTarget`, `TurnOrActionStop` camera mouse look, or secure macro execution).
+  - Hardened `KB.Utils.CanAccess(val)` with `issecretvalue`, `issecrettable`, `canaccessvalue`, and defensive `pcall` equality guards.
+  - Implemented early-exit secret value guards in `CombatTracker.lua` (`PLAYER_TARGET_CHANGED`, `UNIT_DIED`, `OnPlayerHonorableKill`, and `RecordManualKill`), completely shielding string comparisons from Blizzard's secret value system.
+  - Fixed short-circuit evaluation order in `UnitScanner.lua` ensuring `CanAccess(realm)` executes prior to string comparison.
+
 ## [1.4.101] - 2026-10-04
 
 ### Added

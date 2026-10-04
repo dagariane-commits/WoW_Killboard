@@ -32,6 +32,31 @@ CT.SessionStats = {
 
 local frame = CreateFrame("Frame")
 
+-- Secret Values & Taint Access Guard (WoW 11.0+ / The War Within & Modern Classic)
+local function CanAccess(val)
+    if val == nil then return false end
+    if KB.Utils and KB.Utils.CanAccess then
+        return KB.Utils.CanAccess(val)
+    end
+    if type(issecretvalue) == "function" then
+        local ok, secret = pcall(issecretvalue, val)
+        if ok and secret then return false end
+    end
+    if type(issecrettable) == "function" then
+        local ok, secretTable = pcall(issecrettable, val)
+        if ok and secretTable then return false end
+    end
+    if type(canaccessvalue) == "function" then
+        local ok, canAccess = pcall(canaccessvalue, val)
+        if ok and not canAccess then return false end
+    end
+    local ok1 = pcall(function() return val == val end)
+    if not ok1 then return false end
+    local ok2 = pcall(function() return val ~= "" end)
+    if not ok2 then return false end
+    return true
+end
+
 -- Canonical Blizzard Combat Log Bitmask Constants (Cross-Client Guardrail 2 Compliant)
 local COMBATLOG_OBJECT_TYPE_PLAYER = _G.COMBATLOG_OBJECT_TYPE_PLAYER or 0x00000400
 local COMBATLOG_OBJECT_CONTROL_PLAYER = _G.COMBATLOG_OBJECT_CONTROL_PLAYER or 0x00000100
@@ -690,7 +715,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
                 else
                     local tGuid = UnitGUID("target")
                     local tName = UnitName("target")
-                    if tName and tName ~= "" and tName ~= UnitName("player") then
+                    if tName and CanAccess(tName) and CanAccess(tGuid) and tName ~= "" and (not CanAccess(UnitName("player")) or tName ~= UnitName("player")) then
                         local npcId = 0
                         if tGuid then
                             local parsed = tGuid:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or tGuid:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
@@ -713,7 +738,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             if not enemy and UnitExists("targettarget") and UnitIsUnit("targettarget", "player") and UnitExists("target") then
                 local tGuid = UnitGUID("target")
                 local tName = UnitName("target")
-                if tName and tName ~= "" and tName ~= UnitName("player") then
+                if tName and CanAccess(tName) and CanAccess(tGuid) and tName ~= "" and (not CanAccess(UnitName("player")) or tName ~= UnitName("player")) then
                     local isTP = UnitIsPlayer("target")
                     local npcId = 0
                     if not isTP and tGuid then
@@ -783,18 +808,20 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             if not fallbackNpc and UnitExists("target") and (UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or not UnitIsFriend("player", "target")) then
                 local tName = UnitName("target")
                 local tGuid = UnitGUID("target")
-                local npcId = 0
-                if tGuid then
-                    local parsed = tGuid:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or tGuid:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
-                    if parsed then npcId = tonumber(parsed) or 0 end
+                if CanAccess(tName) and CanAccess(tGuid) then
+                    local npcId = 0
+                    if tGuid then
+                        local parsed = tGuid:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or tGuid:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
+                        if parsed then npcId = tonumber(parsed) or 0 end
+                    end
+                    fallbackNpc = {
+                        name = tName or "Hostile NPC",
+                        id = npcId,
+                        guid = tGuid or "CREATURE",
+                        spell = "Combat Strike",
+                        damage = 0,
+                    }
                 end
-                fallbackNpc = {
-                    name = tName or "Hostile NPC",
-                    id = npcId,
-                    guid = tGuid or "CREATURE",
-                    spell = "Combat Strike",
-                    damage = 0,
-                }
             end
             if not fallbackNpc then
                 fallbackNpc = {
@@ -1275,22 +1302,25 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     local victimInfo = nil
     if unitToken and UnitExists(unitToken) and UnitIsPlayer(unitToken) then
         victimInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit(unitToken)
-        if (not victimName or victimName == "") and victimInfo then
+        if (not victimName or not CanAccess(victimName) or victimName == "") and victimInfo then
             victimName = victimInfo.name
         end
     end
 
-    if (not victimName or victimName == "") and UnitExists("target") and UnitIsPlayer("target") and (UnitIsDead("target") or UnitIsDeadOrGhost("target")) then
-        victimName = UnitName("target")
-        victimInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+    if (not victimName or not CanAccess(victimName) or victimName == "") and UnitExists("target") and UnitIsPlayer("target") and (UnitIsDead("target") or UnitIsDeadOrGhost("target")) then
+        local tN = UnitName("target")
+        if CanAccess(tN) then
+            victimName = tN
+            victimInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+        end
     end
 
-    if (not victimName or victimName == "") and activeEnemyTarget and (now - (activeEnemyTarget.lastSeen or 0)) <= 30 then
+    if (not victimName or not CanAccess(victimName) or victimName == "") and activeEnemyTarget and (now - (activeEnemyTarget.lastSeen or 0)) <= 30 then
         victimName = activeEnemyTarget.name
         victimInfo = activeEnemyTarget
     end
 
-    if not victimName or victimName == "" then
+    if not victimName or not CanAccess(victimName) or victimName == "" then
         local bestEnemy = nil
         local bestTime = 0
         for guid, e in pairs(CT.RecentEngagedEnemies) do
@@ -1305,7 +1335,7 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
         end
     end
 
-    if not victimName or victimName == "" then
+    if not victimName or not CanAccess(victimName) or victimName == "" then
         victimName = "Hostile Combatant"
     end
 
@@ -1333,8 +1363,10 @@ function CT:OnPlayerHonorableKill(victimName, explicitGuid, unitToken)
     end
     if (not victimGUID or victimGUID == "UNKNOWN") and UnitExists("target") then
         local tName = UnitName("target")
-        if (cleanVictim and tName and tName:lower() == cleanVictim:lower()) or (victimName and tName and tName:lower() == victimName:lower()) then
-            victimGUID = UnitGUID("target")
+        if tName and CanAccess(tName) then
+            if (cleanVictim and tName:lower() == cleanVictim:lower()) or (victimName and tName:lower() == victimName:lower()) then
+                victimGUID = UnitGUID("target")
+            end
         end
     end
     if (not victimGUID or victimGUID == "UNKNOWN") and activeEnemyTarget then
@@ -1837,13 +1869,17 @@ function CT:RecordManualKill(customTargetName)
     local targetGuid = nil
     local targetInfo = nil
 
-    if (not targetName or targetName == "") and UnitExists("target") and UnitIsPlayer("target") then
-        targetName = UnitName("target")
-        targetGuid = UnitGUID("target")
-        targetInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+    if (not targetName or not CanAccess(targetName) or targetName == "") and UnitExists("target") and UnitIsPlayer("target") then
+        local tN = UnitName("target")
+        local tG = UnitGUID("target")
+        if CanAccess(tN) and CanAccess(tG) then
+            targetName = tN
+            targetGuid = tG
+            targetInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+        end
     end
 
-    if not targetName or targetName == "" then
+    if not targetName or not CanAccess(targetName) or targetName == "" then
         targetName = "Target Dummy"
     end
 
@@ -2270,12 +2306,28 @@ frame:SetScript("OnEvent", function(self, event, ...)
             if destGUID and IsPlayerUnit(destGUID, destFlags, destName) then
                 local pGUID = UnitGUID("player")
                 if pGUID and destGUID ~= pGUID then
-                    local isEngaged = (UnitExists("target") and (UnitGUID("target") == destGUID or UnitName("target") == destName))
-                                   or (activeEnemyTarget and (activeEnemyTarget.guid == destGUID or activeEnemyTarget.name == destName))
-                                   or (CT.RecentEngagedEnemies and CT.RecentEngagedEnemies[destGUID])
-                                   or (CT.RecentDamage and CT.RecentDamage[destGUID])
+                    local isEngaged = false
+                    if UnitExists("target") then
+                        local tG = UnitGUID("target")
+                        local tN = UnitName("target")
+                        if CanAccess(tG) and tG == destGUID then
+                            isEngaged = true
+                        elseif CanAccess(tN) and tN == destName then
+                            isEngaged = true
+                        end
+                    end
+                    if not isEngaged and activeEnemyTarget then
+                        if CanAccess(activeEnemyTarget.guid) and activeEnemyTarget.guid == destGUID then
+                            isEngaged = true
+                        elseif CanAccess(activeEnemyTarget.name) and activeEnemyTarget.name == destName then
+                            isEngaged = true
+                        end
+                    end
+                    if not isEngaged and ((CT.RecentEngagedEnemies and CT.RecentEngagedEnemies[destGUID]) or (CT.RecentDamage and CT.RecentDamage[destGUID])) then
+                        isEngaged = true
+                    end
                     if isEngaged then
-                        local unitTok = (UnitExists("target") and UnitGUID("target") == destGUID) and "target" or nil
+                        local unitTok = (UnitExists("target") and CanAccess(UnitGUID("target")) and UnitGUID("target") == destGUID) and "target" or nil
                         CT:OnPlayerHonorableKill(destName, destGUID, unitTok)
                     end
                 end
@@ -2305,17 +2357,20 @@ frame:SetScript("OnEvent", function(self, event, ...)
         local challenger = ...
         if challenger and KB.Utils.CanAccess(challenger) then
             local cName = tostring(challenger):match("^([^-]+)") or tostring(challenger)
-            if UnitExists("target") and (UnitName("target") == cName or UnitName("target"):match("^" .. cName)) then
-                local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
-                CT.ActiveDuelOpponent = {
-                    name = cName,
-                    guid = UnitGUID("target"),
-                    level = UnitLevel("target") or (tInfo and tInfo.level or 0),
-                    class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
-                    guild = (not InCombatLockdown() and GetGuildInfo("target")) or (tInfo and tInfo.guild or "None"),
-                    faction = UnitFactionGroup("player") or "Unknown",
-                    lastSeen = time(),
-                }
+            if UnitExists("target") then
+                local tN = UnitName("target")
+                if CanAccess(tN) and (tN == cName or tN:match("^" .. cName)) then
+                    local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+                    CT.ActiveDuelOpponent = {
+                        name = cName,
+                        guid = UnitGUID("target"),
+                        level = UnitLevel("target") or (tInfo and tInfo.level or 0),
+                        class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
+                        guild = (not InCombatLockdown() and GetGuildInfo("target")) or (tInfo and tInfo.guild or "None"),
+                        faction = UnitFactionGroup("player") or "Unknown",
+                        lastSeen = time(),
+                    }
+                end
             end
         end
 
@@ -2347,25 +2402,34 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "PLAYER_TARGET_CHANGED" then
         if UnitExists("target") then
+            local tGuid = UnitGUID("target")
+            local tName = UnitName("target")
+            -- Guard against WoW 11.0+ Secret Values during protected execution (TargetLastTarget, TurnOrActionStop)
+            if not CanAccess(tName) or not CanAccess(tGuid) then
+                return
+            end
             local isEnemy = UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or (not UnitIsFriend("player", "target"))
             if isEnemy then
                 local isDead = (UnitIsDead("target") or UnitIsDeadOrGhost("target")) and true or false
-                local tGuid = UnitGUID("target")
-                local tName = UnitName("target")
                 local isTargetPlayer = UnitIsPlayer("target")
 
                 if isTargetPlayer then
-                    if isDead and tName and tName ~= "" then
+                    if isDead and tName ~= "" then
                         CT:OnPlayerHonorableKill(tName, tGuid, "target")
                     elseif not isDead then
                         local tInfo = KB.UnitScanner and KB.UnitScanner:ScanUnit("target")
+                        local tLevel = UnitLevel("target")
+                        local tClass = select(2, UnitClass("target"))
+                        local tGuild = (not InCombatLockdown() and GetGuildInfo and GetGuildInfo("target")) or nil
+                        local tFaction = UnitFactionGroup("target")
+
                         activeEnemyTarget = {
                             name = tName,
                             guid = tGuid,
-                            level = UnitLevel("target") or (tInfo and tInfo.level or 0),
-                            class = select(2, UnitClass("target")) or (tInfo and tInfo.class or "UNKNOWN"),
-                            guild = (not InCombatLockdown() and GetGuildInfo("target")) or (tInfo and tInfo.guild or "None"),
-                            faction = UnitFactionGroup("target") or (tInfo and tInfo.faction or "Unknown"),
+                            level = (CanAccess(tLevel) and tLevel) or (tInfo and tInfo.level or 0),
+                            class = (CanAccess(tClass) and tClass) or (tInfo and tInfo.class or "UNKNOWN"),
+                            guild = (CanAccess(tGuild) and tGuild) or (tInfo and tInfo.guild or "None"),
+                            faction = (CanAccess(tFaction) and tFaction) or (tInfo and tInfo.faction or "Unknown"),
                             lastSeen = time(),
                             isPlayer = true,
                         }
@@ -2374,24 +2438,24 @@ frame:SetScript("OnEvent", function(self, event, ...)
                         end
                         -- If attackable player is from the same faction, they are an active duel opponent!
                         local pFaction = UnitFactionGroup("player")
-                        local tFaction = UnitFactionGroup("target") or (tInfo and tInfo.faction)
-                        if pFaction and tFaction and pFaction == tFaction and UnitCanAttack and UnitCanAttack("player", "target") then
+                        if pFaction and tFaction and CanAccess(pFaction) and CanAccess(tFaction) and pFaction == tFaction and UnitCanAttack and UnitCanAttack("player", "target") then
                             CT.ActiveDuelOpponent = activeEnemyTarget
                         end
                     end
                 else
                     -- Hostile NPC / Monster target tracking for PvE mortality attribution
-                    if not isDead and tName and tName ~= "" then
+                    if not isDead and tName ~= "" then
                         local npcId = 0
                         if tGuid then
                             local parsed = tGuid:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or tGuid:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
                             if parsed then npcId = tonumber(parsed) or 0 end
                         end
+                        local tLevel = UnitLevel("target")
                         local npcData = {
                             name = tName,
                             guid = tGuid or "UNKNOWN_CREATURE",
                             id = npcId,
-                            level = UnitLevel("target") or 0,
+                            level = (CanAccess(tLevel) and tLevel) or 0,
                             class = "MONSTER",
                             guild = "None",
                             faction = "Hostile NPC",

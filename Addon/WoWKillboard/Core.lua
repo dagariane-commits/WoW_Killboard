@@ -427,7 +427,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             enemyName = arg:match("^%s*(.-)%s*$")
         elseif UnitExists("target") then
             local tName = UnitName("target")
-            if tName and tName ~= "" then
+            if tName and KB.Utils.CanAccess(tName) and tName ~= "" then
                 enemyName = tName
                 local _, tClass = UnitClass("target")
                 if tClass then enemyClass = tClass end

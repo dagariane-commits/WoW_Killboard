@@ -11,8 +11,23 @@ local U = KB.Utils
 -- Secret Values Guard (The War Within / 11.0+ / Modern Classic Architecture)
 function U.CanAccess(val)
     if val == nil then return false end
-    if canaccessvalue and not canaccessvalue(val) then return false end
-    if issecretvalue and issecretvalue(val) then return false end
+    if type(issecretvalue) == "function" then
+        local ok, secret = pcall(issecretvalue, val)
+        if ok and secret then return false end
+    end
+    if type(issecrettable) == "function" then
+        local ok, secretTable = pcall(issecrettable, val)
+        if ok and secretTable then return false end
+    end
+    if type(canaccessvalue) == "function" then
+        local ok, canAccess = pcall(canaccessvalue, val)
+        if ok and not canAccess then return false end
+    end
+    -- Ultimate runtime check: if comparing val with itself or empty string errors, it is a secret value
+    local ok1 = pcall(function() return val == val end)
+    if not ok1 then return false end
+    local ok2 = pcall(function() return val ~= "" end)
+    if not ok2 then return false end
     return true
 end
 

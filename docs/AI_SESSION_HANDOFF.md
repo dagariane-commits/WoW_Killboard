@@ -39,6 +39,10 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Secret Values & Protected Execution Taint Guard (`CombatTracker.lua`, `Utils.lua`, `UnitScanner.lua`, `Core.lua`)**:
+  - Resolved Lua error (`attempt to compare local 'tName' (a secret string value, while execution tainted by 'WoWKillboard')`) triggered during protected execution paths (`TargetLastTarget`, right-click camera turn `TurnOrActionStop`, and secure macros).
+  - Hardened `KB.Utils.CanAccess(val)` with `issecretvalue`, `issecrettable`, `canaccessvalue`, and defensive `pcall` equality guards.
+  - Implemented early-return secret value guards in `CombatTracker.lua` (`PLAYER_TARGET_CHANGED`, `UNIT_DIED`, `OnPlayerHonorableKill`, `RecordManualKill`), completely preventing secret value comparisons.
 - **Redesigned Combat Toast Banner Semantics & Directional Kill Feed (`UI.lua`)**:
   - Replaced generic phrases ("Combat Telemetry", "Intel", "Tactical") with clear, single-glance live kill feed storytelling.
   - **Dynamic Contextual Header**: `#FFD100` gold header displaying `WORLD PVP CASUALTY` (PvP), `FALLEN HERO` (Hardcore), or `CASUALTY REPORT` (PvE), appended directly with zone/subzone telemetry (e.g. `CASUALTY REPORT  •  WESTFALL (SENTINEL HILL)`).
