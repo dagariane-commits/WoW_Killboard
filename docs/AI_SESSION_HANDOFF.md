@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 03:30:00 EDT  
-> **Git Status**: Branch `main` (Preparing commit for v1.4.107).  
+> **Last Synchronized**: 2026-10-04 03:35:00 EDT  
+> **Git Status**: Branch `main` (Preparing commit for v1.4.108).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.1` (Community Release).  
 > **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
@@ -39,6 +39,20 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Multi-Scenario PvP & PvE Kill Banner Test Suite (`UI.lua`, `Core.lua`)**:
+  - **"Dag killed X" (PvP Kill)**: Direct test scenario where Dagariane (Player) defeats an enemy player (`[24] Shadowstalker` in `<Grim Syndicate>`). Displays the Horde crest and yellow Rogue class icon on the Fallen (left), `[23] Dagariane` in Paladin pink on the Victor (right) with golden victory border trim, and directional action `slain by Judgement`.
+  - **"X killed Dag" (PvP Death)**: Direct test scenario where an enemy player (`[25] Shadowstalker`) defeats Dagariane. Displays the Alliance crest and Paladin class icon on the Fallen (left), `[25] Shadowstalker` in Hostile Crimson (`#FF3838`) on the Threat (right) with red hostile border trim, and directional action `slain by Ambush`.
+  - **"Defias Pillager executed Dag" (PvE Casualty)**: Direct test scenario where Defias Pillager defeats Dagariane in Westfall with `slain by Fireball`.
+  - **Flexible Slash & Cycle Subcommands**:
+    - `/kb test` (no args): Automatically cycles across all 3 scenarios (`1/3` PvP Kill $\rightarrow$ `2/3` PvP Death $\rightarrow$ `3/3` PvE Casualty) with descriptive chat status.
+    - `/kb test kill` or `/kb test dag`: Directly previews **Dag killed X** (PvP Kill).
+    - `/kb test death` or `/kb test x`: Directly previews **X killed Dag** (PvP Death).
+    - `/kb test pvp`: Alternates directly between both PvP perspectives.
+    - `/kb test pve`: Directly previews Defias Pillager in Westfall.
+  - **Dynamic In-Game Target Inheritance**: When targeting an active enemy player, `/kb test` dynamically inherits their live name, class, level, guild, and faction into the simulated battle banner.
+  - **Dynamic Friendly vs Hostile Killer Styling**: `UI:ShowKillBanner` now renders friendly and player killers in their authentic class color with golden victory icon trims (`1.0, 0.82, 0.0`), while hostile killers remain in Blizzard Hostile Crimson (`#FF3838`) with red threat borders.
+  - **ElvUI Allegiance Alignment**: Top accent stripe in ElvUI mode dynamically anchors to the player's faction (`#0078FF` Alliance Blue / `#C41E3A` Horde Red), preserving consistent faction identity during victories and defeats.
+  - **Direct `/kb testdeath` Banner Integration**: Added `UI:ShowKillBanner` invocation to `/kb testdeath` alongside the revenge blood bounty popup.
 - **Bug Fix Pass: Text Truncation, Skull Spacing & Classic Border Asset Height (`UI.lua`)**:
   - **Victim Name Truncation Elimination**: Re-anchored `victimNameText` and `victimSubText` right bound from `CENTER -65` to `CENTER -26`, expanding available text rendering width from 113px to 152px. Completely eliminated ellipsis truncation (`...`) on player names (e.g. `[23] Dagariane`) while guaranteeing a clean 14px horizontal buffer before the death skull.
   - **Symmetrical Killer Text Buffer**: Re-anchored `killerNameText` and `killerSubText` left bound to `CENTER 26`, creating an identical 14px horizontal buffer after the skull (`+12`) for harmonious typographic balance.
