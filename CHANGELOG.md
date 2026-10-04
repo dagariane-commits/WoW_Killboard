@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resolved `UI.lua:313: attempt to call a nil value` by adding `"BackdropTemplate"` to `CreateMetricSegment` and adding explicit `card.SetBackdrop` safety guarding in `UI:ApplyTheme()`.
   - Added dedicated theming support for `UI.TopMetricsBar` (`SetBackdrop`, `SetBackdropColor`, `SetBackdropBorderColor`) across Classic and ElvUI themes.
   - Fixed issue where the main Killboard window opened completely blank/empty due to `CreateMainWindow` aborting mid-initialization before `UI:Refresh()` could populate the content child frame.
+- **Direct Download Routing to GitHub Releases CDN (`web/server.py`)**:
+  - Re-routed the `/download` endpoint from CurseForge project page redirect to GitHub Releases Fastly CDN (`GITHUB_RELEASE_ZIP_URL`), providing authentic 1-click open-source direct downloads and eliminating redundancy with the dedicated **CurseForge Hub** button.
 
 ### Added
 - **Minimalist ElvUI In-Game Window Redesign (`Addon/WoWKillboard/UI.lua`, `Config.lua`)**:

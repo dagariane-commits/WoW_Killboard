@@ -1656,7 +1656,7 @@ WoWKillboardDB = {
             app.config["TESTING"] = False
             res_cdn_addon = self.client.get("/download")
             self.assertEqual(res_cdn_addon.status_code, 302)
-            self.assertIn("curseforge.com", res_cdn_addon.headers.get("Location", ""))
+            self.assertIn("github.com", res_cdn_addon.headers.get("Location", ""))
 
             res_cdn_exe = self.client.get("/WoWKillboardSync.exe")
             self.assertEqual(res_cdn_exe.status_code, 302)

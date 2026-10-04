@@ -729,6 +729,10 @@ GITHUB_RELEASE_SYNC_URL = os.environ.get(
     "GITHUB_RELEASE_SYNC_URL",
     "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboardSync.exe"
 )
+GITHUB_RELEASE_ZIP_URL = os.environ.get(
+    "GITHUB_RELEASE_ZIP_URL",
+    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.2.zip"
+)
 
 @app.route("/WoWKillboard-v1.0.2.zip")
 @app.route("/WoWKillboard-v1.0.1.zip")
@@ -737,9 +741,9 @@ GITHUB_RELEASE_SYNC_URL = os.environ.get(
 @app.route("/addon.zip")
 def download_addon():
     log_analytics_event("download_addon", path=request.path, source="web")
-    # In production, offload large addon archive bandwidth to CurseForge CloudFront CDN
+    # In production, offload addon archive streaming to GitHub Releases Fastly CDN
     if not app.config.get("TESTING") and not os.environ.get("SERVE_LOCAL_BINARIES"):
-        return redirect(CURSEFORGE_PROJECT_URL, code=302)
+        return redirect(GITHUB_RELEASE_ZIP_URL, code=302)
 
     root_dir = os.path.dirname(APP_DIR)
     # Check for specific requested file if path has specific version
@@ -756,7 +760,7 @@ def download_addon():
             target = os.path.join(d, pkg)
             if os.path.exists(target):
                 return send_from_directory(d, pkg, as_attachment=True)
-    return redirect(CURSEFORGE_PROJECT_URL, code=302)
+    return redirect(GITHUB_RELEASE_ZIP_URL, code=302)
 
 @app.route("/curseforge")
 @app.route("/curse")
