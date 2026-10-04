@@ -627,7 +627,7 @@ def launch_gui(watcher_instance, target_files, target_apis):
         _w.register_log_hook(on_watcher_log)
 
     # Initial greeting log
-    app.append_log(f"WoW Killboard Desktop Companion v{getattr(watcher_instance, 'version', '1.0.2')} initialized.", tag="gold")
+    app.append_log(f"WoW Killboard Desktop Companion v{getattr(watcher_instance, 'version', '1.0.3')} initialized.", tag="gold")
     app.append_log(f"Connected to Ingestion API: {target_apis[0] if target_apis else 'https://wowkillboard.com'}", tag="sync")
     app.append_log(f"Actively monitoring {len(target_files)} WoW client accounts.", tag="blue")
     app.append_log("ℹ️ Note: WoW writes combat data to disk on /reload or character logout.", tag="muted")
