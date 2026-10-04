@@ -5,6 +5,24 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.103] - 2026-10-04
+
+### Changed
+- **Combat Toast Visual & Cosmetic Refinements (`Addon/WoWKillboard/UI.lua`)**:
+  - **Classic Theme Frame Geometry & Placement**:
+    - **Native Texture Scale**: Locked frame height to 78px and calibrated 3-slice alert texture mapping (`0.609375` V-coord), preserving Blizzard wood and filigree border aspect ratios with zero stretching or distortion.
+    - **Header Placement**: Shifted top header down by 6px (`TOP, 0, -17`) so it rests directly inside the top dark carved bevel groove of the wood plaque instead of hovering above the gold leaf border.
+    - **Bottom Border Bleed Prevention**: Pulled the bottom action string text up by 5px (`TOP, CenterIcon, BOTTOM, 0, 1`), ensuring 13px clearance above the bottom bronze trim and completely eliminating border bleed.
+  - **Visual Hierarchy & Narrative Styling**:
+    - **High-Contrast Fatal Blow Highlight**: Styled the killing ability in high-contrast Light Spell Yellow (`#FFF1A8`) for Fire/Physical/Holy and Arcane Cyan (`#71D5FF`) for Frost/Arcane abilities.
+    - **Portrait Center Line Alignment**: Lowered the center death skull by 2px (`TOP, 0, -30`) to align directly on the horizontal center line of the victim and killer portraits.
+    - **Blood-Drop Death Shadow**: Added a subtle, deep crimson blood-drop shadow layer under the skull (`0.60, 0.05, 0.05, 0.65`) to visually distinguish fatal casualties from neutral matchups.
+  - **ElvUI Minimalist Theme Polish**:
+    - **Flush 2px Top Accent Stripe**: Thinned top accent stripe to a crisp 2px border flush with frame edges (`TOPLEFT 1, -1` / `TOPRIGHT -1, -1`), dynamically colored by faction (`#0078FF` Alliance / `#C41E3A` Horde / `#FFC107` Amber Gold).
+    - **Uniform 1px Icon Outlines**: Standardized all icon borders to uniform 1px solid outlines (`#383E47`).
+    - **Razor-Sharp Killer Border**: Replaced blurry double-line borders with a flat, razor-sharp 1px solid crimson outline (`#FF3B30`).
+    - **Monochrome Hard Outlines**: Set all typography across the banner to use a hard 1px monochrome black outline (`OUTLINE`) with zero drop-shadow offset, establishing authentic ElvUI flatness.
+
 ## [1.4.102] - 2026-10-04
 
 ### Changed
