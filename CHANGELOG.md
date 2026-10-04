@@ -5,6 +5,16 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.107] - 2026-10-04
+
+### Changed
+- **Bug Fix Pass: Text Truncation, Skull Spacing & Classic Border Asset Height (`Addon/WoWKillboard/UI.lua`)**:
+  - **Victim Name Truncation Elimination**: Re-anchored `victimNameText` and `victimSubText` right bound from `CENTER -65` to `CENTER -26`, expanding available text rendering width from 113px to 152px. Completely eliminated ellipsis truncation (`...`) on player names (e.g. `[23] Dagariane`) while guaranteeing a clean 14px horizontal buffer before the death skull.
+  - **Symmetrical Killer Text Buffer**: Re-anchored `killerNameText` and `killerSubText` left bound to `CENTER 26`, creating an identical 14px horizontal buffer after the skull (`+12`) for harmonious typographic balance.
+  - **Lethal Blow Chin Clearance**: Shifted directional action string (`slain by [AbilityName]`) down by 3px (`TOP, centerIcon, BOTTOM, 0, 1`), ensuring upper font ascenders have clear separation from the bottom chin of the red death skull icon.
+  - **Classic Outer Achievement Border Height**: Expanded outer 3-slice decorative achievement alert border (`toastLeft`, `toastRight`, `toastMid`) texture height from 84px to 88px with calibrated V-coords (`0.6875` = 88/128) anchored to `BOTTOM 0, -4` and adjusted `innerFill` to `BOTTOMRIGHT -6, 2`, completely eliminating vertical compression on the bottom golden laurel leaves.
+  - **Frozen Shared Base Geometry Continuity**: Preserved 560px × 84px base frame dimensions and zero-mutation theme-swapping architecture across both Classic Forever and ElvUI Minimalist modes.
+
 ## [1.4.106] - 2026-10-04
 
 ### Changed
