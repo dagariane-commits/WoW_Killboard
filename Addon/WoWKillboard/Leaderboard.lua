@@ -51,6 +51,15 @@ function LB:MatchesRealm(km)
 
     -- If realm is unknown or missing (legacy record):
     local myRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVP"
+
+    -- PvE casualty records (executed by NPC/monster) naturally belong on PvE and Hardcore feeds
+    local isPve = km.isPveDeath or (km.npc ~= nil) or (km.deathId and tostring(km.deathId):find("^PVE")) or (km.death_id and tostring(km.death_id):find("^PVE")) or (km.killer and km.killer.faction == "Monster")
+    if isPve then
+        if myRuleset == "PVE" or myRuleset == "HARDCORE" then
+            return true
+        end
+    end
+
     if km.ruleset and km.ruleset ~= "" then
         return km.ruleset:upper() == myRuleset:upper()
     end

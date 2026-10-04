@@ -42,4 +42,7 @@ web/static/*.exe
 # Logs
 *.log
 
+# Temporary user archives
+*second account.zip
+
 
