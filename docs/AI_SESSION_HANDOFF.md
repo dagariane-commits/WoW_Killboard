@@ -25,12 +25,13 @@
      3. Anniversary (`_anniversary_` / `WowClassic.exe`)
      4. Modern Retail (`_retail_` / `Wow.exe`)
    - Feature gate using dynamic runtime feature detection (`type(CombatLogGetCurrentEventInfo) == "function"`), never fragile version string parsing.
-5. **Zero Documentation Drift**:
+5. **Zero Documentation Drift & CurseForge/Git Parity**:
    - Code and docs are twin artifacts: always update `CHANGELOG.md` (Strict Keep a Changelog v1.1.0 standard), `docs/`, and `README.md` alongside code changes.
+   - **CurseForge & Git Lockstep Parity (P0 Invariant)**: Whenever an update or release archive is uploaded or pushed to CurseForge, it **MUST** simultaneously be committed, tagged (`git tag -a vX.Y.Z`), and pushed to GitHub (`git push origin main --tags`). Never allow CurseForge and GitHub releases to drift out of sync.
 6. **Mandatory Automated Verification**:
    - Run `python tests/validate_lua.py` (Must return `[PASS]` for all 13 Lua files).
    - Run `python -m unittest discover tests` (Must return `OK` across all 26 pipeline/security tests).
-   - Run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.1.zip` and `WoWKillboard-v1.0.0.zip`.
+   - Run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.2.zip`, `WoWKillboard-v1.0.1.zip`, and `WoWKillboard-v1.0.0.zip`.
 
 ---
 
