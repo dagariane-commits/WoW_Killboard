@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 03:20:00 EDT  
-> **Git Status**: Branch `main` (Preparing commit for v1.4.105).  
+> **Last Synchronized**: 2026-10-04 03:25:00 EDT  
+> **Git Status**: Branch `main` (Preparing commit for v1.4.106).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.1` (Community Release).  
 > **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
@@ -39,6 +39,11 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Architectural Rule: Frozen Shared Base Geometry & Anchor Parity (`UI.lua`)**:
+  - **Shared Base Geometry**: Locked frame dimensions to identical **560px × 84px** across all themes, establishing permanent parity with the master layout template.
+  - **Zero Geometry Drift on Theme Switch**: Completely eliminated all `SetPoint`, `SetSize`, and `ClearAllPoints` mutations during `UI:ApplyBannerTheme()`. Theme switching strictly swaps cosmetic textures, backdrops, and borders without moving a single pixel of text, crests, or icons.
+  - **ElvUI Minimalist Theme**: Configured solid flat dark slate backdrop (`rgba(13, 17, 23, 0.94)`), subtle 1px border (`#2D333B`) with 2px flush top faction stripe, 1px square black icon borders, and crisp monochrome `OUTLINE` typography.
+  - **Classic Forever Theme**: Configured dark solid slate/stone base (`rgba(16, 14, 12, 0.94)`), native Blizzard metallic and golden filigree border overlay directly onto the perimeter of the existing 84px frame, standard Blizzard beveled button borders (`UI-Achievement-IconFrame`, `UI-Debuff-Border`, `medallion_border.tga`), and soft shadow typography.
 - **Classic Theme Contrast & Background Fill Polish (`UI.lua`)**:
   - **Dark Stone Base Fill**: Replaced the native muddy orange-to-amber gradient wood texture with a uniform flat dark-stone base fill (`rgba(16, 14, 12, 0.92)`) anchored at `(6, -14)` to `(-6, 7)`, preserving the outer golden-leaf filigree and bronze border framing while delivering 100% font contrast across the entire frame.
   - **Dynamic Header Clearance**: Dropped the event header (`CASUALTY REPORT • WESTFALL`) down by 3px (`TOP, 0, -24`) so gold text rests squarely in the carved plaque groove and no longer intersects the golden leaf tips.

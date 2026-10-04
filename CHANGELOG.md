@@ -5,6 +5,15 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.106] - 2026-10-04
+
+### Changed
+- **Architectural Refactor: Frozen Shared Base Geometry & Anchor Parity (`Addon/WoWKillboard/UI.lua`)**:
+  - **Frozen Shared Base Geometry**: Locked frame dimensions to identical **560px × 84px** across all themes, establishing permanent parity with the master layout template.
+  - **Zero Geometry Drift on Theme Switch**: Completely eliminated all `SetPoint`, `SetSize`, and `ClearAllPoints` mutations during `UI:ApplyBannerTheme()`. Switching between Classic Forever and ElvUI Minimalist now strictly swaps cosmetic textures, backdrops, and borders without moving a single pixel of text, crests, or icons.
+  - **ElvUI Minimalist Theme**: Configured solid flat dark slate backdrop (`rgba(13, 17, 23, 0.94)`), subtle 1px border (`#2D333B`) with 2px flush top faction stripe, 1px square black icon borders, and crisp monochrome `OUTLINE` typography.
+  - **Classic Forever Theme**: Configured dark solid slate/stone base (`rgba(16, 14, 12, 0.94)`), native Blizzard metallic and golden filigree border overlay directly onto the perimeter of the existing 84px frame, standard Blizzard beveled button borders (`UI-Achievement-IconFrame`, `UI-Debuff-Border`, `medallion_border.tga`), and soft shadow typography.
+
 ## [1.4.105] - 2026-10-04
 
 ### Changed
