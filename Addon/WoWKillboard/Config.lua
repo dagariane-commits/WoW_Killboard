@@ -15,6 +15,7 @@ KB.WebDomain = "wowkillboard.com"
 KB.DefaultSettings = {
     enabled = true,
     theme = "elvui",             -- "elvui" (Modern Dark Minimalist) or "classic" (Classic WoW Stone & Gold)
+    isolateRealms = true,        -- Strictly isolate combat telemetry, killfeeds, and leaderboards to active realm
     accentColorMode = "gold",    -- "gold" (#FFD100), "class" (Player Character Class), "custom" (User RGB)
     customAccentColor = { 1.0, 0.82, 0.0, 1.0 }, -- Saved custom RGB
     includeBattlegrounds = true,

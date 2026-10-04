@@ -35,6 +35,33 @@ function LB:MatchesMode(km, mode)
     return (not km.isDuel)
 end
 
+-- Check if a combat record belongs to the active realm / ruleset
+function LB:MatchesRealm(km)
+    if not km or type(km) ~= "table" then return false end
+    if WoWKillboardSettings and WoWKillboardSettings.isolateRealms == false then
+        return true
+    end
+    local myRealm = (GetRealmName and GetRealmName()) or ""
+    if myRealm == "" then return true end
+
+    local kmRealm = km.realm or (km.killer and km.killer.realm) or (km.victim and km.victim.realm)
+    if kmRealm and kmRealm ~= "" and kmRealm ~= "Unknown" then
+        return kmRealm:lower() == myRealm:lower()
+    end
+
+    -- If realm is unknown or missing (legacy record):
+    local myRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVP"
+    if km.ruleset and km.ruleset ~= "" then
+        return km.ruleset:upper() == myRuleset:upper()
+    end
+
+    -- Strict Isolation: If active realm is PvE or Hardcore, never display untagged legacy PvP records from other servers
+    if myRuleset == "PVE" or myRuleset == "HARDCORE" then
+        return false
+    end
+    return true
+end
+
 -- Rebuild all aggregate statistics from WoWKillboardDB and shared WoWKillboard_RealmData
 function LB:Rebuild()
     LB.Aggregates = {
@@ -47,35 +74,37 @@ function LB:Rebuild()
 
     local seenKills = {}
 
-    -- 1. Index local account kills
+    -- 1. Index local account kills (Strictly filtered by active realm)
     if WoWKillboardDB and WoWKillboardDB.kills then
         for _, km in pairs(WoWKillboardDB.kills) do
             if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
                 local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
-                if kId then seenKills[kId] = true end
-                if not km.isDuel then
-                    LB:IndexKillmail(km, "ALL")
-                end
-                if km.isDuel then
-                    LB:IndexKillmail(km, "DUEL")
-                elseif km.isArena then
-                    LB:IndexKillmail(km, "ARENA")
-                elseif km.isBattleground then
-                    LB:IndexKillmail(km, "BG")
-                else
-                    LB:IndexKillmail(km, "WORLD")
+                if kId and not seenKills[kId] and LB:MatchesRealm(km) then
+                    seenKills[kId] = true
+                    if not km.isDuel then
+                        LB:IndexKillmail(km, "ALL")
+                    end
+                    if km.isDuel then
+                        LB:IndexKillmail(km, "DUEL")
+                    elseif km.isArena then
+                        LB:IndexKillmail(km, "ARENA")
+                    elseif km.isBattleground then
+                        LB:IndexKillmail(km, "BG")
+                    else
+                        LB:IndexKillmail(km, "WORLD")
+                    end
                 end
             end
         end
     end
 
-    -- 2. Index shared realm kills from two-way sync
+    -- 2. Index shared realm kills from two-way sync (Filtered by active realm)
     local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
     if rData and rData.RecentKills then
         for _, km in ipairs(rData.RecentKills) do
             if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
                 local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
-                if kId and not seenKills[kId] then
+                if kId and not seenKills[kId] and LB:MatchesRealm(km) then
                     seenKills[kId] = true
                     if not km.isDuel then
                         LB:IndexKillmail(km, "ALL")
@@ -168,7 +197,9 @@ function LB:Rebuild()
     -- Index local SavedVariables PvE deaths
     if WoWKillboardDB and WoWKillboardDB.pveDeaths then
         for _, pd in pairs(WoWKillboardDB.pveDeaths) do
-            IndexPve(pd)
+            if LB:MatchesRealm(pd) then
+                IndexPve(pd)
+            end
         end
     end
 
@@ -177,7 +208,9 @@ function LB:Rebuild()
         local pveList = rData.RecentPveDeaths or rData.PveDeaths
         if pveList and type(pveList) == "table" then
             for _, pd in ipairs(pveList) do
-                IndexPve(pd)
+                if LB:MatchesRealm(pd) then
+                    IndexPve(pd)
+                end
             end
         end
     end
@@ -404,7 +437,7 @@ function LB:GetRecentKills(mode, limit)
         for _, km in pairs(WoWKillboardDB.kills) do
             if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
                 local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
-                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) and LB:MatchesRealm(km) then
                     seenKills[kId] = true
                     table.insert(list, km)
                 end
@@ -418,7 +451,7 @@ function LB:GetRecentKills(mode, limit)
         for _, km in ipairs(rData.RecentKills) do
             if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
                 local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
-                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) and LB:MatchesRealm(km) then
                     seenKills[kId] = true
                     table.insert(list, km)
                 end

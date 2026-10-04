@@ -1824,6 +1824,72 @@ WoWKillboardDB = {
 
         print("[PASS] Verified Standardized Military Chat Telemetry (Formats A, B, C) and User Control Toggles.")
 
+    def test_28_realm_and_ruleset_isolation(self):
+        """Verify server and ruleset isolation across PvP, PvE, RP, and Hardcore realms."""
+        pve_km = {
+            "killId": f"KILL-PVE-ISO-{int(time.time())}",
+            "realm": "Wild Growth",
+            "ruleset": "PVE",
+            "timestamp": int(time.time()),
+            "isDuel": False,
+            "isBattleground": False,
+            "isArena": False,
+            "isSolo": True,
+            "attackersCount": 1,
+            "totalDamage": 1500,
+            "killer": {
+                "name": "PvePlayer", "level": 50, "class": "PALADIN",
+                "guild": "Peaceful", "faction": "Alliance", "realm": "Wild Growth",
+                "damageDone": 1500, "healingDone": 0
+            },
+            "victim": {
+                "name": "PveFlaggedEnemy", "level": 50, "class": "SHAMAN",
+                "guild": "None", "faction": "Horde", "realm": "Wild Growth"
+            },
+            "location": {"mapId": 1429, "zone": "Elwynn Forest", "x": 50.0, "y": 50.0}
+        }
+        pvp_km = {
+            "killId": f"KILL-PVP-ISO-{int(time.time())}",
+            "realm": "Crusader Strike",
+            "ruleset": "PVP",
+            "timestamp": int(time.time()),
+            "isDuel": False,
+            "isBattleground": False,
+            "isArena": False,
+            "isSolo": True,
+            "attackersCount": 1,
+            "totalDamage": 2500,
+            "killer": {
+                "name": "Ganker", "level": 60, "class": "ROGUE",
+                "guild": "RedridgePolice", "faction": "Alliance", "realm": "Crusader Strike",
+                "damageDone": 2500, "healingDone": 0
+            },
+            "victim": {
+                "name": "Victim", "level": 60, "class": "WARLOCK",
+                "guild": "None", "faction": "Horde", "realm": "Crusader Strike"
+            },
+            "location": {"mapId": 1429, "zone": "Redridge Mountains", "x": 30.0, "y": 40.0}
+        }
+
+        self.client.post("/api/kills", json=pve_km)
+        self.client.post("/api/kills", json=pvp_km)
+
+        # Query Wild Growth
+        resp_pve = self.client.get("/api/kills?realm=Wild%20Growth")
+        data_pve = resp_pve.get_json()
+        pve_ids = [k["killId"] for k in data_pve["kills"]]
+        self.assertIn(pve_km["killId"], pve_ids)
+        self.assertNotIn(pvp_km["killId"], pve_ids)
+
+        # Query Crusader Strike
+        resp_pvp = self.client.get("/api/kills?realm=Crusader%20Strike")
+        data_pvp = resp_pvp.get_json()
+        pvp_ids = [k["killId"] for k in data_pvp["kills"]]
+        self.assertIn(pvp_km["killId"], pvp_ids)
+        self.assertNotIn(pve_km["killId"], pvp_ids)
+
+        print("[PASS] Verified Realm & Ruleset Isolation: Wild Growth (PvE) isolated from Crusader Strike (PvP).")
+
 if __name__ == "__main__":
     unittest.main()
 

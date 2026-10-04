@@ -125,6 +125,7 @@ function BE:PlaceBounty(targetName, targetClass, targetFaction, amountInput, tar
         placerName = placerName,
         amountCopper = copper,
         amountGold = goldAmount,
+        realm = (GetRealmName and GetRealmName()) or "Unknown",
         status = KB.STATUS.ACTIVE,
         hunterName = nil,
         killId = nil,

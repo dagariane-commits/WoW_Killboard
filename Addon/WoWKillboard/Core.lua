@@ -141,7 +141,8 @@ function KB:SyncRealmData()
                     end
                 end
 
-                if isMe and kId and not WoWKillboardDB.kills[kId] then
+                local matchRealm = not KB.Leaderboard or KB.Leaderboard:MatchesRealm(km)
+                if isMe and matchRealm and kId and not WoWKillboardDB.kills[kId] then
                     WoWKillboardDB.kills[kId] = km
                     imported = imported + 1
                 end
@@ -174,6 +175,36 @@ function KB:Initialize()
     WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {}, pveDeaths = {} }
     WoWKillboardDB.kills = WoWKillboardDB.kills or {}
     WoWKillboardDB.pveDeaths = WoWKillboardDB.pveDeaths or {}
+    WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
+
+    -- Auto-tag untagged legacy kills/deaths involving the local character with current realm
+    local myRealm = (GetRealmName and GetRealmName()) or ""
+    local myRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVP"
+    local myName = UnitName("player") or ""
+    if myRealm ~= "" and myName ~= "" then
+        for _, km in pairs(WoWKillboardDB.kills) do
+            if type(km) == "table" and (not km.realm or km.realm == "" or km.realm == "Unknown") then
+                local kName = (km.killer and km.killer.name) or ""
+                local vName = (km.victim and km.victim.name) or ""
+                if kName:lower() == myName:lower() or vName:lower() == myName:lower() then
+                    km.realm = myRealm
+                    km.ruleset = myRuleset
+                    if km.killer then km.killer.realm = myRealm end
+                    if km.victim then km.victim.realm = myRealm end
+                end
+            end
+        end
+        for _, pd in pairs(WoWKillboardDB.pveDeaths) do
+            if type(pd) == "table" and (not pd.realm or pd.realm == "" or pd.realm == "Unknown") then
+                local vName = (pd.victim and pd.victim.name) or ""
+                if vName:lower() == myName:lower() then
+                    pd.realm = myRealm
+                    pd.ruleset = myRuleset
+                    if pd.victim then pd.victim.realm = myRealm end
+                end
+            end
+        end
+    end
 
     -- Two-Way Sync Realm Data Linking & Player Historical Merge
     KB:SyncRealmData()
