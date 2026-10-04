@@ -18,6 +18,264 @@ function S:JoinGlobalChannel()
     end
 end
 
+-- Robust channel ID lookup across all client versions and channel order
+function S:GetChannelId(chanName)
+    chanName = chanName or "WoWKillboard"
+    if GetChannelList then
+        local list = { GetChannelList() }
+        for i = 1, #list, 3 do
+            local id = list[i]
+            local name = list[i+1]
+            if name and (name:lower() == chanName:lower() or name:lower():find(chanName:lower())) then
+                return id
+            end
+        end
+    end
+    if GetChannelName then
+        local id = GetChannelName(chanName)
+        if id and id > 0 then return id end
+        id = GetChannelName("WoWKB")
+        if id and id > 0 then return id end
+    end
+    return nil
+end
+
+-- Safely transmit a message to the dedicated WoWKillboard realm channel
+function S:SendToGlobalChannel(msg)
+    if not msg or msg == "" then return false end
+    local chanId = S:GetChannelId("WoWKillboard")
+    if chanId and chanId > 0 then
+        pcall(SendChatMessage, msg, "CHANNEL", nil, chanId)
+        return true
+    else
+        S:JoinGlobalChannel()
+        if C_Timer and C_Timer.After then
+            C_Timer.After(1.5, function()
+                local retryId = S:GetChannelId("WoWKillboard")
+                if retryId and retryId > 0 then
+                    pcall(SendChatMessage, msg, "CHANNEL", nil, retryId)
+                end
+            end)
+        end
+        return false
+    end
+end
+
+-- Broadcast a Simulated/Test Casualty across Party, Guild, and Realm Channel without saving to database
+function S:BroadcastTestCasualty(mode)
+    local myName = UnitName("player") or "Dagariane"
+    local _, pClass = UnitClass("player")
+    pClass = pClass or "PALADIN"
+    local pLevel = UnitLevel("player") or 23
+    local pGuild = (GetGuildInfo and GetGuildInfo("player")) or "Knights of Azeroth"
+    local pFaction = (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
+    local cTitle = (KB.Utils and KB.Utils.GetClassTitle) and KB.Utils.GetClassTitle(pClass) or "Paladin"
+    local loc = (KB.Utils and KB.Utils.GetPlayerLocation) and KB.Utils.GetPlayerLocation() or { zone = "Westfall", subZone = "Sentinel Hill", x = 42.5, y = 58.3 }
+    local zone = (loc.zone and loc.zone ~= "" and loc.zone ~= "Unknown Zone") and loc.zone or "Westfall"
+    local subZone = (loc.subZone and loc.subZone ~= "") and loc.subZone or "Sentinel Hill"
+
+    mode = (mode and tostring(mode):lower()) or "pve"
+    local isPve = (mode == "pve" or mode == "npc" or mode == "mob" or mode == "pillager")
+    local testId = "TEST-CASUALTY-" .. tostring(time())
+
+    local killerName, killerClass, killerLevel, killerSpell, killerGuild, killerFaction, killerDamage
+    if isPve then
+        killerName = "Defias Pillager"
+        killerClass = "MAGE"
+        killerLevel = 15
+        killerSpell = "Fireball"
+        killerGuild = "Wilderness Threat"
+        killerFaction = "Monster"
+        killerDamage = math.max(600, pLevel * 50)
+    else
+        killerFaction = (pFaction == "Alliance") and "Horde" or "Alliance"
+        killerClass = (killerFaction == "Horde") and "ROGUE" or "WARRIOR"
+        killerName = (killerFaction == "Horde") and "Shadowstalker" or "Dawnbreaker"
+        killerGuild = (killerFaction == "Horde") and "Grim Syndicate" or "Silver Hand"
+        killerLevel = math.max(1, pLevel + 1)
+        killerSpell = (killerClass == "ROGUE") and "Ambush" or "Mortal Strike"
+        killerDamage = math.max(800, pLevel * 75)
+    end
+
+    -- AddonMessage payload format:
+    -- TEST_CASUALTY:<mode>:<testId>:<kName>:<kClass>:<kLvl>:<kSpell>:<kDmg>:<vName>:<vClass>:<vLvl>:<vGuild>:<vFaction>:<zone>:<subZone>
+    local payload = string.format("TEST_CASUALTY:%s:%s:%s:%s:%d:%s:%d:%s:%s:%d:%s:%s:%s:%s",
+        isPve and "PVE" or "PVP",
+        testId,
+        killerName:gsub(":", " "),
+        killerClass,
+        killerLevel,
+        killerSpell:gsub(":", " "),
+        killerDamage,
+        myName:gsub(":", " "),
+        pClass,
+        pLevel,
+        pGuild:gsub(":", " "),
+        pFaction,
+        zone:gsub(":", " "),
+        subZone:gsub(":", " ")
+    )
+
+    -- 1. Broadcast via AddonMessage across Party and Guild (Instant, guaranteed delivery to 2nd computer)
+    if IsInRaid and IsInRaid() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "RAID")
+    elseif IsInGroup and IsInGroup() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "PARTY")
+    end
+    if IsInGuild and IsInGuild() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    end
+
+    -- 2. Standardized Chat Casualty Broadcast (Format C) with explicit [TEST SIMULATION] tag
+    local chatMsg = string.format("[WoWKB] Casualty: %s (Lvl %d %s) killed by %s (%s) in %s. [TEST SIMULATION]",
+        myName, pLevel, cTitle, killerName, killerSpell, subZone)
+
+    -- Broadcast to Party/Raid chat if in group
+    if IsInGroup and IsInGroup() then
+        pcall(SendChatMessage, chatMsg, (IsInRaid and IsInRaid()) and "RAID" or "PARTY")
+    end
+
+    -- Broadcast to dedicated WoWKillboard realm channel
+    S:SendToGlobalChannel(chatMsg)
+
+    -- 3. Trigger local test display immediately
+    local testData = {
+        killId = testId,
+        timestamp = time(),
+        isTest = true,
+        isPveDeath = isPve,
+        isSolo = not isPve,
+        npc = isPve and { name = killerName, spell = killerSpell, damage = killerDamage } or nil,
+        killer = {
+            name = killerName,
+            class = killerClass,
+            level = killerLevel,
+            guild = killerGuild,
+            faction = killerFaction,
+            spell = killerSpell,
+            damage = killerDamage,
+        },
+        victim = {
+            name = myName,
+            class = pClass,
+            level = pLevel,
+            guild = pGuild,
+            faction = pFaction,
+        },
+        location = { zone = zone, subZone = subZone, x = loc.x or 0, y = loc.y or 0 },
+    }
+
+    if KB.UI and KB.UI.ShowKillBanner then
+        KB.UI:ShowKillBanner(testData, true)
+    end
+
+    local printMsg = string.format("|cff00ff00[WoWKB Test Broadcast]|r Simulated %s casualty broadcasted to Party, Guild & WoWKillboard channel! (|cffffd100Zero database pollution|r)", isPve and "PvE" or "PvP")
+    if KB.Utils and KB.Utils.SafePrint then
+        KB.Utils.SafePrint(printMsg)
+    elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        DEFAULT_CHAT_FRAME:AddMessage(printMsg)
+    end
+end
+
+-- Process incoming test casualty broadcast from remote peer (Displays alert without writing to database)
+function S:OnIncomingTestCasualty(testData, sender)
+    if not testData then return end
+    local myName = UnitName("player")
+    if sender and myName and (sender == myName or sender:find("^" .. myName .. "%-") or sender:lower() == myName:lower()) then
+        return
+    end
+
+    -- Trigger Kill Banner & Toast with isTest = true (Bypasses zone restrictions, guarantees zero database write)
+    if KB.UI and KB.UI.ShowKillBanner then
+        KB.UI:ShowKillBanner(testData, true)
+    end
+
+    local kName = (testData.killer and testData.killer.name) or "Hostile"
+    local vName = (testData.victim and testData.victim.name) or sender or "Combatant"
+    local locStr = (testData.location and (testData.location.subZone or testData.location.zone)) or "Wilderness"
+
+    local alertMsg = string.format("|cff38bdf8[WoWKB Network Test]|r Received simulated casualty broadcast from |cff00e5ff%s|r (%s killed by %s in %s). |cffffd100Alert and toast verified!|r (Not saved to history).",
+        sender or vName, vName, kName, locStr)
+    if KB.Utils and KB.Utils.SafePrint then
+        KB.Utils.SafePrint(alertMsg)
+    elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        DEFAULT_CHAT_FRAME:AddMessage(alertMsg)
+    end
+end
+
+-- Broadcast an administrative update warning across channel, party, and guild
+function S:BroadcastAdminAlert(message, alertType)
+    if not message or message == "" then return end
+    alertType = alertType or "UPDATE"
+    local myName = UnitName("player") or "Admin"
+    local cleanMsg = tostring(message):gsub(":", ";"):gsub("\n", " ")
+
+    -- 1. Send to dedicated WoWKillboard realm channel
+    local chanMsg = string.format("[WoWKB Alert] %s: %s", myName, cleanMsg)
+    S:SendToGlobalChannel(chanMsg)
+
+    -- 2. Send via AddonMessage to Party/Raid and Guild
+    local payload = string.format("SYS_ALERT:%s:%s:%s", myName, alertType, cleanMsg)
+    if IsInRaid and IsInRaid() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "RAID")
+    elseif IsInGroup and IsInGroup() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "PARTY")
+    end
+    if IsInGuild and IsInGuild() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    end
+
+    -- 3. Also display locally
+    S:OnIncomingAdminAlert(myName, alertType, cleanMsg)
+end
+
+-- Process incoming system/update alert from channel or addon message
+function S:OnIncomingAdminAlert(sender, alertType, message)
+    if not message or message == "" then return end
+    local now = time()
+    S.recentAlerts = S.recentAlerts or {}
+    local key = tostring(sender) .. ":" .. tostring(message)
+    if S.recentAlerts[key] and (now - S.recentAlerts[key]) < 8 then
+        return
+    end
+    S.recentAlerts[key] = now
+
+    -- Audio notification
+    pcall(PlaySound, 5274) -- SOUNDKIT.RAID_WARNING
+
+    -- Formatted Chat Banner
+    local border = "|cffffd100" .. string.rep("=", 60) .. "|r"
+    local title = string.format("|cffff3838[WoWKB SYSTEM UPDATE ALERT]|r |cffffd100From:|r |cff00e5ff%s|r", sender or "Operator")
+    local body = string.format("|cffffffff%s|r", message)
+
+    if KB.Utils and KB.Utils.SafePrint then
+        KB.Utils.SafePrint(border)
+        KB.Utils.SafePrint(title)
+        KB.Utils.SafePrint(body)
+        KB.Utils.SafePrint(border)
+    elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        DEFAULT_CHAT_FRAME:AddMessage(border)
+        DEFAULT_CHAT_FRAME:AddMessage(title)
+        DEFAULT_CHAT_FRAME:AddMessage(body)
+        DEFAULT_CHAT_FRAME:AddMessage(border)
+    end
+
+    -- On-Screen Raid Notice if available
+    if RaidNotice_AddMessage and RaidWarningFrame then
+        pcall(RaidNotice_AddMessage, RaidWarningFrame, string.format("|cffff3838[WoWKB UPDATE]|r |cffffffff%s|r", message), ChatTypeInfo["RAID_WARNING"] or { r = 1, g = 0.3, b = 0.3 })
+    end
+
+    -- High-priority On-Screen Toast
+    if KB.UI and KB.UI.TriggerToast then
+        KB.UI:TriggerToast({
+            type = "pve_casualty",
+            title = "SYSTEM UPDATE NOTICE",
+            text = string.format("%s: %s", sender or "Operator", message),
+            duration = 10,
+        })
+    end
+end
+
 function S:Init()
     C_ChatInfo.RegisterAddonMessagePrefix(KB.Prefix)
     S:JoinGlobalChannel()
@@ -537,6 +795,56 @@ function S:OnAddonMessage(prefix, message, channel, sender)
             KB.IntelScanner:OnIncomingSighting(sighting)
         end
 
+    elseif msgType == "TEST_CASUALTY" and #parts >= 15 then
+        local subMode = parts[2]
+        local testId = parts[3]
+        local kName = parts[4]
+        local kClass = parts[5]
+        local kLvl = tonumber(parts[6]) or 0
+        local kSpell = parts[7]
+        local kDmg = tonumber(parts[8]) or 0
+        local vName = parts[9]
+        local vClass = parts[10]
+        local vLvl = tonumber(parts[11]) or 0
+        local vGuild = parts[12]
+        local vFaction = parts[13]
+        local zone = parts[14]
+        local subZone = parts[15]
+
+        local isPve = (subMode == "PVE")
+        local testKM = {
+            killId = testId,
+            timestamp = time(),
+            isTest = true,
+            isPveDeath = isPve,
+            isSolo = not isPve,
+            npc = isPve and { name = kName, spell = kSpell, damage = kDmg } or nil,
+            killer = {
+                name = kName,
+                class = kClass,
+                level = kLvl,
+                guild = isPve and "Wilderness Threat" or "Enemy Guild",
+                faction = isPve and "Monster" or "Enemy",
+                spell = kSpell,
+                damage = kDmg,
+            },
+            victim = {
+                name = vName,
+                class = vClass,
+                level = vLvl,
+                guild = vGuild,
+                faction = vFaction,
+            },
+            location = { zone = zone, subZone = subZone, x = 0, y = 0 },
+        }
+        S:OnIncomingTestCasualty(testKM, sender)
+
+    elseif msgType == "SYS_ALERT" and #parts >= 4 then
+        local alertSender = parts[2]
+        local alertType = parts[3]
+        local alertMsg = table.concat(parts, ":", 4)
+        S:OnIncomingAdminAlert(alertSender, alertType, alertMsg)
+
     elseif msgType == "VER" and #parts >= 2 then
         local peerVer = parts[2]
         S:CheckPeerVersion(peerVer, sender)
@@ -551,57 +859,68 @@ function S:OnIncomingChannelCasualty(text, sender)
         return
     end
 
-    local vName, vLvl, vClass, kName, spellName, locStr = text:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*%((.-)%)%s*in%s*(.-)%.?$")
+    local isTestMsg = (text:find("%[TEST") ~= nil) or (text:find("Simulation") ~= nil)
+
+    local vName, vLvl, vClass, kName, spellName, locStr = text:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*%((.-)%)%s*in%s*(.-)%.?%s*%[")
+    if not vName or not kName then
+        vName, vLvl, vClass, kName, spellName, locStr = text:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*%((.-)%)%s*in%s*(.-)%.?$")
+    end
     if not vName or not kName then return end
 
     vLvl = tonumber(vLvl) or 0
     local now = time()
     local seed = string.format("%s_%s_%s_%s", tostring(now), tostring(kName), tostring(vName), tostring(locStr or ""))
-    local deathId = "PVE-" .. (KB.Utils and KB.Utils.Hash and KB.Utils.Hash(seed) or tostring(now))
+    local deathId = (isTestMsg and "TEST-CHANNEL-" or "PVE-") .. (KB.Utils and KB.Utils.Hash and KB.Utils.Hash(seed) or tostring(now))
+
+    local channelPve = {
+        deathId = deathId,
+        timestamp = now,
+        isTest = isTestMsg,
+        isPveDeath = true,
+        npc = {
+            name = kName,
+            id = 0,
+            guid = "CREATURE",
+            spell = spellName or "Combat Strike",
+            damage = 0,
+        },
+        killer = {
+            guid = "CREATURE",
+            name = kName,
+            level = 0,
+            class = "WARRIOR",
+            guild = "Wilderness Threat",
+            faction = "Monster",
+            partySize = 1,
+            damageDone = 0,
+            spell = spellName or "Combat Strike",
+        },
+        victim = {
+            guid = "UNKNOWN",
+            name = vName,
+            level = vLvl,
+            class = vClass or "UNKNOWN",
+            guild = "None",
+            faction = "Unknown",
+        },
+        location = {
+            mapId = 0,
+            zone = locStr or "Wilderness",
+            subZone = "",
+            x = 0,
+            y = 0,
+        },
+    }
+
+    if isTestMsg then
+        S:OnIncomingTestCasualty(channelPve, sender)
+        return
+    end
 
     WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {}, pveDeaths = {} }
     WoWKillboardDB.pveDeaths = WoWKillboardDB.pveDeaths or {}
 
     if not WoWKillboardDB.pveDeaths[deathId] then
-        local channelPve = {
-            deathId = deathId,
-            timestamp = now,
-            isPveDeath = true,
-            npc = {
-                name = kName,
-                id = 0,
-                guid = "CREATURE",
-                spell = spellName or "Combat Strike",
-                damage = 0,
-            },
-            killer = {
-                guid = "CREATURE",
-                name = kName,
-                level = 0,
-                class = "WARRIOR",
-                guild = "Wilderness Threat",
-                faction = "Monster",
-                partySize = 1,
-                damageDone = 0,
-                spell = spellName or "Combat Strike",
-            },
-            victim = {
-                guid = "UNKNOWN",
-                name = vName,
-                level = vLvl,
-                class = vClass or "UNKNOWN",
-                guild = "None",
-                faction = "Unknown",
-            },
-            location = {
-                mapId = 0,
-                zone = locStr or "Wilderness",
-                subZone = "",
-                x = 0,
-                y = 0,
-            },
-        }
-
         WoWKillboardDB.pveDeaths[deathId] = channelPve
 
         if KB.UI and KB.UI.ShowKillBanner then
@@ -628,10 +947,24 @@ frame:SetScript("OnEvent", function(self, event, ...)
         elseif channelName and channelName:lower():find("wowkillboard") then
             isKBChannel = true
         end
-        if isKBChannel and text and text:find("^%[WoWKB%] Casualty:") then
-            pcall(function()
-                S:OnIncomingChannelCasualty(text, sender)
-            end)
+        if isKBChannel and text then
+            if text:find("^%[WoWKB Alert%]") or text:find("^%[WoWKB Update%]") then
+                pcall(function()
+                    local alertSender, alertMsg = text:match("^%[WoWKB %a+%]%s*(.-):%s*(.+)$")
+                    if alertMsg then
+                        S:OnIncomingAdminAlert(alertSender or sender, "UPDATE", alertMsg)
+                    else
+                        local alertBody = text:match("^%[WoWKB %a+%]%s*(.+)$")
+                        if alertBody then
+                            S:OnIncomingAdminAlert(sender, "UPDATE", alertBody)
+                        end
+                    end
+                end)
+            elseif text:find("^%[WoWKB%] Casualty:") then
+                pcall(function()
+                    S:OnIncomingChannelCasualty(text, sender)
+                end)
+            end
         end
     elseif event == "PLAYER_ENTERING_WORLD" then
         pcall(function()

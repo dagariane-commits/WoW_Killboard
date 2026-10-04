@@ -11,7 +11,9 @@ local KM = KB.Killmail
 
 -- Record a validated kill
 function KM:RecordKill(data)
-    if not data or not data.killer or not data.victim then return end
+    if not data or not data.killer or not data.victim or data.isTest or (data.killId and tostring(data.killId):find("^TEST%-")) then
+        return nil
+    end
 
     -- Generate unique hash ID
     local killId = KB.Utils.GenerateKillId(data.timestamp, data.killer.guid, data.victim.guid, data.location.mapId)
@@ -187,11 +189,11 @@ end
 -- Standardized Casualty / Death Broadcast (Format C)
 -- Format: [WoWKB] Casualty: <Victim> (Lvl <Level> <Class>) killed by <Killer> (<Spell/Ability>) in <Location>.
 -- Example: [WoWKB] Casualty: Dagariane (Lvl 23 Paladin) killed by Defias Pillager (Fireball) in Sentinel Hill.
-function KM:BroadcastCasualty(victim, killer, location, spell)
+function KM:BroadcastCasualty(victim, killer, location, spell, isTest)
     if not victim or not killer then return end
 
     local now = time()
-    if (now - (KM.LastCasualtyBroadcastTime or 0)) < 3 then return end
+    if not isTest and (now - (KM.LastCasualtyBroadcastTime or 0)) < 3 then return end
     KM.LastCasualtyBroadcastTime = now
 
     local s = WoWKillboardSettings or (KB.DefaultSettings or {})
@@ -204,9 +206,10 @@ function KM:BroadcastCasualty(victim, killer, location, spell)
     local kName = killer.name or "Hostile Threat"
     local spellName = (spell and spell ~= "" and spell ~= "UNKNOWN") and spell or "Combat"
     local locStr = (location and location.subZone and location.subZone ~= "") and location.subZone or ((location and location.zone) or GetZoneText() or "Wilderness")
+    local tag = isTest and " [TEST SIMULATION]" or ""
 
-    local casualtyMsg = string.format("[WoWKB] Casualty: %s (Lvl %s %s) killed by %s (%s) in %s.",
-        vName, tostring(vLevel), vClass, kName, spellName, locStr)
+    local casualtyMsg = string.format("[WoWKB] Casualty: %s (Lvl %s %s) killed by %s (%s) in %s.%s",
+        vName, tostring(vLevel), vClass, kName, spellName, locStr, tag)
 
     -- Broadcast to Guild (Default: On)
     if IsInGuild and IsInGuild() and enableGuild then
@@ -219,7 +222,7 @@ function KM:BroadcastCasualty(victim, killer, location, spell)
     end
 
     -- Broadcast to dedicated WoWKillboard channel across the realm
-    local chanId = GetChannelName and (GetChannelName("WoWKillboard") or GetChannelName("WoWKB"))
+    local chanId = (KB.Sync and KB.Sync.GetChannelId and KB.Sync:GetChannelId("WoWKillboard")) or (GetChannelName and (GetChannelName("WoWKillboard") or GetChannelName("WoWKB")))
     if chanId and chanId > 0 then
         pcall(SendChatMessage, casualtyMsg, "CHANNEL", nil, chanId)
     end
@@ -235,7 +238,7 @@ end
 
 -- Record a validated PvE death (Player executed by an NPC/Monster)
 function KM:RecordPveDeath(data)
-    if not data or not data.npc or not data.victim then return end
+    if not data or not data.npc or not data.victim or data.isTest or (data.deathId and tostring(data.deathId):find("^TEST%-")) then return end
 
     local now = data.timestamp or time()
     local seed = string.format("%s_%s_%s_%s", tostring(now), tostring(data.npc.guid or data.npc.name or "NPC"), tostring(data.victim.guid or ""), tostring(data.location and data.location.mapId or 0))

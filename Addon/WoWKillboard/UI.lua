@@ -6204,6 +6204,171 @@ function UI:ShowChangelogModal(isManual)
 end
 
 -- ============================================================================
+-- Realm Update Broadcaster & Administrative Alert Modal (100% Zero-Taint)
+-- ============================================================================
+function UI:ShowAnnouncementModal()
+    if InCombatLockdown and InCombatLockdown() then
+        SafePrint("|cffff9900[WoWKB]|r Cannot open announcement modal during combat.")
+        return
+    end
+
+    if not UI.AnnouncementDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(580, 320)
+        dlg:SetPoint("CENTER", 0, 40)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(110)
+        dlg:EnableMouse(true)
+        dlg:SetMovable(true)
+        dlg:SetClampedToScreen(true)
+
+        dlg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        dlg:SetBackdropColor(0.04, 0.05, 0.08, 0.98)
+        dlg:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.95)
+
+        -- Header Drag Bar
+        local header = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        header:SetPoint("TOPLEFT", 1, -1)
+        header:SetPoint("TOPRIGHT", -1, -1)
+        header:SetHeight(28)
+        header:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8" })
+        header:SetBackdropColor(0.12, 0.09, 0.06, 0.98)
+        header:EnableMouse(true)
+        header:RegisterForDrag("LeftButton")
+        header:SetScript("OnDragStart", function() if not InCombatLockdown() then dlg:StartMoving() end end)
+        header:SetScript("OnDragStop", function() dlg:StopMovingOrSizing() end)
+
+        local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("LEFT", 12, 0)
+        title:SetText("|cffffd100WoW KILLBOARD  -  REALM UPDATE BROADCASTER|r")
+
+        local closeX = CreateFrame("Button", nil, header)
+        closeX:SetSize(22, 22)
+        closeX:SetPoint("RIGHT", -4, 0)
+        local closeXText = closeX:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        closeXText:SetPoint("CENTER", 0, 0)
+        closeXText:SetText("|cffff4444X|r")
+        closeX:SetScript("OnClick", function() dlg:Hide() end)
+
+        -- Subtitle & Instructions
+        local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        sub:SetPoint("TOPLEFT", 16, -34)
+        sub:SetText("|cff38bdf8Broadcast update warnings & system alerts across WoWKillboard realm network|r")
+
+        local desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        desc:SetPoint("TOPLEFT", 16, -52)
+        desc:SetPoint("RIGHT", -16, 0)
+        desc:SetJustifyH("LEFT")
+        desc:SetWordWrap(true)
+        desc:SetText("|cff94a3b8Send alerts to the dedicated 'WoWKillboard' channel and party/guild network to notify active players before pushing an addon release or restart.|r")
+
+        -- Edit Box Frame
+        local ebBg = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        ebBg:SetPoint("TOPLEFT", 16, -88)
+        ebBg:SetPoint("TOPRIGHT", -16, -88)
+        ebBg:SetHeight(76)
+        ebBg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        ebBg:SetBackdropColor(0.02, 0.03, 0.05, 0.95)
+        ebBg:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.9)
+
+        local eb = CreateFrame("EditBox", nil, ebBg)
+        eb:SetPoint("TOPLEFT", 8, -6)
+        eb:SetPoint("BOTTOMRIGHT", -8, 6)
+        eb:SetFontObject("GameFontHighlight")
+        eb:SetAutoFocus(false)
+        eb:SetMultiLine(true)
+        eb:EnableMouse(true)
+        eb:SetText("Addon update releasing in 10 minutes. Please save combat records and prepare to update via CurseForge or GitHub.")
+        dlg.MessageEditBox = eb
+
+        -- Presets Row Label
+        local pLabel = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        pLabel:SetPoint("TOPLEFT", 16, -174)
+        pLabel:SetText("|cffffd100Quick Presets:|r")
+
+        -- Preset Buttons
+        local btn10m = UI:CreateButton(dlg, 115, 24, "10-Min Warning", "GameFontHighlightSmall")
+        btn10m:SetPoint("LEFT", pLabel, "RIGHT", 10, 0)
+        btn10m:SetScript("OnClick", function()
+            eb:SetText("Addon update releasing in 10 minutes. Please save combat records and prepare to update via CurseForge or GitHub.")
+        end)
+
+        local btn5m = UI:CreateButton(dlg, 115, 24, "5-Min Warning", "GameFontHighlightSmall")
+        btn5m:SetPoint("LEFT", btn10m, "RIGHT", 8, 0)
+        btn5m:SetScript("OnClick", function()
+            eb:SetText("Addon update releasing in 5 minutes! Please prepare to exit WoW or /reload once updated.")
+        end)
+
+        local btn1m = UI:CreateButton(dlg, 115, 24, "1-Min Urgent", "GameFontHighlightSmall")
+        btn1m:SetPoint("LEFT", btn5m, "RIGHT", 8, 0)
+        btn1m:SetScript("OnClick", function()
+            eb:SetText("Addon update releasing in 1 minute! Final warning to save combat records and /reload.")
+        end)
+
+        local btnLive = UI:CreateButton(dlg, 105, 24, "Update Live!", "GameFontHighlightSmall")
+        btnLive:SetPoint("LEFT", btn1m, "RIGHT", 8, 0)
+        btnLive:SetScript("OnClick", function()
+            eb:SetText("New addon update is now live on CurseForge & GitHub! Please /reload or restart WoW to update.")
+        end)
+
+        -- Bottom Divider
+        local bDiv = dlg:CreateTexture(nil, "ARTWORK")
+        bDiv:SetHeight(1)
+        bDiv:SetPoint("TOPLEFT", 16, -214)
+        bDiv:SetPoint("TOPRIGHT", -16, -214)
+        bDiv:SetColorTexture(0.35, 0.28, 0.16, 0.8)
+
+        -- Action Buttons
+        local bcastBtn = UI:CreateButton(dlg, 260, 30, "|cffffd100Broadcast Alert to Realm Network|r", "GameFontNormal")
+        bcastBtn:SetPoint("BOTTOMLEFT", 16, 16)
+        bcastBtn:SetScript("OnClick", function()
+            local text = eb:GetText()
+            if text and not text:match("^%s*$") then
+                if KB.Sync and KB.Sync.BroadcastAdminAlert then
+                    KB.Sync:BroadcastAdminAlert(text, "UPDATE")
+                end
+                dlg:Hide()
+            end
+        end)
+
+        local testNetBtn = UI:CreateButton(dlg, 190, 30, "|cff38bdf8Test Broadcast (Party/Net)|r", "GameFontHighlightSmall")
+        testNetBtn:SetPoint("LEFT", bcastBtn, "RIGHT", 10, 0)
+        testNetBtn:SetScript("OnClick", function()
+            if KB.Sync and KB.Sync.BroadcastTestCasualty then
+                KB.Sync:BroadcastTestCasualty("pve")
+            end
+        end)
+
+        local cancelBtn = UI:CreateButton(dlg, 80, 30, "Close", "GameFontHighlight")
+        cancelBtn:SetPoint("BOTTOMRIGHT", -16, 16)
+        cancelBtn:SetScript("OnClick", function() dlg:Hide() end)
+
+        -- ESC handler
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                self:SetPropagateKeyboardInput(false)
+                self:Hide()
+            else
+                self:SetPropagateKeyboardInput(true)
+            end
+        end)
+
+        UI.AnnouncementDialog = dlg
+    end
+
+    UI.AnnouncementDialog:Show()
+    if UI.AnnouncementDialog.Raise then UI.AnnouncementDialog:Raise() end
+end
+
+-- ============================================================================
 -- Template-Free Bug Report & AI Diagnostics Dispatch Dialog
 -- ============================================================================
 function UI:ShowBugReportModal()
@@ -7528,6 +7693,8 @@ end
 
 function UI:ShowKillBanner(killmail, isTest)
     if not killmail or not killmail.killer or not killmail.victim then return end
+
+    isTest = isTest or (killmail and killmail.isTest) or (killmail and killmail.killId and tostring(killmail.killId):find("^TEST%-")) or (killmail and killmail.deathId and tostring(killmail.deathId):find("^TEST%-"))
 
     local settings = WoWKillboardSettings or KB.DefaultSettings
     local alertMode = settings.alertMode or "SOUND_AND_BANNER"
@@ -9191,12 +9358,16 @@ function UI:ShowAlertsConfig()
         dlg.BottomDivider = bDiv
 
         -- Footer Action Buttons
-        local testBtn = UI:CreateButton(dlg, 190, 28, "Test Alert Preview", "GameFontNormal")
-        testBtn:SetPoint("BOTTOMLEFT", 24, 18)
+        local testBtn = UI:CreateButton(dlg, 145, 28, "Test Local Preview", "GameFontHighlightSmall")
+        testBtn:SetPoint("BOTTOMLEFT", 20, 16)
         dlg.TestBtn = testBtn
 
-        local closeBtn = UI:CreateButton(dlg, 120, 28, "Close", "GameFontHighlight")
-        closeBtn:SetPoint("BOTTOMRIGHT", -24, 18)
+        local bcastBtn = UI:CreateButton(dlg, 210, 28, "|cff38bdf8Broadcast Test (Party/Net)|r", "GameFontHighlightSmall")
+        bcastBtn:SetPoint("LEFT", testBtn, "RIGHT", 8, 0)
+        dlg.BcastBtn = bcastBtn
+
+        local closeBtn = UI:CreateButton(dlg, 95, 28, "Close", "GameFontHighlight")
+        closeBtn:SetPoint("BOTTOMRIGHT", -20, 16)
         dlg.CloseBtn = closeBtn
 
         -- Helper to apply active/inactive visual state to segmented buttons
@@ -9400,6 +9571,11 @@ function UI:ShowAlertsConfig()
         -- Footer Event Handlers
         testBtn:SetScript("OnClick", function()
             UI:TestKillBanner()
+        end)
+        bcastBtn:SetScript("OnClick", function()
+            if KB.Sync and KB.Sync.BroadcastTestCasualty then
+                KB.Sync:BroadcastTestCasualty("pve")
+            end
         end)
         closeBtn:SetScript("OnClick", function()
             if UI.bannerUnlocked then UI:ToggleBannerLock(false) end

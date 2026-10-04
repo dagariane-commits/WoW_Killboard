@@ -411,26 +411,82 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             KB.UI:ToggleBannerLock()
         end
     elseif cmd == "test" then
-        if KB.UI and KB.UI.TestKillBanner then
+        local subArg = (arg or ""):lower():match("^%s*(.-)%s*$")
+        if subArg:find("broadcast") or subArg:find("net") or subArg:find("party") or subArg:find("channel") then
+            local mode = (subArg:find("pvp") or subArg:find("player") or subArg:find("death")) and "pvp" or "pve"
+            if KB.Sync and KB.Sync.BroadcastTestCasualty then
+                KB.Sync:BroadcastTestCasualty(mode)
+            end
+        elseif KB.UI and KB.UI.TestKillBanner then
             KB.UI:TestKillBanner(arg)
         end
-    elseif cmd == "testchat" or cmd == "testbroadcast" then
-        local pName = UnitName("player") or "Dagariane"
-        local _, pClass = UnitClass("player")
-        pClass = pClass or "PALADIN"
-        local pLevel = UnitLevel("player") or 23
-        local cTitle = (KB.Utils and KB.Utils.GetClassTitle) and KB.Utils.GetClassTitle(pClass) or "Paladin"
-        local loc = (KB.Utils and KB.Utils.GetPlayerLocation) and KB.Utils.GetPlayerLocation() or { zone = "Stormwind City", subZone = "Sentinel Hill", x = 66.7, y = 42.4 }
-        local zone = (loc.zone and loc.zone ~= "" and loc.zone ~= "Unknown Zone") and loc.zone or "Stormwind City"
-        local subzone = (loc.subZone and loc.subZone ~= "") and loc.subZone or "Sentinel Hill"
-        local x = (loc.x and loc.x > 0) and loc.x or 66.7
-        local y = (loc.y and loc.y > 0) and loc.y or 42.4
+    elseif cmd == "testparty" or cmd == "testnet" or cmd == "testbroadcast" then
+        local subArg = (arg or ""):lower():match("^%s*(.-)%s*$")
+        if subArg == "chat" or subArg == "format" or subArg == "formats" then
+            local pName = UnitName("player") or "Dagariane"
+            local _, pClass = UnitClass("player")
+            pClass = pClass or "PALADIN"
+            local pLevel = UnitLevel("player") or 23
+            local cTitle = (KB.Utils and KB.Utils.GetClassTitle) and KB.Utils.GetClassTitle(pClass) or "Paladin"
+            local loc = (KB.Utils and KB.Utils.GetPlayerLocation) and KB.Utils.GetPlayerLocation() or { zone = "Stormwind City", subZone = "Sentinel Hill", x = 66.7, y = 42.4 }
+            local zone = (loc.zone and loc.zone ~= "" and loc.zone ~= "Unknown Zone") and loc.zone or "Stormwind City"
+            local subzone = (loc.subZone and loc.subZone ~= "") and loc.subZone or "Sentinel Hill"
+            local x = (loc.x and loc.x > 0) and loc.x or 66.7
+            local y = (loc.y and loc.y > 0) and loc.y or 42.4
 
-        SafePrint("|cffffd100[WoWKB]|r --- Standardized Military/Tactical Chat Telemetry ---")
-        SafePrint(string.format("|cff00e5ff[Format A - Local/Yell]:|r [WoWKB] Under attack: %s (%.1f, %.1f) vs Defias Pillager!", zone, x, y))
-        SafePrint(string.format("|cff00e5ff[Format B - Guild/Party]:|r [WoWKB] PvP Alert: %s engaged in %s (%.1f, %.1f) by 1 Hostile. Auto-invite: whisper 'invite'", pName, zone, x, y))
-        SafePrint(string.format("|cff00e5ff[Format C - Casualty]:|r [WoWKB] Casualty: %s (Lvl %d %s) killed by Defias Pillager (Fireball) in %s.", pName, pLevel, cTitle, subzone))
-    elseif cmd == "chat" or cmd == "broadcast" then
+            SafePrint("|cffffd100[WoWKB]|r --- Standardized Military/Tactical Chat Telemetry ---")
+            SafePrint(string.format("|cff00e5ff[Format A - Local/Yell]:|r [WoWKB] Under attack: %s (%.1f, %.1f) vs Defias Pillager!", zone, x, y))
+            SafePrint(string.format("|cff00e5ff[Format B - Guild/Party]:|r [WoWKB] PvP Alert: %s engaged in %s (%.1f, %.1f) by 1 Hostile. Auto-invite: whisper 'invite'", pName, zone, x, y))
+            SafePrint(string.format("|cff00e5ff[Format C - Casualty]:|r [WoWKB] Casualty: %s (Lvl %d %s) killed by Defias Pillager (Fireball) in %s.", pName, pLevel, cTitle, subzone))
+        else
+            local mode = (subArg == "pvp" or subArg == "player" or subArg == "death") and "pvp" or "pve"
+            if KB.Sync and KB.Sync.BroadcastTestCasualty then
+                KB.Sync:BroadcastTestCasualty(mode)
+            end
+        end
+    elseif cmd == "announce" or cmd == "alert" then
+        if not arg or arg:match("^%s*$") then
+            if KB.UI and KB.UI.ShowAnnouncementModal then
+                KB.UI:ShowAnnouncementModal()
+            else
+                SafePrint("|cffff3333[WoWKB]|r Usage: /kb announce <message>  (e.g., /kb announce Update v1.0.4 releasing in 10 minutes!)")
+            end
+        else
+            if KB.Sync and KB.Sync.BroadcastAdminAlert then
+                KB.Sync:BroadcastAdminAlert(arg, "UPDATE")
+            end
+        end
+    elseif cmd == "update" then
+        if not arg or arg:match("^%s*$") then
+            if KB.UI and KB.UI.ShowAnnouncementModal then
+                KB.UI:ShowAnnouncementModal()
+            else
+                SafePrint("|cffff3333[WoWKB]|r Usage: /kb update <minutes> [notes]  (e.g., /kb update 10 or /kb update 5 server reboot)")
+            end
+        else
+            local mins, extra = arg:match("^(%d+)%s*(.*)$")
+            local alertMsg
+            if mins then
+                local extraText = (extra and extra ~= "") and string.format(" (%s)", extra) or ""
+                alertMsg = string.format("Addon update releasing in %s minute(s)%s. Please save combat logs and prepare to /reload or update via CurseForge/GitHub.", mins, extraText)
+            else
+                alertMsg = arg
+            end
+            if KB.Sync and KB.Sync.BroadcastAdminAlert then
+                KB.Sync:BroadcastAdminAlert(alertMsg, "UPDATE")
+            end
+        end
+    elseif cmd == "broadcast" then
+        if arg and not arg:match("^%s*$") then
+            if KB.Sync and KB.Sync.BroadcastAdminAlert then
+                KB.Sync:BroadcastAdminAlert(arg, "UPDATE")
+            end
+        else
+            local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+            s.enableChatBroadcasts = not s.enableChatBroadcasts
+            SafePrint(string.format("|cff00e5ff[WoWKB]|r Chat Broadcasts (Yell/Say): %s. (Tip: Use |cffffd100/kb announce <msg>|r or |cffffd100/kb update <mins>|r to broadcast realm announcements).", s.enableChatBroadcasts and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED (Opt-in)|r"))
+        end
+    elseif cmd == "chat" then
         local s = WoWKillboardSettings or (KB.DefaultSettings or {})
         s.enableChatBroadcasts = not s.enableChatBroadcasts
         SafePrint(string.format("|cff00e5ff[WoWKB]|r Chat Broadcasts (Yell/Say): %s.", s.enableChatBroadcasts and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED (Opt-in)|r"))
@@ -945,7 +1001,10 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/kb claim <code>|r - Register web character ownership verification code")
         SafePrint("  |cffffd100/kb export|r - Open in-game combat export window")
         SafePrint("  |cffffd100/kb move|r - Unlock or lock Kill Banner to reposition on screen")
-        SafePrint("  |cffffd100/kb test [kill|death|pvp|pve]|r - Preview Kill Alert Banner (Dag killed X, X killed Dag, or PvE)")
+        SafePrint("  |cffffd100/kb test [kill|death|pvp|pve]|r - Preview Kill Alert Banner locally")
+        SafePrint("  |cffffd100/kb test broadcast [pve|pvp]|r or |cffffd100/kb testnet|r - Broadcast simulated casualty to Party & Realm Channel (zero DB write)")
+        SafePrint("  |cffffd100/kb announce <message>|r - Broadcast custom alert/announcement to Realm Channel & Party")
+        SafePrint("  |cffffd100/kb update <minutes> [notes]|r - Broadcast scheduled update warning countdown across Realm Network")
         SafePrint("  |cffffd100/kb testkill|r - Simulate an Open-World PvP Kill (populates feed & stats)")
         SafePrint("  |cffffd100/kb testdeath|r - Simulate a PvP Death (prompts revenge blood bounty)")
         SafePrint("  |cffffd100/kb stress [N]|r - Stress test addon with N (default 25) simulated kills")
