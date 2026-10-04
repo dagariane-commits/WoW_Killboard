@@ -5,6 +5,18 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.112] - 2026-10-04
+
+### Changed
+- **Unified Backdrop Structure & Classic Theme Color Parity (`Addon/WoWKillboard/UI.lua`)**:
+  - **Shared Clean Flat Geometry**: Unified both `ClassicSkin` and `ElvSkin` to share the exact same clean rectangular backdrop architecture (560px × 84px, 1px solid border, 2px flush top accent stripe). Completely eliminated `UI-Achievement-Alert-Background`, removing squished wood textures, leaf clip artifacts, and truncated right-side art that left killer icons floating outside the frame.
+  - **Authentic Classic Palette**: Styled `ClassicSkin` with warm dark stone base (`rgba(18, 14, 12, 0.95)`), classic burnished gold border (`0.78, 0.61, 0.23, 1.0` / `#C79C3A`), and Blizzard Gold top accent stripe (`#FFD100`).
+  - **Modern ElvUI Palette**: Styled `ElvSkin` with cool dark slate base (`rgba(13, 17, 23, 0.94)`), subtle dark border (`0.18, 0.20, 0.23, 1.0`), and dynamic faction top accent line (Alliance Blue `#0078FF` / Horde Red `#C41E3A`).
+
+### Fixed
+- **Killer Name & Guild String Collision**: Corrected `killerSub` anchoring from `TOPLEFT, -10, -18` to `BOTTOMLEFT, -10, 2` relative to `killerIcon`, completely resolving the overlap where the guild/classification text collided into the character name string.
+- **Bilateral Text Alignment**: Added explicit `SetJustifyH("LEFT")` for `victimName` and `victimGuild`, and `SetJustifyH("RIGHT")` for `killerName` and `killerSub`.
+
 ## [1.4.111] - 2026-10-04
 
 ### Fixed

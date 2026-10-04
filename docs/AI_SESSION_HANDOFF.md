@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 04:18:00 EDT  
-> **Git Status**: Branch `main` (Preparing commit for v1.4.111).  
+> **Last Synchronized**: 2026-10-04 04:25:00 EDT  
+> **Git Status**: Branch `main` (Preparing commit for v1.4.112).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.1` (Community Release).  
 > **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
@@ -39,6 +39,11 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Unified Backdrop Structure & Classic Theme Color Parity (`UI.lua`)**:
+  - Replaced the distorted achievement alert texture with the identical clean flat backdrop structure as ElvUI (560px × 84px, 1px solid border, 2px top accent line).
+  - Styled Classic with warm dark stone base (`rgba(18, 14, 12, 0.95)`), burnished gold border (`#C79C3A`), and Blizzard Gold top accent line (`#FFD100`).
+  - Fixed killer character name and guild subtitle text collision (`killerSub` anchored to `BOTTOMLEFT, -10, 2`).
+  - Enforced bilateral text alignment: left-aligned victim stack, right-aligned killer stack.
 - **Bulletproof Death Toast Layout & Rendering Cycle Overhaul (`UI.lua`)**:
   - Replaced toast layout engine with user's clean bulletproof 3-tier hierarchy:
     1. `Toast` (`WoWKB_DeathToast`, 560x84, at `TOP`, `UIParent`, `TOP`, 0, -120).
