@@ -11,10 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Authentic WoW Classic "Forever" Theme Engine for Combat Toast Banner (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Textures/`)**:
   - Implemented dual-theme rendering for the in-game combat toast banner: authentic **WoW Classic "Forever"** and modern **ElvUI Minimalist**.
   - Calibrated dimensions to **580px × 84px** with balanced vertical margins and centered 40px icon alignments.
-  - **Authentic Blizzard Frame Assets:**
-    - **Dialog Backdrop & Border:** Textured `Interface\DialogFrame\UI-DialogBox-Background` tiled backdrop with `Interface\DialogFrame\UI-DialogBox-Border` metallic beveled edges.
-    - **Dialog Header Ribbon:** Enclosed top header text in authentic `Interface\DialogFrame\UI-DialogBox-Header` plaque in Blizzard Gold (`#FFD100`) with (1, -1) drop shadow.
-    - **Riveted Corner Brackets:** Added 4 ornate bronze/gold riveted corner brackets (`corner_bracket.tga`) matching the classic Quest Log header bar.
+  - **Authentic Blizzard Frame Assets & Texture Refinements:**
+    - **Header Plaque Removal:** Eliminated the floating external header ribbon plaque, anchoring `WOWKB COMBAT TELEMETRY` cleanly inside the frame at `TOP, 0, -6` from the upper inside edge.
+    - **Dark Marble Textured Backdrop:** Applied authentic Blizzard textured stone backdrop (`Interface\DialogFrame\UI-DialogBox-Background`) with a rich dark marble tint at 0.85 alpha (`#332E26` RGB `0.20, 0.18, 0.15`), replacing flat black fills.
+    - **Flush Corner Insets & Zero Bleed:** Calibrated frame insets to `4, 4, 4, 4` and regenerated `corner_bracket.tga` with 100% transparent antialiased alpha, ensuring corner brackets anchor flush at `(0, 0)` without grey strips bleeding behind them.
+    - **Elevated Location Baseline:** Lifted `Westfall • Sentinel Hill` by 4px (`locText` anchored at `TOP, centerIcon, "BOTTOM", 0, 0`), ensuring 21px clearance from the bottom edge so it never touches the border.
     - **Medallion Gold Bevel Ring:** Framed high-res circular Alliance/Horde crests in raised gold medallion rings (`medallion_border.tga`).
     - **Metallic Class Button Border:** Wrapped combatant class icons with Blizzard beveled button borders (`Interface\Buttons\UI-Quickslot2`).
     - **Hostile Red Debuff Border:** Wrapped threat/killer icons with standard red debuff borders (`Interface\Buttons\UI-Debuff-Border`).
