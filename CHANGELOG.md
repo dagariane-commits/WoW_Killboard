@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resolved `UI.lua:1550: attempt to perform arithmetic on a nil value` occurring on addon open (`UI:Refresh()` -> `UI:Toggle()`) due to uninitialized `soloKillsCount`.
   - Added robust initialization and accumulation for `soloKillsCount` across combat history and integrated `KB.Leaderboard:GetModeSummary()` for pre-calculated, deduplicated realm and local statistics.
   - Fully guarded all percentage calculations, casualty counts, and faction splits against `nil` values, restoring uninterrupted rendering for the main dashboard and live killfeed.
+- **Death Alert Banner & In-Game Toast Pop Trigger (`UI.lua`, `CombatTracker.lua`, `Core.lua`)**:
+  - Pre-allocated `UI.KillBanner`, `UI.RaidNoticeFrame`, `UI.RadarHUD`, and `UI.CombatWire` during `ADDON_LOADED` and `PLAYER_LOGIN` via new `UI:InitHUDs()` method. Prevents combat lockdown (`InCombatLockdown()`) from blocking frame creation when the player dies or scores a kill before opening the main window.
+  - Refactored `UI:ShowKillBanner` scope gating to explicitly exempt the local player's own combat events (kills and casualties). Player deaths and kills now always pop regardless of whether `alertScope` is `"MINE"` or `"ZONE"`, eliminating false-negative drops from subzone name discrepancies or case-sensitive name comparisons.
+  - Integrated `isLocalPlayerVictim` check across `CombatTracker.lua` (checking both `UnitGUID("player")` and case-insensitive/realm-stripped character name), ensuring alt characters and varying name formats are seamlessly tracked on death.
+  - Initialized `WoWKillboardDB.pveDeaths` table in `Core.lua:Initialize()` to guarantee persistence readiness.
+- **Desktop Sync Companion (`WoWKillboardSync.exe`) v1.0.2 Synchronization (`sync/watcher.py`, `sync/gui.py`, `version_info.txt`)**:
+  - Recompiled standalone Windows companion binary with PE version resource `v1.0.2.0` and bumped internal engine version to `1.0.2`.
+  - Added user guidance explaining World of Warcraft's in-memory `SavedVariables` behavior: WoW writes combat data to disk only upon `/reload` or character logout. Added explicit tips to desktop companion startup and manual sync feedback.
 
 ### Added
 - **Complete Clean ElvUI Specification Across All Tabs & Dynamic Accent Engine (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Utils.lua`)**:

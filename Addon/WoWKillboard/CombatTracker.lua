@@ -453,16 +453,22 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     if not isDestPlayer then return end
 
     local playerGUID = UnitGUID("player")
+    local playerName = UnitName("player")
     local now = time()
     local context = CT:GetCombatContext()
 
     -- Filter check: If user disabled BGs and this is a BG, skip
-    if not KB.DefaultSettings.includeBattlegrounds and context.isBattleground then
+    local settings = WoWKillboardSettings or KB.DefaultSettings
+    if settings.includeBattlegrounds == false and context.isBattleground then
         return
     end
 
+    local isLocalPlayerVictim = (victimGUID and playerGUID and victimGUID == playerGUID) or
+                                (victimName and playerName and victimName:lower() == playerName:lower()) or
+                                (victimName and playerName and victimName:lower():find("^" .. playerName:lower() .. "%-"))
+
     -- Check if player died
-    if victimGUID == playerGUID then
+    if isLocalPlayerVictim then
         if (now - (CT.LastPlayerDeathTime or 0)) <= 3 then
             return
         end
@@ -792,7 +798,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
 
     -- Only proceed if there was at least one attacker, or if the local player died (fatal fall / environment)
     if #attackersList == 0 then
-        if playerGUID and victimGUID == playerGUID then
+        if isLocalPlayerVictim then
             CT.SessionStats.pveDeaths = (CT.SessionStats.pveDeaths or 0) + 1
             local pClass = select(2, UnitClass("player"))
             local fallbackNpc = (CT.LastHostileNpc and (now - (CT.LastHostileNpc.lastSeen or 0)) <= 60 and CT.LastHostileNpc)
@@ -879,7 +885,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
                 guild = "None",
                 faction = "Unknown",
             }
-            if playerGUID and victimGUID == playerGUID then
+            if isLocalPlayerVictim then
                 victimInfo.name = UnitName("player")
                 victimInfo.level = UnitLevel("player") or 0
                 local _, pClass = UnitClass("player")
@@ -1069,7 +1075,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         faction = "Unknown",
     }
 
-    if playerGUID and victimGUID == playerGUID then
+    if isLocalPlayerVictim then
         victimInfo.name = UnitName("player")
         victimInfo.level = UnitLevel("player") or 0
         local _, pClass = UnitClass("player")
@@ -1109,7 +1115,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     local isLevelDisparity = (vLvl > 0 and kLvl > 0 and (vLvl - kLvl) >= 5 and (finalBlowKillerGUID == playerGUID and playerDamage < 100 or killerDamage < 100))
 
     local isSolo = false
-    if victimGUID == playerGUID then
+    if isLocalPlayerVictim then
         -- Player is victim: solo only if pure 1v1 engagement with no gang around and positive damage
         isSolo = (not isInstanceCombat)
              and (#attackersList == 1)
@@ -1139,16 +1145,16 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
              and (not isLevelDisparity)
     end
 
-    local friendlyPartySize = math.max(CT:GetFriendlyPartySize(), (victimGUID ~= playerGUID and #attackersList or 1))
-    if victimGUID ~= playerGUID and friendlyAssists > 0 then
+    local friendlyPartySize = math.max(CT:GetFriendlyPartySize(), (not isLocalPlayerVictim and #attackersList or 1))
+    if not isLocalPlayerVictim and friendlyAssists > 0 then
         friendlyPartySize = friendlyPartySize + friendlyAssists
     end
-    if victimGUID ~= playerGUID and not isSolo and friendlyPartySize < 2 then
+    if not isLocalPlayerVictim and not isSolo and friendlyPartySize < 2 then
         friendlyPartySize = 2
     end
 
     local attackersCount = #attackersList
-    if victimGUID == playerGUID then
+    if isLocalPlayerVictim then
         attackersCount = math.max(#attackersList, 1)
         if not isSolo and attackersCount < 2 then
             attackersCount = math.max(2, hostilePartySize)
@@ -1177,7 +1183,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
     local isArena = context.isArena or (C_PvP and C_PvP.IsArena and C_PvP.IsArena())
     local isInstanceCombat = inInst or (instType and instType ~= "none") or isBG or isArena
 
-    if not isInstanceCombat and victimGUID == playerGUID and killerInfo and killerInfo.name and killerInfo.name ~= "Unknown" and killerInfo.name ~= UnitName("player") then
+    if not isInstanceCombat and isLocalPlayerVictim and killerInfo and killerInfo.name and killerInfo.name ~= "Unknown" and killerInfo.name ~= UnitName("player") then
         CT.LastPvpKiller = {
             name = killerInfo.name,
             guid = killerInfo.guid,

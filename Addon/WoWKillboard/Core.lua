@@ -171,8 +171,9 @@ end
 -- Initialize Databases and settings on load
 function KB:Initialize()
     -- Initialize SavedVariables
-    WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {} }
+    WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {}, pveDeaths = {} }
     WoWKillboardDB.kills = WoWKillboardDB.kills or {}
+    WoWKillboardDB.pveDeaths = WoWKillboardDB.pveDeaths or {}
 
     -- Two-Way Sync Realm Data Linking & Player Historical Merge
     KB:SyncRealmData()
@@ -207,6 +208,11 @@ function KB:Initialize()
 
     -- Create Minimap Button
     KB:CreateMinimapButton()
+
+    -- Pre-allocate overlay frames outside combat (Guardrail 1 Compliant)
+    if KB.UI and KB.UI.InitHUDs then
+        KB.UI:InitHUDs()
+    end
 
     SafePrint(string.format("|cff00ccff[WKB]|r |cffffd100WoW Killboard v%s|r loaded. Type |cffffd100/kb|r to open dashboard or |cffffd100/kb help|r for commands.", KB.Version))
     SafePrint("|cff00ff66[Sync]|r Upload your kills at |cffffff00wowkillboard.com/upload|r (or download the auto-sync companion).")
@@ -1371,6 +1377,9 @@ coreFrame:SetScript("OnEvent", function(self, event, ...)
         end
     elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
         KB:SyncRealmData()
+        if KB.UI and KB.UI.InitHUDs then
+            KB.UI:InitHUDs()
+        end
         -- Wait 2.5s for fonts, world loading, and SavedVariables to settle
         local function CheckPostLoginModals()
             local s = WoWKillboardSettings or {}

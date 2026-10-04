@@ -97,7 +97,7 @@ def check_file(filepath):
     expr_p_stack = []
     for idx, c in enumerate(clean_text):
         if c == "(":
-            pre = clean_text[:idx].rstrip()
+            pre = clean_text[max(0, idx-50):idx].rstrip()
             m = re.search(r"([a-zA-Z_0-9]+|[^\s])$", pre)
             is_call = False
             if m:
