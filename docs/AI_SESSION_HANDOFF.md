@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 02:05:00 EDT  
-> **Git Status**: Branch `main` (Commit `bdcd950`, pushed to `origin/main`).  
+> **Last Synchronized**: 2026-10-04 03:20:00 EDT  
+> **Git Status**: Branch `main` (Preparing commit for v1.4.105).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.1` (Community Release).  
 > **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
@@ -39,6 +39,13 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Classic Theme Contrast & Background Fill Polish (`UI.lua`)**:
+  - **Dark Stone Base Fill**: Replaced the native muddy orange-to-amber gradient wood texture with a uniform flat dark-stone base fill (`rgba(16, 14, 12, 0.92)`) anchored at `(6, -14)` to `(-6, 7)`, preserving the outer golden-leaf filigree and bronze border framing while delivering 100% font contrast across the entire frame.
+  - **Dynamic Header Clearance**: Dropped the event header (`CASUALTY REPORT • WESTFALL`) down by 3px (`TOP, 0, -24`) so gold text rests squarely in the carved plaque groove and no longer intersects the golden leaf tips.
+  - **Killer Name High-Contrast Crimson**: Brightened the killer name text from dark maroon to Blizzard Hostile Crimson (`#FF3838`) with a crisp `(1, -1)` solid black dropshadow for immediate readability.
+  - **Killer Subtitle Off-White**: Replaced dark gray subtitle text with Clean Bone/Off-White (`#D6D1C4`).
+  - **Fatal Blow Styling**: Styled `slain by` in crisp off-white (`#E0E0E0`) and the lethal spell (e.g. `Fireball`) in glowing Fire-Orange / Gold (`#FFB300`), with Arcane Cyan (`#71D5FF`) preserved for Frost/Arcane spells.
+  - **Victim Guild Muted Silver**: Brightened victim guild tags to Muted Silver (`#B5BAC1`).
 - **Final Cosmetic & Pixel-Alignment Pass (`UI.lua`)**:
   - **Classic Theme Frame Geometry**:
     - Header Vertical Alignment: Dropped `CASUALTY REPORT • WESTFALL (SENTINEL HILL)` down by 4px (`TOP, 0, -21`) into the dark wooden plaque groove, fully clearing the top golden filigree vines.

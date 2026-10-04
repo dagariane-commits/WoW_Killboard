@@ -5,6 +5,17 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.105] - 2026-10-04
+
+### Changed
+- **Classic Theme Contrast & Background Fill Polish (`Addon/WoWKillboard/UI.lua`)**:
+  - **Dark Stone Base Fill**: Replaced the native muddy orange-to-amber gradient wood texture with a uniform flat dark-stone base fill (`rgba(16, 14, 12, 0.92)`) anchored at `(6, -14)` to `(-6, 7)`, preserving the outer golden-leaf filigree and bronze border framing while delivering 100% font contrast across the entire frame.
+  - **Dynamic Header Clearance**: Dropped the event header (`CASUALTY REPORT • WESTFALL`) down by 3px (`TOP, 0, -24`) so gold text rests squarely in the carved plaque groove and no longer intersects the golden leaf tips.
+  - **Killer Name High-Contrast Crimson**: Brightened the killer name text from dark maroon to Blizzard Hostile Crimson (`#FF3838`) with a crisp `(1, -1)` solid black dropshadow for immediate readability.
+  - **Killer Subtitle Off-White**: Replaced dark gray subtitle text with Clean Bone/Off-White (`#D6D1C4`).
+  - **Fatal Blow Styling**: Styled `slain by` in crisp off-white (`#E0E0E0`) and the lethal spell (e.g. `Fireball`) in glowing Fire-Orange / Gold (`#FFB300`), with Arcane Cyan (`#71D5FF`) preserved for Frost/Arcane spells.
+  - **Victim Guild Muted Silver**: Brightened victim guild tags to Muted Silver (`#B5BAC1`).
+
 ## [1.4.104] - 2026-10-04
 
 ### Changed
