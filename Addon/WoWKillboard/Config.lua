@@ -7,7 +7,7 @@ WoWKillboard = WoWKillboard or {}
 local KB = WoWKillboard
 WoWKB = WoWKillboard
 
-KB.Version = "1.0.2"
+KB.Version = "1.0.3"
 KB.Prefix = "WOWKB"
 KB.WebDomain = "wowkillboard.com"
 

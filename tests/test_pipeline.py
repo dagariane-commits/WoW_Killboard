@@ -1645,7 +1645,9 @@ WoWKillboardDB = {
         self.assertEqual(res_health.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
         self.assertEqual(res_health.headers.get("Permissions-Policy"), "camera=(), microphone=(), geolocation=()")
 
-        # 2. Verify /WoWKillboard-v1.0.2.zip and /WoWKillboard-v1.0.1.zip download endpoints (local file serving under TESTING)
+        # 2. Verify /WoWKillboard-v1.0.3.zip, /WoWKillboard-v1.0.2.zip and /WoWKillboard-v1.0.1.zip download endpoints (local file serving under TESTING)
+        res_pkg_v103 = self.client.get("/WoWKillboard-v1.0.3.zip")
+        self.assertEqual(res_pkg_v103.status_code, 200)
         res_pkg_v102 = self.client.get("/WoWKillboard-v1.0.2.zip")
         self.assertEqual(res_pkg_v102.status_code, 200)
         res_pkg = self.client.get("/WoWKillboard-v1.0.1.zip")

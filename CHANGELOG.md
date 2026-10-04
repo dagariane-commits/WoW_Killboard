@@ -5,6 +5,24 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-10-04 (CurseForge Community Release)
+
+### Added
+- **Complete Clean ElvUI Specification Across All Tabs & Dynamic Accent Engine (`UI.lua`, `Config.lua`, `Utils.lua`)**:
+  - **Dynamic Accent Color Engine (`WoWKB.AccentColor`)**: Dynamic accent colors across headers, active tab borders, rank badges, toast banners, and sticky standing rows (`Classic Gold`, `Player Class Color`, or `Custom Hex / Color Picker`).
+  - **Universal 1px Black Borders & Fluff Stripping**: Strict 1px solid black (`#000000`) borders across all frames, tabs, pill toggles, and tables with flat dark slate backgrounds (`#121212`, `#181818`, `#141414`).
+  - **Tooltip Strata Fix**: Elevated private tooltip strata to `TOOLTIP` (`FrameStrata: TOOLTIP`, `FrameLevel: 200+`) with flat `#121212` backdrop and 1px border.
+  - **Global Top Stat Strip**: Consolidated top section into a compact 32px height bar split into 3 flush segments (Total Kills, 1v1 Solo Ratio, Faction Balance).
+  - **Tabs 1-5 Modernization**: Overhauled Intel (Top Threats + Recent Deaths), Leaderboards (PvP Leaderboards + Sticky Standing), Bounties (+ Place Bounty modal), Call to Arms (Open Defense Calls), and Danger Zones (Realm & Vicinity activity).
+
+### Changed
+- **Automatic SavedVariables Theme Migration (`Core.lua`)**:
+  - Implemented one-time automatic migration flag `WoWKillboardSettings.hasMigratedToElvUI`. Any existing player profiles with legacy `theme = "classic"` are automatically upgraded to `theme = "elvui"` on login, guaranteeing the new minimalist aesthetics render immediately without requiring manual settings resets.
+- **Desktop Companion Synchronizer v1.0.3 (`WoWKillboardSync.exe`)**:
+  - Bumped sync engine version and Windows PE executable version resource to `v1.0.3.0`.
+- **CurseForge & Git Parity (`deploy.py`, `web/server.py`)**:
+  - Updated distribution packaging and web download routes for `WoWKillboard-v1.0.3.zip`.
+
 ## [1.0.2] - 2026-10-04 (CurseForge Community Release)
 
 ### Fixed

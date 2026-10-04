@@ -185,6 +185,12 @@ function KB:Initialize()
         end
     end
 
+    -- Default Theme Migration: ensure all upgraded clients display the new ElvUI specification
+    if not WoWKillboardSettings.hasMigratedToElvUI then
+        WoWKillboardSettings.theme = "elvui"
+        WoWKillboardSettings.hasMigratedToElvUI = true
+    end
+
     WoWKillboardBounties = WoWKillboardBounties or {}
     WoWKillboardDebtLedger = WoWKillboardDebtLedger or {}
 
