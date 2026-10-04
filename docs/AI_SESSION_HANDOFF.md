@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 03:48:00 EDT  
-> **Git Status**: Branch `main` (Preparing commit for v1.4.110).  
+> **Last Synchronized**: 2026-10-04 04:18:00 EDT  
+> **Git Status**: Branch `main` (Preparing commit for v1.4.111).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.1` (Community Release).  
 > **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
@@ -39,6 +39,15 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Bulletproof Death Toast Layout & Rendering Cycle Overhaul (`UI.lua`)**:
+  - Replaced toast layout engine with user's clean bulletproof 3-tier hierarchy:
+    1. `Toast` (`WoWKB_DeathToast`, 560x84, at `TOP`, `UIParent`, `TOP`, 0, -120).
+    2. `ClassicSkin` and `ElvSkin` parented directly to `Toast` at `FrameLevel = Toast:GetFrameLevel() + 1`.
+    3. `Content` parented to `Toast` at `FrameLevel = Toast:GetFrameLevel() + 10`, ensuring text and icons are never obscured.
+  - Eliminated `innerFill` solid black texture and nested subframe backdrops (`victimClassFrame`, `killerIconFrame`), allowing the native cropped achievement alert background (`UI-Achievement-Alert-Background`, UV `0, 0.78, 0, 1`) to render uncompressed and visible.
+  - Added global font fallback alias `GameFontHighlightMedium = GameFontHighlightLarge or GameFontHighlight` to guarantee font strings draw across all client flavors.
+  - Migrated class icons and faction crests to native in-game Blizzard textures (`UI-Classes-Circles` and `UI-PVP-Alliance`/`UI-PVP-Horde`), eliminating unmounted glue asset texture failures.
+  - Implemented `WoWKB_SetTheme(themeName)` to toggle `ClassicSkin` and `ElvSkin` cleanly.
 - **Classic Theme Achievement Alert UV Cropping & Shield Elimination (`UI.lua`)**:
   - Replaced multi-slice stretching with a single clean backdrop texture mapped to `SetTexCoord(0, 0.78, 0, 1)` on `UI-Achievement-Alert-Background`.
   - Cleanly excluded Blizzard's default `[25]` points shield and right-hand badge art while retaining the natural, uncompressed aspect ratio of the wood plaque and golden leaves across the 84px height container.

@@ -5,6 +5,19 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.111] - 2026-10-04
+
+### Fixed
+- **Bulletproof Death Toast Layout & Rendering Cycle Overhaul (`Addon/WoWKillboard/UI.lua`)**:
+  - **Clean Container Architecture (`WoWKB_DeathToast`)**: Replaced toast layout engine with a streamlined, bulletproof 3-tier hierarchy:
+    1. Root frame: `Toast` (`WoWKB_DeathToast`, 560px × 84px, `TOP`, `UIParent`, `TOP`, 0, -120).
+    2. Visual skins: `ClassicSkin` and `ElvSkin` parented directly to `Toast` at `FrameLevel = Toast:GetFrameLevel() + 1`.
+    3. Content layer: `Content` parented to `Toast` at `FrameLevel = Toast:GetFrameLevel() + 10`, guaranteeing text and icons are never obscured or buried.
+  - **Eliminated Black Box Overlay & Texture Occlusion**: Removed `innerFill` solid black texture and nested subframe backdrops (`victimClassFrame`, `killerIconFrame`), allowing the native cropped achievement alert background (`UI-Achievement-Alert-Background`, UV `0, 0.78, 0, 1`) to render with complete clarity.
+  - **Font Availability Guardrail**: Added global fallback alias `GameFontHighlightMedium = GameFontHighlightLarge or GameFontHighlight` so font strings never fail to draw on Classic Era clients lacking `GameFontHighlightMedium`.
+  - **In-Game Icon Texture Parity**: Migrated class icons and faction crests to native in-game Blizzard textures (`Interface\TargetingFrame\UI-Classes-Circles` and `Interface\TargetingFrame\UI-PVP-Alliance`/`UI-PVP-Horde`), eliminating unmounted glue asset texture failures.
+  - **Clean Theme Switcher**: Implemented `WoWKB_SetTheme(themeName)` to toggle `ClassicSkin` and `ElvSkin` cleanly without moving or mutating any child element coordinates.
+
 ## [1.4.110] - 2026-10-04
 
 ### Fixed
