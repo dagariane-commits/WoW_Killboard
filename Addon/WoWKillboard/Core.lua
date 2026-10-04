@@ -1399,6 +1399,9 @@ coreFrame:SetScript("OnEvent", function(self, event, ...)
             CheckPostLoginModals()
         end
     elseif event == "PLAYER_REGEN_ENABLED" then
+        if KB.UI and KB.UI.InitHUDs then
+            KB.UI:InitHUDs()
+        end
         if pendingWelcome then
             pendingWelcome = false
             local s = WoWKillboardSettings or {}

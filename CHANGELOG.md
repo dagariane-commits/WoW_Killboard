@@ -8,15 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.2] - 2026-10-04 (CurseForge Community Release)
 
 ### Fixed
+- **PvE Casualty Alerts & Cross-Machine Broadcast Protocol (`Sync.lua`, `Killmail.lua`, `CombatTracker.lua`)**:
+  - **Peer-to-Peer PvE Death Synchronization (`PVE:` Protocol)**: Implemented `S:BroadcastPveDeath(pveRecord)` and incoming message parser `msgType == "PVE"` in `Sync.lua`, resolving issue where player deaths caused by NPCs/monsters were never transmitted across P2P channels to remote computers running the addon.
+  - **Dedicated Realm Chat Channel (`WoWKillboard`)**: Implemented automated background channel joining (`JoinChannelByName("WoWKillboard")`) and standardized Format C casualty broadcasting (`[WoWKB] Casualty: <Victim> (Lvl <Lvl> <Class>) killed by <Killer> (<Spell>) in <Location>.`). Players on the same realm receive casualty alerts and toast pops even when unaffiliated (not in the same guild or party).
+  - **In-Game Toast Pop Gating & Remote Peer Audio**: Added `S:OnIncomingChannelCasualty` in `Sync.lua` to parse casualty alerts from the `WoWKillboard` channel, instantiate casualty records, trigger the on-screen `WoWKB_DeathToast` banner, and play alert sounds on remote peers.
+  - **Robust NPC Attribution Fallback in `CombatTracker.lua`**: Hardened `CT:ProcessDeath` for local player deaths when `topNpcAttacker` and `finalBlowKillerGUID` are nil, adding automated fallback resolution across `CT.LastHostileNpc`, `activeEnemyTarget`, and target unit tokens to ensure PvE executions are never dropped silently.
+  - **Case-Insensitive & Realm-Stripped Local Player Detection**: Standardized local victim checks in `Killmail.lua:RecordKill` and `Killmail.lua:RecordPveDeath` to match both `UnitGUID("player")` and realm-stripped/case-insensitive character names.
+  - **Post-Combat HUD Frame Allocation**: Hooked `UI:InitHUDs()` into `PLAYER_REGEN_ENABLED` in `Core.lua` to ensure overlay frames (`UI.KillBanner`, `UI.RaidNoticeFrame`, etc.) are guaranteed to pre-allocate even if the player logged in or died during combat lockdown.
 - **UI Initialization Crash in `ApplyTheme` (`Addon/WoWKillboard/UI.lua`)**:
   - Resolved `UI.lua:313: attempt to call a nil value` by adding `"BackdropTemplate"` to `CreateMetricSegment` and adding explicit `card.SetBackdrop` safety guarding in `UI:ApplyTheme()`.
   - Added dedicated theming support for `UI.TopMetricsBar` (`SetBackdrop`, `SetBackdropColor`, `SetBackdropBorderColor`) across Classic and ElvUI themes.
   - Fixed issue where the main Killboard window opened completely blank/empty due to `CreateMainWindow` aborting mid-initialization before `UI:Refresh()` could populate the content child frame.
 - **Direct Download Routing to GitHub Releases CDN (`web/server.py`)**:
   - Re-routed the `/download` endpoint from CurseForge project page redirect to GitHub Releases Fastly CDN (`GITHUB_RELEASE_ZIP_URL`), providing authentic 1-click open-source direct downloads and eliminating redundancy with the dedicated **CurseForge Hub** button.
-- **Lua Syntax Error in `UI:Refresh` (`Addon/WoWKillboard/UI.lua`)**:
-  - Resolved `UI.lua:1513: ')' expected near ','` caused by invalid tuple parentheses syntax (`or (1.0, 0.82, 0.0, "ffd100")`). Replaced with direct `WoWKB.AccentColor()` call, which intrinsically handles default return values.
-  - Enhanced `tests/validate_lua.py` with standalone expression tuple detection to automatically catch this syntax error category.
 - **Nil Value Arithmetic Crash in Top Metrics Bar (`Addon/WoWKillboard/UI.lua`)**:
   - Resolved `UI.lua:1550: attempt to perform arithmetic on a nil value` occurring on addon open (`UI:Refresh()` -> `UI:Toggle()`) due to uninitialized `soloKillsCount`.
   - Added robust initialization and accumulation for `soloKillsCount` across combat history and integrated `KB.Leaderboard:GetModeSummary()` for pre-calculated, deduplicated realm and local statistics.
@@ -24,7 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Death Alert Banner & In-Game Toast Pop Trigger (`UI.lua`, `CombatTracker.lua`, `Core.lua`)**:
   - Pre-allocated `UI.KillBanner`, `UI.RaidNoticeFrame`, `UI.RadarHUD`, and `UI.CombatWire` during `ADDON_LOADED` and `PLAYER_LOGIN` via new `UI:InitHUDs()` method. Prevents combat lockdown (`InCombatLockdown()`) from blocking frame creation when the player dies or scores a kill before opening the main window.
   - Refactored `UI:ShowKillBanner` scope gating to explicitly exempt the local player's own combat events (kills and casualties). Player deaths and kills now always pop regardless of whether `alertScope` is `"MINE"` or `"ZONE"`, eliminating false-negative drops from subzone name discrepancies or case-sensitive name comparisons.
-  - Integrated `isLocalPlayerVictim` check across `CombatTracker.lua` (checking both `UnitGUID("player")` and case-insensitive/realm-stripped character name), ensuring alt characters and varying name formats are seamlessly tracked on death.
   - Initialized `WoWKillboardDB.pveDeaths` table in `Core.lua:Initialize()` to guarantee persistence readiness.
 - **Desktop Sync Companion (`WoWKillboardSync.exe`) v1.0.2 Synchronization (`sync/watcher.py`, `sync/gui.py`, `version_info.txt`)**:
   - Recompiled standalone Windows companion binary with PE version resource `v1.0.2.0` and bumped internal engine version to `1.0.2`.
