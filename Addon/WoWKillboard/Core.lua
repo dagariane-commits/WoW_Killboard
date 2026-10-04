@@ -452,9 +452,22 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             SafePrint(string.format("|cff00e5ff[Format B - Guild/Party]:|r [WoWKB] PvP Alert: %s engaged in %s (%.1f, %.1f) by 1 Hostile. Auto-invite: whisper 'invite'", pName, zone, x, y))
             SafePrint(string.format("|cff00e5ff[Format C - Casualty]:|r [WoWKB] Casualty: %s (Lvl %d %s) killed by Defias Pillager (Fireball) in %s.", pName, pLevel, cTitle, subzone))
         else
-            local mode = (subArg == "pvp" or subArg == "player" or subArg == "death") and "pvp" or "pve"
+            local targetPeer = nil
+            local mode = "pve"
+            if subArg and subArg ~= "" then
+                local first, rest = subArg:match("^(%S+)%s*(.*)$")
+                if first == "pvp" or first == "player" or first == "death" then
+                    mode = "pvp"
+                    if rest and rest ~= "" then targetPeer = rest end
+                elseif first == "pve" or first == "npc" or first == "mob" then
+                    mode = "pve"
+                    if rest and rest ~= "" then targetPeer = rest end
+                else
+                    targetPeer = subArg
+                end
+            end
             if KB.Sync and KB.Sync.BroadcastTestCasualty then
-                KB.Sync:BroadcastTestCasualty(mode)
+                KB.Sync:BroadcastTestCasualty(mode, targetPeer)
             end
         end
     elseif cmd == "announce" or cmd == "alert" then
@@ -1306,10 +1319,23 @@ SLASH_WOWKB_TESTNET1 = "/kbtestnet"
 SLASH_WOWKB_TESTNET2 = "/kbtestparty"
 SLASH_WOWKB_TESTNET3 = "/testnet"
 SlashCmdList["WOWKB_TESTNET"] = function(msg)
-    local subArg = (msg or ""):lower():match("^%s*(.-)%s*$")
-    local mode = (subArg == "pvp" or subArg == "player" or subArg == "death") and "pvp" or "pve"
+    local subArg = (msg or ""):match("^%s*(.-)%s*$")
+    local mode = "pve"
+    local targetPeer = nil
+    if subArg and subArg ~= "" then
+        local first, rest = subArg:match("^(%S+)%s*(.*)$")
+        if first:lower() == "pvp" or first:lower() == "player" or first:lower() == "death" then
+            mode = "pvp"
+            if rest and rest ~= "" then targetPeer = rest end
+        elseif first:lower() == "pve" or first:lower() == "npc" or first:lower() == "mob" then
+            mode = "pve"
+            if rest and rest ~= "" then targetPeer = rest end
+        else
+            targetPeer = subArg
+        end
+    end
     if KB.Sync and KB.Sync.BroadcastTestCasualty then
-        KB.Sync:BroadcastTestCasualty(mode)
+        KB.Sync:BroadcastTestCasualty(mode, targetPeer)
     end
 end
 
@@ -1335,9 +1361,19 @@ function KB:UpdateMinimapTheme()
     local curTheme = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "classic"
     local isClassic = (curTheme == "classic")
 
+    -- Ensure native BackdropTemplate does not occlude child textures on un-modded clients
+    if btn.SetBackdrop then
+        btn:SetBackdrop(nil)
+    end
+
     if isClassic then
         -- Classic Forever Theme: Circular Blizzard minimap border
-        btn:SetBackdrop(nil)
+        if btn.Bg then btn.Bg:Hide() end
+        if btn.BorderTop then btn.BorderTop:Hide() end
+        if btn.BorderBottom then btn.BorderBottom:Hide() end
+        if btn.BorderLeft then btn.BorderLeft:Hide() end
+        if btn.BorderRight then btn.BorderRight:Hide() end
+
         if btn.Border then
             btn.Border:Show()
             btn.Border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
@@ -1346,6 +1382,9 @@ function KB:UpdateMinimapTheme()
             btn.Border:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
         end
         if btn.Icon then
+            btn.Icon:Show()
+            btn.Icon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
+            btn.Icon:SetTexCoord(0, 1, 0, 1)
             btn.Icon:SetSize(22, 22)
             btn.Icon:ClearAllPoints()
             btn.Icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
@@ -1361,19 +1400,23 @@ function KB:UpdateMinimapTheme()
             btn.TipFrame:SetBackdropBorderColor(0.85, 0.65, 0.20, 0.95)
         end
     else
-        -- ElvUI Minimalist Theme: Sleek square 1px black border
-        btn:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1,
-            insets = { left = 0, right = 0, top = 0, bottom = 0 }
-        })
-        btn:SetBackdropColor(0.06, 0.06, 0.06, 1.0)
-        btn:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+        -- ElvUI Minimalist Theme: Sleek square 1px black border with cropped icon
         if btn.Border then
             btn.Border:Hide()
         end
+        if btn.Bg then
+            btn.Bg:Show()
+            btn.Bg:SetColorTexture(0.06, 0.06, 0.06, 1.0)
+        end
+        if btn.BorderTop then btn.BorderTop:Show() end
+        if btn.BorderBottom then btn.BorderBottom:Show() end
+        if btn.BorderLeft then btn.BorderLeft:Show() end
+        if btn.BorderRight then btn.BorderRight:Show() end
+
         if btn.Icon then
+            btn.Icon:Show()
+            btn.Icon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
+            btn.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             btn.Icon:SetSize(28, 28)
             btn.Icon:ClearAllPoints()
             btn.Icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
@@ -1410,18 +1453,59 @@ function KB:CreateMinimapButton()
     btn:SetClampedToScreen(true)
     btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
-    local icon = btn:CreateTexture(nil, "BACKGROUND")
+    -- Background texture for flat themes
+    local bg = btn:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints(btn)
+    bg:Hide()
+    btn.Bg = bg
+
+    -- PvP Skull/Chevron Icon in ARTWORK layer
+    local icon = btn:CreateTexture(nil, "ARTWORK")
     icon:SetSize(22, 22)
     icon:SetPoint("CENTER", 0, 0)
-    icon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01") -- PvP Skull Icon
+    icon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
+    btn.Icon = icon
 
+    -- Circular Classic Tracking Border in OVERLAY layer
     local border = btn:CreateTexture(nil, "OVERLAY")
     border:SetSize(54, 54)
     border:SetPoint("TOPLEFT", 0, 0)
     border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-
-    btn.Icon = icon
     btn.Border = border
+
+    -- 1px Square Flat Borders for ElvUI Theme (Guaranteed taint-free & zero backdrop occlusion)
+    local bTop = btn:CreateTexture(nil, "OVERLAY")
+    bTop:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
+    bTop:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 0, 0)
+    bTop:SetHeight(1)
+    bTop:SetColorTexture(0.0, 0.0, 0.0, 1.0)
+    bTop:Hide()
+    btn.BorderTop = bTop
+
+    local bBottom = btn:CreateTexture(nil, "OVERLAY")
+    bBottom:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+    bBottom:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
+    bBottom:SetHeight(1)
+    bBottom:SetColorTexture(0.0, 0.0, 0.0, 1.0)
+    bBottom:Hide()
+    btn.BorderBottom = bBottom
+
+    local bLeft = btn:CreateTexture(nil, "OVERLAY")
+    bLeft:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
+    bLeft:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+    bLeft:SetWidth(1)
+    bLeft:SetColorTexture(0.0, 0.0, 0.0, 1.0)
+    bLeft:Hide()
+    btn.BorderLeft = bLeft
+
+    local bRight = btn:CreateTexture(nil, "OVERLAY")
+    bRight:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 0, 0)
+    bRight:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
+    bRight:SetWidth(1)
+    bRight:SetColorTexture(0.0, 0.0, 0.0, 1.0)
+    bRight:Hide()
+    btn.BorderRight = bRight
+
     KB.MinimapButton = btn
 
     btn:SetScript("OnClick", function(self, button)
