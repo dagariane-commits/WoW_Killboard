@@ -8,12 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.100] - 2026-10-03
 
 ### Added
+- **Authentic Classic Death Toast Banner Architecture (`Addon/WoWKillboard/UI.lua`)**:
+  - Re-engineered the in-game death toast banner to an authentic 480px × 64px Classic layout adhering to the `[Victim Identity] — [Center Status & Brand] — [Killer Identity]` structure.
+  - **Left Section (Victim):** 24×24 circular Alliance or Horde faction crest framed with a subtle gold ring (`UI-PVP-Alliance` / `UI-PVP-Horde` with `(0, 0.65625, 0, 0.65625)` texCoords), immediately adjacent to 24×24 circular class icon, with stacked `[Lvl] PlayerName` in class color and `<GuildName>` in muted grey (`#8B949E`).
+  - **Center Section (Incident):** Top gold header reading `WOWKB COMBAT TELEMETRY` (`#D4A359`, Friz Quadrata TT, 9pt), crisp death skull or crossed swords separator, and parchment silver location text (`#CCCCCC`, e.g. `Stormwind City • Dwarven District`).
+  - **Right Section (Killer / Threat):** Right-aligned `[Lvl] KillerName` in hostile crimson (`#FF4040`), 24×24 threat target/creature icon with Blizzard dark/red border (`#B32020`), and stacked fatal hit ability (`with Pyroblast`) or guild in muted grey.
+  - **Theme Aesthetics:** Dark slate-parchment texture with 85% opacity (`0.06, 0.08, 0.11, 0.85`), Blizzard classic beveled metallic border with small corner brackets (`UI-Tooltip-Border`), and a razor-thin 2px gold accent border along the top edge (`#D4A359`).
 - **Dynamic Kill & Death Toast Alerts with Combat Flavor Phrases (`Addon/WoWKillboard/UI.lua`, `CombatTracker.lua`, `Killmail.lua`, `Sync.lua`)**:
   - Implemented on-screen death and kill toast banner notifications styled after Classic Hardcore and Deathlog announcements.
   - Generates deterministic, synchronized combat flavor phrases across 5 engagement categories (PvP 1v1 Solo, Duel Victory, Battleground Warfront, Gang/Assisted Ambush, and PvE Beast Casualties) with class-colorized combatant names, cyan fatal hit ability names, and location highlights.
   - Tracked fatal hit spell attribution (`finalSpell`) across combat logs and P2P addon broadcasts (`CT.LastPlayerSpell`, `KM:` serialized payload 14-part protocol).
   - Integrated creature icon texture (`INV_Misc_MonsterHead_02`) and red executioner badges for wilderness mob casualties.
-  - Expanded `killBanner` dimensions from `540x54` to `580x58` with centered, bounded subtitles to fit detailed combat descriptions without screen edge overflow.
 - **Quick-Mute & Toast Scope Controls (`Addon/WoWKillboard/Core.lua`, `UI.lua`)**:
   - Added dedicated `/kb mute` and `/kbmute` slash commands to instantly silence/unmute toasts and sound alerts during intense raids or crowded cities.
   - Added `/kb toast [on|off|mute|mine|zone|all|test]` slash commands allowing instant command-line toggling of alert states and radar proximity scopes (`MINE` personal only, `ZONE` current zone only, `ALL` realm-wide broadcast).
