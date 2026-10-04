@@ -7064,64 +7064,27 @@ function UI:ApplyBannerTheme()
     local isClassic = (theme.id == "classic")
 
     if isClassic then
-        -- Native Blizzard Achievement Toast Artwork (Zero XML Taint, Pure Lua, 78px locked)
-        banner:SetSize(580, 78)
+        -- 3. Classic Theme: Shared 560x84 frame, stone base (rgba(16, 14, 12, 0.94)) + native Blizzard filigree border overlay
         banner:SetBackdrop(nil)
 
         if banner.ToastBgLeft then banner.ToastBgLeft:Show() end
         if banner.ToastBgMid then banner.ToastBgMid:Show() end
         if banner.ToastBgRight then banner.ToastBgRight:Show() end
-        if banner.InnerFill then banner.InnerFill:Show() end
+        if banner.InnerFill then
+            banner.InnerFill:SetColorTexture(16/255, 14/255, 12/255, 0.94)
+            banner.InnerFill:Show()
+        end
         if banner.TopAccent then banner.TopAccent:Hide() end
 
-        -- Header dropped down 3px (-21 -> -24) so gold letters don't intersect leaf tips on border
-        if banner.CenterHeader then
-            banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -24)
-            ApplyClassicTypography(banner.CenterHeader, "GameFontNormalSmall", 1, -1)
-        end
-
-        if banner.Corners then
-            for _, corner in ipairs(banner.Corners) do
-                corner:Hide()
-            end
-        end
-
-        -- Left crest shifted right by 2px (14 -> 16) to avoid inner left border
-        if banner.VictimCrestFrame then
-            banner.VictimCrestFrame:ClearAllPoints()
-            banner.VictimCrestFrame:SetPoint("LEFT", banner, "LEFT", 16, -8)
-        end
-
-        -- Center Skull raised 2px (-30 -> -28) to sit directly in line with character names
-        if banner.CenterIcon then
-            banner.CenterIcon:ClearAllPoints()
-            banner.CenterIcon:SetPoint("TOP", banner, "TOP", 0, -28)
-            banner.CenterIcon:SetSize(24, 24)
-            banner.CenterIcon:SetVertexColor(1.0, 0.23, 0.19, 1.0)
-        end
-
-        -- Subtle red blood-drop shadow under skull
-        if banner.CenterIconShadow then
-            banner.CenterIconShadow:ClearAllPoints()
-            banner.CenterIconShadow:SetPoint("CENTER", banner.CenterIcon, "CENTER", 0, -2)
-            banner.CenterIconShadow:SetSize(26, 26)
-            banner.CenterIconShadow:SetVertexColor(0.60, 0.05, 0.05, 0.65)
-            banner.CenterIconShadow:Show()
-        end
-
-        -- Action Text raised 3px (0, 1 -> 0, 4) with clear breathing room above bottom metallic frame edge
-        if banner.ActionText then
-            banner.ActionText:ClearAllPoints()
-            banner.ActionText:SetPoint("TOP", banner.CenterIcon, "BOTTOM", 0, 4)
-            ApplyClassicTypography(banner.ActionText, "GameFontHighlightSmall", 1, -1)
-        end
-
+        -- Classic Typography & Dropshadows (Cosmetic only, ZERO SetPoint/SetSize modifications)
+        ApplyClassicTypography(banner.CenterHeader, "GameFontNormalSmall", 1, -1)
+        ApplyClassicTypography(banner.ActionText, "GameFontHighlightSmall", 1, -1)
         ApplyClassicTypography(banner.VictimNameText, "GameFontHighlightLarge", 2, -2)
         ApplyClassicTypography(banner.VictimSubText, "GameFontHighlightSmall", 1, -1)
         ApplyClassicTypography(banner.KillerNameText, "GameFontHighlightLarge", 1, -1)
         ApplyClassicTypography(banner.KillerSubText, "GameFontHighlightSmall", 1, -1)
 
+        -- Classic Beveled Icon Borders
         if banner.VictimCrestRing then banner.VictimCrestRing:Show() end
         if banner.VictimClassBorder then
             banner.VictimClassBorder:SetTexture("Interface\\AchievementFrame\\UI-Achievement-IconFrame")
@@ -7143,8 +7106,7 @@ function UI:ApplyBannerTheme()
         end
         if banner.KillerIconFrame then banner.KillerIconFrame:SetBackdropBorderColor(0, 0, 0, 0) end
     else
-        -- Modern ElvUI Minimalist Flat Dark Slate Frame (Pure 1px solid outlines)
-        banner:SetSize(580, 78)
+        -- 2. ElvUI Theme: Flat solid dark slate (rgba(13, 17, 23, 0.94)), 1px border, 2px top stripe, 1px icon borders
         if banner.ToastBgLeft then banner.ToastBgLeft:Hide() end
         if banner.ToastBgMid then banner.ToastBgMid:Hide() end
         if banner.ToastBgRight then banner.ToastBgRight:Hide() end
@@ -7156,63 +7118,16 @@ function UI:ApplyBannerTheme()
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         })
-        banner:SetBackdropColor(0.08, 0.09, 0.11, 0.92) -- Flat dark slate (92% opacity)
-        banner:SetBackdropBorderColor(0.176, 0.200, 0.231, 1.0) -- #2D333B subtle 1px solid outline around left, right, bottom
+        banner:SetBackdropColor(13/255, 17/255, 23/255, 0.94) -- Flat solid dark slate (rgba(13, 17, 23, 0.94))
+        banner:SetBackdropBorderColor(0.176, 0.200, 0.231, 1.0) -- #2D333B flat 1px border
 
-        -- Flush 2px top accent stripe (anchored flush at 0, 0 to 0, 0 for exact 2px thickness)
         if banner.TopAccent then
-            banner.TopAccent:ClearAllPoints()
-            banner.TopAccent:SetPoint("TOPLEFT", banner, "TOPLEFT", 0, 0)
-            banner.TopAccent:SetPoint("TOPRIGHT", banner, "TOPRIGHT", 0, 0)
-            banner.TopAccent:SetHeight(2)
-            banner.TopAccent:SetColorTexture(1.0, 0.757, 0.027, 1.0)
             banner.TopAccent:Show()
         end
 
-        -- Header dropped 3px from top blue accent line (-10 -> -13) for balanced padding
-        if banner.CenterHeader then
-            banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -13)
-            ApplyElvUITypography(banner.CenterHeader, "GameFontNormalSmall")
-        end
-
-        if banner.Corners then
-            for _, corner in ipairs(banner.Corners) do
-                corner:Hide()
-            end
-        end
-
-        -- Left crest shifted right by 2px (14 -> 16)
-        if banner.VictimCrestFrame then
-            banner.VictimCrestFrame:ClearAllPoints()
-            banner.VictimCrestFrame:SetPoint("LEFT", banner, "LEFT", 16, -8)
-        end
-
-        -- Center Skull raised 2px (-30 -> -28) to sit directly in line with character names
-        if banner.CenterIcon then
-            banner.CenterIcon:ClearAllPoints()
-            banner.CenterIcon:SetPoint("TOP", banner, "TOP", 0, -28)
-            banner.CenterIcon:SetSize(24, 24)
-            banner.CenterIcon:SetVertexColor(1.0, 0.23, 0.19, 1.0)
-        end
-
-        -- Subtle red blood-drop shadow under skull
-        if banner.CenterIconShadow then
-            banner.CenterIconShadow:ClearAllPoints()
-            banner.CenterIconShadow:SetPoint("CENTER", banner.CenterIcon, "CENTER", 0, -2)
-            banner.CenterIconShadow:SetSize(26, 26)
-            banner.CenterIconShadow:SetVertexColor(0.60, 0.05, 0.05, 0.65)
-            banner.CenterIconShadow:Show()
-        end
-
-        -- Action Text raised 3px (0, 1 -> 0, 4)
-        if banner.ActionText then
-            banner.ActionText:ClearAllPoints()
-            banner.ActionText:SetPoint("TOP", banner.CenterIcon, "BOTTOM", 0, 4)
-            ApplyElvUITypography(banner.ActionText, "GameFontHighlightSmall")
-        end
-
-        -- 1px monochrome OUTLINE typography for pure ElvUI flatness
+        -- 1px monochrome OUTLINE typography for pure ElvUI flatness (ZERO SetPoint/SetSize modifications)
+        ApplyElvUITypography(banner.CenterHeader, "GameFontNormalSmall")
+        ApplyElvUITypography(banner.ActionText, "GameFontHighlightSmall")
         ApplyElvUITypography(banner.VictimNameText, "GameFontHighlightLarge")
         ApplyElvUITypography(banner.VictimSubText, "GameFontHighlightSmall")
         ApplyElvUITypography(banner.KillerNameText, "GameFontHighlightLarge")
@@ -7221,7 +7136,7 @@ function UI:ApplyBannerTheme()
         if banner.VictimCrestRing then banner.VictimCrestRing:Hide() end
         if banner.VictimClassBorder then banner.VictimClassBorder:Hide() end
 
-        -- Standardized uniform 1px solid icon borders
+        -- Standardized uniform 1px solid square icon borders
         if banner.VictimClassFrame then
             banner.VictimClassFrame:SetBackdrop({
                 bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -7253,9 +7168,9 @@ end
 function UI:InitializeKillBanner()
     if killBanner or InCombatLockdown() then return end
 
-    -- Layout & Dimensions: Scaled Classic 580px x 78px Frame (Native Aspect Ratio Parity)
+    -- Layout & Dimensions: Frozen Shared Base Geometry (560px x 84px) Across All Themes
     killBanner = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    killBanner:SetSize(580, 78)
+    killBanner:SetSize(560, 84)
     killBanner:SetFrameStrata("HIGH")
     killBanner:SetClampedToScreen(true)
     killBanner:SetMovable(true)
@@ -7292,40 +7207,40 @@ function UI:InitializeKillBanner()
         end
     end)
 
-    -- Blizzard Achievement Alert Background (Native 3-Slice burnished bronze artwork at native 78px height)
+    -- Blizzard Achievement Alert Background (Native 3-Slice burnished bronze artwork at frozen 84px height)
     local toastLeft = killBanner:CreateTexture(nil, "BACKGROUND", nil, -7)
     toastLeft:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Alert-Background")
-    toastLeft:SetTexCoord(0, 0.21484375, 0, 0.609375)
-    toastLeft:SetSize(110, 78)
+    toastLeft:SetTexCoord(0, 0.21484375, 0, 0.65625)
+    toastLeft:SetSize(110, 84)
     toastLeft:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 0, 0)
     toastLeft:SetPoint("BOTTOMLEFT", killBanner, "BOTTOMLEFT", 0, 0)
     killBanner.ToastBgLeft = toastLeft
 
     local toastRight = killBanner:CreateTexture(nil, "BACKGROUND", nil, -7)
     toastRight:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Alert-Background")
-    toastRight:SetTexCoord(0.390625, 0.60546875, 0, 0.609375)
-    toastRight:SetSize(110, 78)
+    toastRight:SetTexCoord(0.390625, 0.60546875, 0, 0.65625)
+    toastRight:SetSize(110, 84)
     toastRight:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", 0, 0)
     toastRight:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", 0, 0)
     killBanner.ToastBgRight = toastRight
 
     local toastMid = killBanner:CreateTexture(nil, "BACKGROUND", nil, -7)
     toastMid:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Alert-Background")
-    toastMid:SetTexCoord(0.21484375, 0.390625, 0, 0.609375)
+    toastMid:SetTexCoord(0.21484375, 0.390625, 0, 0.65625)
     toastMid:SetPoint("TOPLEFT", toastLeft, "TOPRIGHT", 0, 0)
     toastMid:SetPoint("BOTTOMRIGHT", toastRight, "BOTTOMLEFT", 0, 0)
     toastMid:SetHorizTile(false)
     toastMid:SetVertTile(false)
     killBanner.ToastBgMid = toastMid
 
-    -- Solid Flat Dark-Stone Base (Option A: rgba(16, 14, 12, 0.92)) replacing muddy orange gradient wood fill
+    -- Solid Flat Dark-Stone Base for Classic Theme (rgba(16, 14, 12, 0.94))
     local innerFill = killBanner:CreateTexture(nil, "BACKGROUND", nil, -6)
-    innerFill:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 6, -14)
-    innerFill:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", -6, 7)
-    innerFill:SetColorTexture(16/255, 14/255, 12/255, 0.92)
+    innerFill:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 6, -12)
+    innerFill:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", -6, 6)
+    innerFill:SetColorTexture(16/255, 14/255, 12/255, 0.94)
     killBanner.InnerFill = innerFill
 
-    -- Thin 2px gold accent border along top edge (#FFD100 / #D4A359) for ElvUI Theme
+    -- Thin 2px faction accent border along top edge for ElvUI Theme
     local topAccent = killBanner:CreateTexture(nil, "OVERLAY")
     topAccent:SetHeight(2)
     topAccent:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 0, 0)
@@ -7334,7 +7249,7 @@ function UI:InitializeKillBanner()
     killBanner.TopAccent = topAccent
 
     -- =========================================================================
-    -- Left Section (The Fallen) - Outer Padding 16px, Centered on Wood Fill (y = -47)
+    -- Left Section (The Fallen) - Master Template Coordinates Frozen (y = -8)
     -- =========================================================================
     -- Circular Alliance Lion or Horde Crest (36x36) shifted right by 2px (14 -> 16)
     local victimCrestFrame = CreateFrame("Frame", nil, killBanner)
@@ -7403,11 +7318,11 @@ function UI:InitializeKillBanner()
     killBanner.VictimSubText = victimSubText
 
     -- =========================================================================
-    -- Center Section (Directional Death Action Block)
+    -- Center Section (Directional Death Action Block) - Master Template Frozen
     -- =========================================================================
-    -- Dynamic Header: Dropped 3px into dark carved groove (TOP, 0, -24) below leaf tips
+    -- Dynamic Header: Master Template coordinate (TOP, 0, -13)
     local centerHeader = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -24)
+    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -13)
     centerHeader:SetText("|cffffd100CASUALTY REPORT  •  WESTFALL (SENTINEL HILL)|r")
     centerHeader:SetShadowOffset(1, -1)
     centerHeader:SetShadowColor(0, 0, 0, 1.0)
@@ -7543,7 +7458,7 @@ function UI:ShowKillBanner(killmail, isTest)
         end
     end
 
-    -- 4. Frontline Kill Banner Frame (Authentic Classic 580x96 Layout, Zero Floating Text)
+    -- 4. Frontline Kill Banner Frame (Frozen Shared 560x84 Layout Across All Themes)
     if alertStyle == "BOTH" or alertStyle == "BANNER" or alertStyle == "RAID_WARNING" then
         if not UI.KillBanner then
             UI:InitializeKillBanner()
