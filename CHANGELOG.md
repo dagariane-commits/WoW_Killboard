@@ -15,11 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Global Top Stat Strip**: Consolidated top section into a compact 32px height bar split into 3 flush segments (Total Kills, 1v1 Solo Ratio, Faction Balance).
   - **Tabs 1-5 Modernization**: Overhauled Intel (Top Threats + Recent Deaths), Leaderboards (PvP Leaderboards + Sticky Standing), Bounties (+ Place Bounty modal), Call to Arms (Open Defense Calls), and Danger Zones (Realm & Vicinity activity).
 
+- **Cross-Realm & Ruleset Isolation Architecture (`Leaderboard.lua`, `Utils.lua`, `Killmail.lua`, `UI.lua`, `Core.lua`)**:
+  - **Strict Realm Telemetry Gating (`LB:MatchesRealm`)**: Filtered all aggregate calculations, recent killfeeds, wilderness casualties, and bounties to the player's active realm (`GetRealmName()`). Completely prevents PvP ganks and open-world kills from leaking into PvE, Hardcore, or RP servers.
+  - **Automated Realm Ruleset Classification**: Enhanced `Utils.GetRealmRuleset()` to auto-detect known PvE servers (Wild Growth, Mankrik, Pagle, etc.), Hardcore servers (Defias Pillager, Skull Rock, etc.), and RP realms (Lava Lash, Bloodsail Buccaneers, etc.).
+  - **Per-Realm Ruleset Memory (`WoWKillboardDB.realmRulesets`)**: Stored manual PvP/PvE ruleset toggles per realm, ensuring toggling mode on one realm never overwrites preferences across other characters on the same account.
+  - **Account-Wide Legacy Auto-Tagging**: On character login, existing untagged combat records involving the player character are automatically attributed to their active realm and ruleset.
+  - **Settings Modal Control**: Added an interactive "Realm Scope: Active Only / All Realms" toggle in Addon Settings with instant live refresh.
+  - **Platform & Companion Parity**: Added `realm` and `ruleset` fields to `/api/kills`, `/api/pve/deaths`, and `WoWKillboard_RealmData.lua` two-way sync payloads.
+
 ### Changed
 - **Automatic SavedVariables Theme Migration (`Core.lua`)**:
   - Implemented one-time automatic migration flag `WoWKillboardSettings.hasMigratedToElvUI`. Any existing player profiles with legacy `theme = "classic"` are automatically upgraded to `theme = "elvui"` on login, guaranteeing the new minimalist aesthetics render immediately without requiring manual settings resets.
 - **Desktop Companion Synchronizer v1.0.3 (`WoWKillboardSync.exe`)**:
-  - Bumped sync engine version and Windows PE executable version resource to `v1.0.3.0`.
+  - Bumped sync engine version and Windows PE executable version resource to `v1.0.3.0` with full multi-realm payload support.
 - **CurseForge & Git Parity (`deploy.py`, `web/server.py`)**:
   - Updated distribution packaging and web download routes for `WoWKillboard-v1.0.3.zip`.
 

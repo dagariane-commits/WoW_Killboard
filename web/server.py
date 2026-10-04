@@ -157,19 +157,27 @@ def init_db():
                 raw_json TEXT
             )
         """)
-        # Safe migration if table exists without is_duel, killer_spec, victim_spec
-        try:
-            conn.execute("ALTER TABLE kills ADD COLUMN is_duel INTEGER DEFAULT 0")
-        except sqlite3.OperationalError:
-            pass
-        try:
-            conn.execute("ALTER TABLE kills ADD COLUMN killer_spec TEXT")
-        except sqlite3.OperationalError:
-            pass
-        try:
-            conn.execute("ALTER TABLE kills ADD COLUMN victim_spec TEXT")
-        except sqlite3.OperationalError:
-            pass
+        for col_name, col_type in [
+            ("is_duel", "INTEGER DEFAULT 0"),
+            ("killer_spec", "TEXT"),
+            ("victim_spec", "TEXT"),
+            ("realm", "TEXT DEFAULT 'Unknown'"),
+            ("ruleset", "TEXT DEFAULT 'PVP'"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE kills ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
+
+        for tbl, col_name, col_type in [
+            ("pve_deaths", "realm", "TEXT DEFAULT 'Unknown'"),
+            ("pve_deaths", "ruleset", "TEXT DEFAULT 'PVE'"),
+            ("bounties", "realm", "TEXT DEFAULT 'Unknown'"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE {tbl} ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS platform_stats (
@@ -1127,6 +1135,11 @@ def get_kills():
         pattern = f"%{search}%"
         params.extend([pattern, pattern, pattern, pattern])
 
+    realm_filter = request.args.get("realm")
+    if realm_filter:
+        query += " AND (LOWER(realm) = LOWER(?) OR realm = 'Unknown' OR realm IS NULL)"
+        params.append(realm_filter)
+
     query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?"
     params.extend([limit, offset])
 
@@ -1189,7 +1202,9 @@ def get_kills():
                     "subZone": r["subzone"],
                     "x": r["coord_x"],
                     "y": r["coord_y"],
-                }
+                },
+                "realm": r["realm"] if "realm" in r.keys() and r["realm"] else "Unknown",
+                "ruleset": r["ruleset"] if "ruleset" in r.keys() and r["ruleset"] else "PVP",
             })
 
     return jsonify({"page": page, "limit": limit, "count": len(kills), "kills": kills})
@@ -1323,6 +1338,8 @@ def ingest_kill_data(data, conn):
 
     k_level = _parse_lvl(k.get("level"))
     v_level = _parse_lvl(v.get("level"))
+    k_realm = str(data.get("realm") or k.get("realm") or v.get("realm") or "Unknown").strip()[:64]
+    k_ruleset = str(data.get("ruleset") or "PVP").strip()[:32]
 
     conn.execute("""
         INSERT OR REPLACE INTO kills (
@@ -1332,8 +1349,8 @@ def ingest_kill_data(data, conn):
             killer_party_size, killer_damage_done, killer_healing_done,
             victim_name, victim_level, victim_class, victim_guild, victim_faction,
             victim_party_size, map_id, zone, subzone, coord_x, coord_y,
-            killer_spec, victim_spec, raw_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            killer_spec, victim_spec, realm, ruleset, raw_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         kill_id, timestamp, is_duel, is_bg, is_arena, bg_name,
         is_solo, attackers_count, total_damage,
@@ -1341,7 +1358,7 @@ def ingest_kill_data(data, conn):
         k.get("partySize", 1), k.get("damageDone", 0), k.get("healingDone", 0),
         v.get("name", "Unknown"), v_level, v.get("class", "ROGUE"), v.get("guild", "None"), v.get("faction", "Horde"),
         v.get("partySize", 1), loc.get("mapId", 0), loc_zone, loc_subzone,
-        loc.get("x", 0.0), loc.get("y", 0.0), k_spec, v_spec, json.dumps(data)
+        loc.get("x", 0.0), loc.get("y", 0.0), k_spec, v_spec, k_realm, k_ruleset, json.dumps(data)
     ))
 
     # Track character guild history
@@ -2026,18 +2043,20 @@ def pve_deaths_endpoint():
         coord_x = float(loc.get("x") or 0.0)
         coord_y = float(loc.get("y") or 0.0)
         ts = int(data.get("timestamp") or time.time())
+        p_realm = str(data.get("realm") or victim.get("realm") or "Unknown").strip()[:64]
+        p_ruleset = str(data.get("ruleset") or "PVE").strip()[:32]
 
         with get_db() as conn:
             conn.execute("""
                 INSERT OR IGNORE INTO pve_deaths (
                     death_id, timestamp, npc_name, npc_id, npc_guid, npc_spell, npc_damage,
                     victim_name, victim_guid, victim_level, victim_class, victim_guild, victim_faction,
-                    map_id, zone, subzone, coord_x, coord_y, raw_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    map_id, zone, subzone, coord_x, coord_y, realm, ruleset, raw_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 death_id, ts, npc_name, npc_id, npc_guid, npc_spell, npc_damage,
                 victim_name, victim_guid, victim_level, victim_class, victim_guild, victim_faction,
-                map_id, zone, subzone, coord_x, coord_y, json.dumps(data)
+                map_id, zone, subzone, coord_x, coord_y, p_realm, p_ruleset, json.dumps(data)
             ))
             conn.commit()
 
@@ -2047,6 +2066,7 @@ def pve_deaths_endpoint():
         limit = int(request.args.get("limit", 50))
         npc_name = request.args.get("npc")
         victim_name = request.args.get("player")
+        realm_filter = request.args.get("realm")
         with get_db() as conn:
             query = "SELECT * FROM pve_deaths"
             params = []
@@ -2057,6 +2077,9 @@ def pve_deaths_endpoint():
             if victim_name:
                 conds.append("victim_name LIKE ?")
                 params.append(f"%{victim_name}%")
+            if realm_filter:
+                conds.append("(LOWER(realm) = LOWER(?) OR realm = 'Unknown' OR realm IS NULL)")
+                params.append(realm_filter)
             if conds:
                 query += " WHERE " + " AND ".join(conds)
             query += " ORDER BY timestamp DESC LIMIT ?"

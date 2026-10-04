@@ -528,6 +528,8 @@ class KillboardWatcher:
     def upload_pve_death(self, death_id: str, data: dict) -> bool:
         payload = {
             "deathId": death_id,
+            "realm": data.get("realm", "Unknown"),
+            "ruleset": data.get("ruleset", "PVE"),
             "timestamp": data.get("timestamp", int(time.time())),
             "npc": data.get("npc", {}),
             "victim": data.get("victim", {}),
@@ -581,9 +583,13 @@ class KillboardWatcher:
 
         k_raw_lvl = killer_data.get("level") if killer_data.get("level") is not None else (data.get("killer_level") if data.get("killer_level") is not None else data.get("level"))
         v_raw_lvl = victim_data.get("level") if victim_data.get("level") is not None else data.get("victim_level")
+        k_realm = data.get("realm") or killer_data.get("realm") or victim_data.get("realm") or "Unknown"
+        k_ruleset = data.get("ruleset") or "PVP"
 
         payload = {
             "killId": kill_id,
+            "realm": k_realm,
+            "ruleset": k_ruleset,
             "timestamp": data.get("timestamp", int(time.time())),
             "isDuel": bool(data.get("isDuel", False)),
             "isBattleground": bool(data.get("isBattleground", False)),
@@ -668,6 +674,7 @@ class KillboardWatcher:
             "targetFaction": data.get("targetFaction") or data.get("target_faction") or "Unknown",
             "targetGuid": data.get("targetGuid") or data.get("target_guid") or "UNKNOWN",
             "placerName": data.get("placerName") or data.get("placer_name") or "Unknown",
+            "realm": data.get("realm", "Unknown"),
             "amountCopper": copper,
             "amountGold": gold,
             "status": data.get("status", "ACTIVE"),
@@ -939,6 +946,10 @@ class KillboardWatcher:
                                 km_copy = dict(km)
                                 if "killId" not in km_copy:
                                     km_copy["killId"] = kid
+                                if "realm" not in km_copy:
+                                    km_copy["realm"] = km.get("realm") or (km.get("killer", {}).get("realm")) or "Unknown"
+                                if "ruleset" not in km_copy:
+                                    km_copy["ruleset"] = km.get("ruleset") or "PVP"
                                 # Guardrail 4: Strict Solo Purity Sanitization
                                 if not km_copy.get("isDuel"):
                                     tot_dmg = km_copy.get("totalDamage", 0) or 0
@@ -960,6 +971,8 @@ class KillboardWatcher:
                                 b_copy = dict(bnt)
                                 if "id" not in b_copy:
                                     b_copy["id"] = bid
+                                if "realm" not in b_copy:
+                                    b_copy["realm"] = bnt.get("realm") or "Unknown"
                                 active_bounties.append(b_copy)
                                 known_bnt_ids.add(bid)
 
@@ -972,6 +985,10 @@ class KillboardWatcher:
                                 pd_copy = dict(pdeath)
                                 if "deathId" not in pd_copy:
                                     pd_copy["deathId"] = did
+                                if "realm" not in pd_copy:
+                                    pd_copy["realm"] = pdeath.get("realm") or "Unknown"
+                                if "ruleset" not in pd_copy:
+                                    pd_copy["ruleset"] = pdeath.get("ruleset") or "PVE"
                                 recent_pve_deaths.append(pd_copy)
                                 known_pve_ids.add(did)
                 except Exception:

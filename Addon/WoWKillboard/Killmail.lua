@@ -57,8 +57,13 @@ function KM:RecordKill(data)
         attackersCount = 1
     end
 
+    local currentRealm = (GetRealmName and GetRealmName()) or "Unknown"
+    local currentRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVP"
+
     local killmail = {
         killId = killId,
+        realm = data.realm or currentRealm,
+        ruleset = data.ruleset or currentRuleset,
         timestamp = data.timestamp or time(),
         isDuel = isDuel,
         isBattleground = isBattleground,
@@ -78,6 +83,7 @@ function KM:RecordKill(data)
             guild = data.killer.guild or "None",
             faction = data.killer.faction or "Unknown",
             partySize = data.killer.partySize or 1,
+            realm = (data.killer and data.killer.realm) or currentRealm,
             damageDone = data.killer.damageDone or 0,
             healingDone = data.killer.healingDone or 0,
         },
@@ -90,6 +96,7 @@ function KM:RecordKill(data)
             guild = data.victim.guild or "None",
             faction = data.victim.faction or "Unknown",
             partySize = data.victim.partySize or 1,
+            realm = (data.victim and data.victim.realm) or currentRealm,
         },
         location = {
             mapId = data.location.mapId or 0,
@@ -241,8 +248,13 @@ function KM:RecordPveDeath(data)
         return
     end
 
+    local currentRealm = (GetRealmName and GetRealmName()) or "Unknown"
+    local currentRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVE"
+
     local pveRecord = {
         deathId = deathId,
+        realm = data.realm or currentRealm,
+        ruleset = data.ruleset or currentRuleset,
         timestamp = now,
         npc = {
             name = data.npc.name or "Unknown Monster",
@@ -258,6 +270,7 @@ function KM:RecordPveDeath(data)
             class = data.victim.class or "UNKNOWN",
             guild = data.victim.guild or "None",
             faction = data.victim.faction or "Unknown",
+            realm = (data.victim and data.victim.realm) or currentRealm,
         },
         location = data.location or {
             mapId = 0,

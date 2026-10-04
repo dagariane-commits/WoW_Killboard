@@ -41,13 +41,16 @@ local tabButtons = {}
 local filterButtons = {}
 
 function UI:GetRuleset()
+    local realm = (GetRealmName and GetRealmName()) or ""
+    if WoWKillboardDB and WoWKillboardDB.realmRulesets and realm ~= "" and WoWKillboardDB.realmRulesets[realm] then
+        return tostring(WoWKillboardDB.realmRulesets[realm]):upper()
+    end
     if KB.Utils and KB.Utils.GetRealmRuleset then
         return KB.Utils.GetRealmRuleset()
     end
     if WoWKillboardDB and WoWKillboardDB.campaignRuleset then
         return tostring(WoWKillboardDB.campaignRuleset):upper()
     end
-    local realm = (GetRealmName and GetRealmName()) or ""
     if realm:lower():find("pve") or realm:lower():find("normal") then return "PVE" end
     return "PVP"
 end
@@ -958,6 +961,11 @@ function UI:CreateMainWindow()
         WoWKillboardDB = WoWKillboardDB or {}
         local cur = UI:GetRuleset()
         local nextR = (cur == "PVE") and "PVP" or "PVE"
+        local realm = (GetRealmName and GetRealmName()) or ""
+        WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
+        if realm ~= "" then
+            WoWKillboardDB.realmRulesets[realm] = nextR
+        end
         WoWKillboardDB.campaignRuleset = nextR
         UI:UpdateRulesetButton()
         UI:Refresh()
@@ -1339,32 +1347,34 @@ function UI:Refresh()
         local histWins, histLosses = 0, 0
         local duelKills, bgKills, worldKills = 0, 0, 0
         for _, km in pairs(WoWKillboardDB.kills) do
-            if km.isSolo then
-                soloKillsCount = soloKillsCount + 1
-            end
-            if km.isDuel then
-                duelKills = duelKills + 1
-                if pName then
-                    local isW = (km.killer and km.killer.name and (km.killer.name:lower():find(pName:lower(), 1, true) ~= nil))
-                    local isL = (km.victim and km.victim.name and (km.victim.name:lower():find(pName:lower(), 1, true) ~= nil))
-                    if isW then histWins = histWins + 1 end
-                    if isL then histLosses = histLosses + 1 end
+            if not KB.Leaderboard or KB.Leaderboard:MatchesRealm(km) then
+                if km.isSolo then
+                    soloKillsCount = soloKillsCount + 1
                 end
-            elseif km.isBattleground then
-                bgKills = bgKills + 1
-                if pName then
-                    local isK = (km.killer and km.killer.name and (km.killer.name:lower() == pName:lower() or km.killer.name:lower():find(pName:lower(), 1, true) ~= nil))
-                    local isV = (km.victim and km.victim.name and (km.victim.name:lower() == pName:lower() or km.victim.name:lower():find(pName:lower(), 1, true) ~= nil))
-                    if isK then histKills = histKills + 1 end
-                    if isV then histDeaths = histDeaths + 1 end
-                end
-            else
-                worldKills = worldKills + 1
-                if pName then
-                    local isK = (km.killer and km.killer.name and (km.killer.name:lower() == pName:lower() or km.killer.name:lower():find(pName:lower(), 1, true) ~= nil))
-                    local isV = (km.victim and km.victim.name and (km.victim.name:lower() == pName:lower() or km.victim.name:lower():find(pName:lower(), 1, true) ~= nil))
-                    if isK then histKills = histKills + 1 end
-                    if isV then histDeaths = histDeaths + 1 end
+                if km.isDuel then
+                    duelKills = duelKills + 1
+                    if pName then
+                        local isW = (km.killer and km.killer.name and (km.killer.name:lower():find(pName:lower(), 1, true) ~= nil))
+                        local isL = (km.victim and km.victim.name and (km.victim.name:lower():find(pName:lower(), 1, true) ~= nil))
+                        if isW then histWins = histWins + 1 end
+                        if isL then histLosses = histLosses + 1 end
+                    end
+                elseif km.isBattleground then
+                    bgKills = bgKills + 1
+                    if pName then
+                        local isK = (km.killer and km.killer.name and (km.killer.name:lower() == pName:lower() or km.killer.name:lower():find(pName:lower(), 1, true) ~= nil))
+                        local isV = (km.victim and km.victim.name and (km.victim.name:lower() == pName:lower() or km.victim.name:lower():find(pName:lower(), 1, true) ~= nil))
+                        if isK then histKills = histKills + 1 end
+                        if isV then histDeaths = histDeaths + 1 end
+                    end
+                else
+                    worldKills = worldKills + 1
+                    if pName then
+                        local isK = (km.killer and km.killer.name and (km.killer.name:lower() == pName:lower() or km.killer.name:lower():find(pName:lower(), 1, true) ~= nil))
+                        local isV = (km.victim and km.victim.name and (km.victim.name:lower() == pName:lower() or km.victim.name:lower():find(pName:lower(), 1, true) ~= nil))
+                        if isK then histKills = histKills + 1 end
+                        if isV then histDeaths = histDeaths + 1 end
+                    end
                 end
             end
         end
@@ -1754,7 +1764,7 @@ function UI:RenderLiveFeed()
     local seenBounties = {}
 
     local function AddCleanBounty(b)
-        if not b then return end
+        if not b or (KB.Leaderboard and not KB.Leaderboard:MatchesRealm(b)) then return end
         local bId = b.id or b.bountyId
         local bStatus = b.status or "ACTIVE"
         local tName = b.targetName or b.target_name
@@ -3968,7 +3978,7 @@ function UI:RenderBounties()
         local seenB = {}
 
         local function AddBountyRow(b)
-            if not b then return end
+            if not b or (KB.Leaderboard and not KB.Leaderboard:MatchesRealm(b)) then return end
             local bId = b.id or b.bountyId
             local bStatus = b.status or "ACTIVE"
             local tName = b.targetName or b.target_name
@@ -8549,6 +8559,10 @@ function UI:ShowSettingsModal()
             if self.toggleMoveBtn then
                 self.toggleMoveBtn.Label:SetText(UI.bannerUnlocked and "|cffff3333Lock Toast|r" or "|cffffd100Move Toast|r")
             end
+            if self.realmIsoBtn then
+                local s = WoWKillboardSettings or KB.DefaultSettings or {}
+                self.realmIsoBtn.Label:SetText((s.isolateRealms ~= false) and "|cff00ff00Realm: ACTIVE ONLY|r" or "|cffffaa00Realm: ALL REALMS|r")
+            end
         end)
         dlg:SetScript("OnHide", function(self)
             if self.EnableKeyboard then self:EnableKeyboard(false) end
@@ -8843,6 +8857,23 @@ function UI:ShowSettingsModal()
             SafePrint(string.format("|cff00e5ff[WoWKB]|r Death Mark Prompt is now %s.", s.ignoreDeathBounties and "|cffff3333MUTED|r" or "|cff00ff00ENABLED|r"))
         end)
         dlg.deathPromptBtn = deathPromptBtn
+
+        local realmIsoBtn = UI:CreateButton(dlg, 220, 22, "Realm: Active Only")
+        realmIsoBtn:SetPoint("LEFT", deathPromptBtn, "RIGHT", 10, 0)
+        realmIsoBtn:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings or {}
+            s.isolateRealms = (s.isolateRealms == false)
+            realmIsoBtn.Label:SetText((s.isolateRealms ~= false) and "|cff00ff00Realm: ACTIVE ONLY|r" or "|cffffaa00Realm: ALL REALMS|r")
+            SafePrint(string.format("|cff00e5ff[WoWKB]|r Realm Isolation is now %s.", (s.isolateRealms ~= false) and "|cff00ff00ENABLED (Active Realm Only)|r" or "|cffffaa00DISABLED (All Account Realms)|r"))
+            if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
+            UI:Refresh()
+        end)
+        realmIsoBtn:SetScript("OnEnter", function(self)
+            local myRealm = (GetRealmName and GetRealmName()) or "Current"
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Realm Telemetry Isolation|r", string.format("Restricts combat data, killfeeds, and standings strictly to |cffffffff%s|r.\nPrevents PvP kills from leaking into PvE, Hardcore, or RP servers. [Default: On]", myRealm))
+        end)
+        realmIsoBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+        dlg.realmIsoBtn = realmIsoBtn
 
         y = y - 78
 

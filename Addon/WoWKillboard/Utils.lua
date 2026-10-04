@@ -374,21 +374,32 @@ end
 
 -- Retrieve active realm ruleset: "PVE", "PVP", "HARDCORE", or "RP"
 function U.GetRealmRuleset()
+    local realm = (GetRealmName and GetRealmName()) or ""
+    -- Check per-realm user override first (prevents cross-realm preference stomping)
+    if WoWKillboardDB and WoWKillboardDB.realmRulesets and realm ~= "" and WoWKillboardDB.realmRulesets[realm] then
+        local r = tostring(WoWKillboardDB.realmRulesets[realm]):upper()
+        if r == "PVE" or r == "PVP" or r == "HARDCORE" or r == "RP" then
+            return r
+        end
+    end
+
+    -- Auto-detect from realm name and known realm classifications
+    local rLower = realm:lower():gsub("%s+", "")
+    if rLower:find("hardcore") or rLower:find("hc") or rLower:find("defiaspillager") or rLower:find("skullrock") or rLower:find("stitches") or rLower:find("nekrosh") or rLower:find("soulseeker") or rLower:find("doomhowl") then
+        return "HARDCORE"
+    elseif rLower:find("pve") or rLower:find("normal") or rLower:find("wildgrowth") or rLower:find("mankrik") or rLower:find("pagle") or rLower:find("atiesh") or rLower:find("ashkandi") or rLower:find("westfall") or rLower:find("mirageraceway") or rLower:find("pyrewood") or rLower:find("nethergarde") or rLower:find("auberdine") or rLower:find("everlook") or rLower:find("chromie") then
+        return "PVE"
+    elseif rLower:find("roleplay") or rLower:find("lavalash") or rLower:find("bloodsail") or rLower:find("celebras") or rLower:find("hydraxian") then
+        return "RP"
+    elseif rLower:find("pvp") or rLower:find("crusaderstrike") or rLower:find("lonewolf") or rLower:find("livingflame") or rLower:find("chaosbolt") or rLower:find("whitemane") or rLower:find("faerlina") or rLower:find("benediction") or rLower:find("grobbulus") or rLower:find("firemaw") or rLower:find("gehennas") then
+        return "PVP"
+    end
+
     if WoWKillboardDB and WoWKillboardDB.campaignRuleset then
         local r = tostring(WoWKillboardDB.campaignRuleset):upper()
         if r == "PVE" or r == "PVP" or r == "HARDCORE" or r == "RP" then
             return r
         end
-    end
-    -- Auto-detect from realm name
-    local realm = (GetRealmName and GetRealmName()) or ""
-    local rLower = realm:lower()
-    if rLower:find("hardcore") or rLower:find("hc") then
-        return "HARDCORE"
-    elseif rLower:find("pve") or rLower:find("normal") then
-        return "PVE"
-    elseif rLower:find("rp") or rLower:find("roleplay") then
-        return "RP"
     end
     return "PVP"
 end
