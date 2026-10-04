@@ -6468,9 +6468,9 @@ local function GetFactionCrestInfo(faction, fallbackClass)
         end
     end
     if f == "alliance" then
-        return "Interface\\TargetingFrame\\UI-PVP-Alliance", {0, 0.65625, 0, 0.65625}
+        return "Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga", {0, 1, 0, 1}
     elseif f == "horde" then
-        return "Interface\\TargetingFrame\\UI-PVP-Horde", {0, 0.65625, 0, 0.65625}
+        return "Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga", {0, 1, 0, 1}
     else
         return "Interface\\TargetingFrame\\UI-PVP-FFA", {0, 0.65625, 0, 0.65625}
     end
@@ -6538,22 +6538,22 @@ function UI:InitializeKillBanner()
     killBanner.TopAccent = topAccent
 
     -- =========================================================================
-    -- Left Section (Victim Identity) - Internal Padding 18px horizontal
+    -- Left Section (Victim Identity) - Equalized Outer Padding 14px
     -- =========================================================================
-    -- Circular Alliance or Horde Crest icon (44x44) without square border box
+    -- High-res circular Alliance Lion or Horde Crest (40x40) matching class icon height
     local victimCrestFrame = CreateFrame("Frame", nil, killBanner)
-    victimCrestFrame:SetSize(44, 44)
-    victimCrestFrame:SetPoint("LEFT", killBanner, "LEFT", 18, 0)
+    victimCrestFrame:SetSize(40, 40)
+    victimCrestFrame:SetPoint("LEFT", killBanner, "LEFT", 14, 0)
     killBanner.VictimCrestFrame = victimCrestFrame
 
     local victimCrest = victimCrestFrame:CreateTexture(nil, "ARTWORK")
-    victimCrest:SetSize(44, 44)
+    victimCrest:SetSize(40, 40)
     victimCrest:SetPoint("CENTER", victimCrestFrame, "CENTER", 0, 0)
     killBanner.VictimCrest = victimCrest
 
-    -- Class Icon (44x44 frame, 42x42 texture) immediately adjacent with normalized 1px border
+    -- Class Icon (40x40 frame, 38x38 texture) immediately adjacent with normalized 1px border
     local victimClassFrame = CreateFrame("Frame", nil, killBanner, "BackdropTemplate")
-    victimClassFrame:SetSize(44, 44)
+    victimClassFrame:SetSize(40, 40)
     victimClassFrame:SetPoint("LEFT", victimCrestFrame, "RIGHT", 6, 0)
     victimClassFrame:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -6566,13 +6566,13 @@ function UI:InitializeKillBanner()
     killBanner.VictimClassFrame = victimClassFrame
 
     local victimIcon = victimClassFrame:CreateTexture(nil, "ARTWORK")
-    victimIcon:SetSize(42, 42)
+    victimIcon:SetSize(38, 38)
     victimIcon:SetPoint("CENTER", victimClassFrame, "CENTER", 0, 0)
     killBanner.VictimIcon = victimIcon
 
     -- Stacked Victim text: [Lvl] PlayerName in 16pt Bold with (2, -2) black shadow (no rigid width clamp)
     local victimNameText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    victimNameText:SetPoint("TOPLEFT", victimClassFrame, "TOPRIGHT", 8, -4)
+    victimNameText:SetPoint("TOPLEFT", victimClassFrame, "TOPRIGHT", 8, -2)
     victimNameText:SetJustifyH("LEFT")
     victimNameText:SetWordWrap(false)
     victimNameText:SetShadowOffset(2, -2)
@@ -6582,7 +6582,7 @@ function UI:InitializeKillBanner()
 
     -- Sub-text: <GuildName> in 12pt regular muted silver (#C0C0C0)
     local victimSubText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    victimSubText:SetPoint("BOTTOMLEFT", victimClassFrame, "BOTTOMRIGHT", 8, 4)
+    victimSubText:SetPoint("BOTTOMLEFT", victimClassFrame, "BOTTOMRIGHT", 8, 2)
     victimSubText:SetJustifyH("LEFT")
     victimSubText:SetWordWrap(false)
     victimSubText:SetShadowOffset(1, -1)
@@ -6590,11 +6590,11 @@ function UI:InitializeKillBanner()
     killBanner.VictimSubText = victimSubText
 
     -- =========================================================================
-    -- Center Section (The Incident: Center Status & Brand) - Padding 12px vertical
+    -- Center Section (The Incident: Center Status & Brand)
     -- =========================================================================
-    -- Top tag: 12pt Blizzard Gold (#FFD100) uppercase centered (+4px top margin)
+    -- Top tag: 12pt Blizzard Gold (#FFD100) uppercase centered
     local centerHeader = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -16)
+    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -12)
     centerHeader:SetText("|cffffd100WOWKB COMBAT TELEMETRY|r")
     centerHeader:SetShadowOffset(1, -1)
     centerHeader:SetShadowColor(0, 0, 0, 1.0)
@@ -6604,14 +6604,14 @@ function UI:InitializeKillBanner()
     -- Middle: Skull / Death separator 32px x 32px
     local centerIcon = killBanner:CreateTexture(nil, "OVERLAY")
     centerIcon:SetSize(32, 32)
-    centerIcon:SetPoint("CENTER", killBanner, "CENTER", 0, -2)
+    centerIcon:SetPoint("CENTER", killBanner, "CENTER", 0, 2)
     centerIcon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcon_8")
     killBanner.CenterIcon = centerIcon
 
     -- Bottom: Location text in 11pt parchment silver (#CCCCCC) or amber (#D4A359)
-    -- Aligned cleanly with the bottom margin of the 44px icon frames (y = 22)
+    -- Exactly 4px vertical spacing below skull icon; leaves >6px clearance to bottom frame edge
     local locText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    locText:SetPoint("BOTTOM", killBanner, "BOTTOM", 0, 22)
+    locText:SetPoint("TOP", centerIcon, "BOTTOM", 0, -4)
     locText:SetJustifyH("CENTER")
     locText:SetWordWrap(false)
     locText:SetShadowOffset(1, -1)
@@ -6621,12 +6621,12 @@ function UI:InitializeKillBanner()
     killBanner.ModeTag = locText -- backward-compatible alias
 
     -- =========================================================================
-    -- Right Section (Killer Identity / Threat) - Internal Padding 18px horizontal
+    -- Right Section (Killer Identity / Threat) - Equalized Outer Padding 14px
     -- =========================================================================
-    -- Target / Threat / NPC Icon (44x44 frame, 42x42 texture) normalized with 1px border matching victim
+    -- Target / Threat / NPC Icon (40x40 frame, 38x38 texture) normalized with 1px border matching victim
     local killerIconFrame = CreateFrame("Frame", nil, killBanner, "BackdropTemplate")
-    killerIconFrame:SetSize(44, 44)
-    killerIconFrame:SetPoint("RIGHT", killBanner, "RIGHT", -18, 0)
+    killerIconFrame:SetSize(40, 40)
+    killerIconFrame:SetPoint("RIGHT", killBanner, "RIGHT", -14, 0)
     killerIconFrame:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -6638,13 +6638,13 @@ function UI:InitializeKillBanner()
     killBanner.KillerIconFrame = killerIconFrame
 
     local killerIcon = killerIconFrame:CreateTexture(nil, "ARTWORK")
-    killerIcon:SetSize(42, 42)
+    killerIcon:SetSize(38, 38)
     killerIcon:SetPoint("CENTER", killerIconFrame, "CENTER", 0, 0)
     killBanner.KillerIcon = killerIcon
 
     -- Right-aligned [Lvl] KillerName in 16pt Bold hostile crimson (#FF4040) with (2, -2) black shadow (no rigid width clamp)
     local killerNameText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    killerNameText:SetPoint("TOPRIGHT", killerIconFrame, "TOPLEFT", -8, -4)
+    killerNameText:SetPoint("TOPRIGHT", killerIconFrame, "TOPLEFT", -8, -2)
     killerNameText:SetJustifyH("RIGHT")
     killerNameText:SetWordWrap(false)
     killerNameText:SetShadowOffset(2, -2)
@@ -6654,7 +6654,7 @@ function UI:InitializeKillBanner()
 
     -- Stacked subtext: with Pyroblast or <GuildName> in 12pt regular muted silver (#C0C0C0)
     local killerSubText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    killerSubText:SetPoint("BOTTOMRIGHT", killerIconFrame, "BOTTOMLEFT", -8, 4)
+    killerSubText:SetPoint("BOTTOMRIGHT", killerIconFrame, "BOTTOMLEFT", -8, 2)
     killerSubText:SetJustifyH("RIGHT")
     killerSubText:SetWordWrap(false)
     killerSubText:SetShadowOffset(1, -1)
@@ -6818,8 +6818,8 @@ function UI:ToggleBannerLock(explicitState)
         banner:EnableMouse(true) -- Enable mouse interaction only while repositioning
         banner:RegisterForDrag("LeftButton")
 
-        banner.VictimCrest:SetTexture("Interface\\TargetingFrame\\UI-PVP-Alliance")
-        banner.VictimCrest:SetTexCoord(0, 0.65625, 0, 0.65625)
+        banner.VictimCrest:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
+        banner.VictimCrest:SetTexCoord(0, 1, 0, 1)
         banner.VictimIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
         banner.VictimIcon:SetTexCoord(0, 1, 0, 1)
         banner.VictimNameText:SetText("|cff00ff00[60] Drag Anchor|r")
