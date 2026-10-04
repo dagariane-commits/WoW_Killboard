@@ -208,11 +208,8 @@ function KB:Initialize()
     -- Create Minimap Button
     KB:CreateMinimapButton()
 
-    SafePrint(string.format("|cff00ccff[WKB]|r |cffffd100WoW Killboard v%s (Beta)|r loaded.", KB.Version))
-    SafePrint("|cff00ff00[Local Tracking]|r All PvP kills, 1v1 duels, bounties, and PvE deaths track 100% offline in-game.")
-    SafePrint("|cffffd100[Global Sync]|r To upload kills to wowkillboard.com & sync realm data, run |cff00e5ffWoWKillboardSync.exe|r (|cffffff00https://wowkillboard.com/download|r).")
-    SafePrint("|cff38bdf8[CurseForge]|r Search |cffffff00wkb|r in the CurseForge App or visit |cffffff00https://www.curseforge.com/wow/addons/wkb|r.")
-    SafePrint("Commands: |cffffd100/kb|r (Dashboard) | |cffffd100/kb promo|r (Promotional Macros) | |cffffd100/kb feedback|r (Feedback)")
+    SafePrint(string.format("|cff00ccff[WKB]|r |cffffd100WoW Killboard v%s|r loaded. Type |cffffd100/kb|r to open dashboard or |cffffd100/kb help|r for commands.", KB.Version))
+    SafePrint("|cff00ff66[Sync]|r Upload your kills at |cffffff00wowkillboard.com/upload|r (or download the auto-sync companion).")
 end
 
 -- Slash Commands (Support /killboard, /wowkb, and /kb)

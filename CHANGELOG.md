@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added matching victor faction left accent bars and interactive hover illumination.
   - Skinned PvE wilderness casualty rows with victim faction tints and styled executioner/fallen mortal cards in `UI.DetailModal`.
 
+### Changed
+- **Streamlined Login & Reload Chat Banner (`Addon/WoWKillboard/Core.lua`)**:
+  - Replaced the verbose 5-line startup printout with a clean, 2-line notification.
+  - Line 1 provides immediate dashboard and help command access: `[WKB] WoW Killboard v1.0.1 loaded. Type /kb to open dashboard or /kb help for commands.`
+  - Line 2 directs players to the primary zero-install browser uploader while referencing the optional companion: `[Sync] Upload your kills at wowkillboard.com/upload (or download the auto-sync companion).`
+  - Eliminated redundant in-game CurseForge search instructions and removed implied mandatory `.exe` execution.
+
 ### Fixed
 - **Hostile NPC Death Attribution & Duplicate Death Debouncing (`Addon/WoWKillboard/CombatTracker.lua`)**:
   - Fixed false `Environmental Hazard (Fatal Impact / Mishap)` reports when dying to hostile NPCs.
