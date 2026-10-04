@@ -6984,13 +6984,13 @@ local function GetKillingBlowText(killmail)
             spell = "Melee"
         end
     end
-    -- High-contrast fatal blow highlight: Light Fire-Gold (#FFE066) or Arcane Cyan (#71D5FF)
-    local spellColor = "ffe066"
+    -- High-contrast fatal blow highlight: Glowing Fire-Orange/Gold (#FFB300) or Arcane Cyan (#71D5FF)
+    local spellColor = "ffb300"
     local sLower = spell:lower()
     if sLower:find("frost") or sLower:find("ice") or sLower:find("arcane") or sLower:find("water") or sLower:find("cyan") then
         spellColor = "71d5ff"
     end
-    return string.format("|cffe2e8f0slain by|r |cff%s%s|r", spellColor, spell)
+    return string.format("|cffe0e0e0slain by|r |cff%s%s|r", spellColor, spell)
 end
 
 local function GetKillerSubtitle(killmail, isNpc)
@@ -7071,12 +7071,13 @@ function UI:ApplyBannerTheme()
         if banner.ToastBgLeft then banner.ToastBgLeft:Show() end
         if banner.ToastBgMid then banner.ToastBgMid:Show() end
         if banner.ToastBgRight then banner.ToastBgRight:Show() end
+        if banner.InnerFill then banner.InnerFill:Show() end
         if banner.TopAccent then banner.TopAccent:Hide() end
 
-        -- Header dropped down 4px (-17 -> -21) to sit cleanly inside dark wooden plaque groove
+        -- Header dropped down 3px (-21 -> -24) so gold letters don't intersect leaf tips on border
         if banner.CenterHeader then
             banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -21)
+            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -24)
             ApplyClassicTypography(banner.CenterHeader, "GameFontNormalSmall", 1, -1)
         end
 
@@ -7118,7 +7119,7 @@ function UI:ApplyBannerTheme()
 
         ApplyClassicTypography(banner.VictimNameText, "GameFontHighlightLarge", 2, -2)
         ApplyClassicTypography(banner.VictimSubText, "GameFontHighlightSmall", 1, -1)
-        ApplyClassicTypography(banner.KillerNameText, "GameFontHighlightLarge", 2, -2)
+        ApplyClassicTypography(banner.KillerNameText, "GameFontHighlightLarge", 1, -1)
         ApplyClassicTypography(banner.KillerSubText, "GameFontHighlightSmall", 1, -1)
 
         if banner.VictimCrestRing then banner.VictimCrestRing:Show() end
@@ -7147,6 +7148,7 @@ function UI:ApplyBannerTheme()
         if banner.ToastBgLeft then banner.ToastBgLeft:Hide() end
         if banner.ToastBgMid then banner.ToastBgMid:Hide() end
         if banner.ToastBgRight then banner.ToastBgRight:Hide() end
+        if banner.InnerFill then banner.InnerFill:Hide() end
 
         banner:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -7316,6 +7318,13 @@ function UI:InitializeKillBanner()
     toastMid:SetVertTile(false)
     killBanner.ToastBgMid = toastMid
 
+    -- Solid Flat Dark-Stone Base (Option A: rgba(16, 14, 12, 0.92)) replacing muddy orange gradient wood fill
+    local innerFill = killBanner:CreateTexture(nil, "BACKGROUND", nil, -6)
+    innerFill:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 6, -14)
+    innerFill:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", -6, 7)
+    innerFill:SetColorTexture(16/255, 14/255, 12/255, 0.92)
+    killBanner.InnerFill = innerFill
+
     -- Thin 2px gold accent border along top edge (#FFD100 / #D4A359) for ElvUI Theme
     local topAccent = killBanner:CreateTexture(nil, "OVERLAY")
     topAccent:SetHeight(2)
@@ -7383,7 +7392,7 @@ function UI:InitializeKillBanner()
     killBanner.VictimNameText = victimNameText
     killBanner.VictimText = victimNameText -- backward-compatible alias
 
-    -- Line 2: <GuildName> in muted guild silver (#A0A0A0)
+    -- Line 2: <GuildName> in muted silver (#B5BAC1)
     local victimSubText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     victimSubText:SetPoint("TOPLEFT", victimClassFrame, "RIGHT", 8, -1)
     victimSubText:SetPoint("RIGHT", killBanner, "CENTER", -65, 0)
@@ -7396,9 +7405,9 @@ function UI:InitializeKillBanner()
     -- =========================================================================
     -- Center Section (Directional Death Action Block)
     -- =========================================================================
-    -- Dynamic Header: Dropped 4px into top dark carved groove (TOP, 0, -21)
+    -- Dynamic Header: Dropped 3px into dark carved groove (TOP, 0, -24) below leaf tips
     local centerHeader = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -21)
+    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -24)
     centerHeader:SetText("|cffffd100CASUALTY REPORT  •  WESTFALL (SENTINEL HILL)|r")
     centerHeader:SetShadowOffset(1, -1)
     centerHeader:SetShadowColor(0, 0, 0, 1.0)
@@ -7428,7 +7437,7 @@ function UI:InitializeKillBanner()
     actionText:SetWordWrap(false)
     actionText:SetShadowOffset(1, -1)
     actionText:SetShadowColor(0, 0, 0, 1.0)
-    actionText:SetText("|cffe2e8f0slain by|r |cffffe066Fireball|r")
+    actionText:SetText("|cffe0e0e0slain by|r |cffffb300Fireball|r")
     killBanner.ActionText = actionText
     killBanner.LocText = actionText       -- backward-compatible alias
     killBanner.ModeTag = actionText       -- backward-compatible alias
@@ -7471,18 +7480,18 @@ function UI:InitializeKillBanner()
     killerDebuffBorder:SetVertexColor(1.0, 0.23, 0.19, 1.0)
     killBanner.KillerDebuffBorder = killerDebuffBorder
 
-    -- Right-aligned Stacked Killer text: Line 1 = [Lvl] KillerName in Hostile Red (#FF3B30)
+    -- Right-aligned Stacked Killer text: Line 1 = [Lvl] KillerName in Hostile Crimson (#FF3838) with sharp (1, -1) shadow
     local killerNameText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
     killerNameText:SetPoint("BOTTOMRIGHT", killerIconFrame, "LEFT", -8, 1)
     killerNameText:SetPoint("LEFT", killBanner, "CENTER", 65, 0)
     killerNameText:SetJustifyH("RIGHT")
     killerNameText:SetWordWrap(false)
-    killerNameText:SetShadowOffset(2, -2)
+    killerNameText:SetShadowOffset(1, -1)
     killerNameText:SetShadowColor(0, 0, 0, 1.0)
     killBanner.KillerNameText = killerNameText
     killBanner.KillerText = killerNameText -- backward-compatible alias
 
-    -- Line 2 = Classification / Guild in Muted Gray (#8B949E)
+    -- Line 2 = Classification / Guild in Clean Bone/Off-White (#D6D1C4)
     local killerSubText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     killerSubText:SetPoint("TOPRIGHT", killerIconFrame, "LEFT", -8, -1)
     killerSubText:SetPoint("LEFT", killBanner, "CENTER", 65, 0)
@@ -7578,7 +7587,7 @@ function UI:ShowKillBanner(killmail, isTest)
         if not vGuild or vGuild == "" or vGuild == "None" then
             vGuild = (killmail.victim.isPlayer == false) and "Wilderness" or "Forged By Valor"
         end
-        banner.VictimSubText:SetText(string.format("|cffa0a0a0<%s>|r", vGuild))
+        banner.VictimSubText:SetText(string.format("|cffb5bac1<%s>|r", vGuild))
 
         -- 2. Populate Center Section (Directional Death Action Block)
         banner.CenterHeader:SetText(GetEventHeaderText(killmail, isNpc))
@@ -7596,8 +7605,8 @@ function UI:ShowKillBanner(killmail, isTest)
         -- 3. Populate Right Section (The Victor / Threat)
         local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
         local kName = killmail.killer.name or "Threat"
-        banner.KillerNameText:SetText(string.format("|cffff3b30[%s] %s|r", kLevelStr, kName))
-        banner.KillerSubText:SetText(string.format("|cff8b949e%s|r", GetKillerSubtitle(killmail, isNpc)))
+        banner.KillerNameText:SetText(string.format("|cffff3838[%s] %s|r", kLevelStr, kName))
+        banner.KillerSubText:SetText(string.format("|cffd6d1c4%s|r", GetKillerSubtitle(killmail, isNpc)))
 
         if isNpc then
             banner.KillerIcon:SetTexture("Interface\\Icons\\INV_Misc_MonsterHead_02")
@@ -7659,7 +7668,7 @@ function UI:ToggleBannerLock(explicitState)
         banner.VictimIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
         banner.VictimIcon:SetTexCoord(0, 1, 0, 1)
         banner.VictimNameText:SetText("|cff00ff00[60] Drag Anchor|r")
-        banner.VictimSubText:SetText("|cffa0a0a0<Hold Left-Click>|r")
+        banner.VictimSubText:SetText("|cffb5bac1<Hold Left-Click>|r")
 
         banner.CenterHeader:SetText(string.format("|cffffd100REPOSITION ANCHOR  •  %s (%d, %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -135))
         banner.CenterIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
@@ -7671,10 +7680,10 @@ function UI:ToggleBannerLock(explicitState)
             banner.CenterIconShadow:SetVertexColor(0.60, 0.05, 0.05, 0.65)
             banner.CenterIconShadow:Show()
         end
-        banner.ActionText:SetText("|cffe2e8f0drag to|r |cffffe066Move|r")
+        banner.ActionText:SetText("|cffe0e0e0drag to|r |cffffb300Move|r")
 
-        banner.KillerNameText:SetText("|cffff3b30[60] Reposition|r")
-        banner.KillerSubText:SetText("|cff8b949eAnchor / Move|r")
+        banner.KillerNameText:SetText("|cffff3838[60] Reposition|r")
+        banner.KillerSubText:SetText("|cffd6d1c4Anchor / Move|r")
         banner.KillerIcon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
         banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
 
