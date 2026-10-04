@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 03:35:00 EDT  
-> **Git Status**: Branch `main` (Preparing commit for v1.4.108).  
+> **Last Synchronized**: 2026-10-04 03:45:00 EDT  
+> **Git Status**: Branch `main` (Preparing commit for v1.4.109).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.1` (Community Release).  
 > **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
@@ -39,6 +39,13 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Decoupled Root, Visual Skins & Persistent ContentLayer Architecture (`UI.lua`)**:
+  - **Single Persistent Content Layer (`ContentLayer`)**: Completely decoupled all functional and text widgets from theme frames by parenting them to an independent `ContentLayer` (`FrameLevel = ToastRoot:GetFrameLevel() + 5`) anchored once to `ToastRoot`. All icons, faction crests, character names, subtitles, skulls, and action text remain permanently fixed with zero recalculation or re-anchoring on theme swap.
+  - **Independent Visual Skin Containers**: Split cosmetic backdrops into dedicated container frames parented to `ToastRoot`:
+    - `ClassicSkin`: Encapsulates 3-slice native achievement alert textures (`88px` height) and dark stone base fill (`rgba(16, 14, 12, 0.94)`).
+    - `ElvSkin`: Encapsulates flat dark slate backdrop (`rgba(13, 17, 23, 0.94)`), 1px solid border, and flush 2px top faction accent line.
+  - **Zero-Reposition Theme Switching (`SetToastTheme`)**: Theme switching strictly toggles visibility (`ClassicSkin:Show()` / `ElvSkin:Hide()` or vice-versa) and typography outline flags, eliminating any potential for child element drift or layout corruption.
+  - **Strict Combatant Direction Invariant**: Hardened rule that **Victim is ALWAYS Left** and **Killer is ALWAYS Right** across all PvP and PvE death events, never inverting combatant orientation based on player faction, perspective, or visual theme.
 - **Multi-Scenario PvP & PvE Kill Banner Test Suite (`UI.lua`, `Core.lua`)**:
   - **"Dag killed X" (PvP Kill)**: Direct test scenario where Dagariane (Player) defeats an enemy player (`[24] Shadowstalker` in `<Grim Syndicate>`). Displays the Horde crest and yellow Rogue class icon on the Fallen (left), `[23] Dagariane` in Paladin pink on the Victor (right) with golden victory border trim, and directional action `slain by Judgement`.
   - **"X killed Dag" (PvP Death)**: Direct test scenario where an enemy player (`[25] Shadowstalker`) defeats Dagariane. Displays the Alliance crest and Paladin class icon on the Fallen (left), `[25] Shadowstalker` in Hostile Crimson (`#FF3838`) on the Threat (right) with red hostile border trim, and directional action `slain by Ambush`.

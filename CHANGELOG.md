@@ -5,6 +5,17 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.109] - 2026-10-04
+
+### Changed
+- **Decoupled Root, Visual Skins & Persistent ContentLayer Architecture (`Addon/WoWKillboard/UI.lua`)**:
+  - **Single Persistent Content Layer (`ContentLayer`)**: Completely decoupled all functional and text widgets from theme frames by parenting them to an independent `ContentLayer` (`FrameLevel = ToastRoot:GetFrameLevel() + 5`) anchored once to `ToastRoot`. All icons, faction crests, character names, subtitles, skulls, and action text remain permanently fixed with zero recalculation or re-anchoring on theme swap.
+  - **Independent Visual Skin Containers**: Split cosmetic backdrops into dedicated container frames parented to `ToastRoot`:
+    - `ClassicSkin`: Encapsulates 3-slice native achievement alert textures (`88px` height) and dark stone base fill (`rgba(16, 14, 12, 0.94)`).
+    - `ElvSkin`: Encapsulates flat dark slate backdrop (`rgba(13, 17, 23, 0.94)`), 1px solid border, and flush 2px top faction accent line.
+  - **Zero-Reposition Theme Switching (`SetToastTheme`)**: Theme switching strictly toggles visibility (`ClassicSkin:Show()` / `ElvSkin:Hide()` or vice-versa) and typography outline flags, eliminating any potential for child element drift or layout corruption.
+  - **Strict Combatant Direction Invariant**: Hardened rule that **Victim is ALWAYS Left** and **Killer is ALWAYS Right** across all PvP and PvE death events, never inverting combatant orientation based on player faction, perspective, or visual theme.
+
 ## [1.4.108] - 2026-10-04
 
 ### Added
