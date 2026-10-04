@@ -6491,25 +6491,23 @@ function UI:ApplyBannerTheme()
     local isClassic = (theme.id == "classic")
 
     if isClassic then
-        -- Authentic WoW Classic Quest Parchment & Chiseled Metallic Frame
+        -- Authentic WoW Classic Metallic Frame (Border only; single continuous ParchmentBg fills inner area)
         banner:SetBackdrop({
-            bgFile = "Interface\\QuestFrame\\QuestBG",
             edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-            tile = true,
-            tileSize = 256,
             edgeSize = 16,
             insets = { left = 4, right = 4, top = 4, bottom = 4 },
         })
-        banner:SetBackdropColor(1.0, 1.0, 1.0, 1.0) -- Authentic warm antique vellum / parchment
+        banner:SetBackdropColor(0, 0, 0, 0)
         banner:SetBackdropBorderColor(1.0, 1.0, 1.0, 1.0)
 
+        if banner.ParchmentBg then banner.ParchmentBg:Show() end
         if banner.HeaderStrip then banner.HeaderStrip:Show() end
         if banner.HeaderDivider then banner.HeaderDivider:Show() end
         if banner.TopAccent then banner.TopAccent:Hide() end
 
-        if banner.CenterHeader and banner.HeaderStrip then
+        if banner.CenterHeader then
             banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("CENTER", banner.HeaderStrip, "CENTER", 0, 0)
+            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -8)
             banner.CenterHeader:SetFontObject("GameFontNormal")
             banner.CenterHeader:SetText("|cffffd100WOWKB COMBAT TELEMETRY|r")
             banner.CenterHeader:SetShadowOffset(1, -1)
@@ -6524,15 +6522,15 @@ function UI:ApplyBannerTheme()
 
         if banner.VictimSubText then
             banner.VictimSubText:SetShadowOffset(1, -1)
-            banner.VictimSubText:SetShadowColor(0, 0, 0, 0.4)
+            banner.VictimSubText:SetShadowColor(1.0, 0.94, 0.82, 0.75)
         end
         if banner.KillerSubText then
             banner.KillerSubText:SetShadowOffset(1, -1)
-            banner.KillerSubText:SetShadowColor(0, 0, 0, 0.4)
+            banner.KillerSubText:SetShadowColor(1.0, 0.94, 0.82, 0.75)
         end
         if banner.LocText then
             banner.LocText:SetShadowOffset(1, -1)
-            banner.LocText:SetShadowColor(0, 0, 0, 0.4)
+            banner.LocText:SetShadowColor(1.0, 0.94, 0.82, 0.75)
         end
 
         if banner.VictimCrestRing then banner.VictimCrestRing:Show() end
@@ -6543,6 +6541,7 @@ function UI:ApplyBannerTheme()
         if banner.KillerIconFrame then banner.KillerIconFrame:SetBackdropBorderColor(0, 0, 0, 0) end
     else
         -- Modern ElvUI Minimalist Dark Slate
+        if banner.ParchmentBg then banner.ParchmentBg:Hide() end
         banner:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -6558,7 +6557,7 @@ function UI:ApplyBannerTheme()
 
         if banner.CenterHeader then
             banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -6)
+            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -8)
             banner.CenterHeader:SetFontObject("GameFontNormal")
             banner.CenterHeader:SetText("|cffffd100WOWKB COMBAT TELEMETRY|r")
             banner.CenterHeader:SetShadowOffset(1, -1)
@@ -6635,11 +6634,19 @@ function UI:InitializeKillBanner()
         end
     end)
 
+    -- Single Continuous Authentic Blizzard Quest Parchment Texture (Zero center splits/seams)
+    local parchmentBg = killBanner:CreateTexture(nil, "BACKGROUND", nil, -8)
+    parchmentBg:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 4, -4)
+    parchmentBg:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", -4, 4)
+    parchmentBg:SetTexture("Interface\\QuestFrame\\QuestBG")
+    parchmentBg:SetTexCoord(0, 1, 0, 1)
+    killBanner.ParchmentBg = parchmentBg
+
     -- Top Dark Header Strip Bar (Classic Quest Log top banner ribbon)
     local headerStrip = killBanner:CreateTexture(nil, "BACKGROUND", nil, -5)
     headerStrip:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 4, -4)
     headerStrip:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", -4, -4)
-    headerStrip:SetHeight(18)
+    headerStrip:SetHeight(20)
     headerStrip:SetColorTexture(0.11, 0.08, 0.05, 0.95) -- Deep dark wood / leather brown
     killBanner.HeaderStrip = headerStrip
 
@@ -6722,15 +6729,15 @@ function UI:InitializeKillBanner()
     victimSubText:SetJustifyH("LEFT")
     victimSubText:SetWordWrap(false)
     victimSubText:SetShadowOffset(1, -1)
-    victimSubText:SetShadowColor(0, 0, 0, 0.4)
+    victimSubText:SetShadowColor(1.0, 0.94, 0.82, 0.75)
     killBanner.VictimSubText = victimSubText
 
     -- =========================================================================
     -- Center Section (The Incident: Center Status & Brand)
     -- =========================================================================
-    -- Top tag: 12pt Blizzard Gold (#FFD100) inside the dark header strip
+    -- Top tag: 12pt Blizzard Gold (#FFD100) dropped 6px inside frame (TOP, 0, -8px)
     local centerHeader = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    centerHeader:SetPoint("CENTER", headerStrip, "CENTER", 0, 0)
+    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -8)
     centerHeader:SetText("|cffffd100WOWKB COMBAT TELEMETRY|r")
     centerHeader:SetShadowOffset(1, -1)
     centerHeader:SetShadowColor(0, 0, 0, 1.0)
@@ -6744,14 +6751,14 @@ function UI:InitializeKillBanner()
     centerIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
     killBanner.CenterIcon = centerIcon
 
-    -- Bottom: Location text in 11pt quest text brown (#382A1D) or amber (#D4A359)
+    -- Bottom: Location text in 11pt quest text brown (#382A1D) with soft warm light highlight shadow
     -- Anchored directly below centerIcon with 6px clearance from bottom frame edge
     local locText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     locText:SetPoint("TOP", centerIcon, "BOTTOM", 0, -3)
     locText:SetJustifyH("CENTER")
     locText:SetWordWrap(false)
     locText:SetShadowOffset(1, -1)
-    locText:SetShadowColor(0, 0, 0, 0.4)
+    locText:SetShadowColor(1.0, 0.94, 0.82, 0.75)
     locText:SetText("|cff382a1dWestfall • Sentinel Hill|r")
     killBanner.LocText = locText
     killBanner.ModeTag = locText -- backward-compatible alias
@@ -6802,7 +6809,7 @@ function UI:InitializeKillBanner()
     killerSubText:SetJustifyH("RIGHT")
     killerSubText:SetWordWrap(false)
     killerSubText:SetShadowOffset(1, -1)
-    killerSubText:SetShadowColor(0, 0, 0, 0.4)
+    killerSubText:SetShadowColor(1.0, 0.94, 0.82, 0.75)
     killBanner.KillerSubText = killerSubText
 
     UI.KillBanner = killBanner
