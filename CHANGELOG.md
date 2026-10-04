@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.100] - 2026-10-03
 
 ### Added
+- **Dynamic Kill & Death Toast Alerts with Combat Flavor Phrases (`Addon/WoWKillboard/UI.lua`, `CombatTracker.lua`, `Killmail.lua`, `Sync.lua`)**:
+  - Implemented on-screen death and kill toast banner notifications styled after Classic Hardcore and Deathlog announcements.
+  - Generates deterministic, synchronized combat flavor phrases across 5 engagement categories (PvP 1v1 Solo, Duel Victory, Battleground Warfront, Gang/Assisted Ambush, and PvE Beast Casualties) with class-colorized combatant names, cyan fatal hit ability names, and location highlights.
+  - Tracked fatal hit spell attribution (`finalSpell`) across combat logs and P2P addon broadcasts (`CT.LastPlayerSpell`, `KM:` serialized payload 14-part protocol).
+  - Integrated creature icon texture (`INV_Misc_MonsterHead_02`) and red executioner badges for wilderness mob casualties.
+  - Expanded `killBanner` dimensions from `540x54` to `580x58` with centered, bounded subtitles to fit detailed combat descriptions without screen edge overflow.
+- **Quick-Mute & Toast Scope Controls (`Addon/WoWKillboard/Core.lua`, `UI.lua`)**:
+  - Added dedicated `/kb mute` and `/kbmute` slash commands to instantly silence/unmute toasts and sound alerts during intense raids or crowded cities.
+  - Added `/kb toast [on|off|mute|mine|zone|all|test]` slash commands allowing instant command-line toggling of alert states and radar proximity scopes (`MINE` personal only, `ZONE` current zone only, `ALL` realm-wide broadcast).
+  - Connected slash command toggles directly to `UI.AlertsDialog` state synchronizer (`UpdateControls`) to keep graphical UI and command-line settings 100% in sync.
 - **Modal Backdrop Scrim & Dimmer Layer (`Addon/WoWKillboard/UI.lua`)**:
   - Implemented an anonymous, 78% opacity dark scrim (`modal.Scrim`) covering `mainFrame` at frame level `+40` behind the detail modal (`+50`).
   - Dims the busy live combat feed to eliminate visual distraction when inspecting Killmail Combat Records or Wilderness Casualty Dossiers.

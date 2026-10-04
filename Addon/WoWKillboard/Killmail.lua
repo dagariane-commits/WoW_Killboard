@@ -68,6 +68,7 @@ function KM:RecordKill(data)
         attackersCount = attackersCount,
         totalDamage = totalDamage,
         attackers = data.attackers or {},
+        finalSpell = data.finalSpell or (data.killer and data.killer.spell) or "Combat Strike",
         killer = {
             guid = data.killer.guid,
             name = data.killer.name or "Unknown",
@@ -215,6 +216,34 @@ function KM:RecordPveDeath(data)
     local victimStr = KB.Utils.ColorizeByClass(string.format("[%d] %s", pveRecord.victim.level, pveRecord.victim.name), pveRecord.victim.class)
     local chatMsg = string.format("|cffff2020[WoWKB PvE]|r %s was executed by |cffffd700[%s]|r (%s) in %s!", victimStr, pveRecord.npc.name, pveRecord.npc.spell or "Combat", pveRecord.location.zone)
     KB.Utils.SafePrint(chatMsg)
+
+    -- Trigger On-Screen Toast Banner for PvE Casualty
+    if KB.UI and KB.UI.ShowKillBanner then
+        KB.UI:ShowKillBanner({
+            killId = deathId,
+            timestamp = now,
+            isSolo = false,
+            isBattleground = false,
+            isArena = false,
+            isDuel = false,
+            attackersCount = 1,
+            finalSpell = pveRecord.npc.spell or "Combat Strike",
+            npc = pveRecord.npc,
+            killer = {
+                guid = pveRecord.npc.guid or "CREATURE",
+                name = pveRecord.npc.name or "Unknown Monster",
+                level = 0,
+                class = "WARRIOR",
+                guild = "Wilderness Threat",
+                faction = "Monster",
+                partySize = 1,
+                damageDone = pveRecord.npc.damage or 0,
+                spell = pveRecord.npc.spell or "Combat Strike",
+            },
+            victim = pveRecord.victim,
+            location = pveRecord.location,
+        })
+    end
 
     return pveRecord
 end
