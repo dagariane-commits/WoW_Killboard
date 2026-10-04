@@ -5,8 +5,7 @@
 
 WoWKillboard = WoWKillboard or {}
 local KB = WoWKillboard
-
-
+WoWKB = WoWKillboard
 
 KB.Version = "1.0.2"
 KB.Prefix = "WOWKB"
@@ -16,6 +15,8 @@ KB.WebDomain = "wowkillboard.com"
 KB.DefaultSettings = {
     enabled = true,
     theme = "elvui",             -- "elvui" (Modern Dark Minimalist) or "classic" (Classic WoW Stone & Gold)
+    accentColorMode = "gold",    -- "gold" (#FFD100), "class" (Player Character Class), "custom" (User RGB)
+    customAccentColor = { 1.0, 0.82, 0.0, 1.0 }, -- Saved custom RGB
     includeBattlegrounds = true,
     filterMode = "WORLD",        -- "WORLD", "BG", "DUEL", "ARENA"
     trackDamage = true,
