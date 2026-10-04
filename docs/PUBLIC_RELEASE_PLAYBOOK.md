@@ -52,6 +52,14 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
 ## 2. Portal Distribution Channels
 
 ### A. CurseForge / Overwolf
+
+> [!IMPORTANT]
+> **CurseForge & Git Lockstep Parity (MANDATORY PROCEDURE)**:
+> Whenever you push or upload an update to CurseForge, you **MUST** ensure the exact identical release is committed, tagged (`git tag -a vX.Y.Z -m "Release vX.Y.Z"`), and pushed to GitHub (`git push origin main --tags`).
+> - CurseForge and GitHub must never drift out of sync.
+> - The packaged zip (e.g., `WoWKillboard-v1.0.2.zip`) must be generated from the exact committed source tree.
+> - Release zips must be mirrored to repository root and `web/static/` via `python scripts/deploy.py` so the direct download button on wowkillboard.com delivers the same build.
+
 1. Log into the [CurseForge Author Portal](https://authors.curseforge.com/).
 2. Create New Project -> Category: `PvP` / `Combat` / `Information`.
 3. Description template:
@@ -60,7 +68,7 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
    > **WoW Killboard** is a community killboard that tracks your open-world PvP kills, certified 1v1 duels, battleground stats, blood bounties, and wilderness PvE deaths. It works across WoW Forever, Classic Era, Anniversary, and Retail.
    >
    > I really hope you like it! Please drop your feedback, feature ideas, or bug reports on CurseForge or our website so I can continue enhancing it.
-4. Upload `WoWKillboard-v1.0.1.zip`.
+4. Upload `WoWKillboard-v1.0.2.zip`.
 5. Supported Flavors: Select `WoW Classic`, `Classic Era`, and `Mainline`.
 6. Upload promotional banner (`assets/curseforge/logo.png`) and in-game UI screenshots.
 

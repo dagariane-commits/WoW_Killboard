@@ -77,6 +77,10 @@ Upload the screenshots located in [`assets/curseforge/`](assets/curseforge/) in 
 
 ## 5. File Upload Instructions (`File` Tab)
 
+> [!IMPORTANT]
+> **CurseForge & Git Lockstep Parity (MANDATORY)**:
+> Whenever you push or upload an update to CurseForge, you **MUST** ensure the exact same code and zip are committed, tagged, and pushed to GitHub (`git tag -a v1.0.2 -m "..."` and `git push origin main --tags`). Users downloading from GitHub or CurseForge must always experience identical features, styling, and bug fixes.
+
 1. Navigate to the **File** tab on your CurseForge project dashboard.
 2. Click **Upload File**.
 3. Select `WoWKillboard-v1.0.2.zip` (located in the project root: `WoWKillboard-v1.0.2.zip`).

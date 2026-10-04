@@ -21,12 +21,13 @@ Every response, diagnostic trace, and code commit must embody absolute engineeri
   4. **Modern Retail** (`_retail_` / `Wow.exe`)
 - Gate version-specific features using dynamic runtime feature detection (e.g., `type(CombatLogGetCurrentEventInfo) == "function"`) rather than fragile version string comparisons.
 
-### Guardrail 3: Zero Documentation Drift
+### Guardrail 3: Zero Documentation Drift & CurseForge/Git Parity
 - Code and documentation are twin artifacts: no code change is complete without updating the documentation.
 - Every change must immediately update:
   - [`CHANGELOG.md`](CHANGELOG.md) (Strict Keep a Changelog v1.1.0 standard).
   - The relevant technical wiki document in [`docs/`](docs/).
   - [`README.md`](README.md) if user-facing behavior, controls, or architecture change.
+- **CurseForge & Git Lockstep Parity (P0 Release Invariant)**: Whenever an update or release archive is uploaded or pushed to CurseForge, it **MUST** simultaneously be committed, tagged, and pushed to Git (`git push origin main --tags`). Never allow CurseForge and GitHub releases to drift out of sync; players downloading from GitHub or CurseForge must always receive identical code and documentation.
 
 ### Guardrail 4: Telemetry-First & Cryptographic Determinism
 - Every killmail must have a deterministic 32-bit FNV-1a hash based on timestamp, combatant GUIDs, and location coordinates to guarantee distributed deduplication.
@@ -79,8 +80,9 @@ flowchart TD
 - Rebuild distribution package (`WoWKillboard-v1.0.1.zip` and `WoWKillboard-v1.0.0.zip`).
 - Recompile `WoWKillboardSync.exe` if sync logic was modified.
 
-### Step 6: Zero-Drift Documentation & Clean Git Commit
+### Step 6: Zero-Drift Documentation, CurseForge/Git Parity & Clean Commit
 - Update [`CHANGELOG.md`](CHANGELOG.md) under appropriate semantic version headers.
 - Update relevant wiki documents in [`docs/`](docs/).
 - Commit changes to Git with clear Conventional Commit messages (`feat:`, `fix:`, `docs:`).
+- **CurseForge & Git Parity Gating**: Whenever an update is pushed to CurseForge, create the semantic git release tag (e.g., `git tag -a v1.0.2 -m "..."`) and push to remote (`git push origin main --tags`) so GitHub and CurseForge never drift.
 - Deliver a concise, BLUF response highlighting verification proofs and exact in-game testing steps.
