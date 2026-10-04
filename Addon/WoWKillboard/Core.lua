@@ -1288,6 +1288,32 @@ SlashCmdList["WOWKB_ALERTS"] = function()
     if KB.UI and KB.UI.ShowAlertsConfig then KB.UI:ShowAlertsConfig() end
 end
 
+-- Dedicated Quick-Slash Commands for Network Broadcast Testing & Announcements
+SLASH_WOWKB_TESTNET1 = "/kbtestnet"
+SLASH_WOWKB_TESTNET2 = "/kbtestparty"
+SLASH_WOWKB_TESTNET3 = "/testnet"
+SlashCmdList["WOWKB_TESTNET"] = function(msg)
+    local subArg = (msg or ""):lower():match("^%s*(.-)%s*$")
+    local mode = (subArg == "pvp" or subArg == "player" or subArg == "death") and "pvp" or "pve"
+    if KB.Sync and KB.Sync.BroadcastTestCasualty then
+        KB.Sync:BroadcastTestCasualty(mode)
+    end
+end
+
+SLASH_WOWKB_ANNOUNCE1 = "/kbannounce"
+SLASH_WOWKB_ANNOUNCE2 = "/announce"
+SlashCmdList["WOWKB_ANNOUNCE"] = function(msg)
+    local clean = msg and msg:match("^%s*(.-)%s*$") or ""
+    if clean == "" then
+        if KB.UI and KB.UI.ShowAnnouncementModal then
+            KB.UI:ShowAnnouncementModal()
+        end
+    else
+        if KB.Sync and KB.Sync.BroadcastAdminAlert then
+            KB.Sync:BroadcastAdminAlert(clean, "UPDATE")
+        end
+    end
+end
 
 -- Lightweight Floating Launcher Button (100% Taint-Free, Zero GameTooltip Touching, Anonymous Frame)
 function KB:UpdateMinimapTheme()

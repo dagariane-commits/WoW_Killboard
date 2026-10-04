@@ -22,11 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Account-Wide Legacy Auto-Tagging**: On character login, existing untagged combat records involving the player character are automatically attributed to their active realm and ruleset.
   - **Settings Modal Control**: Added an interactive "Realm Scope: Active Only / All Realms" toggle in Addon Settings with instant live refresh.
 - **Network Test Casualty Simulation & Realm Update Broadcaster (`Sync.lua`, `Core.lua`, `UI.lua`, `Killmail.lua`)**:
+  - **Party, Raid, Guild & Channel Event Listeners (`Sync.lua`)**: Registered `CHAT_MSG_PARTY`, `CHAT_MSG_PARTY_LEADER`, `CHAT_MSG_RAID`, `CHAT_MSG_RAID_LEADER`, `CHAT_MSG_GUILD`, `CHAT_MSG_OFFICER`, `CHAT_MSG_SAY`, and `CHAT_MSG_YELL` in `Sync.lua` event frame. Fixes the issue where casualty alerts sent to party chat appeared in text chat on a second computer but never triggered the on-screen toast banner or sound alert.
+  - **Immediate Prefix Registration & Deduplication Window (`Sync.lua`)**: Registered `C_ChatInfo.RegisterAddonMessagePrefix` immediately at file load time and added a 5-second deduplication hash window to prevent duplicate alerts when receiving both Addon and Chat messages.
   - **Network Test Casualty Protocol (`TEST_CASUALTY` & Format C `[TEST SIMULATION]`)**: Added `S:BroadcastTestCasualty(mode)` to broadcast simulated deaths across Party, Guild, and `WoWKillboard` channel without modifying local or remote SavedVariables databases (`WoWKillboardDB.kills` and `WoWKillboardDB.pveDeaths`). Guarantees 100% database purity while enabling instant peer-to-peer verification across separate computers.
-  - **Quick Test Commands & UI Action**: Added `/kb test broadcast [pve|pvp]`, `/kb testparty`, and `/kb testnet` slash commands, along with an interactive `[Broadcast Test (Party/Net)]` button in Combat Alerts & Radar Configuration (`/kb alerts`).
+  - **Prominent UI Action Buttons Across All Frames (`UI.lua`)**:
+    - **Main Window Header Bar**: Added `[Test Net]` (`#38BDF8`) and `[Announce]` (`#FFD100`) buttons directly to the top header bar next to the campaign mode toggle, allowing 1-click test simulation from the main interface.
+    - **Settings Modal (`/kb` -> `Settings`)**: Added `[Broadcast Test (Party/Net)]` and `[Announce Update to Realm]` in Section 2 (Combat Alerts & Kill Banners).
+    - **What's New Dialog (`/kb changelog`)**: Added `[Test Broadcast (Party/Net)]` action button at the bottom rail.
+  - **Quick Test Commands & UI Action**: Added `/kb test broadcast [pve|pvp]`, `/kb testparty`, `/kb testnet`, `/testnet`, `/kbannounce`, and `/announce` quick-slash commands.
   - **Realm Update Broadcaster & Announcements (`SYS_ALERT` & `[WoWKB Alert]`)**: Implemented `/kb announce <message>`, `/kb update <minutes> [notes]`, and `/kb broadcast <message>` allowing operators to broadcast scheduled update warnings and release countdowns to active players online.
   - **Interactive Realm Update Broadcaster Modal (`UI:ShowAnnouncementModal`)**: Added dedicated pure-Lua zero-taint modal (`/kb announce` or `/kb update`) featuring 10-minute, 5-minute, 1-minute, and live update presets with 1-click network transmission.
-  - **Remote Receiver Alerts & Audio Dispatch**: Remote peers receiving administrative announcements display a high-visibility chat frame banner, sound the raid warning siren, and trigger an on-screen toast notification.
+  - **Remote Receiver Alerts & Generic Toast Dispatch (`UI:TriggerToast`)**: Remote peers receiving administrative announcements display a high-visibility chat frame banner, sound the raid warning siren, and trigger an on-screen toast notification.
 
 ### Changed
 - **Automatic SavedVariables Theme Migration (`Core.lua`)**:
