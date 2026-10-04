@@ -973,6 +973,74 @@ function UI:CreateMainWindow()
     UI.RulesetButton = modePill
     UI:UpdateRulesetButton()
 
+    -- Network Broadcast Test Button (Direct party / realm simulation with 0 DB writes)
+    local testNetBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
+    testNetBtn:SetSize(72, 20)
+    testNetBtn:SetPoint("RIGHT", modePill, "LEFT", -6, 0)
+    testNetBtn:EnableMouse(true)
+    testNetBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    testNetBtn:SetBackdropColor(24/255, 36/255, 52/255, 1.0)
+    testNetBtn:SetBackdropBorderColor(56/255, 189/255, 248/255, 0.6)
+    local testNetLabel = testNetBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    testNetLabel:SetPoint("CENTER", 0, 0)
+    testNetLabel:SetTextColor(56/255, 189/255, 248/255, 1.0) -- #38BDF8
+    testNetLabel:SetText("Test Net")
+    if testNetLabel.SetFont then local f, s = testNetLabel:GetFont(); testNetLabel:SetFont(f, s or 10, "OUTLINE") end
+    testNetLabel:SetShadowOffset(0, 0)
+    testNetBtn.Label = testNetLabel
+    testNetBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(36/255, 54/255, 78/255, 1.0)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff38bdf8Broadcast Test (Party/Net)|r", "Broadcasts a simulated casualty across your Party, Guild, and Realm network to verify toasts on other computers. (0 database writes).")
+    end)
+    testNetBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(24/255, 36/255, 52/255, 1.0)
+        UI:HidePrivateTooltip()
+    end)
+    testNetBtn:SetScript("OnClick", function()
+        if KB.Sync and KB.Sync.BroadcastTestCasualty then
+            KB.Sync:BroadcastTestCasualty("pve")
+        end
+    end)
+    UI.TestNetButton = testNetBtn
+
+    -- Realm Update Broadcaster Button
+    local announceBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
+    announceBtn:SetSize(66, 20)
+    announceBtn:SetPoint("RIGHT", testNetBtn, "LEFT", -4, 0)
+    announceBtn:EnableMouse(true)
+    announceBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    announceBtn:SetBackdropColor(45/255, 38/255, 18/255, 1.0)
+    announceBtn:SetBackdropBorderColor(255/255, 209/255, 0/255, 0.6)
+    local announceLabel = announceBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    announceLabel:SetPoint("CENTER", 0, 0)
+    announceLabel:SetTextColor(255/255, 209/255, 0/255, 1.0) -- #FFD100
+    announceLabel:SetText("Announce")
+    if announceLabel.SetFont then local f, s = announceLabel:GetFont(); announceLabel:SetFont(f, s or 10, "OUTLINE") end
+    announceLabel:SetShadowOffset(0, 0)
+    announceBtn.Label = announceLabel
+    announceBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(65/255, 55/255, 25/255, 1.0)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Realm Update Announcer|r", "Broadcasts an update alert banner to all online players in your party, guild, and realm channel.")
+    end)
+    announceBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(45/255, 38/255, 18/255, 1.0)
+        UI:HidePrivateTooltip()
+    end)
+    announceBtn:SetScript("OnClick", function()
+        UI:ShowAnnouncementModal()
+    end)
+    UI.AnnounceButton = announceBtn
+
     -- 3. Global Top Stat Strip (Single compact 32px height bar divided into 3 equal flush segments)
     local metricsBar = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
     metricsBar:SetSize(860, 32)
@@ -6170,9 +6238,21 @@ function UI:ShowChangelogModal(isManual)
             if UI.Toggle then UI:Toggle() end
         end)
 
-        local gotItBtn = UI:CreateButton(dlg, 120, 26, "Got It!", "GameFontHighlightSmall")
+        local gotItBtn = UI:CreateButton(dlg, 100, 26, "Got It!", "GameFontHighlightSmall")
         gotItBtn:SetPoint("BOTTOMRIGHT", -16, 14)
         gotItBtn:SetScript("OnClick", function() dlg:Hide() end)
+
+        local bcastTestBtn = UI:CreateButton(dlg, 200, 26, "|cff38bdf8Test Broadcast (Party/Net)|r", "GameFontHighlightSmall")
+        bcastTestBtn:SetPoint("RIGHT", gotItBtn, "LEFT", -10, 0)
+        bcastTestBtn:SetScript("OnClick", function()
+            if KB.Sync and KB.Sync.BroadcastTestCasualty then
+                KB.Sync:BroadcastTestCasualty("pve")
+            end
+        end)
+        bcastTestBtn:SetScript("OnEnter", function(self)
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff38bdf8Test Broadcast (Party/Net)|r", "Dispatches a simulated casualty across your Party, Guild, and Realm network to verify toasts on other computers. (0 database writes).")
+        end)
+        bcastTestBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
 
         -- ESC handler
         dlg:SetScript("OnKeyDown", function(self, key)
@@ -7737,11 +7817,11 @@ function UI:ShowKillBanner(killmail, isTest)
         end
     end
 
-    -- 3. Audio Dispatch (Sound + Banner mode only)
-    if alertMode == "SOUND_AND_BANNER" then
+    -- 3. Audio Dispatch (Sound + Banner mode only, or explicit test)
+    if isTest or alertMode == "SOUND_AND_BANNER" then
         if PlaySound then
             local soundId = (KB.SoundAlerts and KB.SoundAlerts.SOLO_KILL) or 8959
-            PlaySound(soundId, "Master")
+            pcall(PlaySound, soundId, "Master")
         end
     end
 
@@ -7752,12 +7832,12 @@ function UI:ShowKillBanner(killmail, isTest)
         end
         local flavor = UI:GetCombatFlavorPhrase(killmail)
         if flavor and UI.ShowRaidNotice then
-            UI:ShowRaidNotice(flavor)
+            UI.ShowRaidNotice(flavor)
         end
     end
 
     -- 4. Frontline Kill Banner Frame (Frozen Shared 560x84 Layout Across All Themes)
-    if alertStyle == "BOTH" or alertStyle == "BANNER" then
+    if isTest or alertStyle == "BOTH" or alertStyle == "BANNER" then
         if not UI.KillBanner then
             UI:InitializeKillBanner()
         end
@@ -7944,6 +8024,79 @@ function UI:ShowKillBanner(killmail, isTest)
             end)
         end
     end
+end
+
+-- Generic Frontline Toast / System Announcement Trigger
+function UI:TriggerToast(opts)
+    opts = opts or {}
+    local title = opts.title or "SYSTEM UPDATE NOTICE"
+    local text = opts.text or "Realm update broadcast."
+    local duration = opts.duration or 6
+
+    if not UI.KillBanner then
+        UI:InitializeKillBanner()
+    end
+    local banner = UI.KillBanner
+    if not banner then return end
+
+    if banner.KillerFactionIcon then
+        banner.KillerFactionIcon:SetTexture("Interface\\Icons\\INV_Misc_Gear_01")
+        banner.KillerFactionIcon:SetTexCoord(0, 1, 0, 1)
+    end
+    if banner.KillerIcon then
+        banner.KillerIcon:SetTexture("Interface\\Icons\\Achievement_General")
+        banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
+    end
+    banner.KillerNameText:SetTextColor(1, 0.82, 0, 1)
+    banner.KillerNameText:SetText("|cffffd100" .. title .. "|r")
+    banner.KillerSubText:SetText("|cff38bdf8WoW Killboard Alert|r")
+
+    banner.CenterHeader:SetText("|cffff3838BROADCAST|r")
+    if banner.CenterIcon then
+        banner.CenterIcon:SetTexture("Interface\\Icons\\INV_Misc_Bell_01")
+        banner.CenterIcon:SetTexCoord(0, 1, 0, 1)
+        banner.CenterIcon:SetVertexColor(1, 0.82, 0, 1)
+    end
+    if banner.CenterIconShadow then
+        banner.CenterIconShadow:Hide()
+    end
+    banner.ActionText:SetText("|cffffffff" .. text .. "|r")
+
+    if banner.VictimCrest then
+        banner.VictimCrest:SetTexture("Interface\\Icons\\INV_Misc_Gear_01")
+        banner.VictimCrest:SetTexCoord(0, 1, 0, 1)
+    end
+    if banner.VictimIcon then
+        banner.VictimIcon:SetTexture("Interface\\Icons\\Achievement_General")
+        banner.VictimIcon:SetTexCoord(0, 1, 0, 1)
+    end
+    banner.VictimNameText:SetTextColor(1, 1, 1, 1)
+    banner.VictimNameText:SetText("|cff00e5ffNetwork Alert|r")
+    banner.VictimSubText:SetText("")
+
+    if banner.ClassicSkin then
+        banner.ClassicSkin:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
+        if banner.classicTopAccent then banner.classicTopAccent:SetColorTexture(1.0, 0.82, 0.0, 1.0) end
+    end
+    if banner.ElvSkin then
+        banner.ElvSkin:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
+        if banner.elvTopAccent then banner.elvTopAccent:SetColorTexture(1.0, 0.82, 0.0, 1.0) end
+    end
+
+    banner:SetAlpha(1.0)
+    banner:Show()
+    if killBannerTimer then killBannerTimer:Cancel() end
+    killBannerTimer = C_Timer.NewTimer(duration, function()
+        if banner and not UI.bannerUnlocked then
+            if InCombatLockdown and InCombatLockdown() then
+                banner:SetAlpha(0)
+                UI.PendingHides = UI.PendingHides or {}
+                table.insert(UI.PendingHides, banner)
+            else
+                banner:Hide()
+            end
+        end
+    end)
 end
 
 -- Toggle Banner Drag / Positioning Mode
@@ -8739,7 +8892,7 @@ function UI:ShowSettingsModal()
 
     if not UI.SettingsDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(500, 600)
+        dlg:SetSize(500, 630)
         dlg:SetPoint("CENTER", 0, 20)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(120)
@@ -8970,7 +9123,33 @@ function UI:ShowSettingsModal()
         end)
         dlg.soundBtn = soundBtn
 
-        y = y - 68
+        -- Row 2: Network Broadcast Simulation & Realm Update Broadcaster
+        local bcastTestBtn = UI:CreateButton(dlg, 220, 22, "|cff38bdf8Broadcast Test (Party/Net)|r")
+        bcastTestBtn:SetPoint("TOPLEFT", 24, y - 60)
+        bcastTestBtn:SetScript("OnClick", function()
+            if KB.Sync and KB.Sync.BroadcastTestCasualty then
+                KB.Sync:BroadcastTestCasualty("pve")
+            end
+        end)
+        bcastTestBtn:SetScript("OnEnter", function(self)
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff38bdf8Broadcast Test (Party/Net)|r", "Simulates a casualty across your Party, Guild, and Realm channel to test toast alerts on your other computers without saving to history.")
+        end)
+        bcastTestBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+        dlg.bcastTestBtn = bcastTestBtn
+
+        local announceBtn = UI:CreateButton(dlg, 220, 22, "|cffffd100Announce Update to Realm|r")
+        announceBtn:SetPoint("LEFT", bcastTestBtn, "RIGHT", 10, 0)
+        announceBtn:SetScript("OnClick", function()
+            dlg:Hide()
+            UI:ShowAnnouncementModal()
+        end)
+        announceBtn:SetScript("OnEnter", function(self)
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Announce Update to Realm|r", "Broadcasts an on-screen update warning across Party, Guild, and Realm channel to notify other players.")
+        end)
+        announceBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+        dlg.announceBtn = announceBtn
+
+        y = y - 94
 
         -- SECTION 3: TACTICAL CHAT & BROADCAST TELEMETRY
         local s3Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")

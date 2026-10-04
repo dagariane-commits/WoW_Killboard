@@ -11,6 +11,13 @@ local S = KB.Sync
 
 local frame = CreateFrame("Frame")
 
+-- Immediate prefix registration at file load for cross-client parity
+if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+    pcall(C_ChatInfo.RegisterAddonMessagePrefix, KB.Prefix or "WOWKB")
+elseif RegisterAddonMessagePrefix then
+    pcall(RegisterAddonMessagePrefix, KB.Prefix or "WOWKB")
+end
+
 function S:JoinGlobalChannel()
     if InCombatLockdown and InCombatLockdown() then return end
     if JoinChannelByName then
@@ -184,6 +191,15 @@ function S:OnIncomingTestCasualty(testData, sender)
     if sender and myName and (sender == myName or sender:find("^" .. myName .. "%-") or sender:lower() == myName:lower()) then
         return
     end
+
+    -- Deduplication window: Prevent duplicate toasts if both AddonMessage and ChatMessage arrive within 5s
+    S.recentTestAlerts = S.recentTestAlerts or {}
+    local testKey = (testData and (testData.killId or testData.deathId)) or (tostring(sender) .. ":" .. tostring(testData.timestamp or time()))
+    local now = time()
+    if S.recentTestAlerts[testKey] and (now - S.recentTestAlerts[testKey]) < 5 then
+        return
+    end
+    S.recentTestAlerts[testKey] = now
 
     -- Trigger Kill Banner & Toast with isTest = true (Bypasses zone restrictions, guarantees zero database write)
     if KB.UI and KB.UI.ShowKillBanner then
@@ -795,21 +811,21 @@ function S:OnAddonMessage(prefix, message, channel, sender)
             KB.IntelScanner:OnIncomingSighting(sighting)
         end
 
-    elseif msgType == "TEST_CASUALTY" and #parts >= 15 then
-        local subMode = parts[2]
-        local testId = parts[3]
-        local kName = parts[4]
-        local kClass = parts[5]
+    elseif msgType == "TEST_CASUALTY" and #parts >= 10 then
+        local subMode = parts[2] or "PVE"
+        local testId = parts[3] or ("TEST-" .. time())
+        local kName = parts[4] or "Defias Pillager"
+        local kClass = parts[5] or "MAGE"
         local kLvl = tonumber(parts[6]) or 0
-        local kSpell = parts[7]
+        local kSpell = parts[7] or "Combat Strike"
         local kDmg = tonumber(parts[8]) or 0
-        local vName = parts[9]
-        local vClass = parts[10]
+        local vName = parts[9] or sender or "Combatant"
+        local vClass = parts[10] or "WARRIOR"
         local vLvl = tonumber(parts[11]) or 0
-        local vGuild = parts[12]
-        local vFaction = parts[13]
-        local zone = parts[14]
-        local subZone = parts[15]
+        local vGuild = parts[12] or "None"
+        local vFaction = parts[13] or "Unknown"
+        local zone = parts[14] or "Wilderness"
+        local subZone = parts[15] or ""
 
         local isPve = (subMode == "PVE")
         local testKM = {
@@ -851,7 +867,7 @@ function S:OnAddonMessage(prefix, message, channel, sender)
     end
 end
 
--- Process incoming standardized casualty alert from the realm channel
+-- Process incoming standardized casualty alert from party, guild, raid, or realm channel
 function S:OnIncomingChannelCasualty(text, sender)
     if not text or not text:find("^%[WoWKB%] Casualty:") then return end
     local myName = UnitName("player")
@@ -859,11 +875,26 @@ function S:OnIncomingChannelCasualty(text, sender)
         return
     end
 
-    local isTestMsg = (text:find("%[TEST") ~= nil) or (text:find("Simulation") ~= nil)
+    local isTestMsg = (text:find("%[TEST") ~= nil) or (text:find("Simulation") ~= nil) or (text:find("TEST SIMULATION") ~= nil)
 
-    local vName, vLvl, vClass, kName, spellName, locStr = text:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*%((.-)%)%s*in%s*(.-)%.?%s*%[")
+    -- Clean trailing tags and periods
+    local cleanText = text
+    if cleanText:find("%[TEST") or cleanText:find("%[test") then
+        cleanText = cleanText:gsub("%s*%[.-%]%s*$", "")
+    end
+    cleanText = cleanText:gsub("%.$", ""):gsub("%s+$", "")
+
+    -- Format C: [WoWKB] Casualty: <victim> (Lvl <lvl> <class>) killed by <killer> (<spell>) in <location>
+    local vName, vLvl, vClass, kName, spellName, locStr = cleanText:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*%((.-)%)%s*in%s*(.-)$")
     if not vName or not kName then
-        vName, vLvl, vClass, kName, spellName, locStr = text:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*%((.-)%)%s*in%s*(.-)%.?$")
+        vName, vLvl, vClass, kName, locStr = cleanText:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*in%s*(.-)$")
+        spellName = "Combat Strike"
+    end
+    if not vName or not kName then
+        vName, kName, locStr = cleanText:match("^%[WoWKB%] Casualty:%s*(.-)%s*killed by%s*(.-)%s*in%s*(.-)$")
+        vLvl = 60
+        vClass = "WARRIOR"
+        spellName = "Combat Strike"
     end
     if not vName or not kName then return end
 
@@ -899,7 +930,7 @@ function S:OnIncomingChannelCasualty(text, sender)
             guid = "UNKNOWN",
             name = vName,
             level = vLvl,
-            class = vClass or "UNKNOWN",
+            class = (vClass and vClass ~= "") and vClass:upper() or "WARRIOR",
             guild = "None",
             faction = "Unknown",
         },
@@ -939,15 +970,25 @@ frame:SetScript("OnEvent", function(self, event, ...)
         pcall(function()
             S:OnAddonMessage(prefix, message, channel, sender)
         end)
-    elseif event == "CHAT_MSG_CHANNEL" then
+    elseif event == "CHAT_MSG_CHANNEL" or event == "CHAT_MSG_PARTY" or event == "CHAT_MSG_PARTY_LEADER" or
+           event == "CHAT_MSG_RAID" or event == "CHAT_MSG_RAID_LEADER" or event == "CHAT_MSG_GUILD" or
+           event == "CHAT_MSG_OFFICER" or event == "CHAT_MSG_SAY" or event == "CHAT_MSG_YELL" then
         local text, sender, _, channelName, _, _, _, channelNumber, channelBase = ...
-        local isKBChannel = false
-        if channelBase and channelBase:lower():find("wowkillboard") then
-            isKBChannel = true
-        elseif channelName and channelName:lower():find("wowkillboard") then
-            isKBChannel = true
+        local shouldProcess = true
+        if event == "CHAT_MSG_CHANNEL" then
+            local isKBChannel = false
+            if channelBase and channelBase:lower():find("wowkillboard") then
+                isKBChannel = true
+            elseif channelName and channelName:lower():find("wowkillboard") then
+                isKBChannel = true
+            end
+            -- Allow channel processing if it's the WoWKillboard channel OR if text explicitly starts with WoWKB tags
+            if not isKBChannel and text and not (text:find("^%[WoWKB Alert%]") or text:find("^%[WoWKB Update%]") or text:find("^%[WoWKB%] Casualty:")) then
+                shouldProcess = false
+            end
         end
-        if isKBChannel and text then
+
+        if shouldProcess and text then
             if text:find("^%[WoWKB Alert%]") or text:find("^%[WoWKB Update%]") then
                 pcall(function()
                     local alertSender, alertMsg = text:match("^%[WoWKB %a+%]%s*(.-):%s*(.+)$")
@@ -994,6 +1035,14 @@ end)
 
 frame:RegisterEvent("CHAT_MSG_ADDON")
 frame:RegisterEvent("CHAT_MSG_CHANNEL")
+frame:RegisterEvent("CHAT_MSG_PARTY")
+frame:RegisterEvent("CHAT_MSG_PARTY_LEADER")
+frame:RegisterEvent("CHAT_MSG_RAID")
+frame:RegisterEvent("CHAT_MSG_RAID_LEADER")
+frame:RegisterEvent("CHAT_MSG_GUILD")
+frame:RegisterEvent("CHAT_MSG_OFFICER")
+frame:RegisterEvent("CHAT_MSG_SAY")
+frame:RegisterEvent("CHAT_MSG_YELL")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
