@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed issue where the main Killboard window opened completely blank/empty due to `CreateMainWindow` aborting mid-initialization before `UI:Refresh()` could populate the content child frame.
 - **Direct Download Routing to GitHub Releases CDN (`web/server.py`)**:
   - Re-routed the `/download` endpoint from CurseForge project page redirect to GitHub Releases Fastly CDN (`GITHUB_RELEASE_ZIP_URL`), providing authentic 1-click open-source direct downloads and eliminating redundancy with the dedicated **CurseForge Hub** button.
+- **Lua Syntax Error in `UI:Refresh` (`Addon/WoWKillboard/UI.lua`)**:
+  - Resolved `UI.lua:1513: ')' expected near ','` caused by invalid tuple parentheses syntax (`or (1.0, 0.82, 0.0, "ffd100")`). Replaced with direct `WoWKB.AccentColor()` call, which intrinsically handles default return values.
+  - Enhanced `tests/validate_lua.py` with standalone expression tuple detection to automatically catch this syntax error category.
 
 ### Added
 - **Complete Clean ElvUI Specification Across All Tabs & Dynamic Accent Engine (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Utils.lua`)**:
