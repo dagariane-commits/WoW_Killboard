@@ -562,8 +562,10 @@ def add_cache_control_headers(response):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
 
-    # Enforce no-cache for HTML, CSS, and JS so users always receive fresh UI changes
-    if request.path.endswith(".html") or request.path == "/" or request.path.endswith(".js") or request.path.endswith(".css"):
+    # Enforce no-cache for HTML, CSS, JS, and downloads so users always receive fresh UI changes and downloads
+    if (request.path.endswith(".html") or request.path == "/" or 
+        request.path.endswith(".js") or request.path.endswith(".css") or 
+        request.path.startswith("/download") or request.path.endswith(".zip") or request.path.endswith(".exe")):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -755,7 +757,11 @@ def download_addon():
     log_analytics_event("download_addon", path=request.path, source="web")
     # In production, offload addon archive streaming to GitHub Releases Fastly CDN
     if not app.config.get("TESTING") and not os.environ.get("SERVE_LOCAL_BINARIES"):
-        return redirect(GITHUB_RELEASE_ZIP_URL, code=302)
+        resp = redirect(GITHUB_RELEASE_ZIP_URL, code=302)
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
 
     root_dir = os.path.dirname(APP_DIR)
     # Check for specific requested file if path has specific version
@@ -772,7 +778,11 @@ def download_addon():
             target = os.path.join(d, pkg)
             if os.path.exists(target):
                 return send_from_directory(d, pkg, as_attachment=True)
-    return redirect(GITHUB_RELEASE_ZIP_URL, code=302)
+    resp = redirect(GITHUB_RELEASE_ZIP_URL, code=302)
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 @app.route("/curseforge")
 @app.route("/curse")
@@ -789,7 +799,11 @@ def download_sync_exe():
     log_analytics_event("download_sync", path=request.path, source="web")
     # In production, offload 12MB-15MB companion executable streaming to GitHub Releases Fastly CDN
     if not app.config.get("TESTING") and not os.environ.get("SERVE_LOCAL_BINARIES"):
-        return redirect(GITHUB_RELEASE_SYNC_URL, code=302)
+        resp = redirect(GITHUB_RELEASE_SYNC_URL, code=302)
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
 
     root_dir = os.path.dirname(APP_DIR)
     exe_path = os.path.join(root_dir, "WoWKillboardSync.exe")
@@ -801,7 +815,11 @@ def download_sync_exe():
         return send_from_directory(root_dir, "WoWKillboardSync.exe", as_attachment=True)
     if os.path.exists(dist_exe):
         return send_from_directory(os.path.join(root_dir, "dist"), "WoWKillboardSync.exe", as_attachment=True)
-    return redirect(GITHUB_RELEASE_SYNC_URL, code=302)
+    resp = redirect(GITHUB_RELEASE_SYNC_URL, code=302)
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 
 # ----------------- StreamBox (OBS Overlay) -----------------
@@ -3742,13 +3760,13 @@ def get_realm_summary():
             },
             "DeadliestZones": deadliest_zones,
             "TopGankers24h": top_gankers,
-            "LatestVersion": "1.0.1",
-            "DownloadUrl": "https://wowkillboard.com/download",
+            "LatestVersion": "1.0.3",
+            "DownloadUrl": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.3.zip",
             "CurseForgeUrl": "https://www.curseforge.com/wow/addons/wkb",
             "Changelog": [
-                "Interactive Anti-Spam Share Modal with Faction tags",
-                "Concise 1-Line Chat Broadcasts (<200 chars)",
-                "Live Peer Version Discovery across Guild & Party",
+                "Complete Clean ElvUI Specification Across All Tabs",
+                "Dynamic Accent Color Engine (Classic Gold, Class Color, Hex)",
+                "Strict Realm & Ruleset Isolation Architecture (PvP / PvE / RP / HC)",
                 "PvE Apex Predator Telemetry & Monster Casualties",
                 "Windows 11 Smart App Control Unblock Compatibility"
             ],
@@ -3760,14 +3778,14 @@ def get_version_info():
     """Returns official current addon release version, download endpoints, and changelog summary."""
     return jsonify({
         "status": "ok",
-        "version": "1.0.1",
-        "release_tag": "v1.0.1",
-        "download_url": "https://wowkillboard.com/download",
+        "version": "1.0.3",
+        "release_tag": "v1.0.3",
+        "download_url": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.3.zip",
         "curseforge_url": "https://www.curseforge.com/wow/addons/wkb",
         "changelog": [
-            "Interactive Anti-Spam Share Modal with Faction tags",
-            "Concise 1-Line Chat Broadcasts (<200 chars)",
-            "Live Peer Version Discovery across Guild & Party",
+            "Complete Clean ElvUI Specification Across All Tabs",
+            "Dynamic Accent Color Engine (Classic Gold, Class Color, Hex)",
+            "Strict Realm & Ruleset Isolation Architecture (PvP / PvE / RP / HC)",
             "PvE Apex Predator Telemetry & Monster Casualties",
             "Windows 11 Smart App Control Unblock Compatibility"
         ]

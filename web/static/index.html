@@ -66,7 +66,8 @@
         <button id="nav-rallies" class="nav-btn" onclick="switchTab('RALLIES')">Manhunt</button>
         <button id="nav-zones" class="nav-btn" onclick="switchTab('ZONES')">Zone Intel</button>
         <button id="nav-upload" class="nav-btn" onclick="switchTab('UPLOAD')">Upload</button>
-        <button id="nav-analytics" class="nav-btn" onclick="openAnalyticsModal()" title="View Web Traffic &amp; CurseForge Telemetry">📊 Analytics</button>
+        <button id="nav-spec" class="nav-btn" onclick="openAddonDossierModal()" title="War Room Operational Specification &amp; Architecture"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>War Room Spec</button>
+        <button id="nav-analytics" class="nav-btn" onclick="openAnalyticsModal()" title="View Web Traffic &amp; CurseForge Telemetry">Analytics</button>
       </nav>
     </div>
   </header>
@@ -123,6 +124,10 @@
           <span>Upload Combat Log</span>
           <span>&rarr;</span>
         </button>
+        <button class="mobile-nav-item" id="m-nav-spec" onclick="openAddonDossierModal(); toggleMobileDrawer(false);">
+          <span>War Room Operational Spec</span>
+          <span>&rarr;</span>
+        </button>
       </div>
 
       <!-- Mobile User Action -->
@@ -130,11 +135,11 @@
 
       <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 6px;">
         <button class="mobile-nav-item" onclick="openAddonDossierModal(); toggleMobileDrawer(false);">
-          <span>How the Addon Works &amp; Download</span>
+          <span>War Room Operational Spec &amp; Download</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" onclick="openAnalyticsModal(); toggleMobileDrawer(false);" style="color: var(--accent-cyan);">
-          <span>📊 Traffic &amp; CurseForge Analytics</span>
+          <span>Traffic &amp; CurseForge Analytics</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" onclick="openBugReportsModal(); toggleMobileDrawer(false);" style="color: #ef4444;">
@@ -393,9 +398,9 @@
         </span>
       </div>
       <div class="footer-links">
-        <a href="javascript:void(0)" onclick="openAddonDossierModal()">How the Addon Works</a> &bull;
+        <a href="javascript:void(0)" onclick="openAddonDossierModal()">War Room Spec</a> &bull;
         <a href="javascript:void(0)" onclick="openBugReportsModal()" style="color: #ef4444; font-weight: 600;">Field Bug Dispatches</a> &bull;
-        <a href="/download">Direct Download (.zip)</a> &bull;
+        <a href="https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.3.zip" target="_blank" rel="noopener">Direct Download (.zip)</a> &bull;
         <a href="javascript:void(0)" onclick="switchTab('THEATER')">Theater of War</a> &bull;
         <a href="javascript:void(0)" onclick="promptAdminAccess()" style="color: #64748b;" title="Master Database Administration">Admin Console</a>
       </div>
@@ -631,7 +636,7 @@
             </div>
           </div>
           <div class="dossier-dl-actions">
-            <a href="/download" class="dossier-btn primary" title="Download Addon (.zip)">
+            <a href="https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.3.zip" target="_blank" rel="noopener" class="dossier-btn primary" title="Download Addon (.zip) from GitHub Releases">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               <span>Direct Download (.zip)</span>
             </a>
@@ -639,7 +644,7 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14h2v2h-2v-2zm0-10h2v8h-2V6z"/></svg>
               <span>CurseForge Hub</span>
             </a>
-            <a href="/WoWKillboardSync.exe" class="dossier-btn outline" download title="Download WoWKillboardSync.exe Desktop Companion">
+            <a href="https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboardSync.exe" target="_blank" rel="noopener" class="dossier-btn outline" title="Download WoWKillboardSync.exe Desktop Companion from GitHub">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
               <span>Desktop Sync App (.exe)</span>
             </a>
