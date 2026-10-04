@@ -308,11 +308,20 @@ function UI:ApplyTheme()
     if UI.Divider then
         UI.Divider:SetColorTexture(unpack(theme.dividerColor))
     end
+    if UI.TopMetricsBar then
+        if UI.TopMetricsBar.SetBackdrop then
+            UI.TopMetricsBar:SetBackdrop(theme.cardBackdrop or theme.insetBackdrop)
+            UI.TopMetricsBar:SetBackdropColor(unpack(theme.cardBg or {24/255, 24/255, 24/255, 1.0}))
+            UI.TopMetricsBar:SetBackdropBorderColor(unpack(theme.cardBorder or {0, 0, 0, 1.0}))
+        end
+    end
     if UI.StatCards then
         for _, card in pairs(UI.StatCards) do
-            card:SetBackdrop(theme.cardBackdrop)
-            card:SetBackdropColor(unpack(theme.cardBg))
-            card:SetBackdropBorderColor(unpack(theme.cardBorder))
+            if type(card) == "table" and card.SetBackdrop and not UI.TopMetricsBar then
+                card:SetBackdrop(theme.cardBackdrop)
+                card:SetBackdropColor(unpack(theme.cardBg))
+                card:SetBackdropBorderColor(unpack(theme.cardBorder))
+            end
             if card.HeaderStrip then
                 card.HeaderStrip:SetColorTexture(unpack(theme.cardHeaderBg or {0.09, 0.12, 0.17, 1.0}))
             end
@@ -966,7 +975,7 @@ function UI:CreateMainWindow()
 
     local segWidth = 286
     local function CreateMetricSegment(parent, xOffset, defLabel)
-        local seg = CreateFrame("Frame", nil, parent)
+        local seg = CreateFrame("Frame", nil, parent, "BackdropTemplate")
         seg:SetSize(segWidth, 38)
         seg:SetPoint("TOPLEFT", parent, "TOPLEFT", xOffset, 0)
 

@@ -39,6 +39,10 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **UI Initialization Crash Fix in `ApplyTheme` (`Addon/WoWKillboard/UI.lua`)**:
+  - Resolved `UI.lua:313: attempt to call a nil value` by adding `"BackdropTemplate"` to `CreateMetricSegment` and adding explicit `card.SetBackdrop` safety checks in `UI:ApplyTheme()`.
+  - Added full theming support for `UI.TopMetricsBar` (`SetBackdrop`, `SetBackdropColor`, `SetBackdropBorderColor`) across Classic and ElvUI modes.
+  - Eliminated the empty main window condition caused by `CreateMainWindow` aborting mid-initialization.
 - **Minimalist ElvUI In-Game Window Redesign (`Addon/WoWKillboard/UI.lua`, `Config.lua`)**:
   - **Authentic ElvUI Minimalism**: Complete overhaul of the main window layout adhering to authentic ElvUI minimalism: flat dark slate surfaces (`#121212` primary window, `#181818` headers/panels, `#141414` / `#161616` alternating data rows), universal 1px solid black (`#000000`) borders, strict tabular grid alignment, and complete removal of all melodrama, subtitles, and decorative card clutter.
   - **Header & Top Control Bar**: Full-width 28px height header in `#1A1A1A` with a 1px solid black divider. Left: Addon Title (`WoW Killboard` in Gold `#FFD100`) and Version Tag (`v1.0.2` in Muted Gray `#666666`). Right: Compact pill toggle for PvP / PvE (`UI.RulesetButton`), plus `Sync`, `Settings`, and `Close (X)` buttons in flat `#1E1E1E` with hover highlight `#2A2A2A`.

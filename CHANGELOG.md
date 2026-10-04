@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.2] - 2026-10-04 (CurseForge Community Release)
 
+### Fixed
+- **UI Initialization Crash in `ApplyTheme` (`Addon/WoWKillboard/UI.lua`)**:
+  - Resolved `UI.lua:313: attempt to call a nil value` by adding `"BackdropTemplate"` to `CreateMetricSegment` and adding explicit `card.SetBackdrop` safety guarding in `UI:ApplyTheme()`.
+  - Added dedicated theming support for `UI.TopMetricsBar` (`SetBackdrop`, `SetBackdropColor`, `SetBackdropBorderColor`) across Classic and ElvUI themes.
+  - Fixed issue where the main Killboard window opened completely blank/empty due to `CreateMainWindow` aborting mid-initialization before `UI:Refresh()` could populate the content child frame.
+
 ### Added
 - **Minimalist ElvUI In-Game Window Redesign (`Addon/WoWKillboard/UI.lua`, `Config.lua`)**:
   - **Authentic ElvUI Minimalism**: Complete overhaul of the main window layout adhering to authentic ElvUI minimalism: flat dark slate surfaces (`#121212` primary window, `#181818` headers/panels, `#141414` / `#161616` alternating data rows), universal 1px solid black (`#000000`) borders, strict tabular grid alignment, and complete removal of all melodrama, subtitles, and decorative card clutter.
