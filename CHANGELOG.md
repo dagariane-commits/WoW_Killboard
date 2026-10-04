@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Alliance Victory Aura**: When an Alliance player wins in PvP, the frame perimeter border and top accent stripe dynamically transition to vibrant **Alliance Blue** (`#0078FF` / `0.0, 0.47, 1.0, 1.0`) in both Classic and ElvUI themes.
   - **Horde Victory Aura**: When a Horde player wins in PvP, the frame perimeter border and top accent stripe dynamically transition to **Horde Crimson Red** (`#DC2626` / `#C41E3A` / `0.85, 0.15, 0.15, 1.0`) in both Classic and ElvUI themes.
   - **PvE & World Casualties**: In PvE or non-PvP encounters, the frame border preserves warm **Classic Burnished Gold** (`0.78, 0.61, 0.23, 1.0` / `#C79C3A`) with a Blizzard Gold accent line, or dark slate/amber in ElvUI.
+- **PvP Class Color Typography & Contextual NPC Enemy Coloring (`Addon/WoWKillboard/UI.lua`)**:
+  - **Authentic PvP Class Colors**: In PvP encounters, both the victor and casualty player names are rendered in their authentic class color (e.g. Paladin Pink `#F58CBA`, Rogue Yellow `#FFF569`, Mage Cyan `#69CCF0`, Warrior Brown `#C79C6E`, etc.) via `KB.Utils.ColorizeByClass`, completely eliminating the static red hostile text.
+  - **Contextual NPC Threat Coloring**: When a player is eliminated by an NPC, the killer's name and level badge dynamically colorize based on threat classification:
+    - **World Boss**: Deep Boss Crimson (`#FF2020`).
+    - **Rare Elite**: Vibrant Rare Elite Orange (`#FF9900`).
+    - **Elite**: Iconic Warcraft Gold (`#FFD100`) with level plus badge (e.g. `[15+] Defias Pillager`).
+    - **Rare**: Celestial Cyan (`#00CCFF`).
+    - **Standard Mob**: Crisp Hostile Red (`#FF4444`).
+  - **Chat Test Output Synchronization**: `/kb test dag`, `/kb test x`, and `/kb test pve` announce combatants formatted in their authentic class colors.
 - **Enhanced Test Mode Feedback**:
   - `/kb test dag`, `/kb test x`, and `/kb test pve` announce the scenario alongside the resulting border color (`Alliance Blue Border`, `Horde Red Border`, `Classic Gold Border`).
 

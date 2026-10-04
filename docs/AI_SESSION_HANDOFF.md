@@ -46,8 +46,10 @@ We are systematically fine-tuning the visual presentation and in-game aesthetic 
     - **Alliance Victor**: Frame border and top accent transition to **Alliance Blue** (`#0078FF` / `0.0, 0.47, 1.0, 1.0`) across both Classic and ElvUI themes.
     - **Horde Victor**: Frame border and top accent transition to **Horde Crimson Red** (`#DC2626` / `#C41E3A` / `0.85, 0.15, 0.15, 1.0`) across both Classic and ElvUI themes.
     - **PvE / Non-PvP**: Frame border preserves authentic **Classic Burnished Gold** (`0.78, 0.61, 0.23, 1.0`) with Blizzard Gold top accent line.
+  - **PvP Class Color Typography**: In PvP, both the killer and victim names are colored strictly by their class color (`KB.Utils.ColorizeByClass`, e.g. Paladin Pink, Rogue Yellow) rather than generic red.
+  - **Contextual NPC Threat Enemy Coloring**: If killed by an NPC enemy, killer name and level tag dynamically colorize by enemy threat classification (`[??]` in Crimson for World Bosses, Orange for Rare Elites, Gold `[15+]` for Elites, Cyan for Rares, and Red for standard mobs).
   - **Reposition Anchor Symmetrical Alignment**: Left side features the green Drag Anchor and right side displays Reposition details in `/kb alert lock`.
-  - **Enhanced Test Mode Chat Feedback (`/kb test [dag|x|pve]`)**: Chat announces the scenario and dynamic border color (`Alliance Blue Border`, `Horde Red Border`, or `Classic Gold Border`).
+  - **Enhanced Test Mode Chat Feedback (`/kb test [dag|x|pve]`)**: Chat announces the scenario and dynamic border color (`Alliance Blue Border`, `Horde Red Border`, or `Classic Gold Border`) with combatants formatted in their class colors.
 - **Bilateral Symmetrical Killer Faction Insignia & Restored High-Res Crests (`UI.lua`)**:
   - Restored high-res circular medallions `crest_alliance.tga` and `crest_horde.tga` across `GetFactionCrestInfo` and `ToggleBannerLock`, resolving the regression to tiny low-res PvP badges.
   - Implemented `killerFactionIcon` (36px × 36px) on the far right of the banner anchored at `RIGHT, Content, RIGHT, -14, -4`, re-anchoring `killerIcon` adjacent to it at `RIGHT, killerFactionIcon, LEFT, -8, 0`.
