@@ -5,6 +5,14 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.110] - 2026-10-04
+
+### Fixed
+- **Classic Theme Achievement Texture Squish & Shield Elimination (`Addon/WoWKillboard/UI.lua`)**:
+  - **Calibrated UV Crop Mapping**: Replaced multi-slice stretching with a single clean backdrop texture mapped precisely to `SetTexCoord(0, 0.78, 0, 1)` on `UI-Achievement-Alert-Background`. This explicitly crops out Blizzard's default `[25]` points shield and right-hand badge art while maintaining the natural, uncompressed aspect ratio of the wood plaque and golden filigree.
+  - **Default Template Cleanup**: Added explicit defensive hiding (`ClassicSkin.shield:Hide()`, `ClassicSkin.points:Hide()`, `ClassicSkin.unlocked:Hide()`) to guarantee no Blizzard default achievement widgets render on the alert.
+  - **Proportional Frame Integrity**: Maintained 560px × 84px native base proportions on `ToastRoot` with `rgba(16, 14, 12, 0.94)` dark-stone base fill for maximum font contrast.
+
 ## [1.4.109] - 2026-10-04
 
 ### Changed

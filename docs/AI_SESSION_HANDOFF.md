@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 03:45:00 EDT  
-> **Git Status**: Branch `main` (Preparing commit for v1.4.109).  
+> **Last Synchronized**: 2026-10-04 03:48:00 EDT  
+> **Git Status**: Branch `main` (Preparing commit for v1.4.110).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.1` (Community Release).  
 > **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
@@ -39,6 +39,11 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Classic Theme Achievement Alert UV Cropping & Shield Elimination (`UI.lua`)**:
+  - Replaced multi-slice stretching with a single clean backdrop texture mapped to `SetTexCoord(0, 0.78, 0, 1)` on `UI-Achievement-Alert-Background`.
+  - Cleanly excluded Blizzard's default `[25]` points shield and right-hand badge art while retaining the natural, uncompressed aspect ratio of the wood plaque and golden leaves across the 84px height container.
+  - Added explicit defensive hiding (`.shield:Hide()`, `.points:Hide()`, `.unlocked:Hide()`) to ensure zero default Blizzard template artifacts appear.
+  - Preserved `innerFill` dark-stone base (`rgba(16, 14, 12, 0.94)`) for 100% font contrast.
 - **Decoupled Root, Visual Skins & Persistent ContentLayer Architecture (`UI.lua`)**:
   - **Single Persistent Content Layer (`ContentLayer`)**: Completely decoupled all functional and text widgets from theme frames by parenting them to an independent `ContentLayer` (`FrameLevel = ToastRoot:GetFrameLevel() + 5`) anchored once to `ToastRoot`. All icons, faction crests, character names, subtitles, skulls, and action text remain permanently fixed with zero recalculation or re-anchoring on theme swap.
   - **Independent Visual Skin Containers**: Split cosmetic backdrops into dedicated container frames parented to `ToastRoot`:
