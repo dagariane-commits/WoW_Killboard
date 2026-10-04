@@ -1869,9 +1869,17 @@ def admin_deploy():
             text=True,
             timeout=30
         )
+        # Schedule background process exit so systemd (Restart=always) automatically reloads the new server process
+        def _deferred_restart():
+            import time
+            time.sleep(1)
+            os._exit(0)
+        import threading
+        threading.Thread(target=_deferred_restart, daemon=True).start()
+
         return jsonify({
             "success": True,
-            "message": "Git fetch and reset executed successfully.",
+            "message": "Git fetch and reset executed successfully. Server process reloading.",
             "stdout": fetch_res.stdout + "\n" + reset_res.stdout,
             "stderr": fetch_res.stderr + "\n" + reset_res.stderr,
             "returncode": reset_res.returncode
