@@ -870,6 +870,53 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             spellName = "Execution",
         })
 
+        -- Fallback: If no direct NPC record, check recent hostile engagement for the local player
+        if not npc and isLocalPlayerVictim then
+            if CT.LastHostileNpc and (now - (CT.LastHostileNpc.lastSeen or 0)) <= 60 then
+                npc = {
+                    guid = CT.LastHostileNpc.guid or "CREATURE",
+                    name = CT.LastHostileNpc.name or "Hostile Threat",
+                    id = CT.LastHostileNpc.id or 0,
+                    totalDamage = CT.LastHostileNpc.damage or 0,
+                    spellName = CT.LastHostileNpc.spell or "Fatal Strike",
+                }
+            elseif activeEnemyTarget and (now - (activeEnemyTarget.lastSeen or 0)) <= 60 then
+                npc = {
+                    guid = activeEnemyTarget.guid or "CREATURE",
+                    name = activeEnemyTarget.name or "Hostile NPC",
+                    id = 0,
+                    totalDamage = 0,
+                    spellName = "Combat Strike",
+                }
+            elseif UnitExists("target") and (UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or not UnitIsFriend("player", "target")) then
+                local tN = UnitName("target")
+                local tG = UnitGUID("target")
+                if KB.Utils and KB.Utils.CanAccess(tN) and KB.Utils.CanAccess(tG) and not UnitIsPlayer("target") then
+                    local npcId = 0
+                    if tG then
+                        local parsed = tG:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or tG:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
+                        if parsed then npcId = tonumber(parsed) or 0 end
+                    end
+                    npc = {
+                        guid = tG or "CREATURE",
+                        name = tN or "Hostile NPC",
+                        id = npcId,
+                        totalDamage = 0,
+                        spellName = "Combat Strike",
+                    }
+                end
+            end
+            if not npc then
+                npc = {
+                    guid = "CREATURE",
+                    name = "Wilderness Monster",
+                    id = 0,
+                    totalDamage = 0,
+                    spellName = "Execution",
+                }
+            end
+        end
+
         if npc then
             local npcId = 0
             if npc.guid then

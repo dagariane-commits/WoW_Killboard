@@ -166,7 +166,11 @@ function KM:RecordKill(data)
     end
 
     -- Standardized Casualty Broadcast (Format C) if local player is victim
-    if killmail.victim.name == UnitName("player") then
+    local myName = UnitName("player") or ""
+    local myGUID = UnitGUID("player") or ""
+    local isLocalVictim = (killmail.victim.guid and myGUID ~= "" and killmail.victim.guid == myGUID) or
+                          (killmail.victim.name and myName ~= "" and (killmail.victim.name == myName or killmail.victim.name:match("^" .. myName .. "%-") or killmail.victim.name:lower() == myName:lower()))
+    if isLocalVictim then
         KM:BroadcastCasualty(killmail.victim, killmail.killer, killmail.location, killmail.finalSpell or "Combat")
     end
 
@@ -180,7 +184,7 @@ function KM:BroadcastCasualty(victim, killer, location, spell)
     if not victim or not killer then return end
 
     local now = time()
-    if (now - (KM.LastCasualtyBroadcastTime or 0)) < 5 then return end
+    if (now - (KM.LastCasualtyBroadcastTime or 0)) < 3 then return end
     KM.LastCasualtyBroadcastTime = now
 
     local s = WoWKillboardSettings or (KB.DefaultSettings or {})
@@ -198,13 +202,19 @@ function KM:BroadcastCasualty(victim, killer, location, spell)
         vName, tostring(vLevel), vClass, kName, spellName, locStr)
 
     -- Broadcast to Guild (Default: On)
-    if IsInGuild() and enableGuild then
-        SendChatMessage(casualtyMsg, "GUILD")
+    if IsInGuild and IsInGuild() and enableGuild then
+        pcall(SendChatMessage, casualtyMsg, "GUILD")
     end
 
     -- Broadcast to Group/Raid
-    if IsInGroup() then
-        SendChatMessage(casualtyMsg, IsInRaid() and "RAID" or "PARTY")
+    if IsInGroup and IsInGroup() then
+        pcall(SendChatMessage, casualtyMsg, (IsInRaid and IsInRaid()) and "RAID" or "PARTY")
+    end
+
+    -- Broadcast to dedicated WoWKillboard channel across the realm
+    local chanId = GetChannelName and (GetChannelName("WoWKillboard") or GetChannelName("WoWKB"))
+    if chanId and chanId > 0 then
+        pcall(SendChatMessage, casualtyMsg, "CHANNEL", nil, chanId)
     end
 
     -- Broadcast to Say (Opt-in only)
@@ -265,9 +275,16 @@ function KM:RecordPveDeath(data)
     local chatMsg = string.format("|cffff2020[WoWKB]|r %s executed by |cffffd700[%s]|r (%s) in %s.", victimStr, pveRecord.npc.name, pveRecord.npc.spell or "Combat", pveRecord.location.zone)
     KB.Utils.SafePrint(chatMsg)
 
-    -- Standardized Casualty Broadcast (Format C) if local player is victim
-    if pveRecord.victim.name == UnitName("player") then
+    -- Standardized Casualty Broadcast (Format C) & P2P Sync if local player is victim
+    local myName = UnitName("player") or ""
+    local myGUID = UnitGUID("player") or ""
+    local isLocalVictim = (pveRecord.victim.guid and myGUID ~= "" and pveRecord.victim.guid == myGUID) or
+                          (pveRecord.victim.name and myName ~= "" and (pveRecord.victim.name == myName or pveRecord.victim.name:match("^" .. myName .. "%-") or pveRecord.victim.name:lower() == myName:lower()))
+    if isLocalVictim then
         KM:BroadcastCasualty(pveRecord.victim, pveRecord.npc, pveRecord.location, pveRecord.npc.spell or "Combat Strike")
+        if KB.Sync and KB.Sync.BroadcastPveDeath then
+            KB.Sync:BroadcastPveDeath(pveRecord)
+        end
     end
 
     -- Trigger On-Screen Toast Banner for PvE Casualty

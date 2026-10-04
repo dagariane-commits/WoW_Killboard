@@ -11,8 +11,16 @@ local S = KB.Sync
 
 local frame = CreateFrame("Frame")
 
+function S:JoinGlobalChannel()
+    if InCombatLockdown and InCombatLockdown() then return end
+    if JoinChannelByName then
+        pcall(JoinChannelByName, "WoWKillboard")
+    end
+end
+
 function S:Init()
     C_ChatInfo.RegisterAddonMessagePrefix(KB.Prefix)
+    S:JoinGlobalChannel()
 end
 
 -- Broadcast a killmail to group and guild
@@ -47,6 +55,49 @@ function S:BroadcastKillmail(killmail)
     end
 
     if IsInGuild() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    end
+end
+
+-- Broadcast a PvE death to group and guild
+function S:BroadcastPveDeath(pveRecord)
+    if not KB.DefaultSettings or not KB.DefaultSettings.p2pSyncEnabled or not pveRecord then return end
+    local deathId = pveRecord.deathId or "PVE-0"
+    local npc = pveRecord.npc or {}
+    local vic = pveRecord.victim or {}
+    local loc = pveRecord.location or {}
+    local npcName = (npc.name or "Hostile Threat"):gsub(":", " ")
+    local npcSpell = (npc.spell or "Combat Strike"):gsub(":", " ")
+    local vName = (vic.name or "Player"):gsub(":", " ")
+    local vClass = (vic.class or "UNKNOWN"):gsub(":", " ")
+    local vGuild = (vic.guild or "None"):gsub(":", " ")
+    local vFaction = (vic.faction or "Unknown"):gsub(":", " ")
+    local zone = (loc.zone or "Wilderness"):gsub(":", " ")
+    local subZone = (loc.subZone or ""):gsub(":", " ")
+
+    local payload = string.format("PVE:%s:%d:%s:%d:%s:%d:%s:%s:%d:%s:%s:%s:%s",
+        deathId,
+        pveRecord.timestamp or time(),
+        npcName,
+        npc.id or 0,
+        npcSpell,
+        npc.damage or 0,
+        vName,
+        vClass,
+        vic.level or 0,
+        vGuild,
+        vFaction,
+        zone,
+        subZone
+    )
+
+    if IsInRaid and IsInRaid() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "RAID")
+    elseif IsInGroup and IsInGroup() then
+        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "PARTY")
+    end
+
+    if IsInGuild and IsInGuild() then
         C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
     end
 end
@@ -318,6 +369,76 @@ function S:OnAddonMessage(prefix, message, channel, sender)
             end
         end
 
+    elseif msgType == "PVE" and #parts >= 13 then
+        local deathId = parts[2]
+        WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {}, pveDeaths = {} }
+        WoWKillboardDB.pveDeaths = WoWKillboardDB.pveDeaths or {}
+
+        if not WoWKillboardDB.pveDeaths[deathId] then
+            local ts = tonumber(parts[3]) or time()
+            local npcName = parts[4] or "Hostile Threat"
+            local npcId = tonumber(parts[5]) or 0
+            local npcSpell = parts[6] or "Combat Strike"
+            local npcDmg = tonumber(parts[7]) or 0
+            local vName = parts[8] or "Adventurer"
+            local vClass = parts[9] or "UNKNOWN"
+            local vLvl = tonumber(parts[10]) or 0
+            local vGuild = parts[11] or "None"
+            local vFaction = parts[12] or "Unknown"
+            local zone = parts[13] or "Wilderness"
+            local subZone = parts[14] or ""
+
+            local syncedPve = {
+                deathId = deathId,
+                timestamp = ts,
+                isPveDeath = true,
+                npc = {
+                    name = npcName,
+                    id = npcId,
+                    guid = "CREATURE",
+                    spell = npcSpell,
+                    damage = npcDmg,
+                },
+                killer = {
+                    guid = "CREATURE",
+                    name = npcName,
+                    level = 0,
+                    class = "WARRIOR",
+                    guild = "Wilderness Threat",
+                    faction = "Monster",
+                    partySize = 1,
+                    damageDone = npcDmg,
+                    spell = npcSpell,
+                },
+                victim = {
+                    guid = "UNKNOWN",
+                    name = vName,
+                    level = vLvl,
+                    class = vClass,
+                    guild = vGuild,
+                    faction = vFaction,
+                },
+                location = {
+                    mapId = 0,
+                    zone = zone,
+                    subZone = subZone,
+                    x = 0,
+                    y = 0,
+                },
+            }
+
+            WoWKillboardDB.pveDeaths[deathId] = syncedPve
+
+            -- Frontline Kill Banner UI alert for PvE casualty
+            if KB.UI and KB.UI.ShowKillBanner then
+                KB.UI:ShowKillBanner(syncedPve)
+            end
+
+            if KB.UI and KB.UI.RefreshIfVisible then
+                KB.UI:RefreshIfVisible()
+            end
+        end
+
     elseif msgType == "BNT" and #parts >= 6 then
         local bntId = parts[2]
         WoWKillboardBounties = WoWKillboardBounties or {}
@@ -422,16 +543,101 @@ function S:OnAddonMessage(prefix, message, channel, sender)
     end
 end
 
+-- Process incoming standardized casualty alert from the realm channel
+function S:OnIncomingChannelCasualty(text, sender)
+    if not text or not text:find("^%[WoWKB%] Casualty:") then return end
+    local myName = UnitName("player")
+    if sender and myName and (sender == myName or sender:find("^" .. myName .. "%-") or sender:lower() == myName:lower()) then
+        return
+    end
+
+    local vName, vLvl, vClass, kName, spellName, locStr = text:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*%((.-)%)%s*in%s*(.-)%.?$")
+    if not vName or not kName then return end
+
+    vLvl = tonumber(vLvl) or 0
+    local now = time()
+    local seed = string.format("%s_%s_%s_%s", tostring(now), tostring(kName), tostring(vName), tostring(locStr or ""))
+    local deathId = "PVE-" .. (KB.Utils and KB.Utils.Hash and KB.Utils.Hash(seed) or tostring(now))
+
+    WoWKillboardDB = WoWKillboardDB or { kills = {}, stats = {}, pveDeaths = {} }
+    WoWKillboardDB.pveDeaths = WoWKillboardDB.pveDeaths or {}
+
+    if not WoWKillboardDB.pveDeaths[deathId] then
+        local channelPve = {
+            deathId = deathId,
+            timestamp = now,
+            isPveDeath = true,
+            npc = {
+                name = kName,
+                id = 0,
+                guid = "CREATURE",
+                spell = spellName or "Combat Strike",
+                damage = 0,
+            },
+            killer = {
+                guid = "CREATURE",
+                name = kName,
+                level = 0,
+                class = "WARRIOR",
+                guild = "Wilderness Threat",
+                faction = "Monster",
+                partySize = 1,
+                damageDone = 0,
+                spell = spellName or "Combat Strike",
+            },
+            victim = {
+                guid = "UNKNOWN",
+                name = vName,
+                level = vLvl,
+                class = vClass or "UNKNOWN",
+                guild = "None",
+                faction = "Unknown",
+            },
+            location = {
+                mapId = 0,
+                zone = locStr or "Wilderness",
+                subZone = "",
+                x = 0,
+                y = 0,
+            },
+        }
+
+        WoWKillboardDB.pveDeaths[deathId] = channelPve
+
+        if KB.UI and KB.UI.ShowKillBanner then
+            KB.UI:ShowKillBanner(channelPve)
+        end
+
+        if KB.UI and KB.UI.RefreshIfVisible then
+            KB.UI:RefreshIfVisible()
+        end
+    end
+end
+
 frame:SetScript("OnEvent", function(self, event, ...)
     if event == "CHAT_MSG_ADDON" then
         local prefix, message, channel, sender = ...
         pcall(function()
             S:OnAddonMessage(prefix, message, channel, sender)
         end)
+    elseif event == "CHAT_MSG_CHANNEL" then
+        local text, sender, _, channelName, _, _, _, channelNumber, channelBase = ...
+        local isKBChannel = false
+        if channelBase and channelBase:lower():find("wowkillboard") then
+            isKBChannel = true
+        elseif channelName and channelName:lower():find("wowkillboard") then
+            isKBChannel = true
+        end
+        if isKBChannel and text and text:find("^%[WoWKB%] Casualty:") then
+            pcall(function()
+                S:OnIncomingChannelCasualty(text, sender)
+            end)
+        end
     elseif event == "PLAYER_ENTERING_WORLD" then
         pcall(function()
             S:Init()
             if C_Timer and C_Timer.After then
+                C_Timer.After(2.0, function() S:JoinGlobalChannel() end)
                 C_Timer.After(4.0, function() S:BroadcastVersion() end)
             end
         end)
@@ -447,10 +653,14 @@ frame:SetScript("OnEvent", function(self, event, ...)
             S.pendingNewVersion = nil
             S:CheckPeerVersion(peerVer, "Deferred")
         end
+        if not InCombatLockdown() then
+            S:JoinGlobalChannel()
+        end
     end
 end)
 
 frame:RegisterEvent("CHAT_MSG_ADDON")
+frame:RegisterEvent("CHAT_MSG_CHANNEL")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
