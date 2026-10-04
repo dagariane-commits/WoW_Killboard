@@ -307,6 +307,9 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
     -- If player dealt damage, increment session damage telemetry
     if playerGUID and KB.Utils.CanAccess(playerGUID) and sourceGUID == playerGUID then
         CT.SessionStats.damageDone = CT.SessionStats.damageDone + amount
+        if spellName and spellName ~= "" and spellName ~= "Swing" then
+            CT.LastPlayerSpell = spellName
+        end
     end
 
     -- If source is hostile to player, add to HostileCluster
@@ -1163,6 +1166,21 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
 
     local location = KB.Utils.GetPlayerLocation()
 
+    local killerSpell = "Combat Strike"
+    for _, att in ipairs(attackersList) do
+        if att.guid == finalBlowKillerGUID or att.name == finalBlowKillerName then
+            if att.spell and att.spell ~= "" and att.spell ~= "Combat" then
+                killerSpell = att.spell
+            end
+            break
+        end
+    end
+    if (killerSpell == "Combat Strike" or killerSpell == "Combat") and finalBlowKillerGUID == playerGUID then
+        if CT.LastPlayerSpell and CT.LastPlayerSpell ~= "" then
+            killerSpell = CT.LastPlayerSpell
+        end
+    end
+
     -- Dispatch to Killmail Engine
     KB.Killmail:RecordKill({
         timestamp = now,
@@ -1173,6 +1191,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         attackersCount = attackersCount,
         attackers = attackersList,
         totalDamage = totalDamage,
+        finalSpell = killerSpell,
         killer = {
             guid = killerInfo.guid,
             name = killerInfo.name,
@@ -1183,6 +1202,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             partySize = (finalBlowKillerGUID == playerGUID) and friendlyPartySize or math.max(1, #attackersList),
             damageDone = (finalBlowKillerGUID == playerGUID) and math.max(playerDamage, 0) or math.max(killerDamage, totalDamage),
             healingDone = (finalBlowKillerGUID == playerGUID) and CT.SessionStats.healingDone or 0,
+            spell = killerSpell,
         },
         victim = {
             guid = victimInfo.guid,

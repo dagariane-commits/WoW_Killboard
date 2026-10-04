@@ -19,8 +19,12 @@ end
 function S:BroadcastKillmail(killmail)
     if not KB.DefaultSettings.p2pSyncEnabled or not killmail or killmail.isDuel then return end
 
-    -- Serialize compact payload: "KM:killId:timestamp:isSolo:isBG:kName:kClass:kLvl:vName:vClass:vLvl:zone"
-    local payload = string.format("KM:%s:%d:%d:%d:%s:%s:%d:%s:%s:%d:%s",
+    -- Serialize compact payload: "KM:killId:timestamp:isSolo:isBG:kName:kClass:kLvl:vName:vClass:vLvl:zone:subZone:spell"
+    local subZone = (killmail.location and killmail.location.subZone) or ""
+    local spell = killmail.finalSpell or (killmail.killer and killmail.killer.spell) or "Combat Strike"
+    subZone = subZone:gsub(":", " ")
+    spell = spell:gsub(":", " ")
+    local payload = string.format("KM:%s:%d:%d:%d:%s:%s:%d:%s:%s:%d:%s:%s:%s",
         killmail.killId,
         killmail.timestamp,
         killmail.isSolo and 1 or 0,
@@ -31,7 +35,9 @@ function S:BroadcastKillmail(killmail)
         killmail.victim.name,
         killmail.victim.class,
         killmail.victim.level,
-        killmail.location.zone
+        killmail.location.zone,
+        subZone,
+        spell
     )
 
     if IsInRaid() then
@@ -256,6 +262,8 @@ function S:OnAddonMessage(prefix, message, channel, sender)
         WoWKillboardDB.kills = WoWKillboardDB.kills or {}
 
         if not WoWKillboardDB.kills[killId] then
+            local subZone = (parts[13] and parts[13] ~= "") and parts[13] or ""
+            local finalSpell = (parts[14] and parts[14] ~= "") and parts[14] or "Combat Strike"
             local syncedKM = {
                 killId = killId,
                 timestamp = tonumber(parts[3]) or time(),
@@ -265,6 +273,7 @@ function S:OnAddonMessage(prefix, message, channel, sender)
                 isArena = false,
                 attackersCount = (parts[4] == "1") and 1 or 2,
                 totalDamage = 0,
+                finalSpell = finalSpell,
                 killer = {
                     name = parts[6],
                     class = parts[7],
@@ -274,6 +283,7 @@ function S:OnAddonMessage(prefix, message, channel, sender)
                     partySize = 1,
                     damageDone = 0,
                     healingDone = 0,
+                    spell = finalSpell,
                 },
                 victim = {
                     name = parts[9],
@@ -286,7 +296,7 @@ function S:OnAddonMessage(prefix, message, channel, sender)
                 location = {
                     mapId = 0,
                     zone = parts[12],
-                    subZone = "",
+                    subZone = subZone,
                     x = 0,
                     y = 0,
                 },

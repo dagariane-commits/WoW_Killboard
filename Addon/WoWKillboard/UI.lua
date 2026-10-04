@@ -6366,11 +6366,102 @@ function UI:ShowRaidNotice(mainMsg, subMsg, r, g, b)
     end)
 end
 
+-- =========================================================================
+-- Combat Flavor Phrase Generation (Classic Hardcore / Deathlog style)
+-- =========================================================================
+function UI:GetCombatFlavorPhrase(killmail)
+    if not killmail or not killmail.killer or not killmail.victim then
+        return "A combatant was slain in battle."
+    end
+
+    local kName = killmail.killer.name or "Unknown"
+    local vName = killmail.victim.name or "Unknown"
+
+    local isNpc = (killmail.npc ~= nil) or (killmail.killer and killmail.killer.faction == "Monster") or (killmail.isPveDeath == true)
+
+    local kFormatted
+    if isNpc then
+        kFormatted = string.format("|cffff2020%s|r", kName)
+    elseif killmail.killer.class and KB.Utils and KB.Utils.ColorizeByClass then
+        kFormatted = KB.Utils.ColorizeByClass(kName, killmail.killer.class)
+    else
+        kFormatted = "|cffffffff" .. kName .. "|r"
+    end
+
+    local vFormatted
+    if killmail.victim.class and KB.Utils and KB.Utils.ColorizeByClass then
+        vFormatted = KB.Utils.ColorizeByClass(vName, killmail.victim.class)
+    else
+        vFormatted = "|cffffffff" .. vName .. "|r"
+    end
+
+    local spell = killmail.finalSpell or (killmail.killer and killmail.killer.spell) or "Combat Strike"
+    if spell == "" then spell = "Combat Strike" end
+    local spellFormatted = string.format("|cff00e5ff%s|r", spell)
+
+    local loc = killmail.location or {}
+    local locStr = (loc.subZone and loc.subZone ~= "") and loc.subZone or (loc.zone and loc.zone ~= "") and loc.zone or (GetZoneText and GetZoneText()) or "Azeroth"
+    local locFormatted = string.format("|cffffffff%s|r", locStr)
+
+    local pool = {}
+
+    if isNpc then
+        pool = {
+            string.format("%s was slaughtered by %s (%s) in %s!", vFormatted, kFormatted, spellFormatted, locFormatted),
+            string.format("%s fell to %s's %s in %s!", vFormatted, kFormatted, spellFormatted, locFormatted),
+            string.format("%s was executed by %s in %s with %s!", vFormatted, kFormatted, locFormatted, spellFormatted),
+            string.format("%s succumbed to %s in %s!", vFormatted, kFormatted, locFormatted),
+            string.format("%s was devoured by %s's %s in %s!", vFormatted, kFormatted, spellFormatted, locFormatted),
+        }
+    elseif killmail.isDuel then
+        pool = {
+            string.format("%s bested %s in an honorable duel in %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s defeated %s in a certified duel in %s (%s)!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s claimed duel victory against %s in %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+        }
+    elseif killmail.isBattleground then
+        pool = {
+            string.format("%s crushed %s on the battlefield of %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s secured a warfront victory over %s in %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s struck down %s in %s (%s)!", kFormatted, vFormatted, locFormatted, spellFormatted),
+        }
+    elseif killmail.isSolo then
+        pool = {
+            string.format("%s obliterated %s in %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s cleanly executed %s in %s using %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s sent %s to the graveyard in %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s outplayed %s in %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s eliminated %s in 1v1 combat in %s (%s)!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s harvested %s's soul in %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+        }
+    else
+        local attackers = killmail.attackersCount or 2
+        pool = {
+            string.format("%s and allies overwhelmed %s in %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+            string.format("%s landed the fatal %s on %s in %s (x%d)!", kFormatted, spellFormatted, vFormatted, locFormatted, attackers),
+            string.format("%s collapsed under assault by %s in %s (%s)!", vFormatted, kFormatted, locFormatted, spellFormatted),
+            string.format("%s ambushed %s with reinforcements in %s with %s!", kFormatted, vFormatted, locFormatted, spellFormatted),
+        }
+    end
+
+    local seed = 1
+    if killmail.killId and type(killmail.killId) == "string" then
+        for i = 1, #killmail.killId do
+            seed = (seed * 31 + string.byte(killmail.killId, i)) % 1000000007
+        end
+    else
+        seed = math.random(1, 1000)
+    end
+
+    local idx = (seed % #pool) + 1
+    return pool[idx]
+end
+
 function UI:InitializeKillBanner()
     if killBanner or InCombatLockdown() then return end
 
     killBanner = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    killBanner:SetSize(540, 54)
+    killBanner:SetSize(580, 58)
     killBanner:SetFrameStrata("HIGH")
     killBanner:SetClampedToScreen(true)
     killBanner:SetMovable(true)
@@ -6429,7 +6520,7 @@ function UI:InitializeKillBanner()
     topAccent:SetColorTexture(0.96, 0.72, 0.20, 1.0)
     killBanner.TopAccent = topAccent
 
-    -- Killer Class Icon
+    -- Killer Class / Creature Icon
     local killerIcon = killBanner:CreateTexture(nil, "ARTWORK")
     killerIcon:SetSize(26, 26)
     killerIcon:SetPoint("LEFT", 12, 4)
@@ -6462,9 +6553,12 @@ function UI:InitializeKillBanner()
     victimText:SetPoint("RIGHT", victimIcon, "LEFT", -8, 0)
     killBanner.VictimText = victimText
 
-    -- Location Subtitle
-    local locText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    -- Location Subtitle / Combat Flavor Phrase
+    local locText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     locText:SetPoint("BOTTOM", 0, 5)
+    locText:SetWidth(560)
+    locText:SetJustifyH("CENTER")
+    locText:SetWordWrap(false)
     killBanner.LocText = locText
 
     UI.KillBanner = killBanner
@@ -6498,6 +6592,9 @@ function UI:ShowKillBanner(killmail, isTest)
         end
     end
 
+    -- Generate Combat Flavor Phrase
+    local phrase = UI:GetCombatFlavorPhrase(killmail)
+
     -- 3. Audio Dispatch (Sound + Banner mode only)
     if alertMode == "SOUND_AND_BANNER" then
         if PlaySound then
@@ -6508,16 +6605,16 @@ function UI:ShowKillBanner(killmail, isTest)
 
     -- 4. Taint-Free Raid Warning Screen Combat Notice (Zero Blizzard FrameXML taint)
     if alertStyle == "BOTH" or alertStyle == "RAID_WARNING" then
-        local kName = killmail.killer.name or "Unknown"
-        local vName = killmail.victim.name or "Unknown"
         local loc = killmail.location or {}
         local zName = (loc.zone and loc.zone ~= "") and loc.zone or (GetZoneText and GetZoneText()) or "Azeroth"
-        local rwMain = string.format("|cffff3333[WoWKB]|r %s destroyed %s", kName, vName)
+        local rwMain = string.format("|cffff3333[WoWKB]|r %s", phrase)
         local rwSub = string.format("|cffffd100%s|r", zName)
-        if loc.subZone and loc.subZone ~= "" then
+        if loc.subZone and loc.subZone ~= "" and loc.subZone ~= zName then
             rwSub = rwSub .. " - " .. loc.subZone
         end
-        if killmail.isSolo then
+        if killmail.npc or (killmail.killer and killmail.killer.faction == "Monster") or killmail.isPveDeath then
+            rwSub = rwSub .. " | |cffff2020Wilderness Casualty|r"
+        elseif killmail.isSolo then
             rwSub = rwSub .. " | |cff00ff00Certified 1v1 Solo Kill|r"
         elseif killmail.isDuel then
             rwSub = rwSub .. " | |cffffd7001v1 Certified Duel|r"
@@ -6540,13 +6637,22 @@ function UI:ShowKillBanner(killmail, isTest)
         local banner = UI.KillBanner
         if not banner then return end
 
+        local isNpc = (killmail.npc ~= nil) or (killmail.killer and killmail.killer.faction == "Monster") or (killmail.isPveDeath == true)
+
         -- Setup Killer Icon & Name
-        local kClass = (killmail.killer.class or ""):upper()
-        local kCoords = CLASS_COORDS[kClass] or {0, 0.25, 0, 0.25}
-        banner.KillerIcon:SetTexture(CLASS_ICON_TEXTURE)
-        banner.KillerIcon:SetTexCoord(kCoords[1], kCoords[2], kCoords[3], kCoords[4])
-        local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
-        banner.KillerText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", kLevelStr, killmail.killer.name or "Unknown"), killmail.killer.class))
+        if isNpc then
+            banner.KillerIcon:SetTexture("Interface\\Icons\\INV_Misc_MonsterHead_02")
+            banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
+            local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
+            banner.KillerText:SetText(string.format("|cffff2020[%s] %s|r", kLevelStr, killmail.killer.name or "Wild Beast"))
+        else
+            local kClass = (killmail.killer.class or ""):upper()
+            local kCoords = CLASS_COORDS[kClass] or {0, 0.25, 0, 0.25}
+            banner.KillerIcon:SetTexture(CLASS_ICON_TEXTURE)
+            banner.KillerIcon:SetTexCoord(kCoords[1], kCoords[2], kCoords[3], kCoords[4])
+            local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
+            banner.KillerText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", kLevelStr, killmail.killer.name or "Unknown"), killmail.killer.class))
+        end
 
         -- Setup Victim Icon & Name
         local vClass = (killmail.victim.class or ""):upper()
@@ -6557,7 +6663,12 @@ function UI:ShowKillBanner(killmail, isTest)
         banner.VictimText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", vLevelStr, killmail.victim.name or "Unknown"), killmail.victim.class))
 
         -- Setup Engagement Theme & Accents
-        if killmail.isDuel then
+        if isNpc then
+            banner.CenterAction:SetText("|cffff2020BEAST CASUALTY|r")
+            banner.ModeTag:SetText("|cffff8000WILDERNESS THREAT|r")
+            banner.TopAccent:SetColorTexture(0.9, 0.1, 0.1, 1.0)
+            banner:SetBackdropBorderColor(0, 0, 0, 0)
+        elseif killmail.isDuel then
             banner.CenterAction:SetText("|cffffd100DUEL VICTORY|r")
             banner.ModeTag:SetText("|cffffd7001v1 CERTIFIED DUEL|r")
             banner.TopAccent:SetColorTexture(1.0, 0.84, 0.0, 1.0)
@@ -6584,13 +6695,8 @@ function UI:ShowKillBanner(killmail, isTest)
             banner:SetBackdropBorderColor(0, 0, 0, 0)
         end
 
-        -- Location Subtitle
-        local loc = killmail.location or {}
-        local zoneStr = loc.zone or "Azeroth"
-        if loc.subZone and loc.subZone ~= "" then
-            zoneStr = zoneStr .. " - " .. loc.subZone
-        end
-        banner.LocText:SetText(string.format("|cff888888%s  |  %.1f, %.1f|r", zoneStr, loc.x or 0, loc.y or 0))
+        -- Location Subtitle / Combat Flavor Phrase
+        banner.LocText:SetText(phrase)
 
         banner:SetAlpha(1.0)
         banner:Show()
@@ -6692,35 +6798,74 @@ function UI:ResetBannerPosition()
 end
 
 -- Fire Test Banner Preview
-function UI:TestKillBanner()
+function UI:TestKillBanner(isPveTest)
     local myName = UnitName("player") or "Player"
     local _, pClass = UnitClass("player")
-    local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Arathi Highlands"
-    local testKM = {
-        killId = "TEST-" .. tostring(time()),
-        timestamp = time(),
-        isSolo = true,
-        isBattleground = false,
-        isArena = false,
-        isDuel = false,
-        attackersCount = 1,
-        killer = {
-            name = myName,
-            class = pClass or "PALADIN",
-            level = UnitLevel("player") or 20,
-        },
-        victim = {
-            name = "Shadowstalker",
-            class = "ROGUE",
-            level = 21,
-        },
-        location = {
-            zone = currentZone,
-            subZone = "Refuge Pointe",
-            x = 45.2,
-            y = 47.1,
-        },
-    }
+    local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Westfall"
+    local currentSubZone = (GetSubZoneText and GetSubZoneText() ~= "") and GetSubZoneText() or "Sentinel Hill"
+    local testKM
+    if isPveTest then
+        testKM = {
+            killId = "TEST-PVE-" .. tostring(time()),
+            timestamp = time(),
+            isSolo = false,
+            isBattleground = false,
+            isArena = false,
+            isDuel = false,
+            isPveDeath = true,
+            attackersCount = 1,
+            finalSpell = "Fireball",
+            npc = { name = "Defias Pillager", spell = "Fireball" },
+            killer = {
+                name = "Defias Pillager",
+                class = "MAGE",
+                level = 15,
+                faction = "Monster",
+                spell = "Fireball",
+            },
+            victim = {
+                name = myName,
+                class = pClass or "PALADIN",
+                level = UnitLevel("player") or 20,
+            },
+            location = {
+                zone = currentZone,
+                subZone = currentSubZone,
+                x = 42.5,
+                y = 58.3,
+            },
+        }
+    else
+        local spells = { "Mortal Strike", "Pyroblast", "Shadow Bolt", "Eviscerate", "Aimed Shot", "Chain Lightning", "Starfire", "Judgment" }
+        local chosenSpell = spells[math.random(1, #spells)]
+        testKM = {
+            killId = "TEST-PVP-" .. tostring(time()),
+            timestamp = time(),
+            isSolo = true,
+            isBattleground = false,
+            isArena = false,
+            isDuel = false,
+            attackersCount = 1,
+            finalSpell = chosenSpell,
+            killer = {
+                name = myName,
+                class = pClass or "PALADIN",
+                level = UnitLevel("player") or 20,
+                spell = chosenSpell,
+            },
+            victim = {
+                name = "Sneakyrogue",
+                class = "ROGUE",
+                level = 21,
+            },
+            location = {
+                zone = currentZone,
+                subZone = currentSubZone,
+                x = 45.2,
+                y = 47.1,
+            },
+        }
+    end
     UI:ShowKillBanner(testKM, true)
 end
 

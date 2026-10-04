@@ -419,6 +419,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             isArena = false,
             isDuel = false,
             attackersCount = 1,
+            finalSpell = (pClass == "PALADIN") and "Judgement" or ((pClass == "ROGUE") and "Eviscerate" or "Mortal Strike"),
             totalDamage = dmgAmount,
             killer = {
                 guid = UnitGUID("player") or "Player-0001",
@@ -516,6 +517,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
                 isDuel = false,
                 attackersCount = (i % 2 == 1) and 1 or math.random(2, 4),
                 totalDamage = dmgAmount,
+                finalSpell = (pClass == "MAGE" and "Pyroblast") or (pClass == "ROGUE" and "Eviscerate") or (pClass == "WARLOCK" and "Shadow Bolt") or (pClass == "HUNTER" and "Aimed Shot") or (pClass == "DRUID" and "Starfire") or (pClass == "PRIEST" and "Mind Blast") or (pClass == "SHAMAN" and "Chain Lightning") or (pClass == "PALADIN" and "Judgment") or "Mortal Strike",
                 killer = {
                     guid = UnitGUID("player") or "Player-0001",
                     name = pName,
@@ -608,6 +610,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             isArena = false,
             isDuel = false,
             attackersCount = 1,
+            finalSpell = (enemyClass == "MAGE" and "Pyroblast") or "Shadow Bolt",
             totalDamage = dmgAmount,
             killer = {
                 guid = "Player-DEMO-KILLER-" .. tostring(time()),
@@ -669,6 +672,70 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     elseif cmd == "alerts" or cmd == "alert" or cmd == "config" then
         if KB.UI and KB.UI.ShowAlertsConfig then
             KB.UI:ShowAlertsConfig()
+        end
+    elseif cmd == "toast" or cmd == "toasts" then
+        local tArg = arg and arg:lower():match("^%s*(.-)%s*$") or ""
+        WoWKillboardSettings = WoWKillboardSettings or {}
+        if tArg == "off" or tArg == "disable" or tArg == "0" then
+            WoWKillboardSettings.alertMode = "OFF"
+            SafePrint("|cffff3333[WoWKB]|r Combat alerts and toasts: |cffff3333OFF|r. Use |cffffd100/kb toast on|r or |cffffd100/kb unmute|r to re-enable.")
+        elseif tArg == "on" or tArg == "enable" or tArg == "1" then
+            WoWKillboardSettings.alertMode = "SOUND_AND_BANNER"
+            SafePrint("|cff00ff00[WoWKB]|r Combat alerts and toasts: |cff00ff00Sound + Banner Enabled|r.")
+        elseif tArg == "mute" or tArg == "silent" then
+            WoWKillboardSettings.alertMode = "BANNER_ONLY"
+            SafePrint("|cffffd100[WoWKB]|r Combat toasts set to silent (|cffffd100Banner Only|r, audio muted).")
+        elseif tArg == "mine" or tArg == "solo" then
+            WoWKillboardSettings.alertScope = "MINE"
+            SafePrint("|cff00ff00[WoWKB]|r Toast scope set to |cffffd100Personal Only|r (only shows your own kills and deaths).")
+        elseif tArg == "zone" then
+            WoWKillboardSettings.alertScope = "ZONE"
+            SafePrint("|cff00ff00[WoWKB]|r Toast scope set to |cffffd100Current Zone|r (filters out combat from other zones).")
+        elseif tArg == "all" or tArg == "realm" or tArg == "hardcore" then
+            WoWKillboardSettings.alertScope = "ALL"
+            SafePrint("|cff00ff00[WoWKB]|r Toast scope set to |cffffd100Entire Realm|r (Hardcore broadcast mode: alerts for all realm kills).")
+        elseif tArg == "test" then
+            if KB.UI and KB.UI.TestKillBanner then
+                KB.UI:TestKillBanner(false)
+            end
+        elseif tArg == "testpve" or tArg == "pve" then
+            if KB.UI and KB.UI.TestKillBanner then
+                KB.UI:TestKillBanner(true)
+            end
+        else
+            local curMode = WoWKillboardSettings.alertMode or "SOUND_AND_BANNER"
+            local curScope = WoWKillboardSettings.alertScope or "ZONE"
+            if curMode == "OFF" then
+                WoWKillboardSettings.alertMode = "SOUND_AND_BANNER"
+                SafePrint(string.format("|cff00ff00[WoWKB]|r Toasts toggled |cff00ff00ON|r (Sound + Banner) | Scope: |cffffd100%s|r.", curScope))
+            else
+                WoWKillboardSettings.alertMode = "OFF"
+                SafePrint(string.format("|cffff3333[WoWKB]|r Toasts toggled |cffff3333OFF|r | Scope: |cffffd100%s|r.", curScope))
+            end
+            SafePrint("  |cff94a3b8Quick Commands: /kb toast [on|off|mute|mine|zone|all|test] or /kb alerts|r")
+        end
+        if KB.UI and KB.UI.AlertsDialog and KB.UI.AlertsDialog.UpdateControls then
+            KB.UI.AlertsDialog:UpdateControls()
+        end
+    elseif cmd == "mute" or cmd == "silence" then
+        WoWKillboardSettings = WoWKillboardSettings or {}
+        local curMode = WoWKillboardSettings.alertMode or "SOUND_AND_BANNER"
+        if curMode == "OFF" then
+            WoWKillboardSettings.alertMode = "SOUND_AND_BANNER"
+            SafePrint("|cff00ff00[WoWKB]|r Combat alerts and toasts unmuted (|cff00ff00ON|r).")
+        else
+            WoWKillboardSettings.alertMode = "OFF"
+            SafePrint("|cffff3333[WoWKB]|r Combat alerts and toasts muted (|cffff3333OFF|r). Type |cffffd100/kb unmute|r or |cffffd100/kb mute|r to toggle.")
+        end
+        if KB.UI and KB.UI.AlertsDialog and KB.UI.AlertsDialog.UpdateControls then
+            KB.UI.AlertsDialog:UpdateControls()
+        end
+    elseif cmd == "unmute" then
+        WoWKillboardSettings = WoWKillboardSettings or {}
+        WoWKillboardSettings.alertMode = "SOUND_AND_BANNER"
+        SafePrint("|cff00ff00[WoWKB]|r Combat alerts and toasts unmuted (|cff00ff00Sound + Banner Enabled|r).")
+        if KB.UI and KB.UI.AlertsDialog and KB.UI.AlertsDialog.UpdateControls then
+            KB.UI.AlertsDialog:UpdateControls()
         end
     elseif cmd == "armory" then
         KB:PrintArmoryDossier(arg)
@@ -786,6 +853,8 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/kb manhunt|r or |cffffd100/kb rally|r - Muster a Vanguard hunting squad")
         SafePrint("  |cffffd100/kb radar|r or |cffffd100/kbradar|r - Toggle the Tactical Radar HUD floating window")
         SafePrint("  |cffffd100/kb alerts|r - Open Combat Alerts & Radar Configuration")
+        SafePrint("  |cffffd100/kb toast [on|off|mute|mine|zone|all]|r - Configure or toggle on-screen kill/death toast alerts")
+        SafePrint("  |cffffd100/kb mute|r or |cffffd100/kbmute|r - Quickly silence / unmute combat toasts")
         SafePrint("  |cffffd100/kb markprompt [on|off]|r - Toggle Mark of Spite revenge prompt on PvP death")
         SafePrint("  |cffffd100/kb claim <code>|r - Register web character ownership verification code")
         SafePrint("  |cffffd100/kb export|r - Open in-game combat export window")
@@ -820,6 +889,22 @@ SLASH_WOWKB_RADAR1 = "/kbradar"
 SlashCmdList["WOWKB_RADAR"] = function()
     if KB.UI and KB.UI.ToggleRadarHUD then
         KB.UI:ToggleRadarHUD()
+    end
+end
+
+SLASH_WOWKB_MUTE1 = "/kbmute"
+SlashCmdList["WOWKB_MUTE"] = function()
+    WoWKillboardSettings = WoWKillboardSettings or {}
+    local curMode = WoWKillboardSettings.alertMode or "SOUND_AND_BANNER"
+    if curMode == "OFF" then
+        WoWKillboardSettings.alertMode = "SOUND_AND_BANNER"
+        SafePrint("|cff00ff00[WoWKB]|r Combat alerts and toasts unmuted (|cff00ff00ON|r).")
+    else
+        WoWKillboardSettings.alertMode = "OFF"
+        SafePrint("|cffff3333[WoWKB]|r Combat alerts and toasts muted (|cffff3333OFF|r). Type |cffffd100/kbmute|r again to unmute.")
+    end
+    if KB.UI and KB.UI.AlertsDialog and KB.UI.AlertsDialog.UpdateControls then
+        KB.UI.AlertsDialog:UpdateControls()
     end
 end
 
