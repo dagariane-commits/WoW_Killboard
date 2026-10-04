@@ -6570,9 +6570,9 @@ function UI:InitializeKillBanner()
     victimIcon:SetPoint("CENTER", victimClassFrame, "CENTER", 0, 0)
     killBanner.VictimIcon = victimIcon
 
-    -- Stacked Victim text: [Lvl] PlayerName in 16pt Bold with (2, -2) black shadow (no rigid width clamp)
+    -- Stacked Victim text: [Lvl] PlayerName in 16pt Bold with (2, -2) black shadow (dropped 2px to align with icon center)
     local victimNameText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    victimNameText:SetPoint("TOPLEFT", victimClassFrame, "TOPRIGHT", 8, -2)
+    victimNameText:SetPoint("TOPLEFT", victimClassFrame, "TOPRIGHT", 8, -4)
     victimNameText:SetJustifyH("LEFT")
     victimNameText:SetWordWrap(false)
     victimNameText:SetShadowOffset(2, -2)
@@ -6594,22 +6594,22 @@ function UI:InitializeKillBanner()
     -- =========================================================================
     -- Top tag: 12pt Blizzard Gold (#FFD100) uppercase centered
     local centerHeader = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -12)
+    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -10)
     centerHeader:SetText("|cffffd100WOWKB COMBAT TELEMETRY|r")
     centerHeader:SetShadowOffset(1, -1)
     centerHeader:SetShadowColor(0, 0, 0, 1.0)
     killBanner.CenterHeader = centerHeader
     killBanner.CenterAction = centerHeader -- backward-compatible alias
 
-    -- Middle: Skull / Death separator 32px x 32px
+    -- Middle: Skull / Death separator 32px x 32px (nudged up by 4px together with location text for balanced spacing)
     local centerIcon = killBanner:CreateTexture(nil, "OVERLAY")
     centerIcon:SetSize(32, 32)
-    centerIcon:SetPoint("CENTER", killBanner, "CENTER", 0, 2)
+    centerIcon:SetPoint("CENTER", killBanner, "CENTER", 0, 6)
     centerIcon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcon_8")
     killBanner.CenterIcon = centerIcon
 
     -- Bottom: Location text in 11pt parchment silver (#CCCCCC) or amber (#D4A359)
-    -- Exactly 4px vertical spacing below skull icon; leaves >6px clearance to bottom frame edge
+    -- Exactly 4px vertical spacing below skull icon; leaves ~21px clearance to bottom frame edge
     local locText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     locText:SetPoint("TOP", centerIcon, "BOTTOM", 0, -4)
     locText:SetJustifyH("CENTER")
@@ -6642,9 +6642,9 @@ function UI:InitializeKillBanner()
     killerIcon:SetPoint("CENTER", killerIconFrame, "CENTER", 0, 0)
     killBanner.KillerIcon = killerIcon
 
-    -- Right-aligned [Lvl] KillerName in 16pt Bold hostile crimson (#FF4040) with (2, -2) black shadow (no rigid width clamp)
+    -- Right-aligned [Lvl] KillerName in 16pt Bold hostile crimson (#FF4040) with (2, -2) black shadow (dropped 2px to align with icon center)
     local killerNameText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    killerNameText:SetPoint("TOPRIGHT", killerIconFrame, "TOPLEFT", -8, -2)
+    killerNameText:SetPoint("TOPRIGHT", killerIconFrame, "TOPLEFT", -8, -4)
     killerNameText:SetJustifyH("RIGHT")
     killerNameText:SetWordWrap(false)
     killerNameText:SetShadowOffset(2, -2)
