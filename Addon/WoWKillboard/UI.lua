@@ -6491,32 +6491,48 @@ function UI:ApplyBannerTheme()
     local isClassic = (theme.id == "classic")
 
     if isClassic then
-        -- Authentic WoW Classic Dialog Box Backdrop & Border with dark marble tint (0.85 alpha)
+        -- Authentic WoW Classic Quest Parchment & Chiseled Metallic Frame
         banner:SetBackdrop({
-            bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+            bgFile = "Interface\\QuestFrame\\QuestBG",
             edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
             tile = true,
-            tileSize = 32,
+            tileSize = 256,
             edgeSize = 16,
             insets = { left = 4, right = 4, top = 4, bottom = 4 },
         })
-        banner:SetBackdropColor(0.20, 0.18, 0.15, 0.85)
+        banner:SetBackdropColor(1.0, 1.0, 1.0, 1.0) -- Authentic warm antique vellum / parchment
         banner:SetBackdropBorderColor(1.0, 1.0, 1.0, 1.0)
 
+        if banner.HeaderStrip then banner.HeaderStrip:Show() end
+        if banner.HeaderDivider then banner.HeaderDivider:Show() end
         if banner.TopAccent then banner.TopAccent:Hide() end
 
-        if banner.CenterHeader then
+        if banner.CenterHeader and banner.HeaderStrip then
             banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -6)
+            banner.CenterHeader:SetPoint("CENTER", banner.HeaderStrip, "CENTER", 0, 0)
             banner.CenterHeader:SetFontObject("GameFontNormal")
+            banner.CenterHeader:SetText("|cffffd100WOWKB COMBAT TELEMETRY|r")
             banner.CenterHeader:SetShadowOffset(1, -1)
             banner.CenterHeader:SetShadowColor(0, 0, 0, 1.0)
         end
 
         if banner.Corners then
             for _, corner in ipairs(banner.Corners) do
-                corner:Show()
+                corner:Hide()
             end
+        end
+
+        if banner.VictimSubText then
+            banner.VictimSubText:SetShadowOffset(1, -1)
+            banner.VictimSubText:SetShadowColor(0, 0, 0, 0.4)
+        end
+        if banner.KillerSubText then
+            banner.KillerSubText:SetShadowOffset(1, -1)
+            banner.KillerSubText:SetShadowColor(0, 0, 0, 0.4)
+        end
+        if banner.LocText then
+            banner.LocText:SetShadowOffset(1, -1)
+            banner.LocText:SetShadowColor(0, 0, 0, 0.4)
         end
 
         if banner.VictimCrestRing then banner.VictimCrestRing:Show() end
@@ -6536,12 +6552,15 @@ function UI:ApplyBannerTheme()
         banner:SetBackdropColor(0.06, 0.08, 0.11, 0.85)
         banner:SetBackdropBorderColor(0.55, 0.50, 0.40, 0.90)
 
+        if banner.HeaderStrip then banner.HeaderStrip:Hide() end
+        if banner.HeaderDivider then banner.HeaderDivider:Hide() end
         if banner.TopAccent then banner.TopAccent:Show() end
 
         if banner.CenterHeader then
             banner.CenterHeader:ClearAllPoints()
             banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -6)
             banner.CenterHeader:SetFontObject("GameFontNormal")
+            banner.CenterHeader:SetText("|cffffd100WOWKB COMBAT TELEMETRY|r")
             banner.CenterHeader:SetShadowOffset(1, -1)
             banner.CenterHeader:SetShadowColor(0, 0, 0, 1.0)
         end
@@ -6550,6 +6569,19 @@ function UI:ApplyBannerTheme()
             for _, corner in ipairs(banner.Corners) do
                 corner:Hide()
             end
+        end
+
+        if banner.VictimSubText then
+            banner.VictimSubText:SetShadowOffset(1, -1)
+            banner.VictimSubText:SetShadowColor(0, 0, 0, 1.0)
+        end
+        if banner.KillerSubText then
+            banner.KillerSubText:SetShadowOffset(1, -1)
+            banner.KillerSubText:SetShadowColor(0, 0, 0, 1.0)
+        end
+        if banner.LocText then
+            banner.LocText:SetShadowOffset(1, -1)
+            banner.LocText:SetShadowColor(0, 0, 0, 1.0)
         end
 
         if banner.VictimCrestRing then banner.VictimCrestRing:Hide() end
@@ -6603,6 +6635,21 @@ function UI:InitializeKillBanner()
         end
     end)
 
+    -- Top Dark Header Strip Bar (Classic Quest Log top banner ribbon)
+    local headerStrip = killBanner:CreateTexture(nil, "BACKGROUND", nil, -5)
+    headerStrip:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 4, -4)
+    headerStrip:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", -4, -4)
+    headerStrip:SetHeight(18)
+    headerStrip:SetColorTexture(0.11, 0.08, 0.05, 0.95) -- Deep dark wood / leather brown
+    killBanner.HeaderStrip = headerStrip
+
+    local headerDivider = killBanner:CreateTexture(nil, "BACKGROUND", nil, -4)
+    headerDivider:SetPoint("TOPLEFT", headerStrip, "BOTTOMLEFT", 0, 0)
+    headerDivider:SetPoint("TOPRIGHT", headerStrip, "BOTTOMRIGHT", 0, 0)
+    headerDivider:SetHeight(1)
+    headerDivider:SetColorTexture(0.45, 0.35, 0.18, 0.85) -- Chiseled antique bronze / gold divider
+    killBanner.HeaderDivider = headerDivider
+
     -- Thin 2px gold accent border along top edge (#FFD100 / #D4A359) for ElvUI Theme
     local topAccent = killBanner:CreateTexture(nil, "OVERLAY")
     topAccent:SetHeight(2)
@@ -6611,41 +6658,13 @@ function UI:InitializeKillBanner()
     topAccent:SetColorTexture(1.0, 0.82, 0.0, 1.0)
     killBanner.TopAccent = topAccent
 
-    -- Classic Ornate Bronze/Gold Riveted Corner Brackets (matching Quest Log header bar)
-    -- Flush anchor to (0, 0) with crisp antialiased alpha (zero bleed)
-    local cornerTL = killBanner:CreateTexture(nil, "OVERLAY", nil, 2)
-    cornerTL:SetSize(24, 24)
-    cornerTL:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 0, 0)
-    cornerTL:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\corner_bracket.tga")
-    cornerTL:SetTexCoord(0, 27/64, 0, 27/64)
-
-    local cornerTR = killBanner:CreateTexture(nil, "OVERLAY", nil, 2)
-    cornerTR:SetSize(24, 24)
-    cornerTR:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", 0, 0)
-    cornerTR:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\corner_bracket.tga")
-    cornerTR:SetTexCoord(27/64, 0, 0, 27/64)
-
-    local cornerBL = killBanner:CreateTexture(nil, "OVERLAY", nil, 2)
-    cornerBL:SetSize(24, 24)
-    cornerBL:SetPoint("BOTTOMLEFT", killBanner, "BOTTOMLEFT", 0, 0)
-    cornerBL:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\corner_bracket.tga")
-    cornerBL:SetTexCoord(0, 27/64, 27/64, 0)
-
-    local cornerBR = killBanner:CreateTexture(nil, "OVERLAY", nil, 2)
-    cornerBR:SetSize(24, 24)
-    cornerBR:SetPoint("BOTTOMRIGHT", killBanner, "BOTTOMRIGHT", 0, 0)
-    cornerBR:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\corner_bracket.tga")
-    cornerBR:SetTexCoord(27/64, 0, 27/64, 0)
-
-    killBanner.Corners = { cornerTL, cornerTR, cornerBL, cornerBR }
-
     -- =========================================================================
     -- Left Section (Victim Identity) - Equalized Outer Padding 14px
     -- =========================================================================
     -- High-res circular Alliance Lion or Horde Crest (40x40) matching class icon height
     local victimCrestFrame = CreateFrame("Frame", nil, killBanner)
     victimCrestFrame:SetSize(40, 40)
-    victimCrestFrame:SetPoint("LEFT", killBanner, "LEFT", 14, 0)
+    victimCrestFrame:SetPoint("LEFT", killBanner, "LEFT", 14, -4)
     killBanner.VictimCrestFrame = victimCrestFrame
 
     local victimCrest = victimCrestFrame:CreateTexture(nil, "ARTWORK")
@@ -6697,43 +6716,43 @@ function UI:InitializeKillBanner()
     killBanner.VictimNameText = victimNameText
     killBanner.VictimText = victimNameText -- backward-compatible alias
 
-    -- Sub-text: <GuildName> in 12pt regular muted silver (#C0C0C0 / #E0D8C3)
+    -- Sub-text: <GuildName> in 12pt regular muted silver / quest brown (#382A1D)
     local victimSubText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     victimSubText:SetPoint("BOTTOMLEFT", victimClassFrame, "BOTTOMRIGHT", 8, 2)
     victimSubText:SetJustifyH("LEFT")
     victimSubText:SetWordWrap(false)
     victimSubText:SetShadowOffset(1, -1)
-    victimSubText:SetShadowColor(0, 0, 0, 1.0)
+    victimSubText:SetShadowColor(0, 0, 0, 0.4)
     killBanner.VictimSubText = victimSubText
 
     -- =========================================================================
     -- Center Section (The Incident: Center Status & Brand)
     -- =========================================================================
-    -- Top tag: 12pt Blizzard Gold (#FFD100) uppercase centered inside frame (-6px down from upper inside edge)
+    -- Top tag: 12pt Blizzard Gold (#FFD100) inside the dark header strip
     local centerHeader = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -6)
+    centerHeader:SetPoint("CENTER", headerStrip, "CENTER", 0, 0)
     centerHeader:SetText("|cffffd100WOWKB COMBAT TELEMETRY|r")
     centerHeader:SetShadowOffset(1, -1)
     centerHeader:SetShadowColor(0, 0, 0, 1.0)
     killBanner.CenterHeader = centerHeader
     killBanner.CenterAction = centerHeader -- backward-compatible alias
 
-    -- Middle: Skull / Death separator 32px x 32px
+    -- Middle: Skull / Death separator 32px x 32px grounded between combatants
     local centerIcon = killBanner:CreateTexture(nil, "OVERLAY")
     centerIcon:SetSize(32, 32)
-    centerIcon:SetPoint("CENTER", killBanner, "CENTER", 0, 6)
+    centerIcon:SetPoint("CENTER", killBanner, "CENTER", 0, -3)
     centerIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
     killBanner.CenterIcon = centerIcon
 
-    -- Bottom: Location text in 11pt parchment amber (#E6C387 / #D4A359)
-    -- Lifted 4px higher (0 offset from centerIcon bottom instead of -4) so it doesn't touch the bottom border
+    -- Bottom: Location text in 11pt quest text brown (#382A1D) or amber (#D4A359)
+    -- Anchored directly below centerIcon with 6px clearance from bottom frame edge
     local locText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    locText:SetPoint("TOP", centerIcon, "BOTTOM", 0, 0)
+    locText:SetPoint("TOP", centerIcon, "BOTTOM", 0, -3)
     locText:SetJustifyH("CENTER")
     locText:SetWordWrap(false)
     locText:SetShadowOffset(1, -1)
-    locText:SetShadowColor(0, 0, 0, 1.0)
-    locText:SetText("|cffe6c387Westfall • Sentinel Hill|r")
+    locText:SetShadowColor(0, 0, 0, 0.4)
+    locText:SetText("|cff382a1dWestfall • Sentinel Hill|r")
     killBanner.LocText = locText
     killBanner.ModeTag = locText -- backward-compatible alias
 
@@ -6743,7 +6762,7 @@ function UI:InitializeKillBanner()
     -- Target / Threat / NPC Icon (40x40 frame, 38x38 texture) normalized with 1px border matching victim
     local killerIconFrame = CreateFrame("Frame", nil, killBanner, "BackdropTemplate")
     killerIconFrame:SetSize(40, 40)
-    killerIconFrame:SetPoint("RIGHT", killBanner, "RIGHT", -14, 0)
+    killerIconFrame:SetPoint("RIGHT", killBanner, "RIGHT", -14, -4)
     killerIconFrame:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -6767,7 +6786,7 @@ function UI:InitializeKillBanner()
     killerDebuffBorder:SetVertexColor(1.0, 0.15, 0.15, 1.0)
     killBanner.KillerDebuffBorder = killerDebuffBorder
 
-    -- Right-aligned [Lvl] KillerName in 16pt Bold hostile crimson (#FF4040) with (2, -2) black shadow (dropped 2px to align with icon center)
+    -- Right-aligned [Lvl] KillerName in 16pt Bold hostile crimson (#C41E3A / #FF4040) with (2, -2) black shadow
     local killerNameText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
     killerNameText:SetPoint("TOPRIGHT", killerIconFrame, "TOPLEFT", -8, -4)
     killerNameText:SetJustifyH("RIGHT")
@@ -6777,13 +6796,13 @@ function UI:InitializeKillBanner()
     killBanner.KillerNameText = killerNameText
     killBanner.KillerText = killerNameText -- backward-compatible alias
 
-    -- Stacked subtext: with Pyroblast or <GuildName> in 12pt regular muted silver (#C0C0C0 / #E0D8C3)
+    -- Stacked subtext: with Pyroblast or <GuildName> in 12pt regular muted silver / quest brown (#382A1D)
     local killerSubText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     killerSubText:SetPoint("BOTTOMRIGHT", killerIconFrame, "BOTTOMLEFT", -8, 2)
     killerSubText:SetJustifyH("RIGHT")
     killerSubText:SetWordWrap(false)
     killerSubText:SetShadowOffset(1, -1)
-    killerSubText:SetShadowColor(0, 0, 0, 1.0)
+    killerSubText:SetShadowColor(0, 0, 0, 0.4)
     killBanner.KillerSubText = killerSubText
 
     UI.KillBanner = killBanner
@@ -6855,8 +6874,9 @@ function UI:ShowKillBanner(killmail, isTest)
 
         local theme = UI:GetTheme()
         local isClassic = (theme.id == "classic")
-        local subColor = isClassic and "e0d8c3" or "c0c0c0"
-        local locColor = isClassic and "e6c387" or "d4a359"
+        local subColor = isClassic and "382a1d" or "c0c0c0"
+        local locColor = isClassic and "382a1d" or "d4a359"
+        local kColor = isClassic and "c41e3a" or "ff4040"
         local skullTex = isClassic and "Interface\\TargetingFrame\\UI-TargetingFrame-Skull" or "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8"
 
         local vGuild = killmail.victim.guild
@@ -6889,7 +6909,7 @@ function UI:ShowKillBanner(killmail, isTest)
         -- 3. Populate Right Section (Killer Identity / Threat)
         local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
         local kName = killmail.killer.name or "Threat"
-        banner.KillerNameText:SetText(string.format("|cffff4040[%s] %s|r", kLevelStr, kName))
+        banner.KillerNameText:SetText(string.format("|cff%s[%s] %s|r", kColor, kLevelStr, kName))
 
         local spell = killmail.finalSpell or (killmail.killer and killmail.killer.spell) or ""
         if spell and spell ~= "" and spell ~= "Combat Strike" then
@@ -6955,8 +6975,9 @@ function UI:ToggleBannerLock(explicitState)
         UI:ApplyBannerTheme()
         local theme = UI:GetTheme()
         local isClassic = (theme.id == "classic")
-        local subColor = isClassic and "e0d8c3" or "c0c0c0"
-        local locColor = isClassic and "e6c387" or "d4a359"
+        local subColor = isClassic and "382a1d" or "c0c0c0"
+        local locColor = isClassic and "382a1d" or "d4a359"
+        local kColor = isClassic and "c41e3a" or "ff4040"
         local skullTex = isClassic and "Interface\\TargetingFrame\\UI-TargetingFrame-Skull" or "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8"
 
         banner.VictimCrest:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
@@ -6972,7 +6993,7 @@ function UI:ToggleBannerLock(explicitState)
         local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
         banner.LocText:SetText(string.format("|cff%sAnchor: %s (%d, %d)|r", locColor, pos.point or "TOP", pos.x or 0, pos.y or -135))
 
-        banner.KillerNameText:SetText("|cffff4040[60] Reposition|r")
+        banner.KillerNameText:SetText(string.format("|cff%s[60] Reposition|r", kColor))
         banner.KillerSubText:SetText(string.format("|cff%swith Move|r", subColor))
         banner.KillerIcon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
         banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
