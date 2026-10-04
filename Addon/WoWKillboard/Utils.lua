@@ -580,6 +580,9 @@ function U.SendAddonMessage(prefix, message, chatType, target)
     if not prefix or not message or not chatType then return end
     if C_ChatInfo and C_ChatInfo.SendAddonMessage then
         pcall(C_ChatInfo.SendAddonMessage, prefix, message, chatType, target)
+        if chatType == "CHANNEL" and C_ChatInfo.SendAddonMessageLogged then
+            pcall(C_ChatInfo.SendAddonMessageLogged, prefix, message, chatType, target)
+        end
         return
     end
     if SendAddonMessage then

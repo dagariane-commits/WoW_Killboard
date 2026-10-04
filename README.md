@@ -257,6 +257,8 @@ WoW_Killboard/
    - /killboard testchat or /kb testchat — Preview standardized military chat telemetry (Formats A, B, C).
    - `/warhorn` or `/kbrally` — Sound the War Horn (open-world emergency distress & auto-invite rally).
    - `/killboard stats` — View current session damage, healing, kills, and K/D.
+   - `/testnet` or `/kb testnet` — Broadcast a simulated casualty across the realm network to test alerts on any player with the addon (0 database writes).
+   - `/kb net` or `/kb channel` — Inspect live realm network connection and channel diagnostics.
    - `/killboard sync` or `/kb sync` — Flush combat SavedVariables to disk (`/reload`) to sync immediately with the live website.
    - `/killboard bounty <Name> <Gold>` — Declare a blood bounty upon an enemy player (open world only).
    - `/kb bug <description>` or `/kb report` — Submit in-game telemetry & bug dispatch directly to the AI Diagnostician (or click `[Report Bug]` in header).

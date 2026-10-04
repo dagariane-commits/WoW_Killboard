@@ -18,41 +18,103 @@ elseif RegisterAddonMessagePrefix then
     pcall(RegisterAddonMessagePrefix, KB.Prefix or "WOWKB")
 end
 
-function S:JoinGlobalChannel()
-    if InCombatLockdown and InCombatLockdown() then return end
-    if JoinChannelByName then
-        pcall(JoinChannelByName, "WoWKillboard")
+-- Hide custom channel from all chat windows to eliminate visual clutter
+function S:HideChannelFromChat(chanName)
+    chanName = chanName or "WoWKillboard"
+    for i = 1, (NUM_CHAT_WINDOWS or 10) do
+        local cf = _G["ChatFrame" .. i]
+        if cf and ChatFrame_RemoveChannel then
+            pcall(ChatFrame_RemoveChannel, cf, chanName)
+        end
     end
 end
 
--- Robust channel ID lookup across all client versions and channel order
+-- Robust channel ID lookup across all client versions, channel order, and stride lengths
 function S:GetChannelId(chanName)
     chanName = chanName or "WoWKillboard"
-    if GetChannelList then
-        local list = { GetChannelList() }
-        for i = 1, #list, 3 do
-            local id = list[i]
-            local name = list[i+1]
-            if name and (name:lower() == chanName:lower() or name:lower():find(chanName:lower())) then
-                return id
-            end
-        end
-    end
+    -- 1. Direct Blizzard lookup (O(1) fast-path, standard across Classic Era, Beta, Anniversary, Retail)
     if GetChannelName then
         local id = GetChannelName(chanName)
-        if id and id > 0 then return id end
+        if id and tonumber(id) and tonumber(id) > 0 then
+            return tonumber(id)
+        end
         id = GetChannelName("WoWKB")
-        if id and id > 0 then return id end
+        if id and tonumber(id) and tonumber(id) > 0 then
+            return tonumber(id)
+        end
+    end
+    -- 2. List iteration fallback with dynamic stride detection (stride 2: [id, name], stride 3: [id, name, disabled])
+    if GetChannelList then
+        local ok, list = pcall(function() return { GetChannelList() } end)
+        if ok and type(list) == "table" and #list > 0 then
+            local stride = (type(list[3]) == "boolean") and 3 or 2
+            local lowerTarget = chanName:lower()
+            for i = 1, #list, stride do
+                local id = list[i]
+                local name = list[i+1]
+                if type(name) == "string" and type(id) == "number" and id > 0 then
+                    local lowerName = name:lower()
+                    if lowerName == lowerTarget or lowerName:find(lowerTarget, 1, true) then
+                        return id
+                    end
+                end
+            end
+        end
     end
     return nil
 end
 
--- Safely transmit a message to the dedicated WoWKillboard realm channel
-function S:SendToGlobalChannel(msg)
-    if not msg or msg == "" then return false end
+function S:JoinGlobalChannel()
+    if InCombatLockdown and InCombatLockdown() then return end
+    local chanName = "WoWKillboard"
+    local id = S:GetChannelId(chanName)
+    if id and id > 0 then
+        S.channelIndex = id
+        S:HideChannelFromChat(chanName)
+        return id
+    end
+    if JoinChannelByName then
+        pcall(JoinChannelByName, chanName)
+    end
+    if C_Timer and C_Timer.After then
+        C_Timer.After(2.0, function()
+            local afterId = S:GetChannelId(chanName)
+            if afterId and afterId > 0 then
+                S.channelIndex = afterId
+                S:HideChannelFromChat(chanName)
+            end
+        end)
+    end
+    return nil
+end
+
+-- Process Blizzard channel notices (YOU_JOINED, YOU_LEFT, etc.)
+function S:OnChannelNotice(notice, player, _, channelName, _, _, _, _, baseName)
+    local name = baseName or channelName or ""
+    if type(name) == "string" and (name:lower():find("wowkillboard", 1, true) or name:lower():find("wowkb", 1, true)) then
+        if notice == "YOU_JOINED" or notice == "YOU_CHANGED" then
+            local id = S:GetChannelId("WoWKillboard")
+            if id and id > 0 then
+                S.channelIndex = id
+                S:HideChannelFromChat("WoWKillboard")
+            end
+        elseif notice == "YOU_LEFT" or notice == "SUSPENDED" then
+            S.channelIndex = nil
+        end
+    end
+end
+
+-- Safely transmit a message and optional AddonMessage payload to the dedicated WoWKillboard realm channel
+function S:BroadcastToGlobalChannel(chatText, addonPayload)
     local chanId = S:GetChannelId("WoWKillboard")
     if chanId and chanId > 0 then
-        pcall(SendChatMessage, msg, "CHANNEL", nil, chanId)
+        S.channelIndex = chanId
+        if chatText and chatText ~= "" then
+            pcall(SendChatMessage, chatText, "CHANNEL", nil, chanId)
+        end
+        if addonPayload and addonPayload ~= "" and KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, addonPayload, "CHANNEL", chanId)
+        end
         return true
     else
         S:JoinGlobalChannel()
@@ -60,12 +122,36 @@ function S:SendToGlobalChannel(msg)
             C_Timer.After(1.5, function()
                 local retryId = S:GetChannelId("WoWKillboard")
                 if retryId and retryId > 0 then
-                    pcall(SendChatMessage, msg, "CHANNEL", nil, retryId)
+                    S.channelIndex = retryId
+                    if chatText and chatText ~= "" then
+                        pcall(SendChatMessage, chatText, "CHANNEL", nil, retryId)
+                    end
+                    if addonPayload and addonPayload ~= "" and KB.Utils and KB.Utils.SendAddonMessage then
+                        KB.Utils.SendAddonMessage(KB.Prefix, addonPayload, "CHANNEL", retryId)
+                    end
+                else
+                    C_Timer.After(2.0, function()
+                        local secondRetryId = S:GetChannelId("WoWKillboard")
+                        if secondRetryId and secondRetryId > 0 then
+                            S.channelIndex = secondRetryId
+                            if chatText and chatText ~= "" then
+                                pcall(SendChatMessage, chatText, "CHANNEL", nil, secondRetryId)
+                            end
+                            if addonPayload and addonPayload ~= "" and KB.Utils and KB.Utils.SendAddonMessage then
+                                KB.Utils.SendAddonMessage(KB.Prefix, addonPayload, "CHANNEL", secondRetryId)
+                            end
+                        end
+                    end)
                 end
             end)
         end
         return false
     end
+end
+
+-- Backward-compatible wrapper for SendToGlobalChannel
+function S:SendToGlobalChannel(msg)
+    return S:BroadcastToGlobalChannel(msg, nil)
 end
 
 -- Broadcast a Simulated/Test Casualty across Party, Guild, and Realm Channel without saving to database
@@ -191,8 +277,11 @@ function S:BroadcastTestCasualty(mode, targetPeer)
         pcall(SendChatMessage, chatMsg, isRaid and "RAID" or "PARTY")
     end
 
-    -- Broadcast to dedicated WoWKillboard realm channel
-    local sentChan = S:SendToGlobalChannel(chatMsg)
+    -- Broadcast to dedicated WoWKillboard realm channel (both chat Format C and AddonMessage payload)
+    local sentChan = S:BroadcastToGlobalChannel(chatMsg, payload)
+    if sentChan then
+        sentPeerCount = sentPeerCount + 1
+    end
 
     -- 3. Trigger local test display immediately
     local testData = {
@@ -225,15 +314,15 @@ function S:BroadcastTestCasualty(mode, targetPeer)
         KB.UI:ShowKillBanner(testData, true)
     end
 
-    local printMsg = string.format("|cff00ff00[WoWKB Test Broadcast]|r Simulated %s casualty broadcasted! (|cffffd100Zero database pollution|r)", isPve and "PvE" or "PvP")
+    local printMsg = string.format("|cff00ff00[WoWKB Test Broadcast]|r Simulated %s casualty broadcasted to Realm Network! (|cffffd100Zero database pollution|r)", isPve and "PvE" or "PvP")
     if KB.Utils and KB.Utils.SafePrint then
         KB.Utils.SafePrint(printMsg)
     elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
         DEFAULT_CHAT_FRAME:AddMessage(printMsg)
     end
 
-    if sentPeerCount == 0 and not sentChan then
-        local note = "|cffffaa00[WoWKB Tip]|r Not currently in a party or channel. To test with another computer, invite the character to a party (|cffffff00/invite <name>|r) or type |cffffff00/testnet <character-name>|r."
+    if not sentChan then
+        local note = "|cff38bdf8[WoWKB Network]|r Connecting to realm channel 'WoWKillboard'... Broadcast queued and will transmit in 1.5s."
         if KB.Utils and KB.Utils.SafePrint then
             KB.Utils.SafePrint(note)
         elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
@@ -428,6 +517,13 @@ function S:BroadcastKillmail(killmail)
             KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
         end
     end
+
+    -- Global realm channel broadcast (Format C chat and AddonMessage payload for anyone with the addon)
+    local vTitle = (KB.Utils and KB.Utils.GetClassTitle) and KB.Utils.GetClassTitle(killmail.victim.class) or killmail.victim.class
+    local locName = (subZone ~= "" and subZone) or killmail.location.zone or "Wilderness"
+    local chatMsg = string.format("[WoWKB] Casualty: %s (Lvl %d %s) killed by %s (%s) in %s.",
+        killmail.victim.name, killmail.victim.level, vTitle, killmail.killer.name, spell, locName)
+    S:BroadcastToGlobalChannel(chatMsg, payload)
 end
 
 -- Broadcast a PvE death to group and guild
@@ -479,6 +575,13 @@ function S:BroadcastPveDeath(pveRecord)
             KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
         end
     end
+
+    -- Global realm channel broadcast (Format C chat and AddonMessage payload for anyone with the addon)
+    local vTitle = (KB.Utils and KB.Utils.GetClassTitle) and KB.Utils.GetClassTitle(vClass) or vClass
+    local locName = (subZone ~= "" and subZone) or zone
+    local chatMsg = string.format("[WoWKB] Casualty: %s (Lvl %d %s) killed by %s (%s) in %s.",
+        vName, vic.level or 0, vTitle, npcName, npcSpell, locName)
+    S:BroadcastToGlobalChannel(chatMsg, payload)
 end
 
 -- Broadcast a bounty creation
@@ -1132,7 +1235,7 @@ function S:OnIncomingChannelCasualty(text, sender)
 end
 
 frame:SetScript("OnEvent", function(self, event, ...)
-    if event == "CHAT_MSG_ADDON" then
+    if event == "CHAT_MSG_ADDON" or event == "CHAT_MSG_ADDON_LOGGED" then
         local prefix, message, channel, sender = ...
         pcall(function()
             S:OnAddonMessage(prefix, message, channel, sender)
@@ -1174,12 +1277,17 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 end)
             end
         end
+    elseif event == "CHAT_MSG_CHANNEL_NOTICE" or event == "CHAT_MSG_CHANNEL_NOTICE_USER" then
+        pcall(function(...)
+            S:OnChannelNotice(...)
+        end, ...)
     elseif event == "PLAYER_ENTERING_WORLD" then
         pcall(function()
             S:Init()
             if C_Timer and C_Timer.After then
                 C_Timer.After(2.0, function() S:JoinGlobalChannel() end)
-                C_Timer.After(4.0, function() S:BroadcastVersion() end)
+                C_Timer.After(5.0, function() S:JoinGlobalChannel() end)
+                C_Timer.After(7.0, function() S:BroadcastVersion() end)
             end
         end)
     elseif event == "GROUP_ROSTER_UPDATE" then
@@ -1201,7 +1309,10 @@ frame:SetScript("OnEvent", function(self, event, ...)
 end)
 
 frame:RegisterEvent("CHAT_MSG_ADDON")
+frame:RegisterEvent("CHAT_MSG_ADDON_LOGGED")
 frame:RegisterEvent("CHAT_MSG_CHANNEL")
+frame:RegisterEvent("CHAT_MSG_CHANNEL_NOTICE")
+frame:RegisterEvent("CHAT_MSG_CHANNEL_NOTICE_USER")
 frame:RegisterEvent("CHAT_MSG_PARTY")
 frame:RegisterEvent("CHAT_MSG_PARTY_LEADER")
 frame:RegisterEvent("CHAT_MSG_RAID")
@@ -1213,3 +1324,17 @@ frame:RegisterEvent("CHAT_MSG_YELL")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+
+-- Recurring housekeeping loop: maintains channel connection and chat window purity
+if C_Timer and C_Timer.NewTicker then
+    C_Timer.NewTicker(30, function()
+        if InCombatLockdown and InCombatLockdown() then return end
+        local id = S:GetChannelId("WoWKillboard")
+        if not id or id <= 0 then
+            S:JoinGlobalChannel()
+        else
+            S.channelIndex = id
+            S:HideChannelFromChat("WoWKillboard")
+        end
+    end)
+end
