@@ -7312,7 +7312,7 @@ function UI:InitializeKillBanner()
 
     local victimName = Content:CreateFontString(nil, "OVERLAY", "GameFontHighlightMedium")
     victimName:SetPoint("TOPRIGHT", victimIcon, "TOPLEFT", -10, -2)
-    victimName:SetTextColor(1, 0.25, 0.25, 1) -- Red
+    victimName:SetTextColor(1, 0.96, 0.41, 1) -- Rogue Yellow (#FFF569)
     victimName:SetText("[25] Shadowstalker")
     victimName:SetJustifyH("RIGHT")
     victimName:SetShadowOffset(1, -1)
@@ -7481,13 +7481,28 @@ function UI:ShowKillBanner(killmail, isTest)
 
         local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
         local kName = killmail.killer.name or "Threat"
-        local isFriendlyKiller = (killmail.killer and (killmail.killer.name == myName or (killmail.killer.faction and killmail.killer.faction == pFaction and killmail.killer.faction ~= "Monster")))
 
-        if isFriendlyKiller then
-            banner.KillerNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", kLevelStr, kName), killmail.killer.class))
+        if isNpc then
+            local npcClassification = (killmail.npc and killmail.npc.classification) or (killmail.killer and killmail.killer.classification) or ""
+            local isElite = npcClassification:find("elite") or npcClassification == "worldboss"
+            local lvlDisplay = (isElite and kLevelStr ~= "??") and (kLevelStr .. "+") or kLevelStr
+
+            local npcColor = "ff4444" -- Standard Hostile Mob Red
+            if npcClassification == "worldboss" then
+                npcColor = "ff2020" -- World Boss Deep Crimson
+            elseif npcClassification == "rareelite" then
+                npcColor = "ff9900" -- Rare Elite Orange
+            elseif npcClassification == "elite" then
+                npcColor = "ffd100" -- Iconic Elite Gold
+            elseif npcClassification == "rare" then
+                npcColor = "00ccff" -- Rare Silver/Cyan
+            end
+            banner.KillerNameText:SetTextColor(1, 1, 1, 1)
+            banner.KillerNameText:SetText(string.format("|cff%s[%s] %s|r", npcColor, lvlDisplay, kName))
         else
-            banner.KillerNameText:SetTextColor(1, 0.25, 0.25, 1)
-            banner.KillerNameText:SetText(string.format("[%s] %s", kLevelStr, kName))
+            -- PvP: Always use class color for player names
+            banner.KillerNameText:SetTextColor(1, 1, 1, 1)
+            banner.KillerNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", kLevelStr, kName), killmail.killer.class))
         end
 
         banner.KillerSubText:SetText(GetKillerSubtitle(killmail, isNpc))
@@ -7518,12 +7533,23 @@ function UI:ShowKillBanner(killmail, isTest)
         local vLevelStr = (killmail.victim.level and killmail.victim.level > 0) and tostring(killmail.victim.level) or "??"
         local vName = killmail.victim.name or "Unknown"
 
-        local isFriendlyVictim = (killmail.victim and (killmail.victim.name == myName or (killmail.victim.faction and killmail.victim.faction == pFaction and killmail.victim.faction ~= "Monster")))
-        if isFriendlyVictim then
+        local isVictimPlayer = (killmail.victim.isPlayer ~= false) and (killmail.victim.faction ~= "Monster")
+        if isVictimPlayer and killmail.victim.class and killmail.victim.class ~= "" then
+            -- PvP / Player Casualty: Always use class color for player names
+            banner.VictimNameText:SetTextColor(1, 1, 1, 1)
             banner.VictimNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", vLevelStr, vName), killmail.victim.class))
         else
-            banner.VictimNameText:SetTextColor(1, 0.25, 0.25, 1)
-            banner.VictimNameText:SetText(string.format("[%s] %s", vLevelStr, vName))
+            local vClassification = (killmail.victim and killmail.victim.classification) or ""
+            local isVElite = vClassification:find("elite") or vClassification == "worldboss"
+            local vLvlDisplay = (isVElite and vLevelStr ~= "??") and (vLevelStr .. "+") or vLevelStr
+            local vColor = "ff4444"
+            if vClassification == "worldboss" then vColor = "ff2020"
+            elseif vClassification == "rareelite" then vColor = "ff9900"
+            elseif vClassification == "elite" then vColor = "ffd100"
+            elseif vClassification == "rare" then vColor = "00ccff"
+            end
+            banner.VictimNameText:SetTextColor(1, 1, 1, 1)
+            banner.VictimNameText:SetText(string.format("|cff%s[%s] %s|r", vColor, vLvlDisplay, vName))
         end
 
         local vGuild = killmail.victim.guild
@@ -7789,7 +7815,7 @@ function UI:TestKillBanner(mode)
                 y = 57.4,
             },
         }
-        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cff38bdf8Alliance Victory|r: |cff38bdf8%s|r killed |cffff5555%s|r (|cff0078ffAlliance Blue Border|r)! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", myName, enemyName))
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cff38bdf8Alliance Victory|r: %s killed %s (|cff0078ffAlliance Blue Border|r)! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", KB.Utils.ColorizeByClass(myName, pClass), KB.Utils.ColorizeByClass(enemyName, enemyClass)))
 
     elseif selectedScenario == "pvp_death" then
         local enemySpell = (enemyClass == "MAGE" and "Pyroblast") or
@@ -7831,7 +7857,7 @@ function UI:TestKillBanner(mode)
                 y = 57.4,
             },
         }
-        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff3838Horde Victory|r: |cffff5555%s|r killed |cff38bdf8%s|r (|cffff3838Horde Red Border|r)! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", enemyName, myName))
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff3838Horde Victory|r: %s killed %s (|cffff3838Horde Red Border|r)! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", KB.Utils.ColorizeByClass(enemyName, enemyClass), KB.Utils.ColorizeByClass(myName, pClass)))
 
     else -- "pve"
         testKM = {
@@ -7873,7 +7899,7 @@ function UI:TestKillBanner(mode)
                 y = 58.3,
             },
         }
-        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff9900PvE Casualty|r: Defias Pillager killed |cff38bdf8%s|r (|cffffd100Classic Gold Border|r)! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", myName))
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff9900PvE Casualty|r: |cffffd100[15+] Defias Pillager|r killed %s (|cffffd100Classic Gold Border|r)! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", KB.Utils.ColorizeByClass(myName, pClass)))
     end
 
     UI:ShowKillBanner(testKM, true)
