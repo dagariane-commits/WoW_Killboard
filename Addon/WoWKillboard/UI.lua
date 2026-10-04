@@ -1510,8 +1510,8 @@ function UI:Refresh()
         end
     end
 
-    local aR, aG, aB, aHex = (KB.Utils and KB.Utils.GetAccentColor) and KB.Utils.GetAccentColor() or (1.0, 0.82, 0.0, "ffd100")
-    local aCode = "|cff" .. aHex
+    local aR, aG, aB, aHex = WoWKB.AccentColor()
+    local aCode = "|cff" .. (aHex or "ffd100")
 
     if UI.StatCards then
         -- Segment 1: Total Kills

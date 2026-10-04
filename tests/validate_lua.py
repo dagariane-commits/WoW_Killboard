@@ -93,9 +93,32 @@ def check_file(filepath):
                 return False
             kw_stack.pop()
 
-    if kw_stack:
-        print(f"[FAIL] {filepath}: Unclosed blocks: {kw_stack}")
-        return False
+    # 3. Standalone expression tuple check: commas inside parentheses that are not function calls/defs
+    expr_p_stack = []
+    for idx, c in enumerate(clean_text):
+        if c == "(":
+            pre = clean_text[:idx].rstrip()
+            m = re.search(r"([a-zA-Z_0-9]+|[^\s])$", pre)
+            is_call = False
+            if m:
+                tok = m.group(1)
+                keywords = {"or", "and", "not", "return", "in", "if", "while", "until", "then", "do", "else", "elseif", "repeat"}
+                if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", tok) and tok not in keywords:
+                    is_call = True
+                elif tok in ("]", ")"):
+                    is_call = True
+            expr_p_stack.append({"is_call": is_call, "pos": idx})
+        elif c in ("{", "["):
+            expr_p_stack.append({"is_call": True, "pos": idx})
+        elif c == ",":
+            if expr_p_stack and not expr_p_stack[-1]["is_call"]:
+                line_no = clean_text[:idx].count("\n") + 1
+                snippet = clean_text[max(0, idx-30):min(len(clean_text), idx+30)].replace("\n", " ").strip()
+                print(f"[FAIL] {filepath}:{line_no}: Invalid comma in parenthesized expression: ')' expected near ',' -> ...{snippet}...")
+                return False
+        elif c in (")", "}", "]"):
+            if expr_p_stack:
+                expr_p_stack.pop()
 
     print(f"[PASS] {filepath}")
     return True
