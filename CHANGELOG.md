@@ -436,17 +436,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Inline Event Handler Hardening & Apostrophe Resiliency (`web/static/app.js`)**: Migrated all remaining inline DOM event handlers to `safeJsParam()`, eradicating JavaScript syntax crashes and potential script execution breakouts when interacting with entities or zones containing single quotes/apostrophes (e.g., `Un'Goro Crater`, `Blade's Edge Mountains`, or fantasy champion names):
     - Sanitized `copyCharacterProfileLink`, `filterFeedByZone`, `openKillModal`, `handleSelectForeverServer`, `releaseClaim`, `selectKnownCharacter`, `showClaimCodeModal`, and `claimKnownCharacter`.
   - **Residual DOM XSS Sink Neutralization (`web/static/app.js`)**: Wrapped all remaining user/entity interpolations in `escapeHtml()`, neutralizing potential DOM XSS vectors in `data.rankTitle`, `data.percentile.cohortLabel`, `data.spec`, `data.class`, `data.faction`, `data.bloodDebtor.creditor`, `data.reputation`, `c.rankTitle`, and `deadZone.zone`.
-  - **Complete REST State Mutation Rate Limiting (`web/server.py`)**: Expanded in-memory sliding-window IP rate limiting across all remaining un-throttled POST endpoints with automatic unit test bypass:
+  - **Complete REST State Mutation Rate Limiting (`web/server.py`)**: Expanded in-memory sliding-window IP rate limiting across 100% of all 30 state mutation (POST) endpoints with automatic unit test bypass:
     - `POST /api/upload` (30 req/min)
     - `POST /api/kills` (120 req/min)
+    - `POST /api/stats` (30 req/min)
+    - `POST /api/pve/deaths` (120 req/min)
+    - `POST /api/system/flavor` (20 req/min)
     - `POST /api/bounties/accept` (20 req/min)
     - `POST /api/bounties/debt-ledger` (10 req/min)
     - `POST /api/backup/resolve/<beacon_id>` (20 req/min)
     - `POST /api/feuds/<feud_id>/accept` (10 req/min)
     - `POST /api/discord/test` (5 req/min)
     - `POST /api/analytics/event` (60 req/min)
-  - **Payload Length & Numeric Range Sanitization (`web/server.py`)**: Applied defensive string truncations (32-64 chars) and numeric boundaries across all state mutation endpoints to prevent database bloat and oversized payload ingestion.
-  - **Pipeline Test Expansion (`tests/test_pipeline.py`)**: Added `test_25_phase_5_security_and_sanitization` ensuring 100% automated coverage across all 25 pipeline and security tests.
+  - **Payload Length & Numeric Range Sanitization (`web/server.py`)**: Applied defensive string truncations (32-64 chars) and numeric boundaries across all state mutation endpoints (`POST /api/stats`, `POST /api/pve/deaths`, `POST /api/system/flavor`, etc.) to prevent database bloat and oversized payload ingestion.
+  - **Pipeline Test Expansion (`tests/test_pipeline.py`)**: Added `test_25_phase_5_security_and_sanitization` ensuring 100% automated coverage across all 26 pipeline and security tests.
 - **Phase 4 Deep Security Audit & Sanitization Hardening (`server.py`, `app.js`, `watcher.py`, `deploy.py`, `setup_vps.sh`, documentation)**:
   - **Comprehensive DOM XSS Eradication (`web/static/app.js`)**: Sanitized all remaining unescaped innerHTML template interpolations using `escapeHtml()` across the entire web platform:
     - Guild profile modal: sanitized raw `guildName` in the loading banner, active members table, recent victories, and guild title.
