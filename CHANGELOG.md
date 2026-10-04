@@ -21,10 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Rare**: Celestial Cyan (`#00CCFF`).
     - **Standard Mob**: Crisp Hostile Red (`#FF4444`).
   - **Chat Test Output Synchronization**: `/kb test dag`, `/kb test x`, and `/kb test pve` announce combatants formatted in their authentic class colors.
-- **Enhanced Test Mode Feedback**:
-  - `/kb test dag`, `/kb test x`, and `/kb test pve` announce the scenario alongside the resulting border color (`Alliance Blue Border`, `Horde Red Border`, `Classic Gold Border`).
+- **Interactive Live Alert Preview & Drag Anchor Toggle (`UI:ToggleBannerLock`, `/kb move`, `/kb preview`)**:
+  - **1:1 Realistic In-Game Preview**: When toggling the anchor unlock on, the toast displays a true-to-life combat alert banner (complete with player and enemy combatants, authentic class colors, faction medallions, and dynamic victory borders) so players can see exactly how the toast looks while dragging it.
+  - **Settings Menu Move Button**: Added direct "Move Toast" / "Lock Toast" toggle button to Section 2 ("Combat Alerts & Kill Banners") of `SettingsDialog`, allowing instant calibration without digging into submenus.
+  - **Safe Auto-Locking on Close**: Closing `SettingsDialog` or `AlertsDialog` (via ESC key or Close button) automatically locks and hides the reposition preview banner, preventing persistent test frames from remaining on screen.
 
-### Changed
+### Fixed
+- **Persistent Initial Toast on Menu Open (`UI:InitializeKillBanner`)**:
+  - Resolved bug where the death toast was left visible upon creation, causing it to spawn onto the screen when opening the menu and remain visible indefinitely until a manual test was run.
+  - Added explicit `Toast:Hide()` calls immediately following `CreateFrame` and `WoWKB_SetTheme("Classic")`.
 - **Flipped Banner Orientation to Natural Reading Order ("Player Killed Other Player") (`Addon/WoWKillboard/UI.lua`)**:
   - **Left-to-Right Combat Flow**: Inverted the death toast layout to mirror natural Western subject-verb-object reading order: **Killer (Left)** $\rightarrow$ **Incident Action (Center)** $\rightarrow$ **Victim (Right)**.
   - **Lethal Action Grammar**: Shifted center action text from passive `"slain by <Spell>"` to active `"killed with |cff<Color><Spell>|r"` (or `"killed with Melee Strike"`).
