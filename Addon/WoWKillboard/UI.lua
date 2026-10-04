@@ -7194,31 +7194,23 @@ function UI:InitializeKillBanner()
     local ClassicSkin = CreateFrame("Frame", nil, ToastRoot, "BackdropTemplate")
     ClassicSkin:SetAllPoints(ToastRoot)
 
-    -- Native 3-Slice burnished bronze artwork at 88px height for full un-squished bottom leaves
-    local toastLeft = ClassicSkin:CreateTexture(nil, "BACKGROUND", nil, -7)
-    toastLeft:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Alert-Background")
-    toastLeft:SetTexCoord(0, 0.21484375, 0, 0.6875)
-    toastLeft:SetSize(110, 88)
-    toastLeft:SetPoint("TOPLEFT", ClassicSkin, "TOPLEFT", 0, 0)
-    toastLeft:SetPoint("BOTTOMLEFT", ClassicSkin, "BOTTOMLEFT", 0, -4)
-    ClassicSkin.ToastBgLeft = toastLeft
+    -- Hide default template elements if created with a Blizzard template
+    if ClassicSkin.shield then ClassicSkin.shield:Hide() end
+    if ClassicSkin.points then ClassicSkin.points:Hide() end
+    if ClassicSkin.unlocked then ClassicSkin.unlocked:Hide() end
 
-    local toastRight = ClassicSkin:CreateTexture(nil, "BACKGROUND", nil, -7)
-    toastRight:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Alert-Background")
-    toastRight:SetTexCoord(0.390625, 0.60546875, 0, 0.6875)
-    toastRight:SetSize(110, 88)
-    toastRight:SetPoint("TOPRIGHT", ClassicSkin, "TOPRIGHT", 0, 0)
-    toastRight:SetPoint("BOTTOMRIGHT", ClassicSkin, "BOTTOMRIGHT", 0, -4)
-    ClassicSkin.ToastBgRight = toastRight
-
-    local toastMid = ClassicSkin:CreateTexture(nil, "BACKGROUND", nil, -7)
-    toastMid:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Alert-Background")
-    toastMid:SetTexCoord(0.21484375, 0.390625, 0, 0.6875)
-    toastMid:SetPoint("TOPLEFT", toastLeft, "TOPRIGHT", 0, 0)
-    toastMid:SetPoint("BOTTOMRIGHT", toastRight, "BOTTOMLEFT", 0, 0)
-    toastMid:SetHorizTile(false)
-    toastMid:SetVertTile(false)
-    ClassicSkin.ToastBgMid = toastMid
+    -- Clean cropped backdrop texture (UV 0, 0.78, 0, 1) eliminating squish and hiding points shield
+    local classicTexture = ClassicSkin:CreateTexture(nil, "BACKGROUND", nil, -7)
+    classicTexture:ClearAllPoints()
+    classicTexture:SetPoint("TOPLEFT", ClassicSkin, "TOPLEFT", 0, 0)
+    classicTexture:SetPoint("BOTTOMRIGHT", ClassicSkin, "BOTTOMRIGHT", 0, 0)
+    classicTexture:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Alert-Background")
+    classicTexture:SetTexCoord(0, 0.78, 0, 1)
+    ClassicSkin.ClassicTexture = classicTexture
+    ToastRoot.ClassicTexture = classicTexture
+    ClassicSkin.ToastBgLeft = classicTexture
+    ClassicSkin.ToastBgRight = classicTexture
+    ClassicSkin.ToastBgMid = classicTexture
 
     -- Solid Flat Dark-Stone Base for Classic Theme (rgba(16, 14, 12, 0.94))
     local innerFill = ClassicSkin:CreateTexture(nil, "BACKGROUND", nil, -6)
@@ -7226,6 +7218,7 @@ function UI:InitializeKillBanner()
     innerFill:SetPoint("BOTTOMRIGHT", ClassicSkin, "BOTTOMRIGHT", -6, 2)
     innerFill:SetColorTexture(16/255, 14/255, 12/255, 0.94)
     ClassicSkin.InnerFill = innerFill
+    ToastRoot.InnerFill = innerFill
 
     -- ElvUI Backdrop
     local ElvSkin = CreateFrame("Frame", nil, ToastRoot, "BackdropTemplate")
