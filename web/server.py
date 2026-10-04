@@ -68,6 +68,9 @@ RATE_LIMIT_STORES = {
     "debt_ledger": {},
     "discord_test": {},
     "analytics": {},
+    "stats": {},
+    "pve_deaths": {},
+    "client_flavor": {},
 }
 
 def check_ip_rate_limit(bucket_name: str, ip: str, max_requests: int, window_seconds: int) -> bool:
@@ -1846,10 +1849,17 @@ def admin_deploy():
 @app.route("/api/stats", methods=["GET", "POST"])
 def stats_endpoint():
     if request.method == "POST":
+        client_ip = get_client_ip()
+        if not check_ip_rate_limit("stats", client_ip, max_requests=30, window_seconds=60):
+            return jsonify({"error": "Rate limit exceeded. Maximum 30 stats updates per minute."}), 429
         data = request.json or {}
+        if not isinstance(data, dict):
+            return jsonify({"error": "Invalid payload format. Expected JSON object."}), 400
         with get_db() as conn:
             for category, val in data.items():
-                conn.execute("INSERT OR REPLACE INTO platform_stats (key, value) VALUES (?, ?)", (category, json.dumps(val)))
+                cat_key = str(category).strip()[:64]
+                if cat_key:
+                    conn.execute("INSERT OR REPLACE INTO platform_stats (key, value) VALUES (?, ?)", (cat_key, json.dumps(val)))
             conn.commit()
         return jsonify({"success": True}), 200
     else:
@@ -1983,14 +1993,38 @@ def get_leaderboard():
 @app.route("/api/pve/deaths", methods=["GET", "POST"])
 def pve_deaths_endpoint():
     if request.method == "POST":
+        client_ip = get_client_ip()
+        if not check_ip_rate_limit("pve_deaths", client_ip, max_requests=120, window_seconds=60):
+            return jsonify({"error": "Rate limit exceeded. Maximum 120 PvE death dispatches per minute."}), 429
         data = request.json or {}
         death_id = data.get("deathId")
         if not death_id:
             return jsonify({"error": "Missing deathId"}), 400
 
-        npc = data.get("npc", {})
-        victim = data.get("victim", {})
-        loc = data.get("location", {})
+        death_id = str(death_id).strip()[:64]
+        npc = data.get("npc", {}) if isinstance(data.get("npc"), dict) else {}
+        victim = data.get("victim", {}) if isinstance(data.get("victim"), dict) else {}
+        loc = data.get("location", {}) if isinstance(data.get("location"), dict) else {}
+
+        npc_name = str(npc.get("name", "Unknown Monster")).strip()[:64]
+        npc_id = max(0, min(int(npc.get("id") or 0), 1000000))
+        npc_guid = str(npc.get("guid", "")).strip()[:64]
+        npc_spell = str(npc.get("spell", "Combat Strike")).strip()[:64]
+        npc_damage = max(0, min(int(npc.get("damage") or 0), 100000000))
+
+        victim_name = str(victim.get("name", "Unknown")).strip()[:64]
+        victim_guid = str(victim.get("guid", "")).strip()[:64]
+        victim_level = max(0, min(int(victim.get("level") or 0), 90))
+        victim_class = str(victim.get("class", "UNKNOWN")).strip().upper()[:32]
+        victim_guild = str(victim.get("guild", "None")).strip()[:64]
+        victim_faction = str(victim.get("faction", "Unknown")).strip()[:32]
+
+        map_id = max(0, min(int(loc.get("mapId") or 0), 100000))
+        zone = str(loc.get("zone", "Unknown")).strip()[:128]
+        subzone = str(loc.get("subZone", "")).strip()[:128]
+        coord_x = float(loc.get("x") or 0.0)
+        coord_y = float(loc.get("y") or 0.0)
+        ts = int(data.get("timestamp") or time.time())
 
         with get_db() as conn:
             conn.execute("""
@@ -2000,25 +2034,9 @@ def pve_deaths_endpoint():
                     map_id, zone, subzone, coord_x, coord_y, raw_json
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                death_id,
-                data.get("timestamp", int(time.time())),
-                npc.get("name", "Unknown Monster"),
-                int(npc.get("id") or 0),
-                npc.get("guid", ""),
-                npc.get("spell", "Combat Strike"),
-                int(npc.get("damage") or 0),
-                victim.get("name", "Unknown"),
-                victim.get("guid", ""),
-                int(victim.get("level") or 0),
-                victim.get("class", "UNKNOWN"),
-                victim.get("guild", "None"),
-                victim.get("faction", "Unknown"),
-                int(loc.get("mapId") or 0),
-                loc.get("zone", "Unknown"),
-                loc.get("subZone", ""),
-                float(loc.get("x") or 0.0),
-                float(loc.get("y") or 0.0),
-                json.dumps(data)
+                death_id, ts, npc_name, npc_id, npc_guid, npc_spell, npc_damage,
+                victim_name, victim_guid, victim_level, victim_class, victim_guild, victim_faction,
+                map_id, zone, subzone, coord_x, coord_y, json.dumps(data)
             ))
             conn.commit()
 
@@ -2103,6 +2121,9 @@ def client_flavor_endpoint():
     valid_flavors = ["CLASSIC_ERA", "ANNIVERSARY", "FOREVER", "TBC", "WOTLK", "RETAIL"]
     valid_servers = ["PVP", "PVE", "RP", "HARDCORE"]
     if request.method == "POST":
+        client_ip = get_client_ip()
+        if not check_ip_rate_limit("client_flavor", client_ip, max_requests=20, window_seconds=60):
+            return jsonify({"error": "Rate limit exceeded. Maximum 20 flavor changes per minute."}), 429
         data = request.json or {}
         flavor = (data.get("flavor") or "").upper()
         server = (data.get("server") or "").upper()
