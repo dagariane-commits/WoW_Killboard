@@ -3318,10 +3318,8 @@ def get_activity_7d():
             # Dedicated PvE Realm Telemetry (Casualties, Apex Monsters, Wilderness Hazards, and Guild Casualties)
             total_kills = conn.execute("SELECT COUNT(*) FROM pve_deaths").fetchone()[0]
             char_count = conn.execute("""
-                SELECT COUNT(DISTINCT victim_name) FROM pve_deaths WHERE victim_name != 'Unknown'
-            """).fetchone()[0]
-            if char_count == 0:
-                char_count = conn.execute("SELECT COUNT(*) FROM characters").fetchone()[0]
+                SELECT COUNT(DISTINCT victim_name) FROM pve_deaths WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''
+            """).fetchone()[0] or 0
 
             guild_count = conn.execute("""
                 SELECT COUNT(DISTINCT victim_guild) FROM pve_deaths WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''
@@ -3447,14 +3445,12 @@ def get_activity_7d():
         # Lifetime total kills (Open World & BGs, Duels isolated)
         total_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
 
-        # Lifetime active characters (includes combatants and scanner-indexed characters)
+        # Lifetime active characters (active combatants from recorded kills)
         char_count = conn.execute("""
             SELECT COUNT(DISTINCT name) FROM (
-                SELECT killer_name AS name FROM kills WHERE killer_name != 'Unknown'
+                SELECT killer_name AS name FROM kills WHERE killer_name IS NOT NULL AND killer_name != 'Unknown' AND killer_name != ''
                 UNION
-                SELECT victim_name AS name FROM kills WHERE victim_name != 'Unknown'
-                UNION
-                SELECT name FROM characters WHERE name IS NOT NULL AND name != 'Unknown'
+                SELECT victim_name AS name FROM kills WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''
             )
         """).fetchone()[0]
 

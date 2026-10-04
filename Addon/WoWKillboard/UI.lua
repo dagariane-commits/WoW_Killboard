@@ -1993,28 +1993,74 @@ function UI:RenderLiveFeed()
             row:SetPoint("TOPLEFT", 0, yOffset)
             local isEven = (idx % 2 == 0)
             local baseBg = isEven and theme.rowBgAlt or theme.rowBg
-            row:SetBackdrop(theme.rowBackdrop)
-            row:SetBackdropColor(unpack(baseBg))
-            row:SetBackdropBorderColor(unpack(theme.rowBorder))
 
-            -- Left Accent Bar (Colored by engagement category)
+            -- Determine victor faction (Alliance Blue vs Horde Red, matching web killboard)
+            local kFaction = (km.killer and km.killer.faction or ""):lower()
+            if kFaction == "" and km.killer and km.killer.class then
+                local cls = km.killer.class:upper()
+                if cls == "PALADIN" then kFaction = "alliance"
+                elseif cls == "SHAMAN" then kFaction = "horde" end
+            end
+            if kFaction == "" and km.victim and km.victim.faction and not km.isDuel then
+                local vf = km.victim.faction:lower()
+                if vf == "alliance" then kFaction = "horde"
+                elseif vf == "horde" then kFaction = "alliance" end
+            end
+
+            local rowBg = baseBg
+            local rowBorder = theme.rowBorder
+            local hoverBg = theme.btnHoverBg or { 0.15, 0.15, 0.18, 0.95 }
+            local hoverBorder = theme.btnHoverBorder or { 1.0, 0.82, 0.0, 0.8 }
+
+            if kFaction == "alliance" then
+                rowBg = isEven and { 0.04, 0.08, 0.16, 0.92 } or { 0.03, 0.06, 0.13, 0.92 }
+                rowBorder = { 0.18, 0.38, 0.72, 0.75 }
+                hoverBg = { 0.07, 0.13, 0.25, 0.98 }
+                hoverBorder = { 0.28, 0.58, 0.98, 1.0 }
+            elseif kFaction == "horde" then
+                rowBg = isEven and { 0.14, 0.04, 0.05, 0.92 } or { 0.11, 0.03, 0.04, 0.92 }
+                rowBorder = { 0.72, 0.18, 0.18, 0.75 }
+                hoverBg = { 0.22, 0.07, 0.08, 0.98 }
+                hoverBorder = { 0.95, 0.25, 0.25, 1.0 }
+            elseif km.isDuel then
+                rowBg = isEven and { 0.10, 0.08, 0.04, 0.90 } or { 0.08, 0.07, 0.03, 0.90 }
+                rowBorder = { 0.65, 0.52, 0.15, 0.75 }
+                hoverBg = { 0.18, 0.15, 0.06, 0.98 }
+                hoverBorder = { 1.0, 0.84, 0.0, 1.0 }
+            end
+
+            row:SetBackdrop(theme.rowBackdrop)
+            row:SetBackdropColor(unpack(rowBg))
+            row:SetBackdropBorderColor(unpack(rowBorder))
+
+            -- Left Accent Bar (Colored by victor faction or engagement category)
             local accent = row:CreateTexture(nil, "ARTWORK")
             accent:SetPoint("TOPLEFT", 0, 0)
             accent:SetPoint("BOTTOMLEFT", 0, 0)
             accent:SetWidth(4)
 
-            local badgeStr = ""
-            if km.isDuel then
+            if kFaction == "alliance" then
+                accent:SetColorTexture(0.0, 0.44, 0.87, 1.0) -- Alliance Blue
+            elseif kFaction == "horde" then
+                accent:SetColorTexture(0.77, 0.12, 0.23, 1.0) -- Horde Red
+            elseif km.isDuel then
                 accent:SetColorTexture(1.0, 0.84, 0.0, 1.0) -- Gold
-                badgeStr = "|cffffd700[DUEL]|r"
             elseif km.isBattleground then
                 accent:SetColorTexture(0.3, 0.65, 1.0, 1.0) -- Soft Blue
-                badgeStr = string.format("|cff69ccf0[BG x%d]|r", km.attackersCount or 1)
             elseif km.isSolo then
                 accent:SetColorTexture(0.0, 1.0, 0.4, 1.0) -- Emerald
-                badgeStr = "|cff00ff66[SOLO]|r"
             else
                 accent:SetColorTexture(1.0, 0.6, 0.0, 1.0) -- Orange
+            end
+
+            local badgeStr = ""
+            if km.isDuel then
+                badgeStr = "|cffffd700[DUEL]|r"
+            elseif km.isBattleground then
+                badgeStr = string.format("|cff69ccf0[BG x%d]|r", km.attackersCount or 1)
+            elseif km.isSolo then
+                badgeStr = "|cff00ff66[SOLO]|r"
+            else
                 local attCount = km.attackersCount or 2
                 if attCount > 1 then
                     badgeStr = string.format("|cffffaa00[GANG x%d]|r", attCount)
@@ -2094,18 +2140,12 @@ function UI:RenderLiveFeed()
 
             -- Interactive Hover
             row:SetScript("OnEnter", function(self)
-                local t = UI:GetTheme()
-                if t and t.btnHoverBg then
-                    self:SetBackdropColor(unpack(t.btnHoverBg))
-                    self:SetBackdropBorderColor(unpack(t.btnHoverBorder))
-                end
+                self:SetBackdropColor(unpack(hoverBg))
+                self:SetBackdropBorderColor(unpack(hoverBorder))
             end)
             row:SetScript("OnLeave", function(self)
-                local t = UI:GetTheme()
-                self:SetBackdropColor(unpack(baseBg))
-                if t and t.rowBorder then
-                    self:SetBackdropBorderColor(unpack(t.rowBorder))
-                end
+                self:SetBackdropColor(unpack(rowBg))
+                self:SetBackdropBorderColor(unpack(rowBorder))
             end)
 
             -- Click handler to open killmail detail
@@ -2331,9 +2371,34 @@ function UI:RenderPveFeed()
         row:SetPoint("TOPLEFT", 0, yOffset)
         local isEven = (idx % 2 == 0)
         local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+
+        local vFaction = (pd.victim and pd.victim.faction or ""):lower()
+        if vFaction == "" and pd.victim and pd.victim.class then
+            local cls = pd.victim.class:upper()
+            if cls == "PALADIN" then vFaction = "alliance"
+            elseif cls == "SHAMAN" then vFaction = "horde" end
+        end
+
+        local pveRowBg = baseBg
+        local pveRowBorder = theme.rowBorder
+        local pveHoverBg = { 0.12, 0.12, 0.15, 0.95 }
+        local pveHoverBorder = { 1.0, 0.82, 0.0, 0.8 }
+
+        if vFaction == "alliance" then
+            pveRowBg = isEven and { 0.04, 0.07, 0.14, 0.92 } or { 0.03, 0.05, 0.11, 0.92 }
+            pveRowBorder = { 0.18, 0.35, 0.65, 0.70 }
+            pveHoverBg = { 0.06, 0.11, 0.22, 0.98 }
+            pveHoverBorder = { 0.28, 0.55, 0.95, 1.0 }
+        elseif vFaction == "horde" then
+            pveRowBg = isEven and { 0.12, 0.04, 0.05, 0.92 } or { 0.10, 0.03, 0.04, 0.92 }
+            pveRowBorder = { 0.65, 0.18, 0.18, 0.70 }
+            pveHoverBg = { 0.18, 0.06, 0.07, 0.98 }
+            pveHoverBorder = { 0.95, 0.25, 0.25, 1.0 }
+        end
+
         row:SetBackdrop(theme.rowBackdrop)
-        row:SetBackdropColor(unpack(baseBg))
-        row:SetBackdropBorderColor(unpack(theme.rowBorder))
+        row:SetBackdropColor(unpack(pveRowBg))
+        row:SetBackdropBorderColor(unpack(pveRowBorder))
 
         -- Left Accent Bar
         local accent = row:CreateTexture(nil, "ARTWORK")
@@ -2424,20 +2489,12 @@ function UI:RenderPveFeed()
         -- Row hover effects
         row:EnableMouse(true)
         row:SetScript("OnEnter", function(self)
-            local t = UI:GetTheme()
-            if t and t.rowHoverBg then
-                self:SetBackdropColor(unpack(t.rowHoverBg))
-            else
-                self:SetBackdropColor(0.12, 0.12, 0.15, 0.95)
-            end
-            self:SetBackdropBorderColor(1.0, 0.82, 0.0, 0.8)
+            self:SetBackdropColor(unpack(pveHoverBg))
+            self:SetBackdropBorderColor(unpack(pveHoverBorder))
         end)
         row:SetScript("OnLeave", function(self)
-            local t = UI:GetTheme()
-            self:SetBackdropColor(unpack(baseBg))
-            if t and t.rowBorder then
-                self:SetBackdropBorderColor(unpack(t.rowBorder))
-            end
+            self:SetBackdropColor(unpack(pveRowBg))
+            self:SetBackdropBorderColor(unpack(pveRowBorder))
         end)
 
         -- Click handler to open death detail
@@ -2946,6 +3003,23 @@ function UI:ShowPveDeathDetail(pd)
     ))
 
     UI:ApplyTheme()
+
+    local vFac = (vFaction or ""):lower()
+    if vFac == "" and vClass then
+        local cls = vClass:upper()
+        if cls == "PALADIN" then vFac = "alliance"
+        elseif cls == "SHAMAN" then vFac = "horde" end
+    end
+    if vFac == "alliance" then
+        m.VictimCard:SetBackdropColor(0.04, 0.08, 0.16, 0.96)
+        m.VictimCard:SetBackdropBorderColor(0.22, 0.52, 0.88, 0.95)
+    elseif vFac == "horde" then
+        m.VictimCard:SetBackdropColor(0.16, 0.04, 0.04, 0.96)
+        m.VictimCard:SetBackdropBorderColor(0.85, 0.24, 0.20, 0.95)
+    end
+    m.KillerCard:SetBackdropColor(0.16, 0.05, 0.04, 0.96)
+    m.KillerCard:SetBackdropBorderColor(0.85, 0.35, 0.15, 0.95)
+
     m:Show()
     if m.Raise then m:Raise() end
 end
@@ -4375,14 +4449,39 @@ end
 
 -- Detail Modal Frame: Classified Killmail Dossier (Anonymous, 100% template-free)
 function UI:CreateDetailModal()
+    -- Full Backdrop Dimmer / Scrim covering the mainFrame behind the modal
+    local scrim = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+    scrim:SetAllPoints(mainFrame)
+    scrim:SetFrameStrata("DIALOG")
+    scrim:SetFrameLevel(mainFrame:GetFrameLevel() + 40)
+    scrim:EnableMouse(true)
+    scrim:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = nil,
+    })
+    scrim:SetBackdropColor(0, 0, 0, 0.78)
+    scrim:Hide()
+
     local modal = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
     UI.DetailModal = modal
+    modal.Scrim = scrim
     modal:SetSize(520, 360)
     modal:SetPoint("CENTER", mainFrame, "CENTER", 0, 0)
     modal:SetFrameStrata("DIALOG")
     modal:SetFrameLevel(mainFrame:GetFrameLevel() + 50)
     modal:EnableMouse(true)
     modal:SetClampedToScreen(true)
+
+    scrim:SetScript("OnMouseDown", function()
+        modal:Hide()
+    end)
+
+    modal:HookScript("OnShow", function()
+        if modal.Scrim then modal.Scrim:Show() end
+    end)
+    modal:HookScript("OnHide", function()
+        if modal.Scrim then modal.Scrim:Hide() end
+    end)
 
     local theme = UI:GetTheme()
     local modalSolid = modal:CreateTexture(nil, "BACKGROUND", nil, -8)
@@ -4594,6 +4693,47 @@ function UI:ShowKillDetail(km)
     ))
 
     UI:ApplyTheme()
+
+    -- Skin cards based on faction
+    local kFaction = (km.killer and km.killer.faction or ""):lower()
+    if kFaction == "" and km.killer and km.killer.class then
+        local cls = km.killer.class:upper()
+        if cls == "PALADIN" then kFaction = "alliance"
+        elseif cls == "SHAMAN" then kFaction = "horde" end
+    end
+    if kFaction == "" and km.victim and km.victim.faction and not km.isDuel then
+        local vf = km.victim.faction:lower()
+        if vf == "alliance" then kFaction = "horde"
+        elseif vf == "horde" then kFaction = "alliance" end
+    end
+
+    if kFaction == "alliance" then
+        m.KillerCard:SetBackdropColor(0.04, 0.08, 0.16, 0.96)
+        m.KillerCard:SetBackdropBorderColor(0.22, 0.52, 0.88, 0.95)
+    elseif kFaction == "horde" then
+        m.KillerCard:SetBackdropColor(0.16, 0.04, 0.04, 0.96)
+        m.KillerCard:SetBackdropBorderColor(0.85, 0.24, 0.20, 0.95)
+    end
+
+    local vFaction = (km.victim and km.victim.faction or ""):lower()
+    if vFaction == "" and km.victim and km.victim.class then
+        local cls = km.victim.class:upper()
+        if cls == "PALADIN" then vFaction = "alliance"
+        elseif cls == "SHAMAN" then vFaction = "horde" end
+    end
+    if vFaction == "" and kFaction ~= "" and not km.isDuel then
+        if kFaction == "alliance" then vFaction = "horde"
+        elseif kFaction == "horde" then vFaction = "alliance" end
+    end
+
+    if vFaction == "alliance" then
+        m.VictimCard:SetBackdropColor(0.04, 0.08, 0.16, 0.96)
+        m.VictimCard:SetBackdropBorderColor(0.22, 0.52, 0.88, 0.95)
+    elseif vFaction == "horde" then
+        m.VictimCard:SetBackdropColor(0.16, 0.04, 0.04, 0.96)
+        m.VictimCard:SetBackdropBorderColor(0.85, 0.24, 0.20, 0.95)
+    end
+
     m:Show()
     if m.Raise then m:Raise() end
 end

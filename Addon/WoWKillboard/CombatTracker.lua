@@ -313,6 +313,21 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
     local isHostile = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE)
     if isHostile and isSourcePlayer then
         CT.HostileCluster[sourceGUID] = now
+    elseif destGUID == playerGUID and not isSourcePlayer and sourceName and sourceName ~= "" and sourceName ~= "Environment" then
+        local npcId = 0
+        if sourceGUID then
+            local parsed = sourceGUID:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or sourceGUID:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
+            if parsed then npcId = tonumber(parsed) or 0 end
+        end
+        CT.LastHostileNpc = {
+            name = cleanSource or sourceName,
+            guid = sourceGUID,
+            id = npcId,
+            spell = spellName or "Combat Strike",
+            damage = amount or 0,
+            lastSeen = now,
+        }
+        CT.HostileCluster[sourceGUID] = now
     end
 
     -- If source is friendly to player (or in player's faction), track in FriendlyCluster
@@ -420,10 +435,11 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
 
     -- Check if player died
     if victimGUID == playerGUID then
-        if (now - (CT.LastPlayerDeathTime or 0)) > 3 then
-            CT.SessionStats.deaths = CT.SessionStats.deaths + 1
-            CT.LastPlayerDeathTime = now
+        if (now - (CT.LastPlayerDeathTime or 0)) <= 3 then
+            return
         end
+        CT.SessionStats.deaths = CT.SessionStats.deaths + 1
+        CT.LastPlayerDeathTime = now
     end
 
     local cleanVictim = KB.Utils.CleanCombatantName(victimName)
@@ -751,13 +767,41 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
         if playerGUID and victimGUID == playerGUID then
             CT.SessionStats.pveDeaths = (CT.SessionStats.pveDeaths or 0) + 1
             local pClass = select(2, UnitClass("player"))
-            local fallbackNpc = (CT.LastHostileNpc and (now - (CT.LastHostileNpc.lastSeen or 0)) <= 45 and CT.LastHostileNpc) or {
-                name = "Environmental Hazard",
-                id = 0,
-                guid = "ENVIRONMENT",
-                spell = "Fatal Impact / Mishap",
-                damage = 0,
-            }
+            local fallbackNpc = (CT.LastHostileNpc and (now - (CT.LastHostileNpc.lastSeen or 0)) <= 60 and CT.LastHostileNpc)
+            if not fallbackNpc and activeEnemyTarget and (now - (activeEnemyTarget.lastSeen or 0)) <= 60 then
+                fallbackNpc = {
+                    name = activeEnemyTarget.name or "Hostile NPC",
+                    id = 0,
+                    guid = activeEnemyTarget.guid or "CREATURE",
+                    spell = "Combat Strike",
+                    damage = 0,
+                }
+            end
+            if not fallbackNpc and UnitExists("target") and (UnitIsEnemy("player", "target") or (UnitCanAttack and UnitCanAttack("player", "target")) or not UnitIsFriend("player", "target")) then
+                local tName = UnitName("target")
+                local tGuid = UnitGUID("target")
+                local npcId = 0
+                if tGuid then
+                    local parsed = tGuid:match("Creature%-%d+%-%d+%-%d+%-%d+%-(%d+)%-") or tGuid:match("Vehicle%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
+                    if parsed then npcId = tonumber(parsed) or 0 end
+                end
+                fallbackNpc = {
+                    name = tName or "Hostile NPC",
+                    id = npcId,
+                    guid = tGuid or "CREATURE",
+                    spell = "Combat Strike",
+                    damage = 0,
+                }
+            end
+            if not fallbackNpc then
+                fallbackNpc = {
+                    name = "Environmental Hazard",
+                    id = 0,
+                    guid = "ENVIRONMENT",
+                    spell = "Fatal Impact / Mishap",
+                    damage = 0,
+                }
+            end
             KB.Killmail:RecordPveDeath({
                 timestamp = now,
                 npc = {
