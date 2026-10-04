@@ -177,30 +177,43 @@ function KB:Initialize()
     WoWKillboardDB.pveDeaths = WoWKillboardDB.pveDeaths or {}
     WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
 
-    -- Auto-tag untagged legacy kills/deaths involving the local character with current realm
+    -- Auto-tag untagged legacy kills/deaths involving the local character or active realm
     local myRealm = (GetRealmName and GetRealmName()) or ""
     local myRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVP"
     local myName = UnitName("player") or ""
-    if myRealm ~= "" and myName ~= "" then
+    if myRealm ~= "" then
         for _, km in pairs(WoWKillboardDB.kills) do
             if type(km) == "table" and (not km.realm or km.realm == "" or km.realm == "Unknown") then
                 local kName = (km.killer and km.killer.name) or ""
                 local vName = (km.victim and km.victim.name) or ""
-                if kName:lower() == myName:lower() or vName:lower() == myName:lower() then
+                local kRealm = (km.killer and km.killer.realm) or ""
+                local vRealm = (km.victim and km.victim.realm) or ""
+                if (myName ~= "" and (kName:lower() == myName:lower() or vName:lower() == myName:lower())) then
                     km.realm = myRealm
                     km.ruleset = myRuleset
-                    if km.killer then km.killer.realm = myRealm end
-                    if km.victim then km.victim.realm = myRealm end
+                    if km.killer and (not km.killer.realm or km.killer.realm == "") then km.killer.realm = myRealm end
+                    if km.victim and (not km.victim.realm or km.victim.realm == "") then km.victim.realm = myRealm end
+                elseif kRealm ~= "" and kRealm ~= "Unknown" then
+                    km.realm = kRealm
+                    km.ruleset = km.ruleset or myRuleset
+                elseif vRealm ~= "" and vRealm ~= "Unknown" then
+                    km.realm = vRealm
+                    km.ruleset = km.ruleset or myRuleset
                 end
             end
         end
         for _, pd in pairs(WoWKillboardDB.pveDeaths) do
             if type(pd) == "table" and (not pd.realm or pd.realm == "" or pd.realm == "Unknown") then
-                local vName = (pd.victim and pd.victim.name) or ""
-                if vName:lower() == myName:lower() then
+                local vRealm = (pd.victim and pd.victim.realm) or ""
+                if vRealm ~= "" and vRealm ~= "Unknown" then
+                    pd.realm = vRealm
+                    pd.ruleset = pd.ruleset or myRuleset or "PVE"
+                else
                     pd.realm = myRealm
-                    pd.ruleset = myRuleset
-                    if pd.victim then pd.victim.realm = myRealm end
+                    pd.ruleset = pd.ruleset or myRuleset or "PVE"
+                    if pd.victim and (not pd.victim.realm or pd.victim.realm == "" or pd.victim.realm == "Unknown") then
+                        pd.victim.realm = myRealm
+                    end
                 end
             end
         end

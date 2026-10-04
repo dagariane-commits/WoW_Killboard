@@ -201,6 +201,11 @@ function S:OnIncomingTestCasualty(testData, sender)
     end
     S.recentTestAlerts[testKey] = now
 
+    testData.realm = testData.realm or (GetRealmName and GetRealmName()) or ""
+    testData.ruleset = testData.ruleset or (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVE"
+    if testData.killer and not testData.killer.realm then testData.killer.realm = testData.realm end
+    if testData.victim and not testData.victim.realm then testData.victim.realm = testData.realm end
+
     -- Trigger Kill Banner & Toast with isTest = true (Bypasses zone restrictions, guarantees zero database write)
     if KB.UI and KB.UI.ShowKillBanner then
         KB.UI:ShowKillBanner(testData, true)
@@ -625,7 +630,11 @@ function S:OnAddonMessage(prefix, message, channel, sender)
                     x = 0,
                     y = 0,
                 },
+                realm = (GetRealmName and GetRealmName()) or "",
+                ruleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVP",
             }
+            if syncedKM.killer then syncedKM.killer.realm = syncedKM.realm end
+            if syncedKM.victim then syncedKM.victim.realm = syncedKM.realm end
 
             WoWKillboardDB.kills[killId] = syncedKM
 
@@ -699,7 +708,10 @@ function S:OnAddonMessage(prefix, message, channel, sender)
                     x = 0,
                     y = 0,
                 },
+                realm = (GetRealmName and GetRealmName()) or "",
+                ruleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVE",
             }
+            if syncedPve.victim then syncedPve.victim.realm = syncedPve.realm end
 
             WoWKillboardDB.pveDeaths[deathId] = syncedPve
 
@@ -941,7 +953,10 @@ function S:OnIncomingChannelCasualty(text, sender)
             x = 0,
             y = 0,
         },
+        realm = (GetRealmName and GetRealmName()) or "",
+        ruleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVE",
     }
+    if channelPve.victim then channelPve.victim.realm = channelPve.realm end
 
     if isTestMsg then
         S:OnIncomingTestCasualty(channelPve, sender)

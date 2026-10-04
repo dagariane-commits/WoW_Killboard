@@ -985,9 +985,9 @@ class KillboardWatcher:
                                 pd_copy = dict(pdeath)
                                 if "deathId" not in pd_copy:
                                     pd_copy["deathId"] = did
-                                if "realm" not in pd_copy:
-                                    pd_copy["realm"] = pdeath.get("realm") or "Unknown"
-                                if "ruleset" not in pd_copy:
+                                if "realm" not in pd_copy or pd_copy["realm"] in (None, "", "Unknown"):
+                                    pd_copy["realm"] = pdeath.get("realm") or (isinstance(pdeath.get("victim"), dict) and pdeath["victim"].get("realm")) or "Unknown"
+                                if "ruleset" not in pd_copy or not pd_copy["ruleset"]:
                                     pd_copy["ruleset"] = pdeath.get("ruleset") or "PVE"
                                 recent_pve_deaths.append(pd_copy)
                                 known_pve_ids.add(did)

@@ -52,6 +52,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added dual copy-paste edit boxes for CurseForge and GitHub Releases direct downloads.
   - Synchronized `WoWKillboard_RealmData.lua` and companion desktop sync watcher fallback to `LatestVersion = "1.0.3"`.
 
+### Fixed
+- **PvE Casualty Visibility & Shared Account Deaths (`Leaderboard.lua`, `Core.lua`, `Sync.lua`, `watcher.py`)**:
+  - Resolved issue where previous PvE casualties (from secondary computers or synced data) without explicit realm tags were rejected by `LB:MatchesRealm` on PvE and Hardcore servers, causing previous deaths on the leaderboard to disappear.
+  - Updated `Leaderboard.lua` to recognize that any PvE death record (`isPveDeath`, `npc` table, or `deathId` prefix) belongs on PvE/Hardcore feeds even if untagged.
+  - Updated `Core.lua` on load to auto-tag all untagged PvE deaths in `WoWKillboardDB.pveDeaths` with the active realm and ruleset.
+  - Updated `Sync.lua` to guarantee that incoming casualties over party, guild, raid, and realm channels are tagged with the active realm and ruleset.
+  - Refined `watcher.py` to ensure local PvE deaths merged into `WoWKillboard_RealmData.lua` receive proper realm and ruleset fallbacks.
+
 ## [1.0.2] - 2026-10-04 (CurseForge Community Release)
 
 ### Fixed
