@@ -8,7 +8,7 @@ local KB = WoWKillboard
 
 
 
-KB.Version = "1.0.1"
+KB.Version = "1.0.2"
 KB.Prefix = "WOWKB"
 KB.WebDomain = "wowkillboard.com"
 

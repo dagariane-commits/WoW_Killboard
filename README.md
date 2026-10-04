@@ -1,6 +1,6 @@
 # WoW Killboard — Frontline War Room
 
-[![Release](https://img.shields.io/badge/Release-v1.0.1-00e5ff.svg)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/Release-v1.0.2-00e5ff.svg)](CHANGELOG.md)
 [![CI](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml)
 [![WoW Flavors](https://img.shields.io/badge/WoW-Forever%20%7C%20Classic%20Era%20%7C%20Anniversary%20%7C%20Retail-ffd700.svg)](docs/TAINT_AND_COMPATIBILITY.md)
