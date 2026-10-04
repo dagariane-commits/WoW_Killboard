@@ -1,8 +1,8 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 04:25:00 EDT  
-> **Git Status**: Branch `main` (Preparing commit for v1.4.112).  
+> **Last Synchronized**: 2026-10-04 04:35:00 EDT  
+> **Git Status**: Branch `main` (Preparing commit for v1.4.113).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.1` (Community Release).  
 > **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
@@ -39,6 +39,13 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Bilateral Symmetrical Killer Faction Insignia & Restored High-Res Crests (`UI.lua`)**:
+  - Restored high-res circular medallions `crest_alliance.tga` and `crest_horde.tga` across `GetFactionCrestInfo` and `ToggleBannerLock`, resolving the regression to tiny low-res PvP badges.
+  - Implemented `killerFactionIcon` (36px × 36px) on the far right of the banner anchored at `RIGHT, Content, RIGHT, -14, -4`, re-anchoring `killerIcon` adjacent to it at `RIGHT, killerFactionIcon, LEFT, -8, 0`.
+  - Added smart contextual PvE mob insignia detection in `GetKillerFactionCrestInfo(killmail, isNpc)` (Red Defias Mask `INV_Mask_01` for Defias Pillager, Scourge Death Scream skull for Undead, Fel sigil for Demons, Predator Claws for Beasts, Candle for Kobolds, etc.).
+  - Added dynamic lethal spell texture display on `killerIcon` for NPC kills (e.g. Fireball `Spell_Fire_FlameBolt`).
+  - Added sharp (1, -1) drop shadows across all banner text elements.
+  - Extended `/kb test [dag|x|pve]` subcommands for instant PvP victory, PvP casualty, and PvE death previews.
 - **Unified Backdrop Structure & Classic Theme Color Parity (`UI.lua`)**:
   - Replaced the distorted achievement alert texture with the identical clean flat backdrop structure as ElvUI (560px × 84px, 1px solid border, 2px top accent line).
   - Styled Classic with warm dark stone base (`rgba(18, 14, 12, 0.95)`), burnished gold border (`#C79C3A`), and Blizzard Gold top accent line (`#FFD100`).

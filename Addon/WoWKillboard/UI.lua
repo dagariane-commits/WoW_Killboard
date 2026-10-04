@@ -6941,12 +6941,104 @@ local function GetFactionCrestInfo(faction, fallbackClass)
         end
     end
     if f == "alliance" then
-        return "Interface\\TargetingFrame\\UI-PVP-Alliance", {0, 1, 0, 1}
+        return "Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga", {0, 1, 0, 1}
     elseif f == "horde" then
-        return "Interface\\TargetingFrame\\UI-PVP-Horde", {0, 1, 0, 1}
+        return "Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga", {0, 1, 0, 1}
     else
         return "Interface\\TargetingFrame\\UI-PVP-FFA", {0, 1, 0, 1}
     end
+end
+
+local function GetKillerFactionCrestInfo(killmail, isNpc)
+    if not isNpc and killmail.killer and killmail.killer.isPlayer ~= false and killmail.killer.faction ~= "Monster" then
+        return GetFactionCrestInfo(killmail.killer.faction, killmail.killer.class)
+    end
+
+    -- NPC / PvE Lore Insignia Detection
+    local killer = killmail.killer or killmail.npc or {}
+    local name = (killer.name or ""):lower()
+    local cType = (killer.creatureType or (killmail.npc and killmail.npc.creatureType) or ""):lower()
+    local faction = (killer.faction or (killmail.npc and killmail.npc.faction) or ""):lower()
+
+    -- Check if NPC is affiliated with Alliance or Horde (City Guards, Faction Troops)
+    if faction == "alliance" or (name:find("guard") and (name:find("stormwind") or name:find("ironforge") or name:find("darnassus") or name:find("southshore") or name:find("sentinel"))) then
+        return "Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga", {0, 1, 0, 1}
+    elseif faction == "horde" or (name:find("grunt") or name:find("deathguard") or (name:find("guard") and (name:find("orgrimmar") or name:find("undercity") or name:find("thunder bluff") or name:find("tarren mill")))) then
+        return "Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga", {0, 1, 0, 1}
+    end
+
+    -- Defias Brotherhood & Outlaws (Westfall, Deadmines, Redridge)
+    if name:find("defias") or name:find("bandit") or name:find("highwayman") or name:find("pillager") or name:find("cutpurse") or name:find("thief") or name:find("looter") then
+        return "Interface\\Icons\\INV_Mask_01", {0, 1, 0, 1} -- Iconic Red Defias Bandana / Mask
+    end
+
+    -- Bloodsail Buccaneers & Pirates
+    if name:find("bloodsail") or name:find("pirate") or name:find("buccaneer") or name:find("corsair") or name:find("swashbuckler") then
+        return "Interface\\Icons\\INV_Misc_PirateFlag_01", {0, 1, 0, 1}
+    end
+
+    -- Syndicate
+    if name:find("syndicate") then
+        return "Interface\\Icons\\INV_Mask_02", {0, 1, 0, 1}
+    end
+
+    -- Scarlet Crusade
+    if name:find("scarlet") then
+        return "Interface\\Icons\\INV_Shield_06", {0, 1, 0, 1}
+    end
+
+    -- Kobolds
+    if name:find("kobold") or name:find("tunnel rat") or name:find("geomancer") then
+        return "Interface\\Icons\\INV_Misc_Candle_01", {0, 1, 0, 1}
+    end
+
+    -- Murlocs
+    if name:find("murloc") or name:find("tidehunter") or name:find("oracle") or name:find("coastrunner") then
+        return "Interface\\Icons\\INV_Misc_Fish_02", {0, 1, 0, 1}
+    end
+
+    -- Gnolls & Troggs
+    if name:find("gnoll") or name:find("hogger") or name:find("riverpaw") or name:find("redridge") or name:find("trogg") then
+        return "Interface\\Icons\\INV_Misc_Bone_08", {0, 1, 0, 1}
+    end
+
+    -- Undead & Scourge
+    if cType == "undead" or name:find("scourge") or name:find("ghoul") or name:find("zombie") or name:find("skeleton") or name:find("necromancer") or name:find("cultist") or name:find("lich") then
+        return "Interface\\Icons\\Spell_Shadow_DeathScream", {0, 1, 0, 1}
+    end
+
+    -- Demons & Burning Legion
+    if cType == "demon" or name:find("demon") or name:find("fel") or name:find("infernal") or name:find("imp") or name:find("succubus") or name:find("doomguard") or name:find("dreadlord") or name:find("legion") then
+        return "Interface\\Icons\\Spell_Shadow_SummonFelHunter", {0, 1, 0, 1}
+    end
+
+    -- Dragonkin & Flights
+    if cType == "dragonkin" or name:find("dragon") or name:find("drake") or name:find("whelp") or name:find("onyxia") or name:find("nefarian") then
+        return "Interface\\Icons\\INV_Misc_Head_Dragon_01", {0, 1, 0, 1}
+    end
+
+    -- Elementals
+    if cType == "elemental" or name:find("elemental") or name:find("ragnaros") or name:find("flame") or name:find("water") or name:find("earth") or name:find("vortex") then
+        return "Interface\\Icons\\Spell_Fire_Elemental_Devastation", {0, 1, 0, 1}
+    end
+
+    -- Beasts & Predators
+    if cType == "beast" or name:find("wolf") or name:find("bear") or name:find("boar") or name:find("spider") or name:find("raptor") or name:find("cat") or name:find("crocolisk") then
+        return "Interface\\Icons\\INV_Misc_MonsterClaw_04", {0, 1, 0, 1}
+    end
+
+    -- Mechanical
+    if cType == "mechanical" or name:find("harvest golem") or name:find("mech") or name:find("robot") or name:find("golem") then
+        return "Interface\\Icons\\INV_Gizmo_02", {0, 1, 0, 1}
+    end
+
+    -- Giants
+    if cType == "giant" or name:find("giant") or name:find("colossus") then
+        return "Interface\\Icons\\Ability_Racial_Avatar", {0, 1, 0, 1}
+    end
+
+    -- Default Mob / Threat Insignia
+    return "Interface\\Icons\\INV_Misc_MonsterHead_02", {0, 1, 0, 1}
 end
 
 -- =========================================================================
@@ -6956,8 +7048,15 @@ local function GetEventHeaderText(killmail, isNpc)
     local eventTitle = "CASUALTY REPORT"
     local ruleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or (UI.GetRuleset and UI:GetRuleset()) or "PVP"
 
+    local myName = UnitName("player") or "Dagariane"
+    local isMyVictory = (killmail.killer and killmail.killer.name == myName)
+
     if not isNpc and not killmail.isPveDeath then
-        eventTitle = "WORLD PVP CASUALTY"
+        if isMyVictory then
+            eventTitle = "HONORABLE VICTORY"
+        else
+            eventTitle = "WORLD PVP CASUALTY"
+        end
     elseif ruleset == "HARDCORE" or (killmail.isHardcore == true) then
         eventTitle = "FALLEN HERO"
     else
@@ -7151,12 +7250,14 @@ function UI:InitializeKillBanner()
     headerText:SetPoint("TOP", Content, "TOP", 0, -8)
     headerText:SetTextColor(1, 0.82, 0, 1) -- #FFD100
     headerText:SetText("CASUALTY REPORT  •  WESTFALL (SENTINEL HILL)")
+    headerText:SetShadowOffset(1, -1)
+    headerText:SetShadowColor(0, 0, 0, 1.0)
 
-    -- Left Side: Victim
+    -- Left Side: Victim (Outer Faction Crest + Inner Class Icon)
     local factionIcon = Content:CreateTexture(nil, "ARTWORK")
     factionIcon:SetSize(36, 36)
     factionIcon:SetPoint("LEFT", Content, "LEFT", 14, -4)
-    factionIcon:SetTexture("Interface\\TargetingFrame\\UI-PVP-Alliance")
+    factionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
 
     local victimIcon = Content:CreateTexture(nil, "ARTWORK")
     victimIcon:SetSize(36, 36)
@@ -7168,12 +7269,16 @@ function UI:InitializeKillBanner()
     victimName:SetTextColor(0.96, 0.55, 0.73, 1) -- Paladin Pink
     victimName:SetText("[23] Dagariane")
     victimName:SetJustifyH("LEFT")
+    victimName:SetShadowOffset(1, -1)
+    victimName:SetShadowColor(0, 0, 0, 1.0)
 
     local victimGuild = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     victimGuild:SetPoint("BOTTOMLEFT", victimIcon, "BOTTOMRIGHT", 10, 2)
     victimGuild:SetTextColor(0.65, 0.65, 0.65, 1)
     victimGuild:SetText("")
     victimGuild:SetJustifyH("LEFT")
+    victimGuild:SetShadowOffset(1, -1)
+    victimGuild:SetShadowColor(0, 0, 0, 1.0)
 
     -- Center: Death Action
     local skullIcon = Content:CreateTexture(nil, "ARTWORK")
@@ -7185,11 +7290,18 @@ function UI:InitializeKillBanner()
     local actionText = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     actionText:SetPoint("TOP", skullIcon, "BOTTOM", 0, -2)
     actionText:SetText("slain by |cffffc107Fireball|r")
+    actionText:SetShadowOffset(1, -1)
+    actionText:SetShadowColor(0, 0, 0, 1.0)
 
-    -- Right Side: Killer
+    -- Right Side: Killer (Bilateral Mirror with Left Side: Outer Crest/Insignia + Inner Class/Spell Icon)
+    local killerFactionIcon = Content:CreateTexture(nil, "ARTWORK")
+    killerFactionIcon:SetSize(36, 36)
+    killerFactionIcon:SetPoint("RIGHT", Content, "RIGHT", -14, -4)
+    killerFactionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga")
+
     local killerIcon = Content:CreateTexture(nil, "ARTWORK")
     killerIcon:SetSize(36, 36)
-    killerIcon:SetPoint("RIGHT", Content, "RIGHT", -14, -4)
+    killerIcon:SetPoint("RIGHT", killerFactionIcon, "LEFT", -8, 0)
     killerIcon:SetTexture("Interface\\Icons\\Ability_Creature_Poison_02")
 
     local killerName = Content:CreateFontString(nil, "OVERLAY", "GameFontHighlightMedium")
@@ -7197,12 +7309,16 @@ function UI:InitializeKillBanner()
     killerName:SetTextColor(1, 0.25, 0.25, 1) -- Red
     killerName:SetText("[15] Defias Pillager")
     killerName:SetJustifyH("RIGHT")
+    killerName:SetShadowOffset(1, -1)
+    killerName:SetShadowColor(0, 0, 0, 1.0)
 
     local killerSub = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     killerSub:SetPoint("BOTTOMRIGHT", killerIcon, "BOTTOMLEFT", -10, 2)
     killerSub:SetTextColor(0.65, 0.65, 0.65, 1)
     killerSub:SetText("Humanoid / Elite")
     killerSub:SetJustifyH("RIGHT")
+    killerSub:SetShadowOffset(1, -1)
+    killerSub:SetShadowColor(0, 0, 0, 1.0)
 
     -- Store references on Toast
     Toast.ClassicSkin = ClassicSkin
@@ -7219,6 +7335,7 @@ function UI:InitializeKillBanner()
     Toast.victimGuild = victimGuild
     Toast.skullIcon = skullIcon
     Toast.actionText = actionText
+    Toast.killerFactionIcon = killerFactionIcon
     Toast.killerIcon = killerIcon
     Toast.killerName = killerName
     Toast.killerSub = killerSub
@@ -7235,6 +7352,9 @@ function UI:InitializeKillBanner()
     Toast.ActionText = actionText
     Toast.LocText = actionText
     Toast.ModeTag = actionText
+    Toast.KillerFactionIcon = killerFactionIcon
+    Toast.killerCrest = killerFactionIcon
+    Toast.KillerCrest = killerFactionIcon
     Toast.KillerIcon = killerIcon
     Toast.KillerNameText = killerName
     Toast.KillerSubText = killerSub
@@ -7260,9 +7380,11 @@ function UI:ShowKillBanner(killmail, isTest)
     if not isTest and killmail.isDuel then return end
     if alertMode == "OFF" and not isTest then return end
 
+    local myName = UnitName("player") or "Dagariane"
+    local pFaction = (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
+
     -- 2. Scope & Proximity Filter (bypassed if explicit test)
     if not isTest then
-        local myName = UnitName("player")
         if alertScope == "MINE" then
             local isMyCombat = (killmail.killer.name and killmail.killer.name == myName) or
                                (killmail.victim.name and killmail.victim.name == myName)
@@ -7307,18 +7429,24 @@ function UI:ShowKillBanner(killmail, isTest)
 
         local vLevelStr = (killmail.victim.level and killmail.victim.level > 0) and tostring(killmail.victim.level) or "??"
         local vName = killmail.victim.name or "Unknown"
-        banner.VictimNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", vLevelStr, vName), killmail.victim.class))
+
+        local isFriendlyVictim = (killmail.victim and (killmail.victim.name == myName or (killmail.victim.faction and killmail.victim.faction == pFaction and killmail.victim.faction ~= "Monster")))
+        if isFriendlyVictim then
+            banner.VictimNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", vLevelStr, vName), killmail.victim.class))
+        else
+            banner.VictimNameText:SetTextColor(1, 0.25, 0.25, 1)
+            banner.VictimNameText:SetText(string.format("[%s] %s", vLevelStr, vName))
+        end
 
         local theme = UI:GetTheme()
         local isClassic = (theme.id == "classic")
 
         -- Dynamic TopAccent Faction Coloring in ElvUI mode
         if banner.TopAccent and not isClassic then
-            local myFaction = (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
-            local vFaction = killmail.victim and killmail.victim.faction
-            local accentFaction = (killmail.killer and killmail.killer.name == myName and myFaction)
-                or (killmail.victim and killmail.victim.name == myName and myFaction)
-                or vFaction or myFaction
+            local accentFaction = (killmail.killer and killmail.killer.name == myName and pFaction)
+                or (killmail.victim and killmail.victim.name == myName and pFaction)
+                or (killmail.victim and killmail.victim.faction)
+                or pFaction
 
             if accentFaction == "Alliance" then
                 banner.TopAccent:SetColorTexture(0.0, 0.47, 1.0, 1.0) -- #0078FF Alliance Blue
@@ -7349,13 +7477,11 @@ function UI:ShowKillBanner(killmail, isTest)
         end
         banner.ActionText:SetText(GetKillingBlowText(killmail))
 
-        -- 3. Populate Right Section (The Victor / Threat)
+        -- 3. Populate Right Section (The Victor / Threat - Bilateral Mirror)
         local kLevelStr = (killmail.killer.level and killmail.killer.level > 0) and tostring(killmail.killer.level) or "??"
         local kName = killmail.killer.name or "Threat"
 
-        local pName = UnitName("player") or "Dagariane"
-        local pFaction = (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
-        local isFriendlyKiller = (killmail.killer and (killmail.killer.name == pName or (killmail.killer.faction and killmail.killer.faction == pFaction and killmail.killer.faction ~= "Monster")))
+        local isFriendlyKiller = (killmail.killer and (killmail.killer.name == myName or (killmail.killer.faction and killmail.killer.faction == pFaction and killmail.killer.faction ~= "Monster")))
 
         if isFriendlyKiller then
             banner.KillerNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%s] %s", kLevelStr, kName), killmail.killer.class))
@@ -7366,8 +7492,39 @@ function UI:ShowKillBanner(killmail, isTest)
 
         banner.KillerSubText:SetText(GetKillerSubtitle(killmail, isNpc))
 
+        -- Outer Killer Faction / Insignia Crest
+        local kCrestTex, kCrestCoords = GetKillerFactionCrestInfo(killmail, isNpc)
+        if banner.KillerFactionIcon then
+            banner.KillerFactionIcon:SetTexture(kCrestTex)
+            banner.KillerFactionIcon:SetTexCoord(kCrestCoords[1], kCrestCoords[2], kCrestCoords[3], kCrestCoords[4])
+        end
+
+        -- Inner Killer Class / Spell Icon
         if isNpc then
-            banner.KillerIcon:SetTexture("Interface\\Icons\\Ability_Creature_Poison_02")
+            local spell = killmail.finalSpell or (killmail.killer and killmail.killer.spell) or ""
+            local spellTex = nil
+            if spell and spell ~= "" and spell ~= "Combat Strike" and spell ~= "Melee" then
+                if C_Spell and C_Spell.GetSpellTexture then
+                    spellTex = C_Spell.GetSpellTexture(spell)
+                elseif GetSpellTexture then
+                    spellTex = GetSpellTexture(spell)
+                end
+                if not spellTex then
+                    local sLower = spell:lower()
+                    if sLower:find("fireball") then spellTex = "Interface\\Icons\\Spell_Fire_FlameBolt"
+                    elseif sLower:find("shadow bolt") then spellTex = "Interface\\Icons\\Spell_Shadow_ShadowBolt"
+                    elseif sLower:find("frostbolt") then spellTex = "Interface\\Icons\\Spell_Frost_FrostBolt02"
+                    elseif sLower:find("shoot") then spellTex = "Interface\\Icons\\Ability_Marksmanship"
+                    elseif sLower:find("cleave") then spellTex = "Interface\\Icons\\Ability_Warrior_Cleave"
+                    elseif sLower:find("strike") then spellTex = "Interface\\Icons\\INV_Sword_04"
+                    end
+                end
+            end
+            if spellTex then
+                banner.KillerIcon:SetTexture(spellTex)
+            else
+                banner.KillerIcon:SetTexture("Interface\\Icons\\Ability_Creature_Poison_02")
+            end
             banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
         else
             local kClass = (killmail.killer.class or ""):upper()
@@ -7421,7 +7578,7 @@ function UI:ToggleBannerLock(explicitState)
         UI:ApplyBannerTheme()
         local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
 
-        banner.VictimCrest:SetTexture("Interface\\TargetingFrame\\UI-PVP-Alliance")
+        banner.VictimCrest:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
         banner.VictimCrest:SetTexCoord(0, 1, 0, 1)
         banner.VictimIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
         banner.VictimIcon:SetTexCoord(0, 1, 0, 1)
@@ -7444,6 +7601,10 @@ function UI:ToggleBannerLock(explicitState)
         banner.KillerSubText:SetText("|cffd6d1c4Anchor / Move|r")
         banner.KillerIcon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
         banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
+        if banner.KillerFactionIcon then
+            banner.KillerFactionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga")
+            banner.KillerFactionIcon:SetTexCoord(0, 1, 0, 1)
+        end
 
         banner:SetAlpha(1.0)
         banner:Show()
@@ -7521,11 +7682,11 @@ function UI:TestKillBanner(mode)
         selectedScenario = mode and "pve" or "pvp_death"
     elseif type(mode) == "string" and mode ~= "" then
         local m = mode:lower():match("^%s*(.-)%s*$")
-        if m == "kill" or m == "dag" or m == "win" or m == "pvp_kill" or m == "victory" or m == "player" then
+        if m == "kill" or m == "dag" or m == "win" or m == "pvp_kill" or m == "victory" or m == "player" or m == "1" then
             selectedScenario = "pvp_kill"
-        elseif m == "death" or m == "x" or m == "loss" or m == "pvp_death" or m == "die" then
+        elseif m == "death" or m == "x" or m == "loss" or m == "pvp_death" or m == "die" or m == "2" then
             selectedScenario = "pvp_death"
-        elseif m == "pve" or m == "npc" or m == "monster" or m == "mob" or m == "pillager" then
+        elseif m == "pve" or m == "npc" or m == "monster" or m == "mob" or m == "pillager" or m == "3" then
             selectedScenario = "pve"
         elseif m == "pvp" then
             UI.lastPvpTestMode = (UI.lastPvpTestMode == "pvp_kill") and "pvp_death" or "pvp_kill"
@@ -7571,6 +7732,7 @@ function UI:TestKillBanner(mode)
                 guild = pGuild,
                 faction = pFaction,
                 spell = mySpell,
+                isPlayer = true,
             },
             victim = {
                 name = enemyName,
@@ -7587,7 +7749,7 @@ function UI:TestKillBanner(mode)
                 y = 57.4,
             },
         }
-        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffffd100PvP Kill|r: |cff38bdf8%s|r killed |cffff5555%s|r in Hillsbrad Foothills! (|cffffd100/kb test [kill|death|pve]|r)", myName, enemyName))
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffffd100PvP Victory|r: |cff38bdf8%s|r killed |cffff5555%s|r in Hillsbrad Foothills! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", myName, enemyName))
 
     elseif selectedScenario == "pvp_death" then
         local enemySpell = (enemyClass == "MAGE" and "Pyroblast") or
@@ -7612,6 +7774,7 @@ function UI:TestKillBanner(mode)
                 guild = enemyGuild,
                 faction = enemyFaction,
                 spell = enemySpell,
+                isPlayer = true,
             },
             victim = {
                 name = myName,
@@ -7628,7 +7791,7 @@ function UI:TestKillBanner(mode)
                 y = 57.4,
             },
         }
-        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff3838PvP Death|r: |cffff5555%s|r killed |cff38bdf8%s|r in Hillsbrad Foothills! (|cffffd100/kb test [kill|death|pve]|r)", enemyName, myName))
+        SafePrint(string.format("|cff00ff00[WoWKB Test]|r Previewing |cffff3838PvP Casualty|r: |cffff5555%s|r killed |cff38bdf8%s|r in Hillsbrad Foothills! (Commands: |cffffd100/kb test dag|r, |cffffd100/kb test x|r, |cffffd100/kb test pve|r)", enemyName, myName))
 
     else -- "pve"
         testKM = {
