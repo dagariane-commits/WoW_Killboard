@@ -39,6 +39,18 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Combat Toast Visual & Cosmetic Refinements (`UI.lua`)**:
+  - **Classic Theme Frame Geometry**: Locked frame height to 78px with uncompressed native 1:1 aspect ratio on Blizzard wood plaque and filigree borders.
+  - **Header Placement**: Shifted top header down by 6px (`TOP, 0, -17`) so it rests directly inside the top dark carved bevel groove of the wood plaque instead of hovering above the gold leaf border.
+  - **Bottom Border Bleed Prevention**: Pulled the bottom action string text up by 5px (`TOP, CenterIcon, BOTTOM, 0, 1`), ensuring 13px clearance above the bottom bronze trim and completely eliminating border bleed.
+  - **High-Contrast Fatal Blow Highlight**: Styled the killing ability in high-contrast Light Spell Yellow (`#FFF1A8`) for Fire/Physical/Holy and Arcane Cyan (`#71D5FF`) for Frost/Arcane abilities.
+  - **Portrait Center Line Alignment**: Lowered the center death skull by 2px (`TOP, 0, -30`) to align directly on the horizontal center line of the victim and killer portraits.
+  - **Blood-Drop Death Shadow**: Added a subtle, deep crimson blood-drop shadow layer under the skull (`0.60, 0.05, 0.05, 0.65`) to visually distinguish fatal casualties from neutral matchups.
+  - **ElvUI Minimalist Theme Polish**:
+    - Thinned top accent stripe to a crisp 2px border flush with frame edges (`TOPLEFT 1, -1` / `TOPRIGHT -1, -1`), dynamically colored by faction (`#0078FF` Alliance / `#C41E3A` Horde / `#FFC107` Amber Gold).
+    - Standardized all icon borders to uniform 1px solid outlines (`#383E47`).
+    - Replaced blurry double-line borders with a flat, razor-sharp 1px solid crimson outline (`#FF3B30`).
+    - Configured hard 1px monochrome black outlines (`OUTLINE`) with zero drop-shadow offset across all typography for authentic ElvUI flatness.
 - **Secret Values & Protected Execution Taint Guard (`CombatTracker.lua`, `Utils.lua`, `UnitScanner.lua`, `Core.lua`)**:
   - Resolved Lua error (`attempt to compare local 'tName' (a secret string value, while execution tainted by 'WoWKillboard')`) triggered during protected execution paths (`TargetLastTarget`, right-click camera turn `TurnOrActionStop`, and secure macros).
   - Hardened `KB.Utils.CanAccess(val)` with `issecretvalue`, `issecrettable`, `canaccessvalue`, and defensive `pcall` equality guards.
