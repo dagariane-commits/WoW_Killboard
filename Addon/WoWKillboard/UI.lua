@@ -6054,6 +6054,23 @@ function UI:ShowChangelogModal(isManual)
         inset:SetBackdropBorderColor(0.35, 0.28, 0.16, 0.9)
         dlg.Inset = inset
 
+        local scrollFrame = CreateFrame("ScrollFrame", nil, inset)
+        scrollFrame:SetPoint("TOPLEFT", inset, "TOPLEFT", 4, -4)
+        scrollFrame:SetPoint("BOTTOMRIGHT", inset, "BOTTOMRIGHT", -4, 4)
+        scrollFrame:EnableMouseWheel(true)
+        dlg.LogScrollFrame = scrollFrame
+
+        local content = CreateFrame("Frame", nil, scrollFrame)
+        content:SetSize(618, 620)
+        scrollFrame:SetScrollChild(content)
+
+        scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+            local current = self:GetVerticalScroll()
+            local maxScroll = math.max(0, (content:GetHeight() or 620) - self:GetHeight())
+            local newScroll = math.max(0, math.min(maxScroll, current - (delta * 32)))
+            self:SetVerticalScroll(newScroll)
+        end)
+
         local function AddLogHeader(parent, yOffset, text, color)
             local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
             fs:SetPoint("TOPLEFT", 14, yOffset)
@@ -6071,22 +6088,37 @@ function UI:ShowChangelogModal(isManual)
             return fs
         end
 
-        AddLogHeader(inset, -10, "Version 1.0.1  (Current Release)", "ffffd100")
-        AddLogBullet(inset, -28, "Interactive Share Modal", "Share buttons open a preview modal (like /kb promo) so you can review broadcasts before posting to /guild, /party, or /say.")
-        AddLogBullet(inset, -66, "Concise 1-Line Leaderboards", "Broadcasts output top 3 players with explicit [Horde] / [Alliance] tags and web CTA, strictly under 200 characters.")
-        AddLogBullet(inset, -104, "Live Peer Version Discovery", "Silently discovers newer versions via P2P gossip in guild & groups without touching external web sockets.")
-        AddLogBullet(inset, -142, "PvE Apex Predator Telemetry", "Deadliest wilderness creatures and hazard casualties tracked seamlessly on PvE realms.")
-        AddLogBullet(inset, -180, "Windows 11 SAC Guidance", "Full instructions for Smart App Control 'Unblock' in File Properties for zero-barrier desktop sync.")
+        -- Version 1.0.3 (Current Release)
+        AddLogHeader(content, -8, "Version 1.0.3  (Current Release)", "ffffd100")
+        AddLogBullet(content, -26, "Dynamic Accent Color Engine", "Configure classic gold, player class color, or custom hex color across headers, rank badges, toasts, and sticky standings.")
+        AddLogBullet(content, -62, "ElvUI Minimalist Overhaul", "Universal 1px solid black borders, flat slate backdrops, elevated tooltip strata, and compact 3-segment top stat strip.")
+        AddLogBullet(content, -98, "Cross-Realm & Ruleset Isolation", "Filters leaderboards, recent kills, bounties, and deaths strictly to your active realm ruleset (PvP, PvE, RP, HC).")
+        AddLogBullet(content, -134, "Automated Theme Migration", "Existing player profiles automatically upgraded to clean modern aesthetics with zero manual resets required.")
 
-        AddLogHeader(inset, -222, "Version 1.0.0  (Launch Foundation)", "ff10b981")
-        local baseFs = inset:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        baseFs:SetPoint("TOPLEFT", 18, -240)
-        baseFs:SetPoint("RIGHT", inset, "RIGHT", -14, 0)
+        -- Version 1.0.2 (Release Update)
+        AddLogHeader(content, -174, "Version 1.0.2  (Release Update)", "ff38bdf8")
+        AddLogBullet(content, -192, "PvE Casualty Realm Broadcasts", "Cross-computer casualty alerts broadcast via dedicated 'WoWKillboard' realm channel with audio alerts.")
+        AddLogBullet(content, -228, "On-Screen Casualty Toasts", "Real-time toast popups on death alerts even for unaffiliated realm players outside your party or guild.")
+        AddLogBullet(content, -264, "Resilient NPC Attribution", "Automated fallback target resolution ensures wilderness executions and lethal mob strikes are never dropped.")
+
+        -- Version 1.0.1 (Release Update)
+        AddLogHeader(content, -304, "Version 1.0.1  (Release Update)", "ffa855f7")
+        AddLogBullet(content, -322, "Interactive Share Modal", "Share buttons open a preview modal (like /kb promo) so you can review broadcasts before posting to /guild, /party, or /say.")
+        AddLogBullet(content, -358, "Concise 1-Line Leaderboards", "Broadcasts output top 3 players with explicit [Horde] / [Alliance] tags and web CTA, strictly under 200 characters.")
+        AddLogBullet(content, -394, "Live Peer Version Discovery", "Silently discovers newer versions via P2P gossip in guild & groups without touching external web sockets.")
+        AddLogBullet(content, -430, "PvE Apex Predator Telemetry", "Deadliest wilderness creatures and hazard casualties tracked seamlessly on PvE realms.")
+        AddLogBullet(content, -466, "Windows 11 SAC Guidance", "Full instructions for Smart App Control 'Unblock' in File Properties for zero-barrier desktop sync.")
+
+        -- Version 1.0.0 (Launch Foundation)
+        AddLogHeader(content, -506, "Version 1.0.0  (Launch Foundation)", "ff10b981")
+        local baseFs = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        baseFs:SetPoint("TOPLEFT", 18, -524)
+        baseFs:SetPoint("RIGHT", content, "RIGHT", -14, 0)
         baseFs:SetJustifyH("LEFT")
         baseFs:SetWordWrap(true)
         baseFs:SetText("|cff94a3b8* Dual UI themes (Classic Stone & ElvUI Dark via /kb theme)\n* Certified 1v1 solo kill engine with 15s gang-clustering\n* Cross-client parity across Forever Beta, Era, Anniversary & Retail\n* Blood Ledger in-game bounties & KOS debtor blacklists|r")
 
-        -- Links Box: CurseForge & Web Download
+        -- Links Box: CurseForge & GitHub Releases
         local linkTitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         linkTitle:SetPoint("TOPLEFT", 16, -386)
         linkTitle:SetText("|cffffd100Download & Update Links (Click inside & press Ctrl+C to copy):|r")
@@ -6121,10 +6153,10 @@ function UI:ShowChangelogModal(isManual)
         end
 
         dlg.CfEditBox = CreateCopyLink(dlg, 16, -406, 305, "CurseForge App (Search 'wkb'):", "https://www.curseforge.com/wow/addons/wkb")
-        dlg.WebEditBox = CreateCopyLink(dlg, 335, -406, 305, "Web Platform & Desktop Sync:", "https://wowkillboard.com/download")
+        dlg.WebEditBox = CreateCopyLink(dlg, 335, -406, 305, "GitHub Releases & Direct Download:", "https://github.com/dagariane-commits/WoW_Killboard/releases")
 
         -- Bottom Row Buttons
-        local promoBtn = UI:CreateButton(dlg, 180, 26, "|cffffd100[📢] Promo Macros (/kb promo)|r", "GameFontHighlightSmall")
+        local promoBtn = UI:CreateButton(dlg, 180, 26, "|cffffd100Promo Macros (/kb promo)|r", "GameFontHighlightSmall")
         promoBtn:SetPoint("BOTTOMLEFT", 16, 14)
         promoBtn:SetScript("OnClick", function()
             dlg:Hide()
@@ -6161,6 +6193,10 @@ function UI:ShowChangelogModal(isManual)
         dlg.VersionSub:SetText(string.format("|cff10b981Installed: v%s (Up to date)|r  |  |cff888888Cross-Client Unified Architecture|r", KB.Version))
     else
         dlg.VersionSub:SetText(string.format("|cffff9900Installed: v%s|r  |  |cff00ff00New Version Available: v%s!|r  |  |cff38bdf8Update via CurseForge|r", KB.Version, latest))
+    end
+
+    if dlg.LogScrollFrame then
+        dlg.LogScrollFrame:SetVerticalScroll(0)
     end
 
     dlg:Show()
