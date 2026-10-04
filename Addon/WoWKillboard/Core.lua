@@ -363,7 +363,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         WoWKillboardDB.lastManualSync = time()
         SafePrint("|cff00ccff[WoWKB]|r Flushed combat SavedVariables to disk. Reloading UI to sync with live web platform...")
         ReloadUI()
-    elseif cmd == "move" or cmd == "unlock" then
+    elseif cmd == "move" or cmd == "unlock" or cmd == "preview" then
         if KB.UI and KB.UI.ToggleBannerLock then
             KB.UI:ToggleBannerLock()
         end
@@ -741,6 +741,10 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             if KB.UI and KB.UI.TestKillBanner then
                 KB.UI:TestKillBanner("pve")
             end
+        elseif tArg == "move" or tArg == "unlock" or tArg == "preview" then
+            if KB.UI and KB.UI.ToggleBannerLock then
+                KB.UI:ToggleBannerLock()
+            end
         else
             local curMode = WoWKillboardSettings.alertMode or "SOUND_AND_BANNER"
             local curScope = WoWKillboardSettings.alertScope or "ZONE"
@@ -751,7 +755,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
                 WoWKillboardSettings.alertMode = "OFF"
                 SafePrint(string.format("|cffff3333[WoWKB]|r Toasts toggled |cffff3333OFF|r | Scope: |cffffd100%s|r.", curScope))
             end
-            SafePrint("  |cff94a3b8Quick Commands: /kb toast [on|off|mute|mine|zone|all|test] or /kb alerts|r")
+            SafePrint("  |cff94a3b8Quick Commands: /kb toast [on|off|mute|mine|zone|all|test|move] or /kb alerts|r")
         end
         if KB.UI and KB.UI.AlertsDialog and KB.UI.AlertsDialog.UpdateControls then
             KB.UI.AlertsDialog:UpdateControls()

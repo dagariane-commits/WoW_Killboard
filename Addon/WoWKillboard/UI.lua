@@ -7175,6 +7175,7 @@ function UI:InitializeKillBanner()
     Toast:SetFrameStrata("HIGH")
     Toast:SetMovable(true)
     Toast:EnableMouse(false)
+    Toast:Hide()
 
     -- Restore saved position if customized
     local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition
@@ -7199,7 +7200,7 @@ function UI:InitializeKillBanner()
             y = math.floor((y or -120) + 0.5),
         }
         if self.headerText then
-            self.headerText:SetText(string.format("|cffffd100REPOSITION ANCHOR  •  %s (%d, %d)|r", point or "TOP", math.floor((x or 0) + 0.5), math.floor((y or -120) + 0.5)))
+            self.headerText:SetText(string.format("|cffffd100MOVE / PREVIEW  •  %s (%d, %d)|r", point or "TOP", math.floor((x or 0) + 0.5), math.floor((y or -120) + 0.5)))
         end
         if UI.AlertsDialog and UI.AlertsDialog.UpdateControls then
             UI.AlertsDialog:UpdateControls()
@@ -7387,6 +7388,7 @@ function UI:InitializeKillBanner()
 
     -- Initialize
     WoWKB_SetTheme("Classic")
+    Toast:Hide()
 end
 
 function UI:ShowKillBanner(killmail, isTest)
@@ -7640,52 +7642,96 @@ function UI:ToggleBannerLock(explicitState)
         banner:RegisterForDrag("LeftButton")
 
         UI:ApplyBannerTheme()
-        local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
+        local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -120 }
 
-        -- Left: Drag Anchor (Killer position)
+        local myName = UnitName("player") or "Dagariane"
+        local _, pClass = UnitClass("player")
+        pClass = pClass or "PALADIN"
+        local pLevel = UnitLevel("player") or 24
+        local pGuild = (GetGuildInfo and GetGuildInfo("player")) or "Forged By Valor"
+        local pFaction = (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
+
+        local enemyFaction = (pFaction == "Alliance") and "Horde" or "Alliance"
+        local enemyClass = (enemyFaction == "Horde") and "ROGUE" or "WARRIOR"
+        local enemyName = (enemyFaction == "Horde") and "Shadowstalker" or "Dawnbreaker"
+        local enemyGuild = (enemyFaction == "Horde") and "Grim Syndicate" or "Silver Hand"
+        local enemyLevel = pLevel + 1
+
+        -- 1. Left: Victor / Player (Dynamic by player class and faction)
+        local myCrestTex, myCrestCoords = GetFactionCrestInfo(pFaction, pClass)
         if banner.KillerFactionIcon then
-            banner.KillerFactionIcon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
-            banner.KillerFactionIcon:SetTexCoord(0, 1, 0, 1)
+            banner.KillerFactionIcon:SetTexture(myCrestTex)
+            banner.KillerFactionIcon:SetTexCoord(myCrestCoords[1], myCrestCoords[2], myCrestCoords[3], myCrestCoords[4])
         end
-        banner.KillerIcon:SetTexture("Interface\\Icons\\INV_Sword_27")
-        banner.KillerIcon:SetTexCoord(0, 1, 0, 1)
-        banner.KillerNameText:SetText("|cff00ff00[60] Drag Anchor|r")
-        banner.KillerSubText:SetText("|cffb5bac1<Hold Left-Click>|r")
+        local kCoords = CLASS_COORDS[pClass:upper()] or {0, 0.25, 0, 0.25}
+        banner.KillerIcon:SetTexture(CLASS_ICON_TEXTURE)
+        banner.KillerIcon:SetTexCoord(kCoords[1], kCoords[2], kCoords[3], kCoords[4])
+        banner.KillerNameText:SetTextColor(1, 1, 1, 1)
+        banner.KillerNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%d] %s", pLevel, myName), pClass))
+        banner.KillerSubText:SetText(string.format("<%s>", pGuild))
 
-        -- Center: Reposition Telemetry
-        banner.CenterHeader:SetText(string.format("|cffffd100REPOSITION ANCHOR  •  %s (%d, %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -135))
+        -- 2. Center: Incident Action Block & Drag Indicator
+        banner.CenterHeader:SetText(string.format("|cffffd100MOVE / PREVIEW  •  %s (%d, %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -120))
         banner.CenterIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
         banner.CenterIcon:SetTexCoord(0, 1, 0, 1)
-        banner.CenterIcon:SetVertexColor(1.0, 0.23, 0.19, 1.0)
+        banner.CenterIcon:SetVertexColor(1.0, 0.15, 0.15, 1.0)
         if banner.CenterIconShadow then
             banner.CenterIconShadow:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
             banner.CenterIconShadow:SetTexCoord(0, 1, 0, 1)
             banner.CenterIconShadow:SetVertexColor(0.60, 0.05, 0.05, 0.65)
             banner.CenterIconShadow:Show()
         end
-        banner.ActionText:SetText("|cffe0e0e0drag to|r |cffffb300Move|r")
+        banner.ActionText:SetText("killed with |cffffc107Judgement|r")
 
-        -- Right: Reposition Info (Victim position)
-        banner.VictimNameText:SetText("|cffff3838[60] Reposition|r")
-        banner.VictimSubText:SetText("|cffd6d1c4Anchor / Move|r")
-        banner.VictimIcon:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
-        banner.VictimIcon:SetTexCoord(0, 1, 0, 1)
-        banner.VictimCrest:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga")
-        banner.VictimCrest:SetTexCoord(0, 1, 0, 1)
+        -- 3. Right: Victim / Casualty (Class-colored)
+        local enemyCrestTex, enemyCrestCoords = GetFactionCrestInfo(enemyFaction, enemyClass)
+        banner.VictimCrest:SetTexture(enemyCrestTex)
+        banner.VictimCrest:SetTexCoord(enemyCrestCoords[1], enemyCrestCoords[2], enemyCrestCoords[3], enemyCrestCoords[4])
+        local vCoords = CLASS_COORDS[enemyClass:upper()] or {0, 0.25, 0, 0.25}
+        banner.VictimIcon:SetTexture(CLASS_ICON_TEXTURE)
+        banner.VictimIcon:SetTexCoord(vCoords[1], vCoords[2], vCoords[3], vCoords[4])
+        banner.VictimNameText:SetTextColor(1, 1, 1, 1)
+        banner.VictimNameText:SetText(KB.Utils.ColorizeByClass(string.format("[%d] %s", enemyLevel, enemyName), enemyClass))
+        banner.VictimSubText:SetText(string.format("<%s>", enemyGuild))
+
+        -- 4. Dynamic Winning Faction Border
+        if pFaction == "Alliance" then
+            if banner.ClassicSkin then
+                banner.ClassicSkin:SetBackdropBorderColor(0.0, 0.47, 1.0, 1.0)
+                if banner.classicTopAccent then banner.classicTopAccent:SetColorTexture(0.0, 0.47, 1.0, 1.0) end
+            end
+            if banner.ElvSkin then
+                banner.ElvSkin:SetBackdropBorderColor(0.0, 0.47, 1.0, 1.0)
+                if banner.elvTopAccent then banner.elvTopAccent:SetColorTexture(0.0, 0.47, 1.0, 1.0) end
+            end
+        else
+            if banner.ClassicSkin then
+                banner.ClassicSkin:SetBackdropBorderColor(0.85, 0.15, 0.15, 1.0)
+                if banner.classicTopAccent then banner.classicTopAccent:SetColorTexture(0.85, 0.15, 0.15, 1.0) end
+            end
+            if banner.ElvSkin then
+                banner.ElvSkin:SetBackdropBorderColor(0.85, 0.15, 0.15, 1.0)
+                if banner.elvTopAccent then banner.elvTopAccent:SetColorTexture(0.85, 0.15, 0.15, 1.0) end
+            end
+        end
 
         banner:SetAlpha(1.0)
         banner:Show()
 
-        SafePrint("|cff00ccff[WoWKB Alert]|r Alert Anchor unlocked! Click and drag with |cffffd100Left-Click|r anywhere on your screen. Type |cffffd100/wowkb move|r again or click Lock to save.")
+        SafePrint(string.format("|cff00ccff[WoWKB Alert]|r Alert Banner unlocked! Click and drag with |cffffd100Left-Click|r. Type |cffffd100/kb move|r again or click Lock to save at %s (%d, %d).", pos.point or "TOP", pos.x or 0, pos.y or -120))
     else
         banner:EnableMouse(false) -- Revert to click-through immediately
         banner:RegisterForDrag()  -- Unregister drag listeners
         banner:Hide()
-        local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -135 }
+        local pos = WoWKillboardSettings and WoWKillboardSettings.bannerPosition or { point = "TOP", x = 0, y = -120 }
+        SafePrint(string.format("|cff00ccff[WoWKB Alert]|r Alert Banner locked and hidden. Saved anchor at |cffffd100%s (%d, %d)|r.", pos.point or "TOP", pos.x or 0, pos.y or -120))
     end
 
     if UI.AlertsDialog and UI.AlertsDialog.UpdateControls then
         UI.AlertsDialog:UpdateControls()
+    end
+    if UI.SettingsDialog and UI.SettingsDialog.toggleMoveBtn then
+        UI.SettingsDialog.toggleMoveBtn.Label:SetText(UI.bannerUnlocked and "|cffff3333Lock Toast|r" or "|cffffd100Move Toast|r")
     end
 end
 
@@ -8385,6 +8431,9 @@ function UI:ShowSettingsModal()
         dlg:SetScript("OnShow", function(self)
             if self.EnableKeyboard then self:EnableKeyboard(true) end
             if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+            if self.toggleMoveBtn then
+                self.toggleMoveBtn.Label:SetText(UI.bannerUnlocked and "|cffff3333Lock Toast|r" or "|cffffd100Move Toast|r")
+            end
         end)
         dlg:SetScript("OnHide", function(self)
             if self.EnableKeyboard then self:EnableKeyboard(false) end
@@ -8396,6 +8445,7 @@ function UI:ShowSettingsModal()
                 return
             end
             if key == "ESCAPE" then
+                if UI.bannerUnlocked then UI:ToggleBannerLock(false) end
                 if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
                 self:Hide()
             else
@@ -8430,7 +8480,10 @@ function UI:ShowSettingsModal()
         closeLabel:SetPoint("CENTER", 0, 0)
         closeLabel:SetText("|cffff3333X|r")
         closeBtn.Label = closeLabel
-        closeBtn:SetScript("OnClick", function() dlg:Hide() end)
+        closeBtn:SetScript("OnClick", function()
+            if UI.bannerUnlocked then UI:ToggleBannerLock(false) end
+            dlg:Hide()
+        end)
 
         local y = -60
 
@@ -8465,15 +8518,23 @@ function UI:ShowSettingsModal()
         alertsDesc:SetPoint("TOPLEFT", 24, y - 16)
         alertsDesc:SetText("Calibrate screen positioning, kill banner scale, sound, and HUD.")
 
-        local calibBtn = UI:CreateButton(dlg, 190, 22, "Calibrate Alerts & Banners")
+        local calibBtn = UI:CreateButton(dlg, 165, 22, "Calibrate Alerts")
         calibBtn:SetPoint("TOPLEFT", 24, y - 34)
         calibBtn:SetScript("OnClick", function()
             dlg:Hide()
             UI:ShowAlertsConfig()
         end)
 
-        local soundBtn = UI:CreateButton(dlg, 140, 22, "Sound: Enabled")
-        soundBtn:SetPoint("LEFT", calibBtn, "RIGHT", 10, 0)
+        local toggleMoveBtn = UI:CreateButton(dlg, 145, 22, UI.bannerUnlocked and "|cffff3333Lock Toast|r" or "|cffffd100Move Toast|r")
+        toggleMoveBtn:SetPoint("LEFT", calibBtn, "RIGHT", 10, 0)
+        toggleMoveBtn:SetScript("OnClick", function()
+            UI:ToggleBannerLock()
+            toggleMoveBtn.Label:SetText(UI.bannerUnlocked and "|cffff3333Lock Toast|r" or "|cffffd100Move Toast|r")
+        end)
+        dlg.toggleMoveBtn = toggleMoveBtn
+
+        local soundBtn = UI:CreateButton(dlg, 130, 22, "Sound: Enabled")
+        soundBtn:SetPoint("LEFT", toggleMoveBtn, "RIGHT", 10, 0)
         soundBtn:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             s.soundAlerts = not s.soundAlerts
@@ -8920,13 +8981,13 @@ function UI:ShowAlertsConfig()
             end
 
             -- Section 4: Screen Positioning
-            local pos = s.bannerPosition or { point = "TOP", x = 0, y = -135 }
-            dlg.PosCoords:SetText(string.format("|cff00e5ffCurrent Anchor:|r |cffffffff%s (X: %d, Y: %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -135))
+            local pos = s.bannerPosition or { point = "TOP", x = 0, y = -120 }
+            dlg.PosCoords:SetText(string.format("|cff00e5ffCurrent Anchor:|r |cffffffff%s (X: %d, Y: %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -120))
 
             if UI.bannerUnlocked then
-                dlg.UnlockBtn.Label:SetText("|cffff3333Lock Anchor Position|r")
+                dlg.UnlockBtn.Label:SetText("|cffff3333Lock Toast Position (Toggle OFF)|r")
             else
-                dlg.UnlockBtn.Label:SetText("|cffffd100Move / Unlock Alert Anchor|r")
+                dlg.UnlockBtn.Label:SetText("|cffffd100Preview & Move Toast (Toggle ON)|r")
             end
 
             -- Section 5: Mark of Spite Death Popup
