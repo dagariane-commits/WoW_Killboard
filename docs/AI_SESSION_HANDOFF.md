@@ -1,11 +1,11 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 04:50:00 EDT  
-> **Git Status**: Branch `main` (Preparing commit for v1.4.114).  
+> **Last Synchronized**: 2026-10-04 05:05:00 EDT  
+> **Git Status**: Branch `main` (Release `v1.0.2` prepared).  
 > **Developer & Lead**: Dagariane.  
-> **Active Release**: `v1.0.1` (Community Release).  
-> **Active Focus**: **In-Game Appearance Fine-Tuning & Authentic Blizzard UI Parity**.  
+> **Active Release**: `v1.0.2` (CurseForge Community Release).  
+> **Active Focus**: **v1.0.2 Distribution Package, Sanitization, and CurseForge Upload**.  
 > **Live Production Domain**: [`https://wowkillboard.com/`](https://wowkillboard.com/)
 
 ---

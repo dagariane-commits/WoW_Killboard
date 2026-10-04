@@ -730,6 +730,7 @@ GITHUB_RELEASE_SYNC_URL = os.environ.get(
     "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboardSync.exe"
 )
 
+@app.route("/WoWKillboard-v1.0.2.zip")
 @app.route("/WoWKillboard-v1.0.1.zip")
 @app.route("/WoWKillboard-v1.0.0.zip")
 @app.route("/download")
@@ -743,14 +744,14 @@ def download_addon():
     root_dir = os.path.dirname(APP_DIR)
     # Check for specific requested file if path has specific version
     req_file = os.path.basename(request.path)
-    if req_file in ("WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    if req_file in ("WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, req_file)
             if os.path.exists(target):
                 return send_from_directory(d, req_file, as_attachment=True)
 
-    # General download (/download, /addon.zip): serve v1.0.1, fallback to v1.0.0
-    for pkg in ("WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    # General download (/download, /addon.zip): serve v1.0.2, fallback to v1.0.1 then v1.0.0
+    for pkg in ("WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, pkg)
             if os.path.exists(target):
