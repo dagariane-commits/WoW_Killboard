@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added aggressive `Cache-Control: no-cache, no-store, must-revalidate` headers to `/download`, preventing proxy or browser 302 redirect caching.
   - Promoted "War Room Operational Specification" modal directly into the top header navigation rail (`#nav-spec`) and mobile navigation drawer (`#m-nav-spec`).
   - Enforced strict zero-emoji standard across all documentation, UI navigation elements, and markdown artifacts.
+- **What's New & Update Log Modal Overhaul (`UI.lua`, `WoWKillboard_RealmData.lua`, `watcher.py`)**:
+  - Re-architected in-game changelog dialog (`UI:ShowChangelogModal`) into a pure-Lua, taint-free `ScrollFrame` with mouse-wheel scrolling.
+  - Added comprehensive release notes for Version 1.0.3 and Version 1.0.2 alongside 1.0.1 and 1.0.0, resolving the version display discrepancy where installed was v1.0.3 but the dialog body displayed legacy v1.0.1 notes.
+  - Added dual copy-paste edit boxes for CurseForge and GitHub Releases direct downloads.
+  - Synchronized `WoWKillboard_RealmData.lua` and companion desktop sync watcher fallback to `LatestVersion = "1.0.3"`.
 
 ## [1.0.2] - 2026-10-04 (CurseForge Community Release)
 
