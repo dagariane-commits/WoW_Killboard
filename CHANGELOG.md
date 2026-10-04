@@ -5,9 +5,22 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.100] - 2026-10-03
+## [1.4.100] - 2026-10-04
 
 ### Added
+- **Authentic WoW Classic "Forever" Theme Engine for Combat Toast Banner (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Textures/`)**:
+  - Implemented dual-theme rendering for the in-game combat toast banner: authentic **WoW Classic "Forever"** and modern **ElvUI Minimalist**.
+  - Calibrated dimensions to **580px × 84px** with balanced vertical margins and centered 40px icon alignments.
+  - **Authentic Blizzard Frame Assets:**
+    - **Dialog Backdrop & Border:** Textured `Interface\DialogFrame\UI-DialogBox-Background` tiled backdrop with `Interface\DialogFrame\UI-DialogBox-Border` metallic beveled edges.
+    - **Dialog Header Ribbon:** Enclosed top header text in authentic `Interface\DialogFrame\UI-DialogBox-Header` plaque in Blizzard Gold (`#FFD100`) with (1, -1) drop shadow.
+    - **Riveted Corner Brackets:** Added 4 ornate bronze/gold riveted corner brackets (`corner_bracket.tga`) matching the classic Quest Log header bar.
+    - **Medallion Gold Bevel Ring:** Framed high-res circular Alliance/Horde crests in raised gold medallion rings (`medallion_border.tga`).
+    - **Metallic Class Button Border:** Wrapped combatant class icons with Blizzard beveled button borders (`Interface\Buttons\UI-Quickslot2`).
+    - **Hostile Red Debuff Border:** Wrapped threat/killer icons with standard red debuff borders (`Interface\Buttons\UI-Debuff-Border`).
+    - **Death Skull Separator:** Swapped raid target marker for authentic Blizzard targeting skull (`Interface\TargetingFrame\UI-TargetingFrame-Skull`) in Classic mode.
+    - **Parchment Typography:** Switched subtext to soft parchment silver (`#E0D8C3`) and location text to warm parchment amber (`#E6C387`).
+  - **Dynamic Theme Synchronization:** Fully integrated with `UI:ApplyBannerTheme()`, `/kb theme`, the settings modal toggle, and `/wowkb move` anchor drag mode.
 - **Standardized Military/Tactical Chat Telemetry (`Addon/WoWKillboard/Reinforcements.lua`, `Killmail.lua`, `IntelScanner.lua`, `Config.lua`, `Core.lua`, `UI.lua`)**:
   - Stripped all melodramatic roleplay phrasing (`"WAR HORN Sounded"`, `"Vanguard under attack"`, `"To arms!"`, `"to muster"`, `"Blood and Honor!"`, and redundant `"1 hostile(s) (Enemy Hostiles)"`).
   - Standardized all chat broadcasts to functional, concise, single-line military/tactical telemetry with clean `[WoWKB]` or `[WoWKB Alert]` branding:
