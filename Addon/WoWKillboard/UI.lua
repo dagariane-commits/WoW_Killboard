@@ -84,7 +84,7 @@ function UI:GetCurrentThemeName()
         local t = WoWKillboardSettings.theme:lower()
         if t == "classic" or t == "elvui" then return t end
     end
-    return "classic"
+    return (KB.DefaultSettings and KB.DefaultSettings.theme) or "elvui"
 end
 
 function UI:GetTheme()
@@ -769,428 +769,268 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {1.0, 1.0, 1.0, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
-    -- Iconic Blizzard Circular Medallion Frame (Concentric & Grand in Header)
-    local medallion = CreateFrame("Frame", nil, mainFrame)
-    medallion:SetSize(46, 46)
-    medallion:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -8)
-    medallion:SetFrameLevel(mainFrame:GetFrameLevel() + 5)
-
-    local portBg = medallion:CreateTexture(nil, "BACKGROUND")
-    portBg:SetSize(40, 40)
-    portBg:SetPoint("CENTER", medallion, "CENTER", 0, 0)
-    portBg:SetColorTexture(0.02, 0.02, 0.03, 1.0)
-
-    local portrait = medallion:CreateTexture(nil, "ARTWORK")
-    portrait:SetSize(40, 40)
-    portrait:SetPoint("CENTER", medallion, "CENTER", 0, 0)
-    if SetPortraitTexture then
-        SetPortraitTexture(portrait, "player")
-    end
-    if not portrait:GetTexture() then
-        portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
-    end
-    portrait:SetTexCoord(0, 1, 0, 1) -- Blizzard SetPortraitTexture already handles exact headshot framing
-    medallion.Portrait = portrait
-
-    local ring = medallion:CreateTexture(nil, "OVERLAY")
-    ring:SetSize(46, 46)
-    ring:SetPoint("CENTER", medallion, "CENTER", 0, 0)
-    ring:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\medallion_border.tga")
-    medallion.Ring = ring
-
-    -- Circular Level Plate Backing
-    local lvlFrame = CreateFrame("Frame", nil, medallion, "BackdropTemplate")
-    lvlFrame:SetSize(18, 16)
-    lvlFrame:SetPoint("BOTTOMRIGHT", medallion, "BOTTOMRIGHT", 2, -2)
-    lvlFrame:SetBackdrop({
+    -- 2. Header & Top Control Bar (Height 28px, Solid #1A1A1A, 1px solid black bottom divider)
+    local headerBar = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+    headerBar:SetSize(880, 28)
+    headerBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 0, 0)
+    headerBar:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    lvlFrame:SetBackdropColor(0.04, 0.05, 0.08, 0.95)
-    lvlFrame:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.95)
+    headerBar:SetBackdropColor(26/255, 26/255, 26/255, 1.0) -- #1A1A1A
+    headerBar:SetBackdropBorderColor(0, 0, 0, 1.0)          -- 1px solid black
+    UI.HeaderBar = headerBar
 
-    local lvlBadge = lvlFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    lvlBadge:SetPoint("CENTER", lvlFrame, "CENTER", 0, 0)
-    if UnitLevel then
-        local pLvl = UnitLevel("player")
-        if pLvl and pLvl > 0 then
-            lvlBadge:SetText(string.format("|cffffd100%d|r", pLvl))
-        end
-    end
-    medallion.LevelBadge = lvlBadge
+    -- 1px solid black bottom divider
+    local headerDiv = headerBar:CreateTexture(nil, "OVERLAY")
+    headerDiv:SetHeight(1)
+    headerDiv:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 0, 0)
+    headerDiv:SetPoint("BOTTOMRIGHT", headerBar, "BOTTOMRIGHT", 0, 0)
+    headerDiv:SetColorTexture(0, 0, 0, 1.0)
+    headerBar.Divider = headerDiv
 
-    -- Clickable Character Medallion for Web Profile Link
-    medallion:EnableMouse(true)
-    medallion:SetScript("OnEnter", function(self)
-        local pName = UnitName("player") or "Player"
-        local knownCount = KB.UnitScanner and KB.UnitScanner.GetKnownCharactersCount and KB.UnitScanner:GetKnownCharactersCount() or 0
-        local title = string.format("|cffffd100%s  -  Web Profile|r", pName)
-        local desc = "Click to copy your character's public web profile link.\nView detailed combat record, kill timeline, and charts outside the game."
-        if knownCount > 0 then
-            desc = desc .. string.format("\n|cff94a3b8Known Realm Characters Tracked:|r |cff00e5ff%d|r", knownCount)
-        end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, title, desc)
-    end)
-    medallion:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
-    medallion:SetScript("OnMouseDown", function()
-        UI:ShowCharacterWebLink((UnitName("player")), select(2, UnitClass("player")), UnitLevel("player"), UnitFactionGroup("player"))
-    end)
-    -- Template-Free Character Web Profile Link Button (Positioned cleanly on Left next to Medallion)
-    local webBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    webBtn:SetSize(84, 20)
-    webBtn:SetPoint("LEFT", medallion, "RIGHT", 10, 0)
-    webBtn:EnableMouse(true)
-    local webLabel = webBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    webLabel:SetPoint("CENTER", 0, 0)
-    webLabel:SetText("|cff00e5ffWeb Profile|r")
-    webBtn.Label = webLabel
-    webBtn:SetScript("OnClick", function()
-        UI:ShowCharacterWebLink((UnitName("player")), select(2, UnitClass("player")), UnitLevel("player"), UnitFactionGroup("player"))
-    end)
-    webBtn:SetScript("OnEnter", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnHoverBg then
-            self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(0.0, 0.85, 1.0, 1.0)
-        end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff00e5ffCharacter Web Profile|r", "Click to copy your character's public web profile link.\nView detailed combat record, kill timeline, and charts outside the game.")
-    end)
-    webBtn:SetScript("OnLeave", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnBg then
-            self:SetBackdropColor(unpack(t.btnBg))
-            self:SetBackdropBorderColor(unpack(t.btnBorder))
-        end
-        UI:HidePrivateTooltip()
-    end)
-    UI.WebProfileButton = webBtn
+    -- Addon Title: WoW Killboard in GameFontNormal (Gold #FFD100)
+    local title = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("LEFT", headerBar, "LEFT", 12, 0)
+    title:SetTextColor(1.0, 0.82, 0.0, 1.0) -- #FFD100
+    title:SetText("WoW Killboard")
+    if title.SetFont then local f, s = title:GetFont(); title:SetFont(f, s or 12, "OUTLINE") end
+    title:SetShadowOffset(0, 0)
+    UI.TitleText = title
 
-    -- Template-Free Shadow Network Pop-Out Toggle Button
-    local wireBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    wireBtn:SetSize(68, 20)
-    wireBtn:SetPoint("LEFT", webBtn, "RIGHT", 6, 0)
-    wireBtn:EnableMouse(true)
-    local wireLabel = wireBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    wireLabel:SetPoint("CENTER", 0, 0)
-    wireLabel:SetText("|cff00e5ffNetwork|r")
-    wireBtn.Label = wireLabel
-    wireBtn:SetScript("OnClick", function()
-        UI:ToggleCombatWire()
-    end)
-    wireBtn:SetScript("OnEnter", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnHoverBg then
-            self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(0.0, 0.85, 1.0, 1.0)
-        end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff00e5ffThe Shadow Network (Pop-Out)|r", "Click to toggle the floating Shadow Network live combat feed window.\nLive combat notifications stream here instead of cluttering your main chat.")
-    end)
-    wireBtn:SetScript("OnLeave", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnBg then
-            self:SetBackdropColor(unpack(t.btnBg))
-            self:SetBackdropBorderColor(unpack(t.btnBorder))
-        end
-        UI:HidePrivateTooltip()
-    end)
-    UI.WireButton = wireBtn
+    -- Version Tag: v1.0.2 in Muted Gray (#666666) anchored to the right of the title
+    local verTag = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    verTag:SetPoint("LEFT", title, "RIGHT", 8, 0)
+    verTag:SetTextColor(102/255, 102/255, 102/255, 1.0) -- #666666
+    verTag:SetText(string.format("v%s", KB.Version or "1.0.2"))
+    if verTag.SetFont then local f, s = verTag:GetFont(); verTag:SetFont(f, s or 10, "OUTLINE") end
+    verTag:SetShadowOffset(0, 0)
+    UI.VersionText = verTag
 
-    -- Template-Free Campaign Ruleset Toggle Button (Dual-Segment Switch: Mode: ● PvP  ○ PvE)
-    local rulesetBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    rulesetBtn:SetSize(118, 20)
-    rulesetBtn:SetPoint("LEFT", wireBtn, "RIGHT", 6, 0)
-    rulesetBtn:EnableMouse(true)
-    rulesetBtn:SetBackdrop({
+    -- Right Elements: Close (X), Settings, Sync, Mode Indicator
+    local closeBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
+    closeBtn:SetSize(20, 20)
+    closeBtn:SetPoint("RIGHT", headerBar, "RIGHT", -6, 0)
+    closeBtn:EnableMouse(true)
+    closeBtn:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
+    closeBtn:SetBackdropColor(30/255, 30/255, 30/255, 1.0) -- #1E1E1E
+    closeBtn:SetBackdropBorderColor(0, 0, 0, 1.0)
+    local closeLabel = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    closeLabel:SetPoint("CENTER", 0, 0)
+    closeLabel:SetTextColor(255/255, 56/255, 56/255, 1.0) -- #FF3838
+    closeLabel:SetText("X")
+    if closeLabel.SetFont then local f, s = closeLabel:GetFont(); closeLabel:SetFont(f, s or 10, "OUTLINE") end
+    closeLabel:SetShadowOffset(0, 0)
+    closeBtn.Label = closeLabel
+    closeBtn:SetScript("OnEnter", function(self) self:SetBackdropColor(42/255, 42/255, 42/255, 1.0) end)
+    closeBtn:SetScript("OnLeave", function(self) self:SetBackdropColor(30/255, 30/255, 30/255, 1.0) end)
+    closeBtn:SetScript("OnClick", function() mainFrame:Hide() end)
+    UI.CloseButton = closeBtn
 
-    local rulesetLabel = rulesetBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    rulesetLabel:SetPoint("CENTER", 0, 0)
-    rulesetBtn.Label = rulesetLabel
+    local settingsBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
+    settingsBtn:SetSize(58, 20)
+    settingsBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
+    settingsBtn:EnableMouse(true)
+    settingsBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    settingsBtn:SetBackdropColor(30/255, 30/255, 30/255, 1.0) -- #1E1E1E
+    settingsBtn:SetBackdropBorderColor(0, 0, 0, 1.0)
+    local settingsLabel = settingsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    settingsLabel:SetPoint("CENTER", 0, 0)
+    settingsLabel:SetTextColor(204/255, 204/255, 204/255, 1.0)
+    settingsLabel:SetText("Settings")
+    if settingsLabel.SetFont then local f, s = settingsLabel:GetFont(); settingsLabel:SetFont(f, s or 10, "OUTLINE") end
+    settingsLabel:SetShadowOffset(0, 0)
+    settingsBtn.Label = settingsLabel
+    settingsBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(42/255, 42/255, 42/255, 1.0)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Settings & Preferences|r", "Configure Theme, Alert Banners, Sound, Mute Death Marks, Combat Feed & Data Export.")
+    end)
+    settingsBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(30/255, 30/255, 30/255, 1.0)
+        UI:HidePrivateTooltip()
+    end)
+    settingsBtn:SetScript("OnClick", function() UI:ShowSettingsModal() end)
+    UI.SettingsButton = settingsBtn
+
+    local syncBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
+    syncBtn:SetSize(46, 20)
+    syncBtn:SetPoint("RIGHT", settingsBtn, "LEFT", -4, 0)
+    syncBtn:EnableMouse(true)
+    syncBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    syncBtn:SetBackdropColor(30/255, 30/255, 30/255, 1.0) -- #1E1E1E
+    syncBtn:SetBackdropBorderColor(0, 0, 0, 1.0)
+    local syncLabel = syncBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    syncLabel:SetPoint("CENTER", 0, 0)
+    syncLabel:SetTextColor(16/255, 185/255, 129/255, 1.0) -- #10B981
+    syncLabel:SetText("Sync")
+    if syncLabel.SetFont then local f, s = syncLabel:GetFont(); syncLabel:SetFont(f, s or 10, "OUTLINE") end
+    syncLabel:SetShadowOffset(0, 0)
+    syncBtn.Label = syncLabel
+    syncBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(42/255, 42/255, 42/255, 1.0)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Save & Sync Kills|r", "Flushes all in-memory combat records to SavedVariables on disk via /reload.")
+    end)
+    syncBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(30/255, 30/255, 30/255, 1.0)
+        UI:HidePrivateTooltip()
+    end)
+    syncBtn:SetScript("OnClick", function()
+        if InCombatLockdown and InCombatLockdown() then return end
+        WoWKillboardDB = WoWKillboardDB or {}
+        WoWKillboardDB.lastManualSync = time()
+        ReloadUI()
+    end)
+    UI.SyncButton = syncBtn
+
+    -- Mode Indicator: Compact pill toggle for PvP / PvE
+    local modePill = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
+    modePill:SetSize(96, 20)
+    modePill:SetPoint("RIGHT", syncBtn, "LEFT", -8, 0)
+    modePill:EnableMouse(true)
+    modePill:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    modePill:SetBackdropColor(20/255, 20/255, 20/255, 1.0) -- #141414
+    modePill:SetBackdropBorderColor(0, 0, 0, 1.0)
+    local modeLabel = modePill:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    modeLabel:SetPoint("CENTER", 0, 0)
+    if modeLabel.SetFont then local f, s = modeLabel:GetFont(); modeLabel:SetFont(f, s or 10, "OUTLINE") end
+    modeLabel:SetShadowOffset(0, 0)
+    modePill.Label = modeLabel
 
     function UI:UpdateRulesetButton()
         if not (UI.RulesetButton and UI.RulesetButton.Label) then return end
         local isPve = UI:IsPve()
         if isPve then
-            UI.RulesetButton:SetBackdropColor(0.03, 0.10, 0.05, 0.95)
-            UI.RulesetButton:SetBackdropBorderColor(0.20, 0.75, 0.35, 0.9)
-            UI.RulesetButton.Label:SetText("|cffffd100Mode:|r |cff64748bPvP|r |cff10b981[● PvE]|r")
+            UI.RulesetButton.Label:SetText("|cff666666PvP|r |cff10b981[PvE]|r")
         else
-            UI.RulesetButton:SetBackdropColor(0.14, 0.04, 0.04, 0.95)
-            UI.RulesetButton:SetBackdropBorderColor(0.85, 0.25, 0.25, 0.9)
-            UI.RulesetButton.Label:SetText("|cffffd100Mode:|r |cffef4444[● PvP]|r |cff64748bPvE|r")
+            UI.RulesetButton.Label:SetText("|cffef4444[PvP]|r |cff666666PvE|r")
         end
     end
 
-    rulesetBtn:SetScript("OnClick", function()
+    modePill:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(42/255, 42/255, 42/255, 1.0) -- #2A2A2A
+        local isPve = UI:IsPve()
+        local title = isPve and "|cff10b981Campaign Mode: Wilderness PvE|r" or "|cffef4444Campaign Mode: Contested PvP|r"
+        local rDesc = "Click to toggle between Contested PvP and Wilderness PvE modes."
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, title, rDesc)
+    end)
+    modePill:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(20/255, 20/255, 20/255, 1.0) -- #141414
+        UI:HidePrivateTooltip()
+    end)
+    modePill:SetScript("OnClick", function()
         WoWKillboardDB = WoWKillboardDB or {}
         local cur = UI:GetRuleset()
         local nextR = (cur == "PVE") and "PVP" or "PVE"
         WoWKillboardDB.campaignRuleset = nextR
-        SafePrint(string.format("|cff00ccff[WoWKB]|r Switched campaign ruleset to: |cffffd100[%s]|r", nextR))
+        UI:UpdateRulesetButton()
         UI:Refresh()
     end)
-    rulesetBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
-        local cur = UI:GetRuleset()
-        local isPve = (cur == "PVE")
-        local title = isPve and "|cff10b981Campaign Mode: Wilderness PvE|r" or "|cffef4444Campaign Mode: Contested PvP|r"
-        local rDesc = isPve
-            and "Currently displaying |cff10b981Wilderness Casualties|r, deadly creature executions, and monster rankings.\n\n|cffffd100▶ Left-Click:|r Toggle to |cffef4444Contested PvP|r (player kills, 1v1 duels, bounties, and battlegrounds)."
-            or "Currently displaying |cffef4444Contested PvP|r (open-world kills, 1v1 duels, battlegrounds, and bounties).\n\n|cffffd100▶ Left-Click:|r Toggle to |cff10b981Wilderness PvE|r (creature executions, environmental deaths, and NPC rankings)."
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, title, rDesc)
-    end)
-    rulesetBtn:SetScript("OnLeave", function(self)
-        UI:UpdateRulesetButton()
-        UI:HidePrivateTooltip()
-    end)
-    UI.RulesetButton = rulesetBtn
+    UI.RulesetButton = modePill
     UI:UpdateRulesetButton()
 
-    -- Authentic Classic Dialog Arched Header Crest (Centered at top)
-    local headerPlate = mainFrame:CreateTexture(nil, "ARTWORK", nil, 1)
-    headerPlate:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
-    headerPlate:SetSize(320, 56)
-    headerPlate:SetPoint("TOP", mainFrame, "TOP", 0, -2)
-    UI.HeaderPlate = headerPlate
+    -- 3. Top Metrics Bar (Single unified stat strip split into 3 flush segments)
+    local metricsBar = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+    metricsBar:SetSize(860, 38)
+    metricsBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -32)
+    metricsBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    metricsBar:SetBackdropColor(24/255, 24/255, 24/255, 1.0) -- #181818
+    metricsBar:SetBackdropBorderColor(0, 0, 0, 1.0)          -- 1px solid black
+    UI.TopMetricsBar = metricsBar
 
-    -- Window Title Header (Centered cleanly inside the Arched Header Plate)
-    local title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", headerPlate, "TOP", 0, -10)
-    title:SetText("|cffffd100WoW Killboard|r")
-    title:SetShadowOffset(1, -1)
-    title:SetShadowColor(0, 0, 0, 1)
-    UI.TitleText = title
+    local segWidth = 286
+    local function CreateMetricSegment(parent, xOffset, defLabel)
+        local seg = CreateFrame("Frame", nil, parent)
+        seg:SetSize(segWidth, 38)
+        seg:SetPoint("TOPLEFT", parent, "TOPLEFT", xOffset, 0)
 
-    local subtitle = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    subtitle:SetPoint("TOP", title, "BOTTOM", 0, -2)
-    local realm = (GetRealmName and GetRealmName()) or "PvP"
-    local sub = (KB.Utils and KB.Utils.GetClientFlavorSubtitle and KB.Utils.GetClientFlavorSubtitle())
-             or string.format("|cffffd100WoW|r / |cff00e5ffForever|r / |cffc7b28c%s|r / |cff00ff88Beta|r / |cff888888v%s|r", realm, KB.Version)
-    subtitle:SetText(sub)
-    subtitle:SetShadowOffset(1, -1)
-    subtitle:SetShadowColor(0, 0, 0, 1)
-    UI.SubtitleText = subtitle
+        local lbl = seg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        lbl:SetPoint("TOPLEFT", seg, "TOPLEFT", 10, -4)
+        lbl:SetTextColor(136/255, 136/255, 136/255, 1.0) -- #888888 Muted Silver
+        lbl:SetText(defLabel)
+        if lbl.SetFont then local f, s = lbl:GetFont(); lbl:SetFont(f, s or 10, "OUTLINE") end
+        lbl:SetShadowOffset(0, 0)
+        seg.TitleLabel = lbl
 
-    -- Template-Free Close Button
-    local closeBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    closeBtn:SetSize(26, 26)
-    closeBtn:SetPoint("TOPRIGHT", -8, -10)
-    closeBtn:EnableMouse(true)
-    local closeLabel = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    closeLabel:SetPoint("CENTER", 0, 0)
-    closeLabel:SetText("|cffff3333X|r")
-    closeBtn.Label = closeLabel
-    closeBtn:SetScript("OnClick", function()
-        mainFrame:Hide()
-    end)
-    UI.CloseButton = closeBtn
+        local pri = seg:CreateFontString(nil, "OVERLAY", "GameFontHighlightMedium")
+        pri:SetPoint("BOTTOMLEFT", seg, "BOTTOMLEFT", 10, 4)
+        pri:SetTextColor(1.0, 1.0, 1.0, 1.0)
+        pri:SetText("0")
+        if pri.SetFont then local f, s = pri:GetFont(); pri:SetFont(f, (s or 12) + 1, "OUTLINE") end
+        pri:SetShadowOffset(0, 0)
+        seg.PrimaryLabel = pri
+        seg.ValueLabel = pri
 
-    -- Template-Free Consolidated Settings Button
-    local settingsBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    settingsBtn:SetSize(82, 20)
-    settingsBtn:SetPoint("RIGHT", closeBtn, "LEFT", -6, 0)
-    settingsBtn:EnableMouse(true)
-    local settingsLabel = settingsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    settingsLabel:SetPoint("CENTER", 0, 0)
-    settingsLabel:SetText("|cffffd100Settings|r")
-    settingsBtn.Label = settingsLabel
-    settingsBtn:SetScript("OnClick", function()
-        UI:ShowSettingsModal()
-    end)
-    settingsBtn:SetScript("OnEnter", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnHoverBg then
-            self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
-        end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Settings & Preferences|r", "Configure Theme, Alert Banners, Sound, Mute Death Marks, Combat Feed & Data Export.")
-    end)
-    settingsBtn:SetScript("OnLeave", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnBg then
-            self:SetBackdropColor(unpack(t.btnBg))
-            self:SetBackdropBorderColor(unpack(t.btnBorder))
-        end
-        UI:HidePrivateTooltip()
-    end)
-    UI.SettingsButton = settingsBtn
+        local sub = seg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        sub:SetPoint("LEFT", pri, "RIGHT", 8, 0)
+        sub:SetTextColor(102/255, 102/255, 102/255, 1.0) -- #666666 Muted Gray
+        sub:SetText("")
+        if sub.SetFont then local f, s = sub:GetFont(); sub:SetFont(f, s or 10, "OUTLINE") end
+        sub:SetShadowOffset(0, 0)
+        seg.SubLabel = sub
 
-    -- Template-Free Desktop Sync / Reload Button
-    local syncBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    syncBtn:SetSize(72, 20)
-    syncBtn:SetPoint("RIGHT", settingsBtn, "LEFT", -6, 0)
-    syncBtn:EnableMouse(true)
-    local syncLabel = syncBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    syncLabel:SetPoint("CENTER", 0, 0)
-    syncLabel:SetText("|cff10b981Sync|r")
-    syncBtn.Label = syncLabel
-    syncBtn:SetScript("OnClick", function()
-        if InCombatLockdown and InCombatLockdown() then
-            SafePrint("|cffff9900[WoWKB]|r Cannot reload UI during combat.")
-            return
-        end
-        WoWKillboardDB = WoWKillboardDB or {}
-        WoWKillboardDB.lastManualSync = time()
-        SafePrint("|cff00ccff[WoWKB]|r Flushing combat records to disk... Keep WoWKillboardSync.exe running in the background to automatically upload to web.")
-        ReloadUI()
-    end)
-    syncBtn:SetScript("OnEnter", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnHoverBg then
-            self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(0.1, 0.85, 0.4, 1.0)
-        end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Save & Sync Kills|r", "Flushes all in-memory combat records to SavedVariables on disk via /reload.\n\nNOTE: WoW's security sandbox prevents addons from accessing the internet directly. Keep WoWKillboardSync.exe running in the background (or in Windows Startup) to automatically ingest and sync your kills to the web platform.")
-    end)
-    syncBtn:SetScript("OnLeave", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnBg then
-            self:SetBackdropColor(unpack(t.btnBg))
-            self:SetBackdropBorderColor(unpack(t.btnBorder))
-        end
-        UI:HidePrivateTooltip()
-    end)
-    UI.SyncButton = syncBtn
-
-    -- Template-Free Feedback & Bug Dispatch Button
-    local bugBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    bugBtn:SetSize(74, 20)
-    bugBtn:SetPoint("RIGHT", syncBtn, "LEFT", -6, 0)
-    bugBtn:EnableMouse(true)
-    local bugLabel = bugBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    bugLabel:SetPoint("CENTER", 0, 0)
-    bugLabel:SetText("|cffffd100Feedback|r")
-    bugBtn.Label = bugLabel
-    bugBtn:SetScript("OnClick", function()
-        UI:ShowBugReportModal()
-    end)
-    bugBtn:SetScript("OnEnter", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnHoverBg then
-            self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
-        end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Send Feedback & Bug Reports|r", "Submit player feedback, balance suggestions, or report combat glitches.\n\nOur AI diagnostic agent analyzes diagnostics upon desktop sync.")
-    end)
-    bugBtn:SetScript("OnLeave", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnBg then
-            self:SetBackdropColor(unpack(t.btnBg))
-            self:SetBackdropBorderColor(unpack(t.btnBorder))
-        end
-        UI:HidePrivateTooltip()
-    end)
-    UI.BugButton = bugBtn
-
-
-    -- 3 KPI Stat Cards (Authentic Warcraft Attribute Plate Style - Clean Vertical Separation)
-    local cardConfigs = {
-        { id = "KD",    title = "SESSION COMBAT K/D",   color = "ffd100", w = 274 },
-        { id = "DUELS", title = "1v1 DUELS RECORD",     color = "ffb82e", w = 274 },
-        { id = "BGS",   title = "BATTLEGROUNDS RECORD", color = "00e5ff", w = 274 },
-    }
-
-    UI.StatCards = {}
-    local prevCard = nil
-    for _, cfg in ipairs(cardConfigs) do
-        local card = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-        card:SetSize(cfg.w, 42)
-        if not prevCard then
-            card:SetPoint("TOPLEFT", 14, -70)
-        else
-            card:SetPoint("LEFT", prevCard, "RIGHT", 14, 0)
-        end
-        card.rawTitle = cfg.title
-
-        -- Header Strip Bar (Character Attribute Ribbon)
-        local hStrip = card:CreateTexture(nil, "BACKGROUND", nil, -5)
-        hStrip:SetPoint("TOPLEFT", 2, -2)
-        hStrip:SetPoint("TOPRIGHT", -2, -2)
-        hStrip:SetHeight(16)
-        hStrip:SetColorTexture(0.09, 0.12, 0.17, 1.0)
-        card.HeaderStrip = hStrip
-
-        local hDiv = card:CreateTexture(nil, "BACKGROUND", nil, -4)
-        hDiv:SetPoint("TOPLEFT", hStrip, "BOTTOMLEFT", 0, 0)
-        hDiv:SetPoint("TOPRIGHT", hStrip, "BOTTOMRIGHT", 0, 0)
-        hDiv:SetHeight(1)
-        hDiv:SetColorTexture(0.35, 0.28, 0.16, 0.8)
-        card.HeaderDivider = hDiv
-
-        local topLabel = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        topLabel:SetPoint("CENTER", hStrip, "CENTER", 0, 0)
-        topLabel:SetText(string.format("|cff%s%s|r", cfg.color, cfg.title))
-        card.TitleLabel = topLabel
-
-        local valLabel = card:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        valLabel:SetPoint("CENTER", card, "CENTER", 0, -8)
-        valLabel:SetText("0 / 0")
-        card.ValueLabel = valLabel
-
-        card:EnableMouse(true)
-        local cardId = cfg.id
-        card:SetScript("OnEnter", function(self)
-            local title, desc
-            if cardId == "KD" then
-                title = "|cffffd100Session Combat K/D|r"
-                desc = "Personal session combat record (You) and total open-world PvP kills logged."
-            elseif cardId == "DUELS" then
-                title = "|cffffb82e1v1 Duels Record|r"
-                desc = "Personal duel record (You) and total witnessed realm duels logged on board."
-            elseif cardId == "BGS" then
-                title = "|cff00e5ffBattlegrounds Record|r"
-                desc = "Personal battleground record (You) and total battleground matches logged."
-            end
-            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, title, desc)
+        seg:EnableMouse(true)
+        seg:SetScript("OnEnter", function(self)
+            local tText = self.TitleLabel and self.TitleLabel:GetText() or "Metric"
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100" .. tText .. "|r", "Real-time combat telemetry summary.")
         end)
-        card:SetScript("OnLeave", function(self)
-            UI:HidePrivateTooltip()
-        end)
+        seg:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
 
-        UI.StatCards[cfg.id] = card
-        prevCard = card
+        return seg
     end
 
-    -- Ribbon Stats Mode Toggle Button [ Realm Stats | Session Stats ]
-    local ribbonToggleBtn = UI:CreateButton(mainFrame, 192, 22, "|cffffd100[ Realm Stats ]|r |cff64748bSession|r", "GameFontHighlightSmall")
-    ribbonToggleBtn:SetPoint("BOTTOMRIGHT", UI.StatCards["BGS"], "TOPRIGHT", 0, 4)
-    ribbonToggleBtn:SetScript("OnClick", function()
-        if ribbonMode == "SESSION" then
-            ribbonMode = "REALM"
-        else
-            ribbonMode = "SESSION"
-        end
-        UI:Refresh()
-    end)
-    ribbonToggleBtn:SetScript("OnEnter", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnHoverBg then
-            self:SetBackdropColor(unpack(t.btnHoverBg))
-            self:SetBackdropBorderColor(1.0, 0.85, 0.0, 1.0)
-        end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Telemetry Ribbon Mode|r", "Toggle between your personal Session Combat Stats and Global Realm Intelligence.")
-    end)
-    ribbonToggleBtn:SetScript("OnLeave", function(self)
-        local t = UI:GetTheme()
-        if t and t.btnBg then
-            self:SetBackdropColor(unpack(t.btnBg))
-            self:SetBackdropBorderColor(unpack(t.btnBorder))
-        end
-        UI:HidePrivateTooltip()
-    end)
-    UI.RibbonToggleBtn = ribbonToggleBtn
+    local seg1 = CreateMetricSegment(metricsBar, 0, "Total Deaths")
+    local div1 = metricsBar:CreateTexture(nil, "OVERLAY")
+    div1:SetSize(1, 38)
+    div1:SetPoint("LEFT", seg1, "RIGHT", 0, 0)
+    div1:SetColorTexture(0, 0, 0, 1.0)
+
+    local seg2 = CreateMetricSegment(metricsBar, segWidth + 1, "Top Threat")
+    local div2 = metricsBar:CreateTexture(nil, "OVERLAY")
+    div2:SetSize(1, 38)
+    div2:SetPoint("LEFT", seg2, "RIGHT", 0, 0)
+    div2:SetColorTexture(0, 0, 0, 1.0)
+
+    local seg3 = CreateMetricSegment(metricsBar, (segWidth + 1) * 2, "Deadliest Zone")
+
+    UI.StatCards = {
+        KD = seg1,
+        DUELS = seg2,
+        BGS = seg3,
+    }
 
     -- 1px Dividing Rule
     local divider = mainFrame:CreateTexture(nil, "ARTWORK")
-    divider:SetPoint("TOPLEFT", 14, -118)
-    divider:SetPoint("TOPRIGHT", -14, -118)
+    divider:SetPoint("TOPLEFT", 10, -100)
+    divider:SetPoint("TOPRIGHT", -10, -100)
     divider:SetHeight(1)
-    divider:SetColorTexture(0.35, 0.28, 0.16, 0.9)
+    divider:SetColorTexture(0, 0, 0, 1.0)
     UI.Divider = divider
 
     -- Navigation Bar (Tabs on Left, Filter Pills on Right, Search in Center - Zero Overlap)
@@ -1205,9 +1045,9 @@ function UI:CreateMainWindow()
     tabButtons = {}
     local prevTab = nil
     for _, t in ipairs(tabs) do
-        local btn = UI:CreateButton(mainFrame, t.w, 24, t.text, "GameFontHighlightSmall")
+        local btn = UI:CreateButton(mainFrame, t.w, 22, t.text, "GameFontHighlightSmall")
         if not prevTab then
-            btn:SetPoint("TOPLEFT", 14, -124)
+            btn:SetPoint("TOPLEFT", 10, -74)
         else
             btn:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
         end
@@ -1231,9 +1071,9 @@ function UI:CreateMainWindow()
     filterButtons = {}
     local prevPill = nil
     for _, f in ipairs(filterConfigs) do
-        local pill = UI:CreateButton(mainFrame, f.w, 22, f.text, "GameFontHighlightSmall")
+        local pill = UI:CreateButton(mainFrame, f.w, 20, f.text, "GameFontHighlightSmall")
         if not prevPill then
-            pill:SetPoint("TOPRIGHT", -14, -125)
+            pill:SetPoint("TOPRIGHT", -10, -75)
         else
             pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
         end
@@ -1260,16 +1100,16 @@ function UI:CreateMainWindow()
 
     -- Real-Time Tactical Search Input Box (100% Template-Free, Zero XML Taint)
     local searchBox = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-    searchBox:SetSize(115, 22)
+    searchBox:SetSize(115, 20)
     searchBox:SetPoint("RIGHT", filterButtons["WORLD"], "LEFT", -8, 0)
     searchBox:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
         edgeSize = 1,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+        insets = { left = 0, right = 0, top = 0, bottom = 0 },
     })
-    searchBox:SetBackdropColor(0.07, 0.06, 0.04, 0.95)
-    searchBox:SetBackdropBorderColor(0.55, 0.44, 0.22, 0.95)
+    searchBox:SetBackdropColor(20/255, 20/255, 20/255, 1.0) -- #141414
+    searchBox:SetBackdropBorderColor(0, 0, 0, 1.0)          -- 1px solid black
     UI.SearchBox = searchBox
 
     local searchIcon = searchBox:CreateTexture(nil, "ARTWORK")
@@ -1314,12 +1154,7 @@ function UI:CreateMainWindow()
 
     eb:SetScript("OnEditFocusGained", function(self)
         placeholder:Hide()
-        local t = UI:GetTheme()
-        if t and t.searchFocusBorder then
-            searchBox:SetBackdropBorderColor(unpack(t.searchFocusBorder))
-        else
-            searchBox:SetBackdropBorderColor(1.0, 0.84, 0.0, 1.0)
-        end
+        searchBox:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
     end)
     eb:SetScript("OnEditFocusLost", function(self)
         local text = self:GetText()
@@ -1329,10 +1164,7 @@ function UI:CreateMainWindow()
         else
             clearBtn:Show()
         end
-        local t = UI:GetTheme()
-        if t and t.searchBorder then
-            searchBox:SetBackdropBorderColor(unpack(t.searchBorder))
-        end
+        searchBox:SetBackdropBorderColor(0, 0, 0, 1.0)
     end)
     eb:SetScript("OnTextChanged", function(self, isUserInput)
         local raw = self:GetText() or ""
@@ -1362,11 +1194,19 @@ function UI:CreateMainWindow()
         self:ClearFocus()
     end)
 
-    -- Dedicated Content Inset Panel (Sunken Vault Plate with Website Battlefield Artwork)
+    -- Dedicated Content Inset Panel (Flat #121212 with 1px solid black border)
     local inset = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-    inset:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -154)
-    inset:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -14, 14)
+    inset:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -104)
+    inset:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -10, 10)
     inset:SetFrameLevel(mainFrame:GetFrameLevel() + 1)
+    inset:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    inset:SetBackdropColor(18/255, 18/255, 18/255, 1.0) -- #121212
+    inset:SetBackdropBorderColor(0, 0, 0, 1.0)          -- 1px solid black
     UI.ContentInset = inset
 
     -- Website Dark War Battlefield Artwork Layer
@@ -1565,7 +1405,7 @@ function UI:Refresh()
             if btn.Label then btn.Label:SetText(def.text) end
             btn:ClearAllPoints()
             if not prevTab then
-                btn:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 14, -124)
+                btn:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -74)
             else
                 btn:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
             end
@@ -1600,7 +1440,7 @@ function UI:Refresh()
             pill.tooltipText = pDef.tooltip
             pill:ClearAllPoints()
             if not prevPill then
-                pill:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -14, -125)
+                pill:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -10, -75)
             else
                 pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
             end
@@ -1661,30 +1501,45 @@ function UI:Refresh()
 
         if UI.StatCards then
             if UI.StatCards.KD then
-                if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffff4444WILDERNESS CASUALTIES|r") end
-                if UI.StatCards.KD.ValueLabel then
-                    UI.StatCards.KD.ValueLabel:SetText(string.format(
-                        "|cffffd100%d|r |cff94a3b8Realm Fallen|r  |cff64748b||r  |cffff4444%d|r |cffcbd5e1Deaths (You)|r",
-                        pveSummary.totalDeaths or 0, myPveDeaths
-                    ))
+                if UI.StatCards.KD.TitleLabel then
+                    UI.StatCards.KD.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+                    UI.StatCards.KD.TitleLabel:SetText("Total Deaths")
+                end
+                if UI.StatCards.KD.PrimaryLabel then
+                    UI.StatCards.KD.PrimaryLabel:SetTextColor(1.0, 1.0, 1.0, 1.0)
+                    UI.StatCards.KD.PrimaryLabel:SetText(tostring(pveSummary.totalDeaths or 0))
+                end
+                if UI.StatCards.KD.SubLabel then
+                    UI.StatCards.KD.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
+                    UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d", myPveDeaths))
                 end
             end
             if UI.StatCards.DUELS then
-                if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cffffb82eAPEX EXECUTIONER|r") end
-                if UI.StatCards.DUELS.ValueLabel then
-                    UI.StatCards.DUELS.ValueLabel:SetText(string.format(
-                        "|cffff4444%s|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Mortal Kills|r",
-                        pveSummary.topMonster or "None Encountered", pveSummary.topMonsterKills or 0
-                    ))
+                if UI.StatCards.DUELS.TitleLabel then
+                    UI.StatCards.DUELS.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+                    UI.StatCards.DUELS.TitleLabel:SetText("Top Threat")
+                end
+                if UI.StatCards.DUELS.PrimaryLabel then
+                    UI.StatCards.DUELS.PrimaryLabel:SetTextColor(1.0, 56/255, 56/255, 1.0) -- Hostile Red #FF3838
+                    UI.StatCards.DUELS.PrimaryLabel:SetText(pveSummary.topMonster or "None")
+                end
+                if UI.StatCards.DUELS.SubLabel then
+                    UI.StatCards.DUELS.SubLabel:SetTextColor(1.0, 0.82, 0.0, 1.0) -- Gold #FFD100
+                    UI.StatCards.DUELS.SubLabel:SetText(string.format("%d Kills", pveSummary.topMonsterKills or 0))
                 end
             end
             if UI.StatCards.BGS then
-                if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffZONE DANGER INDEX|r") end
-                if UI.StatCards.BGS.ValueLabel then
-                    UI.StatCards.BGS.ValueLabel:SetText(string.format(
-                        "|cffffd100%s|r  |cff64748b||r  |cffef4444%d|r |cff94a3b8Casualties|r",
-                        pveSummary.deadliestZone or "Azeroth", pveSummary.deadliestZoneDeaths or 0
-                    ))
+                if UI.StatCards.BGS.TitleLabel then
+                    UI.StatCards.BGS.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+                    UI.StatCards.BGS.TitleLabel:SetText("Deadliest Zone")
+                end
+                if UI.StatCards.BGS.PrimaryLabel then
+                    UI.StatCards.BGS.PrimaryLabel:SetTextColor(1.0, 0.82, 0.0, 1.0) -- Gold #FFD100
+                    UI.StatCards.BGS.PrimaryLabel:SetText(pveSummary.deadliestZone or "Azeroth")
+                end
+                if UI.StatCards.BGS.SubLabel then
+                    UI.StatCards.BGS.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0) -- Muted Gray #666666
+                    UI.StatCards.BGS.SubLabel:SetText(string.format("%d Casualties", pveSummary.deadliestZoneDeaths or 0))
                 end
             end
         end
@@ -1705,62 +1560,88 @@ function UI:Refresh()
                 local fSplit = rData.FactionSplit or { Alliance = 50.0, Horde = 50.0 }
 
                 if UI.StatCards.KD then
-                    if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100REALM TOTAL CARNAGE|r") end
-                    if UI.StatCards.KD.ValueLabel then
-                        UI.StatCards.KD.ValueLabel:SetText(string.format(
-                            "|cffffd100%d|r |cff94a3b8Realm|r  |cff64748b||r  |cffffffff%d|rK / |cffff4444%d|rD |cff38bdf8(You)|r",
-                            rCarnage, myKills, myDeaths
-                        ))
+                    if UI.StatCards.KD.TitleLabel then
+                        UI.StatCards.KD.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+                        UI.StatCards.KD.TitleLabel:SetText("Realm Total Carnage")
+                    end
+                    if UI.StatCards.KD.PrimaryLabel then
+                        UI.StatCards.KD.PrimaryLabel:SetTextColor(1.0, 1.0, 1.0, 1.0)
+                        UI.StatCards.KD.PrimaryLabel:SetText(tostring(rCarnage))
+                    end
+                    if UI.StatCards.KD.SubLabel then
+                        UI.StatCards.KD.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
+                        UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %dK / %dD", myKills, myDeaths))
                     end
                 end
                 if UI.StatCards.DUELS then
-                    if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cff10b9811v1 SOLO KILL RATIO|r") end
-                    if UI.StatCards.DUELS.ValueLabel then UI.StatCards.DUELS.ValueLabel:SetText(string.format("|cff10b981%.1f%%|r |cff94a3b8Solo Encounters|r", rSolo)) end
+                    if UI.StatCards.DUELS.TitleLabel then
+                        UI.StatCards.DUELS.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+                        UI.StatCards.DUELS.TitleLabel:SetText("1v1 Solo Kill Ratio")
+                    end
+                    if UI.StatCards.DUELS.PrimaryLabel then
+                        UI.StatCards.DUELS.PrimaryLabel:SetTextColor(16/255, 185/255, 129/255, 1.0)
+                        UI.StatCards.DUELS.PrimaryLabel:SetText(string.format("%.1f%%", rSolo))
+                    end
+                    if UI.StatCards.DUELS.SubLabel then
+                        UI.StatCards.DUELS.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
+                        UI.StatCards.DUELS.SubLabel:SetText("Solo Encounters")
+                    end
                 end
                 if UI.StatCards.BGS then
-                    if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffFACTION WAR SPLIT|r") end
-                    if UI.StatCards.BGS.ValueLabel then UI.StatCards.BGS.ValueLabel:SetText(string.format("|cff3b82f6A: %.1f%%|r  |cff64748b||r  |cffef4444H: %.1f%%|r", fSplit.Alliance or 50, fSplit.Horde or 50)) end
+                    if UI.StatCards.BGS.TitleLabel then
+                        UI.StatCards.BGS.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+                        UI.StatCards.BGS.TitleLabel:SetText("Faction War Split")
+                    end
+                    if UI.StatCards.BGS.PrimaryLabel then
+                        UI.StatCards.BGS.PrimaryLabel:SetTextColor(1.0, 1.0, 1.0, 1.0)
+                        UI.StatCards.BGS.PrimaryLabel:SetText(string.format("|cff3b82f6A: %.0f%%|r  |cffef4444H: %.0f%%|r", fSplit.Alliance or 50, fSplit.Horde or 50))
+                    end
+                    if UI.StatCards.BGS.SubLabel then
+                        UI.StatCards.BGS.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
+                        UI.StatCards.BGS.SubLabel:SetText("Realm War Balance")
+                    end
                 end
             else
                 if UI.StatCards.KD then
-                    if UI.StatCards.KD.TitleLabel then UI.StatCards.KD.TitleLabel:SetText("|cffffd100CAREER COMBAT K/D|r") end
-                    if UI.StatCards.KD.ValueLabel then
-                        UI.StatCards.KD.ValueLabel:SetText(string.format(
-                            "|cffffffff%d|rK / |cffff4444%d|rD |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8All-Time Logged|r",
-                            myKills, myDeaths, totalKillsCount
-                        ))
+                    if UI.StatCards.KD.TitleLabel then
+                        UI.StatCards.KD.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+                        UI.StatCards.KD.TitleLabel:SetText("Total Kills")
+                    end
+                    if UI.StatCards.KD.PrimaryLabel then
+                        UI.StatCards.KD.PrimaryLabel:SetTextColor(1.0, 1.0, 1.0, 1.0)
+                        UI.StatCards.KD.PrimaryLabel:SetText(tostring(totalKillsCount))
+                    end
+                    if UI.StatCards.KD.SubLabel then
+                        UI.StatCards.KD.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
+                        UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %dK / %dD", myKills, myDeaths))
                     end
                 end
                 if UI.StatCards.DUELS then
-                    if UI.StatCards.DUELS.TitleLabel then UI.StatCards.DUELS.TitleLabel:SetText("|cffffb82e1v1 DUELS RECORD|r") end
-                    if UI.StatCards.DUELS.ValueLabel then
-                        if dTot > 0 then
-                            UI.StatCards.DUELS.ValueLabel:SetText(string.format(
-                                "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
-                                dW, dL, dRate, totalDuelsCount
-                            ))
-                        else
-                            UI.StatCards.DUELS.ValueLabel:SetText(string.format(
-                                "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b||r  |cffffd100%d|r |cff94a3b8Logged|r",
-                                totalDuelsCount
-                            ))
-                        end
+                    if UI.StatCards.DUELS.TitleLabel then
+                        UI.StatCards.DUELS.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+                        UI.StatCards.DUELS.TitleLabel:SetText("1v1 Duels Record")
+                    end
+                    if UI.StatCards.DUELS.PrimaryLabel then
+                        UI.StatCards.DUELS.PrimaryLabel:SetTextColor(1.0, 0.82, 0.0, 1.0)
+                        UI.StatCards.DUELS.PrimaryLabel:SetText(string.format("%dW - %dL", dW, dL))
+                    end
+                    if UI.StatCards.DUELS.SubLabel then
+                        UI.StatCards.DUELS.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
+                        UI.StatCards.DUELS.SubLabel:SetText(string.format("%d%% Win Rate (%d Logged)", dRate, totalDuelsCount))
                     end
                 end
                 if UI.StatCards.BGS then
-                    if UI.StatCards.BGS.TitleLabel then UI.StatCards.BGS.TitleLabel:SetText("|cff00e5ffBATTLEGROUNDS RECORD|r") end
-                    if UI.StatCards.BGS.ValueLabel then
-                        if bgTot > 0 then
-                            UI.StatCards.BGS.ValueLabel:SetText(string.format(
-                                "|cffffffff%d|rW - |cffff4444%d|rL |cff64748b(%d%%)|r  |cff64748b||r  |cff00e5ff%d|r |cff94a3b8Logged|r",
-                                bgW, bgL, bgRate, totalBgsCount
-                            ))
-                        else
-                            UI.StatCards.BGS.ValueLabel:SetText(string.format(
-                                "|cffffffff0|rW - |cffff44440|rL |cff64748b(You)|r  |cff64748b||r  |cff00e5ff%d|r |cff94a3b8Logged|r",
-                                totalBgsCount
-                            ))
-                        end
+                    if UI.StatCards.BGS.TitleLabel then
+                        UI.StatCards.BGS.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+                        UI.StatCards.BGS.TitleLabel:SetText("Battlegrounds Record")
+                    end
+                    if UI.StatCards.BGS.PrimaryLabel then
+                        UI.StatCards.BGS.PrimaryLabel:SetTextColor(0.0, 0.90, 1.0, 1.0)
+                        UI.StatCards.BGS.PrimaryLabel:SetText(string.format("%dW - %dL", bgW, bgL))
+                    end
+                    if UI.StatCards.BGS.SubLabel then
+                        UI.StatCards.BGS.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
+                        UI.StatCards.BGS.SubLabel:SetText(string.format("%d%% Win Rate (%d Logged)", bgRate, totalBgsCount))
                     end
                 end
             end
@@ -1903,37 +1784,25 @@ function UI:RenderLiveFeed()
         kills = filtered
     end
 
-    -- 1. The Blood Ledger (Azeroth's Most Wanted - Red Font & Parity with Website)
-    local mwTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    mwTitle:SetPoint("TOPLEFT", 10, -8)
-    mwTitle:SetText(" |cffff2222THE BLOOD LEDGER|r  -  |cffff4444Azeroth's Most Wanted|r")
-    mwTitle:SetShadowOffset(1, -1)
-    mwTitle:SetShadowColor(0, 0, 0, 1)
+    -- 4. Top Threats Strip (Replaces the 10 Bulky Cards)
+    local threatsHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    threatsHeader:SetSize(808, 18)
+    threatsHeader:SetPoint("TOPLEFT", 0, -4)
+    threatsHeader:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    threatsHeader:SetBackdropColor(24/255, 24/255, 24/255, 1.0) -- #181818
+    threatsHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
 
-    local mwSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    mwSub:SetPoint("TOPLEFT", mwTitle, "BOTTOMLEFT", 0, -2)
-    mwSub:SetText("|cffb8a080Open World Execution Contracts & Certified Outlaws | Deliver the final blow to claim the bounty.|r")
-    mwSub:SetShadowOffset(1, -1)
-    mwSub:SetShadowColor(0, 0, 0, 1)
-
-    local seeAllBtn = UI:CreateButton(UI.ContentFrame, 110, 22, "The Marked ->")
-    seeAllBtn:SetPoint("TOPRIGHT", -10, -8)
-    seeAllBtn:SetScript("OnClick", function()
-        activeTab = "BOUNTIES"
-        UI:Refresh()
-    end)
-
-    local shareWantedBtn = UI:CreateButton(UI.ContentFrame, 114, 22, "Share Wanted")
-    shareWantedBtn:SetPoint("RIGHT", seeAllBtn, "LEFT", -6, 0)
-    shareWantedBtn:SetScript("OnClick", function()
-        UI:ShareWantedToChat()
-    end)
-    shareWantedBtn:SetScript("OnEnter", function(self)
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "Share Most Wanted", "Broadcasts active bounty contracts with the CurseForge addon link to group or guild chat.")
-    end)
-    shareWantedBtn:SetScript("OnLeave", function()
-        UI:HidePrivateTooltip()
-    end)
+    local threatsTitle = threatsHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    threatsTitle:SetPoint("LEFT", threatsHeader, "LEFT", 8, 0)
+    threatsTitle:SetTextColor(224/255, 224/255, 224/255, 1.0) -- #E0E0E0
+    threatsTitle:SetText("TOP THREATS")
+    if threatsTitle.SetFont then local f, s = threatsTitle:GetFont(); threatsTitle:SetFont(f, s or 10, "OUTLINE") end
+    threatsTitle:SetShadowOffset(0, 0)
 
     -- Gather Active Outlaws sorted by highest Mark value
     if KB.BountyEngine and KB.BountyEngine.InitDB then KB.BountyEngine:InitDB() end
@@ -1977,407 +1846,319 @@ function UI:RenderLiveFeed()
         return (a.amountCopper or 0) > (b.amountCopper or 0)
     end)
 
-    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
-        local q = UI.activeSearchQuery
-        local filteredOutlaws = {}
-        for _, b in ipairs(activeOutlaws) do
-            local tName = (b.targetName or b.target_name or ""):lower()
-            local pName = (b.placerName or b.placer_name or ""):lower()
-            if tName:find(q, 1, true) or pName:find(q, 1, true) then
-                table.insert(filteredOutlaws, b)
-            end
-        end
-        activeOutlaws = filteredOutlaws
-    end
+    local colW = 159
+    local colH = 44
+    local colGap = 3
 
-    -- Render 10 Most Wanted Cards in a 2x5 Grid
-    for idx = 1, 10 do
-        local col = (idx - 1) % 5
-        local r = math.floor((idx - 1) / 5)
-        local cardX = 10 + (col * 164)
-        local cardY = -48 - (r * 118)
-
+    for idx = 1, 5 do
         local b = activeOutlaws[idx]
-        local card = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-        card:SetSize(154, 110)
-        card:SetPoint("TOPLEFT", cardX, cardY)
-        card:SetBackdrop(theme.rowBackdrop)
+        local colX = (idx - 1) * (colW + colGap)
+        local colItem = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        colItem:SetSize(colW, colH)
+        colItem:SetPoint("TOPLEFT", colX, -24)
+        colItem:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        colItem:SetBackdropColor(20/255, 20/255, 20/255, 1.0) -- #141414
+        colItem:SetBackdropBorderColor(0, 0, 0, 1.0)
+
+        -- Rank Number: Gold (#FFD100)
+        local rankStr = colItem:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rankStr:SetPoint("LEFT", colItem, "LEFT", 5, 0)
+        rankStr:SetTextColor(1.0, 0.82, 0.0, 1.0) -- #FFD100
+        rankStr:SetText(string.format("#%d", idx))
+        if rankStr.SetFont then local f, s = rankStr:GetFont(); rankStr:SetFont(f, s or 11, "OUTLINE") end
+        rankStr:SetShadowOffset(0, 0)
+
+        -- Icon: 24x24 square class/target icon with 1px solid black border
+        local iconFrame = CreateFrame("Frame", nil, colItem, "BackdropTemplate")
+        iconFrame:SetSize(24, 24)
+        iconFrame:SetPoint("LEFT", rankStr, "RIGHT", 4, 0)
+        iconFrame:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        iconFrame:SetBackdropColor(0, 0, 0, 1.0)
+        iconFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
 
         if b then
-            local bFaction = (b.targetFaction or b.target_faction or ""):lower()
-            local bClass = b.targetClass or b.target_class or "UNKNOWN"
-            local tName = b.targetName or b.target_name or "Target"
-            local borderColor = { 0.55, 0.45, 0.22, 0.95 }
-            local bgColor = { 0.07, 0.07, 0.09, 0.96 }
-            if bFaction == "alliance" or bClass == "PALADIN" then
-                borderColor = { 0.22, 0.52, 0.88, 0.95 }
-                bgColor = { 0.04, 0.08, 0.16, 0.96 }
-            elseif bFaction == "horde" or bClass == "SHAMAN" then
-                borderColor = { 0.85, 0.24, 0.20, 0.95 }
-                bgColor = { 0.16, 0.04, 0.04, 0.96 }
-            end
-            card:SetBackdropColor(unpack(bgColor))
-            card:SetBackdropBorderColor(unpack(borderColor))
+            local bClass = b.targetClass or "UNKNOWN"
+            local tName = b.targetName or "Target"
+            local bIcon = UI:CreateClassIcon(iconFrame, bClass, 24)
+            bIcon:SetAllPoints(iconFrame)
 
-            local stamp = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            stamp:SetPoint("TOPLEFT", 6, -6)
-            stamp:SetText(string.format("|cffff4444#%d WANTED|r", idx))
-            stamp:SetShadowOffset(1, -1)
-            stamp:SetShadowColor(0, 0, 0, 1)
-
-            local reward = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            reward:SetPoint("TOPRIGHT", -6, -6)
-            local goldAmt = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
-            if goldAmt <= 0 and (b.amountCopper or 0) > 0 then
-                goldAmt = math.max(1, math.floor((b.amountCopper or 0) / 10000))
-            end
-            reward:SetText(string.format("|cffffd100%dg|r |TInterface\\MoneyFrame\\UI-GoldIcon:12:12:0:0|t", goldAmt))
-            reward:SetShadowOffset(1, -1)
-            reward:SetShadowColor(0, 0, 0, 1)
-
-            local icon = UI:CreateClassIcon(card, bClass, 24)
-            icon:SetPoint("TOPLEFT", 6, -26)
-
-            local nameStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            nameStr:SetPoint("TOPLEFT", icon, "TOPRIGHT", 5, 0)
-            nameStr:SetPoint("RIGHT", card, "RIGHT", -6, 0)
+            -- Name: Strict class color
+            local nameStr = colItem:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            nameStr:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 5, -3)
+            nameStr:SetPoint("RIGHT", colItem, "RIGHT", -4, 0)
             nameStr:SetJustifyH("LEFT")
             nameStr:SetWordWrap(false)
-            nameStr:SetText(KB.Utils and KB.Utils.ColorizeByClass and KB.Utils.ColorizeByClass(tName, bClass) or tName)
-            nameStr:SetShadowOffset(1, -1)
-            nameStr:SetShadowColor(0, 0, 0, 1)
+            nameStr:SetText(KB.Utils.ColorizeByClass(tName, bClass))
+            if nameStr.SetFont then local f, s = nameStr:GetFont(); nameStr:SetFont(f, s or 10, "OUTLINE") end
+            nameStr:SetShadowOffset(0, 0)
 
-            local gStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            gStr:SetPoint("TOPLEFT", nameStr, "BOTTOMLEFT", 0, -2)
-            gStr:SetPoint("RIGHT", card, "RIGHT", -6, 0)
-            gStr:SetJustifyH("LEFT")
-            gStr:SetWordWrap(false)
+            -- Zone/Guild + Reward: Gold (#FFD100) / Crisp White (#FFFFFF)
+            local subStr = colItem:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            subStr:SetPoint("BOTTOMLEFT", iconFrame, "BOTTOMRIGHT", 5, 3)
+            subStr:SetPoint("RIGHT", colItem, "RIGHT", -4, 0)
+            subStr:SetJustifyH("LEFT")
+            subStr:SetWordWrap(false)
+            local goldAmt = b.amountGold or math.floor((b.amountCopper or 0) / 10000)
             local fTitle = (b.targetFaction and b.targetFaction ~= "") and b.targetFaction or (b.guildName or "Hostile")
-            gStr:SetText(string.format("|cff94a3b8<%s>|r", fTitle))
-            gStr:SetShadowOffset(1, -1)
-            gStr:SetShadowColor(0, 0, 0, 1)
+            subStr:SetText(string.format("|cffc4a77d%s|r  |cffffffff%dg|r", fTitle, goldAmt))
+            if subStr.SetFont then local f, s = subStr:GetFont(); subStr:SetFont(f, s or 9, "OUTLINE") end
+            subStr:SetShadowOffset(0, 0)
 
-            local lastSeenLoc = "Unknown Sector"
-            if WoWKillboardDB and WoWKillboardDB.kills then
-                local latestTime = 0
-                local latestZone = nil
-                for _, km in pairs(WoWKillboardDB.kills) do
-                    if km.killer and km.victim and (km.killer.name == b.targetName or km.victim.name == b.targetName) then
-                        if (km.timestamp or 0) > latestTime then
-                            latestTime = km.timestamp
-                            latestZone = km.location and km.location.zone
-                        end
-                    end
-                end
-                if latestZone and latestTime > 0 then
-                    local diffMin = math.max(1, math.floor((time() - latestTime) / 60))
-                    lastSeenLoc = string.format("%s (%dm ago)", latestZone, diffMin)
-                end
-            end
-
-            local seenStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            seenStr:SetPoint("TOPLEFT", 6, -58)
-            seenStr:SetPoint("RIGHT", -6, 0)
-            seenStr:SetJustifyH("LEFT")
-            seenStr:SetWordWrap(false)
-            seenStr:SetText(string.format("|cff38bdf8%s|r", lastSeenLoc))
-            seenStr:SetShadowOffset(1, -1)
-            seenStr:SetShadowColor(0, 0, 0, 1)
-
-            local bId = b.id
-            local isAccepted = KB.BountyEngine and KB.BountyEngine.IsBountyAccepted and KB.BountyEngine:IsBountyAccepted(bId)
-            local actBtn = UI:CreateButton(card, 142, 20, isAccepted and "|cff00ff66[OK] Tracking|r" or "|cffffd100 Accept|r")
-            actBtn:SetPoint("BOTTOM", 0, 6)
-            if not isAccepted then
-                actBtn:SetScript("OnClick", function(btnSelf)
-                    if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
-                        KB.BountyEngine:AcceptBounty(bId)
-                        if btnSelf.Label then btnSelf.Label:SetText("|cff00ff66[OK] Tracking|r") end
-                    end
-                end)
-            end
+            colItem:EnableMouse(true)
+            local itemB = b
+            local itemIdx = idx
+            colItem:SetScript("OnEnter", function(self)
+                self:SetBackdropColor(42/255, 42/255, 42/255, 1.0)
+                local desc = string.format(
+                    "|cffc4a77dFaction/Guild:|r %s\n|cffffd100Bounty Reward:|r %dg\n|cff888888Rank #%d Most Wanted Contract|r",
+                    fTitle, goldAmt, itemIdx
+                )
+                UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, KB.Utils.ColorizeByClass(tName, bClass), desc)
+            end)
+            colItem:SetScript("OnLeave", function(self)
+                self:SetBackdropColor(20/255, 20/255, 20/255, 1.0)
+                UI:HidePrivateTooltip()
+            end)
         else
-            card:SetBackdropColor(0.04, 0.05, 0.07, 0.85)
-            card:SetBackdropBorderColor(0.25, 0.28, 0.32, 0.55)
-
-            local stamp = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            stamp:SetPoint("TOPLEFT", 6, -6)
-            stamp:SetText(string.format("|cff64748b#%d WANTED|r", idx))
-            stamp:SetShadowOffset(1, -1)
-            stamp:SetShadowColor(0, 0, 0, 1)
-
-            local reward = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            reward:SetPoint("TOPRIGHT", -6, -6)
-            reward:SetText("|cff64748bOPEN|r")
-            reward:SetShadowOffset(1, -1)
-            reward:SetShadowColor(0, 0, 0, 1)
-
-            local blankIcon = card:CreateTexture(nil, "ARTWORK")
-            blankIcon:SetSize(22, 22)
-            blankIcon:SetPoint("TOPLEFT", 6, -26)
+            local blankIcon = iconFrame:CreateTexture(nil, "ARTWORK")
+            blankIcon:SetAllPoints(iconFrame)
             blankIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
             blankIcon:SetVertexColor(0.35, 0.40, 0.48, 0.6)
 
-            local nameStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            nameStr:SetPoint("TOPLEFT", blankIcon, "TOPRIGHT", 5, 0)
-            nameStr:SetPoint("RIGHT", -6, 0)
+            local nameStr = colItem:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            nameStr:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 5, -3)
+            nameStr:SetPoint("RIGHT", colItem, "RIGHT", -4, 0)
             nameStr:SetJustifyH("LEFT")
             nameStr:SetWordWrap(false)
-            nameStr:SetText("|cff64748bPending Target|r")
-            nameStr:SetShadowOffset(1, -1)
-            nameStr:SetShadowColor(0, 0, 0, 1)
+            nameStr:SetTextColor(102/255, 102/255, 102/255, 1.0) -- #666666
+            nameStr:SetText("Open Contract")
+            if nameStr.SetFont then local f, s = nameStr:GetFont(); nameStr:SetFont(f, s or 10, "OUTLINE") end
+            nameStr:SetShadowOffset(0, 0)
 
-            local gStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            gStr:SetPoint("TOPLEFT", nameStr, "BOTTOMLEFT", 0, -2)
-            gStr:SetPoint("RIGHT", -6, 0)
-            gStr:SetJustifyH("LEFT")
-            gStr:SetWordWrap(false)
-            gStr:SetText("|cff475569<Unclaimed>|r")
-            gStr:SetShadowOffset(1, -1)
-            gStr:SetShadowColor(0, 0, 0, 1)
-
-            local seenStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            seenStr:SetPoint("TOPLEFT", 6, -58)
-            seenStr:SetPoint("RIGHT", -6, 0)
-            seenStr:SetJustifyH("LEFT")
-            seenStr:SetWordWrap(false)
-            seenStr:SetText("|cff475569No Active Contract|r")
-            seenStr:SetShadowOffset(1, -1)
-            seenStr:SetShadowColor(0, 0, 0, 1)
-
-            local issueBtn = UI:CreateButton(card, 142, 20, "|cff94a3b8+ Issue Mark|r")
-            issueBtn:SetPoint("BOTTOM", 0, 6)
-            issueBtn:SetScript("OnClick", function()
-                UI:ShowBountyPrompt()
-            end)
+            local subStr = colItem:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            subStr:SetPoint("BOTTOMLEFT", iconFrame, "BOTTOMRIGHT", 5, 3)
+            subStr:SetPoint("RIGHT", colItem, "RIGHT", -4, 0)
+            subStr:SetJustifyH("LEFT")
+            subStr:SetWordWrap(false)
+            subStr:SetTextColor(119/255, 119/255, 119/255, 1.0)
+            subStr:SetText("No Active Mark")
+            if subStr.SetFont then local f, s = subStr:GetFont(); subStr:SetFont(f, s or 9, "OUTLINE") end
+            subStr:SetShadowOffset(0, 0)
         end
     end
 
-    -- Divider Line separating Most Wanted from Live Combat Feed
-    local divLine = UI.ContentFrame:CreateTexture(nil, "BACKGROUND")
-    divLine:SetSize(820, 1)
-    divLine:SetPoint("TOPLEFT", 0, -288)
-    divLine:SetColorTexture(0.35, 0.28, 0.16, 0.8)
+    -- 5. Death Log (Recent Casualties Table)
+    local recentHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    recentHeader:SetSize(808, 18)
+    recentHeader:SetPoint("TOPLEFT", 0, -74)
+    recentHeader:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    recentHeader:SetBackdropColor(24/255, 24/255, 24/255, 1.0) -- #181818
+    recentHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
 
-    -- 2. Live Combat Recon Feed Header (The Shadow Network)
-    local feedTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    feedTitle:SetPoint("TOPLEFT", 10, -298)
-    feedTitle:SetText(" |cff00e5ffTHE SHADOW NETWORK  -  TACTICAL INTEL|r")
-    feedTitle:SetShadowOffset(1, -1)
-    feedTitle:SetShadowColor(0, 0, 0, 1)
+    local recentTitle = recentHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    recentTitle:SetPoint("LEFT", recentHeader, "LEFT", 8, 0)
+    recentTitle:SetTextColor(224/255, 224/255, 224/255, 1.0) -- #E0E0E0
+    recentTitle:SetText("RECENT DEATHS")
+    if recentTitle.SetFont then local f, s = recentTitle:GetFont(); recentTitle:SetFont(f, s or 10, "OUTLINE") end
+    recentTitle:SetShadowOffset(0, 0)
 
-    local feedSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    feedSub:SetPoint("TOPLEFT", feedTitle, "BOTTOMLEFT", 0, -2)
-    feedSub:SetText("|cffb8a080Live battlefield killfeed, spatial GPS coordinates, and threat alerts.|r")
-    feedSub:SetShadowOffset(1, -1)
-    feedSub:SetShadowColor(0, 0, 0, 1)
+    -- Table Column Header Strip (18px height, #161616, 1px black border)
+    local colHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    colHeader:SetSize(808, 18)
+    colHeader:SetPoint("TOPLEFT", 0, -94)
+    colHeader:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    colHeader:SetBackdropColor(22/255, 22/255, 22/255, 1.0) -- #161616
+    colHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
 
-    -- Realm Telemetry KPI Summary Bar (matching website layout)
-    local sum = KB.Leaderboard and KB.Leaderboard.GetModeSummary and KB.Leaderboard:GetModeSummary(currentMode) or { totalKills = 0, soloPct = 0, alliancePct = 50, hordePct = 50 }
-    local kpiPlate = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-    kpiPlate:SetSize(820, 26)
-    kpiPlate:SetPoint("TOPLEFT", 0, -336)
-    kpiPlate:SetBackdrop(theme.rowBackdrop)
-    kpiPlate:SetBackdropColor(0.04, 0.04, 0.05, 0.95)
-    kpiPlate:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.85)
+    local function CreateColHeaderLabel(parent, x, w, text, rightAnchor)
+        local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        lbl:SetPoint("LEFT", parent, "LEFT", x, 0)
+        if rightAnchor then
+            lbl:SetPoint("RIGHT", parent, "RIGHT", rightAnchor, 0)
+        elseif w then
+            lbl:SetWidth(w)
+        end
+        lbl:SetJustifyH("LEFT")
+        lbl:SetTextColor(119/255, 119/255, 119/255, 1.0) -- #777777 Muted Gray
+        lbl:SetText(text)
+        if lbl.SetFont then local f, s = lbl:GetFont(); lbl:SetFont(f, s or 10, "OUTLINE") end
+        lbl:SetShadowOffset(0, 0)
+        return lbl
+    end
 
-    local kpiText = kpiPlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    kpiText:SetPoint("CENTER", 0, 0)
-    kpiText:SetText(string.format(
-        "THE SHADOW NETWORK: |cffffffff%d|r   |cff64748b||r   1V1 SOLO RATIO: |cff00e5ff%d%%|r   |cff64748b||r   FACTION WAR: |cff3b82f6A %d%%|r / |cffef4444H %d%%|r   |cff64748b||r   FILTER: |cffffd100[%s]|r",
-        sum.totalKills, sum.soloPct, sum.alliancePct, sum.hordePct, currentMode
-    ))
-    kpiText:SetShadowOffset(1, -1)
-    kpiText:SetShadowColor(0, 0, 0, 1)
+    CreateColHeaderLabel(colHeader, 8, 60, "TIME")
+    CreateColHeaderLabel(colHeader, 72, 220, "VICTIM")
+    CreateColHeaderLabel(colHeader, 298, 150, "ACTION / FATAL BLOW")
+    CreateColHeaderLabel(colHeader, 454, 180, "KILLER")
+    CreateColHeaderLabel(colHeader, 640, nil, "ZONE", -8)
 
-    local yOffset = -368
+    local yOffset = -114
 
     if #kills == 0 then
-        if not UI.EmptyFeedText then
-            UI.EmptyFeedText = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            UI.EmptyFeedText:SetJustifyH("CENTER")
-            UI.EmptyFeedText:SetSpacing(4)
-        end
-        UI.EmptyFeedText:SetPoint("TOP", UI.ContentFrame, "TOP", 0, yOffset - 16)
-        local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Azeroth"
-        UI.EmptyFeedText:SetText(string.format(
-            "|cffffd100* FRONTLINE COMBAT RADAR ONLINE|r\n\n" ..
-            "|cffcbd5e1Sector Surveillance:|r |cffffffff%s|r   |cff64748b||r   |cffcbd5e1Filter Mode:|r |cffffd100[%s]|r\n" ..
-            "|cffcbd5e1Combat Engine Status:|r |cff10b981ARMED & RECORDING COMBAT|r |cff94a3b8(Zero confirmed deaths in this filter)|r\n\n" ..
-            "|cff94a3b8Killmails are automatically recorded upon confirming an open-world player kill,\n" ..
-            "battleground victory, or sanctioned 1v1 duel.|r\n\n" ..
-            "|cff00e5ffQuick Verification:|r |cffccccccType |cffffd100/wowkb testkill|r to simulate a live killmail and preview the feed.|r",
-            currentZone, currentMode
-        ))
-        UI.EmptyFeedText:SetShadowOffset(1, -1)
-        UI.EmptyFeedText:SetShadowColor(0, 0, 0, 1)
-        UI.EmptyFeedText:Show()
-        UI.ContentFrame:SetHeight(math.abs(yOffset) + 260)
+        local emptyFrame = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        emptyFrame:SetSize(808, 54)
+        emptyFrame:SetPoint("TOPLEFT", 0, yOffset)
+        emptyFrame:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        emptyFrame:SetBackdropColor(20/255, 20/255, 20/255, 1.0)
+        emptyFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
+
+        local emptyText = emptyFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        emptyText:SetPoint("CENTER", 0, 0)
+        emptyText:SetTextColor(119/255, 119/255, 119/255, 1.0)
+        emptyText:SetText("No combat casualties recorded in this filter. Awaiting combat telemetry.")
+        if emptyText.SetFont then local f, s = emptyText:GetFont(); emptyText:SetFont(f, s or 10, "OUTLINE") end
+        emptyText:SetShadowOffset(0, 0)
+
+        yOffset = yOffset - 58
+        UI.ContentFrame:SetHeight(math.abs(yOffset) + 16)
         return
-    elseif UI.EmptyFeedText then
-        UI.EmptyFeedText:Hide()
     end
 
     for idx, km in ipairs(kills) do
         if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
             local row = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
-            row:SetSize(820, 36)
+            row:SetSize(808, 24)
             row:SetPoint("TOPLEFT", 0, yOffset)
             local isEven = (idx % 2 == 0)
-            local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+            local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 } -- #161616 / #141414
 
-            -- Determine victor faction (Alliance Blue vs Horde Red, matching web killboard)
-            local kFaction = (km.killer and km.killer.faction or ""):lower()
-            if kFaction == "" and km.killer and km.killer.class then
-                local cls = km.killer.class:upper()
-                if cls == "PALADIN" then kFaction = "alliance"
-                elseif cls == "SHAMAN" then kFaction = "horde" end
-            end
-            if kFaction == "" and km.victim and km.victim.faction and not km.isDuel then
-                local vf = km.victim.faction:lower()
-                if vf == "alliance" then kFaction = "horde"
-                elseif vf == "horde" then kFaction = "alliance" end
-            end
-
-            local rowBg = baseBg
-            local rowBorder = theme.rowBorder
-            local hoverBg = theme.btnHoverBg or { 0.15, 0.15, 0.18, 0.95 }
-            local hoverBorder = theme.btnHoverBorder or { 1.0, 0.82, 0.0, 0.8 }
-
-            if kFaction == "alliance" then
-                rowBg = isEven and { 0.04, 0.08, 0.16, 0.92 } or { 0.03, 0.06, 0.13, 0.92 }
-                rowBorder = { 0.18, 0.38, 0.72, 0.75 }
-                hoverBg = { 0.07, 0.13, 0.25, 0.98 }
-                hoverBorder = { 0.28, 0.58, 0.98, 1.0 }
-            elseif kFaction == "horde" then
-                rowBg = isEven and { 0.14, 0.04, 0.05, 0.92 } or { 0.11, 0.03, 0.04, 0.92 }
-                rowBorder = { 0.72, 0.18, 0.18, 0.75 }
-                hoverBg = { 0.22, 0.07, 0.08, 0.98 }
-                hoverBorder = { 0.95, 0.25, 0.25, 1.0 }
-            elseif km.isDuel then
-                rowBg = isEven and { 0.10, 0.08, 0.04, 0.90 } or { 0.08, 0.07, 0.03, 0.90 }
-                rowBorder = { 0.65, 0.52, 0.15, 0.75 }
-                hoverBg = { 0.18, 0.15, 0.06, 0.98 }
-                hoverBorder = { 1.0, 0.84, 0.0, 1.0 }
-            end
-
-            row:SetBackdrop(theme.rowBackdrop)
+            row:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+                insets = { left = 0, right = 0, top = 0, bottom = 0 }
+            })
             row:SetBackdropColor(unpack(rowBg))
-            row:SetBackdropBorderColor(unpack(rowBorder))
+            row:SetBackdropBorderColor(0, 0, 0, 1.0)
 
-            -- Left Accent Bar (Colored by victor faction or engagement category)
-            local accent = row:CreateTexture(nil, "ARTWORK")
-            accent:SetPoint("TOPLEFT", 0, 0)
-            accent:SetPoint("BOTTOMLEFT", 0, 0)
-            accent:SetWidth(4)
+            -- 1px bottom divider
+            local div = row:CreateTexture(nil, "OVERLAY")
+            div:SetPoint("BOTTOMLEFT", 0, 0)
+            div:SetPoint("BOTTOMRIGHT", 0, 0)
+            div:SetHeight(1)
+            div:SetColorTexture(0, 0, 0, 1.0)
 
-            if kFaction == "alliance" then
-                accent:SetColorTexture(0.0, 0.44, 0.87, 1.0) -- Alliance Blue
-            elseif kFaction == "horde" then
-                accent:SetColorTexture(0.77, 0.12, 0.23, 1.0) -- Horde Red
-            elseif km.isDuel then
-                accent:SetColorTexture(1.0, 0.84, 0.0, 1.0) -- Gold
-            elseif km.isBattleground then
-                accent:SetColorTexture(0.3, 0.65, 1.0, 1.0) -- Soft Blue
-            elseif km.isSolo then
-                accent:SetColorTexture(0.0, 1.0, 0.4, 1.0) -- Emerald
-            else
-                accent:SetColorTexture(1.0, 0.6, 0.0, 1.0) -- Orange
-            end
-
-            local badgeStr = ""
-            if km.isDuel then
-                badgeStr = "|cffffd700[DUEL]|r"
-            elseif km.isBattleground then
-                badgeStr = string.format("|cff69ccf0[BG x%d]|r", km.attackersCount or 1)
-            elseif km.isSolo then
-                badgeStr = "|cff00ff66[SOLO]|r"
-            else
-                local attCount = km.attackersCount or 2
-                if attCount > 1 then
-                    badgeStr = string.format("|cffffaa00[GANG x%d]|r", attCount)
-                else
-                    badgeStr = "|cffffaa00[ASSIST]|r"
-                end
-            end
-
-            -- Category Badge
-            local badgeText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            badgeText:SetPoint("LEFT", 12, 0)
-            badgeText:SetText(badgeStr)
-            badgeText:SetShadowOffset(1, -1)
-            badgeText:SetShadowColor(0, 0, 0, 1)
-
-            -- Killer Class Icon
-            local kIcon = UI:CreateClassIcon(row, km.killer.class, 22)
-            kIcon:SetPoint("LEFT", 78, 0)
-
-            -- Killer Level Pill
-            local kLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            kLvl:SetPoint("LEFT", kIcon, "RIGHT", 4, 0)
-            local kLvlVal = km.killer.level or 0
-            kLvl:SetText((kLvlVal > 0) and string.format("|cffffd100%d|r", kLvlVal) or "|cff8899aa??|r")
-            kLvl:SetShadowOffset(1, -1)
-            kLvl:SetShadowColor(0, 0, 0, 1)
-
-            -- Action Verb Separator (Center)
-            local actionVerb = km.isDuel and "defeated" or "destroyed"
-            local sep = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            sep:SetPoint("LEFT", 305, 0)
-            sep:SetText(string.format("|cffe2d4c0%s|r", actionVerb))
-            sep:SetShadowOffset(1, -1)
-            sep:SetShadowColor(0, 0, 0, 1)
-
-            -- Killer Name & Guild (Bounded cleanly before separator)
-            local killerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            killerStr:SetPoint("LEFT", kLvl, "RIGHT", 5, 0)
-            killerStr:SetPoint("RIGHT", sep, "LEFT", -6, 0)
-            killerStr:SetJustifyH("LEFT")
-            killerStr:SetWordWrap(false)
-            local kGuildStr = (km.killer.guild and km.killer.guild ~= "None" and km.killer.guild ~= "") and string.format(" |cffc0a080<%s>|r", km.killer.guild) or ""
-            killerStr:SetText(KB.Utils.ColorizeByClass(km.killer.name, km.killer.class) .. kGuildStr)
-            killerStr:SetShadowOffset(1, -1)
-            killerStr:SetShadowColor(0, 0, 0, 1)
-
-            -- Victim Class Icon
-            local vIcon = UI:CreateClassIcon(row, km.victim.class, 22)
-            vIcon:SetPoint("LEFT", 365, 0)
-
-            -- Victim Level Pill
-            local vLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            vLvl:SetPoint("LEFT", vIcon, "RIGHT", 4, 0)
-            local vLvlVal = km.victim.level or 0
-            vLvl:SetText((vLvlVal > 0) and string.format("|cffffd100%d|r", vLvlVal) or "|cff8899aa??|r")
-            vLvl:SetShadowOffset(1, -1)
-            vLvl:SetShadowColor(0, 0, 0, 1)
-
-            -- Location & Timestamp (Right-Aligned)
-            local infoStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            infoStr:SetPoint("RIGHT", -12, 0)
+            local vName = km.victim.name or "Unknown"
+            local vClass = km.victim.class or "WARRIOR"
+            local vLevel = tonumber(km.victim.level or 0) or 0
+            local vGuild = km.victim.guild or ""
+            local kName = km.killer.name or "Unknown"
+            local kClass = km.killer.class or "WARRIOR"
+            local kLevel = tonumber(km.killer.level or 0) or 0
             local locName = km.isBattleground and (km.battlegroundName or "Battleground") or (km.location and km.location.zone or "Azeroth")
-            infoStr:SetText(string.format("|cffcbd5e1%s|r  |cff64748b||r  |cffa0aab8%s|r", locName, KB.Utils.FormatTimeAgo(km.timestamp)))
-            infoStr:SetShadowOffset(1, -1)
-            infoStr:SetShadowColor(0, 0, 0, 1)
+            local subLoc = (km.location and km.location.subZone) or ""
 
-            -- Victim Name & Guild (Bounded cleanly before location info)
-            local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            victimStr:SetPoint("LEFT", vLvl, "RIGHT", 5, 0)
-            victimStr:SetPoint("RIGHT", infoStr, "LEFT", -10, 0)
+            -- Col 1 (Time): 60px | Muted Gray #777777
+            local timeAgoStr = KB.Utils and KB.Utils.FormatTimeAgo and KB.Utils.FormatTimeAgo(km.timestamp) or "Recently"
+            local timeLbl = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            timeLbl:SetPoint("LEFT", row, "LEFT", 8, 0)
+            timeLbl:SetWidth(60)
+            timeLbl:SetJustifyH("LEFT")
+            timeLbl:SetTextColor(119/255, 119/255, 119/255, 1.0) -- #777777
+            timeLbl:SetText(timeAgoStr)
+            if timeLbl.SetFont then local f, s = timeLbl:GetFont(); timeLbl:SetFont(f, s or 10, "OUTLINE") end
+            timeLbl:SetShadowOffset(0, 0)
+
+            -- Col 2 (Victim): 220px | [Class Icon 16x16, 1px border] + [Level] + Player Name (Class Colored) + <Guild> (#888888)
+            local iconFrame = CreateFrame("Frame", nil, row, "BackdropTemplate")
+            iconFrame:SetSize(16, 16)
+            iconFrame:SetPoint("LEFT", row, "LEFT", 72, 0)
+            iconFrame:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+                insets = { left = 0, right = 0, top = 0, bottom = 0 }
+            })
+            iconFrame:SetBackdropColor(0, 0, 0, 1.0)
+            iconFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
+
+            local vIcon = UI:CreateClassIcon(iconFrame, vClass, 16)
+            vIcon:SetAllPoints(iconFrame)
+
+            local lvlStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            lvlStr:SetPoint("LEFT", iconFrame, "RIGHT", 4, 0)
+            lvlStr:SetTextColor(1.0, 0.82, 0.0, 1.0) -- #FFD100
+            lvlStr:SetText((vLevel > 0) and string.format("[%d]", vLevel) or "[??]")
+            if lvlStr.SetFont then local f, s = lvlStr:GetFont(); lvlStr:SetFont(f, s or 10, "OUTLINE") end
+            lvlStr:SetShadowOffset(0, 0)
+
+            local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            victimStr:SetPoint("LEFT", lvlStr, "RIGHT", 4, 0)
+            victimStr:SetPoint("RIGHT", row, "LEFT", 292, 0)
             victimStr:SetJustifyH("LEFT")
             victimStr:SetWordWrap(false)
-            local vGuildStr = (km.victim.guild and km.victim.guild ~= "None" and km.victim.guild ~= "") and string.format(" |cffc0a080<%s>|r", km.victim.guild) or ""
-            victimStr:SetText(KB.Utils.ColorizeByClass(km.victim.name, km.victim.class) .. vGuildStr)
-            victimStr:SetShadowOffset(1, -1)
-            victimStr:SetShadowColor(0, 0, 0, 1)
+            local vColorName = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(vName, vClass) or vName
+            local vGuildStr = (vGuild and vGuild ~= "" and vGuild ~= "None") and string.format(" |cff888888<%s>|r", vGuild) or ""
+            victimStr:SetText(vColorName .. vGuildStr)
+            if victimStr.SetFont then local f, s = victimStr:GetFont(); victimStr:SetFont(f, s or 10, "OUTLINE") end
+            victimStr:SetShadowOffset(0, 0)
 
-            -- Interactive Hover
+            -- Col 3 (Action / Fatal Blow): 150px | slain by (Muted #777777) + [Ability Name] (Spell Gold #FFE066)
+            local actionStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            actionStr:SetPoint("LEFT", row, "LEFT", 298, 0)
+            actionStr:SetPoint("RIGHT", row, "LEFT", 448, 0)
+            actionStr:SetJustifyH("LEFT")
+            actionStr:SetWordWrap(false)
+            local spellName = km.killingBlowAbility or (km.combatLog and km.combatLog.ability) or "Combat Strike"
+            actionStr:SetText(string.format("|cff777777slain by |r|cffffe066%s|r", spellName))
+            if actionStr.SetFont then local f, s = actionStr:GetFont(); actionStr:SetFont(f, s or 10, "OUTLINE") end
+            actionStr:SetShadowOffset(0, 0)
+
+            -- Col 4 (Killer): 180px | [Player Name] in Class Color
+            local killerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            killerStr:SetPoint("LEFT", row, "LEFT", 454, 0)
+            killerStr:SetPoint("RIGHT", row, "LEFT", 634, 0)
+            killerStr:SetJustifyH("LEFT")
+            killerStr:SetWordWrap(false)
+            local kColorName = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(kName, kClass) or string.format("|cffff3838%s|r", kName)
+            killerStr:SetText(kColorName)
+            if killerStr.SetFont then local f, s = killerStr:GetFont(); killerStr:SetFont(f, s or 10, "OUTLINE") end
+            killerStr:SetShadowOffset(0, 0)
+
+            -- Col 5 (Zone): Auto-fill width | Zone & Subzone in Muted Amber (#D4A359)
+            local locStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            locStr:SetPoint("LEFT", row, "LEFT", 640, 0)
+            locStr:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+            locStr:SetJustifyH("LEFT")
+            locStr:SetWordWrap(false)
+            local fullLoc = (subLoc and subLoc ~= "" and subLoc ~= locName) and string.format("%s (%s)", locName, subLoc) or locName
+            locStr:SetTextColor(212/255, 163/255, 89/255, 1.0) -- #D4A359 Muted Amber
+            locStr:SetText(fullLoc)
+            if locStr.SetFont then local f, s = locStr:GetFont(); locStr:SetFont(f, s or 10, "OUTLINE") end
+            locStr:SetShadowOffset(0, 0)
+
+            -- Row hover interaction
+            row:EnableMouse(true)
             row:SetScript("OnEnter", function(self)
-                self:SetBackdropColor(unpack(hoverBg))
-                self:SetBackdropBorderColor(unpack(hoverBorder))
+                self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
             end)
             row:SetScript("OnLeave", function(self)
                 self:SetBackdropColor(unpack(rowBg))
-                self:SetBackdropBorderColor(unpack(rowBorder))
             end)
 
             -- Click handler to open killmail detail
@@ -2386,11 +2167,11 @@ function UI:RenderLiveFeed()
                 UI:ShowKillDetail(targetKM)
             end)
 
-            yOffset = yOffset - 40
+            yOffset = yOffset - 24
         end
     end
 
-    UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
+    UI.ContentFrame:SetHeight(math.abs(yOffset) + 16)
 end
 
 -- =========================================================================
@@ -2419,47 +2200,41 @@ function UI:RenderPveFeed()
         deaths = filtered
     end
 
-    -- 1. The Apex Bestiary Header (Deadliest Monsters & Hazards)
-    local bwTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    bwTitle:SetPoint("TOPLEFT", 10, -8)
-    bwTitle:SetText(" |cffff4444THE APEX BESTIARY|r  -  |cffff8844Deadliest Monsters & Hazards|r")
-    bwTitle:SetShadowOffset(1, -1)
-    bwTitle:SetShadowColor(0, 0, 0, 1)
+    -- 4. Top Threats Strip (Replaces the 10 Bulky Cards)
+    local threatsHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    threatsHeader:SetSize(808, 18)
+    threatsHeader:SetPoint("TOPLEFT", 0, -4)
+    threatsHeader:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    threatsHeader:SetBackdropColor(24/255, 24/255, 24/255, 1.0) -- #181818
+    threatsHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
 
-    local bwSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    bwSub:SetPoint("TOPLEFT", bwTitle, "BOTTOMLEFT", 0, -2)
-    bwSub:SetText("|cffb8a080Top executioners of mortal adventurers | Hunt down apex threats across Azeroth.|r")
-    bwSub:SetShadowOffset(1, -1)
-    bwSub:SetShadowColor(0, 0, 0, 1)
+    local threatsTitle = threatsHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    threatsTitle:SetPoint("LEFT", threatsHeader, "LEFT", 8, 0)
+    threatsTitle:SetTextColor(224/255, 224/255, 224/255, 1.0) -- #E0E0E0
+    threatsTitle:SetText("TOP THREATS")
+    if threatsTitle.SetFont then local f, s = threatsTitle:GetFont(); threatsTitle:SetFont(f, s or 10, "OUTLINE") end
+    threatsTitle:SetShadowOffset(0, 0)
 
-    local seeBountiesBtn = UI:CreateButton(UI.ContentFrame, 130, 22, "Notorious Elites ->")
-    seeBountiesBtn:SetPoint("TOPRIGHT", -10, -8)
-    seeBountiesBtn:SetScript("OnClick", function()
-        activeTab = "BOUNTIES"
-        UI:Refresh()
-    end)
-
-    -- Gather Top 10 Apex Monsters
-    local topNpcs = KB.Leaderboard:GetTopDeadlyNpcs(10) or {}
+    -- Gather Top 5 Apex Monsters
+    local topNpcs = KB.Leaderboard:GetTopDeadlyNpcs(5) or {}
     local fallbackMonsters = {
         { name = "Hogger", zone = "Elwynn Forest", kills = 0, maxDamage = 180, icon = "Interface\\Icons\\Achievement_Boss_Hogger" },
         { name = "Defias Pillager", zone = "Westfall", kills = 0, maxDamage = 240, icon = "Interface\\Icons\\Spell_Fire_Fireball02" },
         { name = "Son of Arugal", zone = "Silverpine Forest", kills = 0, maxDamage = 560, icon = "Interface\\Icons\\Ability_Racial_BearForm" },
         { name = "Mor'Ladim", zone = "Duskwood", kills = 0, maxDamage = 820, icon = "Interface\\Icons\\Spell_Shadow_DeathScream" },
         { name = "Stitches", zone = "Duskwood", kills = 0, maxDamage = 950, icon = "Interface\\Icons\\INV_Misc_MonsterHead_03" },
-        { name = "Southshore Guard", zone = "Hillsbrad", kills = 0, maxDamage = 1200, icon = "Interface\\Icons\\INV_Shield_06" },
-        { name = "Tarren Mill Deathguard", zone = "Hillsbrad", kills = 0, maxDamage = 1200, icon = "Interface\\Icons\\INV_Shield_04" },
-        { name = "Devilsaur", zone = "Un'Goro Crater", kills = 0, maxDamage = 2200, icon = "Interface\\Icons\\Ability_Hunter_Pet_Devilsaur" },
-        { name = "Scarlet Crusader", zone = "Western Plaguelands", kills = 0, maxDamage = 1450, icon = "Interface\\Icons\\Spell_Holy_SealOfSacrifice" },
-        { name = "High General Abbendis", zone = "Eastern Plaguelands", kills = 0, maxDamage = 3100, icon = "Interface\\Icons\\INV_Sword_39" },
     }
-
     local displayMonsters = {}
     for _, m in ipairs(topNpcs) do
         table.insert(displayMonsters, m)
     end
     for _, fb in ipairs(fallbackMonsters) do
-        if #displayMonsters >= 10 then break end
+        if #displayMonsters >= 5 then break end
         local already = false
         for _, dm in ipairs(displayMonsters) do
             if dm.name == fb.name then already = true; break end
@@ -2469,294 +2244,295 @@ function UI:RenderPveFeed()
         end
     end
 
-    if UI.activeSearchQuery and UI.activeSearchQuery ~= "" then
-        local q = UI.activeSearchQuery
-        local filteredMonsters = {}
-        for _, m in ipairs(displayMonsters) do
-            local mName = (m.name or ""):lower()
-            local mZone = (m.zone or ""):lower()
-            if mName:find(q, 1, true) or mZone:find(q, 1, true) then
-                table.insert(filteredMonsters, m)
-            end
-        end
-        displayMonsters = filteredMonsters
+    local colW = 159
+    local colH = 44
+    local colGap = 3
+
+    for idx = 1, 5 do
+        local m = displayMonsters[idx] or fallbackMonsters[idx]
+        local colX = (idx - 1) * (colW + colGap)
+        local colItem = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        colItem:SetSize(colW, colH)
+        colItem:SetPoint("TOPLEFT", colX, -24)
+        colItem:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        colItem:SetBackdropColor(20/255, 20/255, 20/255, 1.0) -- #141414
+        colItem:SetBackdropBorderColor(0, 0, 0, 1.0)
+
+        -- Rank Number: Gold (#FFD100)
+        local rankStr = colItem:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        rankStr:SetPoint("LEFT", colItem, "LEFT", 5, 0)
+        rankStr:SetTextColor(1.0, 0.82, 0.0, 1.0) -- #FFD100
+        rankStr:SetText(string.format("#%d", idx))
+        if rankStr.SetFont then local f, s = rankStr:GetFont(); rankStr:SetFont(f, s or 11, "OUTLINE") end
+        rankStr:SetShadowOffset(0, 0)
+
+        -- Icon: 24x24 square NPC portrait or hazard icon with 1px solid black border
+        local iconFrame = CreateFrame("Frame", nil, colItem, "BackdropTemplate")
+        iconFrame:SetSize(24, 24)
+        iconFrame:SetPoint("LEFT", rankStr, "RIGHT", 4, 0)
+        iconFrame:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        iconFrame:SetBackdropColor(0, 0, 0, 1.0)
+        iconFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
+
+        local iconTex = iconFrame:CreateTexture(nil, "ARTWORK")
+        iconTex:SetAllPoints(iconFrame)
+        local iconPath = m.icon or "Interface\\Icons\\INV_Misc_MonsterHead_02"
+        iconTex:SetTexture(iconPath)
+
+        -- Name: Hostile Red (#FF3838)
+        local nameStr = colItem:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        nameStr:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 5, -3)
+        nameStr:SetPoint("RIGHT", colItem, "RIGHT", -4, 0)
+        nameStr:SetJustifyH("LEFT")
+        nameStr:SetWordWrap(false)
+        nameStr:SetTextColor(1.0, 56/255, 56/255, 1.0) -- #FF3838
+        nameStr:SetText(m.name or "Hazard")
+        if nameStr.SetFont then local f, s = nameStr:GetFont(); nameStr:SetFont(f, s or 10, "OUTLINE") end
+        nameStr:SetShadowOffset(0, 0)
+
+        -- Zone: Muted Gold/Tan (#C4A77D) + Kills: Crisp White (#FFFFFF)
+        local subStr = colItem:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        subStr:SetPoint("BOTTOMLEFT", iconFrame, "BOTTOMRIGHT", 5, 3)
+        subStr:SetPoint("RIGHT", colItem, "RIGHT", -4, 0)
+        subStr:SetJustifyH("LEFT")
+        subStr:SetWordWrap(false)
+        local killsCount = m.kills or 0
+        subStr:SetText(string.format("|cffc4a77d%s|r  |cffffffff%d Kills|r", m.zone or "Wilderness", killsCount))
+        if subStr.SetFont then local f, s = subStr:GetFont(); subStr:SetFont(f, s or 9, "OUTLINE") end
+        subStr:SetShadowOffset(0, 0)
+
+        -- Interaction: Entire item is hoverable; mouseover displays standard tooltip with details
+        colItem:EnableMouse(true)
+        local itemM = m
+        local itemIdx = idx
+        colItem:SetScript("OnEnter", function(self)
+            self:SetBackdropColor(42/255, 42/255, 42/255, 1.0) -- #2A2A2A
+            local tName = itemM.name or "Apex Threat"
+            local tZone = itemM.zone or "Wilderness"
+            local tKills = itemM.kills or 0
+            local tDmg = itemM.maxDamage or 0
+            local desc = string.format(
+                "|cffc4a77dZone:|r %s\n|cffffffffConfirmed Mortalities:|r %d\n|cffef4444Max Strike Damage:|r %d dmg\n|cff888888Rank #%d Apex Threat|r",
+                tZone, tKills, tDmg, itemIdx
+            )
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffff3838" .. tName .. "|r", desc)
+        end)
+        colItem:SetScript("OnLeave", function(self)
+            self:SetBackdropColor(20/255, 20/255, 20/255, 1.0)
+            UI:HidePrivateTooltip()
+        end)
     end
 
-    -- Render 10 Apex Executioner Cards in a 2x5 Grid
-    for idx = 1, 10 do
-        local col = (idx - 1) % 5
-        local r = math.floor((idx - 1) / 5)
-        local cardX = 10 + (col * 164)
-        local cardY = -48 - (r * 118)
+    -- 5. Death Log (Recent Casualties Table)
+    local recentHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    recentHeader:SetSize(808, 18)
+    recentHeader:SetPoint("TOPLEFT", 0, -74)
+    recentHeader:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    recentHeader:SetBackdropColor(24/255, 24/255, 24/255, 1.0) -- #181818
+    recentHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
 
-        local m = displayMonsters[idx]
-        local card = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-        card:SetSize(154, 110)
-        card:SetPoint("TOPLEFT", cardX, cardY)
-        card:SetBackdrop(theme.rowBackdrop)
+    local recentTitle = recentHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    recentTitle:SetPoint("LEFT", recentHeader, "LEFT", 8, 0)
+    recentTitle:SetTextColor(224/255, 224/255, 224/255, 1.0) -- #E0E0E0
+    recentTitle:SetText("RECENT DEATHS")
+    if recentTitle.SetFont then local f, s = recentTitle:GetFont(); recentTitle:SetFont(f, s or 10, "OUTLINE") end
+    recentTitle:SetShadowOffset(0, 0)
 
-        if m then
-            local killsCount = m.kills or 0
-            local maxDmg = m.maxDamage or 0
-            local isHighThreat = killsCount > 0 or maxDmg > 500
-            local borderColor = isHighThreat and { 0.85, 0.28, 0.18, 0.95 } or { 0.45, 0.35, 0.22, 0.85 }
-            local bgColor = isHighThreat and { 0.14, 0.04, 0.04, 0.96 } or { 0.06, 0.06, 0.08, 0.96 }
+    -- Table Column Header Strip (18px height, #161616, 1px black border)
+    local colHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+    colHeader:SetSize(808, 18)
+    colHeader:SetPoint("TOPLEFT", 0, -94)
+    colHeader:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    colHeader:SetBackdropColor(22/255, 22/255, 22/255, 1.0) -- #161616
+    colHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
 
-            card:SetBackdropColor(unpack(bgColor))
-            card:SetBackdropBorderColor(unpack(borderColor))
-
-            local stamp = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            stamp:SetPoint("TOPLEFT", 6, -6)
-            stamp:SetText(string.format("|cffff4444#%d THREAT|r", idx))
-            stamp:SetShadowOffset(1, -1)
-            stamp:SetShadowColor(0, 0, 0, 1)
-
-            local casLabel = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            casLabel:SetPoint("TOPRIGHT", -6, -6)
-            casLabel:SetText(string.format("|cffffd100%d|r |cff94a3b8Kills|r", killsCount))
-            casLabel:SetShadowOffset(1, -1)
-            casLabel:SetShadowColor(0, 0, 0, 1)
-
-            local icon = card:CreateTexture(nil, "ARTWORK")
-            icon:SetSize(24, 24)
-            icon:SetPoint("TOPLEFT", 6, -26)
-            local iconTex = m.icon or "Interface\\Icons\\INV_Misc_MonsterHead_02"
-            if not iconTex or iconTex == "" then
-                iconTex = "Interface\\Icons\\INV_Misc_MonsterClaw_04"
-            end
-            icon:SetTexture(iconTex)
-
-            local nameStr = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            nameStr:SetPoint("TOPLEFT", icon, "TOPRIGHT", 5, 0)
-            nameStr:SetPoint("RIGHT", card, "RIGHT", -6, 0)
-            nameStr:SetJustifyH("LEFT")
-            nameStr:SetWordWrap(false)
-            nameStr:SetText(string.format("|cffff5533%s|r", m.name or "Hazard"))
-            nameStr:SetShadowOffset(1, -1)
-            nameStr:SetShadowColor(0, 0, 0, 1)
-
-            local zStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            zStr:SetPoint("TOPLEFT", nameStr, "BOTTOMLEFT", 0, -2)
-            zStr:SetPoint("RIGHT", card, "RIGHT", -6, 0)
-            zStr:SetJustifyH("LEFT")
-            zStr:SetWordWrap(false)
-            zStr:SetText(string.format("|cff38bdf8%s|r", m.zone or "Wilderness"))
-            zStr:SetShadowOffset(1, -1)
-            zStr:SetShadowColor(0, 0, 0, 1)
-
-            local dmgStr = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            dmgStr:SetPoint("TOPLEFT", 6, -58)
-            dmgStr:SetPoint("RIGHT", -6, 0)
-            dmgStr:SetJustifyH("LEFT")
-            dmgStr:SetWordWrap(false)
-            dmgStr:SetText(string.format("|cffef4444Max Strike: %d dmg|r", maxDmg))
-            dmgStr:SetShadowOffset(1, -1)
-            dmgStr:SetShadowColor(0, 0, 0, 1)
-
-            local viewBtn = UI:CreateButton(card, 142, 20, "|cffffd100View Bestiary|r")
-            viewBtn:SetPoint("BOTTOM", 0, 6)
-            viewBtn:SetScript("OnClick", function()
-                activeTab = "LEADERBOARD"
-                UI:Refresh()
-            end)
+    local function CreateColHeaderLabel(parent, x, w, text, rightAnchor)
+        local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        lbl:SetPoint("LEFT", parent, "LEFT", x, 0)
+        if rightAnchor then
+            lbl:SetPoint("RIGHT", parent, "RIGHT", rightAnchor, 0)
+        elseif w then
+            lbl:SetWidth(w)
         end
+        lbl:SetJustifyH("LEFT")
+        lbl:SetTextColor(119/255, 119/255, 119/255, 1.0) -- #777777 Muted Gray
+        lbl:SetText(text)
+        if lbl.SetFont then local f, s = lbl:GetFont(); lbl:SetFont(f, s or 10, "OUTLINE") end
+        lbl:SetShadowOffset(0, 0)
+        return lbl
     end
 
-    -- Divider Line
-    local divLine = UI.ContentFrame:CreateTexture(nil, "BACKGROUND")
-    divLine:SetSize(820, 1)
-    divLine:SetPoint("TOPLEFT", 0, -288)
-    divLine:SetColorTexture(0.35, 0.28, 0.16, 0.8)
+    CreateColHeaderLabel(colHeader, 8, 60, "TIME")
+    CreateColHeaderLabel(colHeader, 72, 220, "VICTIM")
+    CreateColHeaderLabel(colHeader, 298, 150, "ACTION / FATAL BLOW")
+    CreateColHeaderLabel(colHeader, 454, 180, "KILLER")
+    CreateColHeaderLabel(colHeader, 640, nil, "ZONE", -8)
 
-    -- 2. Mortal Casualties Header
-    local feedTitle = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    feedTitle:SetPoint("TOPLEFT", 10, -298)
-    feedTitle:SetText(" |cffff8844MORTAL CASUALTIES & WILDERNESS HAZARDS|r")
-    feedTitle:SetShadowOffset(1, -1)
-    feedTitle:SetShadowColor(0, 0, 0, 1)
-
-    local feedSub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    feedSub:SetPoint("TOPLEFT", feedTitle, "BOTTOMLEFT", 0, -2)
-    feedSub:SetText("|cffb8a080Live log of adventurer deaths, lethal creatures, fatal falls, and environmental hazards.|r")
-    feedSub:SetShadowOffset(1, -1)
-    feedSub:SetShadowColor(0, 0, 0, 1)
-
-    -- Telemetry KPI Plate
-    local pveSum = KB.Leaderboard and KB.Leaderboard.GetPveSummary and KB.Leaderboard:GetPveSummary() or { totalDeaths = 0, topMonster = "None", topMonsterKills = 0, deadliestZone = "Azeroth", deadliestZoneDeaths = 0 }
-    local kpiPlate = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-    kpiPlate:SetSize(820, 26)
-    kpiPlate:SetPoint("TOPLEFT", 0, -336)
-    kpiPlate:SetBackdrop(theme.rowBackdrop)
-    kpiPlate:SetBackdropColor(0.04, 0.04, 0.05, 0.95)
-    kpiPlate:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.85)
-
-    local kpiText = kpiPlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    kpiText:SetPoint("CENTER", 0, 0)
-    kpiText:SetText(string.format(
-        "CASUALTY REGISTRY: |cffffffff%d|r   |cff64748b||r   APEX EXECUTIONER: |cffff4444%s (%d Kills)|r   |cff64748b||r   DEADLIEST REGION: |cffffd100%s (%d Fallen)|r   |cff64748b||r   FILTER: |cffffd100[%s]|r",
-        pveSum.totalDeaths, pveSum.topMonster or "None", pveSum.topMonsterKills or 0, pveSum.deadliestZone or "Azeroth", pveSum.deadliestZoneDeaths or 0, currentMode
-    ))
-    kpiText:SetShadowOffset(1, -1)
-    kpiText:SetShadowColor(0, 0, 0, 1)
-
-    local yOffset = -368
+    local yOffset = -114
 
     if #deaths == 0 then
-        if not UI.EmptyPveFeedText then
-            UI.EmptyPveFeedText = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            UI.EmptyPveFeedText:SetJustifyH("CENTER")
-            UI.EmptyPveFeedText:SetSpacing(4)
-        end
-        UI.EmptyPveFeedText:SetPoint("TOP", UI.ContentFrame, "TOP", 0, yOffset - 16)
-        local currentZone = (GetZoneText and GetZoneText() ~= "") and GetZoneText() or "Azeroth"
-        UI.EmptyPveFeedText:SetText(string.format(
-            "|cffffd100* WILDERNESS SURVEILLANCE RADAR ONLINE|r\n\n" ..
-            "|cffcbd5e1Current Sector:|r |cffffffff%s|r   |cff64748b||r   |cffcbd5e1Filter Mode:|r |cffffd100[%s]|r\n" ..
-            "|cffcbd5e1Mortality Engine Status:|r |cff10b981ARMED & RECORDING CASUALTIES|r |cff94a3b8(Zero casualties in this filter)|r\n\n" ..
-            "|cff94a3b8Wilderness casualties to monsters, fatal falls, drowning, or lava\n" ..
-            "are automatically captured upon player release.|r\n\n" ..
-            "|cff00e5ffPvE Telemetry Note:|r |cffccccccExplore dangerous wilderness regions or type |cffffd100/kb help|r for commands.|r",
-            currentZone, currentMode
-        ))
-        UI.EmptyPveFeedText:SetShadowOffset(1, -1)
-        UI.EmptyPveFeedText:SetShadowColor(0, 0, 0, 1)
-        UI.EmptyPveFeedText:Show()
-        UI.ContentFrame:SetHeight(math.abs(yOffset) + 260)
+        local emptyFrame = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
+        emptyFrame:SetSize(808, 54)
+        emptyFrame:SetPoint("TOPLEFT", 0, yOffset)
+        emptyFrame:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        emptyFrame:SetBackdropColor(20/255, 20/255, 20/255, 1.0)
+        emptyFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
+
+        local emptyText = emptyFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        emptyText:SetPoint("CENTER", 0, 0)
+        emptyText:SetTextColor(119/255, 119/255, 119/255, 1.0)
+        emptyText:SetText("No casualties recorded in this filter. Awaiting combat telemetry.")
+        if emptyText.SetFont then local f, s = emptyText:GetFont(); emptyText:SetFont(f, s or 10, "OUTLINE") end
+        emptyText:SetShadowOffset(0, 0)
+
+        yOffset = yOffset - 58
+        UI.ContentFrame:SetHeight(math.abs(yOffset) + 16)
         return
-    elseif UI.EmptyPveFeedText then
-        UI.EmptyPveFeedText:Hide()
     end
 
     for idx, pd in ipairs(deaths) do
         local row = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
-        row:SetSize(820, 36)
+        row:SetSize(808, 24)
         row:SetPoint("TOPLEFT", 0, yOffset)
         local isEven = (idx % 2 == 0)
-        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+        local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 } -- #161616 / #141414
 
-        local vFaction = (pd.victim and pd.victim.faction or ""):lower()
-        if vFaction == "" and pd.victim and pd.victim.class then
-            local cls = pd.victim.class:upper()
-            if cls == "PALADIN" then vFaction = "alliance"
-            elseif cls == "SHAMAN" then vFaction = "horde" end
-        end
+        row:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        row:SetBackdropColor(unpack(rowBg))
+        row:SetBackdropBorderColor(0, 0, 0, 1.0)
 
-        local pveRowBg = baseBg
-        local pveRowBorder = theme.rowBorder
-        local pveHoverBg = { 0.12, 0.12, 0.15, 0.95 }
-        local pveHoverBorder = { 1.0, 0.82, 0.0, 0.8 }
+        -- 1px bottom divider
+        local div = row:CreateTexture(nil, "OVERLAY")
+        div:SetPoint("BOTTOMLEFT", 0, 0)
+        div:SetPoint("BOTTOMRIGHT", 0, 0)
+        div:SetHeight(1)
+        div:SetColorTexture(0, 0, 0, 1.0)
 
-        if vFaction == "alliance" then
-            pveRowBg = isEven and { 0.04, 0.07, 0.14, 0.92 } or { 0.03, 0.05, 0.11, 0.92 }
-            pveRowBorder = { 0.18, 0.35, 0.65, 0.70 }
-            pveHoverBg = { 0.06, 0.11, 0.22, 0.98 }
-            pveHoverBorder = { 0.28, 0.55, 0.95, 1.0 }
-        elseif vFaction == "horde" then
-            pveRowBg = isEven and { 0.12, 0.04, 0.05, 0.92 } or { 0.10, 0.03, 0.04, 0.92 }
-            pveRowBorder = { 0.65, 0.18, 0.18, 0.70 }
-            pveHoverBg = { 0.18, 0.06, 0.07, 0.98 }
-            pveHoverBorder = { 0.95, 0.25, 0.25, 1.0 }
-        end
-
-        row:SetBackdrop(theme.rowBackdrop)
-        row:SetBackdropColor(unpack(pveRowBg))
-        row:SetBackdropBorderColor(unpack(pveRowBorder))
-
-        -- Left Accent Bar
-        local accent = row:CreateTexture(nil, "ARTWORK")
-        accent:SetPoint("TOPLEFT", 0, 0)
-        accent:SetPoint("BOTTOMLEFT", 0, 0)
-        accent:SetWidth(4)
-
-        local nName = (pd.npc and pd.npc.name) or "Unknown Entity"
-        local nSpell = (pd.npc and pd.npc.spell) or "Combat Strike"
-        local nDmg = tonumber((pd.npc and pd.npc.damage) or 0) or 0
         local vName = (pd.victim and pd.victim.name) or "Unknown"
         local vClass = (pd.victim and pd.victim.class) or "WARRIOR"
         local vLevel = tonumber((pd.victim and pd.victim.level) or 0) or 0
-        local vGuild = (pd.victim and pd.victim.guild) or "None"
+        local vGuild = (pd.victim and pd.victim.guild) or ""
+        local nName = (pd.npc and pd.npc.name) or "Unknown Entity"
+        local nSpell = (pd.npc and pd.npc.spell) or "Combat Strike"
         local zName = (pd.location and pd.location.zone) or "Azeroth"
+        local subZone = (pd.location and pd.location.subZone) or ""
 
-        local badgeStr = ""
-        if nName:find("Falling") or nName:find("Drowning") or nName:find("Lava") or nName:find("Environmental") then
-            accent:SetColorTexture(1.0, 0.5, 0.0, 1.0) -- Orange
-            badgeStr = "|cffff8800[HAZARD]|r"
-        elseif nDmg >= 5000 or nName:find("Baron") or nName:find("Ragnaros") or nName:find("Onyxia") then
-            accent:SetColorTexture(1.0, 0.15, 0.15, 1.0) -- Red
-            badgeStr = "|cffff2222[BOSS]|r"
-        elseif nDmg >= 1000 then
-            accent:SetColorTexture(1.0, 0.84, 0.0, 1.0) -- Gold
-            badgeStr = "|cffffd700[ELITE]|r"
-        else
-            accent:SetColorTexture(0.2, 0.7, 1.0, 1.0) -- Soft Blue
-            badgeStr = "|cff00e5ff[CREATURE]|r"
-        end
-
-        -- Category Badge
-        local badgeText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        badgeText:SetPoint("LEFT", 12, 0)
-        badgeText:SetText(badgeStr)
-        badgeText:SetShadowOffset(1, -1)
-        badgeText:SetShadowColor(0, 0, 0, 1)
-
-        -- Executioner Monster/Hazard Text
-        local monsterStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        monsterStr:SetPoint("LEFT", 88, 0)
-        monsterStr:SetPoint("RIGHT", row, "LEFT", 300, 0)
-        monsterStr:SetJustifyH("LEFT")
-        monsterStr:SetWordWrap(false)
-        local strikeText = (nSpell and nSpell ~= "Combat Strike" and nSpell ~= "") and string.format(" |cffef4444(%s - %d dmg)|r", nSpell, nDmg) or (nDmg > 0 and string.format(" |cffef4444(%d dmg)|r", nDmg) or "")
-        monsterStr:SetText(string.format("|cffff5533%s|r%s", nName, strikeText))
-        monsterStr:SetShadowOffset(1, -1)
-        monsterStr:SetShadowColor(0, 0, 0, 1)
-
-        -- Action Verb Separator (Center)
-        local sep = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        sep:SetPoint("LEFT", 305, 0)
-        sep:SetText("|cffe2d4c0executed|r")
-        sep:SetShadowOffset(1, -1)
-        sep:SetShadowColor(0, 0, 0, 1)
-
-        -- Victim Class Icon
-        local vIcon = UI:CreateClassIcon(row, vClass, 22)
-        vIcon:SetPoint("LEFT", 365, 0)
-
-        -- Victim Level Pill
-        local vLvl = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        vLvl:SetPoint("LEFT", vIcon, "RIGHT", 4, 0)
-        vLvl:SetText((vLevel > 0) and string.format("|cffffd100%d|r", vLevel) or "|cff8899aa??|r")
-        vLvl:SetShadowOffset(1, -1)
-        vLvl:SetShadowColor(0, 0, 0, 1)
-
-        -- Location & Timestamp (Right-Aligned)
-        local infoStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        infoStr:SetPoint("RIGHT", -12, 0)
+        -- Col 1 (Time): 60px | Muted Gray #777777
         local timeAgoStr = KB.Utils and KB.Utils.FormatTimeAgo and KB.Utils.FormatTimeAgo(pd.timestamp) or "Recently"
-        infoStr:SetText(string.format("|cffcbd5e1%s|r  |cff64748b||r  |cffa0aab8%s|r", zName, timeAgoStr))
-        infoStr:SetShadowOffset(1, -1)
-        infoStr:SetShadowColor(0, 0, 0, 1)
+        local timeLbl = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        timeLbl:SetPoint("LEFT", row, "LEFT", 8, 0)
+        timeLbl:SetWidth(60)
+        timeLbl:SetJustifyH("LEFT")
+        timeLbl:SetTextColor(119/255, 119/255, 119/255, 1.0) -- #777777
+        timeLbl:SetText(timeAgoStr)
+        if timeLbl.SetFont then local f, s = timeLbl:GetFont(); timeLbl:SetFont(f, s or 10, "OUTLINE") end
+        timeLbl:SetShadowOffset(0, 0)
 
-        -- Victim Name & Guild
-        local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        victimStr:SetPoint("LEFT", vLvl, "RIGHT", 5, 0)
-        victimStr:SetPoint("RIGHT", infoStr, "LEFT", -10, 0)
+        -- Col 2 (Victim): 220px | [Class Icon 16x16, 1px border] + [Level] + Player Name (Class Colored) + <Guild> (#888888)
+        local iconFrame = CreateFrame("Frame", nil, row, "BackdropTemplate")
+        iconFrame:SetSize(16, 16)
+        iconFrame:SetPoint("LEFT", row, "LEFT", 72, 0)
+        iconFrame:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        iconFrame:SetBackdropColor(0, 0, 0, 1.0)
+        iconFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
+
+        local vIcon = UI:CreateClassIcon(iconFrame, vClass, 16)
+        vIcon:SetAllPoints(iconFrame)
+
+        local lvlStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        lvlStr:SetPoint("LEFT", iconFrame, "RIGHT", 4, 0)
+        lvlStr:SetTextColor(1.0, 0.82, 0.0, 1.0) -- #FFD100
+        lvlStr:SetText((vLevel > 0) and string.format("[%d]", vLevel) or "[??]")
+        if lvlStr.SetFont then local f, s = lvlStr:GetFont(); lvlStr:SetFont(f, s or 10, "OUTLINE") end
+        lvlStr:SetShadowOffset(0, 0)
+
+        local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        victimStr:SetPoint("LEFT", lvlStr, "RIGHT", 4, 0)
+        victimStr:SetPoint("RIGHT", row, "LEFT", 292, 0)
         victimStr:SetJustifyH("LEFT")
         victimStr:SetWordWrap(false)
-        local vGuildStr = (vGuild and vGuild ~= "None" and vGuild ~= "") and string.format(" |cffc0a080<%s>|r", vGuild) or ""
         local vColorName = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(vName, vClass) or vName
+        local vGuildStr = (vGuild and vGuild ~= "" and vGuild ~= "None") and string.format(" |cff888888<%s>|r", vGuild) or ""
         victimStr:SetText(vColorName .. vGuildStr)
-        victimStr:SetShadowOffset(1, -1)
-        victimStr:SetShadowColor(0, 0, 0, 1)
+        if victimStr.SetFont then local f, s = victimStr:GetFont(); victimStr:SetFont(f, s or 10, "OUTLINE") end
+        victimStr:SetShadowOffset(0, 0)
 
-        -- Row hover effects
+        -- Col 3 (Action / Fatal Blow): 150px | slain by (Muted #777777) + [Ability Name] (Spell Gold #FFE066)
+        local actionStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        actionStr:SetPoint("LEFT", row, "LEFT", 298, 0)
+        actionStr:SetPoint("RIGHT", row, "LEFT", 448, 0)
+        actionStr:SetJustifyH("LEFT")
+        actionStr:SetWordWrap(false)
+        local spellText = (nSpell and nSpell ~= "") and nSpell or "Melee"
+        actionStr:SetText(string.format("|cff777777slain by |r|cffffe066%s|r", spellText))
+        if actionStr.SetFont then local f, s = actionStr:GetFont(); actionStr:SetFont(f, s or 10, "OUTLINE") end
+        actionStr:SetShadowOffset(0, 0)
+
+        -- Col 4 (Killer): 180px | [NPC / Player Name] in Hostile Red (#FF3838)
+        local killerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        killerStr:SetPoint("LEFT", row, "LEFT", 454, 0)
+        killerStr:SetPoint("RIGHT", row, "LEFT", 634, 0)
+        killerStr:SetJustifyH("LEFT")
+        killerStr:SetWordWrap(false)
+        killerStr:SetTextColor(1.0, 56/255, 56/255, 1.0) -- #FF3838
+        killerStr:SetText(nName)
+        if killerStr.SetFont then local f, s = killerStr:GetFont(); killerStr:SetFont(f, s or 10, "OUTLINE") end
+        killerStr:SetShadowOffset(0, 0)
+
+        -- Col 5 (Zone): Auto-fill width | Zone & Subzone in Muted Amber (#D4A359)
+        local locStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        locStr:SetPoint("LEFT", row, "LEFT", 640, 0)
+        locStr:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+        locStr:SetJustifyH("LEFT")
+        locStr:SetWordWrap(false)
+        local fullLoc = (subZone and subZone ~= "" and subZone ~= zName) and string.format("%s (%s)", zName, subZone) or zName
+        locStr:SetTextColor(212/255, 163/255, 89/255, 1.0) -- #D4A359 Muted Amber
+        locStr:SetText(fullLoc)
+        if locStr.SetFont then local f, s = locStr:GetFont(); locStr:SetFont(f, s or 10, "OUTLINE") end
+        locStr:SetShadowOffset(0, 0)
+
+        -- Row hover interaction
         row:EnableMouse(true)
         row:SetScript("OnEnter", function(self)
-            self:SetBackdropColor(unpack(pveHoverBg))
-            self:SetBackdropBorderColor(unpack(pveHoverBorder))
+            self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
         end)
         row:SetScript("OnLeave", function(self)
-            self:SetBackdropColor(unpack(pveRowBg))
-            self:SetBackdropBorderColor(unpack(pveRowBorder))
+            self:SetBackdropColor(unpack(rowBg))
         end)
 
         -- Click handler to open death detail
@@ -2765,10 +2541,10 @@ function UI:RenderPveFeed()
             UI:ShowPveDeathDetail(targetPD)
         end)
 
-        yOffset = yOffset - 40
+        yOffset = yOffset - 24
     end
 
-    UI.ContentFrame:SetHeight(math.abs(yOffset) + 20)
+    UI.ContentFrame:SetHeight(math.abs(yOffset) + 16)
 end
 
 -- 2B. Render PvE Leaderboard Tab (Deadly Hazards & Casualty Registry)

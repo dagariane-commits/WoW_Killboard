@@ -39,6 +39,21 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Minimalist ElvUI In-Game Window Redesign (`Addon/WoWKillboard/UI.lua`, `Config.lua`)**:
+  - **Authentic ElvUI Minimalism**: Complete overhaul of the main window layout adhering to authentic ElvUI minimalism: flat dark slate surfaces (`#121212` primary window, `#181818` headers/panels, `#141414` / `#161616` alternating data rows), universal 1px solid black (`#000000`) borders, strict tabular grid alignment, and complete removal of all melodrama, subtitles, and decorative card clutter.
+  - **Header & Top Control Bar**: Full-width 28px height header in `#1A1A1A` with a 1px solid black divider. Left: Addon Title (`WoW Killboard` in Gold `#FFD100`) and Version Tag (`v1.0.2` in Muted Gray `#666666`). Right: Compact pill toggle for PvP / PvE (`UI.RulesetButton`), plus `Sync`, `Settings`, and `Close (X)` buttons in flat `#1E1E1E` with hover highlight `#2A2A2A`.
+  - **Unified Top Metrics Bar**: Replaced the 3 separated card boxes with a flush 38px height stat strip split into 3 flush segments with 1px black dividers:
+    - Segment 1: `Total Deaths` (Muted Silver `#888888`), Primary Value (White `#FFFFFF`), Sub-Value (`Personal: X` in Muted Gray `#666666`).
+    - Segment 2: `Top Threat` (`#888888`), Primary Value (Hostile Red `#FF3838`), Sub-Value (`X Kills` in Gold `#FFD100`).
+    - Segment 3: `Deadliest Zone` (`#888888`), Primary Value (Gold `#FFD100`), Sub-Value (`X Casualties` in Muted Gray `#666666`).
+  - **Top Threats Strip (Replaces 10 Bulky Cards)**: Flat 18px `#181818` header with `TOP THREATS` in White (`#E0E0E0`). Single horizontal 5-column ranking strip (Ranks 1 through 5) featuring Gold `#FFD100` rank number, 24px × 24px icon with 1px solid black border, Hostile Red `#FF3838` name, Muted Gold/Tan `#C4A77D` zone, Crisp White `#FFFFFF` kill count, and full interactive mouseover telemetry tooltip.
+  - **Death Log (Recent Casualties Table)**: Flat 18px `#181818` header with `RECENT DEATHS` in White (`#E0E0E0`), followed by an 18px `#161616` table column header strip (`TIME`, `VICTIM`, `ACTION / FATAL BLOW`, `KILLER`, `ZONE`). Dense 24px rows with alternating `#141414` / `#161616` fills and 1px bottom black dividers:
+    - Col 1 (`TIME`): Width 60px | Text: Muted Gray (`#777777`, e.g., `7m ago`, `3h ago`)
+    - Col 2 (`VICTIM`): Width 220px | [Class Icon 16x16, 1px border] + [Level] + Player Name (strict class colored) + `<Guild>` (Muted Silver `#888888`)
+    - Col 3 (`ACTION`): Width 150px | `slain by ` (Muted `#777777`) + `[Ability Name]` (Spell Gold `#FFE066`)
+    - Col 4 (`KILLER`): Width 180px | `[NPC / Player Name]` in Hostile Red (`#FF3838`, or class-colored in PvP)
+    - Col 5 (`ZONE`): Auto-fill width | `Zone & Subzone` in Muted Amber (`#D4A359`)
+  - **Default Theme Selection**: Set `KB.DefaultSettings.theme = "elvui"` and updated `UI:GetCurrentThemeName()` to default to `"elvui"`.
 - **Flipped Toast Orientation to Natural Reading Order ("Player Killed Other Player") & Dynamic Winning Faction Borders (`UI.lua`)**:
   - **Natural Subject-Verb-Object Layout**: Inverted the toast orientation so the Killer (Threat/Victor) is positioned on the LEFT and the Victim (Casualty) is positioned on the RIGHT. Matches natural Western reading flow: `[Killer] -> killed with [Ability] -> [Victim]`.
   - **Lethal Action Grammar**: Shifted center action text from passive `"slain by <Spell>"` to active `"killed with |cff<Color><Spell>|r"` (or `"killed with Melee Strike"`).

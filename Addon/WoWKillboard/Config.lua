@@ -15,7 +15,7 @@ KB.WebDomain = "wowkillboard.com"
 -- Default User Settings
 KB.DefaultSettings = {
     enabled = true,
-    theme = "classic",           -- "classic" (Classic WoW Stone & Gold) or "elvui" (Modern Dark Gunmetal)
+    theme = "elvui",             -- "elvui" (Modern Dark Minimalist) or "classic" (Classic WoW Stone & Gold)
     includeBattlegrounds = true,
     filterMode = "WORLD",        -- "WORLD", "BG", "DUEL", "ARENA"
     trackDamage = true,
@@ -102,9 +102,9 @@ KB.Themes = {
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        mainBg = { 0.05, 0.05, 0.05, 1.0 }, -- True matte charcoal/black (100% OPAQUE)
-        mainBorder = { 0.0, 0.0, 0.0, 1.0 },  -- 1px solid black razor outline
-        solidBg = { 0.05, 0.05, 0.05, 1.0 },
+        mainBg = { 18/255, 18/255, 18/255, 1.0 }, -- #121212 Flat dark slate primary window
+        mainBorder = { 0.0, 0.0, 0.0, 1.0 },      -- 1px solid black border
+        solidBg = { 18/255, 18/255, 18/255, 1.0 }, -- #121212
         titleText = "|cffffd100WoW Killboard|r",
         subtitleText = "v%s",
         insetBackdrop = {
@@ -113,17 +113,17 @@ KB.Themes = {
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        insetBg = { 0.03, 0.03, 0.03, 1.0 },
-        insetBorder = { 0.0, 0.0, 0.0, 1.0 },
+        insetBg = { 18/255, 18/255, 18/255, 1.0 }, -- #121212 Flat dark slate inset
+        insetBorder = { 0.0, 0.0, 0.0, 1.0 },     -- 1px solid black border
         cardBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        cardBg = { 0.09, 0.09, 0.09, 1.0 },
-        cardBorder = { 0.0, 0.0, 0.0, 1.0 },
-        cardHeaderBg = { 0.12, 0.12, 0.12, 1.0 },
+        cardBg = { 24/255, 24/255, 24/255, 1.0 }, -- #181818 Secondary headers/panels
+        cardBorder = { 0.0, 0.0, 0.0, 1.0 },     -- 1px solid black border
+        cardHeaderBg = { 26/255, 26/255, 26/255, 1.0 }, -- #1A1A1A
         cardHeaderBorder = { 0.0, 0.0, 0.0, 1.0 },
         btnBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -131,12 +131,12 @@ KB.Themes = {
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        btnBg = { 0.12, 0.12, 0.12, 1.0 },
-        btnBorder = { 0.0, 0.0, 0.0, 1.0 },
-        btnActiveBg = { 0.20, 0.20, 0.20, 1.0 },
-        btnActiveBorder = { 1.0, 0.82, 0.0, 1.0 }, -- ElvUI signature Gold accent
-        btnHoverBg = { 0.18, 0.18, 0.18, 1.0 },
-        btnHoverBorder = { 0.45, 0.45, 0.45, 1.0 },
+        btnBg = { 30/255, 30/255, 30/255, 1.0 }, -- #1E1E1E Flat button
+        btnBorder = { 0.0, 0.0, 0.0, 1.0 },     -- 1px solid black border
+        btnActiveBg = { 42/255, 42/255, 42/255, 1.0 },
+        btnActiveBorder = { 1.0, 0.82, 0.0, 1.0 }, -- #FFD100 Gold active accent
+        btnHoverBg = { 42/255, 42/255, 42/255, 1.0 }, -- #2A2A2A Hover highlight
+        btnHoverBorder = { 0.0, 0.0, 0.0, 1.0 },
         dividerColor = { 0.0, 0.0, 0.0, 1.0 },
         rowBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -144,16 +144,16 @@ KB.Themes = {
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        rowBg = { 0.09, 0.09, 0.09, 1.0 },
-        rowBgAlt = { 0.06, 0.06, 0.06, 1.0 },
-        rowBorder = { 0.0, 0.0, 0.0, 0.8 },
+        rowBg = { 20/255, 20/255, 20/255, 1.0 },    -- #141414 Alternating row fill
+        rowBgAlt = { 22/255, 22/255, 22/255, 1.0 }, -- #161616 Alternating row fill
+        rowBorder = { 0.0, 0.0, 0.0, 1.0 },        -- 1px solid black divider
         modalBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        modalBg = { 0.06, 0.06, 0.06, 1.0 },
+        modalBg = { 18/255, 18/255, 18/255, 1.0 }, -- #121212
         modalBorder = { 0.0, 0.0, 0.0, 1.0 },
         bannerBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -161,13 +161,13 @@ KB.Themes = {
             edgeSize = 16,
             insets = { left = 4, right = 4, top = 4, bottom = 4 },
         },
-        bannerBg = { 0.06, 0.08, 0.11, 0.85 },
-        bannerBorder = { 0.55, 0.50, 0.40, 0.90 },
-        scrollbarRail = { 0.03, 0.03, 0.03, 1.0 },
+        bannerBg = { 13/255, 17/255, 23/255, 0.94 },
+        bannerBorder = { 0.18, 0.20, 0.23, 1.0 },
+        scrollbarRail = { 20/255, 20/255, 20/255, 1.0 }, -- #141414
         scrollbarRailBorder = { 0.0, 0.0, 0.0, 1.0 },
-        scrollbarThumb = { 0.25, 0.25, 0.25, 1.0 },
+        scrollbarThumb = { 42/255, 42/255, 42/255, 1.0 }, -- #2A2A2A
         scrollbarThumbBorder = { 0.0, 0.0, 0.0, 1.0 },
-        searchBg = { 0.08, 0.08, 0.08, 1.0 },
+        searchBg = { 20/255, 20/255, 20/255, 1.0 }, -- #141414
         searchBorder = { 0.0, 0.0, 0.0, 1.0 },
         searchFocusBorder = { 1.0, 0.82, 0.0, 1.0 },
         tagColor = "ffd100",
