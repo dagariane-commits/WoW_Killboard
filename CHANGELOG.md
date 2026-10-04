@@ -5,6 +5,39 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.113] - 2026-10-04
+
+### Added
+- **Bilateral Symmetrical Killer Faction Insignia (`Addon/WoWKillboard/UI.lua`)**:
+  - **Mirrored Dual-Icon Structure**: Added `killerFactionIcon` (36px × 36px) to the far right of the banner anchored at `RIGHT, Content, RIGHT, -14, -4`, re-anchoring `killerIcon` adjacent to it at `RIGHT, killerFactionIcon, LEFT, -8, 0`. This establishes 100% mathematical symmetry with the left side (`[Faction Crest] [Class Icon]` $\leftrightarrow$ `[Class/Spell Icon] [Faction Insignia]`).
+  - **Dynamic Player Faction Insignia**: Displays high-resolution circular Alliance medallion (`crest_alliance.tga`) or Horde medallion (`crest_horde.tga`) for player combatants.
+  - **Contextual PvE Mob & Creature Insignias (`GetKillerFactionCrestInfo`)**: For non-player combatants, dynamically maps lore-accurate faction and creature crests:
+    - **Defias Brotherhood & Outlaws**: Iconic Red Defias Bandana/Mask (`Interface\Icons\INV_Mask_01`).
+    - **Bloodsail Buccaneers & Pirates**: Pirate Flag (`Interface\Icons\INV_Misc_PirateFlag_01`).
+    - **Syndicate**: Black Syndicate Mask (`Interface\Icons\INV_Mask_02`).
+    - **Scarlet Crusade**: Scarlet Crusade Shield (`Interface\Icons\INV_Shield_06`).
+    - **Kobolds**: "You no take candle!" (`Interface\Icons\INV_Misc_Candle_01`).
+    - **Murlocs**: Murloc Fin/Fish (`Interface\Icons\INV_Misc_Fish_02`).
+    - **Scourge & Undead**: Scourge Death Scream Skull (`Interface\Icons\Spell_Shadow_DeathScream`).
+    - **Burning Legion & Demons**: Demon Fel Sigil (`Interface\Icons\Spell_Shadow_SummonFelHunter`).
+    - **Dragonkin & Flights**: Dragon Flight Head Crest (`Interface\Icons\INV_Misc_Head_Dragon_01`).
+    - **Elementals**: Primal Elemental Core (`Interface\Icons\Spell_Fire_Elemental_Devastation`).
+    - **Beasts & Predators**: Predator Claws (`Interface\Icons\INV_Misc_MonsterClaw_04`).
+    - **Mechanical**: Clockwork Gizmo (`Interface\Icons\INV_Gizmo_02`).
+    - **Alliance / Horde Troops**: City Guard / Faction troop insignia matching capital allegiance.
+    - **Universal Monster Threat**: Default creature skull threat (`Interface\Icons\INV_Misc_MonsterHead_02`).
+
+### Changed
+- **Restored High-Resolution Circular Faction Crests (`Addon/WoWKillboard/UI.lua`)**:
+  - Restored `Interface\AddOns\WoWKillboard\Textures\crest_alliance.tga` and `crest_horde.tga` as the default faction crests in `GetFactionCrestInfo` and `ToggleBannerLock`, replacing the tiny, low-res Blizzard PvP unitframe badges.
+- **Dynamic Lethal Spell Icon for NPC Killers**:
+  - When an NPC eliminates a player with a lethal spell (e.g. Defias Pillager with Fireball), `killerIcon` dynamically loads the lethal spell icon (`Spell_Fire_FlameBolt` for Fireball, `Spell_Shadow_ShadowBolt`, `Spell_Frost_FrostBolt02`, etc.) while `killerFactionIcon` displays the Defias Red Mask.
+- **Dedicated PvP & PvE Test Subcommands (`/kb test [dag|x|pve]`)**:
+  - `/kb test dag` (or `/kb test kill`): Previews PvP Victory (`HONORABLE VICTORY`) with Dagariane as the victor and Shadowstalker as the casualty.
+  - `/kb test x` (or `/kb test death`): Previews PvP Casualty (`WORLD PVP CASUALTY`) with Shadowstalker as the victor and Dagariane as the casualty.
+  - `/kb test pve` (or `/kb test mob`): Previews PvE Casualty (`CASUALTY REPORT`) with Defias Pillager executing Dagariane in Westfall.
+  - `/kb test` (no args): Seamlessly cycles across all 3 scenarios.
+
 ## [1.4.112] - 2026-10-04
 
 ### Changed
