@@ -169,6 +169,62 @@ function U.ColorizeByFaction(text, faction)
     return string.format("|cff%s%s|r", colorHex, text)
 end
 
+-- Convert Hex color string ("RRGGBB" or "AARRGGBB") to RGB (0.0 - 1.0)
+function U.HexToRGB(hex)
+    if not hex or type(hex) ~= "string" then return 1.0, 0.82, 0.0 end
+    hex = hex:gsub("#", ""):gsub("^ff", ""):gsub("^FF", "")
+    if #hex < 6 then return 1.0, 0.82, 0.0 end
+    local r = tonumber(hex:sub(1, 2), 16) or 255
+    local g = tonumber(hex:sub(3, 4), 16) or 210
+    local b = tonumber(hex:sub(5, 6), 16) or 0
+    return r / 255, g / 255, b / 255
+end
+
+-- Dynamic Accent & Highlight Color Engine (User Configurable: Gold, Class Color, Custom)
+function U.GetAccentColor()
+    local s = WoWKillboardSettings or (KB and KB.DefaultSettings) or {}
+    local mode = s.accentColorMode or "gold"
+    if mode == "class" then
+        local _, pClass = UnitClass("player")
+        if pClass then
+            pClass = pClass:upper()
+            if RAID_CLASS_COLORS and RAID_CLASS_COLORS[pClass] then
+                local c = RAID_CLASS_COLORS[pClass]
+                local r, g, b = c.r or 1.0, c.g or 0.82, c.b or 0.0
+                local hex = string.format("%02x%02x%02x", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
+                return r, g, b, hex
+            elseif KB.ClassColors and KB.ClassColors[pClass] then
+                local hex = KB.ClassColors[pClass]
+                local r, g, b = U.HexToRGB(hex)
+                return r, g, b, hex
+            end
+        end
+    elseif mode == "custom" and s.customAccentColor then
+        local c = s.customAccentColor
+        local r, g, b = c[1] or 1.0, c[2] or 0.82, c[3] or 0.0
+        local hex = string.format("%02x%02x%02x", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
+        return r, g, b, hex
+    end
+    -- Default: Classic Gold #FFD100
+    return 1.0, 0.82, 0.0, "ffd100"
+end
+
+function U.GetAccentHex()
+    local _, _, _, hex = U.GetAccentColor()
+    return hex or "ffd100"
+end
+
+function U.GetAccentCode()
+    local _, _, _, hex = U.GetAccentColor()
+    return "|cff" .. (hex or "ffd100")
+end
+
+KB.GetAccentColor = U.GetAccentColor
+KB.GetAccentHex = U.GetAccentHex
+KB.GetAccentCode = U.GetAccentCode
+WoWKB = WoWKillboard
+WoWKB.AccentColor = U.GetAccentColor
+
 local CLASS_TITLE_MAP = {
     ["WARRIOR"]     = "Warrior",
     ["PALADIN"]     = "Paladin",

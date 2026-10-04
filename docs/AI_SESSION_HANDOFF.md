@@ -39,6 +39,22 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Complete Clean ElvUI Specification Across All Tabs & Dynamic Accent Engine (`UI.lua`, `Config.lua`, `Utils.lua`)**:
+  - **Dynamic Accent Color Engine (`WoWKB.AccentColor`)**:
+    - Added user-selectable accent modes in Addon Settings: `Classic Gold` (`#FFD100`, default), `Player Class Color` (auto-detected from logged-in character class), and `Custom Hex / Color Picker` (cross-client color wheel integration supporting Retail `SetupColorPickerAndShow` and Classic Era/Beta fallback).
+    - Dynamically applies chosen accent color across active tab outlines/text, section headers (`TOP THREATS`, `PVP LEADERBOARDS`), leaderboard rank badges (`#1`, `#2`, `#3`), toast banner top accent stripe, and sticky self-standing rows.
+  - **Universal 1px Black Borders & Fluff Stripping**: Strict 1px solid black (`#000000`) borders across all frames, tabs, pill toggles, row dividers, and icon borders. Complete removal of AI/melodramatic subtitles, paragraphs, and card clutter.
+  - **Tooltip Strata Fix**: Elevated private tooltip strata to `TOOLTIP` (`FrameStrata: TOOLTIP`, `FrameLevel: 200+`) with flat `#121212` backdrop and 1px solid black border, guaranteeing tooltips never render behind frames or headers.
+  - **Global Top Stat Strip**: Consolidated top section into a compact 32px height bar split into 3 flush segments:
+    - Segment 1: `Total Kills` (White `#FFFFFF`), Sub: `Personal: X Kills / Y Deaths` (`#666666`).
+    - Segment 2: `1v1 Solo Ratio` (Green `#4ADE80`), Sub: `X Encounters` (`#666666`).
+    - Segment 3: `Faction Balance` (`A: X%` Blue `#0078FF` / `H: Y%` Red `#FF3838`), Sub: `Realm Balance` (`#666666`).
+  - **Tab 1 (Intel)**: Top Threats 5-column ranking strip with `WoWKB.AccentColor`; empty slots rendered as `[#Rank] [Empty Frame] Unclaimed` (`#555555`) with all fake question marks and contract text removed. Dense 5-column Recent Deaths table.
+  - **Tab 2 (Leaderboards - renamed from Defender of Azeroth)**: `PVP LEADERBOARDS` header, sub-navigation pills (`Players`, `Guilds`, `Last 24 Hours`), sticky top row (`Your Standing` in `#1E1A10` fill with `AccentColor` border), and clean 7-column table (`Rank`, `Player`, `Guild`, `Faction`, `Kills`, `Solo Kills`, `Percentile`).
+  - **Tab 3 (Bounties - renamed from The Marked)**: `ACTIVE BOUNTIES` header, top-right `+ Place Bounty` button, 5-column table (`Target`, `Bounty`, `Issued By`, `Last Seen`, `Action`), and clean empty state.
+  - **Tab 4 (Call to Arms - renamed from Manhunt)**: `OPEN DEFENSE CALLS` header, compact `Broadcast Location` banner, and 5-column active defense requests table (`Time`, `Faction`, `Requester`, `Location`, `Action`).
+  - **Tab 5 (Danger Zones - renamed from Zone Intel)**: `ZONE CONFLICT ACTIVITY` header, Table A (`REALM ACTIVITY (LAST 24 HOURS)`), and Table B (`SESSION ACTIVITY (YOUR VICINITY)`).
+  - **Zero Mentions Sanitization**: Strict audit and sanitization replacing all non-gaming dummy guild names with `<Knights of Azeroth>`.
 - **UI Initialization Crash Fix in `ApplyTheme` (`Addon/WoWKillboard/UI.lua`)**:
   - Resolved `UI.lua:313: attempt to call a nil value` by adding `"BackdropTemplate"` to `CreateMetricSegment` and adding explicit `card.SetBackdrop` safety checks in `UI:ApplyTheme()`.
   - Added full theming support for `UI.TopMetricsBar` (`SetBackdrop`, `SetBackdropColor`, `SetBackdropBorderColor`) across Classic and ElvUI modes.
@@ -169,7 +185,7 @@ We are systematically fine-tuning the visual presentation and in-game aesthetic 
     - Directional Action String directly below skull: `slain by [AbilityName]` (e.g. `slain by Fireball`) with ability text in light spell yellow (`#FFF1A8`) and prefix in light silver (`#CBD5E1`).
   - **Left Block (The Fallen)**:
     - 36×36 circular Alliance/Horde crest with raised gold medallion ring (`medallion_border.tga`) + 36×36 square class icon with beveled frame (`UI-Achievement-IconFrame`).
-    - Left-aligned text stack centered at `y = -47`: Line 1 `[23] Dagariane` in bold class color, Line 2 `<Forged By Valor>` in `#A0A0A0` muted guild silver.
+    - Left-aligned text stack centered at `y = -47`: Line 1 `[23] Dagariane` in bold class color, Line 2 `<Knights of Azeroth>` in `#A0A0A0` muted guild silver.
   - **Right Block (The Victor / Threat)**:
     - Right-aligned text stack centered at `y = -47`: Line 1 `[15] Defias Pillager` in `#FF3B30` hostile red, Line 2 `Humanoid / Elite` or killer guild/title in `#8B949E` muted gray.
     - 36×36 threat icon with beveled frame (`UI-Achievement-IconFrame`) and `#FF3B30` hostile debuff border (`UI-Debuff-Border`).
@@ -196,7 +212,7 @@ We are systematically fine-tuning the visual presentation and in-game aesthetic 
 1. `/reload` — Reload UI after synchronization.
 2. `/kb test` — Preview the redesigned combat toast banner (defaults to Westfall Defias Pillager scenario):
    - Header displays: `CASUALTY REPORT  •  WESTFALL (SENTINEL HILL)` in `#FFD100` gold in the top carved groove.
-   - Left Block: Alliance Lion crest + Paladin hammer, `[23] Dagariane` (Class Pink), `<Forged By Valor>` (`#A0A0A0` silver).
+   - Left Block: Alliance Lion crest + Paladin hammer, `[23] Dagariane` (Class Pink), `<Knights of Azeroth>` (`#A0A0A0` silver).
    - Center Block: Red death skull + `slain by Fireball` (`#FFF1A8` yellow).
    - Right Block: Defias Pillager icon with red hostile border, `[15] Defias Pillager` (`#FF3B30` red), `Humanoid / Elite` (`#8B949E` gray).
 3. `/kb theme` — Toggle active theme between Classic Forever and ElvUI Minimalist; observe identical 580×78 geometry, dynamic headers, red skull, and action strings.
