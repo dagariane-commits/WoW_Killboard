@@ -6984,8 +6984,8 @@ local function GetKillingBlowText(killmail)
             spell = "Melee"
         end
     end
-    -- High-contrast fatal blow highlight: Light Spell Yellow (#FFF1A8) or Arcane Cyan (#71D5FF)
-    local spellColor = "fff1a8"
+    -- High-contrast fatal blow highlight: Light Fire-Gold (#FFE066) or Arcane Cyan (#71D5FF)
+    local spellColor = "ffe066"
     local sLower = spell:lower()
     if sLower:find("frost") or sLower:find("ice") or sLower:find("arcane") or sLower:find("water") or sLower:find("cyan") then
         spellColor = "71d5ff"
@@ -7073,10 +7073,10 @@ function UI:ApplyBannerTheme()
         if banner.ToastBgRight then banner.ToastBgRight:Show() end
         if banner.TopAccent then banner.TopAccent:Hide() end
 
-        -- Header shifted down by 6px (-11 -> -17) to sit directly inside top dark bevel groove
+        -- Header dropped down 4px (-17 -> -21) to sit cleanly inside dark wooden plaque groove
         if banner.CenterHeader then
             banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -17)
+            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -21)
             ApplyClassicTypography(banner.CenterHeader, "GameFontNormalSmall", 1, -1)
         end
 
@@ -7086,10 +7086,16 @@ function UI:ApplyBannerTheme()
             end
         end
 
-        -- Center Skull lowered 2px (to -30) to align with horizontal center line of portraits
+        -- Left crest shifted right by 2px (14 -> 16) to avoid inner left border
+        if banner.VictimCrestFrame then
+            banner.VictimCrestFrame:ClearAllPoints()
+            banner.VictimCrestFrame:SetPoint("LEFT", banner, "LEFT", 16, -8)
+        end
+
+        -- Center Skull raised 2px (-30 -> -28) to sit directly in line with character names
         if banner.CenterIcon then
             banner.CenterIcon:ClearAllPoints()
-            banner.CenterIcon:SetPoint("TOP", banner, "TOP", 0, -30)
+            banner.CenterIcon:SetPoint("TOP", banner, "TOP", 0, -28)
             banner.CenterIcon:SetSize(24, 24)
             banner.CenterIcon:SetVertexColor(1.0, 0.23, 0.19, 1.0)
         end
@@ -7103,10 +7109,10 @@ function UI:ApplyBannerTheme()
             banner.CenterIconShadow:Show()
         end
 
-        -- Action Text pulled up 5px to prevent bottom border bleed
+        -- Action Text raised 3px (0, 1 -> 0, 4) with clear breathing room above bottom metallic frame edge
         if banner.ActionText then
             banner.ActionText:ClearAllPoints()
-            banner.ActionText:SetPoint("TOP", banner.CenterIcon, "BOTTOM", 0, 1)
+            banner.ActionText:SetPoint("TOP", banner.CenterIcon, "BOTTOM", 0, 4)
             ApplyClassicTypography(banner.ActionText, "GameFontHighlightSmall", 1, -1)
         end
 
@@ -7149,21 +7155,22 @@ function UI:ApplyBannerTheme()
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         })
         banner:SetBackdropColor(0.08, 0.09, 0.11, 0.92) -- Flat dark slate (92% opacity)
-        banner:SetBackdropBorderColor(0.20, 0.22, 0.25, 1.0) -- Uniform 1px solid border
+        banner:SetBackdropBorderColor(0.176, 0.200, 0.231, 1.0) -- #2D333B subtle 1px solid outline around left, right, bottom
 
-        -- Crisp 2px flush top accent stripe (#FFC107 default or faction colored)
+        -- Flush 2px top accent stripe (anchored flush at 0, 0 to 0, 0 for exact 2px thickness)
         if banner.TopAccent then
             banner.TopAccent:ClearAllPoints()
-            banner.TopAccent:SetPoint("TOPLEFT", banner, "TOPLEFT", 1, -1)
-            banner.TopAccent:SetPoint("TOPRIGHT", banner, "TOPRIGHT", -1, -1)
+            banner.TopAccent:SetPoint("TOPLEFT", banner, "TOPLEFT", 0, 0)
+            banner.TopAccent:SetPoint("TOPRIGHT", banner, "TOPRIGHT", 0, 0)
             banner.TopAccent:SetHeight(2)
             banner.TopAccent:SetColorTexture(1.0, 0.757, 0.027, 1.0)
             banner.TopAccent:Show()
         end
 
+        -- Header dropped 3px from top blue accent line (-10 -> -13) for balanced padding
         if banner.CenterHeader then
             banner.CenterHeader:ClearAllPoints()
-            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -10)
+            banner.CenterHeader:SetPoint("TOP", banner, "TOP", 0, -13)
             ApplyElvUITypography(banner.CenterHeader, "GameFontNormalSmall")
         end
 
@@ -7173,10 +7180,16 @@ function UI:ApplyBannerTheme()
             end
         end
 
-        -- Center Skull lowered 2px (to -30) to align with horizontal center line of portraits
+        -- Left crest shifted right by 2px (14 -> 16)
+        if banner.VictimCrestFrame then
+            banner.VictimCrestFrame:ClearAllPoints()
+            banner.VictimCrestFrame:SetPoint("LEFT", banner, "LEFT", 16, -8)
+        end
+
+        -- Center Skull raised 2px (-30 -> -28) to sit directly in line with character names
         if banner.CenterIcon then
             banner.CenterIcon:ClearAllPoints()
-            banner.CenterIcon:SetPoint("TOP", banner, "TOP", 0, -30)
+            banner.CenterIcon:SetPoint("TOP", banner, "TOP", 0, -28)
             banner.CenterIcon:SetSize(24, 24)
             banner.CenterIcon:SetVertexColor(1.0, 0.23, 0.19, 1.0)
         end
@@ -7190,10 +7203,10 @@ function UI:ApplyBannerTheme()
             banner.CenterIconShadow:Show()
         end
 
-        -- Action Text pulled up 5px
+        -- Action Text raised 3px (0, 1 -> 0, 4)
         if banner.ActionText then
             banner.ActionText:ClearAllPoints()
-            banner.ActionText:SetPoint("TOP", banner.CenterIcon, "BOTTOM", 0, 1)
+            banner.ActionText:SetPoint("TOP", banner.CenterIcon, "BOTTOM", 0, 4)
             ApplyElvUITypography(banner.ActionText, "GameFontHighlightSmall")
         end
 
@@ -7306,18 +7319,18 @@ function UI:InitializeKillBanner()
     -- Thin 2px gold accent border along top edge (#FFD100 / #D4A359) for ElvUI Theme
     local topAccent = killBanner:CreateTexture(nil, "OVERLAY")
     topAccent:SetHeight(2)
-    topAccent:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 1, -1)
-    topAccent:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", -1, -1)
+    topAccent:SetPoint("TOPLEFT", killBanner, "TOPLEFT", 0, 0)
+    topAccent:SetPoint("TOPRIGHT", killBanner, "TOPRIGHT", 0, 0)
     topAccent:SetColorTexture(1.0, 0.757, 0.027, 1.0)
     killBanner.TopAccent = topAccent
 
     -- =========================================================================
-    -- Left Section (The Fallen) - Outer Padding 14px, Centered on Wood Fill (y = -47)
+    -- Left Section (The Fallen) - Outer Padding 16px, Centered on Wood Fill (y = -47)
     -- =========================================================================
-    -- Circular Alliance Lion or Horde Crest (36x36)
+    -- Circular Alliance Lion or Horde Crest (36x36) shifted right by 2px (14 -> 16)
     local victimCrestFrame = CreateFrame("Frame", nil, killBanner)
     victimCrestFrame:SetSize(36, 36)
-    victimCrestFrame:SetPoint("LEFT", killBanner, "LEFT", 14, -8)
+    victimCrestFrame:SetPoint("LEFT", killBanner, "LEFT", 16, -8)
     killBanner.VictimCrestFrame = victimCrestFrame
 
     local victimCrest = victimCrestFrame:CreateTexture(nil, "ARTWORK")
@@ -7383,19 +7396,19 @@ function UI:InitializeKillBanner()
     -- =========================================================================
     -- Center Section (Directional Death Action Block)
     -- =========================================================================
-    -- Dynamic Header: Shifted down 6px into top dark carved groove (TOP, 0, -17)
+    -- Dynamic Header: Dropped 4px into top dark carved groove (TOP, 0, -21)
     local centerHeader = killBanner:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -17)
+    centerHeader:SetPoint("TOP", killBanner, "TOP", 0, -21)
     centerHeader:SetText("|cffffd100CASUALTY REPORT  •  WESTFALL (SENTINEL HILL)|r")
     centerHeader:SetShadowOffset(1, -1)
     centerHeader:SetShadowColor(0, 0, 0, 1.0)
     killBanner.CenterHeader = centerHeader
     killBanner.CenterAction = centerHeader -- backward-compatible alias
 
-    -- Death Action Skull: 24x24 red skull centered on wood fill, lowered 2px to align with combatant portraits
+    -- Death Action Skull: 24x24 red skull centered on wood fill, raised 2px to align with character names (TOP, 0, -28)
     local centerIcon = killBanner:CreateTexture(nil, "OVERLAY")
     centerIcon:SetSize(24, 24)
-    centerIcon:SetPoint("TOP", killBanner, "TOP", 0, -30)
+    centerIcon:SetPoint("TOP", killBanner, "TOP", 0, -28)
     centerIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
     centerIcon:SetVertexColor(1.0, 0.23, 0.19, 1.0)
     killBanner.CenterIcon = centerIcon
@@ -7408,14 +7421,14 @@ function UI:InitializeKillBanner()
     centerIconShadow:SetVertexColor(0.60, 0.05, 0.05, 0.65)
     killBanner.CenterIconShadow = centerIconShadow
 
-    -- Directional Action String: "slain by [AbilityName]" pulled up 5px inside wood plate
+    -- Directional Action String: "slain by [AbilityName]" raised 3px (TOP, centerIcon, BOTTOM, 0, 4)
     local actionText = killBanner:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    actionText:SetPoint("TOP", centerIcon, "BOTTOM", 0, 1)
+    actionText:SetPoint("TOP", centerIcon, "BOTTOM", 0, 4)
     actionText:SetJustifyH("CENTER")
     actionText:SetWordWrap(false)
     actionText:SetShadowOffset(1, -1)
     actionText:SetShadowColor(0, 0, 0, 1.0)
-    actionText:SetText("|cffe2e8f0slain by|r |cfffff1a8Fireball|r")
+    actionText:SetText("|cffe2e8f0slain by|r |cffffe066Fireball|r")
     killBanner.ActionText = actionText
     killBanner.LocText = actionText       -- backward-compatible alias
     killBanner.ModeTag = actionText       -- backward-compatible alias
@@ -7658,7 +7671,7 @@ function UI:ToggleBannerLock(explicitState)
             banner.CenterIconShadow:SetVertexColor(0.60, 0.05, 0.05, 0.65)
             banner.CenterIconShadow:Show()
         end
-        banner.ActionText:SetText("|cffe2e8f0drag to|r |cfffff1a8Move|r")
+        banner.ActionText:SetText("|cffe2e8f0drag to|r |cffffe066Move|r")
 
         banner.KillerNameText:SetText("|cffff3b30[60] Reposition|r")
         banner.KillerSubText:SetText("|cff8b949eAnchor / Move|r")

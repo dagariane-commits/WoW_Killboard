@@ -5,6 +5,20 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.104] - 2026-10-04
+
+### Changed
+- **Final Cosmetic & Pixel-Alignment Pass (`Addon/WoWKillboard/UI.lua`)**:
+  - **Classic Theme Frame Polish**:
+    - **Header Vertical Alignment**: Dropped `CASUALTY REPORT • WESTFALL (SENTINEL HILL)` down by 4px (`TOP, 0, -21`) to sit cleanly inside the dark wooden plaque groove without overlapping top golden filigree vines.
+    - **Center Stack Margins**: Raised the red skull by 2px (`TOP, 0, -28`) to sit directly in line with character names; raised `slain by Fireball` by 3px (`TOP, CenterIcon, BOTTOM, 0, 4`) for clear breathing room above the bottom metallic frame edge.
+    - **Left Faction Alignment**: Shifted the circular Alliance crest right by 2px (`LEFT, 16, -8`) so it no longer touches the left inner border.
+  - **ElvUI Theme Polish**:
+    - **True 2px Top Accent Stripe**: Anchored top accent stripe flush with frame perimeter (`TOPLEFT 0, 0` / `TOPRIGHT 0, 0`, height 2) for true 1:1 ElvUI thickness without backdrop border bleed.
+    - **Subtle 1px Outer Border**: Configured `#2D333B` subtle 1px solid border around left, right, and bottom edges of the frame to prevent bleeding into dark game environments.
+    - **Header Vertical Margin**: Dropped header down by 3px (`TOP, 0, -13`) from the top accent stripe for balanced top/bottom padding within the header zone.
+    - **High-Contrast Fatal Blow Fire-Gold**: Styled lethal spells in radiant Light Fire-Gold (`#FFE066`), maximizing readability against the dark slate background.
+
 ## [1.4.103] - 2026-10-04
 
 ### Changed

@@ -39,6 +39,16 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Final Cosmetic & Pixel-Alignment Pass (`UI.lua`)**:
+  - **Classic Theme Frame Geometry**:
+    - Header Vertical Alignment: Dropped `CASUALTY REPORT • WESTFALL (SENTINEL HILL)` down by 4px (`TOP, 0, -21`) into the dark wooden plaque groove, fully clearing the top golden filigree vines.
+    - Center Stack Margins: Raised the red death skull by 2px (`TOP, 0, -28`) to sit directly in line with character names; raised `slain by Fireball` by 3px (`TOP, CenterIcon, BOTTOM, 0, 4`) providing clear breathing room above the bottom metallic frame edge.
+    - Left Faction Alignment: Shifted circular Alliance crest right by 2px (`LEFT, 16, -8`) to prevent touching the left inner border.
+  - **ElvUI Minimalist Theme Polish**:
+    - Flush 2px Top Accent Stripe: Anchored top accent stripe flush with frame perimeter (`TOPLEFT 0, 0` / `TOPRIGHT 0, 0`, height 2) for true 1:1 ElvUI thickness without backdrop border bleed.
+    - Subtle 1px Outer Border: Added `#2D333B` subtle 1px solid border around left, right, and bottom edges of the frame to prevent bleeding into dark game environments.
+    - Header Vertical Margin: Dropped header down by 3px (`TOP, 0, -13`) from the top accent stripe for balanced top/bottom padding within the header zone.
+    - High-Contrast Fatal Blow Fire-Gold: Styled lethal spells in radiant Light Fire-Gold (`#FFE066`), maximizing readability against the dark slate background.
 - **Combat Toast Visual & Cosmetic Refinements (`UI.lua`)**:
   - **Classic Theme Frame Geometry**: Locked frame height to 78px with uncompressed native 1:1 aspect ratio on Blizzard wood plaque and filigree borders.
   - **Header Placement**: Shifted top header down by 6px (`TOP, 0, -17`) so it rests directly inside the top dark carved bevel groove of the wood plaque instead of hovering above the gold leaf border.
