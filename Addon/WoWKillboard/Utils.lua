@@ -560,3 +560,48 @@ function U.FlushPrintQueue()
     end
 end
 
+-- Cross-Client Group and Raid Runtime Feature Detection (Guardrail 2: Cross-Client Parity)
+function U.IsInRaid()
+    if IsInRaid and IsInRaid() then return true end
+    if GetNumRaidMembers and GetNumRaidMembers() > 0 then return true end
+    return false
+end
+
+function U.IsInGroup()
+    if IsInGroup and IsInGroup() then return true end
+    if GetNumGroupMembers and GetNumGroupMembers() > 0 then return true end
+    if GetNumPartyMembers and GetNumPartyMembers() > 0 then return true end
+    if U.IsInRaid() then return true end
+    return false
+end
+
+-- Cross-Client Taint-Safe Addon Message Dispatcher
+function U.SendAddonMessage(prefix, message, chatType, target)
+    if not prefix or not message or not chatType then return end
+    if C_ChatInfo and C_ChatInfo.SendAddonMessage then
+        pcall(C_ChatInfo.SendAddonMessage, prefix, message, chatType, target)
+        return
+    end
+    if SendAddonMessage then
+        pcall(SendAddonMessage, prefix, message, chatType, target)
+        return
+    end
+end
+
+-- Safe Self-Sender Check Immune to Lua Regex/Dash Magic Characters in Character or Realm Names
+function U.IsSelfSender(sender, myName)
+    if not sender or not myName then return false end
+    if sender:lower() == myName:lower() then return true end
+    local sLen = #myName
+    if #sender > sLen and sender:sub(1, sLen):lower() == myName:lower() and sender:sub(sLen + 1, sLen + 1) == "-" then
+        return true
+    end
+    local baseSender = sender:match("^([^-]+)") or sender
+    local baseMyName = myName:match("^([^-]+)") or myName
+    if baseSender:lower() == baseMyName:lower() then
+        return true
+    end
+    return false
+end
+
+

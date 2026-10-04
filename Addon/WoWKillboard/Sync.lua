@@ -69,7 +69,7 @@ function S:SendToGlobalChannel(msg)
 end
 
 -- Broadcast a Simulated/Test Casualty across Party, Guild, and Realm Channel without saving to database
-function S:BroadcastTestCasualty(mode)
+function S:BroadcastTestCasualty(mode, targetPeer)
     local myName = UnitName("player") or "Dagariane"
     local _, pClass = UnitClass("player")
     pClass = pClass or "PALADIN"
@@ -123,14 +123,63 @@ function S:BroadcastTestCasualty(mode)
         subZone:gsub(":", " ")
     )
 
-    -- 1. Broadcast via AddonMessage across Party and Guild (Instant, guaranteed delivery to 2nd computer)
-    if IsInRaid and IsInRaid() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "RAID")
-    elseif IsInGroup and IsInGroup() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "PARTY")
+    -- 1. Broadcast via AddonMessage across Party, Raid, Guild, and direct peer Whispers
+    local isRaid = (KB.Utils and KB.Utils.IsInRaid and KB.Utils.IsInRaid()) or (IsInRaid and IsInRaid())
+    local isGroup = (KB.Utils and KB.Utils.IsInGroup and KB.Utils.IsInGroup()) or (IsInGroup and IsInGroup())
+    local sentPeerCount = 0
+
+    if isRaid then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "RAID")
+            sentPeerCount = sentPeerCount + 1
+        end
+    elseif isGroup then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
+            sentPeerCount = sentPeerCount + 1
+        end
     end
     if IsInGuild and IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+            sentPeerCount = sentPeerCount + 1
+        end
+    end
+
+    -- Direct Target Peer: If explicit targetPeer passed (e.g. /testnet <player>), whisper them directly
+    if targetPeer and targetPeer ~= "" and targetPeer ~= myName then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "WHISPER", targetPeer)
+            sentPeerCount = sentPeerCount + 1
+        end
+    end
+
+    -- Direct Peer Fallback: Also dispatch directly to party members via whisper AddonMessage
+    local numMembers = (GetNumGroupMembers and GetNumGroupMembers()) or (GetNumPartyMembers and GetNumPartyMembers() + 1) or 0
+    if numMembers and numMembers > 1 then
+        for i = 1, numMembers do
+            local unit = (isRaid and "raid" or "party") .. i
+            local pName, pRealm = UnitName(unit)
+            if pName and pName ~= myName and not pName:lower():find(myName:lower()) then
+                local peer = (pRealm and pRealm ~= "") and (pName .. "-" .. pRealm) or pName
+                if KB.Utils and KB.Utils.SendAddonMessage then
+                    KB.Utils.SendAddonMessage(KB.Prefix, payload, "WHISPER", peer)
+                    sentPeerCount = sentPeerCount + 1
+                end
+            end
+        end
+    end
+
+    -- Also if player currently has another player targeted, dispatch directly to target
+    if UnitExists("target") and UnitIsPlayer("target") then
+        local tName, tRealm = UnitName("target")
+        if tName and tName ~= myName then
+            local peer = (tRealm and tRealm ~= "") and (tName .. "-" .. tRealm) or tName
+            if KB.Utils and KB.Utils.SendAddonMessage then
+                KB.Utils.SendAddonMessage(KB.Prefix, payload, "WHISPER", peer)
+                sentPeerCount = sentPeerCount + 1
+            end
+        end
     end
 
     -- 2. Standardized Chat Casualty Broadcast (Format C) with explicit [TEST SIMULATION] tag
@@ -138,12 +187,12 @@ function S:BroadcastTestCasualty(mode)
         myName, pLevel, cTitle, killerName, killerSpell, subZone)
 
     -- Broadcast to Party/Raid chat if in group
-    if IsInGroup and IsInGroup() then
-        pcall(SendChatMessage, chatMsg, (IsInRaid and IsInRaid()) and "RAID" or "PARTY")
+    if isGroup then
+        pcall(SendChatMessage, chatMsg, isRaid and "RAID" or "PARTY")
     end
 
     -- Broadcast to dedicated WoWKillboard realm channel
-    S:SendToGlobalChannel(chatMsg)
+    local sentChan = S:SendToGlobalChannel(chatMsg)
 
     -- 3. Trigger local test display immediately
     local testData = {
@@ -176,11 +225,20 @@ function S:BroadcastTestCasualty(mode)
         KB.UI:ShowKillBanner(testData, true)
     end
 
-    local printMsg = string.format("|cff00ff00[WoWKB Test Broadcast]|r Simulated %s casualty broadcasted to Party, Guild & WoWKillboard channel! (|cffffd100Zero database pollution|r)", isPve and "PvE" or "PvP")
+    local printMsg = string.format("|cff00ff00[WoWKB Test Broadcast]|r Simulated %s casualty broadcasted! (|cffffd100Zero database pollution|r)", isPve and "PvE" or "PvP")
     if KB.Utils and KB.Utils.SafePrint then
         KB.Utils.SafePrint(printMsg)
     elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
         DEFAULT_CHAT_FRAME:AddMessage(printMsg)
+    end
+
+    if sentPeerCount == 0 and not sentChan then
+        local note = "|cffffaa00[WoWKB Tip]|r Not currently in a party or channel. To test with another computer, invite the character to a party (|cffffff00/invite <name>|r) or type |cffffff00/testnet <character-name>|r."
+        if KB.Utils and KB.Utils.SafePrint then
+            KB.Utils.SafePrint(note)
+        elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+            DEFAULT_CHAT_FRAME:AddMessage(note)
+        end
     end
 end
 
@@ -188,9 +246,8 @@ end
 function S:OnIncomingTestCasualty(testData, sender)
     if not testData then return end
     local myName = UnitName("player")
-    if sender and myName and (sender == myName or sender:find("^" .. myName .. "%-") or sender:lower() == myName:lower()) then
-        return
-    end
+    local isSelf = (KB.Utils and KB.Utils.IsSelfSender and KB.Utils.IsSelfSender(sender, myName))
+    if isSelf then return end
 
     -- Deduplication window: Prevent duplicate toasts if both AddonMessage and ChatMessage arrive within 5s
     S.recentTestAlerts = S.recentTestAlerts or {}
@@ -206,9 +263,24 @@ function S:OnIncomingTestCasualty(testData, sender)
     if testData.killer and not testData.killer.realm then testData.killer.realm = testData.realm end
     if testData.victim and not testData.victim.realm then testData.victim.realm = testData.realm end
 
+    -- Sound Alert (Soundkit 8959 = PvP Solo Kill, 5274 = Raid Warning)
+    pcall(PlaySound, 8959, "Master")
+    pcall(PlaySound, 5274, "Master")
+
     -- Trigger Kill Banner & Toast with isTest = true (Bypasses zone restrictions, guarantees zero database write)
     if KB.UI and KB.UI.ShowKillBanner then
         KB.UI:ShowKillBanner(testData, true)
+    end
+    if KB.UI and KB.UI.TriggerToast then
+        local kName = (testData.killer and testData.killer.name) or "Hostile"
+        local vName = (testData.victim and testData.victim.name) or sender or "Combatant"
+        local locStr = (testData.location and (testData.location.subZone or testData.location.zone)) or "Wilderness"
+        KB.UI:TriggerToast({
+            type = "pve_casualty",
+            title = "NETWORK BROADCAST VERIFIED",
+            text = string.format("%s killed by %s in %s", vName, kName, locStr),
+            duration = 6,
+        })
     end
 
     local kName = (testData.killer and testData.killer.name) or "Hostile"
@@ -237,13 +309,21 @@ function S:BroadcastAdminAlert(message, alertType)
 
     -- 2. Send via AddonMessage to Party/Raid and Guild
     local payload = string.format("SYS_ALERT:%s:%s:%s", myName, alertType, cleanMsg)
-    if IsInRaid and IsInRaid() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "RAID")
-    elseif IsInGroup and IsInGroup() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "PARTY")
+    local isRaid = (KB.Utils and KB.Utils.IsInRaid and KB.Utils.IsInRaid()) or (IsInRaid and IsInRaid())
+    local isGroup = (KB.Utils and KB.Utils.IsInGroup and KB.Utils.IsInGroup()) or (IsInGroup and IsInGroup())
+    if isRaid then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "RAID")
+        end
+    elseif isGroup then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
+        end
     end
     if IsInGuild and IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        end
     end
 
     -- 3. Also display locally
@@ -298,7 +378,11 @@ function S:OnIncomingAdminAlert(sender, alertType, message)
 end
 
 function S:Init()
-    C_ChatInfo.RegisterAddonMessagePrefix(KB.Prefix)
+    if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+        pcall(C_ChatInfo.RegisterAddonMessagePrefix, KB.Prefix or "WOWKB")
+    elseif RegisterAddonMessagePrefix then
+        pcall(RegisterAddonMessagePrefix, KB.Prefix or "WOWKB")
+    end
     S:JoinGlobalChannel()
 end
 
@@ -327,14 +411,22 @@ function S:BroadcastKillmail(killmail)
         spell
     )
 
-    if IsInRaid() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "RAID")
-    elseif IsInGroup() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "PARTY")
+    local isRaid = (KB.Utils and KB.Utils.IsInRaid and KB.Utils.IsInRaid()) or (IsInRaid and IsInRaid())
+    local isGroup = (KB.Utils and KB.Utils.IsInGroup and KB.Utils.IsInGroup()) or (IsInGroup and IsInGroup())
+    if isRaid then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "RAID")
+        end
+    elseif isGroup then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
+        end
     end
 
-    if IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    if IsInGuild and IsInGuild() then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        end
     end
 end
 
@@ -370,14 +462,22 @@ function S:BroadcastPveDeath(pveRecord)
         subZone
     )
 
-    if IsInRaid and IsInRaid() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "RAID")
-    elseif IsInGroup and IsInGroup() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "PARTY")
+    local isRaid = (KB.Utils and KB.Utils.IsInRaid and KB.Utils.IsInRaid()) or (IsInRaid and IsInRaid())
+    local isGroup = (KB.Utils and KB.Utils.IsInGroup and KB.Utils.IsInGroup()) or (IsInGroup and IsInGroup())
+    if isRaid then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "RAID")
+        end
+    elseif isGroup then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
+        end
     end
 
     if IsInGuild and IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        end
     end
 end
 
@@ -393,11 +493,21 @@ function S:BroadcastBounty(bounty)
         bounty.placerName
     )
 
-    if IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    if IsInGuild and IsInGuild() then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        end
     end
-    if IsInGroup() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, IsInRaid() and "RAID" or "PARTY")
+    local isRaid = (KB.Utils and KB.Utils.IsInRaid and KB.Utils.IsInRaid()) or (IsInRaid and IsInRaid())
+    local isGroup = (KB.Utils and KB.Utils.IsInGroup and KB.Utils.IsInGroup()) or (IsInGroup and IsInGroup())
+    if isRaid then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "RAID")
+        end
+    elseif isGroup then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
+        end
     end
 end
 
@@ -422,11 +532,21 @@ function S:BroadcastDistress(beacon)
         beacon.timestamp or time()
     )
 
-    if IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    if IsInGuild and IsInGuild() then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        end
     end
-    if IsInGroup() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, IsInRaid() and "RAID" or "PARTY")
+    local isRaid = (KB.Utils and KB.Utils.IsInRaid and KB.Utils.IsInRaid()) or (IsInRaid and IsInRaid())
+    local isGroup = (KB.Utils and KB.Utils.IsInGroup and KB.Utils.IsInGroup()) or (IsInGroup and IsInGroup())
+    if isRaid then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "RAID")
+        end
+    elseif isGroup then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
+        end
     end
 end
 
@@ -434,11 +554,21 @@ end
 function S:BroadcastDistressResolve()
     local myName = UnitName("player")
     local payload = string.format("SOS_RES:%s", myName)
-    if IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    if IsInGuild and IsInGuild() then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        end
     end
-    if IsInGroup() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, IsInRaid() and "RAID" or "PARTY")
+    local isRaid = (KB.Utils and KB.Utils.IsInRaid and KB.Utils.IsInRaid()) or (IsInRaid and IsInRaid())
+    local isGroup = (KB.Utils and KB.Utils.IsInGroup and KB.Utils.IsInGroup()) or (IsInGroup and IsInGroup())
+    if isRaid then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "RAID")
+        end
+    elseif isGroup then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
+        end
     end
 end
 
@@ -453,8 +583,10 @@ function S:BroadcastEvent(evt)
         evt.zone or "Wilderness",
         evt.time_str or "NOW"
     )
-    if IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    if IsInGuild and IsInGuild() then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        end
     end
 end
 
@@ -481,11 +613,21 @@ function S:BroadcastSighting(sighting)
         sighting.timestamp or time()
     )
 
-    if IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+    if IsInGuild and IsInGuild() then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        end
     end
-    if IsInGroup() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, IsInRaid() and "RAID" or "PARTY")
+    local isRaid = (KB.Utils and KB.Utils.IsInRaid and KB.Utils.IsInRaid()) or (IsInRaid and IsInRaid())
+    local isGroup = (KB.Utils and KB.Utils.IsInGroup and KB.Utils.IsInGroup()) or (IsInGroup and IsInGroup())
+    if isRaid then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "RAID")
+        end
+    elseif isGroup then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
+        end
     end
 end
 
@@ -525,10 +667,20 @@ function S:BroadcastVersion()
 
     local payload = "VER:" .. tostring(KB.Version)
     if IsInGuild and IsInGuild() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "GUILD")
+        end
     end
-    if IsInGroup and IsInGroup() then
-        C_ChatInfo.SendAddonMessage(KB.Prefix, payload, (IsInRaid and IsInRaid()) and "RAID" or "PARTY")
+    local isRaid = (KB.Utils and KB.Utils.IsInRaid and KB.Utils.IsInRaid()) or (IsInRaid and IsInRaid())
+    local isGroup = (KB.Utils and KB.Utils.IsInGroup and KB.Utils.IsInGroup()) or (IsInGroup and IsInGroup())
+    if isRaid then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "RAID")
+        end
+    elseif isGroup then
+        if KB.Utils and KB.Utils.SendAddonMessage then
+            KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
+        end
     end
 end
 
@@ -580,7 +732,8 @@ end
 function S:OnAddonMessage(prefix, message, channel, sender)
     if prefix ~= KB.Prefix then return end
     local myName = UnitName("player")
-    if sender == myName or sender:find("^" .. myName .. "-") then return end
+    local isSelf = (KB.Utils and KB.Utils.IsSelfSender and KB.Utils.IsSelfSender(sender, myName))
+    if isSelf then return end
 
     local parts = ParseMessageParts(message)
 
@@ -883,9 +1036,8 @@ end
 function S:OnIncomingChannelCasualty(text, sender)
     if not text or not text:find("^%[WoWKB%] Casualty:") then return end
     local myName = UnitName("player")
-    if sender and myName and (sender == myName or sender:find("^" .. myName .. "%-") or sender:lower() == myName:lower()) then
-        return
-    end
+    local isSelf = (KB.Utils and KB.Utils.IsSelfSender and KB.Utils.IsSelfSender(sender, myName))
+    if isSelf then return end
 
     local isTestMsg = (text:find("%[TEST") ~= nil) or (text:find("Simulation") ~= nil) or (text:find("TEST SIMULATION") ~= nil)
 
