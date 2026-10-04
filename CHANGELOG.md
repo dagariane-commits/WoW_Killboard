@@ -5,6 +5,27 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.101] - 2026-10-04
+
+### Added
+- **Tactical Real-Time Search Filtering Across All Tabs (`Addon/WoWKillboard/UI.lua`)**:
+  - Implemented 100% template-free, zero-taint live search query dispatch (`UI.activeSearchQuery`) spanning all 5 main tabs across both PvP and PvE rulesets:
+    - **Live Feeds**: Real-time filtering in both `RenderLiveFeed` (PvP kills, Most Wanted outlaws) and `RenderPveFeed` (wilderness casualties, Apex Executioners) by combatant name, guild, killer creature, spell, zone, and subzone.
+    - **Leaderboards**: Real-time filtering in `RenderLeaderboard` across Player Ranks (`topKillers`), Guild Supremacy (`topGuilds`), and 24h Gankers (`gankers`); filtering in `RenderPveLeaderboard` across Apex Executioners (`topNpcs`), Fallen Mortals (`topVictims`), and Perilous Regions (`topZones`).
+    - **Bounties & Outlaws**: Real-time filtering in `RenderBounties` (`activeList` by target, contractor, faction, class) and `RenderPveBounties` (`notoriousElites` by name, title, zone, and abilities).
+    - **Zone Telemetry**: Real-time filtering in `RenderZones` (24h realm hotspots and local session skirmishes) and `RenderPveZones` (geographical mortality rankings).
+    - **Manhunt & Distress Rallies**: Real-time filtering in `RenderRallies` (open Vanguard strike teams) and `RenderPveRallies` (emergency SOS distress beacons).
+  - Search box includes auto-focus styling, gold focus glow, embedded magnifying glass icon, and one-click clear button (`x`).
+- **Dual-Theme Minimap Button & LibDataBroker Integration (`Addon/WoWKillboard/Core.lua`)**:
+  - Registered official `WoWKillboard` Data Object with `LibDataBroker-1.1` for seamless bar addon support (Titan Panel, ChocolateBar, ElvUI data texts).
+  - Implemented theme-aware minimap icon (`KB:UpdateMinimapTheme`):
+    - **Classic Forever**: Circular Blizzard tracking border (`Interface\Minimap\MiniMap-TrackingBorder`) with antique bronze backdrop and golden tooltips.
+    - **ElvUI Minimalist**: Matte charcoal 1px black-bordered square frame with crisp silver font tooltips.
+  - Left-Click toggles main dashboard (`/kb`); Right-Click cycles themes dynamically (`/kb theme`).
+- **Combat Detail Modal Polish & Pure-Lua Scrollbar (`Addon/WoWKillboard/UI.lua`, `Config.lua`)**:
+  - Upgraded `UI.DetailModal` to 540×410 with 246×118 combatant portrait cards, native beveled frames (`UI-Achievement-IconFrame`), fatal strike ability display, and multi-attacker breakdown.
+  - Added pure-Lua custom vertical scrollbar (`UI.ScrollBar`) to `ContentInset` with auto-show/hide logic and theme-aware rail/thumb textures, avoiding all Blizzard `UIPanelScrollBarTemplate` XML taint.
+
 ## [1.4.100] - 2026-10-04
 
 ### Added
