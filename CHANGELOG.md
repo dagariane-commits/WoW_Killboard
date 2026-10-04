@@ -8,21 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.100] - 2026-10-04
 
 ### Added
-- **Authentic WoW Classic "Forever" Theme Engine for Combat Toast Banner (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Textures/`)**:
-  - Implemented dual-theme rendering for the in-game combat toast banner: authentic **WoW Classic "Forever"** and modern **ElvUI Minimalist**.
-  - Calibrated dimensions to **580px × 84px** with balanced vertical margins and centered 40px icon alignments.
-  - **Authentic Blizzard Frame Assets & Texture Refinements:**
-    - **Single Continuous Parchment Interior:** Stretched `Interface\QuestFrame\QuestBG` across the entire interior (`TOPLEFT (4, -4)` to `BOTTOMRIGHT (-4, 4)`) with `SetTexCoord(0, 1, 0, 1)`, `SetHorizTile(false)`, and `SetVertTile(false)`, providing 100% smooth, seamless parchment coverage behind both combatants, the header, and the location text.
-    - **Elimination of Secondary & Split Textures:** Completely removed secondary header strips and divider overlays from the frame, ensuring an unblocked parchment background.
-    - **Classic Tooltip Beveled Border with Bronze/Gold Trim:** Applied `Interface\Tooltips\UI-Tooltip-Border` (`edgeSize = 16`, `insets = { 4, 4, 4, 4 }`) with authentic bronze/gold coloring (`0.8, 0.65, 0.3, 1.0`).
-    - **Calibrated Header Placement:** Anchored `WOWKB COMBAT TELEMETRY` at `SetPoint("TOP", toast, "TOP", 0, -8)` so it sits cleanly inside the frame below the top border directly on the parchment.
-    - **High-Contrast Quest Typography with Light Highlight Shadow:** Formatted quest body text (`#382A1D` dark charcoal / quest brown) with a soft warm parchment light shadow (`(1, -1)` RGB `1.0, 0.94, 0.82, 0.75`) for `Westfall • Sentinel Hill` and subtext, creating a crisp, engraved aesthetic against the parchment.
-    - **Deep Crimson Threat Text:** Rendered threat names in deep crimson hostile red (`#C41E3A`) with `(2, -2)` black drop shadow.
-    - **Medallion Gold Bevel Ring:** Framed high-res circular Alliance/Horde crests in raised gold medallion rings (`medallion_border.tga`).
-    - **Metallic Class Button Border:** Wrapped combatant class icons with Blizzard beveled button borders (`Interface\Buttons\UI-Quickslot2`).
-    - **Hostile Red Debuff Border:** Wrapped threat/killer icons with standard red debuff borders (`Interface\Buttons\UI-Debuff-Border`).
-    - **Death Skull Separator:** Anchored Blizzard targeting skull (`Interface\TargetingFrame\UI-TargetingFrame-Skull`) between combatants at `CENTER, 0, -3` with 6px+ bottom frame clearance for the location text.
-  - **Dynamic Theme Synchronization:** Fully integrated with `UI:ApplyBannerTheme()`, `/kb theme`, the settings modal toggle, and `/wowkb move` anchor drag mode.
+- **Native Blizzard Achievement Alert Frame Kit for Combat Toast Banner (`Addon/WoWKillboard/UI.lua`, `Config.lua`)**:
+  - Rebuilt the authentic **WoW Classic "Forever"** toast banner using native in-game Blizzard Achievement Alert assets (`Interface\AchievementFrame\UI-Achievement-Alert-Background`).
+  - Implemented 3-slice texture mapping across **580px × 88px** with zero distortion of corner ornaments:
+    - `ToastBgLeft` (110×88, texCoords `[0, 0.21484375, 0, 0.703125]`) capturing the left golden corner ornament.
+    - `ToastBgRight` (110×88, texCoords `[0.390625, 0.60546875, 0, 0.703125]`) capturing the right golden corner ornament.
+    - `ToastBgMid` stretched seamlessly between the left and right slices with dark burnished bronze background.
+  - **Native Beveled Icon Framing (`UI-Achievement-IconFrame`)**:
+    - Wrapped victim class icon with 48×48 native beveled square frame `Interface\AchievementFrame\UI-Achievement-IconFrame` (texCoords `[0, 0.5625, 0, 0.5625]`) over a 40×40 icon base.
+    - Wrapped killer threat icon with matching 48×48 beveled square frame on sub-layer 1 plus red hostile debuff border (`UI-Debuff-Border`) on sub-layer 2.
+    - Framed adjacent circular Alliance Lion / Horde Crest in raised gold medallion border ring (`medallion_border.tga`).
+  - **Plaque Typography & Contrast Harmonization**:
+    - Anchored `WOWKB COMBAT TELEMETRY` at `TOP, 0, -8` in `GameFontNormalSmall` / Friz Quadrata TT (`#FFD100` Blizzard Gold with `(1, -1)` black shadow).
+    - Preserved combatant name lines `[23] Dagariane` (Class Pink) and `[15] Defias Pillager` (`#FF4040` Hostile Red) with `(2, -2)` black drop-shadows.
+    - Rendered location text (`Westfall • Sentinel Hill`) in `#FFD100` Blizzard Gold with `(1, -1)` black shadow centered directly under the 32×32 skull separator with generous bottom frame clearance.
+    - Rendered subtexts (`<Forged By Valor>` and `with Fireball`) in `#CCCCCC` parchment silver with `(1, -1)` black shadow.
+  - **Seamless Theme Toggling**:
+    - Classic Forever mode: sets `banner:SetBackdrop(nil)`, displays 3-slice achievement alert background and beveled icon frames.
+    - ElvUI Minimalist mode: hides achievement textures, restores flat dark slate backdrop (`WHITE8X8` + `UI-Tooltip-Border`, `0.06, 0.08, 0.11, 0.85`), 2px top gold accent line, and 1px normalized borders.
 - **Standardized Military/Tactical Chat Telemetry (`Addon/WoWKillboard/Reinforcements.lua`, `Killmail.lua`, `IntelScanner.lua`, `Config.lua`, `Core.lua`, `UI.lua`)**:
   - Stripped all melodramatic roleplay phrasing (`"WAR HORN Sounded"`, `"Vanguard under attack"`, `"To arms!"`, `"to muster"`, `"Blood and Honor!"`, and redundant `"1 hostile(s) (Enemy Hostiles)"`).
   - Standardized all chat broadcasts to functional, concise, single-line military/tactical telemetry with clean `[WoWKB]` or `[WoWKB Alert]` branding:

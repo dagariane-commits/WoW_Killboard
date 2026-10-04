@@ -232,15 +232,9 @@ KB.Themes = {
         },
         modalBg = { 1.0, 1.0, 1.0, 1.0 },
         modalBorder = { 1.0, 1.0, 1.0, 1.0 },
-        bannerBackdrop = {
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            tile = false,
-            edgeSize = 16,
-            insets = { left = 4, right = 4, top = 4, bottom = 4 },
-        },
-        bannerBg = { 0, 0, 0, 0 },
-        bannerBorder = { 0.8, 0.65, 0.3, 1.0 },
+        bannerBackdrop = nil, -- Handled natively by Interface\AchievementFrame\UI-Achievement-Alert-Background
+        bannerBg = nil,
+        bannerBorder = nil,
         tagColor = "ffd100",
         themeBtnText = "|cffffffffTheme: |r|cffffd100Classic|r",
     },
