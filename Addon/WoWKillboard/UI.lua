@@ -7101,16 +7101,25 @@ function UI:InitializeKillBanner()
         end
     end)
 
-    -- 2. CLASSIC SKIN CONTAINER
-    local ClassicSkin = CreateFrame("Frame", nil, Toast)
+    -- 2. CLASSIC SKIN CONTAINER (Identical clean structure as ElvUI with Classic Warcraft colors)
+    local ClassicSkin = CreateFrame("Frame", nil, Toast, "BackdropTemplate")
     ClassicSkin:SetAllPoints(Toast)
     ClassicSkin:SetFrameLevel(Toast:GetFrameLevel() + 1)
+    ClassicSkin:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 }
+    })
+    ClassicSkin:SetBackdropColor(18/255, 14/255, 12/255, 0.95) -- Warm dark stone base
+    ClassicSkin:SetBackdropBorderColor(0.78, 0.61, 0.23, 1.0) -- Classic burnished gold border
 
-    local classicBG = ClassicSkin:CreateTexture(nil, "BACKGROUND")
-    classicBG:SetAllPoints(ClassicSkin)
-    classicBG:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Alert-Background")
-    -- Chops off the native [25] shield on the far right without squishing:
-    classicBG:SetTexCoord(0, 0.78, 0, 1)
+    local classicTopAccent = ClassicSkin:CreateTexture(nil, "OVERLAY")
+    classicTopAccent:SetHeight(2)
+    classicTopAccent:SetPoint("TOPLEFT", ClassicSkin, "TOPLEFT", 1, -1)
+    classicTopAccent:SetPoint("TOPRIGHT", ClassicSkin, "TOPRIGHT", -1, -1)
+    classicTopAccent:SetColorTexture(1.0, 0.82, 0.0, 1.0) -- #FFD100 Classic Blizzard Gold
+    ClassicSkin.TopAccent = classicTopAccent
 
     -- 3. ELVUI SKIN CONTAINER
     local ElvSkin = CreateFrame("Frame", nil, Toast, "BackdropTemplate")
@@ -7122,14 +7131,15 @@ function UI:InitializeKillBanner()
         edgeSize = 1,
         insets = { left = 1, right = 1, top = 1, bottom = 1 }
     })
-    ElvSkin:SetBackdropColor(13/255, 17/255, 23/255, 0.94)
-    ElvSkin:SetBackdropBorderColor(0.18, 0.20, 0.23, 1)
+    ElvSkin:SetBackdropColor(13/255, 17/255, 23/255, 0.94) -- Cool dark slate base
+    ElvSkin:SetBackdropBorderColor(0.18, 0.20, 0.23, 1) -- Subtle slate border
 
     local elvTopAccent = ElvSkin:CreateTexture(nil, "OVERLAY")
     elvTopAccent:SetHeight(2)
     elvTopAccent:SetPoint("TOPLEFT", ElvSkin, "TOPLEFT", 1, -1)
     elvTopAccent:SetPoint("TOPRIGHT", ElvSkin, "TOPRIGHT", -1, -1)
     elvTopAccent:SetColorTexture(0, 0.47, 1, 1) -- Alliance Blue default
+    ElvSkin.TopAccent = elvTopAccent
 
     -- 4. CONTENT LAYER (MUST BE HIGHER FRAME LEVEL SO NOTHING IS HIDDEN)
     local Content = CreateFrame("Frame", nil, Toast)
@@ -7157,11 +7167,13 @@ function UI:InitializeKillBanner()
     victimName:SetPoint("TOPLEFT", victimIcon, "TOPRIGHT", 10, -2)
     victimName:SetTextColor(0.96, 0.55, 0.73, 1) -- Paladin Pink
     victimName:SetText("[23] Dagariane")
+    victimName:SetJustifyH("LEFT")
 
     local victimGuild = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     victimGuild:SetPoint("BOTTOMLEFT", victimIcon, "BOTTOMRIGHT", 10, 2)
     victimGuild:SetTextColor(0.65, 0.65, 0.65, 1)
     victimGuild:SetText("")
+    victimGuild:SetJustifyH("LEFT")
 
     -- Center: Death Action
     local skullIcon = Content:CreateTexture(nil, "ARTWORK")
@@ -7184,16 +7196,18 @@ function UI:InitializeKillBanner()
     killerName:SetPoint("TOPRIGHT", killerIcon, "TOPLEFT", -10, -2)
     killerName:SetTextColor(1, 0.25, 0.25, 1) -- Red
     killerName:SetText("[15] Defias Pillager")
+    killerName:SetJustifyH("RIGHT")
 
     local killerSub = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    killerSub:SetPoint("BOTTOMRIGHT", killerIcon, "TOPLEFT", -10, -18)
+    killerSub:SetPoint("BOTTOMRIGHT", killerIcon, "BOTTOMLEFT", -10, 2)
     killerSub:SetTextColor(0.65, 0.65, 0.65, 1)
     killerSub:SetText("Humanoid / Elite")
+    killerSub:SetJustifyH("RIGHT")
 
     -- Store references on Toast
     Toast.ClassicSkin = ClassicSkin
-    Toast.classicBG = classicBG
     Toast.ElvSkin = ElvSkin
+    Toast.classicTopAccent = classicTopAccent
     Toast.elvTopAccent = elvTopAccent
     Toast.TopAccent = elvTopAccent
     Toast.Content = Content
