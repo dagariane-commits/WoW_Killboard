@@ -1006,6 +1006,18 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             SafePrint(string.format("  |cffffd100[4. World PvP]:|r /s Anyone hunting around here? Grab 'wkb' on CurseForge so we can track kills and bounties against %s (wowkillboard.com)", enemy))
             SafePrint("  |cff38bdf8[5. Direct Link]:|r Search \"wkb\" in CurseForge App or visit https://www.curseforge.com/wow/addons/wkb")
         end
+    elseif cmd == "net" or cmd == "network" or cmd == "channel" then
+        local chanId = (KB.Sync and KB.Sync.GetChannelId and KB.Sync:GetChannelId("WoWKillboard")) or nil
+        local isChanConnected = (chanId and chanId > 0)
+        local statusColor = isChanConnected and "|cff00ff00" or "|cffff3333"
+        local statusText = isChanConnected and string.format("Connected (#%d, Hidden from Chat)", chanId) or "Connecting / Offline (rejoining...)"
+        SafePrint("|cff00ccff[WoW Killboard] Realm Network Status:|r")
+        SafePrint(string.format("  |cffffd100Realm Channel:|r %s%s|r", statusColor, statusText))
+        SafePrint(string.format("  |cffffd100P2P Sync:|r %s", (KB.DefaultSettings and KB.DefaultSettings.p2pSyncEnabled) and "|cff00ff00Enabled|r" or "|cffff3333Disabled|r"))
+        SafePrint("  |cffffd100Quick Test:|r Type |cffffff00/testnet|r to broadcast a casualty alert to any player on the realm.")
+        if not isChanConnected and KB.Sync and KB.Sync.JoinGlobalChannel then
+            KB.Sync:JoinGlobalChannel()
+        end
     elseif cmd == "changelog" or cmd == "update" or cmd == "whatsnew" or cmd == "notes" then
         if KB.UI and KB.UI.ShowChangelogModal then
             KB.UI:ShowChangelogModal(true)
@@ -1013,6 +1025,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
     else
         SafePrint("|cff00ccffWoW Killboard: Frontline War Room Commands:|r")
         SafePrint("  |cffffd100/kb|r, |cffffd100/wowkb|r, or |cffffd100/killboard|r - Toggle the Frontline War Room Dashboard")
+        SafePrint("  |cffffd100/kb net|r or |cffffd100/kb channel|r - Inspect Realm Network connection and channel state")
         SafePrint("  |cffffd100/kb changelog|r or |cffffd100/kb update|r - Open What's New & Version Changelog")
         SafePrint("  |cffffd100/kb promo|r or |cffffd100/kb macro|r - Open Promotional In-Game Macros & Community Sharing Hub")
         SafePrint("  |cffffd100/kb welcome|r or |cffffd100/kb beta|r - Open Early Preview & Feedback Guide")
