@@ -65,7 +65,13 @@ function LB:MatchesRealm(km)
         end
     end
 
-    -- Strict Isolation: If realm cannot be verified to match active realm, strictly reject
+    -- Fallback for un-stamped records loaded in this client: Inherit active realm
+    if not kmRealm or kmRealm == "" or kmRealm == "Unknown" then
+        km.realm = myRealm
+        return true
+    end
+
+    -- Strict Isolation: If realm explicitly belongs to another realm, strictly reject
     return false
 end
 

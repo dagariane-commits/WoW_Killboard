@@ -424,7 +424,14 @@ class KillboardWatcher:
         manual_sync_ts = parsed.get("lastManualSync", 0) or (raw_db.get("lastManualSync", 0) if isinstance(raw_db, dict) else 0)
 
         db_kills = parsed.get("WoWKillboardDB", {})
+        if isinstance(raw_db, dict):
+            if "kills" in raw_db and isinstance(raw_db["kills"], dict):
+                db_kills = raw_db["kills"]
+            elif "kills" in db_kills and isinstance(db_kills["kills"], dict):
+                db_kills = db_kills["kills"]
         pve_deaths = parsed.get("pveDeaths", {})
+        if not pve_deaths and isinstance(raw_db, dict) and "pveDeaths" in raw_db and isinstance(raw_db["pveDeaths"], dict):
+            pve_deaths = raw_db["pveDeaths"]
         bounties = parsed.get("WoWKillboardBounties", {})
         debts = parsed.get("WoWKillboardDebtLedger", {})
         stats = parsed.get("stats", {})
@@ -1000,7 +1007,21 @@ class KillboardWatcher:
                 except Exception:
                     pass
 
-        # Ensure all recent kills strictly conform to valid schema and Guardrail 4 solo purity
+        # Discover active local realm from monitored data, local kills, or fallback
+        discovered_realm = None
+        for rk in recent_kills:
+            if isinstance(rk, dict) and rk.get("realm") and rk.get("realm") not in (None, "", "Unknown"):
+                discovered_realm = rk.get("realm")
+                break
+        if not discovered_realm:
+            for b in active_bounties:
+                if isinstance(b, dict) and b.get("realm") and b.get("realm") not in (None, "", "Unknown"):
+                    discovered_realm = b.get("realm")
+                    break
+        if not discovered_realm:
+            discovered_realm = "Classic Beta PvP"
+
+        # Ensure all recent kills strictly conform to valid schema, realm tagging, and Guardrail 4 solo purity
         sanitized_recent_kills = []
         for rk in recent_kills:
             if not isinstance(rk, dict):
@@ -1009,6 +1030,14 @@ class KillboardWatcher:
             v_data = rk.get("victim")
             if not isinstance(k_data, dict) or not k_data.get("name") or not isinstance(v_data, dict) or not v_data.get("name"):
                 continue
+            if not rk.get("realm") or rk.get("realm") in (None, "", "Unknown"):
+                rk["realm"] = discovered_realm
+            if not rk.get("ruleset") or rk.get("ruleset") in (None, "", "Unknown"):
+                rk["ruleset"] = "PVP"
+            if isinstance(k_data, dict) and (not k_data.get("realm") or k_data.get("realm") in (None, "", "Unknown")):
+                k_data["realm"] = rk["realm"]
+            if isinstance(v_data, dict) and (not v_data.get("realm") or v_data.get("realm") in (None, "", "Unknown")):
+                v_data["realm"] = rk["realm"]
             if not rk.get("isDuel"):
                 tot_dmg = rk.get("totalDamage", 0) or 0
                 k_dmg = k_data.get("damageDone", 0) or 0
@@ -1019,6 +1048,16 @@ class KillboardWatcher:
                         rk["attackersCount"] = 2
             sanitized_recent_kills.append(rk)
         recent_kills = sanitized_recent_kills
+
+        # Stamp realm on PvE deaths
+        for pd in recent_pve_deaths:
+            if isinstance(pd, dict):
+                if not pd.get("realm") or pd.get("realm") in (None, "", "Unknown"):
+                    pd["realm"] = discovered_realm
+                if not pd.get("ruleset") or pd.get("ruleset") in (None, "", "Unknown"):
+                    pd["ruleset"] = "PVE"
+                if isinstance(pd.get("victim"), dict) and (not pd["victim"].get("realm") or pd["victim"].get("realm") in (None, "", "Unknown")):
+                    pd["victim"]["realm"] = pd["realm"]
 
         # Sort recent kills descending by timestamp and cap at 60
         recent_kills.sort(key=lambda x: x.get("timestamp", 0) if isinstance(x, dict) else 0, reverse=True)
@@ -1059,7 +1098,7 @@ class KillboardWatcher:
             b_norm["amountGold"] = a_gold
             b_norm["amount_gold"] = a_gold
             b_norm["status"] = b.get("status", "ACTIVE")
-            b_norm["realm"] = b.get("realm") or "Unknown"
+            b_norm["realm"] = b.get("realm") if (b.get("realm") and b.get("realm") != "Unknown") else discovered_realm
             cleaned_bounties.append(b_norm)
             known_bnt_ids.add(b_id)
 

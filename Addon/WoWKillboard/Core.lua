@@ -123,9 +123,25 @@ function KB:SyncRealmData()
     end
 
     local imported = 0
+    local myRealm = (GetRealmName and GetRealmName()) or ""
+    local myRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVP"
+
     if rData.RecentKills then
         for _, km in ipairs(rData.RecentKills) do
             if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
+                if (not km.realm or km.realm == "" or km.realm == "Unknown") and myRealm ~= "" then
+                    km.realm = myRealm
+                end
+                if not km.ruleset or km.ruleset == "" then
+                    km.ruleset = myRuleset
+                end
+                if km.killer and (not km.killer.realm or km.killer.realm == "" or km.killer.realm == "Unknown") and km.realm then
+                    km.killer.realm = km.realm
+                end
+                if km.victim and (not km.victim.realm or km.victim.realm == "" or km.victim.realm == "Unknown") and km.realm then
+                    km.victim.realm = km.realm
+                end
+
                 local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
                 local isMe = false
                 if IsPlayerMatch(km.killer.name) then
@@ -145,6 +161,22 @@ function KB:SyncRealmData()
                 if isMe and matchRealm and kId and not WoWKillboardDB.kills[kId] then
                     WoWKillboardDB.kills[kId] = km
                     imported = imported + 1
+                end
+            end
+        end
+    end
+
+    if rData.RecentPveDeaths and myRealm ~= "" then
+        for _, pd in ipairs(rData.RecentPveDeaths) do
+            if pd and type(pd) == "table" then
+                if not pd.realm or pd.realm == "" or pd.realm == "Unknown" then
+                    pd.realm = myRealm
+                end
+                if not pd.ruleset or pd.ruleset == "" then
+                    pd.ruleset = "PVE"
+                end
+                if pd.victim and (not pd.victim.realm or pd.victim.realm == "" or pd.victim.realm == "Unknown") then
+                    pd.victim.realm = myRealm
                 end
             end
         end
@@ -184,21 +216,23 @@ function KB:Initialize()
     if myRealm ~= "" then
         for _, km in pairs(WoWKillboardDB.kills) do
             if type(km) == "table" and (not km.realm or km.realm == "" or km.realm == "Unknown") then
-                local kName = (km.killer and km.killer.name) or ""
-                local vName = (km.victim and km.victim.name) or ""
                 local kRealm = (km.killer and km.killer.realm) or ""
                 local vRealm = (km.victim and km.victim.realm) or ""
-                if (myName ~= "" and (kName:lower() == myName:lower() or vName:lower() == myName:lower())) then
-                    km.realm = myRealm
-                    km.ruleset = myRuleset
-                    if km.killer and (not km.killer.realm or km.killer.realm == "") then km.killer.realm = myRealm end
-                    if km.victim and (not km.victim.realm or km.victim.realm == "") then km.victim.realm = myRealm end
-                elseif kRealm ~= "" and kRealm ~= "Unknown" then
+                if kRealm ~= "" and kRealm ~= "Unknown" then
                     km.realm = kRealm
                     km.ruleset = km.ruleset or myRuleset
                 elseif vRealm ~= "" and vRealm ~= "Unknown" then
                     km.realm = vRealm
                     km.ruleset = km.ruleset or myRuleset
+                else
+                    km.realm = myRealm
+                    km.ruleset = km.ruleset or myRuleset
+                end
+                if km.killer and (not km.killer.realm or km.killer.realm == "" or km.killer.realm == "Unknown") then
+                    km.killer.realm = km.realm
+                end
+                if km.victim and (not km.victim.realm or km.victim.realm == "" or km.victim.realm == "Unknown") then
+                    km.victim.realm = km.realm
                 end
             end
         end

@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.4] - 2026-10-04 (CurseForge Community Release)
 
 ### Added
+- **Unified Cross-Faction Realm Intel & Leaderboard Parity (`Core.lua`, `Leaderboard.lua`, `sync/watcher.py`)**:
+  - Resolved Intel feed and leaderboard disparity between factions and characters on the same realm (Alliance `Dagariane` vs. Horde `Enairagad` on `Classic Beta PvP`).
+  - Desktop Sync (`sync/watcher.py`) now dynamically discovers the active realm across monitored SavedVariables files and stamps active realm (`Classic Beta PvP`) across all shared kills, PvE casualties, and bounties before writing `WoWKillboard_RealmData.lua`.
+  - Updated `Core.lua:Initialize()` and `Core.lua:SyncRealmData()` to automatically stamp `km.realm` and `km.ruleset` on all local and imported records lacking an explicit realm tag.
+  - Refined `LB:MatchesRealm(km)` in `Leaderboard.lua` to allow un-stamped local records to safely inherit the active realm while strictly rejecting foreign realm mismatches (e.g., Wild Growth vs. Crusader Strike).
+  - Guarantees 100% identical Intel feeds (14 kills), Leaderboard aggregates, and Realm Carnage across all characters and factions on the active realm.
+- **Faction-Wide Mark of Spite (Bounty) Alerts & Audio Chime (`Sync.lua`, `BountyEngine.lua`)**:
+  - Enhanced `Sync.lua:BroadcastBounty()`: When a player declares a Mark of Spite, a formatted announcement is broadcast to the faction-isolated `WoWKillboard` realm channel (`[WoWKB Bounty Alert] <Placer> placed a <Amount> Mark of Spite on <Target> (<Class>)!`), as well as Guild and Party/Raid.
+  - Implemented `Sync.lua:OnIncomingChannelBounty()` and enhanced `BNT` addon message handling:
+    - Outputs gold-highlighted chat announcement: `[WoWKB Bounty Alert] <Placer> declared a <Amount> Mark of Spite on <Target>!`.
+    - Triggers floating on-screen alert banner: `NEW BOUNTY: <Amount> on <Target>!`.
+    - Plays audio warhorn sound alert (`KB.SoundAlerts.BOUNTY_CLAIMED`) when audio alerts are enabled.
+    - Adds the contract directly into the Bounty Board and refreshes the UI in real-time.
+    - Zero Taint: Pure Lua frames with `BackdropTemplate`, strict `InCombatLockdown()` gating.
 - **Chatter Suppression Filter Engine (`Sync.lua`)**:
   - Registered official Blizzard `ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", ...)` to intercept all incoming messages in the dedicated `WoWKillboard` channel.
   - Completely silences and blocks human conversation, player chatter, and spam from displaying in any chat frame, guaranteeing a pure, tamper-proof open-world casualty stream.

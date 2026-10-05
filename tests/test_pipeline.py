@@ -2066,11 +2066,11 @@ WoWKillboardDB = {
         self.assertIn("WoWKillboardBounties", core_content)
         self.assertIn("b.realm = myRealm", core_content)
 
-        # 6. Verify watcher.py bounty realm preservation
+        # 6. Verify watcher.py bounty realm preservation and active realm stamping
         watcher_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "sync", "watcher.py")
         with open(watcher_path, "r", encoding="utf-8") as f:
             watcher_content = f.read()
-        self.assertIn('b_norm["realm"] = b.get("realm") or "Unknown"', watcher_content)
+        self.assertIn('b_norm["realm"] = b.get("realm") if (b.get("realm") and b.get("realm") != "Unknown") else discovered_realm', watcher_content)
 
         print("[PASS] Verified Strict Realm Isolation, RP Ruleset Inclusion, and In-Game Stats Toggle.")
 
