@@ -9125,9 +9125,24 @@ function UI:ShowSettingsModal()
         end)
         dlg.soundBtn = soundBtn
 
-        -- Row 2: Network Broadcast Simulation & Realm Update Broadcaster
-        local bcastTestBtn = UI:CreateButton(dlg, 220, 22, "|cff38bdf8Broadcast Test (Party/Net)|r")
-        bcastTestBtn:SetPoint("TOPLEFT", 24, y - 60)
+        -- Row 2: Live Chat Stream, Network Broadcast Simulation & Realm Update Broadcaster
+        local chatStreamBtn = UI:CreateButton(dlg, 145, 22, "Chat Stream: OFF")
+        chatStreamBtn:SetPoint("TOPLEFT", 24, y - 60)
+        chatStreamBtn:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings or {}
+            s.showChannelInChat = not s.showChannelInChat
+            if KB.db and KB.db.settings then KB.db.settings.showChannelInChat = s.showChannelInChat end
+            if KB.Sync and KB.Sync.ApplyChatVisibility then KB.Sync:ApplyChatVisibility() end
+            chatStreamBtn.Label:SetText(s.showChannelInChat and "|cff00ff00Chat Stream: ON|r" or "|cffff3333Chat Stream: OFF|r")
+        end)
+        chatStreamBtn:SetScript("OnEnter", function(self)
+            UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "Chat Window Casualty Stream", "Toggle live casualty alerts in your chat window. When ON, open-world kills stream into General chat. When OFF, chat is kept clean and quiet.")
+        end)
+        chatStreamBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+        dlg.chatStreamBtn = chatStreamBtn
+
+        local bcastTestBtn = UI:CreateButton(dlg, 145, 22, "|cff38bdf8Broadcast Test|r")
+        bcastTestBtn:SetPoint("LEFT", chatStreamBtn, "RIGHT", 10, 0)
         bcastTestBtn:SetScript("OnClick", function()
             if KB.Sync and KB.Sync.BroadcastTestCasualty then
                 KB.Sync:BroadcastTestCasualty("pve")
@@ -9139,7 +9154,7 @@ function UI:ShowSettingsModal()
         bcastTestBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
         dlg.bcastTestBtn = bcastTestBtn
 
-        local announceBtn = UI:CreateButton(dlg, 220, 22, "|cffffd100Announce Update to Realm|r")
+        local announceBtn = UI:CreateButton(dlg, 150, 22, "|cffffd100Realm Announce|r")
         announceBtn:SetPoint("LEFT", bcastTestBtn, "RIGHT", 10, 0)
         announceBtn:SetScript("OnClick", function()
             dlg:Hide()
@@ -9301,6 +9316,9 @@ function UI:ShowSettingsModal()
     if UI.SettingsDialog.soundBtn and UI.SettingsDialog.soundBtn.Label then
         UI.SettingsDialog.soundBtn.Label:SetText(s.soundAlerts ~= false and "|cff00ff00Sound: ON|r" or "|cffff3333Sound: OFF|r")
     end
+    if UI.SettingsDialog.chatStreamBtn and UI.SettingsDialog.chatStreamBtn.Label then
+        UI.SettingsDialog.chatStreamBtn.Label:SetText(s.showChannelInChat and "|cff00ff00Chat Stream: ON|r" or "|cffff3333Chat Stream: OFF|r")
+    end
     if UI.SettingsDialog.chatBroadcastBtn and UI.SettingsDialog.chatBroadcastBtn.Label then
         UI.SettingsDialog.chatBroadcastBtn.Label:SetText(s.enableChatBroadcasts and "|cff00ff00Chat (Yell/Say): ON|r" or "|cffff3333Chat (Yell/Say): OFF|r")
     end
@@ -9332,7 +9350,7 @@ function UI:ShowAlertsConfig()
 
     if not UI.AlertsDialog then
         local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-        dlg:SetSize(520, 630)
+        dlg:SetSize(520, 665)
         dlg:SetPoint("CENTER", 0, 20)
         dlg:SetFrameStrata("DIALOG")
         dlg:SetFrameLevel(120)
@@ -9394,37 +9412,52 @@ function UI:ShowAlertsConfig()
             btn.Label:SetText(text)
         end
 
-        -- Section 1: Alert Mode (Display & Sound)
+        -- Section 1: Alert Delivery Mode & Live Chat Stream
         local sec1Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sec1Title:SetPoint("TOPLEFT", 24, -68)
-        sec1Title:SetText("|cffffffff1. DISPLAY & AUDIO FEEDBACK|r")
+        sec1Title:SetText("|cffffffff1. CASUALTY ALERT DELIVERY & CHAT STREAM|r")
 
-        local btnModeSound = UI:CreateButton(dlg, 150, 24, "Sound + Alert", "GameFontHighlightSmall")
-        btnModeSound:SetPoint("TOPLEFT", 24, -88)
-        StyleSegmentButton(btnModeSound, "Sound + Alert")
-        dlg.BtnModeSound = btnModeSound
+        -- Row 1: 4 Quick Delivery Presets
+        local btnPresetBoth = UI:CreateButton(dlg, 110, 24, "Both Displays", "GameFontHighlightSmall")
+        btnPresetBoth:SetPoint("TOPLEFT", 24, -88)
+        StyleSegmentButton(btnPresetBoth, "Both Displays")
+        dlg.BtnPresetBoth = btnPresetBoth
 
-        local btnModeMute = UI:CreateButton(dlg, 150, 24, "Alert Only", "GameFontHighlightSmall")
-        btnModeMute:SetPoint("LEFT", btnModeSound, "RIGHT", 11, 0)
-        StyleSegmentButton(btnModeMute, "Alert Only")
-        dlg.BtnModeMute = btnModeMute
+        local btnPresetHeadsUp = UI:CreateButton(dlg, 110, 24, "Heads-Up Only", "GameFontHighlightSmall")
+        btnPresetHeadsUp:SetPoint("LEFT", btnPresetBoth, "RIGHT", 6, 0)
+        StyleSegmentButton(btnPresetHeadsUp, "Heads-Up Only")
+        dlg.BtnPresetHeadsUp = btnPresetHeadsUp
 
-        local btnModeOff = UI:CreateButton(dlg, 150, 24, "Turn Off", "GameFontHighlightSmall")
-        btnModeOff:SetPoint("LEFT", btnModeMute, "RIGHT", 11, 0)
-        StyleSegmentButton(btnModeOff, "Turn Off")
-        dlg.BtnModeOff = btnModeOff
+        local btnPresetChat = UI:CreateButton(dlg, 116, 24, "Chat Log Only", "GameFontHighlightSmall")
+        btnPresetChat:SetPoint("LEFT", btnPresetHeadsUp, "RIGHT", 6, 0)
+        StyleSegmentButton(btnPresetChat, "Chat Log Only")
+        dlg.BtnPresetChat = btnPresetChat
+
+        local btnPresetOff = UI:CreateButton(dlg, 110, 24, "Muted / Off", "GameFontHighlightSmall")
+        btnPresetOff:SetPoint("LEFT", btnPresetChat, "RIGHT", 6, 0)
+        StyleSegmentButton(btnPresetOff, "Muted / Off")
+        dlg.BtnPresetOff = btnPresetOff
+
+        -- Row 2: Granular Toggles
+        local btnToggleChat = UI:CreateButton(dlg, 226, 22, "Chat Window Feed: ON", "GameFontHighlightSmall")
+        btnToggleChat:SetPoint("TOPLEFT", 24, -118)
+        dlg.BtnToggleChat = btnToggleChat
+
+        local btnToggleSound = UI:CreateButton(dlg, 230, 22, "Audio Warhorn: ON", "GameFontHighlightSmall")
+        btnToggleSound:SetPoint("LEFT", btnToggleChat, "RIGHT", 8, 0)
+        dlg.BtnToggleSound = btnToggleSound
 
         local modeHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        modeHint:SetPoint("TOPLEFT", 24, -116)
+        modeHint:SetPoint("TOPLEFT", 24, -146)
         dlg.ModeHint = modeHint
 
         -- Section 2: Proximity & Scope Filter (Radar)
         local sec2Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        sec2Title:SetPoint("TOPLEFT", 24, -140)
+        sec2Title:SetPoint("TOPLEFT", 24, -170)
         sec2Title:SetText("|cffffffff2. RADAR & PROXIMITY SCOPE|r")
 
         local btnScopeZone = UI:CreateButton(dlg, 150, 24, "Same Zone Only", "GameFontHighlightSmall")
-        btnScopeZone:SetPoint("TOPLEFT", 24, -160)
+        btnScopeZone:SetPoint("TOPLEFT", 24, -190)
         StyleSegmentButton(btnScopeZone, "Same Zone Only")
         dlg.BtnScopeZone = btnScopeZone
 
@@ -9439,16 +9472,16 @@ function UI:ShowAlertsConfig()
         dlg.BtnScopeMine = btnScopeMine
 
         local scopeHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        scopeHint:SetPoint("TOPLEFT", 24, -188)
+        scopeHint:SetPoint("TOPLEFT", 24, -218)
         dlg.ScopeHint = scopeHint
 
         -- Section 3: Visual Alert Style (Raid Warning vs Tactical Banner)
         local sec3Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        sec3Title:SetPoint("TOPLEFT", 24, -212)
+        sec3Title:SetPoint("TOPLEFT", 24, -242)
         sec3Title:SetText("|cffffffff3. VISUAL ALERT STYLE|r")
 
         local btnStyleBoth = UI:CreateButton(dlg, 150, 24, "Both Displays", "GameFontHighlightSmall")
-        btnStyleBoth:SetPoint("TOPLEFT", 24, -232)
+        btnStyleBoth:SetPoint("TOPLEFT", 24, -262)
         StyleSegmentButton(btnStyleBoth, "Both Displays")
         dlg.BtnStyleBoth = btnStyleBoth
 
@@ -9463,16 +9496,16 @@ function UI:ShowAlertsConfig()
         dlg.BtnStyleBanner = btnStyleBanner
 
         local styleHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        styleHint:SetPoint("TOPLEFT", 24, -260)
+        styleHint:SetPoint("TOPLEFT", 24, -290)
         dlg.StyleHint = styleHint
 
         -- Section 4: Screen Positioning & Calibration
         local sec4Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        sec4Title:SetPoint("TOPLEFT", 24, -284)
+        sec4Title:SetPoint("TOPLEFT", 24, -314)
         sec4Title:SetText("|cffffffff4. SCREEN POSITIONING & CALIBRATION|r")
 
         local unlockBtn = UI:CreateButton(dlg, 230, 24, "Move / Unlock Alert Anchor", "GameFontHighlightSmall")
-        unlockBtn:SetPoint("TOPLEFT", 24, -304)
+        unlockBtn:SetPoint("TOPLEFT", 24, -334)
         dlg.UnlockBtn = unlockBtn
 
         local resetBtn = UI:CreateButton(dlg, 230, 24, "Reset to Center", "GameFontHighlightSmall")
@@ -9480,21 +9513,21 @@ function UI:ShowAlertsConfig()
         dlg.ResetBtn = resetBtn
 
         local posHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        posHint:SetPoint("TOPLEFT", 24, -332)
+        posHint:SetPoint("TOPLEFT", 24, -362)
         posHint:SetText("|cff94a3b8Click 'Move / Unlock' or type |cffffd100/wowkb move|r to drag alert anywhere on screen.|r")
         dlg.PosHint = posHint
 
         local posCoords = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        posCoords:SetPoint("TOPLEFT", 24, -348)
+        posCoords:SetPoint("TOPLEFT", 24, -378)
         dlg.PosCoords = posCoords
 
         -- Section 5: Mark of Spite Death Popup
         local sec5Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        sec5Title:SetPoint("TOPLEFT", 24, -374)
+        sec5Title:SetPoint("TOPLEFT", 24, -404)
         sec5Title:SetText("|cffffffff5. MARK OF SPITE DEATH POPUP|r")
 
         local btnMarkPromptOn = UI:CreateButton(dlg, 230, 24, "Prompt on Death", "GameFontHighlightSmall")
-        btnMarkPromptOn:SetPoint("TOPLEFT", 24, -394)
+        btnMarkPromptOn:SetPoint("TOPLEFT", 24, -424)
         StyleSegmentButton(btnMarkPromptOn, "Prompt on Death")
         dlg.BtnMarkPromptOn = btnMarkPromptOn
 
@@ -9504,16 +9537,16 @@ function UI:ShowAlertsConfig()
         dlg.BtnMarkPromptOff = btnMarkPromptOff
 
         local markHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        markHint:SetPoint("TOPLEFT", 24, -422)
+        markHint:SetPoint("TOPLEFT", 24, -452)
         dlg.MarkHint = markHint
 
         -- Section 6: Combat Feed Destination (Shadow Network vs Main Chat)
         local sec6Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        sec6Title:SetPoint("TOPLEFT", 24, -446)
+        sec6Title:SetPoint("TOPLEFT", 24, -476)
         sec6Title:SetText("|cffffffff6. COMBAT FEED DESTINATION|r")
 
         local btnFeedWire = UI:CreateButton(dlg, 150, 24, "Shadow Network", "GameFontHighlightSmall")
-        btnFeedWire:SetPoint("TOPLEFT", 24, -466)
+        btnFeedWire:SetPoint("TOPLEFT", 24, -496)
         StyleSegmentButton(btnFeedWire, "Shadow Network")
         dlg.BtnFeedWire = btnFeedWire
 
@@ -9528,14 +9561,14 @@ function UI:ShowAlertsConfig()
         dlg.BtnFeedOff = btnFeedOff
 
         local feedHint = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        feedHint:SetPoint("TOPLEFT", 24, -494)
+        feedHint:SetPoint("TOPLEFT", 24, -524)
         dlg.FeedHint = feedHint
 
         -- Bottom Divider
         local bDiv = dlg:CreateTexture(nil, "ARTWORK")
         bDiv:SetHeight(1)
-        bDiv:SetPoint("TOPLEFT", 18, -522)
-        bDiv:SetPoint("TOPRIGHT", -18, -522)
+        bDiv:SetPoint("TOPLEFT", 18, -552)
+        bDiv:SetPoint("TOPRIGHT", -18, -552)
         dlg.BottomDivider = bDiv
 
         -- Footer Action Buttons
@@ -9573,18 +9606,31 @@ function UI:ShowAlertsConfig()
             local scope = s.alertScope or "ZONE"
             local style = s.alertStyle or "BOTH"
 
-            -- Section 1: Display & Audio
-            ApplySegmentState(dlg.BtnModeSound, mode == "SOUND_AND_BANNER")
-            ApplySegmentState(dlg.BtnModeMute, mode == "BANNER_ONLY")
-            ApplySegmentState(dlg.BtnModeOff, mode == "OFF")
+            -- Section 1: Alert Delivery Mode & Live Chat Stream
+            local showChat = (s.showChannelInChat == true)
+            local isMuted = (mode == "OFF")
+            local isBoth = (showChat and not isMuted)
+            local isHeadsUp = (not showChat and not isMuted)
+            local isChatOnly = (showChat and isMuted)
+            local isOff = (not showChat and isMuted)
 
-            if mode == "SOUND_AND_BANNER" then
-                dlg.ModeHint:SetText("|cff00ff00* Active:|r |cff94a3b8Plays combat sound alert and displays visual notification.|r")
-            elseif mode == "BANNER_ONLY" then
-                dlg.ModeHint:SetText("|cffffd100* Muted:|r |cff94a3b8Displays visual notification silently with sound muted.|r")
+            ApplySegmentState(dlg.BtnPresetBoth, isBoth)
+            ApplySegmentState(dlg.BtnPresetHeadsUp, isHeadsUp)
+            ApplySegmentState(dlg.BtnPresetChat, isChatOnly)
+            ApplySegmentState(dlg.BtnPresetOff, isOff)
+
+            if isBoth then
+                dlg.ModeHint:SetText("|cff00ff00* Both Displays Active:|r |cff94a3b8Screen banner & audio horn trigger, and casualties stream into General chat.|r")
+            elseif isHeadsUp then
+                dlg.ModeHint:SetText("|cff00e5ff* Heads-Up Only:|r |cff94a3b8Screen banner & audio horn trigger. Chat window remains 100% clean and quiet.|r")
+            elseif isChatOnly then
+                dlg.ModeHint:SetText("|cffffd100* Silent Chat Stream:|r |cff94a3b8Casualties quietly stream into your chat window. Zero screen banners or audio horns.|r")
             else
-                dlg.ModeHint:SetText("|cffff3333* Off:|r |cff94a3b8Suppresses all kill banners, sounds, and raid warnings.|r")
+                dlg.ModeHint:SetText("|cffff3333* All Alerts Muted:|r |cff94a3b8Screen banners and chat feeds suppressed. Kills recorded silently to database.|r")
             end
+
+            dlg.BtnToggleChat.Label:SetText(showChat and "|cff00ff00Chat Stream: ON|r" or "|cff888888Chat Stream: OFF|r")
+            dlg.BtnToggleSound.Label:SetText((s.soundAlerts ~= false) and "|cff00ff00Audio Warhorn: ON|r" or "|cff888888Audio Warhorn: OFF|r")
 
             -- Section 2: Proximity Scope
             ApplySegmentState(dlg.BtnScopeZone, scope == "ZONE")
@@ -9650,22 +9696,71 @@ function UI:ShowAlertsConfig()
         dlg.UpdateControls = UpdateControls
 
         -- Section 1 Event Handlers
-        btnModeSound:SetScript("OnClick", function()
+        btnPresetBoth:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings
+            s.showChannelInChat = true
             s.alertMode = "SOUND_AND_BANNER"
             s.soundAlerts = true
+            if KB.db and KB.db.settings then
+                KB.db.settings.showChannelInChat = true
+                KB.db.settings.alertMode = "SOUND_AND_BANNER"
+                KB.db.settings.soundAlerts = true
+            end
+            if KB.Sync and KB.Sync.ApplyChatVisibility then KB.Sync:ApplyChatVisibility() end
             UpdateControls()
         end)
-        btnModeMute:SetScript("OnClick", function()
+        btnPresetHeadsUp:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings
-            s.alertMode = "BANNER_ONLY"
-            s.soundAlerts = false
+            s.showChannelInChat = false
+            s.alertMode = "SOUND_AND_BANNER"
+            s.soundAlerts = true
+            if KB.db and KB.db.settings then
+                KB.db.settings.showChannelInChat = false
+                KB.db.settings.alertMode = "SOUND_AND_BANNER"
+                KB.db.settings.soundAlerts = true
+            end
+            if KB.Sync and KB.Sync.ApplyChatVisibility then KB.Sync:ApplyChatVisibility() end
             UpdateControls()
         end)
-        btnModeOff:SetScript("OnClick", function()
+        btnPresetChat:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings
+            s.showChannelInChat = true
             s.alertMode = "OFF"
             s.soundAlerts = false
+            if KB.db and KB.db.settings then
+                KB.db.settings.showChannelInChat = true
+                KB.db.settings.alertMode = "OFF"
+                KB.db.settings.soundAlerts = false
+            end
+            if KB.Sync and KB.Sync.ApplyChatVisibility then KB.Sync:ApplyChatVisibility() end
+            UpdateControls()
+        end)
+        btnPresetOff:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.showChannelInChat = false
+            s.alertMode = "OFF"
+            s.soundAlerts = false
+            if KB.db and KB.db.settings then
+                KB.db.settings.showChannelInChat = false
+                KB.db.settings.alertMode = "OFF"
+                KB.db.settings.soundAlerts = false
+            end
+            if KB.Sync and KB.Sync.ApplyChatVisibility then KB.Sync:ApplyChatVisibility() end
+            UpdateControls()
+        end)
+
+        btnToggleChat:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.showChannelInChat = not s.showChannelInChat
+            if KB.db and KB.db.settings then KB.db.settings.showChannelInChat = s.showChannelInChat end
+            if KB.Sync and KB.Sync.ApplyChatVisibility then KB.Sync:ApplyChatVisibility() end
+            UpdateControls()
+        end)
+
+        btnToggleSound:SetScript("OnClick", function()
+            local s = WoWKillboardSettings or KB.DefaultSettings
+            s.soundAlerts = not s.soundAlerts
+            if KB.db and KB.db.settings then KB.db.settings.soundAlerts = s.soundAlerts end
             UpdateControls()
         end)
 

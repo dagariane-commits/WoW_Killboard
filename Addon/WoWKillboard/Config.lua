@@ -49,6 +49,7 @@ KB.DefaultSettings = {
     enableGuildBroadcasts = true,   -- Enable Guild Broadcasts [Default: On]
     includeCoordinates = true,      -- Include Coordinates [Default: On]
     enableWhisperAutoInvite = true,  -- Enable Whisper Auto-Invite [Default: On]
+    showChannelInChat = false,      -- Show WoWKillboard channel feed in main chat window [Default: Off / Clean Chat]
 }
 
 -- Fallback Class Colors (ARGB Hex)

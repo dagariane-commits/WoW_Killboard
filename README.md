@@ -249,12 +249,14 @@ WoW_Killboard/
 2. Start WoW and ensure **WoW Killboard** is checked in your AddOns menu.
 3. In-game commands:
    - `/killboard` or `/wowkb` — Open the Frontline War Room dashboard.
-   - `/killboard alerts` or `/wowkb alerts` — Open Combat Alerts & Radar settings (or click `⚙️ Alerts` button in header).
+   - `/killboard alerts` or `/wowkb alerts` — Open Combat Alerts & Radar settings (or click `[Alerts]` button in header).
    - `/killboard move` or `/wowkb move` — Unlock and reposition Kill Banner anywhere on screen.
    - `/killboard test` or `/wowkb test` — Preview Kill Banner with audio and raid warning.
    - `/killboard theme` — Switch between Classic WoW and ElvUI Minimalist themes.
-   - /killboard chat or /kb chat — Toggle public chat broadcasts (/yell) for open world defense (Opt-in).
-   - /killboard testchat or /kb testchat — Preview standardized military chat telemetry (Formats A, B, C).
+   - `/killboard channel [show|hide]` or `/kbchannel` — Toggle open-world casualty stream directly in your General chat window.
+   - `/killboard stream [both|chat|banner|off]` or `/kbstream` — Set alert delivery mode: `both` (heads-up banner + live chat log), `chat` (silent chat stream only), `banner` (heads-up banner only), or `off` (muted).
+   - `/killboard chat` or `/kb chat` — Toggle public chat broadcasts (/yell) for open world defense (Opt-in).
+   - `/killboard testchat` or `/kb testchat` — Preview standardized military chat telemetry (Formats A, B, C).
    - `/warhorn` or `/kbrally` — Sound the War Horn (open-world emergency distress & auto-invite rally).
    - `/killboard stats` — View current session damage, healing, kills, and K/D.
    - `/testnet` or `/kb testnet` — Broadcast a simulated casualty across the realm network to test alerts on any player with the addon (0 database writes).

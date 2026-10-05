@@ -516,6 +516,55 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         local s = WoWKillboardSettings or (KB.DefaultSettings or {})
         s.enableChatBroadcasts = not s.enableChatBroadcasts
         SafePrint(string.format("|cff00e5ff[WoWKB]|r Chat Broadcasts (Yell/Say): %s.", s.enableChatBroadcasts and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED (Opt-in)|r"))
+    elseif cmd == "channel" then
+        local sub = (arg or ""):lower():match("^%s*(.-)%s*$")
+        local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+        if sub == "show" or sub == "on" or sub == "enable" then
+            s.showChannelInChat = true
+        elseif sub == "hide" or sub == "off" or sub == "disable" then
+            s.showChannelInChat = false
+        else
+            s.showChannelInChat = not s.showChannelInChat
+        end
+        if KB.db and KB.db.settings then KB.db.settings.showChannelInChat = s.showChannelInChat end
+        if KB.Sync and KB.Sync.ApplyChatVisibility then KB.Sync:ApplyChatVisibility() end
+        if s.showChannelInChat then
+            SafePrint("|cff00e5ff[WoWKB]|r Casualty Feed in Chat: |cff00ff00ENABLED|r. The '|cffffd100WoWKillboard|r' channel is now streaming to your chat window.")
+        else
+            SafePrint("|cff00e5ff[WoWKB]|r Casualty Feed in Chat: |cffff3333HIDDEN|r. The '|cffffd100WoWKillboard|r' channel has been detached from your chat frames for quiet play.")
+        end
+    elseif cmd == "stream" or cmd == "delivery" then
+        local sub = (arg or ""):lower():match("^%s*(.-)%s*$")
+        local s = WoWKillboardSettings or (KB.DefaultSettings or {})
+        if sub == "both" or sub == "dual" or sub == "all" then
+            s.showChannelInChat = true
+            s.alertMode = "SOUND_AND_BANNER"
+            s.soundAlerts = true
+            SafePrint("|cff00e5ff[WoWKB Delivery]|r Preset: |cff00ff00Both (Heads-Up + Live Chat Stream)|r. Visual banners, audio warhorn, and chat log active.")
+        elseif sub == "chat" or sub == "silent" or sub == "log" then
+            s.showChannelInChat = true
+            s.alertMode = "OFF"
+            s.soundAlerts = false
+            SafePrint("|cff00e5ff[WoWKB Delivery]|r Preset: |cffffd100Silent Chat Stream Only|r. Casualties stream into your chat window without screen banners or audio horns.")
+        elseif sub == "banner" or sub == "headsup" or sub == "toast" or sub == "clean" then
+            s.showChannelInChat = false
+            s.alertMode = "SOUND_AND_BANNER"
+            s.soundAlerts = true
+            SafePrint("|cff00e5ff[WoWKB Delivery]|r Preset: |cff00e5ffHeads-Up Banner Only|r. Visual banners and audio active; chat windows remain clean.")
+        elseif sub == "off" or sub == "mute" or sub == "none" then
+            s.showChannelInChat = false
+            s.alertMode = "OFF"
+            s.soundAlerts = false
+            SafePrint("|cff00e5ff[WoWKB Delivery]|r Preset: |cffff3333All Alerts Muted|r. Banners and chat feed suppressed. Combat logged silently.")
+        else
+            SafePrint("|cffff9900Usage:|r /kb stream [both | chat | banner | off]  (or /kb channel [show | hide])")
+        end
+        if KB.db and KB.db.settings then
+            KB.db.settings.showChannelInChat = s.showChannelInChat
+            KB.db.settings.alertMode = s.alertMode
+            KB.db.settings.soundAlerts = s.soundAlerts
+        end
+        if KB.Sync and KB.Sync.ApplyChatVisibility then KB.Sync:ApplyChatVisibility() end
     elseif cmd == "guild" then
         local s = WoWKillboardSettings or (KB.DefaultSettings or {})
         s.enableGuildBroadcasts = (s.enableGuildBroadcasts == false)
@@ -1365,6 +1414,16 @@ SlashCmdList["WOWKB_ANNOUNCE"] = function(msg)
             KB.Sync:BroadcastAdminAlert(clean, "UPDATE")
         end
     end
+end
+
+SLASH_WOWKB_CHANNEL1 = "/kbchannel"
+SlashCmdList["WOWKB_CHANNEL"] = function(msg)
+    SlashCmdList["WOWKILLBOARD"]("channel " .. (msg or ""))
+end
+
+SLASH_WOWKB_STREAM1 = "/kbstream"
+SlashCmdList["WOWKB_STREAM"] = function(msg)
+    SlashCmdList["WOWKILLBOARD"]("stream " .. (msg or ""))
 end
 
 -- Lightweight Floating Launcher Button (100% Taint-Free, Zero GameTooltip Touching, Anonymous Frame)
