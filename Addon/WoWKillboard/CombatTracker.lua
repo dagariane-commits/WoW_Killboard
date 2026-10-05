@@ -2389,17 +2389,22 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
         local msg = ...
-        local victimName = ExtractVictimFromHonorMsg(msg)
-        CT:OnPlayerHonorableKill(victimName)
+        if msg and type(msg) == "string" and (not issecretvalue or not issecretvalue(msg)) and (not KB.Utils or not KB.Utils.CanAccess or KB.Utils.CanAccess(msg)) then
+            local victimName = ExtractVictimFromHonorMsg(msg)
+            CT:OnPlayerHonorableKill(victimName)
+        end
 
     elseif event == "CHAT_MSG_SYSTEM" then
         local msg = ...
-        if msg and KB.Utils.CanAccess(msg) then
-            local winner, loser = msg:match("^(.+) has defeated (.+) in a duel")
+        if msg and type(msg) == "string" and (not issecretvalue or not issecretvalue(msg)) and (not KB.Utils or not KB.Utils.CanAccess or KB.Utils.CanAccess(msg)) then
+            local okW, winner, loser = pcall(string.match, msg, "^(.+) has defeated (.+) in a duel")
             local isFlee = false
-            if not winner then
-                loser, winner = msg:match("^(.+) has fled from (.+) in a duel")
-                isFlee = true
+            if not okW or not winner then
+                local okF
+                okF, loser, winner = pcall(string.match, msg, "^(.+) has fled from (.+) in a duel")
+                if okF and loser and winner then
+                    isFlee = true
+                end
             end
             if winner and loser then
                 CT:OnDuelCompleted(winner, loser, isFlee)

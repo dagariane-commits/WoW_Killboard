@@ -18,17 +18,47 @@ elseif RegisterAddonMessagePrefix then
     pcall(RegisterAddonMessagePrefix, KB.Prefix or "WOWKB")
 end
 
+-- Helper functions for secret-value safe string operations (Zero Taint Guardrail)
+local function IsSecret(val)
+    return (issecretvalue and issecretvalue(val)) == true
+end
+
+local function SafeFind(str, pattern, init, plain)
+    if not str or type(str) ~= "string" or IsSecret(str) then return nil end
+    local ok, r1, r2 = pcall(string.find, str, pattern, init, plain)
+    return ok and r1 or nil, ok and r2 or nil
+end
+
+local function SafeMatch(str, pattern, init)
+    if not str or type(str) ~= "string" or IsSecret(str) then return nil end
+    local ok, r1, r2, r3, r4, r5, r6 = pcall(string.match, str, pattern, init)
+    if ok then return r1, r2, r3, r4, r5, r6 end
+    return nil
+end
+
+local function SafeGsub(str, pattern, repl, n)
+    if not str or type(str) ~= "string" or IsSecret(str) then return str end
+    local ok, res = pcall(string.gsub, str, pattern, repl, n)
+    return ok and res or str
+end
+
+local function SafeLower(str)
+    if not str or type(str) ~= "string" or IsSecret(str) then return "" end
+    local ok, res = pcall(string.lower, str)
+    return ok and res or ""
+end
+
 -- Helper to identify WoWKillboard channel across full string or base name
 local function IsWoWKillboardChannel(channelBase, channelName)
-    if type(channelBase) == "string" then
-        local lower = channelBase:lower()
-        if lower == "wowkillboard" or lower == "wowkb" or lower:find("wowkillboard", 1, true) or lower:find("wowkb", 1, true) then
+    if channelBase and type(channelBase) == "string" and not IsSecret(channelBase) then
+        local lower = SafeLower(channelBase)
+        if lower == "wowkillboard" or lower == "wowkb" or SafeFind(lower, "wowkillboard", 1, true) or SafeFind(lower, "wowkb", 1, true) then
             return true
         end
     end
-    if type(channelName) == "string" then
-        local lower = channelName:lower()
-        if lower == "wowkillboard" or lower == "wowkb" or lower:find("wowkillboard", 1, true) or lower:find("wowkb", 1, true) then
+    if channelName and type(channelName) == "string" and not IsSecret(channelName) then
+        local lower = SafeLower(channelName)
+        if lower == "wowkillboard" or lower == "wowkb" or SafeFind(lower, "wowkillboard", 1, true) or SafeFind(lower, "wowkb", 1, true) then
             return true
         end
     end
@@ -39,20 +69,23 @@ end
 -- Completely silences non-addon chatter, spam, or player conversation from displaying in any chat frame
 if ChatFrame_AddMessageEventFilter then
     ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", function(self, event, msg, sender, lang, channelName, target, flags, zoneChannelID, channelNumber, channelBase, ...)
+        if msg and IsSecret(msg) then
+            return false, msg, sender, lang, channelName, target, flags, zoneChannelID, channelNumber, channelBase, ...
+        end
         if IsWoWKillboardChannel(channelBase, channelName) then
             if msg and type(msg) == "string" then
                 -- Permit structured WoWKB telemetry broadcasts
-                if msg:find("^%[WoWKB%] Casualty:") or msg:find("^%[WoWKB Alert%]") or msg:find("^%[WoWKB Update%]") or msg:find("^%[WoWKB Test Broadcast%]") or msg:find("^%[WoWKB") or msg:find("^%[WoW Killboard%]") then
+                if SafeFind(msg, "^%[WoWKB%] Casualty:") or SafeFind(msg, "^%[WoWKB Alert%]") or SafeFind(msg, "^%[WoWKB Update%]") or SafeFind(msg, "^%[WoWKB Test Broadcast%]") or SafeFind(msg, "^%[WoWKB") or SafeFind(msg, "^%[WoW Killboard%]") then
                     -- Format prefix with crisp UI colors
-                    local styledMsg = msg:gsub("^%[WoWKB%]", "|cffffd100[WoWKB]|r")
-                    styledMsg = styledMsg:gsub("^%[WoWKB Alert%]", "|cffff3838[WoWKB Alert]|r")
-                    styledMsg = styledMsg:gsub("^%[WoWKB Update%]", "|cff38bdf8[WoWKB Update]|r")
+                    local styledMsg = SafeGsub(msg, "^%[WoWKB%]", "|cffffd100[WoWKB]|r")
+                    styledMsg = SafeGsub(styledMsg, "^%[WoWKB Alert%]", "|cffff3838[WoWKB Alert]|r")
+                    styledMsg = SafeGsub(styledMsg, "^%[WoWKB Update%]", "|cff38bdf8[WoWKB Update]|r")
                     return false, styledMsg, sender, lang, channelName, target, flags, zoneChannelID, channelNumber, channelBase, ...
                 end
             end
             -- If the local player inadvertently typed into the dedicated channel, provide immediate feedback
             local myName = UnitName("player")
-            if sender and myName and (sender == myName or sender:find("^" .. myName .. "%-")) then
+            if sender and myName and not IsSecret(sender) and (sender == myName or SafeFind(sender, "^" .. myName .. "%-")) then
                 if KB.Utils and KB.Utils.SafePrint then
                     KB.Utils.SafePrint("|cffff3838[WoWKB]|r The '|cffffd100WoWKillboard|r' channel is a dedicated telemetry feed. Player chatting is disabled.")
                 end
@@ -125,13 +158,13 @@ function S:GetChannelId(chanName)
         local ok, list = pcall(function() return { GetChannelList() } end)
         if ok and type(list) == "table" and #list > 0 then
             local stride = (type(list[3]) == "boolean") and 3 or 2
-            local lowerTarget = chanName:lower()
+            local lowerTarget = SafeLower(chanName)
             for i = 1, #list, stride do
                 local id = list[i]
                 local name = list[i+1]
                 if type(name) == "string" and type(id) == "number" and id > 0 then
-                    local lowerName = name:lower()
-                    if lowerName == lowerTarget or lowerName:find(lowerTarget, 1, true) then
+                    local lowerName = SafeLower(name)
+                    if lowerName == lowerTarget or SafeFind(lowerName, lowerTarget, 1, true) then
                         S.channelIndex = id
                         return id
                     end
@@ -169,15 +202,18 @@ end
 -- Process Blizzard channel notices (YOU_JOINED, YOU_LEFT, etc.)
 function S:OnChannelNotice(notice, player, _, channelName, _, _, _, _, baseName)
     local name = baseName or channelName or ""
-    if type(name) == "string" and (name:lower():find("wowkillboard", 1, true) or name:lower():find("wowkb", 1, true)) then
-        if notice == "YOU_JOINED" or notice == "YOU_CHANGED" then
-            local id = S:GetChannelId("WoWKillboard")
-            if id and id > 0 then
-                S.channelIndex = id
-                S:ApplyChatVisibility("WoWKillboard")
+    if type(name) == "string" and not IsSecret(name) then
+        local lowerName = SafeLower(name)
+        if SafeFind(lowerName, "wowkillboard", 1, true) or SafeFind(lowerName, "wowkb", 1, true) then
+            if notice == "YOU_JOINED" or notice == "YOU_CHANGED" then
+                local id = S:GetChannelId("WoWKillboard")
+                if id and id > 0 then
+                    S.channelIndex = id
+                    S:ApplyChatVisibility("WoWKillboard")
+                end
+            elseif notice == "YOU_LEFT" or notice == "SUSPENDED" then
+                S.channelIndex = nil
             end
-        elseif notice == "YOU_LEFT" or notice == "SUSPENDED" then
-            S.channelIndex = nil
         end
     end
 end
@@ -1255,28 +1291,29 @@ end
 
 -- Process incoming standardized casualty alert from party, guild, raid, or realm channel
 function S:OnIncomingChannelCasualty(text, sender)
-    if not text or not text:find("^%[WoWKB%] Casualty:") then return end
+    if not text or type(text) ~= "string" or IsSecret(text) then return end
+    if not SafeFind(text, "^%[WoWKB%] Casualty:") then return end
     local myName = UnitName("player")
     local isSelf = (KB.Utils and KB.Utils.IsSelfSender and KB.Utils.IsSelfSender(sender, myName))
     if isSelf then return end
 
-    local isTestMsg = (text:find("%[TEST") ~= nil) or (text:find("Simulation") ~= nil) or (text:find("TEST SIMULATION") ~= nil)
+    local isTestMsg = (SafeFind(text, "%[TEST") ~= nil) or (SafeFind(text, "Simulation") ~= nil) or (SafeFind(text, "TEST SIMULATION") ~= nil)
 
     -- Clean trailing tags and periods
     local cleanText = text
-    if cleanText:find("%[TEST") or cleanText:find("%[test") then
-        cleanText = cleanText:gsub("%s*%[.-%]%s*$", "")
+    if SafeFind(cleanText, "%[TEST") or SafeFind(cleanText, "%[test") then
+        cleanText = SafeGsub(cleanText, "%s*%[.-%]%s*$", "")
     end
-    cleanText = cleanText:gsub("%.$", ""):gsub("%s+$", "")
+    cleanText = SafeGsub(SafeGsub(cleanText, "%.$", ""), "%s+$", "")
 
     -- Format C: [WoWKB] Casualty: <victim> (Lvl <lvl> <class>) killed by <killer> (<spell>) in <location>
-    local vName, vLvl, vClass, kName, spellName, locStr = cleanText:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*%((.-)%)%s*in%s*(.-)$")
+    local vName, vLvl, vClass, kName, spellName, locStr = SafeMatch(cleanText, "^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*%((.-)%)%s*in%s*(.-)$")
     if not vName or not kName then
-        vName, vLvl, vClass, kName, locStr = cleanText:match("^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*in%s*(.-)$")
+        vName, vLvl, vClass, kName, locStr = SafeMatch(cleanText, "^%[WoWKB%] Casualty:%s*(.-)%s*%(Lvl%s*(%d+)%s*(.-)%)%s*killed by%s*(.-)%s*in%s*(.-)$")
         spellName = "Combat Strike"
     end
     if not vName or not kName then
-        vName, kName, locStr = cleanText:match("^%[WoWKB%] Casualty:%s*(.-)%s*killed by%s*(.-)%s*in%s*(.-)$")
+        vName, kName, locStr = SafeMatch(cleanText, "^%[WoWKB%] Casualty:%s*(.-)%s*killed by%s*(.-)%s*in%s*(.-)$")
         vLvl = 60
         vClass = "WARRIOR"
         spellName = "Combat Strike"
@@ -1354,19 +1391,20 @@ end
 
 -- Process incoming faction bounty alert from channel, guild, raid, or party
 function S:OnIncomingChannelBounty(text, sender)
-    if not text or not text:find("^%[WoWKB Bounty Alert%]") then return end
+    if not text or type(text) ~= "string" or IsSecret(text) then return end
+    if not SafeFind(text, "^%[WoWKB Bounty Alert%]") then return end
     local myName = UnitName("player")
     local isSelf = (KB.Utils and KB.Utils.IsSelfSender and KB.Utils.IsSelfSender(sender, myName))
     if isSelf then return end
 
-    local pName, amtStr, tName, tClass = text:match("^%[WoWKB Bounty Alert%]%s*(.-)%s+placed a%s+(.-)%s+Mark of Spite on%s+(.-)%s*%(?(.-)%)?!")
+    local pName, amtStr, tName, tClass = SafeMatch(text, "^%[WoWKB Bounty Alert%]%s*(.-)%s+placed a%s+(.-)%s+Mark of Spite on%s+(.-)%s*%(?(.-)%)?!")
     if not pName or not tName then
-        pName, amtStr, tName = text:match("^%[WoWKB Bounty Alert%]%s*(.-)%s+placed a%s+(.-)%s+Mark of Spite on%s+(.-)%s*!$")
+        pName, amtStr, tName = SafeMatch(text, "^%[WoWKB Bounty Alert%]%s*(.-)%s+placed a%s+(.-)%s+Mark of Spite on%s+(.-)%s*!$")
     end
     if not pName or not tName then return end
 
-    local myLower = myName and myName:lower() or ""
-    if pName:lower() == myLower then return end
+    local myLower = myName and SafeLower(myName) or ""
+    if SafeLower(pName) == myLower then return end
 
     local seed = string.format("BNT_%s_%s", pName, tName)
     local bntId = "BNT-" .. (KB.Utils and KB.Utils.Hash and KB.Utils.Hash(seed) or tostring(time()))
@@ -1417,40 +1455,42 @@ frame:SetScript("OnEvent", function(self, event, ...)
         end)
     elseif event == "CHAT_MSG_CHANNEL" or event == "CHAT_MSG_PARTY" or event == "CHAT_MSG_PARTY_LEADER" or
            event == "CHAT_MSG_RAID" or event == "CHAT_MSG_RAID_LEADER" or event == "CHAT_MSG_GUILD" or
-           event == "CHAT_MSG_OFFICER" or event == "CHAT_MSG_SAY" or event == "CHAT_MSG_YELL" then
+           event == "CHAT_MSG_OFFICER" then
         local text, sender, _, channelName, _, _, _, channelNumber, channelBase = ...
+        if not text or type(text) ~= "string" or IsSecret(text) then return end
+
         local shouldProcess = true
         if event == "CHAT_MSG_CHANNEL" then
             local isKBChannel = false
-            if channelBase and channelBase:lower():find("wowkillboard") then
+            if channelBase and not IsSecret(channelBase) and SafeFind(SafeLower(channelBase), "wowkillboard", 1, true) then
                 isKBChannel = true
-            elseif channelName and channelName:lower():find("wowkillboard") then
+            elseif channelName and not IsSecret(channelName) and SafeFind(SafeLower(channelName), "wowkillboard", 1, true) then
                 isKBChannel = true
             end
             -- Allow channel processing if it's the WoWKillboard channel OR if text explicitly starts with WoWKB tags
-            if not isKBChannel and text and not (text:find("^%[WoWKB Alert%]") or text:find("^%[WoWKB Update%]") or text:find("^%[WoWKB%] Casualty:") or text:find("^%[WoWKB Bounty Alert%]")) then
+            if not isKBChannel and not (SafeFind(text, "^%[WoWKB Alert%]") or SafeFind(text, "^%[WoWKB Update%]") or SafeFind(text, "^%[WoWKB%] Casualty:") or SafeFind(text, "^%[WoWKB Bounty Alert%]")) then
                 shouldProcess = false
             end
         end
 
-        if shouldProcess and text then
-            if text:find("^%[WoWKB Alert%]") or text:find("^%[WoWKB Update%]") then
+        if shouldProcess then
+            if SafeFind(text, "^%[WoWKB Alert%]") or SafeFind(text, "^%[WoWKB Update%]") then
                 pcall(function()
-                    local alertSender, alertMsg = text:match("^%[WoWKB %a+%]%s*(.-):%s*(.+)$")
+                    local alertSender, alertMsg = SafeMatch(text, "^%[WoWKB %a+%]%s*(.-):%s*(.+)$")
                     if alertMsg then
                         S:OnIncomingAdminAlert(alertSender or sender, "UPDATE", alertMsg)
                     else
-                        local alertBody = text:match("^%[WoWKB %a+%]%s*(.+)$")
+                        local alertBody = SafeMatch(text, "^%[WoWKB %a+%]%s*(.+)$")
                         if alertBody then
                             S:OnIncomingAdminAlert(sender, "UPDATE", alertBody)
                         end
                     end
                 end)
-            elseif text:find("^%[WoWKB%] Casualty:") then
+            elseif SafeFind(text, "^%[WoWKB%] Casualty:") then
                 pcall(function()
                     S:OnIncomingChannelCasualty(text, sender)
                 end)
-            elseif text:find("^%[WoWKB Bounty Alert%]") then
+            elseif SafeFind(text, "^%[WoWKB Bounty Alert%]") then
                 pcall(function()
                     S:OnIncomingChannelBounty(text, sender)
                 end)
@@ -1499,8 +1539,6 @@ frame:RegisterEvent("CHAT_MSG_RAID")
 frame:RegisterEvent("CHAT_MSG_RAID_LEADER")
 frame:RegisterEvent("CHAT_MSG_GUILD")
 frame:RegisterEvent("CHAT_MSG_OFFICER")
-frame:RegisterEvent("CHAT_MSG_SAY")
-frame:RegisterEvent("CHAT_MSG_YELL")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")

@@ -57,6 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `test_29_channel_chatter_suppression_and_delivery_modes` validating simulated channel filter dropping, allowed telemetry passing, and UI preset bindings.
   - Added `test_30_realm_isolation_and_stats_toggle` verifying strict realm matching, rejection of unverified records, RP classification, and header badge/button bindings.
 
+### Fixed
+- **Zero Blizzard UI Taint & Secret String Immunity (`Sync.lua`, `CombatTracker.lua`, `Reinforcements.lua`)**:
+  - Completely eliminated the fatal runtime error: `attempt to index local 'text' (a secret string value, while execution tainted by 'WoWKillboard')` encountered on Classic Beta (1.15.5+) and modern clients.
+  - Removed superfluous `CHAT_MSG_SAY` and `CHAT_MSG_YELL` event listeners from `Sync.lua` to prevent proximity chat strings from ever entering addon execution paths.
+  - Implemented `IsSecret`, `SafeFind`, `SafeMatch`, `SafeGsub`, and `SafeLower` utilities with defensive `pcall` wrappers around string metatable calls.
+  - Guarded all incoming chat, whisper, channel, honor gain, and system messages against secret string indexing across `Sync.lua`, `CombatTracker.lua`, and `Reinforcements.lua`.
+
 ## [1.0.3] - 2026-10-04 (CurseForge Community Release)
 
 ### Added
