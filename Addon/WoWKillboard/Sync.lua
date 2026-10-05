@@ -686,6 +686,26 @@ function S:BroadcastBounty(bounty)
             KB.Utils.SendAddonMessage(KB.Prefix, payload, "PARTY")
         end
     end
+
+    -- Faction-wide Broadcast to Realm Chat Channel (WoWKillboard is faction-segregated)
+    local copper = bounty.amountCopper or (bounty.amountGold and bounty.amountGold * 10000) or 0
+    local goldStr = (KB.Utils and KB.Utils.FormatMoney and KB.Utils.FormatMoney(copper)) or (tostring(bounty.amountGold or 0) .. "g")
+    local tClass = (KB.Utils and KB.Utils.GetClassTitle) and KB.Utils.GetClassTitle(bounty.targetClass) or (bounty.targetClass or "Unknown")
+    local bountyChatMsg = string.format("[WoWKB Bounty Alert] %s placed a %s Mark of Spite on %s (%s)!",
+        bounty.placerName, goldStr, bounty.targetName, tClass)
+
+    local chanId = (KB.Sync and KB.Sync.GetChannelId and KB.Sync:GetChannelId("WoWKillboard")) or (GetChannelName and (GetChannelName("WoWKillboard") or GetChannelName("WoWKB")))
+    if chanId and chanId > 0 then
+        pcall(SendChatMessage, bountyChatMsg, "CHANNEL", nil, chanId)
+    end
+    if IsInGuild and IsInGuild() then
+        pcall(SendChatMessage, bountyChatMsg, "GUILD")
+    end
+    if isRaid then
+        pcall(SendChatMessage, bountyChatMsg, "RAID")
+    elseif isGroup then
+        pcall(SendChatMessage, bountyChatMsg, "PARTY")
+    end
 end
 
 -- Broadcast a Call for Backup SOS distress beacon
@@ -1058,18 +1078,42 @@ function S:OnAddonMessage(prefix, message, channel, sender)
     elseif msgType == "BNT" and #parts >= 6 then
         local bntId = parts[2]
         WoWKillboardBounties = WoWKillboardBounties or {}
-        if not WoWKillboardBounties[bntId] then
+        local isNew = not WoWKillboardBounties[bntId]
+        local tName = parts[3]
+        local tClass = parts[4]
+        local amtCopper = tonumber(parts[5]) or 0
+        local pName = parts[6]
+        local myRealm = (GetRealmName and GetRealmName()) or ""
+
+        if isNew then
             WoWKillboardBounties[bntId] = {
                 id = bntId,
-                targetName = parts[3],
-                targetClass = parts[4],
+                targetName = tName,
+                targetClass = tClass,
                 targetFaction = "Unknown",
-                amountCopper = tonumber(parts[5]) or 0,
-                amountGold = math.floor((tonumber(parts[5]) or 0) / 10000),
-                placerName = parts[6],
+                amountCopper = amtCopper,
+                amountGold = math.floor(amtCopper / 10000),
+                placerName = pName,
+                realm = myRealm,
                 status = KB.STATUS.ACTIVE,
                 timestamp = time(),
             }
+
+            local myName = UnitName("player") or ""
+            if not (KB.Utils and KB.Utils.IsSelfSender and KB.Utils.IsSelfSender(pName, myName)) then
+                local goldStr = (KB.Utils and KB.Utils.FormatMoney and KB.Utils.FormatMoney(amtCopper)) or (tostring(math.floor(amtCopper / 10000)) .. "g")
+                SafePrint(string.format("|cffffd700[WoWKB Bounty Alert]|r |cffffffff%s|r declared a %s Mark of Spite on |cffff3333%s|r!",
+                    pName, goldStr, tName))
+                if KB.BountyEngine and KB.BountyEngine.ShowAlert then
+                    KB.BountyEngine:ShowAlert(string.format("NEW BOUNTY: %s placed %s on %s!", pName, goldStr, tName), 1, 0.84, 0)
+                end
+                local s = WoWKillboardSettings or KB.DefaultSettings
+                if (s.alertMode == "SOUND_AND_BANNER" or (s.alertMode ~= "BANNER_ONLY" and s.alertMode ~= "OFF" and s.soundAlerts ~= false)) then
+                    if KB.SoundAlerts and KB.SoundAlerts.BOUNTY_CLAIMED then
+                        PlaySound(KB.SoundAlerts.BOUNTY_CLAIMED, "Master")
+                    end
+                end
+            end
 
             if KB.UI and KB.UI.RefreshIfVisible then
                 KB.UI:RefreshIfVisible()
@@ -1308,6 +1352,63 @@ function S:OnIncomingChannelCasualty(text, sender)
     end
 end
 
+-- Process incoming faction bounty alert from channel, guild, raid, or party
+function S:OnIncomingChannelBounty(text, sender)
+    if not text or not text:find("^%[WoWKB Bounty Alert%]") then return end
+    local myName = UnitName("player")
+    local isSelf = (KB.Utils and KB.Utils.IsSelfSender and KB.Utils.IsSelfSender(sender, myName))
+    if isSelf then return end
+
+    local pName, amtStr, tName, tClass = text:match("^%[WoWKB Bounty Alert%]%s*(.-)%s+placed a%s+(.-)%s+Mark of Spite on%s+(.-)%s*%(?(.-)%)?!")
+    if not pName or not tName then
+        pName, amtStr, tName = text:match("^%[WoWKB Bounty Alert%]%s*(.-)%s+placed a%s+(.-)%s+Mark of Spite on%s+(.-)%s*!$")
+    end
+    if not pName or not tName then return end
+
+    local myLower = myName and myName:lower() or ""
+    if pName:lower() == myLower then return end
+
+    local seed = string.format("BNT_%s_%s", pName, tName)
+    local bntId = "BNT-" .. (KB.Utils and KB.Utils.Hash and KB.Utils.Hash(seed) or tostring(time()))
+
+    WoWKillboardBounties = WoWKillboardBounties or {}
+    local isNew = not WoWKillboardBounties[bntId]
+
+    local myRealm = (GetRealmName and GetRealmName()) or ""
+    if not WoWKillboardBounties[bntId] then
+        WoWKillboardBounties[bntId] = {
+            id = bntId,
+            targetName = tName,
+            targetClass = (tClass and tClass ~= "") and tClass:upper() or "UNKNOWN",
+            targetFaction = "Unknown",
+            amountCopper = 0,
+            amountGold = 0,
+            placerName = pName,
+            realm = myRealm,
+            status = KB.STATUS.ACTIVE,
+            timestamp = time(),
+        }
+    end
+
+    if isNew then
+        SafePrint(string.format("|cffffd700[WoWKB Bounty Alert]|r |cffffffff%s|r declared a %s Mark of Spite on |cffff3333%s|r!",
+            pName, amtStr or "bounty", tName))
+        if KB.BountyEngine and KB.BountyEngine.ShowAlert then
+            KB.BountyEngine:ShowAlert(string.format("NEW BOUNTY: %s on %s!", amtStr or "Contract", tName), 1, 0.84, 0)
+        end
+        local s = WoWKillboardSettings or KB.DefaultSettings
+        if (s.alertMode == "SOUND_AND_BANNER" or (s.alertMode ~= "BANNER_ONLY" and s.alertMode ~= "OFF" and s.soundAlerts ~= false)) then
+            if KB.SoundAlerts and KB.SoundAlerts.BOUNTY_CLAIMED then
+                PlaySound(KB.SoundAlerts.BOUNTY_CLAIMED, "Master")
+            end
+        end
+    end
+
+    if KB.UI and KB.UI.RefreshIfVisible then
+        KB.UI:RefreshIfVisible()
+    end
+end
+
 frame:SetScript("OnEvent", function(self, event, ...)
     if event == "CHAT_MSG_ADDON" or event == "CHAT_MSG_ADDON_LOGGED" then
         local prefix, message, channel, sender = ...
@@ -1327,7 +1428,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 isKBChannel = true
             end
             -- Allow channel processing if it's the WoWKillboard channel OR if text explicitly starts with WoWKB tags
-            if not isKBChannel and text and not (text:find("^%[WoWKB Alert%]") or text:find("^%[WoWKB Update%]") or text:find("^%[WoWKB%] Casualty:")) then
+            if not isKBChannel and text and not (text:find("^%[WoWKB Alert%]") or text:find("^%[WoWKB Update%]") or text:find("^%[WoWKB%] Casualty:") or text:find("^%[WoWKB Bounty Alert%]")) then
                 shouldProcess = false
             end
         end
@@ -1348,6 +1449,10 @@ frame:SetScript("OnEvent", function(self, event, ...)
             elseif text:find("^%[WoWKB%] Casualty:") then
                 pcall(function()
                     S:OnIncomingChannelCasualty(text, sender)
+                end)
+            elseif text:find("^%[WoWKB Bounty Alert%]") then
+                pcall(function()
+                    S:OnIncomingChannelBounty(text, sender)
                 end)
             end
         end
