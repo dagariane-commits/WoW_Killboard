@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2026-10-05
 
 ### Added
+- **Official Field Kit Return Navigation & Responsive Badges (`web/static/app.js`)**:
+  - Added dedicated `[← Return to Killboard]` navigation button to the top of the `/download` field kit view (`loadDownloadView()`).
+  - Added responsive `flex-wrap: wrap; gap: 8px;` styling to the CurseForge option card header to prevent badge pill collision on smaller viewports.
+- **Responsive Site Header & Zero Viewport Clipping (`web/static/style.css`)**:
+  - Added comprehensive responsive rules for `@media (max-width: 1280px)`, `@media (max-width: 1024px)`, and `@media (max-width: 900px)`.
+  - Replaced rigid `width: 100% !important;` on `.nav-links-rail` with responsive flex containment (`max-width: 40% !important; flex-shrink: 1 !important; overflow-x: auto;`) and hidden scrollbars.
+  - Automatically hidden `.logo-subtitle`, `.theater-label`, search shortcut keys, and icon button labels on constrained viewports, ensuring zero navigation bar cutoff between 900px and 1366px.
+- **Strict Viewer Scope & Web Action Boundary (`web/static/app.js`, `web/static/index.html`)**:
+  - Removed all web-based `+ Issue Mark` creation buttons, character claim triggers, and auto-invite buttons from the website, aligning with the architecture that the website is strictly an intelligence viewer and log uploader while all social and gameplay interactions belong inside the in-game addon.
+  - Converted whisper actions to non-intrusive `[ Copy Whisper Command ]` buttons that paste `/w Player` commands into the game clipboard.
+- **Sanctioned 1v1 Duel Telemetry & Consensual Sparring Badges (`web/static/app.js`)**:
+  - Added prominent `⚔️ 1v1 DUEL` amber mode tags and `⚔️ 1v1 Sparring` subtitles for all duels (`is_duel = 1`) in the Recent Combat Feed.
+  - Added detailed tooltips and battle report banners explaining consensual same-faction duels (e.g. Alliance vs Alliance friendly sparring like Dagariane vs Yung at Lake Everstill).
+- **Timeframe Filtering Engine (`web/server.py`, `web/static/app.js`)**:
+  - Added `timeframe` parameter support (`24H`, `7D`, `ALL`) to `/api/leaderboard` and `/api/guilds` backend SQL endpoints.
+  - Connected `filterLeaderboardsByTime(timeframe)` in `app.js` to immediately re-fetch and render filtered standings.
+  - Added true `kills_24h` calculation to `/api/stats` and updated the top telemetry ribbon to display both all-time `Realm Kills:` and last 24-hour `24h Kills:` with explicit realm tooltips.
+- **In-Game PvE Hazard Forensics (`Addon/WoWKillboard/CombatTracker.lua`, `web/static/app.js`)**:
+  - Added `CT.LastEnvironmentalHazard` tracking for `Falling`, `Drowning`, `Molten Lava`, `Slime`, `Fatigue`, and `Fire`.
+  - Enhanced Deadly Hazards feed with detailed forensic analysis banners detailing cliff plunges, drowning, lava immolation, and creature executions.
 - **Global Realm Isolation (Multi-Tenant Architecture) (`web/server.py`, `web/static/app.js`)**:
   - Scoped all API routes (`/api/kills`, `/api/leaderboard`, `/api/guilds`, `/api/bounties`, `/api/bounties/most-wanted`, `/api/stats`, `/api/stats/activity-7d`, `/api/pve/deaths`, `/api/pve/leaderboard`) strictly by `realm_id` / `realm` parameter.
   - Implemented `normalize_realm_filter` in `web/server.py` supporting standard realm names and short slugs (`PVP`, `PVE`, `RP`, `HARDCORE`).

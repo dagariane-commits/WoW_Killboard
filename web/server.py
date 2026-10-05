@@ -2029,8 +2029,13 @@ def stats_endpoint():
             top_zone_row = conn.execute(f"SELECT zone, COUNT(*) as cnt FROM kills WHERE zone IS NOT NULL AND (is_duel = 0 OR is_duel IS NULL){r_where} GROUP BY zone ORDER BY cnt DESC LIMIT 1", r_param).fetchone()
             top_zone = top_zone_row["zone"] if top_zone_row else "Hillsbrad Foothills"
 
+            now_24h = int(time.time()) - 86400
+            kills_24h = conn.execute(f"SELECT COUNT(*) FROM kills WHERE timestamp >= ?{r_where}", (now_24h,) + r_param).fetchone()[0]
+
             stats["counts"] = {
                 "total": total_kills,
+                "kills_24h": kills_24h,
+                "lifetime_kills": total_kills,
                 "world": world_kills,
                 "bg": bg_kills,
                 "arena": arena_kills,
@@ -2049,6 +2054,7 @@ def stats_endpoint():
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
     mode = request.args.get("mode", "WORLD").upper()
+    timeframe = (request.args.get("timeframe") or request.args.get("time") or "ALL").upper()
     raw_realm = request.args.get("realm")
     realm_filter = normalize_realm_filter(raw_realm)
 
@@ -2064,6 +2070,14 @@ def get_leaderboard():
         where += " AND is_duel = 1"
     else:
         where += " AND (is_duel = 0 OR is_duel IS NULL)"
+
+    now_ts = int(time.time())
+    if timeframe == "24H":
+        where += " AND timestamp >= ?"
+        realm_params.append(now_ts - 86400)
+    elif timeframe == "7D":
+        where += " AND timestamp >= ?"
+        realm_params.append(now_ts - 7 * 86400)
 
     if realm_filter:
         where += " AND LOWER(realm) = LOWER(?)"
@@ -3127,6 +3141,7 @@ def get_character_profile(name):
 @app.route("/api/guilds", methods=["GET"])
 def get_guilds_leaderboard():
     mode = request.args.get("mode", "ALL").upper()
+    timeframe = (request.args.get("timeframe") or request.args.get("time") or "ALL").upper()
     raw_realm = request.args.get("realm")
     realm_filter = normalize_realm_filter(raw_realm)
 
@@ -3151,6 +3166,14 @@ def get_guilds_leaderboard():
         where += " AND k.is_duel = 1"
         victim_where += " AND is_duel = 1"
         member_where += " AND is_duel = 1"
+
+    now_ts = int(time.time())
+    if timeframe == "24H":
+        where += " AND k.timestamp >= ?"
+        guilds_params.append(now_ts - 86400)
+    elif timeframe == "7D":
+        where += " AND k.timestamp >= ?"
+        guilds_params.append(now_ts - 7 * 86400)
 
     if realm_filter:
         where += " AND LOWER(k.realm) = LOWER(?)"
