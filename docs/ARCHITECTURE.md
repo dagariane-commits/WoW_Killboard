@@ -122,18 +122,14 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - Dynamic real-time event polling every 5s with class-colored combatants and killer/victim telemetry.
    - Dual layout options: Horizontal bottom-ticker or vertical side-panel (`?vertical=1`).
    - Backwards-compatible alias preserved at `/streambox/<name>`.
-6. **Streamlined 7-Item Text-Only Navigation & Authentic WoW Version Accents**:
-   - Replaced clunky button-box navigation with a clean, minimalist text navigation rail:
-     - All navigation links use muted slate typography (`#94a3b8`) on transparent backgrounds with zero box backdrops or borders.
-     - The active tab is elegantly highlighted with a bottom underline (`border-bottom: 2px solid var(--active-flavor-color)`) matching the active WoW version's authentic color accent.
-     - **Theater of War**: Displays the active WoW flavor (`Theater: WoW Forever ▾`) with the version name dynamically rendered in that client's signature hue: Cyan (`#00e5ff`) for WoW Forever Beta, Gold (`#eab308`) for Classic Era, Amber (`#d97706`) for Anniversary, and Purple (`#a855f7`) for Retail.
-     - **Intel**: Live combat killmail feed, Top 10 High Command Execution List outlaw gallery, and real-time recon wire (strictly gated to Intel tab).
-     - **Hall of Legends**: Competitive leaderboard embedding the 5-state combat mode filter pills (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`) and cohort percentile standings.
-     - **World Hazards**: Wilderness environmental deaths and deadly PvE NPC casualty telemetry.
-     - **Armory**: Context-aware routing—authenticated users immediately access their personalized combat dossier; guest users access the full realm combatant directory.
-     - **Bounties**: High Command execution list and contract ledger with personal bounties pinned in a dedicated gold card at the top.
-     - **Warroom**: Head-to-head guild wars, blood feuds, and realm KOS blacklist with personal wars pinned at the top.
-   - **Header Auth Badge (`#header-auth-badge`)**: Displays real-time authentication session state (`👤 Username [Sign Out]` or `[Sign In]`).
+6. **Consolidated 56px Sticky Header, Global Omni-Search & Core Combat Views**:
+   - Replaced multi-row header deck with a single 56px sticky header (`position: sticky`, `top: 0`, `z-index: 1000`):
+     - **Brand & Theater**: Grouped brand crests, title, and active theater badge tightly on the left.
+     - **Global Omni-Search (`#global-search-input`)**: Centralized typeahead search bar with `/` keyboard shortcut, instant dropdown (`#search-results-dropdown`), search federation across combatants, guilds, and zones, and keyboard arrow/enter navigation.
+     - **Core Combat Views**: Streamlined 4-button nav rail (`Intel`, `Leaderboards`, `Bounties & Manhunt`, `Zone Intel`) with dynamic sub-toggles combining Defender of Azeroth & Hazards, and Blood Ledger & Manhunts.
+     - **Action Tools & Gold CTA**: War Archivist AI trigger, Upload utility link, real-time Auth Badge, and primary gold CTA button `[ Download Field Kit ]` linking to `/download`.
+     - **32px Telemetry Ribbon**: Replaced heavy stat cards with a compact single-row ribbon, anchoring the live combat feed above the fold with 6–8 rows visible on standard 1080p viewports.
+     - **Context-Aware Dynamic Sidebar**: Tabbed leaderboard widget (`[Hot Zones]`, `[Top Gankers]`, `[Top Guilds]`), champion filter controls on `LEGENDS` view, and compressed 2-column Class Combat Matrix.
 
 7. **Class, Spec & Level Cohort Percentile Engine (`GET /api/character/<name>`, `GET /api/armory`)**:
    - Mathematical cohort ranking computing exact player standing against all combatants sharing the exact same `(class, spec, level)` on the realm.
