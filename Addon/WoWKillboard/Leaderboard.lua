@@ -44,11 +44,25 @@ function LB:MatchesRealm(km)
     local myRealm = (GetRealmName and GetRealmName()) or ""
     if myRealm == "" then return true end
 
-    local kmRealm = km.realm or (km.killer and km.killer.realm) or (km.victim and km.victim.realm)
+    local kmRealm = km.realm or (km.killer and km.killer.realm) or (km.victim and km.victim.realm) or km.targetRealm or km.placerRealm
     if kmRealm and kmRealm ~= "" and kmRealm ~= "Unknown" then
         local cleanKm = kmRealm:lower():gsub("%s+", "")
         local cleanMy = myRealm:lower():gsub("%s+", "")
         return cleanKm == cleanMy
+    end
+
+    -- Bounty Support: If this is an active bounty declared by or targeting active player, or in local database
+    if km.placerName or km.targetName then
+        local myName = (UnitName and UnitName("player")) or ""
+        if (km.placerName and myName ~= "" and km.placerName:lower() == myName:lower()) or (km.targetName and myName ~= "" and km.targetName:lower() == myName:lower()) then
+            km.realm = myRealm
+            return true
+        end
+        local bId = km.id or km.bountyId
+        if bId and WoWKillboardBounties and WoWKillboardBounties[bId] then
+            km.realm = myRealm
+            return true
+        end
     end
 
     -- Strict Isolation: If realm cannot be verified to match active realm, strictly reject

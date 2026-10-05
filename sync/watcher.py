@@ -971,8 +971,14 @@ class KillboardWatcher:
                                 b_copy = dict(bnt)
                                 if "id" not in b_copy:
                                     b_copy["id"] = bid
-                                if "realm" not in b_copy:
-                                    b_copy["realm"] = bnt.get("realm") or "Unknown"
+                                if "realm" not in b_copy or not b_copy.get("realm") or b_copy.get("realm") == "Unknown":
+                                    b_realm = bnt.get("realm")
+                                    if not b_realm or b_realm == "Unknown":
+                                        for _, km in (parsed.get("WoWKillboardDB", {}).get("kills", {}) or {}).items():
+                                            if isinstance(km, dict) and km.get("realm") and km.get("realm") != "Unknown":
+                                                b_realm = km.get("realm")
+                                                break
+                                    b_copy["realm"] = b_realm or "Unknown"
                                 active_bounties.append(b_copy)
                                 known_bnt_ids.add(bid)
 
@@ -1053,6 +1059,7 @@ class KillboardWatcher:
             b_norm["amountGold"] = a_gold
             b_norm["amount_gold"] = a_gold
             b_norm["status"] = b.get("status", "ACTIVE")
+            b_norm["realm"] = b.get("realm") or "Unknown"
             cleaned_bounties.append(b_norm)
             known_bnt_ids.add(b_id)
 

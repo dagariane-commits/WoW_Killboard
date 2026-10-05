@@ -207,6 +207,10 @@ def init_db():
             conn.execute("ALTER TABLE bounties ADD COLUMN target_guid TEXT")
         except sqlite3.OperationalError:
             pass
+        try:
+            conn.execute("ALTER TABLE bounties ADD COLUMN realm TEXT")
+        except sqlite3.OperationalError:
+            pass
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS bounty_acceptances (
@@ -3081,12 +3085,17 @@ def get_guild_profile(guild_name):
 @app.route("/api/bounties", methods=["GET"])
 def get_bounties():
     is_supporter = request.args.get("supporter") == "1"
+    realm_filter = request.args.get("realm")
     with get_db() as conn:
-        rows = conn.execute("SELECT * FROM bounties ORDER BY timestamp DESC").fetchall()
+        if realm_filter:
+            rows = conn.execute("SELECT * FROM bounties WHERE (LOWER(realm) = LOWER(?) OR realm = 'Unknown' OR realm IS NULL) ORDER BY timestamp DESC", (realm_filter,)).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM bounties ORDER BY timestamp DESC").fetchall()
         bounties = [dict(r) for r in rows]
         now = int(time.time())
 
         for b in bounties:
+            b["realm"] = b.get("realm") or "Unknown"
             target = b["target_name"]
 
             # Dynamically resolve target's actual level from characters or recent kills
@@ -3234,16 +3243,17 @@ def create_bounty():
     t_faction = str(data.get("targetFaction") or data.get("target_faction") or "Unknown").strip()[:32]
 
     b_id = str(data.get("id") or f"BNT-{int(time.time()*1000)}").strip()[:64]
+    b_realm = str(data.get("realm") or "Unknown").strip()[:64]
 
     with get_db() as conn:
         conn.execute("""
             INSERT OR REPLACE INTO bounties (
                 id, target_name, target_guid, target_class, target_faction, placer_name,
-                amount_copper, amount_gold, status, timestamp, expiry
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
+                amount_copper, amount_gold, status, timestamp, expiry, realm
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?)
         """, (
             b_id, target, target_guid, t_class, t_faction,
-            placer, copper, gold, int(time.time()), int(time.time() + 86400 * 7)
+            placer, copper, gold, int(time.time()), int(time.time() + 86400 * 7), b_realm
         ))
         conn.commit()
 

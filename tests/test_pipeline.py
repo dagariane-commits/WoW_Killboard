@@ -2056,6 +2056,22 @@ WoWKillboardDB = {
         self.assertFalse(simulate_is_pve("Crusader Strike"))
         self.assertFalse(simulate_is_pve("Lone Wolf"))
 
+        # 5. Verify BountyEngine and Core.lua bounty realm auto-tagging
+        with open(os.path.join(addon_dir, "BountyEngine.lua"), "r", encoding="utf-8") as f:
+            be_content = f.read()
+        self.assertIn("b.realm = myRealm", be_content)
+
+        with open(os.path.join(addon_dir, "Core.lua"), "r", encoding="utf-8") as f:
+            core_content = f.read()
+        self.assertIn("WoWKillboardBounties", core_content)
+        self.assertIn("b.realm = myRealm", core_content)
+
+        # 6. Verify watcher.py bounty realm preservation
+        watcher_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "sync", "watcher.py")
+        with open(watcher_path, "r", encoding="utf-8") as f:
+            watcher_content = f.read()
+        self.assertIn('b_norm["realm"] = b.get("realm") or "Unknown"', watcher_content)
+
         print("[PASS] Verified Strict Realm Isolation, RP Ruleset Inclusion, and In-Game Stats Toggle.")
 
 if __name__ == "__main__":
