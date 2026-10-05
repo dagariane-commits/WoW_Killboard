@@ -945,28 +945,28 @@ function UI:CreateMainWindow()
 
     function UI:UpdateRulesetButton()
         local isPve = UI:IsPve()
+        local aR, aG, aB, aHex = WoWKB.AccentColor()
         if UI.RulesetButton and UI.RulesetButton.Label then
             if isPve then
-                UI.RulesetButton.Label:SetText("|cff666666PvP|r |cff10b981[PVE STATS]|r")
+                UI.RulesetButton:SetBackdropBorderColor(16/255, 185/255, 129/255, 0.8)
+                UI.RulesetButton.Label:SetText("|cff10b981Mode: PvE Stats|r")
             else
-                UI.RulesetButton.Label:SetText("|cffef4444[PVP STATS]|r |cff666666PvE|r")
+                UI.RulesetButton:SetBackdropBorderColor(239/255, 68/255, 68/255, 0.8)
+                UI.RulesetButton.Label:SetText("|cffef4444Mode: PvP Stats|r")
             end
         end
 
         if UI.RealmBadge then
             local realm = (GetRealmName and GetRealmName()) or "Unknown Realm"
-            local rawRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or (isPve and "PVE" or "PVP")
-            local rulesetLabel
-            if rawRuleset == "RP" then
-                rulesetLabel = isPve and "|cff10b981[RP - PvE]|r" or "|cffef4444[RP - PvP]|r"
-            elseif rawRuleset == "HARDCORE" then
-                rulesetLabel = isPve and "|cffff9900[Hardcore]|r" or "|cffef4444[PvP]|r"
-            elseif isPve then
-                rulesetLabel = "|cff10b981[PvE]|r"
-            else
-                rulesetLabel = "|cffef4444[PvP]|r"
-            end
-            UI.RealmBadge:SetText(string.format("|cff888888Realm:|r |cffffd100%s|r %s", realm, rulesetLabel))
+            UI.RealmBadge:SetText(string.format("|cff888888Realm:|r |cff%s%s|r", aHex or "ffd100", realm))
+        end
+
+        if UI.TitleText then
+            UI.TitleText:SetTextColor(aR, aG, aB, 1.0)
+        end
+        if UI.AnnounceButton and UI.AnnounceButton.Label then
+            UI.AnnounceButton.Label:SetTextColor(aR, aG, aB, 1.0)
+            UI.AnnounceButton:SetBackdropBorderColor(aR, aG, aB, 0.6)
         end
     end
 
@@ -3909,39 +3909,10 @@ function UI:RenderBounties()
     if headerTitle.SetFont then local f, s = headerTitle:GetFont(); headerTitle:SetFont(f, s or 10, "OUTLINE") end
     headerTitle:SetShadowOffset(0, 0)
 
-    -- + Place Bounty Action Button (Top Right)
-    local placeBtn = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
-    placeBtn:SetSize(110, 20)
-    placeBtn:SetPoint("TOPRIGHT", 0, -28)
-    placeBtn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    placeBtn:SetBackdropColor(30/255, 30/255, 30/255, 1.0)
-    placeBtn:SetBackdropBorderColor(aR, aG, aB, 1.0)
-    local placeLbl = placeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    placeLbl:SetPoint("CENTER", 0, 0)
-    placeLbl:SetTextColor(aR, aG, aB, 1.0)
-    placeLbl:SetText("+ Place Bounty")
-    if placeLbl.SetFont then local f, s = placeLbl:GetFont(); placeLbl:SetFont(f, s or 10, "OUTLINE") end
-    placeLbl:SetShadowOffset(0, 0)
-    placeBtn.Label = placeLbl
-    placeBtn:SetScript("OnClick", function()
-        UI:ShowBountyPrompt()
-    end)
-    placeBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropColor(42/255, 42/255, 42/255, 1.0)
-    end)
-    placeBtn:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(30/255, 30/255, 30/255, 1.0)
-    end)
-
-    -- Compact Share Button on Right
+    -- Compact Share Button on Right (Bounties can only be declared upon open-world death prompt)
     local shareBtn = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
     shareBtn:SetSize(60, 20)
-    shareBtn:SetPoint("RIGHT", placeBtn, "LEFT", -6, 0)
+    shareBtn:SetPoint("TOPRIGHT", 0, -28)
     shareBtn:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -4061,50 +4032,112 @@ function UI:RenderBounties()
 
     if marksSubTab == "ACTIVE" then
         CreateColHeader({
-            { x = 8, w = 220, text = "TARGET" },
-            { x = 232, w = 140, text = "BOUNTY / REWARD" },
-            { x = 376, w = 160, text = "ISSUED BY" },
-            { x = 540, w = 180, text = "ZONE / LAST SEEN" },
+            { x = 8, w = 230, text = "TARGET" },
+            { x = 246, w = 140, text = "BOUNTY / REWARD" },
+            { x = 392, w = 150, text = "ISSUED BY" },
+            { x = 548, w = 170, text = "ZONE / LAST SEEN" },
             { x = 724, rightAnchor = -8, text = "ACTION", justify = "RIGHT" },
         })
 
         if KB.BountyEngine and KB.BountyEngine.InitDB then KB.BountyEngine:InitDB() end
-        local activeList = {}
-        local seenB = {}
+        local bountyMap = {}
+        local targetOrder = {}
 
-        local function AddBountyRow(b)
+        local function AddBountyEntry(b)
             if not b or (KB.Leaderboard and not KB.Leaderboard:MatchesRealm(b)) then return end
             local bId = b.id or b.bountyId
             local bStatus = b.status or "ACTIVE"
             local tName = b.targetName or b.target_name
-            if (bStatus == "ACTIVE" or bStatus == (KB.STATUS and KB.STATUS.ACTIVE or "ACTIVE")) and bId and not seenB[bId] and tName and tName ~= "" and tName:lower() ~= "unknown" then
-                seenB[bId] = true
-                b.id = bId
-                b.targetName = tName
-                b.target_name = tName
-                b.targetClass = b.targetClass or b.target_class or "UNKNOWN"
-                b.targetFaction = b.targetFaction or b.target_faction or ""
-                b.placerName = b.placerName or b.placer_name or "Unknown"
+            if (bStatus == "ACTIVE" or bStatus == (KB.STATUS and KB.STATUS.ACTIVE or "ACTIVE")) and bId and tName and tName ~= "" and tName:lower() ~= "unknown" then
+                local tKey = tName:lower()
                 local copper = tonumber(b.amountCopper or b.amount_copper or 0) or 0
                 local gold = tonumber(b.amountGold or b.amount_gold or math.floor(copper / 10000)) or 0
                 if copper <= 0 and gold > 0 then copper = gold * 10000 end
-                b.amountCopper = copper
-                b.amountGold = gold
-                table.insert(activeList, b)
+
+                local pName = b.placerName or b.placer_name or "Unknown"
+
+                if not bountyMap[tKey] then
+                    bountyMap[tKey] = {
+                        targetName = tName,
+                        targetClass = b.targetClass or b.target_class or "UNKNOWN",
+                        targetFaction = b.targetFaction or b.target_faction or "Unknown",
+                        targetGuild = b.targetGuild or b.target_guild or nil,
+                        amountCopper = copper,
+                        placers = { pName },
+                        ids = { bId },
+                        bounties = { b },
+                        latestTime = b.timestamp or 0,
+                    }
+                    table.insert(targetOrder, tKey)
+                else
+                    local entry = bountyMap[tKey]
+                    entry.amountCopper = entry.amountCopper + copper
+                    table.insert(entry.ids, bId)
+                    table.insert(entry.bounties, b)
+                    local foundPlacer = false
+                    for _, p in ipairs(entry.placers) do
+                        if p:lower() == pName:lower() then foundPlacer = true break end
+                    end
+                    if not foundPlacer then table.insert(entry.placers, pName) end
+                    if (b.timestamp or 0) > entry.latestTime then
+                        entry.latestTime = b.timestamp or 0
+                    end
+                    if (not entry.targetGuild or entry.targetGuild == "None") and (b.targetGuild or b.target_guild) then
+                        entry.targetGuild = b.targetGuild or b.target_guild
+                    end
+                    if (entry.targetClass == "UNKNOWN" or not entry.targetClass) and (b.targetClass or b.target_class) then
+                        entry.targetClass = b.targetClass or b.target_class
+                    end
+                    if (entry.targetFaction == "Unknown" or not entry.targetFaction) and (b.targetFaction or b.target_faction) then
+                        entry.targetFaction = b.targetFaction or b.target_faction
+                    end
+                end
             end
         end
 
         if WoWKillboardBounties then
             for _, b in pairs(WoWKillboardBounties) do
-                AddBountyRow(b)
+                AddBountyEntry(b)
             end
         end
         local rData = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
         if rData and rData.ActiveBounties then
             for _, b in ipairs(rData.ActiveBounties) do
-                AddBountyRow(b)
+                AddBountyEntry(b)
             end
         end
+
+        local activeList = {}
+        for _, key in ipairs(targetOrder) do
+            local entry = bountyMap[key]
+            local tName = entry.targetName
+
+            -- Enrich missing guild, faction, class from character database
+            if WoWKillboardDB and WoWKillboardDB.characters and WoWKillboardDB.characters[tName] then
+                local c = WoWKillboardDB.characters[tName]
+                if c.guild and c.guild ~= "None" and not entry.targetGuild then entry.targetGuild = c.guild end
+                if c.class and entry.targetClass == "UNKNOWN" then entry.targetClass = c.class end
+                if c.faction and entry.targetFaction == "Unknown" then entry.targetFaction = c.faction end
+            end
+
+            -- Enrich from combat records
+            if WoWKillboardDB and WoWKillboardDB.kills and (not entry.targetGuild or entry.targetClass == "UNKNOWN" or entry.targetFaction == "Unknown") then
+                for _, km in pairs(WoWKillboardDB.kills) do
+                    if km.victim and km.victim.name and km.victim.name:lower() == key then
+                        if km.victim.guild and km.victim.guild ~= "None" and not entry.targetGuild then entry.targetGuild = km.victim.guild end
+                        if km.victim.class and entry.targetClass == "UNKNOWN" then entry.targetClass = km.victim.class end
+                        if km.victim.faction and entry.targetFaction == "Unknown" then entry.targetFaction = km.victim.faction end
+                    elseif km.killer and km.killer.name and km.killer.name:lower() == key then
+                        if km.killer.guild and km.killer.guild ~= "None" and not entry.targetGuild then entry.targetGuild = km.killer.guild end
+                        if km.killer.class and entry.targetClass == "UNKNOWN" then entry.targetClass = km.killer.class end
+                        if km.killer.faction and entry.targetFaction == "Unknown" then entry.targetFaction = km.killer.faction end
+                    end
+                end
+            end
+
+            table.insert(activeList, entry)
+        end
+
         table.sort(activeList, function(a, b)
             return (a.amountCopper or 0) > (b.amountCopper or 0)
         end)
@@ -4113,11 +4146,15 @@ function UI:RenderBounties()
             local q = UI.activeSearchQuery
             local filtered = {}
             for _, b in ipairs(activeList) do
-                local tN = (b.targetName or b.target_name or ""):lower()
-                local pN = (b.placerName or b.placer_name or ""):lower()
-                local tF = (b.targetFaction or b.target_faction or ""):lower()
-                local tC = (b.targetClass or b.target_class or ""):lower()
-                if tN:find(q, 1, true) or pN:find(q, 1, true) or tF:find(q, 1, true) or tC:find(q, 1, true) then
+                local tN = (b.targetName or ""):lower()
+                local tF = (b.targetFaction or ""):lower()
+                local tC = (b.targetClass or ""):lower()
+                local tG = (b.targetGuild or ""):lower()
+                local matchPlacer = false
+                for _, p in ipairs(b.placers or {}) do
+                    if p:lower():find(q, 1, true) then matchPlacer = true break end
+                end
+                if tN:find(q, 1, true) or matchPlacer or tF:find(q, 1, true) or tC:find(q, 1, true) or tG:find(q, 1, true) then
                     table.insert(filtered, b)
                 end
             end
@@ -4135,7 +4172,7 @@ function UI:RenderBounties()
         else
             for idx, b in ipairs(activeList) do
                 local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-                row:SetSize(808, 24)
+                row:SetSize(808, 34)
                 row:SetPoint("TOPLEFT", 0, yOffset)
                 local isEven = (idx % 2 == 0)
                 local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
@@ -4155,14 +4192,15 @@ function UI:RenderBounties()
                 div:SetHeight(1)
                 div:SetColorTexture(0, 0, 0, 1.0)
 
-                local bClass = b.targetClass or b.target_class or "UNKNOWN"
-                local tName = b.targetName or b.target_name or "Target"
-                local pName = b.placerName or b.placer_name or "Unknown"
+                local bClass = b.targetClass or "UNKNOWN"
+                local tName = b.targetName or "Target"
+                local tGuild = b.targetGuild or "No Guild"
+                local tFaction = b.targetFaction or "Unknown"
                 local copper = b.amountCopper or 0
 
-                -- Col 1 (Target): [Class Icon 16x16, 1px border] + [Lvl] + Name (Class Color / Red)
+                -- Col 1 (Target): Class Icon 20x20 + [Line 1: Target Name (Class Color) + Faction Badge] + [Line 2: <Guild>]
                 local iconFrame = CreateFrame("Frame", nil, row, "BackdropTemplate")
-                iconFrame:SetSize(16, 16)
+                iconFrame:SetSize(22, 22)
                 iconFrame:SetPoint("LEFT", row, "LEFT", 8, 0)
                 iconFrame:SetBackdrop({
                     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -4172,38 +4210,66 @@ function UI:RenderBounties()
                 })
                 iconFrame:SetBackdropColor(0, 0, 0, 1.0)
                 iconFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
-                local bIcon = UI:CreateClassIcon(iconFrame, bClass, 16)
+                local bIcon = UI:CreateClassIcon(iconFrame, bClass, 22)
                 bIcon:SetAllPoints(iconFrame)
 
+                local factionBadge = ""
+                if tFaction == "Alliance" then
+                    factionBadge = " |cff0070de[A]|r"
+                elseif tFaction == "Horde" then
+                    factionBadge = " |cffc41e3a[H]|r"
+                end
+
                 local targetStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                targetStr:SetPoint("LEFT", iconFrame, "RIGHT", 6, 0)
-                targetStr:SetPoint("RIGHT", row, "LEFT", 228, 0)
+                targetStr:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 8, -1)
+                targetStr:SetPoint("RIGHT", row, "LEFT", 240, 0)
                 targetStr:SetJustifyH("LEFT")
                 targetStr:SetWordWrap(false)
                 local targetColored = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(tName, bClass) or string.format("|cffff3838%s|r", tName)
-                targetStr:SetText(targetColored)
-                if targetStr.SetFont then local f, s = targetStr:GetFont(); targetStr:SetFont(f, s or 10, "OUTLINE") end
+                local classDisplay = (bClass ~= "UNKNOWN") and string.format(" |cff888888(%s)|r", bClass:sub(1,1):upper() .. bClass:sub(2):lower()) or ""
+                targetStr:SetText(targetColored .. classDisplay .. factionBadge)
+                if targetStr.SetFont then local f, s = targetStr:GetFont(); targetStr:SetFont(f, s or 11, "OUTLINE") end
                 targetStr:SetShadowOffset(0, 0)
 
-                -- Col 2 (Bounty / Reward): Gold/Silver Coins
-                local moneyStr = (KB.Utils and KB.Utils.FormatMoney) and KB.Utils.FormatMoney(copper) or (math.floor(copper / 10000) .. "g")
+                local guildStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                guildStr:SetPoint("BOTTOMLEFT", iconFrame, "BOTTOMRIGHT", 8, 1)
+                guildStr:SetPoint("RIGHT", row, "LEFT", 240, 0)
+                guildStr:SetJustifyH("LEFT")
+                guildStr:SetWordWrap(false)
+                guildStr:SetTextColor(148/255, 163/255, 184/255, 1.0) -- #94A3B8 Muted Slate
+                guildStr:SetText(tGuild ~= "No Guild" and string.format("<%s>", tGuild) or "|cff666666<No Guild>|r")
+                if guildStr.SetFont then local f, s = guildStr:GetFont(); guildStr:SetFont(f, (s or 10) - 1, "OUTLINE") end
+                guildStr:SetShadowOffset(0, 0)
+
+                -- Col 2 (Bounty / Reward): Gold / Silver / Copper
+                local g = math.floor(copper / 10000)
+                local s = math.floor((copper % 10000) / 100)
+                local c = copper % 100
+                local moneyDisplay = string.format("|cffffd100%dg|r |cffe2e8f0%ds|r |cffd97706%dc|r", g, s, c)
+
                 local rewardStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                rewardStr:SetPoint("LEFT", row, "LEFT", 232, 0)
+                rewardStr:SetPoint("LEFT", row, "LEFT", 246, 0)
                 rewardStr:SetWidth(140)
                 rewardStr:SetJustifyH("LEFT")
-                rewardStr:SetText(string.format("|cffffd100%s|r", moneyStr))
-                if rewardStr.SetFont then local f, s = rewardStr:GetFont(); rewardStr:SetFont(f, s or 10, "OUTLINE") end
+                rewardStr:SetText(moneyDisplay)
+                if rewardStr.SetFont then local f, sz = rewardStr:GetFont(); rewardStr:SetFont(f, sz or 11, "OUTLINE") end
                 rewardStr:SetShadowOffset(0, 0)
 
-                -- Col 3 (Issued By): Issuer Name (#888888)
+                -- Col 3 (Issued By): Placers with multi-stack counter
+                local pCount = #(b.placers or {})
+                local placerText = b.placers and b.placers[1] or "Unknown"
+                if pCount > 1 then
+                    placerText = string.format("%s |cff00e5ff(+%d)|r", placerText, pCount - 1)
+                end
+
                 local placerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                placerStr:SetPoint("LEFT", row, "LEFT", 376, 0)
-                placerStr:SetWidth(160)
+                placerStr:SetPoint("LEFT", row, "LEFT", 392, 0)
+                placerStr:SetWidth(150)
                 placerStr:SetJustifyH("LEFT")
                 placerStr:SetWordWrap(false)
-                placerStr:SetTextColor(136/255, 136/255, 136/255, 1.0)
-                placerStr:SetText(pName)
-                if placerStr.SetFont then local f, s = placerStr:GetFont(); placerStr:SetFont(f, s or 10, "OUTLINE") end
+                placerStr:SetTextColor(180/255, 180/255, 180/255, 1.0)
+                placerStr:SetText(placerText)
+                if placerStr.SetFont then local f, sz = placerStr:GetFont(); placerStr:SetFont(f, sz or 10, "OUTLINE") end
                 placerStr:SetShadowOffset(0, 0)
 
                 -- Col 4 (Zone / Last Seen): Zone Name (#D4A359)
@@ -4226,20 +4292,27 @@ function UI:RenderBounties()
                 end
 
                 local locStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                locStr:SetPoint("LEFT", row, "LEFT", 540, 0)
-                locStr:SetWidth(180)
+                locStr:SetPoint("LEFT", row, "LEFT", 548, 0)
+                locStr:SetWidth(170)
                 locStr:SetJustifyH("LEFT")
                 locStr:SetWordWrap(false)
                 locStr:SetTextColor(212/255, 163/255, 89/255, 1.0) -- #D4A359
                 locStr:SetText(lastSeenStr)
-                if locStr.SetFont then local f, s = locStr:GetFont(); locStr:SetFont(f, s or 10, "OUTLINE") end
+                if locStr.SetFont then local f, sz = locStr:GetFont(); locStr:SetFont(f, sz or 10, "OUTLINE") end
                 locStr:SetShadowOffset(0, 0)
 
                 -- Col 5 (Action): Compact Button: Accept or Track
-                local bId = b.id
-                local isAccepted = KB.BountyEngine and KB.BountyEngine.IsBountyAccepted and KB.BountyEngine:IsBountyAccepted(bId)
+                local ids = b.ids or {}
+                local isAccepted = false
+                for _, bId in ipairs(ids) do
+                    if KB.BountyEngine and KB.BountyEngine.IsBountyAccepted and KB.BountyEngine:IsBountyAccepted(bId) then
+                        isAccepted = true
+                        break
+                    end
+                end
+
                 local actionBtn = CreateFrame("Button", nil, row, "BackdropTemplate")
-                actionBtn:SetSize(72, 18)
+                actionBtn:SetSize(72, 22)
                 actionBtn:SetPoint("RIGHT", row, "RIGHT", -8, 0)
                 actionBtn:SetBackdrop({
                     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -4254,18 +4327,22 @@ function UI:RenderBounties()
                 if isAccepted then
                     aLbl:SetTextColor(74/255, 222/255, 128/255, 1.0)
                     aLbl:SetText("Track")
+                    actionBtn:SetBackdropBorderColor(74/255, 222/255, 128/255, 0.6)
                 else
                     aLbl:SetTextColor(aR, aG, aB, 1.0)
                     aLbl:SetText("Accept")
+                    actionBtn:SetBackdropBorderColor(aR, aG, aB, 0.6)
                 end
-                if aLbl.SetFont then local f, s = aLbl:GetFont(); aLbl:SetFont(f, s or 10, "OUTLINE") end
+                if aLbl.SetFont then local f, sz = aLbl:GetFont(); aLbl:SetFont(f, sz or 10, "OUTLINE") end
                 aLbl:SetShadowOffset(0, 0)
                 actionBtn.Label = aLbl
 
                 if not isAccepted then
                     actionBtn:SetScript("OnClick", function()
                         if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
-                            KB.BountyEngine:AcceptBounty(bId)
+                            for _, bId in ipairs(ids) do
+                                KB.BountyEngine:AcceptBounty(bId)
+                            end
                             UI:Refresh()
                         end
                     end)
@@ -4280,12 +4357,21 @@ function UI:RenderBounties()
                 row:EnableMouse(true)
                 row:SetScript("OnEnter", function(self)
                     self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
+                    if pCount > 1 then
+                        local tipBody = "Declared Placers:\n"
+                        for _, p in ipairs(b.placers or {}) do
+                            tipBody = tipBody .. string.format(" - |cffffffff%s|r\n", p)
+                        end
+                        tipBody = tipBody .. string.format("\nTotal Combined Reward: |cffffd100%s|r", KB.Utils.FormatMoney(copper))
+                        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Stacked Marks of Spite|r", tipBody)
+                    end
                 end)
                 row:SetScript("OnLeave", function(self)
                     self:SetBackdropColor(unpack(rowBg))
+                    if pCount > 1 then UI:HidePrivateTooltip() end
                 end)
 
-                yOffset = yOffset - 24
+                yOffset = yOffset - 36
             end
         end
 
@@ -7153,6 +7239,191 @@ function UI:ShowKOSAlert(targetName, guildOrFormer, alertType, reason)
 end
 
 -- ----------------------------------------------------------------------------
+-- RareScanner-Style Bounty Proximity Radar Alert (100% Template-Free, Zero-Taint)
+-- ----------------------------------------------------------------------------
+function UI:ShowBountyProximityAlert(targetName, targetClass, targetGuild, targetFaction, amountCopper, zone, bountyIds)
+    if InCombatLockdown() then return end
+    if not targetName then return end
+
+    if not UI.BountyProximityDialog then
+        local dlg = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        dlg:SetSize(480, 210)
+        dlg:SetPoint("CENTER", 0, 160)
+        dlg:SetFrameStrata("DIALOG")
+        dlg:SetFrameLevel(120)
+        dlg:EnableMouse(true)
+        dlg:SetClampedToScreen(true)
+        dlg:SetMovable(true)
+        dlg:RegisterForDrag("LeftButton")
+        dlg:SetScript("OnDragStart", function(self)
+            if not InCombatLockdown() then self:StartMoving() end
+        end)
+        dlg:SetScript("OnDragStop", function(self)
+            self:StopMovingOrSizing()
+        end)
+
+        dlg:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 2,
+        })
+        dlg:SetBackdropColor(0.12, 0.08, 0.03, 0.98)
+        dlg:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
+
+        dlg:EnableKeyboard(false)
+        dlg:SetScript("OnShow", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(true) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
+        dlg:SetScript("OnHide", function(self)
+            if self.EnableKeyboard then self:EnableKeyboard(false) end
+            if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        end)
+        dlg:SetScript("OnKeyDown", function(self, key)
+            if not self:IsShown() then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+                return
+            end
+            if key == "ESCAPE" then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
+                self:Hide()
+            else
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+            end
+        end)
+
+        local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", 0, -16)
+        dlg.TitleText = title
+
+        local iconFrame = CreateFrame("Frame", nil, dlg, "BackdropTemplate")
+        iconFrame:SetSize(28, 28)
+        iconFrame:SetPoint("TOPLEFT", 28, -50)
+        iconFrame:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        iconFrame:SetBackdropColor(0, 0, 0, 1.0)
+        iconFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
+        dlg.IconFrame = iconFrame
+
+        local targetInfo = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        targetInfo:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 10, -2)
+        targetInfo:SetJustifyH("LEFT")
+        dlg.TargetInfo = targetInfo
+
+        local guildInfo = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        guildInfo:SetPoint("BOTTOMLEFT", iconFrame, "BOTTOMRIGHT", 10, 0)
+        guildInfo:SetJustifyH("LEFT")
+        dlg.GuildInfo = guildInfo
+
+        local rewardText = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        rewardText:SetPoint("TOPLEFT", 28, -92)
+        rewardText:SetJustifyH("LEFT")
+        dlg.RewardText = rewardText
+
+        local locText = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        locText:SetPoint("TOPLEFT", 28, -118)
+        locText:SetJustifyH("LEFT")
+        dlg.LocText = locText
+
+        local acceptBtn = UI:CreateButton(dlg, 140, 26, "Accept & Hunt")
+        acceptBtn:SetPoint("BOTTOMLEFT", 20, 18)
+        dlg.AcceptBtn = acceptBtn
+
+        local calloutBtn = UI:CreateButton(dlg, 150, 26, "Alert Faction")
+        calloutBtn:SetPoint("LEFT", acceptBtn, "RIGHT", 10, 0)
+        dlg.CalloutBtn = calloutBtn
+
+        local dismissBtn = UI:CreateButton(dlg, 120, 26, "Dismiss / Mute")
+        dismissBtn:SetPoint("LEFT", calloutBtn, "RIGHT", 10, 0)
+        dlg.DismissBtn = dismissBtn
+
+        UI.BountyProximityDialog = dlg
+    end
+
+    local dlg = UI.BountyProximityDialog
+    local aR, aG, aB, aHex = WoWKB.AccentColor()
+    local aCode = "|cff" .. (aHex or "ffd100")
+
+    dlg:SetBackdropBorderColor(aR, aG, aB, 1.0)
+    dlg.TitleText:SetText(aCode .. "[!] WANTED OUTLAW IN VICINITY!|r")
+
+    if dlg.IconFrame.Icon then
+        dlg.IconFrame.Icon:Hide()
+        dlg.IconFrame.Icon = nil
+    end
+    local bIcon = UI:CreateClassIcon(dlg.IconFrame, targetClass or "UNKNOWN", 28)
+    bIcon:SetAllPoints(dlg.IconFrame)
+    dlg.IconFrame.Icon = bIcon
+
+    local targetColored = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(targetName, targetClass) or string.format("|cffff3838%s|r", targetName)
+    local factionBadge = ""
+    if targetFaction == "Alliance" then
+        factionBadge = " |cff0070de[A]|r"
+    elseif targetFaction == "Horde" then
+        factionBadge = " |cffc41e3a[H]|r"
+    end
+    local classDisplay = (targetClass and targetClass ~= "UNKNOWN") and string.format(" |cff888888(%s)|r", targetClass:sub(1,1):upper() .. targetClass:sub(2):lower()) or ""
+    dlg.TargetInfo:SetText(targetColored .. classDisplay .. factionBadge)
+
+    local gText = (targetGuild and targetGuild ~= "No Guild" and targetGuild ~= "None") and string.format("<%s>", targetGuild) or "<No Guild>"
+    dlg.GuildInfo:SetText(string.format("|cff94a3b8%s|r", gText))
+
+    local g = math.floor(amountCopper / 10000)
+    local s = math.floor((amountCopper % 10000) / 100)
+    local c = amountCopper % 100
+    dlg.RewardText:SetText(string.format("Bounty Contract Reward: |cffffd100%dg|r |cffe2e8f0%ds|r |cffd97706%dc|r", g, s, c))
+
+    dlg.LocText:SetText(string.format("|cff888888Spotted Location:|r |cffffd700%s|r", zone or (GetZoneText and GetZoneText()) or "Azeroth"))
+
+    -- Wire Accept Button
+    dlg.AcceptBtn:SetBackdropBorderColor(aR, aG, aB, 0.8)
+    dlg.AcceptBtn.Label:SetTextColor(aR, aG, aB, 1.0)
+    dlg.AcceptBtn.Label:SetText("Accept & Hunt")
+    dlg.AcceptBtn:SetScript("OnClick", function()
+        if KB.BountyEngine and KB.BountyEngine.AcceptBounty then
+            for _, bId in ipairs(bountyIds or {}) do
+                KB.BountyEngine:AcceptBounty(bId)
+            end
+            if KB.UI and KB.UI.RefreshIfVisible then KB.UI:RefreshIfVisible() end
+        end
+        dlg:Hide()
+    end)
+
+    -- Wire Callout Button
+    dlg.CalloutBtn:SetBackdropBorderColor(56/255, 189/255, 248/255, 0.8)
+    dlg.CalloutBtn.Label:SetTextColor(56/255, 189/255, 248/255, 1.0)
+    dlg.CalloutBtn.Label:SetText("Alert Faction")
+    dlg.CalloutBtn:SetScript("OnClick", function()
+        local moneyStr = (KB.Utils and KB.Utils.FormatMoney) and KB.Utils.FormatMoney(amountCopper) or (g .. "g")
+        local calloutMsg = string.format("[WoWKB Bounty Radar] Wanted Outlaw %s (%s) spotted in %s! Contract: %s!", targetName, gText, zone or "Azeroth", moneyStr)
+        if not InCombatLockdown() then
+            SendChatMessage(calloutMsg, "YELL")
+        end
+        SafePrint(string.format("|cff00e5ff[WoWKB Callout Sent]|r %s", calloutMsg))
+        dlg:Hide()
+    end)
+
+    -- Wire Dismiss / Mute Button
+    dlg.DismissBtn:SetBackdropBorderColor(0.3, 0.3, 0.3, 1.0)
+    dlg.DismissBtn.Label:SetTextColor(0.7, 0.7, 0.7, 1.0)
+    dlg.DismissBtn.Label:SetText("Dismiss / Mute")
+    dlg.DismissBtn:SetScript("OnClick", function()
+        if KB.UnitScanner and KB.UnitScanner.MutedBounties then
+            KB.UnitScanner.MutedBounties[targetName:lower()] = time() + 300 -- Mute for 5 minutes
+        end
+        SafePrint(string.format("|cff888888[WoWKB]|r Proximity radar for %s muted for 5 minutes.", targetName))
+        dlg:Hide()
+    end)
+
+    dlg:Show()
+    if dlg.Raise then dlg:Raise() end
+end
+
+-- ----------------------------------------------------------------------------
 -- Frontline Combat Alerts & Raid Warning Notice (100% Template-Free, Taint-Free)
 -- ----------------------------------------------------------------------------
 local killBanner = nil
@@ -8968,18 +9239,21 @@ function UI:ShowSettingsModal()
         end)
 
         local theme = UI:GetTheme()
+        local aR, aG, aB, aHex = WoWKB.AccentColor()
+        local aCode = "|cff" .. (aHex or "ffd100")
         dlg:SetBackdrop(theme and theme.modalBackdrop or {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
         })
-        dlg:SetBackdropColor(0.06, 0.06, 0.08, 0.98)
-        dlg:SetBackdropBorderColor(0.85, 0.70, 0.20, 1.0)
+        dlg:SetBackdropColor(unpack(theme.modalBg or {0.06, 0.06, 0.08, 0.98}))
+        dlg:SetBackdropBorderColor(unpack(theme.modalBorder or {0.0, 0.0, 0.0, 1.0}))
 
         -- Title & Subtitle
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffffd100KILLBOARD SETTINGS & PREFERENCES|r")
+        title:SetText(aCode .. "KILLBOARD SETTINGS & PREFERENCES|r")
+        dlg.TitleText = title
 
         local sub = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         sub:SetPoint("TOP", title, "BOTTOM", 0, -4)
@@ -9004,7 +9278,8 @@ function UI:ShowSettingsModal()
         -- SECTION 1: INTERFACE THEME & ACCENT COLOR
         local s1Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         s1Title:SetPoint("TOPLEFT", 24, y)
-        s1Title:SetText("|cffffd1001. Interface Theme & Accent Color|r")
+        s1Title:SetText(aCode .. "1. Interface Theme & Accent Color|r")
+        dlg.S1Title = s1Title
 
         local themeDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         themeDesc:SetPoint("TOPLEFT", 24, y - 16)
@@ -9017,7 +9292,7 @@ function UI:ShowSettingsModal()
             local cur = UI:GetTheme()
             themeBtn.Label:SetText(cur.id == "classic" and "Theme: Classic Stone" or "Theme: ElvUI Dark")
             dlg:SetBackdropColor(unpack(cur.mainBg or {0.06, 0.06, 0.08, 0.98}))
-            dlg:SetBackdropBorderColor(unpack(cur.mainBorder or {0.85, 0.70, 0.20, 1.0}))
+            dlg:SetBackdropBorderColor(unpack(cur.modalBorder or {0.0, 0.0, 0.0, 1.0}))
         end)
         dlg.themeBtn = themeBtn
 
@@ -9026,25 +9301,96 @@ function UI:ShowSettingsModal()
         accentLabel:SetPoint("TOPLEFT", 24, y - 64)
         accentLabel:SetText("Accent Color:")
 
+        local function SetToggleState(btn, text, isOn)
+            if not btn then return end
+            btn.isOn = isOn
+            local curR, curG, curB, curHex = WoWKB.AccentColor()
+            local theme = UI:GetTheme()
+            if isOn then
+                btn:SetBackdropColor(curR * 0.18, curG * 0.18, curB * 0.18, 0.95)
+                btn:SetBackdropBorderColor(curR, curG, curB, 0.95)
+                btn.Label:SetText(string.format("|cff%s* %s: ON|r", curHex or "ffd100", text))
+            else
+                btn:SetBackdropColor(unpack(theme.btnBg or { 0.08, 0.10, 0.15, 1.0 }))
+                btn:SetBackdropBorderColor(unpack(theme.btnBorder or { 0.22, 0.22, 0.22, 0.95 }))
+                btn.Label:SetText(string.format("|cff888888%s: OFF|r", text))
+            end
+        end
+
         local function UpdateAccentButtons()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             local mode = s.accentColorMode or "gold"
-            local aR, aG, aB = WoWKB.AccentColor()
+            local curR, curG, curB, curHex = WoWKB.AccentColor()
+            local curCode = "|cff" .. (curHex or "ffd100")
+
+            if dlg.TitleText then dlg.TitleText:SetText(curCode .. "KILLBOARD SETTINGS & PREFERENCES|r") end
+            if dlg.S1Title then dlg.S1Title:SetText(curCode .. "1. Interface Theme & Accent Color|r") end
+            if dlg.S2Title then dlg.S2Title:SetText(curCode .. "2. Combat Alerts & Kill Banners|r") end
+            if dlg.S3Title then dlg.S3Title:SetText(curCode .. "3. Tactical Chat & Broadcast Telemetry|r") end
+            if dlg.S4Title then dlg.S4Title:SetText(curCode .. "4. Mark of Spite Death Prompt|r") end
+            if dlg.S5Title then dlg.S5Title:SetText(curCode .. "5. Data Export & Desktop Sync|r") end
 
             if dlg.btnGold then
                 local isGold = (mode == "gold")
-                dlg.btnGold:SetBackdropBorderColor(isGold and aR or 0, isGold and aG or 0, isGold and aB or 0, 1.0)
-                dlg.btnGold.Label:SetTextColor(isGold and 1.0 or 0.6, isGold and 0.82 or 0.6, isGold and 0.0 or 0.6)
+                dlg.btnGold:SetBackdropBorderColor(isGold and curR or 0.22, isGold and curG or 0.22, isGold and curB or 0.22, 1.0)
+                dlg.btnGold.Label:SetTextColor(isGold and curR or 0.6, isGold and curG or 0.6, isGold and curB or 0.6)
             end
             if dlg.btnClass then
                 local isClass = (mode == "class")
-                dlg.btnClass:SetBackdropBorderColor(isClass and aR or 0, isClass and aG or 0, isClass and aB or 0, 1.0)
-                dlg.btnClass.Label:SetTextColor(isClass and aR or 0.6, isClass and aG or 0.6, isClass and aB or 0.6)
+                dlg.btnClass:SetBackdropBorderColor(isClass and curR or 0.22, isClass and curG or 0.22, isClass and curB or 0.22, 1.0)
+                dlg.btnClass.Label:SetTextColor(isClass and curR or 0.6, isClass and curG or 0.6, isClass and curB or 0.6)
             end
             if dlg.btnCustom then
                 local isCustom = (mode == "custom")
-                dlg.btnCustom:SetBackdropBorderColor(isCustom and aR or 0, isCustom and aG or 0, isCustom and aB or 0, 1.0)
-                dlg.btnCustom.Label:SetTextColor(isCustom and aR or 0.6, isCustom and aG or 0.6, isCustom and aB or 0.6)
+                dlg.btnCustom:SetBackdropBorderColor(isCustom and curR or 0.22, isCustom and curG or 0.22, isCustom and curB or 0.22, 1.0)
+                dlg.btnCustom.Label:SetTextColor(isCustom and curR or 0.6, isCustom and curG or 0.6, isCustom and curB or 0.6)
+            end
+            if dlg.toggleMoveBtn and dlg.toggleMoveBtn.Label then
+                if UI.bannerUnlocked then
+                    dlg.toggleMoveBtn.Label:SetText("|cffff3333Lock Toast|r")
+                    dlg.toggleMoveBtn:SetBackdropBorderColor(1.0, 0.2, 0.2, 0.9)
+                else
+                    dlg.toggleMoveBtn.Label:SetText(curCode .. "Move Toast|r")
+                    dlg.toggleMoveBtn:SetBackdropBorderColor(curR, curG, curB, 0.6)
+                end
+            end
+            if dlg.calibBtn and dlg.calibBtn.Label then
+                dlg.calibBtn.Label:SetText("Calibrate Alerts")
+                dlg.calibBtn:SetBackdropBorderColor(0.3, 0.3, 0.3, 1.0)
+            end
+            if dlg.bcastTestBtn and dlg.bcastTestBtn.Label then
+                dlg.bcastTestBtn.Label:SetText("|cff38bdf8Broadcast Test|r")
+                dlg.bcastTestBtn:SetBackdropBorderColor(56/255, 189/255, 248/255, 0.6)
+            end
+            if dlg.announceBtn and dlg.announceBtn.Label then
+                dlg.announceBtn.Label:SetText(curCode .. "Realm Announce|r")
+                dlg.announceBtn:SetBackdropBorderColor(curR, curG, curB, 0.6)
+            end
+            if dlg.exportBtn and dlg.exportBtn.Label then
+                dlg.exportBtn.Label:SetText("Export Data / JSON")
+                dlg.exportBtn:SetBackdropBorderColor(0.3, 0.3, 0.3, 1.0)
+            end
+            if dlg.reloadBtn and dlg.reloadBtn.Label then
+                dlg.reloadBtn.Label:SetText(curCode .. "Save & Reload UI|r")
+                dlg.reloadBtn:SetBackdropBorderColor(curR, curG, curB, 0.6)
+            end
+            if dlg.doneBtn and dlg.doneBtn.Label then
+                dlg.doneBtn.Label:SetText("Done")
+                dlg.doneBtn:SetBackdropBorderColor(curR, curG, curB, 0.6)
+            end
+
+            -- Update toggle button states
+            SetToggleState(dlg.soundBtn, "Sound Alerts", s.soundAlerts ~= false)
+            SetToggleState(dlg.chatStreamBtn, "Chat Stream", s.showChannelInChat == true)
+            SetToggleState(dlg.chatBroadcastBtn, "Chat (Yell/Say)", s.enableChatBroadcasts == true)
+            SetToggleState(dlg.guildBroadcastBtn, "Guild Alerts", s.enableGuildBroadcasts ~= false)
+            SetToggleState(dlg.coordsBtn, "GPS Coordinates", s.includeCoordinates ~= false)
+            SetToggleState(dlg.autoInviteBtn, "Auto-Invite", s.enableWhisperAutoInvite ~= false)
+            SetToggleState(dlg.deathPromptBtn, "Death Mark Prompt", not s.ignoreDeathBounties)
+            if s.isolateRealms ~= false then
+                SetToggleState(dlg.realmIsoBtn, "Active Realm Only", true)
+            else
+                SetToggleState(dlg.realmIsoBtn, "All Account Realms", false)
             end
         end
         dlg.UpdateAccentButtons = UpdateAccentButtons
@@ -9121,7 +9467,8 @@ function UI:ShowSettingsModal()
         -- SECTION 2: COMBAT ALERTS & RADAR
         local s2Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         s2Title:SetPoint("TOPLEFT", 24, y)
-        s2Title:SetText("|cffffd1002. Combat Alerts & Kill Banners|r")
+        s2Title:SetText(aCode .. "2. Combat Alerts & Kill Banners|r")
+        dlg.S2Title = s2Title
 
         local alertsDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         alertsDesc:SetPoint("TOPLEFT", 24, y - 16)
@@ -9133,12 +9480,13 @@ function UI:ShowSettingsModal()
             dlg:Hide()
             UI:ShowAlertsConfig()
         end)
+        dlg.calibBtn = calibBtn
 
         local toggleMoveBtn = UI:CreateButton(dlg, 145, 22, UI.bannerUnlocked and "|cffff3333Lock Toast|r" or "|cffffd100Move Toast|r")
         toggleMoveBtn:SetPoint("LEFT", calibBtn, "RIGHT", 10, 0)
         toggleMoveBtn:SetScript("OnClick", function()
             UI:ToggleBannerLock()
-            toggleMoveBtn.Label:SetText(UI.bannerUnlocked and "|cffff3333Lock Toast|r" or "|cffffd100Move Toast|r")
+            UpdateAccentButtons()
         end)
         dlg.toggleMoveBtn = toggleMoveBtn
 
@@ -9148,7 +9496,7 @@ function UI:ShowSettingsModal()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             s.soundAlerts = not s.soundAlerts
             if KB.db and KB.db.settings then KB.db.settings.soundAlerts = s.soundAlerts end
-            soundBtn.Label:SetText(s.soundAlerts and "|cff00ff00Sound: ON|r" or "|cffff3333Sound: OFF|r")
+            UpdateAccentButtons()
         end)
         dlg.soundBtn = soundBtn
 
@@ -9160,7 +9508,7 @@ function UI:ShowSettingsModal()
             s.showChannelInChat = not s.showChannelInChat
             if KB.db and KB.db.settings then KB.db.settings.showChannelInChat = s.showChannelInChat end
             if KB.Sync and KB.Sync.ApplyChatVisibility then KB.Sync:ApplyChatVisibility() end
-            chatStreamBtn.Label:SetText(s.showChannelInChat and "|cff00ff00Chat Stream: ON|r" or "|cffff3333Chat Stream: OFF|r")
+            UpdateAccentButtons()
         end)
         chatStreamBtn:SetScript("OnEnter", function(self)
             UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "Chat Window Casualty Stream", "Toggle live casualty alerts in your chat window. When ON, open-world kills stream into General chat. When OFF, chat is kept clean and quiet.")
@@ -9198,7 +9546,8 @@ function UI:ShowSettingsModal()
         -- SECTION 3: TACTICAL CHAT & BROADCAST TELEMETRY
         local s3Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         s3Title:SetPoint("TOPLEFT", 24, y)
-        s3Title:SetText("|cffffd1003. Tactical Chat & Broadcast Telemetry|r")
+        s3Title:SetText(aCode .. "3. Tactical Chat & Broadcast Telemetry|r")
+        dlg.S3Title = s3Title
 
         local s3Desc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         s3Desc:SetPoint("TOPLEFT", 24, y - 16)
@@ -9210,7 +9559,7 @@ function UI:ShowSettingsModal()
         chatBroadcastBtn:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             s.enableChatBroadcasts = not s.enableChatBroadcasts
-            chatBroadcastBtn.Label:SetText(s.enableChatBroadcasts and "|cff00ff00Chat (Yell/Say): ON|r" or "|cffff3333Chat (Yell/Say): OFF|r")
+            UpdateAccentButtons()
             SafePrint(string.format("|cff00e5ff[WoWKB]|r Chat Broadcasts (Yell/Say) is now %s.", s.enableChatBroadcasts and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED (Opt-in)|r"))
         end)
         chatBroadcastBtn:SetScript("OnEnter", function(self)
@@ -9224,7 +9573,7 @@ function UI:ShowSettingsModal()
         guildBroadcastBtn:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             s.enableGuildBroadcasts = (s.enableGuildBroadcasts == false)
-            guildBroadcastBtn.Label:SetText(s.enableGuildBroadcasts and "|cff00ff00Guild Broadcasts: ON|r" or "|cffff3333Guild Broadcasts: OFF|r")
+            UpdateAccentButtons()
             SafePrint(string.format("|cff00e5ff[WoWKB]|r Guild Broadcasts is now %s.", s.enableGuildBroadcasts and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED|r"))
         end)
         guildBroadcastBtn:SetScript("OnEnter", function(self)
@@ -9239,7 +9588,7 @@ function UI:ShowSettingsModal()
         coordsBtn:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             s.includeCoordinates = (s.includeCoordinates == false)
-            coordsBtn.Label:SetText(s.includeCoordinates and "|cff00ff00Coordinates: ON|r" or "|cffff3333Coordinates: OFF|r")
+            UpdateAccentButtons()
             SafePrint(string.format("|cff00e5ff[WoWKB]|r Include Coordinates is now %s.", s.includeCoordinates and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED|r"))
         end)
         coordsBtn:SetScript("OnEnter", function(self)
@@ -9253,7 +9602,7 @@ function UI:ShowSettingsModal()
         autoInviteBtn:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             s.enableWhisperAutoInvite = (s.enableWhisperAutoInvite == false)
-            autoInviteBtn.Label:SetText(s.enableWhisperAutoInvite and "|cff00ff00Auto-Invite: ON|r" or "|cffff3333Auto-Invite: OFF|r")
+            UpdateAccentButtons()
             SafePrint(string.format("|cff00e5ff[WoWKB]|r Whisper Auto-Invite is now %s.", s.enableWhisperAutoInvite and "|cff00ff00ENABLED|r" or "|cffff3333DISABLED|r"))
         end)
         autoInviteBtn:SetScript("OnEnter", function(self)
@@ -9267,7 +9616,8 @@ function UI:ShowSettingsModal()
         -- SECTION 4: DEATH MARK PROMPT (MARK OF SPITE)
         local s4Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         s4Title:SetPoint("TOPLEFT", 24, y)
-        s4Title:SetText("|cffffd1004. Mark of Spite Death Prompt|r")
+        s4Title:SetText(aCode .. "4. Mark of Spite Death Prompt|r")
+        dlg.S4Title = s4Title
 
         local deathDesc = dlg:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         deathDesc:SetPoint("TOPLEFT", 24, y - 16)
@@ -9279,7 +9629,7 @@ function UI:ShowSettingsModal()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             s.ignoreDeathBounties = not s.ignoreDeathBounties
             if KB.db and KB.db.settings then KB.db.settings.ignoreDeathBounties = s.ignoreDeathBounties end
-            deathPromptBtn.Label:SetText(s.ignoreDeathBounties and "|cffff3333Death Prompt: MUTED|r" or "|cff00ff00Death Prompt: ENABLED|r")
+            UpdateAccentButtons()
             SafePrint(string.format("|cff00e5ff[WoWKB]|r Death Mark Prompt is now %s.", s.ignoreDeathBounties and "|cffff3333MUTED|r" or "|cff00ff00ENABLED|r"))
         end)
         dlg.deathPromptBtn = deathPromptBtn
@@ -9289,7 +9639,7 @@ function UI:ShowSettingsModal()
         realmIsoBtn:SetScript("OnClick", function()
             local s = WoWKillboardSettings or KB.DefaultSettings or {}
             s.isolateRealms = (s.isolateRealms == false)
-            realmIsoBtn.Label:SetText((s.isolateRealms ~= false) and "|cff00ff00Realm: ACTIVE ONLY|r" or "|cffffaa00Realm: ALL REALMS|r")
+            UpdateAccentButtons()
             SafePrint(string.format("|cff00e5ff[WoWKB]|r Realm Isolation is now %s.", (s.isolateRealms ~= false) and "|cff00ff00ENABLED (Active Realm Only)|r" or "|cffffaa00DISABLED (All Account Realms)|r"))
             if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
             UI:Refresh()
@@ -9306,7 +9656,8 @@ function UI:ShowSettingsModal()
         -- SECTION 5: DATA EXPORT & DESKTOP SYNC
         local s5Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         s5Title:SetPoint("TOPLEFT", 24, y)
-        s5Title:SetText("|cffffd1005. Data Export & Desktop Sync|r")
+        s5Title:SetText(aCode .. "5. Data Export & Desktop Sync|r")
+        dlg.S5Title = s5Title
 
         local exportBtn = UI:CreateButton(dlg, 160, 22, "Export Data / JSON")
         exportBtn:SetPoint("TOPLEFT", 24, y - 22)
@@ -9314,6 +9665,7 @@ function UI:ShowSettingsModal()
             dlg:Hide()
             UI:ShowExportDialog()
         end)
+        dlg.exportBtn = exportBtn
 
         local reloadBtn = UI:CreateButton(dlg, 160, 22, "Save & Reload UI")
         reloadBtn:SetPoint("LEFT", exportBtn, "RIGHT", 10, 0)
@@ -9325,41 +9677,21 @@ function UI:ShowSettingsModal()
             SafePrint("|cff00ccff[WoWKB]|r Saving combat records and reloading UI...")
             ReloadUI()
         end)
+        dlg.reloadBtn = reloadBtn
 
         -- Bottom Done Button
         local doneBtn = UI:CreateButton(dlg, 120, 26, "Done")
         doneBtn:SetPoint("BOTTOM", 0, 16)
         doneBtn:SetScript("OnClick", function() dlg:Hide() end)
+        dlg.doneBtn = doneBtn
 
         UI.SettingsDialog = dlg
     end
 
-    -- Update dynamic labels
+    -- Update dynamic labels and toggle states
     local cur = UI:GetTheme()
     if UI.SettingsDialog.themeBtn and UI.SettingsDialog.themeBtn.Label then
         UI.SettingsDialog.themeBtn.Label:SetText(cur.id == "classic" and "Theme: Classic Stone" or "Theme: ElvUI Dark")
-    end
-    local s = WoWKillboardSettings or KB.DefaultSettings or {}
-    if UI.SettingsDialog.soundBtn and UI.SettingsDialog.soundBtn.Label then
-        UI.SettingsDialog.soundBtn.Label:SetText(s.soundAlerts ~= false and "|cff00ff00Sound: ON|r" or "|cffff3333Sound: OFF|r")
-    end
-    if UI.SettingsDialog.chatStreamBtn and UI.SettingsDialog.chatStreamBtn.Label then
-        UI.SettingsDialog.chatStreamBtn.Label:SetText(s.showChannelInChat and "|cff00ff00Chat Stream: ON|r" or "|cffff3333Chat Stream: OFF|r")
-    end
-    if UI.SettingsDialog.chatBroadcastBtn and UI.SettingsDialog.chatBroadcastBtn.Label then
-        UI.SettingsDialog.chatBroadcastBtn.Label:SetText(s.enableChatBroadcasts and "|cff00ff00Chat (Yell/Say): ON|r" or "|cffff3333Chat (Yell/Say): OFF|r")
-    end
-    if UI.SettingsDialog.guildBroadcastBtn and UI.SettingsDialog.guildBroadcastBtn.Label then
-        UI.SettingsDialog.guildBroadcastBtn.Label:SetText((s.enableGuildBroadcasts ~= false) and "|cff00ff00Guild Broadcasts: ON|r" or "|cffff3333Guild Broadcasts: OFF|r")
-    end
-    if UI.SettingsDialog.coordsBtn and UI.SettingsDialog.coordsBtn.Label then
-        UI.SettingsDialog.coordsBtn.Label:SetText((s.includeCoordinates ~= false) and "|cff00ff00Coordinates: ON|r" or "|cffff3333Coordinates: OFF|r")
-    end
-    if UI.SettingsDialog.autoInviteBtn and UI.SettingsDialog.autoInviteBtn.Label then
-        UI.SettingsDialog.autoInviteBtn.Label:SetText((s.enableWhisperAutoInvite ~= false) and "|cff00ff00Auto-Invite: ON|r" or "|cffff3333Auto-Invite: OFF|r")
-    end
-    if UI.SettingsDialog.deathPromptBtn and UI.SettingsDialog.deathPromptBtn.Label then
-        UI.SettingsDialog.deathPromptBtn.Label:SetText(s.ignoreDeathBounties and "|cffff3333Death Prompt: MUTED|r" or "|cff00ff00Death Prompt: ENABLED|r")
     end
     if UI.SettingsDialog.UpdateAccentButtons then
         UI.SettingsDialog:UpdateAccentButtons()
@@ -9392,6 +9724,17 @@ function UI:ShowAlertsConfig()
             self:StopMovingOrSizing()
         end)
 
+        local theme = UI:GetTheme()
+        local aR, aG, aB, aHex = WoWKB.AccentColor()
+        local aCode = "|cff" .. (aHex or "ffd100")
+        dlg:SetBackdrop(theme and theme.modalBackdrop or {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        dlg:SetBackdropColor(unpack(theme.modalBg or {0.06, 0.06, 0.08, 0.98}))
+        dlg:SetBackdropBorderColor(unpack(theme.modalBorder or {0.0, 0.0, 0.0, 1.0}))
+
         -- ESC Key Handling (only active when shown)
         dlg:EnableKeyboard(false)
         dlg:SetScript("OnShow", function(self)
@@ -9419,7 +9762,7 @@ function UI:ShowAlertsConfig()
         -- Header
         local title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOP", 0, -16)
-        title:SetText("|cffffd100FRONTLINE COMBAT ALERTS & RADAR|r")
+        title:SetText(aCode .. "FRONTLINE COMBAT ALERTS & RADAR|r")
         dlg.TitleText = title
 
         local subtitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -9431,6 +9774,7 @@ function UI:ShowAlertsConfig()
         div:SetHeight(1)
         div:SetPoint("TOPLEFT", 18, -56)
         div:SetPoint("TOPRIGHT", -18, -56)
+        div:SetColorTexture(0.2, 0.2, 0.2, 0.8)
         dlg.Divider = div
 
         -- Helper to style segmented buttons
@@ -9442,7 +9786,8 @@ function UI:ShowAlertsConfig()
         -- Section 1: Alert Delivery Mode & Live Chat Stream
         local sec1Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sec1Title:SetPoint("TOPLEFT", 24, -68)
-        sec1Title:SetText("|cffffffff1. CASUALTY ALERT DELIVERY & CHAT STREAM|r")
+        sec1Title:SetText(aCode .. "1. CASUALTY ALERT DELIVERY & CHAT STREAM|r")
+        dlg.Sec1Title = sec1Title
 
         -- Row 1: 4 Quick Delivery Presets
         local btnPresetBoth = UI:CreateButton(dlg, 110, 24, "Both Displays", "GameFontHighlightSmall")
@@ -9481,7 +9826,8 @@ function UI:ShowAlertsConfig()
         -- Section 2: Proximity & Scope Filter (Radar)
         local sec2Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sec2Title:SetPoint("TOPLEFT", 24, -170)
-        sec2Title:SetText("|cffffffff2. RADAR & PROXIMITY SCOPE|r")
+        sec2Title:SetText(aCode .. "2. RADAR & PROXIMITY SCOPE|r")
+        dlg.Sec2Title = sec2Title
 
         local btnScopeZone = UI:CreateButton(dlg, 150, 24, "Same Zone Only", "GameFontHighlightSmall")
         btnScopeZone:SetPoint("TOPLEFT", 24, -190)
@@ -9505,7 +9851,8 @@ function UI:ShowAlertsConfig()
         -- Section 3: Visual Alert Style (Raid Warning vs Tactical Banner)
         local sec3Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sec3Title:SetPoint("TOPLEFT", 24, -242)
-        sec3Title:SetText("|cffffffff3. VISUAL ALERT STYLE|r")
+        sec3Title:SetText(aCode .. "3. VISUAL ALERT STYLE|r")
+        dlg.Sec3Title = sec3Title
 
         local btnStyleBoth = UI:CreateButton(dlg, 150, 24, "Both Displays", "GameFontHighlightSmall")
         btnStyleBoth:SetPoint("TOPLEFT", 24, -262)
@@ -9529,7 +9876,8 @@ function UI:ShowAlertsConfig()
         -- Section 4: Screen Positioning & Calibration
         local sec4Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sec4Title:SetPoint("TOPLEFT", 24, -314)
-        sec4Title:SetText("|cffffffff4. SCREEN POSITIONING & CALIBRATION|r")
+        sec4Title:SetText(aCode .. "4. SCREEN POSITIONING & CALIBRATION|r")
+        dlg.Sec4Title = sec4Title
 
         local unlockBtn = UI:CreateButton(dlg, 230, 24, "Move / Unlock Alert Anchor", "GameFontHighlightSmall")
         unlockBtn:SetPoint("TOPLEFT", 24, -334)
@@ -9551,7 +9899,8 @@ function UI:ShowAlertsConfig()
         -- Section 5: Mark of Spite Death Popup
         local sec5Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sec5Title:SetPoint("TOPLEFT", 24, -404)
-        sec5Title:SetText("|cffffffff5. MARK OF SPITE DEATH POPUP|r")
+        sec5Title:SetText(aCode .. "5. MARK OF SPITE DEATH POPUP|r")
+        dlg.Sec5Title = sec5Title
 
         local btnMarkPromptOn = UI:CreateButton(dlg, 230, 24, "Prompt on Death", "GameFontHighlightSmall")
         btnMarkPromptOn:SetPoint("TOPLEFT", 24, -424)
@@ -9570,7 +9919,8 @@ function UI:ShowAlertsConfig()
         -- Section 6: Combat Feed Destination (Shadow Network vs Main Chat)
         local sec6Title = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sec6Title:SetPoint("TOPLEFT", 24, -476)
-        sec6Title:SetText("|cffffffff6. COMBAT FEED DESTINATION|r")
+        sec6Title:SetText(aCode .. "6. COMBAT FEED DESTINATION|r")
+        dlg.Sec6Title = sec6Title
 
         local btnFeedWire = UI:CreateButton(dlg, 150, 24, "Shadow Network", "GameFontHighlightSmall")
         btnFeedWire:SetPoint("TOPLEFT", 24, -496)
@@ -9615,13 +9965,14 @@ function UI:ShowAlertsConfig()
         local function ApplySegmentState(btn, isActive)
             btn.isActive = isActive
             local theme = UI:GetTheme()
+            local curR, curG, curB, curHex = WoWKB.AccentColor()
             if isActive then
-                btn:SetBackdropColor(unpack(theme.btnActiveBg or { 0.25, 0.18, 0.07, 1.0 }))
-                btn:SetBackdropBorderColor(unpack(theme.btnActiveBorder or { 1.0, 0.82, 0.0, 1.0 }))
-                btn.Label:SetText(string.format("|cff00ff00*|r |cffffd100%s|r", btn.baseText or ""))
+                btn:SetBackdropColor(curR * 0.22, curG * 0.22, curB * 0.22, 0.95)
+                btn:SetBackdropBorderColor(curR, curG, curB, 0.95)
+                btn.Label:SetText(string.format("|cff%s* %s|r", curHex or "ffd100", btn.baseText or ""))
             else
                 btn:SetBackdropColor(unpack(theme.btnBg or { 0.08, 0.10, 0.15, 1.0 }))
-                btn:SetBackdropBorderColor(unpack(theme.btnBorder or { 0.45, 0.35, 0.18, 0.95 }))
+                btn:SetBackdropBorderColor(unpack(theme.btnBorder or { 0.22, 0.22, 0.22, 0.95 }))
                 btn.Label:SetText(string.format("|cff888888%s|r", btn.baseText or ""))
             end
         end
@@ -9632,6 +9983,17 @@ function UI:ShowAlertsConfig()
             local mode = s.alertMode or "SOUND_AND_BANNER"
             local scope = s.alertScope or "ZONE"
             local style = s.alertStyle or "BOTH"
+            local theme = UI:GetTheme()
+            local curR, curG, curB, curHex = WoWKB.AccentColor()
+            local curCode = "|cff" .. (curHex or "ffd100")
+
+            if dlg.TitleText then dlg.TitleText:SetText(curCode .. "FRONTLINE COMBAT ALERTS & RADAR|r") end
+            if dlg.Sec1Title then dlg.Sec1Title:SetText(curCode .. "1. CASUALTY ALERT DELIVERY & CHAT STREAM|r") end
+            if dlg.Sec2Title then dlg.Sec2Title:SetText(curCode .. "2. RADAR & PROXIMITY SCOPE|r") end
+            if dlg.Sec3Title then dlg.Sec3Title:SetText(curCode .. "3. VISUAL ALERT STYLE|r") end
+            if dlg.Sec4Title then dlg.Sec4Title:SetText(curCode .. "4. SCREEN POSITIONING & CALIBRATION|r") end
+            if dlg.Sec5Title then dlg.Sec5Title:SetText(curCode .. "5. MARK OF SPITE DEATH POPUP|r") end
+            if dlg.Sec6Title then dlg.Sec6Title:SetText(curCode .. "6. COMBAT FEED DESTINATION|r") end
 
             -- Section 1: Alert Delivery Mode & Live Chat Stream
             local showChat = (s.showChannelInChat == true)
@@ -9647,17 +10009,34 @@ function UI:ShowAlertsConfig()
             ApplySegmentState(dlg.BtnPresetOff, isOff)
 
             if isBoth then
-                dlg.ModeHint:SetText("|cff00ff00* Both Displays Active:|r |cff94a3b8Screen banner & audio horn trigger, and casualties stream into General chat.|r")
+                dlg.ModeHint:SetText(curCode .. "* Both Displays Active:|r |cff94a3b8Screen banner & audio horn trigger, and casualties stream into General chat.|r")
             elseif isHeadsUp then
-                dlg.ModeHint:SetText("|cff00e5ff* Heads-Up Only:|r |cff94a3b8Screen banner & audio horn trigger. Chat window remains 100% clean and quiet.|r")
+                dlg.ModeHint:SetText(curCode .. "* Heads-Up Only:|r |cff94a3b8Screen banner & audio horn trigger. Chat window remains 100% clean and quiet.|r")
             elseif isChatOnly then
-                dlg.ModeHint:SetText("|cffffd100* Silent Chat Stream:|r |cff94a3b8Casualties quietly stream into your chat window. Zero screen banners or audio horns.|r")
+                dlg.ModeHint:SetText(curCode .. "* Silent Chat Stream:|r |cff94a3b8Casualties quietly stream into your chat window. Zero screen banners or audio horns.|r")
             else
                 dlg.ModeHint:SetText("|cffff3333* All Alerts Muted:|r |cff94a3b8Screen banners and chat feeds suppressed. Kills recorded silently to database.|r")
             end
 
-            dlg.BtnToggleChat.Label:SetText(showChat and "|cff00ff00Chat Stream: ON|r" or "|cff888888Chat Stream: OFF|r")
-            dlg.BtnToggleSound.Label:SetText((s.soundAlerts ~= false) and "|cff00ff00Audio Warhorn: ON|r" or "|cff888888Audio Warhorn: OFF|r")
+            if showChat then
+                dlg.BtnToggleChat:SetBackdropColor(curR * 0.18, curG * 0.18, curB * 0.18, 0.95)
+                dlg.BtnToggleChat:SetBackdropBorderColor(curR, curG, curB, 0.95)
+                dlg.BtnToggleChat.Label:SetText(curCode .. "* Chat Window Feed: ON|r")
+            else
+                dlg.BtnToggleChat:SetBackdropColor(unpack(theme.btnBg or { 0.08, 0.10, 0.15, 1.0 }))
+                dlg.BtnToggleChat:SetBackdropBorderColor(unpack(theme.btnBorder or { 0.22, 0.22, 0.22, 0.95 }))
+                dlg.BtnToggleChat.Label:SetText("|cff888888Chat Window Feed: OFF|r")
+            end
+
+            if s.soundAlerts ~= false then
+                dlg.BtnToggleSound:SetBackdropColor(curR * 0.18, curG * 0.18, curB * 0.18, 0.95)
+                dlg.BtnToggleSound:SetBackdropBorderColor(curR, curG, curB, 0.95)
+                dlg.BtnToggleSound.Label:SetText(curCode .. "* Audio Warhorn: ON|r")
+            else
+                dlg.BtnToggleSound:SetBackdropColor(unpack(theme.btnBg or { 0.08, 0.10, 0.15, 1.0 }))
+                dlg.BtnToggleSound:SetBackdropBorderColor(unpack(theme.btnBorder or { 0.22, 0.22, 0.22, 0.95 }))
+                dlg.BtnToggleSound.Label:SetText("|cff888888Audio Warhorn: OFF|r")
+            end
 
             -- Section 2: Proximity Scope
             ApplySegmentState(dlg.BtnScopeZone, scope == "ZONE")
@@ -9665,11 +10044,11 @@ function UI:ShowAlertsConfig()
             ApplySegmentState(dlg.BtnScopeMine, scope == "MINE")
 
             if scope == "ZONE" then
-                dlg.ScopeHint:SetText("|cff00e5ff* Radar:|r |cff94a3b8Alerts only when combat occurs in your current zone.|r")
+                dlg.ScopeHint:SetText(curCode .. "* Radar:|r |cff94a3b8Alerts only when combat occurs in your current zone.|r")
             elseif scope == "ALL" then
-                dlg.ScopeHint:SetText("|cffffd700* Broadcast:|r |cff94a3b8Alerts for all kills broadcasted across realm network.|r")
+                dlg.ScopeHint:SetText(curCode .. "* Broadcast:|r |cff94a3b8Alerts for all kills broadcasted across realm network.|r")
             else
-                dlg.ScopeHint:SetText("|cff10b981* Solo:|r |cff94a3b8Only triggers when you personally kill or are killed.|r")
+                dlg.ScopeHint:SetText(curCode .. "* Solo:|r |cff94a3b8Only triggers when you personally kill or are killed.|r")
             end
 
             -- Section 3: Visual Alert Style
@@ -9678,22 +10057,28 @@ function UI:ShowAlertsConfig()
             ApplySegmentState(dlg.BtnStyleBanner, style == "BANNER")
 
             if style == "BOTH" then
-                dlg.StyleHint:SetText("|cff00e5ff* Dual Display:|r |cff94a3b8Flashes large Raid Warning text AND Tactical Kill Banner.|r")
+                dlg.StyleHint:SetText(curCode .. "* Dual Display:|r |cff94a3b8Flashes large Raid Warning text AND Tactical Kill Banner.|r")
             elseif style == "RAID_WARNING" then
                 dlg.StyleHint:SetText("|cffff3333* Raid Warning:|r |cff94a3b8Flashes high-visibility cinematic text across screen center.|r")
             else
-                dlg.StyleHint:SetText("|cffffd100* Tactical Banner:|r |cff94a3b8Displays compact banner with combatant class icons & GPS.|r")
+                dlg.StyleHint:SetText(curCode .. "* Tactical Banner:|r |cff94a3b8Displays compact banner with combatant class icons & GPS.|r")
             end
 
             -- Section 4: Screen Positioning
             local pos = s.bannerPosition or { point = "TOP", x = 0, y = -120 }
-            dlg.PosCoords:SetText(string.format("|cff00e5ffCurrent Anchor:|r |cffffffff%s (X: %d, Y: %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -120))
+            dlg.PosCoords:SetText(string.format("%sCurrent Anchor:|r |cffffffff%s (X: %d, Y: %d)|r", curCode, pos.point or "TOP", pos.x or 0, pos.y or -120))
 
             if UI.bannerUnlocked then
-                dlg.UnlockBtn.Label:SetText("|cffff3333Lock Toast Position (Toggle OFF)|r")
+                dlg.UnlockBtn.Label:SetText("|cffff3333Lock Toast Position|r")
+                dlg.UnlockBtn:SetBackdropBorderColor(1.0, 0.2, 0.2, 0.9)
             else
-                dlg.UnlockBtn.Label:SetText("|cffffd100Preview & Move Toast (Toggle ON)|r")
+                dlg.UnlockBtn.Label:SetText(curCode .. "Move Toast Position|r")
+                dlg.UnlockBtn:SetBackdropBorderColor(curR, curG, curB, 0.6)
             end
+            dlg.ResetBtn.Label:SetText("Reset to Center")
+            dlg.ResetBtn:SetBackdropBorderColor(0.3, 0.3, 0.3, 1.0)
+            dlg.CloseBtn.Label:SetText("Close")
+            dlg.CloseBtn:SetBackdropBorderColor(curR, curG, curB, 0.6)
 
             -- Section 5: Mark of Spite Death Popup
             local promptEnabled = (s.promptMarkOnDeath ~= false and s.promptBountyOnDeath ~= false)

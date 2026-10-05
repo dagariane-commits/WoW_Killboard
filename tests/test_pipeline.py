@@ -2007,8 +2007,8 @@ WoWKillboardDB = {
         with open(os.path.join(addon_dir, "UI.lua"), "r", encoding="utf-8") as f:
             ui_content = f.read()
         self.assertIn("UI.RealmBadge = realmTag", ui_content)
-        self.assertIn("[PVE STATS]", ui_content)
-        self.assertIn("[PVP STATS]", ui_content)
+        self.assertTrue("Mode: PvE Stats" in ui_content or "[PVE STATS]" in ui_content)
+        self.assertTrue("Mode: PvP Stats" in ui_content or "[PVP STATS]" in ui_content)
         self.assertIn('r == "PVE" or r == "HARDCORE" or r == "RP"', ui_content)
 
         # 4. Simulate MatchesRealm strict logic

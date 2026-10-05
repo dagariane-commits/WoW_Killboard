@@ -17,18 +17,22 @@ stateDiagram-v2
 
 ---
 
-## 2. Strict Open-World PvP Gating (Zero Instance Taint)
+## 2. Strict Open-World PvP Gating & Anti-Trolling Declaration Policy
 
-To preserve the tactical sanctity of instanced play and focus player bounties on raw open-world warfare:
+To prevent harassment and griefing, arbitrary bounty declarations from UI menus have been decommissioned:
 
-1. **Open-World Enforcement**:
-   - Blood bounties can **strictly only be declared in the open world**.
-   - The addon inspects `IsInInstance()`: if the player is currently inside a dungeon (`"party"`), raid (`"raid"`), battleground (`"pvp"`), or arena (`"arena"`), bounty creation is immediately rejected:
+1. **Open-World Death Gating (Anti-Trolling Standard)**:
+   - Blood bounties can **strictly only be declared upon being slain in open-world PvP**.
+   - Arbitrary "+ Place Bounty" buttons have been completely removed from the Bounty Board to prevent players from banding together to troll or mass-target individuals without cause.
+   - When a player is slain in the open world, the Death Dialog (`FALLEN IN BATTLE — DECLARE BLOOD BOUNTY`) presents the sole legitimate interface to pledge a blood bounty.
+   - If the player is inside an instanced area (`IsInInstance()` returns true for dungeons, raids, battlegrounds, or arenas), bounty creation is strictly suppressed:
      ```text
      "Blood bounties can only be declared upon the open battlefields of Azeroth (Open World PvP only)."
      ```
-2. **Death Revenge Gating**:
-   - The on-screen revenge prompt (`FALLEN IN BATTLE — DECLARE BLOOD BOUNTY`) is suppressed if the player falls inside an instance, battleground, or arena.
+2. **Multi-Bounty Stacking & Aggragated Rewards**:
+   - When multiple independent victims place a Mark of Spite on the same killer, the contracts automatically stack into a single unified bounty target.
+   - Reward funds are summed in real-time, displaying exact total Gold, Silver, and Copper (`%dg %ds %dc`).
+   - The UI lists the primary placer and count of additional backers (`Placer (+N)`), with hover tooltips detailing every contributor and individual pledge.
 3. **Ingestion & REST API Security**:
    - Ingestion endpoints (`POST /api/bounties`) evaluate the incoming context payload:
      ```python
@@ -89,6 +93,18 @@ flowchart LR
   [!] WANTED BLOOD DEBTOR DETECTED: <PlayerName> [Debt: 500g | KOS] [!]
   ```
 - **Auditory Alert**: Triggers a distinctive raid siren sound kit (`PlaySound(8959)`).
+
+### 5.1. RareScanner-Style Bounty Proximity Radar (`UnitScanner.lua`, `UI.lua`)
+When any hostile player carrying an active Mark of Spite enters combatant proximity (detected via mouseover, target, or hostile nameplate registration):
+1. **Interactive Toast Modal (`UI:ShowBountyProximityAlert`)**:
+   - Pops a dedicated, 100% pure Lua frame with `"BackdropTemplate"` (strict `InCombatLockdown()` gated).
+   - Displays the target's class icon, class-colored name, guild name, and total aggregated bounty reward.
+2. **Instant Action Triggers**:
+   - `[ Accept & Hunt ]`: Flags the contract as actively accepted and tracked in the Bounty Board.
+   - `[ Alert Faction ]`: Fires a local `/yell` broadcast with zone coordinates alerting nearby allies:
+     `[WoWKB Bounty Alert] Active Mark of Spite spotted nearby: <Target> (<Class>) - Reward: <Amount>! Coordinates: (<X>, <Y>)`
+   - `[ Dismiss / Mute ]`: Dismisses the modal and suppresses alerts for that specific bounty target for 5 minutes (`US.MutedBounties`).
+3. **60-Second Throttle**: Prevents audio or window spam while engaged in skirmishes with the target.
 
 ---
 
