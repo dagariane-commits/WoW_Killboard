@@ -20,6 +20,62 @@ const CLASS_COLORS = {
   UNKNOWN: "#94a3b8"
 };
 
+const BLIZZARD_CLASS_IDS = [
+  "WARRIOR",      // 1
+  "PALADIN",      // 2
+  "HUNTER",       // 3
+  "ROGUE",        // 4
+  "PRIEST",       // 5
+  "DEATHKNIGHT",  // 6
+  "SHAMAN",       // 7
+  "MAGE",         // 8
+  "WARLOCK",      // 9
+  "MONK",         // 10
+  "DRUID",        // 11
+  "DEMONHUNTER",  // 12
+  "EVOKER"        // 13
+];
+
+function resolveClassName(cls) {
+  if (cls === null || cls === undefined) return "UNKNOWN";
+  const num = parseInt(cls, 10);
+  if (!isNaN(num) && num >= 1 && num <= BLIZZARD_CLASS_IDS.length) {
+    return BLIZZARD_CLASS_IDS[num - 1];
+  }
+  const val = String(cls).trim().toUpperCase();
+  return val ? val : "UNKNOWN";
+}
+
+function getCurrentRealm() {
+  const flavor = (typeof currentFlavor !== "undefined" && currentFlavor) ? currentFlavor : "FOREVER";
+  if (flavor === "FOREVER") {
+    const srv = (typeof getCurrentForeverServer === "function") ? getCurrentForeverServer() : (localStorage.getItem("wowkb_forever_server") || "PVP").toUpperCase();
+    switch (srv) {
+      case "PVE": return "Classic Beta PvE";
+      case "RP": return "Classic Beta RP";
+      case "HARDCORE": return "Classic Beta Hardcore";
+      case "PVP":
+      default: return "Classic Beta PvP";
+    }
+  }
+  if (flavor === "CLASSIC_ERA") return "Classic Era";
+  if (flavor === "ANNIVERSARY") return "Anniversary";
+  if (flavor === "RETAIL") return "Retail";
+  if (flavor === "TBC") return "The Burning Crusade";
+  if (flavor === "WOTLK") return "Wrath of the Lich King";
+  return "Classic Beta PvP";
+}
+
+function flushAndReloadActiveRealm() {
+  cachedKills = [];
+  knownKillIds.clear();
+  benchmarkPlayerCache = {};
+  knownCharactersCache = [];
+  if (typeof reloadActiveView === "function") {
+    reloadActiveView();
+  }
+}
+
 const CLASS_SYMBOLS = {
   WARRIOR: "⚔️",
   PALADIN: "🛡️",
@@ -53,7 +109,7 @@ function safeJsParam(str) {
 }
 
 function getClassIconSvg(cls) {
-  cls = (cls || "").toUpperCase();
+  cls = resolveClassName(cls);
   switch (cls) {
     case "WARRIOR":
       return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M9.5 17.5L21 6V3h-3L6.5 14.5M11 19l-6-6M8 16l-4 4"/></svg>`;
@@ -87,9 +143,9 @@ function getClassIconSvg(cls) {
 }
 
 function renderClassBadge(cls, size = 20) {
-  const clsLower = (cls || "").toLowerCase();
-  const clsUpper = (cls || "").toUpperCase();
-  const color = CLASS_COLORS[clsUpper] || "#94a3b8";
+  const clsUpper = resolveClassName(cls);
+  const clsLower = clsUpper.toLowerCase();
+  const color = CLASS_COLORS[clsUpper] || CLASS_COLORS.UNKNOWN;
   const svg = getClassIconSvg(clsUpper);
   return `<span class="wow-class-icon" style="width:${size}px; height:${size}px; border-color:${color};" title="${clsUpper}">
     <img src="/static/icons/classes/${clsLower}.jpg" alt="${clsUpper}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">
@@ -323,11 +379,7 @@ async function handleFlavorChange(newFlavor, newServer) {
   if (typeof updateNavigationLabels === "function") {
     updateNavigationLabels();
   }
-  if (typeof reloadActiveView === "function") {
-    reloadActiveView();
-  } else if (currentTab === "ARMORY") {
-    loadArmoryView();
-  }
+  flushAndReloadActiveRealm();
 }
 
 function updateFlavorUi() {
@@ -495,8 +547,9 @@ async function loadMostWanted() {
       mwBtn.onclick = () => switchTab('HAZARDS');
     }
 
+    const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvE";
     try {
-      const res = await fetch("/api/pve/leaderboard");
+      const res = await fetch(`/api/pve/leaderboard?realm=${encodeURIComponent(currentRealm)}`);
       if (!res.ok) return;
       const lb = await res.json();
       renderPveMostWanted(lb.topDeadlyNpcs || []);
@@ -513,9 +566,11 @@ async function loadMostWanted() {
     mwBtn.onclick = () => switchTab('BOUNTIES');
   }
 
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
+
   try {
     const isSupporter = isSupporterActive();
-    const res = await fetch(`/api/bounties/most-wanted?supporter=${isSupporter ? '1' : '0'}`);
+    const res = await fetch(`/api/bounties/most-wanted?supporter=${isSupporter ? '1' : '0'}&realm=${encodeURIComponent(currentRealm)}`);
     if (!res.ok) return;
     const outlaws = await res.json();
     renderMostWanted(outlaws);
@@ -529,60 +584,38 @@ function renderPveMostWanted(npcs) {
   if (!container) return;
 
   const safeNpcs = Array.isArray(npcs) ? npcs : [];
-  const totalSlots = safeNpcs.length > 5 ? 10 : 5;
-  let html = "";
+  const topNpcs = safeNpcs.slice(0, 4);
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvE";
 
-  for (let idx = 0; idx < totalSlots; idx++) {
-    const npc = safeNpcs[idx];
-    if (npc) {
-      const isRank1 = idx === 0;
-      const rank1Class = isRank1 ? "rank-1-card" : "";
-      const stampRankClass = isRank1 ? "rank-1" : "";
-      const maxHit = formatNumber(npc.max_damage || 0);
-
-      html += `
-        <div class="wanted-card compact horde ${rank1Class}" style="border-color:#ef4444;">
-          <div class="wanted-card-top">
-            <span class="wanted-stamp ${stampRankClass}">#${idx + 1} DEADLIEST</span>
-            <span class="wanted-reward-pill gold-pot" style="color:#ef4444; border-color:#7f1d1d;">💀 ${npc.kills} Slain</span>
-          </div>
-          <div class="wanted-avatar-wrap compact" style="border-color:#ef4444; background:rgba(239,68,68,0.15); display:flex; align-items:center; justify-content:center; font-size:1.8rem;">
-            💀
-          </div>
-          <div class="wanted-name-row">
-            <span class="wanted-level-badge" style="background:#7f1d1d; color:#fca5a5;">ELITE</span>
-            <div class="wanted-name" style="color:#ef4444;" title="${escapeHtml(npc.npc_name)}">
-              ${escapeHtml(npc.npc_name)}
-            </div>
-          </div>
-          <div class="wanted-guild" style="color:#f87171;">&lt;Wilderness Boss&gt;</div>
-          <div class="wanted-lastseen">💥 Max Hit: ${maxHit} dmg</div>
-          <div class="wanted-action-wrap">
-            <button class="wanted-btn compact" onclick="switchTab('HAZARDS')" style="background:rgba(239,68,68,0.15); border-color:#ef4444; color:#fca5a5;">Inspect Threat &rarr;</button>
-          </div>
-        </div>
-      `;
-    } else {
-      html += `
-        <div class="wanted-card compact blank">
-          <div class="wanted-card-top">
-            <span class="wanted-stamp muted">#${idx + 1} DEADLIEST</span>
-            <span class="wanted-reward-pill muted">CLEAR</span>
-          </div>
-          <div class="wanted-avatar-wrap compact blank">
-            <span class="wanted-blank-icon"></span>
-          </div>
-          <div class="wanted-name muted">Sector Clear</div>
-          <div class="wanted-guild muted">&lt;No Hazard&gt;</div>
-          <div class="wanted-lastseen muted">Wilderness Nominal</div>
-          <div class="wanted-action-wrap">
-            <button class="wanted-btn compact blank-issue-btn" disabled>Secured</button>
-          </div>
-        </div>
-      `;
-    }
+  if (topNpcs.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 14px 8px; text-align: center; color: #64748b; font-size: 0.78rem;">
+        <div>Wilderness nominal on <span style="color:#10b981; font-weight:700;">${escapeHtml(currentRealm)}</span></div>
+      </div>
+    `;
+    return;
   }
 
+  let html = `<div class="sidebar-bounty-list">`;
+  topNpcs.forEach((npc) => {
+    const npcName = npc.npc_name || "Unknown Beast";
+    const kills = npc.kills || 0;
+    html += `
+      <div class="sidebar-bounty-row" onclick="switchTab('HAZARDS')" title="Inspect ${escapeHtml(npcName)} in Deadly Hazards">
+        <div class="sidebar-bounty-left">
+          <span style="font-size: 1.15rem; line-height: 1;">💀</span>
+          <div class="sidebar-bounty-info">
+            <span class="sidebar-bounty-name" style="color: #ef4444;">${escapeHtml(npcName)}</span>
+            <span class="sidebar-bounty-realm">${escapeHtml(currentRealm)}</span>
+          </div>
+        </div>
+        <div class="sidebar-bounty-pot" style="color: #fca5a5; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.15);">
+          ${kills} Slain
+        </div>
+      </div>
+    `;
+  });
+  html += `</div>`;
   container.innerHTML = html;
 }
 
@@ -591,90 +624,51 @@ function renderMostWanted(outlaws) {
   if (!container) return;
 
   const safeOutlaws = Array.isArray(outlaws) ? outlaws : [];
-  // Show 1 clean row (5 slots) if 5 or fewer bounties exist, expand to 10 only when crowded
-  const totalSlots = safeOutlaws.length > 5 ? 10 : 5;
-  let html = "";
+  const topOutlaws = safeOutlaws.slice(0, 4);
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
 
-  for (let idx = 0; idx < totalSlots; idx++) {
-    const b = safeOutlaws[idx];
-    if (b) {
-      const cls = (b.target_class || "WARRIOR").toUpperCase();
-      const clsColor = CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN;
-      const accepted = isBountyAcceptedLocally(b.id);
-      const lastSeenText = b.lastSeen && b.lastSeen.hasTelemetry 
-        ? b.lastSeen.displayText 
-        : "Unknown Location";
-
-      // Format reward accurately for gold, silver, or copper
-      const copper = Number(b.amount_copper) || (Number(b.amount_gold) * 10000) || 0;
-      let rewardText = "";
-      if (copper >= 10000) {
-        rewardText = `${(copper / 10000).toFixed(copper % 10000 === 0 ? 0 : 1)}g`;
-      } else if (copper >= 100) {
-        rewardText = `${Math.floor(copper / 100)}s ${copper % 100 > 0 ? (copper % 100) + 'c' : ''}`.trim();
-      } else {
-        rewardText = `${copper}c`;
-      }
-
-      // Contracts are accepted exclusively in-game in World of Warcraft; website displays tactical dossier link
-      const btnHtml = `<button class="wanted-btn compact" onclick="openCharacterProfile(${safeJsParam(b.target_name)})" title="Inspect Outlaw Dossier (Marks Accepted In-Game Only)">Target Intel &rarr;</button>`;
-
-      let targetFaction = (b.target_faction || "").trim();
-      if (!targetFaction && cls) {
-        if (cls === "PALADIN") targetFaction = "Alliance";
-        else if (cls === "SHAMAN") targetFaction = "Horde";
-      }
-      const factionClass = targetFaction.toLowerCase() === "alliance" ? "alliance" : (targetFaction.toLowerCase() === "horde" ? "horde" : "");
-
-      const isRank1 = idx === 0;
-      const rank1Class = isRank1 ? "rank-1-card" : "";
-      const stampRankClass = isRank1 ? "rank-1" : "";
-      const targetLevel = b.target_level || b.level || 60;
-      const goldPotHtml = `<span class="wanted-reward-pill gold-pot">💰 ${rewardText}</span>`;
-
-      html += `
-        <div class="wanted-card compact ${factionClass} ${rank1Class}">
-          <div class="wanted-card-top">
-            <span class="wanted-stamp ${stampRankClass}">#${idx + 1} WANTED</span>
-            ${goldPotHtml}
-          </div>
-          <div class="wanted-avatar-wrap compact" style="border-color: ${clsColor};">
-            <img src="/static/icons/classes/${cls.toLowerCase()}.jpg" class="wanted-avatar-img" alt="${cls}" onerror="this.src='/static/icons/classes/warrior.jpg'">
-          </div>
-          <div class="wanted-name-row">
-            <span class="wanted-level-badge">Lv ${targetLevel}</span>
-            <div class="wanted-name" onclick="openCharacterProfile(${safeJsParam(b.target_name)})" title="${b.target_name}">
-              ${colorizeClass(b.target_name, cls)}
-            </div>
-          </div>
-          <div class="wanted-guild" title="${targetFaction || 'Neutral'}">&lt;${targetFaction || 'Neutral'}&gt;</div>
-          <div class="wanted-lastseen" title="Last Seen: ${lastSeenText}">📍 ${lastSeenText}</div>
-          <div class="wanted-action-wrap">
-            ${btnHtml}
-          </div>
-        </div>
-      `;
-    } else {
-      html += `
-        <div class="wanted-card compact blank" onclick="switchTab('BOUNTIES')" title="Click to place a Blood Bounty and fill this execution slot">
-          <div class="wanted-card-top">
-            <span class="wanted-stamp muted">#${idx + 1} WANTED</span>
-            <span class="wanted-reward-pill muted">OPEN</span>
-          </div>
-          <div class="wanted-avatar-wrap compact blank">
-            <span class="wanted-blank-icon"></span>
-          </div>
-          <div class="wanted-name muted">Pending Target</div>
-          <div class="wanted-guild muted">&lt;Unclaimed&gt;</div>
-          <div class="wanted-lastseen muted">No Active Contract</div>
-          <div class="wanted-action-wrap">
-            <button class="wanted-btn compact blank-issue-btn" onclick="event.stopPropagation(); switchTab('BOUNTIES')">+ Issue Bounty</button>
-          </div>
-        </div>
-      `;
-    }
+  if (topOutlaws.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 14px 8px; text-align: center; color: #64748b; font-size: 0.78rem;">
+        <div>No active marks on <span style="color:var(--wow-gold); font-weight:700;">${escapeHtml(currentRealm)}</span></div>
+        <button class="issue-bounty-quick-btn" style="margin-top: 8px; padding: 4px 12px;" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
+      </div>
+    `;
+    return;
   }
 
+  let html = `<div class="sidebar-bounty-list">`;
+  topOutlaws.forEach((b) => {
+    const rawCls = b.target_class || b.targetClass || "WARRIOR";
+    const cls = resolveClassName(rawCls);
+    const targetName = b.target_name || b.targetName || "Unknown";
+    const realm = b.realm || currentRealm;
+    const copper = Number(b.amount_copper) || (Number(b.amount_gold) * 10000) || 0;
+    let rewardText = "";
+    if (copper >= 10000) {
+      rewardText = `${(copper / 10000).toFixed(copper % 10000 === 0 ? 0 : 1)}g`;
+    } else if (copper >= 100) {
+      rewardText = `${Math.floor(copper / 100)}s ${copper % 100 > 0 ? (copper % 100) + 'c' : ''}`.trim();
+    } else {
+      rewardText = `${copper}c`;
+    }
+
+    html += `
+      <div class="sidebar-bounty-row" onclick="openCharacterProfile(${safeJsParam(targetName)})" title="Inspect Outlaw Dossier: ${escapeHtml(targetName)} (${escapeHtml(realm)})">
+        <div class="sidebar-bounty-left">
+          ${renderClassBadge(cls, 22)}
+          <div class="sidebar-bounty-info">
+            <span class="sidebar-bounty-name">${colorizeClass(targetName, cls)}</span>
+            <span class="sidebar-bounty-realm">${escapeHtml(realm)}</span>
+          </div>
+        </div>
+        <div class="sidebar-bounty-pot" title="${copper} Copper Bounty Pot">
+          💰 ${rewardText}
+        </div>
+      </div>
+    `;
+  });
+  html += `</div>`;
   container.innerHTML = html;
 }
 
@@ -720,7 +714,8 @@ function formatDuration(sec) {
 }
 
 function colorizeClass(name, cls) {
-  const color = CLASS_COLORS[(cls || "").toUpperCase()] || CLASS_COLORS.UNKNOWN;
+  const resolved = resolveClassName(cls);
+  const color = CLASS_COLORS[resolved] || CLASS_COLORS.UNKNOWN;
   return `<span style="color: ${color}; font-weight: 700;">${escapeHtml(name || "Unknown")}</span>`;
 }
 
@@ -781,10 +776,11 @@ window.showCombatToast = showCombatToast;
 // Data Fetching
 async function loadKills() {
   const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
 
   if (isPve) {
     try {
-      const res = await fetch("/api/pve/deaths?limit=30");
+      const res = await fetch(`/api/pve/deaths?limit=30&realm=${encodeURIComponent(currentRealm)}`);
       if (res.ok) {
         const data = await res.json();
         const incomingDeaths = data.deaths || [];
@@ -801,7 +797,7 @@ async function loadKills() {
 
   try {
     const fetchMode = (currentMode || "WORLD").toUpperCase();
-    const res = await fetch(`/api/kills?mode=${encodeURIComponent(fetchMode)}&search=${encodeURIComponent(searchQuery)}`);
+    const res = await fetch(`/api/kills?mode=${encodeURIComponent(fetchMode)}&search=${encodeURIComponent(searchQuery)}&realm=${encodeURIComponent(currentRealm)}`);
     const data = await res.json();
     const incomingKills = data.kills || [];
 
@@ -897,7 +893,8 @@ async function loadSidebar() {
   try {
     const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
     const activeServer = (typeof getCurrentForeverServer === "function") ? getCurrentForeverServer() : "PVP";
-    const res = await fetch(`/api/stats/activity-7d?flavor=${encodeURIComponent(currentFlavor)}&server=${encodeURIComponent(isPve ? "PVE" : activeServer)}`);
+    const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
+    const res = await fetch(`/api/stats/activity-7d?flavor=${encodeURIComponent(currentFlavor)}&server=${encodeURIComponent(isPve ? "PVE" : activeServer)}&realm=${encodeURIComponent(currentRealm)}`);
     if (!res.ok) return;
     const data = await res.json();
     renderSidebarActivity(data);
@@ -1124,14 +1121,15 @@ async function loadLeaderboards() {
     return;
   }
   const container = document.getElementById("main-content-area");
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
   try {
     if (legendsTabType === "GUILDS") {
-      const res = await fetch(`/api/guilds?mode=${currentMode}`);
+      const res = await fetch(`/api/guilds?mode=${currentMode}&realm=${encodeURIComponent(currentRealm)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       renderLeaderboardView(null, null, data.guilds || []);
     } else {
-      const res = await fetch(`/api/leaderboard?mode=${currentMode}`);
+      const res = await fetch(`/api/leaderboard?mode=${currentMode}&realm=${encodeURIComponent(currentRealm)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
@@ -1145,7 +1143,7 @@ async function loadLeaderboards() {
             if (benchmarkPlayerCache[bmName.toLowerCase()]) {
               benchmarkProfile = benchmarkPlayerCache[bmName.toLowerCase()];
             } else {
-              const charRes = await fetch(`/api/character/${encodeURIComponent(bmName)}`);
+              const charRes = await fetch(`/api/character/${encodeURIComponent(bmName)}?realm=${encodeURIComponent(currentRealm)}`);
               if (charRes.ok) {
                 benchmarkProfile = await charRes.json();
                 benchmarkPlayerCache[bmName.toLowerCase()] = benchmarkProfile;
@@ -1201,12 +1199,13 @@ async function loadBounties() {
   if (container) {
     container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering active bounty contracts and debt ledger...</div>`;
   }
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
   try {
     const isSupporter = isSupporterActive();
     const [bntRes, debtRes, lbRes] = await Promise.all([
-      fetch(`/api/bounties?supporter=${isSupporter ? '1' : '0'}`),
-      fetch(`/api/bounties/debt-ledger`),
-      fetch(`/api/bounties/leaderboards`)
+      fetch(`/api/bounties?supporter=${isSupporter ? '1' : '0'}&realm=${encodeURIComponent(currentRealm)}`),
+      fetch(`/api/bounties/debt-ledger?realm=${encodeURIComponent(currentRealm)}`),
+      fetch(`/api/bounties/leaderboards?realm=${encodeURIComponent(currentRealm)}`)
     ]);
     if (!bntRes.ok) throw new Error(`HTTP ${bntRes.status}`);
     const bounties = await bntRes.json();
@@ -1235,10 +1234,11 @@ async function renderStats(kills) {
   const hubContainer = document.getElementById("homepage-stats-hub");
 
   const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : (isPve ? "Classic Beta PvE" : "Classic Beta PvP");
   if (isPve) {
     let pveSummary = { totalDeaths: 10, uniqueDeadlyNpcs: 8, mostDangerousZone: { zone: "Elwynn Forest", deaths: 3 } };
     try {
-      const lbRes = await fetch("/api/pve/leaderboard");
+      const lbRes = await fetch(`/api/pve/leaderboard?realm=${encodeURIComponent(currentRealm)}`);
       if (lbRes.ok) {
         const lb = await lbRes.json();
         if (lb.summary) pveSummary = lb.summary;
@@ -1268,10 +1268,10 @@ async function renderStats(kills) {
           <span class="telemetry-divider">|</span>
           <div class="telemetry-item">
             <span class="telemetry-label">Campaign:</span>
-            <span class="telemetry-val" id="stat-faction-split" style="color: #10b981; font-weight:800;">Forever PvE</span>
+            <span class="telemetry-val" id="stat-faction-split" style="color: #10b981; font-weight:800;">${escapeHtml(currentRealm)}</span>
           </div>
           <span id="stat-solo-percent" style="display:none;">0%</span>
-          <span id="stat-active-mode" style="display:none;">Forever PvE</span>
+          <span id="stat-active-mode" style="display:none;">${escapeHtml(currentRealm)}</span>
         </div>
       `;
     }
@@ -1289,7 +1289,7 @@ async function renderStats(kills) {
   };
 
   try {
-    const statsRes = await fetch("/api/stats");
+    const statsRes = await fetch(`/api/stats?realm=${encodeURIComponent(currentRealm)}`);
     if (statsRes.ok) {
       const statsData = await statsRes.json();
       if (statsData.counts) {
@@ -1468,10 +1468,15 @@ function renderFeed(kills) {
   let html = `
     <div style="display: flex; flex-direction: column; gap: 6px;">
       <div class="feed-header-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); gap:10px; flex-wrap:wrap;">
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">THE SHADOW NETWORK &mdash; RECENT COMBAT FEED</span>
           <span class="feed-count-pill">${modeFilteredKills.length}</span>
-          <span style="font-size:0.75rem; color:#10b981; font-weight:700; background:rgba(16,185,129,0.12); padding:2px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.25);">${modePillText}</span>
+          <div class="filter-pills" id="feed-mode-pills" style="display:inline-flex; align-items:center; gap:4px; margin-left:4px;">
+            <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
+            <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
+            <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
+            <button class="pill-btn disabled" style="opacity:0.4; cursor:not-allowed;" title="Arenas" onclick="setFilterMode('ARENA')">Arenas</button>
+          </div>
           <button class="pill-btn" onclick="loadKills(); loadSidebar();" title="Refresh Live Combat Feed" style="padding:2px 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Refresh</button>
         </div>
         <span style="font-size:0.75rem; color:#856a36;">The Shadow Network &bull; Type <code style="color:var(--wow-gold);">/reload</code> in WoW to sync</span>
@@ -1608,14 +1613,6 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
   let html = `
     <div style="display: flex; flex-direction: column; gap: 16px;">
-      <!-- Sub-Toggle Navigation: Defender of Azeroth (PvP) vs Deadly Hazards (PvE) -->
-      <div class="legends-subnav-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:4px;">
-        <div class="filter-pills">
-          <button class="pill-btn active" onclick="switchTab('LEGENDS')">⚔️ Defender of Azeroth (PvP)</button>
-          <button class="pill-btn" onclick="switchTab('HAZARDS')">💀 Deadly Hazards (PvE)</button>
-        </div>
-      </div>
-
       <!-- Champions Header Row with Type Toggle and Mode Pills -->
       <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); margin-bottom:4px;">
         <div>
@@ -1727,8 +1724,13 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
     // Render Operative Benchmark Comparison Banner
     if (bmName) {
-      const bmClass = bmMatch ? bmMatch.class : (benchmarkProfile && benchmarkProfile.character ? benchmarkProfile.character.class : 'WARRIOR');
-      const bmFaction = bmMatch ? bmMatch.faction : (benchmarkProfile && benchmarkProfile.character ? benchmarkProfile.character.faction : 'Alliance');
+      const rawBmClass = (bmMatch && bmMatch.class) ||
+        (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
+        (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
+      const bmClass = resolveClassName(rawBmClass);
+      const bmFaction = (bmMatch && bmMatch.faction) ||
+        (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
+        (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
       const bmKills = bmMatch ? bmMatch.kills : (benchmarkProfile ? (benchmarkProfile.total_kills || 0) : 0);
       const bmSolo = bmMatch ? (bmMatch.solo_kills || 0) : (benchmarkProfile ? (benchmarkProfile.solo_kills || 0) : 0);
       const bmPct = bmMatch ? bmMatch.percentile : (benchmarkProfile && benchmarkProfile.percentile ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 });
@@ -1869,9 +1871,12 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       });
 
       if (bmName && !bmMatch && (benchmarkProfile || bmRank)) {
-        const bmClass = (benchmarkProfile && benchmarkProfile.character) ? benchmarkProfile.character.class : 'WARRIOR';
-        const bmFaction = (benchmarkProfile && benchmarkProfile.character) ? benchmarkProfile.character.faction : 'Alliance';
-        const bmGuild = (benchmarkProfile && benchmarkProfile.character && benchmarkProfile.character.guild) ? benchmarkProfile.character.guild : 'None';
+        const rawBmClass = (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
+          (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
+        const bmClass = resolveClassName(rawBmClass);
+        const bmFaction = (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
+          (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
+        const bmGuild = (benchmarkProfile && (benchmarkProfile.guild || (benchmarkProfile.character && benchmarkProfile.character.guild))) || 'None';
         const bmKills = benchmarkProfile ? (benchmarkProfile.total_kills || 0) : 0;
         const bmSolo = benchmarkProfile ? (benchmarkProfile.solo_kills || 0) : 0;
         const bmPct = (benchmarkProfile && benchmarkProfile.percentile) ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 };
@@ -3272,10 +3277,12 @@ async function loadDeadlyNpcsView() {
   if (!container) return;
   container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering wilderness executions and fallen mortal records...</div>`;
 
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvE";
+
   try {
     const [lbRes, deathsRes] = await Promise.all([
-      fetch("/api/pve/leaderboard"),
-      fetch("/api/pve/deaths?limit=40")
+      fetch(`/api/pve/leaderboard?realm=${encodeURIComponent(currentRealm)}`),
+      fetch(`/api/pve/deaths?limit=40&realm=${encodeURIComponent(currentRealm)}`)
     ]);
     const lbData = await lbRes.json();
     const deathsData = await deathsRes.json();
@@ -3297,14 +3304,6 @@ function renderDeadlyNpcsView(lbData, deaths) {
 
   let html = `
     <div class="deadly-npcs-container">
-      <!-- Sub-Toggle Navigation: Defender of Azeroth (PvP) vs Deadly Hazards (PvE) -->
-      <div class="legends-subnav-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-        <div class="filter-pills">
-          <button class="pill-btn" onclick="switchTab('LEGENDS')">⚔️ Defender of Azeroth (PvP)</button>
-          <button class="pill-btn active" onclick="switchTab('HAZARDS')">💀 Deadly Hazards (PvE)</button>
-        </div>
-      </div>
-
       <!-- Hero Header Banner -->
       <div class="deadly-npcs-hero">
         <div>
@@ -4276,10 +4275,6 @@ function switchTab(tab) {
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   const activeBtn = document.getElementById(`nav-${tab.toLowerCase()}`);
   if (activeBtn) activeBtn.classList.add("active");
-  if (tab === "HAZARDS") {
-    const lBtn = document.getElementById("nav-legends");
-    if (lBtn) lBtn.classList.add("active");
-  }
   if (tab === "RALLIES") {
     const bBtn = document.getElementById("nav-bounties");
     if (bBtn) bBtn.classList.add("active");
@@ -4288,10 +4283,6 @@ function switchTab(tab) {
   document.querySelectorAll(".mobile-nav-item").forEach(b => b.classList.remove("active"));
   const activeMobileBtn = document.getElementById(`m-nav-${tab.toLowerCase()}`);
   if (activeMobileBtn) activeMobileBtn.classList.add("active");
-  if (tab === "HAZARDS") {
-    const mlBtn = document.getElementById("m-nav-legends");
-    if (mlBtn) mlBtn.classList.add("active");
-  }
   if (tab === "RALLIES") {
     const mbBtn = document.getElementById("m-nav-bounties");
     if (mbBtn) mbBtn.classList.add("active");
@@ -4318,7 +4309,7 @@ function switchTab(tab) {
   }
 
   if (mwSection) {
-    mwSection.style.display = (tab === "INTEL") ? "block" : "none";
+    mwSection.style.display = (tab === "INTEL" || tab === "LEGENDS" || tab === "ZONES" || tab === "HAZARDS" || tab === "BOUNTIES") ? "block" : "none";
   }
   if (tabbedLb) {
     // Hide redundant Top Gankers/Guilds when viewing LEGENDS table
@@ -4329,7 +4320,7 @@ function switchTab(tab) {
     contextFilters.style.display = (tab === "LEGENDS") ? "block" : "none";
   }
   if (classCard) {
-    classCard.style.display = (tab === "INTEL" || tab === "LEGENDS" || tab === "ZONES") ? "block" : "none";
+    classCard.style.display = (tab === "INTEL" || tab === "LEGENDS" || tab === "ZONES" || tab === "HAZARDS") ? "block" : "none";
   }
   if (activityCard) {
     activityCard.style.display = "block";
@@ -6304,9 +6295,6 @@ function updateNavigationLabels() {
   const mNavRallies = document.getElementById("m-nav-rallies");
   const mNavZones = document.getElementById("m-nav-zones");
 
-  // 3. Top Mode Filter Pills
-  const modeFilters = document.getElementById("header-mode-filters");
-
   // 4. Most Wanted Header
   const mwTitle = document.querySelector(".most-wanted-title");
   const mwSub = document.querySelector(".most-wanted-subtitle");
@@ -6326,12 +6314,6 @@ function updateNavigationLabels() {
     if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Bestiary";
     if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Rescue Beacons";
     if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Mortality";
-
-    if (modeFilters) {
-      modeFilters.innerHTML = `
-        <div class="header-mode-pill active" style="border-color:#38bdf8; color:#38bdf8; background:rgba(56, 189, 248, 0.15); font-weight:700; cursor:default; pointer-events:none;">🛡️ PvE Ruleset</div>
-      `;
-    }
 
     if (mwTitle) mwTitle.innerHTML = "NOTORIOUS ELITES &mdash; APEX PREDATORS";
     if (mwSub) mwSub.innerHTML = "Notorious Beasts &amp; Executioners Responsible for Mortal Casualties &bull; Track realm hazards";
@@ -6409,15 +6391,6 @@ function updateNavigationLabels() {
     if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Manhunt";
     if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Intel";
 
-    if (modeFilters) {
-      modeFilters.innerHTML = `
-        <button class="header-mode-pill ${currentMode === 'WORLD' ? 'active' : ''}" id="hdr-pill-world" onclick="setFilterMode('WORLD')" title="Open-World Combat">World</button>
-        <button class="header-mode-pill ${currentMode === 'BG' ? 'active' : ''}" id="hdr-pill-bg" onclick="setFilterMode('BG')" title="Battleground Matches">BGs</button>
-        <button class="header-mode-pill ${currentMode === 'DUEL' ? 'active' : ''}" id="hdr-pill-duel" onclick="setFilterMode('DUEL')" title="1v1 Sanctioned Duels">Duels</button>
-        <button class="header-mode-pill disabled" id="hdr-pill-arena" onclick="setFilterMode('ARENA')" title="Arena Matches">Arenas</button>
-      `;
-    }
-
     if (mwTitle) mwTitle.innerHTML = "THE BLOOD LEDGER &mdash; AZEROTH'S MOST WANTED";
     if (mwSub) mwSub.innerHTML = "Open World Execution Contracts &amp; Certified Outlaws &bull; Deliver the final blow to claim the bounty";
     if (mwBtn) {
@@ -6477,10 +6450,11 @@ async function loadPveBountiesView() {
   if (!container) return;
   container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering Notorious Elites &amp; apex threat telemetry...</div>`;
 
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvE";
   try {
     const [lbRes, deathsRes] = await Promise.all([
-      fetch("/api/pve/leaderboard"),
-      fetch("/api/pve/deaths?limit=30")
+      fetch(`/api/pve/leaderboard?realm=${encodeURIComponent(currentRealm)}`),
+      fetch(`/api/pve/deaths?limit=30&realm=${encodeURIComponent(currentRealm)}`)
     ]);
     const lb = await lbRes.json();
     const deaths = deathsRes.ok ? (await deathsRes.json()).deaths || [] : [];
@@ -6605,10 +6579,11 @@ async function loadPveZonesView() {
   if (!container) return;
   container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading Zone Mortality &amp; Wilderness Hazard Telemetry...</div>`;
 
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvE";
   try {
     const [lbRes, deathsRes] = await Promise.all([
-      fetch("/api/pve/leaderboard"),
-      fetch("/api/pve/deaths?limit=50")
+      fetch(`/api/pve/leaderboard?realm=${encodeURIComponent(currentRealm)}`),
+      fetch(`/api/pve/deaths?limit=50&realm=${encodeURIComponent(currentRealm)}`)
     ]);
     const lb = await lbRes.json();
     const deaths = deathsRes.ok ? (await deathsRes.json()).deaths || [] : [];
@@ -7346,11 +7321,6 @@ function setFilterMode(mode) {
   const activeMobilePill = document.getElementById(`m-pill-${mode.toLowerCase()}`);
   if (activeMobilePill) activeMobilePill.classList.add("active");
 
-  // Sync 4-way mode filter pills in header
-  document.querySelectorAll(".header-mode-pill").forEach(b => b.classList.remove("active"));
-  const activeHdrPill = document.getElementById(`hdr-pill-${mode.toLowerCase()}`);
-  if (activeHdrPill) activeHdrPill.classList.add("active");
-
   const statModeEl = document.getElementById("stat-active-mode");
   if (statModeEl) {
     const modeNames = { WORLD: "World PvP", BG: "Battlegrounds", ARENA: "Arenas", DUEL: "Duels" };
@@ -7368,6 +7338,7 @@ function openPlaceBountyModal() {
   if (!target) return;
   const gold = prompt("Enter Blood Bounty Gold Amount (e.g. 500):", "500");
   if (!gold) return;
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
 
   fetch("/api/bounties", {
     method: "POST",
@@ -7375,10 +7346,11 @@ function openPlaceBountyModal() {
     body: JSON.stringify({
       targetName: target,
       amountGold: parseInt(gold),
-      placerName: "WebUser"
+      placerName: "WebUser",
+      realm: currentRealm
     })
   }).then(() => {
-    alert(`Blood Bounty of ${gold}g declared on ${target}! The execution contract is now active across the realm.`);
+    alert(`Blood Bounty of ${gold}g declared on ${target}! The execution contract is now active across ${currentRealm}.`);
     loadBounties();
     loadMostWanted();
   });

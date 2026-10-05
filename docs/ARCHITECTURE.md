@@ -126,12 +126,24 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - Replaced multi-row header deck with a single 56px sticky header (`position: sticky`, `top: 0`, `z-index: 1000`):
      - **Brand & Theater**: Grouped brand crests, title, and active theater badge tightly on the left.
      - **Global Omni-Search (`#global-search-input`)**: Centralized typeahead search bar with `/` keyboard shortcut, instant dropdown (`#search-results-dropdown`), search federation across combatants, guilds, and zones, and keyboard arrow/enter navigation.
-     - **Core Combat Views**: Streamlined 4-button nav rail (`Intel`, `Leaderboards`, `Bounties & Manhunt`, `Zone Intel`) with dynamic sub-toggles combining Defender of Azeroth & Hazards, and Blood Ledger & Manhunts.
+     - **Core Combat Views**: Streamlined 5-button nav rail (`Intel`, `Leaderboards`, `Deadly Hazards`, `Bounties & Manhunt`, `Zone Intel`) with dedicated top-level visibility for PvE hazards.
+     - **Contextual In-Page Mode Filtering**: Replaced redundant header mode pills with in-page filters (`[ World | BGs | Duels | Arenas ]`) located directly on the combat feed header (`#feed-mode-pills`) and leaderboard (`#champions-mode-pills`).
      - **Action Tools & Gold CTA**: War Archivist AI trigger, Upload utility link, real-time Auth Badge, and primary gold CTA button `[ Download Field Kit ]` linking to `/download`.
      - **32px Telemetry Ribbon**: Replaced heavy stat cards with a compact single-row ribbon, anchoring the live combat feed above the fold with 6–8 rows visible on standard 1080p viewports.
-     - **Context-Aware Dynamic Sidebar**: Tabbed leaderboard widget (`[Hot Zones]`, `[Top Gankers]`, `[Top Guilds]`), champion filter controls on `LEGENDS` view, and compressed 2-column Class Combat Matrix.
+     - **5-Slot Right Sidebar Hierarchy**:
+       1. *Lifetime Combat Activity*: Scoped strictly to the active realm tenant.
+       2. *The Marked (Active Bounties)*: Condensed vertical ledger with class crests, realm, bounty pot, and `+ Issue Mark` quick trigger.
+       3. *Champion Filters*: Faction (All/Alliance/Horde) and Timeframe (24h/7d/All-Time) on Leaderboard view.
+       4. *Tabbed 24-Hour Leaderboard Widget*: Instant pill switching between Hot Zones, Top Gankers, and Top Guilds.
+       5. *All Classes Combat Matrix*: Compressed 2-column tactical grid.
 
-7. **Class, Spec & Level Cohort Percentile Engine (`GET /api/character/<name>`, `GET /api/armory`)**:
+7. **Global Realm Isolation & Multi-Tenant Boundary (`server.py`, `app.js`)**:
+   - Each theater / realm represents an isolated database tenant (e.g., `Classic Beta PvP`, `Classic Beta PvE`, `Classic Beta RP`, `Classic Beta Hardcore`).
+   - Every API route and database query enforces strict realm filtering via `normalize_realm_filter` (`LOWER(realm) = LOWER(?)`).
+   - Client-side state flushes on switch (`flushAndReloadActiveRealm`): clears combat log cache, known kill IDs, and benchmark cache before reloading, ensuring zero cross-realm data bleed.
+   - Blizzard 1-based class ID map (`BLIZZARD_CLASS_IDS`) and `resolveClassName` guarantee accurate class coloring (`#f58cba`) and Paladin crest icon resolution for characters like Dagariane.
+
+8. **Class, Spec & Level Cohort Percentile Engine (`GET /api/character/<name>`, `GET /api/armory`)**:
    - Mathematical cohort ranking computing exact player standing against all combatants sharing the exact same `(class, spec, level)` on the realm.
    - Dual-factor evaluation: Total Kills primary, K/D ratio tie-breaker.
    - Returns `percentile`, `topPct`, `rank`, `totalInCohort`, and `cohortLabel` (e.g., `⭐ Top 5% (95th Pct) • Level 60 Shadow Priest`).

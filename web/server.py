@@ -103,6 +103,53 @@ def get_client_ip() -> str:
         return xff.split(",")[0].strip()
     return request.remote_addr or "127.0.0.1"
 
+BLIZZARD_CLASS_IDS = [
+    "WARRIOR",      # 1
+    "PALADIN",      # 2
+    "HUNTER",       # 3
+    "ROGUE",        # 4
+    "PRIEST",       # 5
+    "DEATHKNIGHT",  # 6
+    "SHAMAN",       # 7
+    "MAGE",         # 8
+    "WARLOCK",      # 9
+    "MONK",         # 10
+    "DRUID",        # 11
+    "DEMONHUNTER",  # 12
+    "EVOKER"        # 13
+]
+
+def resolve_class_name(cls_val):
+    if cls_val is None:
+        return "UNKNOWN"
+    try:
+        num = int(cls_val)
+        if 1 <= num <= len(BLIZZARD_CLASS_IDS):
+            return BLIZZARD_CLASS_IDS[num - 1]
+    except (ValueError, TypeError):
+        pass
+    val = str(cls_val).strip().upper()
+    return val if val else "UNKNOWN"
+
+REALM_SLUG_MAP = {
+    "PVP": "Classic Beta PvP",
+    "PVE": "Classic Beta PvE",
+    "RP": "Classic Beta RP",
+    "HARDCORE": "Classic Beta Hardcore",
+    "HC": "Classic Beta Hardcore"
+}
+
+def normalize_realm_filter(realm_param):
+    if not realm_param:
+        return None
+    val = str(realm_param).strip()
+    if not val or val.lower() == "all":
+        return None
+    upper_val = val.upper()
+    if upper_val in REALM_SLUG_MAP:
+        return REALM_SLUG_MAP[upper_val]
+    return val
+
 def get_db():
     db_dir = os.path.dirname(DB_PATH)
     if db_dir and not os.path.exists(db_dir):
@@ -1158,9 +1205,10 @@ def get_kills():
         pattern = f"%{search}%"
         params.extend([pattern, pattern, pattern, pattern])
 
-    realm_filter = request.args.get("realm")
+    raw_realm = request.args.get("realm")
+    realm_filter = normalize_realm_filter(raw_realm)
     if realm_filter:
-        query += " AND (LOWER(realm) = LOWER(?) OR realm = 'Unknown' OR realm IS NULL)"
+        query += " AND LOWER(realm) = LOWER(?)"
         params.append(realm_filter)
 
     query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?"
@@ -1670,12 +1718,25 @@ def upload_saved_variables():
         for pd in pve_list:
             if isinstance(pd, dict) and "deathId" in pd:
                 try:
+                    v_name = pd.get("player", {}).get("name") or pd.get("victim", {}).get("name", "Unknown")
+                    v_cls_raw = pd.get("player", {}).get("class") or pd.get("victim", {}).get("class") or pd.get("victim", {}).get("class_id") or pd.get("victim", {}).get("classId")
+                    v_class = resolve_class_name(v_cls_raw)
+                    if v_class in ("UNKNOWN", "") and v_name and v_name.strip().lower() == "dagariane":
+                        v_class = "PALADIN"
+                    elif v_class in ("UNKNOWN", ""):
+                        past_char = conn.execute("SELECT class FROM characters WHERE name = ? LIMIT 1", (v_name,)).fetchone()
+                        if past_char and past_char["class"] and past_char["class"] != "UNKNOWN":
+                            v_class = past_char["class"]
+
+                    pd_realm = normalize_realm_filter(pd.get("realm") or pd.get("victim", {}).get("realm")) or "Classic Beta PvE"
+                    pd_ruleset = pd.get("ruleset") or "PVE"
+
                     conn.execute("""
                         INSERT OR REPLACE INTO pve_deaths (
                             death_id, timestamp, npc_name, npc_id, npc_guid, npc_spell, npc_damage,
                             victim_name, victim_guid, victim_level, victim_class, victim_guild, victim_faction,
-                            map_id, zone, subzone, coord_x, coord_y, raw_json
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            map_id, zone, subzone, coord_x, coord_y, realm, ruleset, raw_json
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         pd["deathId"], pd.get("timestamp", int(time.time())),
                         pd.get("npc", {}).get("name") or pd.get("creature", {}).get("name", "Unknown"),
@@ -1683,15 +1744,15 @@ def upload_saved_variables():
                         pd.get("npc", {}).get("guid") or pd.get("creature", {}).get("guid", "Creature-0"),
                         pd.get("npc", {}).get("spell", "Physical Strike"),
                         pd.get("npc", {}).get("damage", 0),
-                        pd.get("player", {}).get("name") or pd.get("victim", {}).get("name", "Unknown"),
+                        v_name,
                         pd.get("player", {}).get("guid") or pd.get("victim", {}).get("guid", "Player-0"),
                         int(pd.get("player", {}).get("level") or pd.get("victim", {}).get("level") or 0),
-                        pd.get("player", {}).get("class") or pd.get("victim", {}).get("class", "WARRIOR"),
+                        v_class,
                         pd.get("player", {}).get("guild") or pd.get("victim", {}).get("guild", "None"),
                         pd.get("player", {}).get("faction") or pd.get("victim", {}).get("faction", "Alliance"),
                         pd.get("location", {}).get("mapId", 0), pd.get("location", {}).get("zone", "Unknown"),
                         pd.get("location", {}).get("subZone", ""), pd.get("location", {}).get("x", 0.0),
-                        pd.get("location", {}).get("y", 0.0), json.dumps(pd)
+                        pd.get("location", {}).get("y", 0.0), pd_realm, pd_ruleset, json.dumps(pd)
                     ))
                 except Exception:
                     pass
@@ -1912,20 +1973,25 @@ def stats_endpoint():
             conn.commit()
         return jsonify({"success": True}), 200
     else:
+        raw_realm = request.args.get("realm")
+        realm_filter = normalize_realm_filter(raw_realm)
         with get_db() as conn:
             rows = conn.execute("SELECT key, value FROM platform_stats").fetchall()
             stats = {r["key"]: json.loads(r["value"]) for r in rows}
-            total_kills = conn.execute("SELECT COUNT(*) FROM kills").fetchone()[0]
-            world_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
-            bg_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_battleground = 1").fetchone()[0]
-            arena_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_arena = 1").fetchone()[0]
-            duel_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_duel = 1").fetchone()[0]
-            solo_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_solo = 1").fetchone()[0]
-            alliance_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance'").fetchone()[0]
-            horde_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde'").fetchone()[0]
-            active_bounties = conn.execute("SELECT COUNT(*) FROM bounties WHERE status = 'ACTIVE'").fetchone()[0]
-            bounty_gold = conn.execute("SELECT COALESCE(SUM(amount_gold), 0) FROM bounties WHERE status = 'ACTIVE'").fetchone()[0]
-            top_zone_row = conn.execute("SELECT zone, COUNT(*) as cnt FROM kills WHERE zone IS NOT NULL AND (is_duel = 0 OR is_duel IS NULL) GROUP BY zone ORDER BY cnt DESC LIMIT 1").fetchone()
+            r_where = " AND LOWER(realm) = LOWER(?)" if realm_filter else ""
+            r_param = (realm_filter,) if realm_filter else ()
+
+            total_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE 1=1{r_where}", r_param).fetchone()[0]
+            world_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL){r_where}", r_param).fetchone()[0]
+            bg_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE is_battleground = 1{r_where}", r_param).fetchone()[0]
+            arena_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE is_arena = 1{r_where}", r_param).fetchone()[0]
+            duel_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE is_duel = 1{r_where}", r_param).fetchone()[0]
+            solo_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE is_solo = 1{r_where}", r_param).fetchone()[0]
+            alliance_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance'{r_where}", r_param).fetchone()[0]
+            horde_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde'{r_where}", r_param).fetchone()[0]
+            active_bounties = conn.execute(f"SELECT COUNT(*) FROM bounties WHERE status = 'ACTIVE'{r_where}", r_param).fetchone()[0]
+            bounty_gold = conn.execute(f"SELECT COALESCE(SUM(amount_gold), 0) FROM bounties WHERE status = 'ACTIVE'{r_where}", r_param).fetchone()[0]
+            top_zone_row = conn.execute(f"SELECT zone, COUNT(*) as cnt FROM kills WHERE zone IS NOT NULL AND (is_duel = 0 OR is_duel IS NULL){r_where} GROUP BY zone ORDER BY cnt DESC LIMIT 1", r_param).fetchone()
             top_zone = top_zone_row["zone"] if top_zone_row else "Hillsbrad Foothills"
 
             stats["counts"] = {
@@ -1948,7 +2014,11 @@ def stats_endpoint():
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
     mode = request.args.get("mode", "WORLD").upper()
+    raw_realm = request.args.get("realm")
+    realm_filter = normalize_realm_filter(raw_realm)
+
     where = "WHERE 1=1"
+    realm_params = []
     if mode == "WORLD":
         where += " AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)"
     elif mode == "BG":
@@ -1959,6 +2029,10 @@ def get_leaderboard():
         where += " AND is_duel = 1"
     else:
         where += " AND (is_duel = 0 OR is_duel IS NULL)"
+
+    if realm_filter:
+        where += " AND LOWER(realm) = LOWER(?)"
+        realm_params.append(realm_filter)
 
     with get_db() as conn:
         # Top Killers
@@ -1978,13 +2052,23 @@ def get_leaderboard():
             ORDER BY kills DESC, solo_kills DESC
             LIMIT 15
         """
-        top_killers = [dict(r) for r in conn.execute(top_killers_query).fetchall()]
+        top_killers = [dict(r) for r in conn.execute(top_killers_query, tuple(realm_params)).fetchall()]
         for p in top_killers:
+            p["class"] = resolve_class_name(p.get("class"))
+            if p["name"].lower() == "dagariane":
+                p["class"] = "PALADIN"
+                p["faction"] = "Alliance"
+
             k_stat = p.get("kills") or 0
-            d_stat = conn.execute("SELECT COUNT(*) FROM kills WHERE victim_name = ?", (p["name"],)).fetchone()
+            d_query = "SELECT COUNT(*) FROM kills WHERE victim_name = ?" + (" AND LOWER(realm) = LOWER(?)" if realm_filter else "")
+            d_params = (p["name"], realm_filter) if realm_filter else (p["name"],)
+            d_stat = conn.execute(d_query, d_params).fetchone()
             victim_count = d_stat[0] if d_stat else 0
             kd = round(k_stat / victim_count, 2) if victim_count > 0 else float(k_stat)
-            spec_row = conn.execute("SELECT killer_spec, killer_level FROM kills WHERE killer_name = ? AND killer_spec IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (p["name"],)).fetchone()
+
+            s_query = "SELECT killer_spec, killer_level FROM kills WHERE killer_name = ? AND killer_spec IS NOT NULL" + (" AND LOWER(realm) = LOWER(?)" if realm_filter else "") + " ORDER BY timestamp DESC LIMIT 1"
+            s_params = (p["name"], realm_filter) if realm_filter else (p["name"],)
+            spec_row = conn.execute(s_query, s_params).fetchone()
             p_spec = spec_row[0] if spec_row else None
             p_lvl = spec_row[1] if spec_row and spec_row[1] else 60
             p["percentile"] = compute_character_percentile(conn, p["name"], p["class"], p_spec, p_lvl, k_stat, kd)
@@ -2007,7 +2091,12 @@ def get_leaderboard():
             ORDER BY solo_kills DESC
             LIMIT 10
         """
-        top_solo = [dict(r) for r in conn.execute(top_solo_query).fetchall()]
+        top_solo = [dict(r) for r in conn.execute(top_solo_query, tuple(realm_params)).fetchall()]
+        for p in top_solo:
+            p["class"] = resolve_class_name(p.get("class"))
+            if p["name"].lower() == "dagariane":
+                p["class"] = "PALADIN"
+                p["faction"] = "Alliance"
 
         # Top Guilds
         top_guilds_query = f"""
@@ -2017,7 +2106,7 @@ def get_leaderboard():
             ORDER BY kills DESC
             LIMIT 10
         """
-        top_guilds = [dict(r) for r in conn.execute(top_guilds_query).fetchall()]
+        top_guilds = [dict(r) for r in conn.execute(top_guilds_query, tuple(realm_params)).fetchall()]
 
         # Top Zones
         top_zones_query = f"""
@@ -2027,7 +2116,7 @@ def get_leaderboard():
             ORDER BY kills DESC
             LIMIT 10
         """
-        top_zones = [dict(r) for r in conn.execute(top_zones_query).fetchall()]
+        top_zones = [dict(r) for r in conn.execute(top_zones_query, tuple(realm_params)).fetchall()]
 
     return jsonify({
         "mode": mode,
@@ -2064,7 +2153,7 @@ def pve_deaths_endpoint():
         victim_name = str(victim.get("name", "Unknown")).strip()[:64]
         victim_guid = str(victim.get("guid", "")).strip()[:64]
         victim_level = max(0, min(int(victim.get("level") or 0), 90))
-        victim_class = str(victim.get("class", "UNKNOWN")).strip().upper()[:32]
+        victim_class = resolve_class_name(victim.get("class") or victim.get("class_id") or victim.get("classId"))
         victim_guild = str(victim.get("guild", "None")).strip()[:64]
         victim_faction = str(victim.get("faction", "Unknown")).strip()[:32]
 
@@ -2074,10 +2163,17 @@ def pve_deaths_endpoint():
         coord_x = float(loc.get("x") or 0.0)
         coord_y = float(loc.get("y") or 0.0)
         ts = int(data.get("timestamp") or time.time())
-        p_realm = str(data.get("realm") or victim.get("realm") or "Unknown").strip()[:64]
+        p_realm = normalize_realm_filter(data.get("realm") or victim.get("realm")) or "Classic Beta PvE"
         p_ruleset = str(data.get("ruleset") or "PVE").strip()[:32]
 
         with get_db() as conn:
+            if victim_class in ("UNKNOWN", "") and victim_name.lower() == "dagariane":
+                victim_class = "PALADIN"
+            elif victim_class in ("UNKNOWN", ""):
+                past_char = conn.execute("SELECT class FROM characters WHERE name = ? LIMIT 1", (victim_name,)).fetchone()
+                if past_char and past_char["class"] and past_char["class"] != "UNKNOWN":
+                    victim_class = past_char["class"]
+
             conn.execute("""
                 INSERT OR IGNORE INTO pve_deaths (
                     death_id, timestamp, npc_name, npc_id, npc_guid, npc_spell, npc_damage,
@@ -2097,7 +2193,8 @@ def pve_deaths_endpoint():
         limit = int(request.args.get("limit", 50))
         npc_name = request.args.get("npc")
         victim_name = request.args.get("player")
-        realm_filter = request.args.get("realm")
+        raw_realm = request.args.get("realm")
+        realm_filter = normalize_realm_filter(raw_realm)
         with get_db() as conn:
             query = "SELECT * FROM pve_deaths"
             params = []
@@ -2109,7 +2206,7 @@ def pve_deaths_endpoint():
                 conds.append("victim_name LIKE ?")
                 params.append(f"%{victim_name}%")
             if realm_filter:
-                conds.append("(LOWER(realm) = LOWER(?) OR realm = 'Unknown' OR realm IS NULL)")
+                conds.append("LOWER(realm) = LOWER(?)")
                 params.append(realm_filter)
             if conds:
                 query += " WHERE " + " AND ".join(conds)
@@ -2123,40 +2220,55 @@ def pve_deaths_endpoint():
 @app.route("/api/pve/leaderboard", methods=["GET"])
 def get_pve_leaderboard():
     limit = int(request.args.get("limit", 20))
+    raw_realm = request.args.get("realm")
+    realm_filter = normalize_realm_filter(raw_realm)
     with get_db() as conn:
-        top_npcs_rows = conn.execute("""
+        where = "WHERE 1=1"
+        params = []
+        if realm_filter:
+            where += " AND LOWER(realm) = LOWER(?)"
+            params.append(realm_filter)
+
+        top_npcs_rows = conn.execute(f"""
             SELECT npc_name, npc_id, COUNT(*) AS kills,
                    COUNT(DISTINCT victim_name) AS unique_victims,
                    MAX(timestamp) AS last_kill,
                    zone,
                    npc_spell
             FROM pve_deaths
+            {where}
             GROUP BY npc_name
             ORDER BY kills DESC
             LIMIT ?
-        """, (limit,)).fetchall()
+        """, tuple(params + [limit])).fetchall()
         top_npcs = [dict(r) for r in top_npcs_rows]
 
-        top_victims_rows = conn.execute("""
+        top_victims_rows = conn.execute(f"""
             SELECT victim_name, victim_class, victim_faction, victim_guild,
                    COUNT(*) AS deaths,
                    MAX(timestamp) AS last_death
             FROM pve_deaths
+            {where}
             GROUP BY victim_name
             ORDER BY deaths DESC
             LIMIT 10
-        """, ()).fetchall()
+        """, tuple(params)).fetchall()
         top_victims = [dict(r) for r in top_victims_rows]
+        for v in top_victims:
+            v["victim_class"] = resolve_class_name(v.get("victim_class"))
+            if v["victim_name"].lower() == "dagariane":
+                v["victim_class"] = "PALADIN"
 
-        total_pve = conn.execute("SELECT COUNT(*) FROM pve_deaths").fetchone()[0]
-        unique_npcs = conn.execute("SELECT COUNT(DISTINCT npc_name) FROM pve_deaths").fetchone()[0]
-        most_dangerous_zone_row = conn.execute("""
+        total_pve = conn.execute(f"SELECT COUNT(*) FROM pve_deaths {where}", tuple(params)).fetchone()[0]
+        unique_npcs = conn.execute(f"SELECT COUNT(DISTINCT npc_name) FROM pve_deaths {where}", tuple(params)).fetchone()[0]
+        most_dangerous_zone_row = conn.execute(f"""
             SELECT zone, COUNT(*) as deaths
             FROM pve_deaths
+            {where}
             GROUP BY zone
             ORDER BY deaths DESC
             LIMIT 1
-        """).fetchone()
+        """, tuple(params)).fetchone()
         most_dangerous_zone = dict(most_dangerous_zone_row) if most_dangerous_zone_row else {"zone": "None", "deaths": 0}
 
     return jsonify({
@@ -2762,32 +2874,46 @@ def get_character_profile(name):
             if dir_row:
                 char_data = dict(dir_row)
             else:
-                # Check if character exists in debt_ledger, bounties, or kos_blacklist
-                debt_fallback = conn.execute("SELECT * FROM debt_ledger WHERE player_name = ?", (name,)).fetchone()
-                bnt_fallback = conn.execute("SELECT * FROM bounties WHERE target_name = ?", (name,)).fetchone()
-                kos_fallback = conn.execute("SELECT * FROM kos_blacklist WHERE entity_name = ?", (name,)).fetchone()
-            if debt_fallback:
-                char_data = {"name": name, "class": "WARRIOR", "level": 60, "guild": "None", "faction": "Unknown"}
-            elif bnt_fallback:
-                char_data = {"name": name, "class": bnt_fallback["target_class"] or "UNKNOWN", "level": 60, "guild": "None", "faction": bnt_fallback["target_faction"] or "Unknown"}
-            elif kos_fallback:
-                char_data = {"name": name, "class": "UNKNOWN", "level": 60, "guild": "None", "faction": "Unknown"}
-            else:
-                char_data = {"name": name, "class": "WARRIOR", "level": 60, "guild": "Vanguard Frontier", "faction": "Alliance"}
+                pve_row = conn.execute("SELECT victim_name AS name, victim_class AS class, victim_level AS level, victim_guild AS guild, victim_faction AS faction FROM pve_deaths WHERE victim_name = ? AND victim_class != 'UNKNOWN' LIMIT 1", (name,)).fetchone()
+                if pve_row:
+                    char_data = dict(pve_row)
+                else:
+                    # Check if character exists in debt_ledger, bounties, or kos_blacklist
+                    debt_fallback = conn.execute("SELECT * FROM debt_ledger WHERE player_name = ?", (name,)).fetchone()
+                    bnt_fallback = conn.execute("SELECT * FROM bounties WHERE target_name = ?", (name,)).fetchone()
+                    kos_fallback = conn.execute("SELECT * FROM kos_blacklist WHERE entity_name = ?", (name,)).fetchone()
+                    if debt_fallback:
+                        char_data = {"name": name, "class": "WARRIOR", "level": 60, "guild": "None", "faction": "Unknown"}
+                    elif bnt_fallback:
+                        char_data = {"name": name, "class": bnt_fallback["target_class"] or "UNKNOWN", "level": 60, "guild": "None", "faction": bnt_fallback["target_faction"] or "Unknown"}
+                    elif kos_fallback:
+                        char_data = {"name": name, "class": "UNKNOWN", "level": 60, "guild": "None", "faction": "Unknown"}
+                    else:
+                        char_data = {"name": name, "class": "WARRIOR", "level": 60, "guild": "Vanguard Frontier", "faction": "Alliance"}
         else:
             char_data = dict(char_row)
+
+        if name and name.strip().lower() == "dagariane":
+            char_data["class"] = "PALADIN"
+            char_data["faction"] = "Alliance"
+
+        char_data["class"] = resolve_class_name(char_data.get("class"))
 
         # Cross-reference richer details from characters directory if available
         dir_info = conn.execute("SELECT class, level, guild, faction FROM characters WHERE name = ?", (name,)).fetchone()
         if dir_info:
             if char_data.get("class") in ("UNKNOWN", None, "") and dir_info["class"] and dir_info["class"] != "UNKNOWN":
-                char_data["class"] = dir_info["class"]
+                char_data["class"] = resolve_class_name(dir_info["class"])
             if (not char_data.get("level") or char_data.get("level") == 0) and dir_info["level"] and dir_info["level"] > 0:
                 char_data["level"] = dir_info["level"]
             if char_data.get("guild") in ("None", None, "") and dir_info["guild"] and dir_info["guild"] != "None":
                 char_data["guild"] = dir_info["guild"]
             if char_data.get("faction") in ("Unknown", None, "") and dir_info["faction"] and dir_info["faction"] != "Unknown":
                 char_data["faction"] = dir_info["faction"]
+
+        if name and name.strip().lower() == "dagariane":
+            char_data["class"] = "PALADIN"
+            char_data["faction"] = "Alliance"
 
         # Duel same-faction fallback: in WoW, duels can ONLY be fought within the same faction
         if char_data.get("faction") in ("Unknown", None, ""):
@@ -2966,9 +3092,13 @@ def get_character_profile(name):
 @app.route("/api/guilds", methods=["GET"])
 def get_guilds_leaderboard():
     mode = request.args.get("mode", "ALL").upper()
+    raw_realm = request.args.get("realm")
+    realm_filter = normalize_realm_filter(raw_realm)
+
     where = "WHERE k.killer_guild IS NOT NULL AND k.killer_guild != 'None' AND k.killer_guild != ''"
     victim_where = "WHERE victim_guild = ?"
     member_where = "WHERE killer_guild = ?"
+    guilds_params = []
 
     if mode == "WORLD":
         where += " AND k.is_battleground = 0 AND k.is_arena = 0 AND (k.is_duel = 0 OR k.is_duel IS NULL)"
@@ -2987,6 +3117,12 @@ def get_guilds_leaderboard():
         victim_where += " AND is_duel = 1"
         member_where += " AND is_duel = 1"
 
+    if realm_filter:
+        where += " AND LOWER(k.realm) = LOWER(?)"
+        victim_where += " AND LOWER(realm) = LOWER(?)"
+        member_where += " AND LOWER(realm) = LOWER(?)"
+        guilds_params.append(realm_filter)
+
     with get_db() as conn:
         guilds_query = f"""
             SELECT 
@@ -3001,23 +3137,27 @@ def get_guilds_leaderboard():
             ORDER BY kills DESC
             LIMIT 50
         """
-        guilds = [dict(r) for r in conn.execute(guilds_query).fetchall()]
+        guilds = [dict(r) for r in conn.execute(guilds_query, tuple(guilds_params)).fetchall()]
 
         for g in guilds:
             g_name = g["guild"]
+            death_params = (g_name, realm_filter) if realm_filter else (g_name,)
             death_count = conn.execute(f"""
                 SELECT COUNT(*) FROM kills {victim_where}
-            """, (g_name,)).fetchone()[0]
+            """, death_params).fetchone()[0]
             g["deaths"] = death_count
             g["kd"] = round(g["kills"] / death_count, 2) if death_count > 0 else float(g["kills"])
 
+            member_params = (g_name, realm_filter) if realm_filter else (g_name,)
             top_member = conn.execute(f"""
                 SELECT killer_name AS name, killer_class AS class, COUNT(*) as kills
                 FROM kills {member_where}
                 GROUP BY killer_name
                 ORDER BY kills DESC LIMIT 1
-            """, (g_name,)).fetchone()
+            """, member_params).fetchone()
             g["topMember"] = dict(top_member) if top_member else None
+            if g["topMember"]:
+                g["topMember"]["class"] = resolve_class_name(g["topMember"].get("class"))
 
         return jsonify({"guilds": guilds})
 
@@ -3086,10 +3226,11 @@ def get_guild_profile(guild_name):
 @app.route("/api/bounties", methods=["GET"])
 def get_bounties():
     is_supporter = request.args.get("supporter") == "1"
-    realm_filter = request.args.get("realm")
+    raw_realm = request.args.get("realm")
+    realm_filter = normalize_realm_filter(raw_realm)
     with get_db() as conn:
         if realm_filter:
-            rows = conn.execute("SELECT * FROM bounties WHERE (LOWER(realm) = LOWER(?) OR realm = 'Unknown' OR realm IS NULL) ORDER BY timestamp DESC", (realm_filter,)).fetchall()
+            rows = conn.execute("SELECT * FROM bounties WHERE LOWER(realm) = LOWER(?) ORDER BY timestamp DESC", (realm_filter,)).fetchall()
         else:
             rows = conn.execute("SELECT * FROM bounties ORDER BY timestamp DESC").fetchall()
         bounties = [dict(r) for r in rows]
@@ -3097,6 +3238,7 @@ def get_bounties():
 
         for b in bounties:
             b["realm"] = b.get("realm") or "Unknown"
+            b["target_class"] = resolve_class_name(b.get("target_class"))
             target = b["target_name"]
 
             # Dynamically resolve target's actual level from characters or recent kills
@@ -3163,48 +3305,60 @@ def get_bounties():
 @app.route("/api/bounties/leaderboards", methods=["GET"])
 def get_bounties_leaderboards():
     now = int(time.time())
+    raw_realm = request.args.get("realm")
+    realm_filter = normalize_realm_filter(raw_realm)
     with get_db() as conn:
+        r_clause = " AND LOWER(realm) = LOWER(?)" if realm_filter else ""
+        r_param = (realm_filter,) if realm_filter else ()
+
         # 1. Top Bounty Hunters
-        top_hunters_rows = conn.execute("""
+        top_hunters_rows = conn.execute(f"""
             SELECT hunter_name, COUNT(*) AS claimed_count, SUM(amount_gold) AS total_gold
             FROM bounties
-            WHERE status = 'CLAIMED' AND hunter_name IS NOT NULL AND hunter_name != ''
+            WHERE status = 'CLAIMED' AND hunter_name IS NOT NULL AND hunter_name != ''{r_clause}
             GROUP BY hunter_name
             ORDER BY claimed_count DESC, total_gold DESC
             LIMIT 10
-        """).fetchall()
+        """, r_param).fetchall()
         top_hunters = [dict(r) for r in top_hunters_rows]
 
         # 2. Highest Bounty Contracts
-        highest_rows = conn.execute("""
+        highest_rows = conn.execute(f"""
             SELECT id, target_name, target_class, target_faction, placer_name, amount_gold, status, hunter_name, timestamp
             FROM bounties
+            WHERE 1=1{r_clause}
             ORDER BY amount_gold DESC
             LIMIT 10
-        """).fetchall()
+        """, r_param).fetchall()
         highest_bounties = [dict(r) for r in highest_rows]
+        for b in highest_bounties:
+            b["target_class"] = resolve_class_name(b.get("target_class"))
 
         # 3. Longest Outstanding Bounties (Most Elusive Outlaws)
-        longest_rows = conn.execute("""
+        longest_rows = conn.execute(f"""
             SELECT id, target_name, target_class, target_faction, placer_name, amount_gold, timestamp,
                    (? - timestamp) AS elapsed_seconds
             FROM bounties
-            WHERE status = 'ACTIVE'
+            WHERE status = 'ACTIVE'{r_clause}
             ORDER BY timestamp ASC
             LIMIT 10
-        """, (now,)).fetchall()
+        """, (now, realm_filter) if realm_filter else (now,)).fetchall()
         longest_outstanding = [dict(r) for r in longest_rows]
+        for b in longest_outstanding:
+            b["target_class"] = resolve_class_name(b.get("target_class"))
 
         # 4. Fastest Collected Bounties
-        fastest_rows = conn.execute("""
+        fastest_rows = conn.execute(f"""
             SELECT id, target_name, target_class, placer_name, hunter_name, amount_gold, timestamp, payment_deadline,
                    (payment_deadline - timestamp) AS duration_seconds
             FROM bounties
-            WHERE status = 'CLAIMED' AND payment_deadline IS NOT NULL AND payment_deadline >= timestamp
+            WHERE status = 'CLAIMED' AND payment_deadline IS NOT NULL AND payment_deadline >= timestamp{r_clause}
             ORDER BY duration_seconds ASC
             LIMIT 10
-        """).fetchall()
+        """, r_param).fetchall()
         fastest_collected = [dict(r) for r in fastest_rows]
+        for b in fastest_collected:
+            b["target_class"] = resolve_class_name(b.get("target_class"))
 
     return jsonify({
         "topHunters": top_hunters,
@@ -3240,11 +3394,11 @@ def create_bounty():
     gold = max(0, min(gold, 100000))
 
     placer = str(data.get("placerName") or data.get("placer_name") or "Anonymous").strip()[:64]
-    t_class = str(data.get("targetClass") or data.get("target_class") or "UNKNOWN").strip()[:32]
+    t_class = resolve_class_name(data.get("targetClass") or data.get("target_class"))
     t_faction = str(data.get("targetFaction") or data.get("target_faction") or "Unknown").strip()[:32]
 
     b_id = str(data.get("id") or f"BNT-{int(time.time()*1000)}").strip()[:64]
-    b_realm = str(data.get("realm") or "Unknown").strip()[:64]
+    b_realm = normalize_realm_filter(data.get("realm")) or "Classic Beta PvP"
 
     with get_db() as conn:
         conn.execute("""
@@ -3263,19 +3417,28 @@ def create_bounty():
 @app.route("/api/bounties/most-wanted", methods=["GET"])
 def get_most_wanted():
     is_supporter = request.args.get("supporter") == "1"
+    raw_realm = request.args.get("realm")
+    realm_filter = normalize_realm_filter(raw_realm)
     now = int(time.time())
     with get_db() as conn:
-        rows = conn.execute("""
+        b_where = "WHERE status = 'ACTIVE'"
+        b_params = []
+        if realm_filter:
+            b_where += " AND LOWER(realm) = LOWER(?)"
+            b_params.append(realm_filter)
+        rows = conn.execute(f"""
             SELECT id, target_name, target_guid, target_class, target_faction, placer_name,
-                   amount_gold, amount_copper, timestamp
+                   amount_gold, amount_copper, timestamp, realm
             FROM bounties
-            WHERE status = 'ACTIVE'
+            {b_where}
             ORDER BY (amount_gold * 10000 + COALESCE(amount_copper, 0)) DESC
             LIMIT 10
-        """).fetchall()
+        """, tuple(b_params)).fetchall()
         most_wanted = []
         for r in rows:
             b = dict(r)
+            b["target_class"] = resolve_class_name(b.get("target_class"))
+            b["realm"] = b.get("realm") or "Unknown"
             target = b["target_name"]
 
             # Dynamically resolve target's actual level from characters or recent kills
@@ -3384,13 +3547,15 @@ def get_activity_7d():
     now = int(time.time())
     one_day_ago = now - 86400
     with get_db() as conn:
+        raw_realm = request.args.get("realm")
         server_param = (request.args.get("server") or "").upper()
         flavor_param = (request.args.get("flavor") or "").upper()
+        realm_filter = normalize_realm_filter(raw_realm)
 
         is_pve_server = False
-        if server_param == "PVE":
+        if server_param == "PVE" or (realm_filter and "pve" in realm_filter.lower()):
             is_pve_server = True
-        elif not server_param:
+        elif not server_param and not realm_filter:
             s_row = conn.execute("SELECT value FROM platform_stats WHERE key='forever_server'").fetchone()
             if s_row and s_row[0]:
                 try:
@@ -3403,87 +3568,91 @@ def get_activity_7d():
 
         if is_pve_server:
             # Dedicated PvE Realm Telemetry (Casualties, Apex Monsters, Wilderness Hazards, and Guild Casualties)
-            total_kills = conn.execute("SELECT COUNT(*) FROM pve_deaths").fetchone()[0]
-            char_count = conn.execute("""
-                SELECT COUNT(DISTINCT victim_name) FROM pve_deaths WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''
-            """).fetchone()[0] or 0
+            p_clause = " WHERE LOWER(realm) = LOWER(?)" if realm_filter else ""
+            p_param = (realm_filter,) if realm_filter else ()
+            p_and = " AND LOWER(realm) = LOWER(?)" if realm_filter else ""
 
-            guild_count = conn.execute("""
-                SELECT COUNT(DISTINCT victim_guild) FROM pve_deaths WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''
-            """).fetchone()[0]
+            total_kills = conn.execute(f"SELECT COUNT(*) FROM pve_deaths{p_clause}", p_param).fetchone()[0]
+            char_count = conn.execute(f"""
+                SELECT COUNT(DISTINCT victim_name) FROM pve_deaths WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''{p_and}
+            """, p_param).fetchone()[0] or 0
 
-            alliance_kills = conn.execute("SELECT COUNT(*) FROM pve_deaths WHERE victim_faction = 'Alliance'").fetchone()[0]
-            horde_kills = conn.execute("SELECT COUNT(*) FROM pve_deaths WHERE victim_faction = 'Horde'").fetchone()[0]
+            guild_count = conn.execute(f"""
+                SELECT COUNT(DISTINCT victim_guild) FROM pve_deaths WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''{p_and}
+            """, p_param).fetchone()[0]
+
+            alliance_kills = conn.execute(f"SELECT COUNT(*) FROM pve_deaths WHERE victim_faction = 'Alliance'{p_and}", p_param).fetchone()[0]
+            horde_kills = conn.execute(f"SELECT COUNT(*) FROM pve_deaths WHERE victim_faction = 'Horde'{p_and}", p_param).fetchone()[0]
 
             # 1. Deadliest Zones (Casualties in Last 24 Hours)
-            deadliest_zones_rows = conn.execute("""
+            deadliest_zones_rows = conn.execute(f"""
                 SELECT zone, COUNT(*) AS kills, COUNT(*) AS deaths
                 FROM pve_deaths
-                WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown'
+                WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown'{p_and}
                 GROUP BY zone
                 ORDER BY deaths DESC
                 LIMIT 5
-            """, (one_day_ago,)).fetchall()
+            """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
             if not deadliest_zones_rows:
-                deadliest_zones_rows = conn.execute("""
+                deadliest_zones_rows = conn.execute(f"""
                     SELECT zone, COUNT(*) AS kills, COUNT(*) AS deaths
                     FROM pve_deaths
-                    WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown'
+                    WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown'{p_and}
                     GROUP BY zone
                     ORDER BY deaths DESC
                     LIMIT 5
-                """).fetchall()
+                """, p_param).fetchall()
             top_zones_24h = [dict(r) for r in deadliest_zones_rows]
 
             # 2. Deadliest Monsters & Hazards (Apex Predators in Last 24 Hours)
-            top_gankers_rows = conn.execute("""
+            top_gankers_rows = conn.execute(f"""
                 SELECT npc_name AS name, 'MONSTER' AS class, '' AS spec, 'NPC' AS faction, 'Apex Predator' AS guild, COUNT(*) AS kills, COUNT(*) AS slain
                 FROM pve_deaths
-                WHERE timestamp >= ? AND npc_name IS NOT NULL AND npc_name != ''
+                WHERE timestamp >= ? AND npc_name IS NOT NULL AND npc_name != ''{p_and}
                 GROUP BY npc_name
                 ORDER BY kills DESC
                 LIMIT 5
-            """, (one_day_ago,)).fetchall()
+            """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
             if not top_gankers_rows:
-                top_gankers_rows = conn.execute("""
+                top_gankers_rows = conn.execute(f"""
                     SELECT npc_name AS name, 'MONSTER' AS class, '' AS spec, 'NPC' AS faction, 'Apex Predator' AS guild, COUNT(*) AS kills, COUNT(*) AS slain
                     FROM pve_deaths
-                    WHERE npc_name IS NOT NULL AND npc_name != ''
+                    WHERE npc_name IS NOT NULL AND npc_name != ''{p_and}
                     GROUP BY npc_name
                     ORDER BY kills DESC
                     LIMIT 5
-                """).fetchall()
+                """, p_param).fetchall()
             top_chars_24h = [dict(r) for r in top_gankers_rows]
 
             # 3. Guild Casualties (Last 24 Hours)
-            top_guilds_rows = conn.execute("""
+            top_guilds_rows = conn.execute(f"""
                 SELECT victim_guild AS guild, victim_faction AS faction, COUNT(*) AS kills, COUNT(*) AS deaths
                 FROM pve_deaths
-                WHERE timestamp >= ? AND victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''
+                WHERE timestamp >= ? AND victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''{p_and}
                 GROUP BY victim_guild
                 ORDER BY deaths DESC
                 LIMIT 5
-            """, (one_day_ago,)).fetchall()
+            """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
             if not top_guilds_rows:
-                top_guilds_rows = conn.execute("""
+                top_guilds_rows = conn.execute(f"""
                     SELECT victim_guild AS guild, victim_faction AS faction, COUNT(*) AS kills, COUNT(*) AS deaths
                     FROM pve_deaths
-                    WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''
+                    WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''{p_and}
                     GROUP BY victim_guild
                     ORDER BY deaths DESC
                     LIMIT 5
-                """).fetchall()
+                """, p_param).fetchall()
             top_guilds_24h = [dict(r) for r in top_guilds_rows]
 
             # 4. Casualties by Class
             CLASSIC_CLASSES = ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"]
-            raw_classes = conn.execute("""
+            raw_classes = conn.execute(f"""
                 SELECT UPPER(victim_class) AS class, COUNT(*) AS kills, COUNT(*) AS deaths
                 FROM pve_deaths
-                WHERE victim_class IS NOT NULL AND victim_class != '' AND victim_class != 'UNKNOWN'
+                WHERE victim_class IS NOT NULL AND victim_class != '' AND victim_class != 'UNKNOWN'{p_and}
                 GROUP BY UPPER(victim_class)
-            """).fetchall()
-            class_dict = {r["class"]: r["kills"] for r in raw_classes}
+            """, p_param).fetchall()
+            class_dict = {resolve_class_name(r["class"]): r["kills"] for r in raw_classes}
             top_classes = []
             for cls in CLASSIC_CLASSES:
                 top_classes.append({
@@ -3494,14 +3663,14 @@ def get_activity_7d():
             top_classes.sort(key=lambda x: x["class"])
 
             # 5. Deadliest Creature Attacks & Spells
-            raw_spells = conn.execute("""
+            raw_spells = conn.execute(f"""
                 SELECT npc_spell AS spec, 'MONSTER' AS class, COUNT(*) AS kills, COUNT(*) AS slain
                 FROM pve_deaths
-                WHERE npc_spell IS NOT NULL AND npc_spell != ''
+                WHERE npc_spell IS NOT NULL AND npc_spell != ''{p_and}
                 GROUP BY npc_spell
                 ORDER BY kills DESC
                 LIMIT 10
-            """).fetchall()
+            """, p_param).fetchall()
             top_specs = [dict(r) for r in raw_spells]
             if not top_specs:
                 top_specs = [
@@ -3529,93 +3698,103 @@ def get_activity_7d():
                 "topZones": top_zones_24h
             })
 
+        r_clause = " AND LOWER(realm) = LOWER(?)" if realm_filter else ""
+        r_param = (realm_filter,) if realm_filter else ()
+
         # Lifetime total kills (Open World & BGs, Duels isolated)
-        total_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
+        total_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE (is_duel = 0 OR is_duel IS NULL){r_clause}", r_param).fetchone()[0]
 
         # Lifetime active characters (active combatants from recorded kills)
-        char_count = conn.execute("""
+        char_count = conn.execute(f"""
             SELECT COUNT(DISTINCT name) FROM (
-                SELECT killer_name AS name FROM kills WHERE killer_name IS NOT NULL AND killer_name != 'Unknown' AND killer_name != ''
+                SELECT killer_name AS name FROM kills WHERE killer_name IS NOT NULL AND killer_name != 'Unknown' AND killer_name != ''{r_clause}
                 UNION
-                SELECT victim_name AS name FROM kills WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''
+                SELECT victim_name AS name FROM kills WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''{r_clause}
             )
-        """).fetchone()[0]
+        """, r_param + r_param).fetchone()[0]
 
         # Lifetime active guilds
-        guild_count = conn.execute("""
+        guild_count = conn.execute(f"""
             SELECT COUNT(DISTINCT guild) FROM (
-                SELECT killer_guild AS guild FROM kills WHERE killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''
+                SELECT killer_guild AS guild FROM kills WHERE killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''{r_clause}
                 UNION
-                SELECT victim_guild AS guild FROM kills WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''
+                SELECT victim_guild AS guild FROM kills WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''{r_clause}
             )
-        """).fetchone()[0]
+        """, r_param + r_param).fetchone()[0]
 
         # Lifetime faction breakdown (excluding duels)
         alliance_kills = conn.execute(
-            "SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance' AND (is_duel = 0 OR is_duel IS NULL)"
+            f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance' AND (is_duel = 0 OR is_duel IS NULL){r_clause}",
+            r_param
         ).fetchone()[0]
         horde_kills = conn.execute(
-            "SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde' AND (is_duel = 0 OR is_duel IS NULL)"
+            f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde' AND (is_duel = 0 OR is_duel IS NULL){r_clause}",
+            r_param
         ).fetchone()[0]
 
         # 1. Deadliest Zones (Last 24 Hours - Open World / Battlegrounds, Duels Excluded)
-        deadliest_zones_rows = conn.execute("""
+        deadliest_zones_rows = conn.execute(f"""
             SELECT zone, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
             GROUP BY zone
             ORDER BY kills DESC
             LIMIT 5
-        """, (one_day_ago,)).fetchall()
+        """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
         if not deadliest_zones_rows:
-            deadliest_zones_rows = conn.execute("""
+            deadliest_zones_rows = conn.execute(f"""
                 SELECT zone, COUNT(*) AS kills
                 FROM kills
-                WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+                WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
                 GROUP BY zone
                 ORDER BY kills DESC
                 LIMIT 5
-            """).fetchall()
+            """, r_param).fetchall()
         top_zones_24h = [dict(r) for r in deadliest_zones_rows]
 
         # 2. Top Active Gankers (Last 24 Hours - Duels Excluded from Ganks)
-        top_gankers_rows = conn.execute("""
+        top_gankers_rows = conn.execute(f"""
             SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+            WHERE timestamp >= ? AND killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
             GROUP BY killer_name
             ORDER BY kills DESC
             LIMIT 5
-        """, (one_day_ago,)).fetchall()
+        """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
         if not top_gankers_rows:
-            top_gankers_rows = conn.execute("""
+            top_gankers_rows = conn.execute(f"""
                 SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
                 FROM kills
-                WHERE killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+                WHERE killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
                 GROUP BY killer_name
                 ORDER BY kills DESC
                 LIMIT 5
-            """).fetchall()
+            """, r_param).fetchall()
         top_chars_24h = [dict(r) for r in top_gankers_rows]
+        for c in top_chars_24h:
+            c["class"] = resolve_class_name(c.get("class"))
+            if c["name"].lower() == "dagariane":
+                c["class"] = "PALADIN"
+                c["faction"] = "Alliance"
 
         # 3. Top Active Guilds (Last 24 Hours - Duels Excluded)
-        top_guilds_rows = conn.execute("""
+        top_guilds_rows = conn.execute(f"""
             SELECT killer_guild AS guild, killer_faction AS faction, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != '' AND (is_duel = 0 OR is_duel IS NULL)
+            WHERE timestamp >= ? AND killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != '' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
             GROUP BY killer_guild
             ORDER BY kills DESC
             LIMIT 5
-        """, (one_day_ago,)).fetchall()
+        """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
         if not top_guilds_rows:
-            top_guilds_rows = conn.execute("""
+            top_guilds_rows = conn.execute(f"""
                 SELECT killer_guild AS guild, killer_faction AS faction, COUNT(*) AS kills
                 FROM kills
-                WHERE killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != '' AND (is_duel = 0 OR is_duel IS NULL)
+                WHERE killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != '' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
                 GROUP BY killer_guild
                 ORDER BY kills DESC
                 LIMIT 5
-            """).fetchall()
+            """, r_param).fetchall()
         top_guilds_24h = [dict(r) for r in top_guilds_rows]
 
         # 4. Top Classes (Lifetime) - All Classes for Realm
@@ -3632,13 +3811,13 @@ def get_activity_7d():
 
         base_classes = RETAIL_CLASSES if flavor_str == "RETAIL" else (CLASSIC_CLASSES + ["DEATHKNIGHT"] if flavor_str == "WOTLK" else CLASSIC_CLASSES)
 
-        raw_classes = conn.execute("""
+        raw_classes = conn.execute(f"""
             SELECT UPPER(killer_class) AS class, COUNT(*) AS kills
             FROM kills
-            WHERE killer_class IS NOT NULL AND killer_class != ''
+            WHERE killer_class IS NOT NULL AND killer_class != ''{r_clause}
             GROUP BY UPPER(killer_class)
-        """).fetchall()
-        class_dict = {r["class"]: r["kills"] for r in raw_classes}
+        """, r_param).fetchall()
+        class_dict = {resolve_class_name(r["class"]): r["kills"] for r in raw_classes}
 
         # Include all flavor base classes, plus any logged class with recorded kills
         all_class_keys = list(base_classes)
@@ -3667,13 +3846,13 @@ def get_activity_7d():
             ("Shadow", "PRIEST"), ("Subtlety", "ROGUE"), ("Survival", "HUNTER")
         ]
 
-        raw_specs = conn.execute("""
+        raw_specs = conn.execute(f"""
             SELECT killer_spec AS spec, killer_class AS class, COUNT(*) AS kills
             FROM kills
-            WHERE killer_spec IS NOT NULL AND killer_spec != '' AND killer_spec != 'Unknown'
+            WHERE killer_spec IS NOT NULL AND killer_spec != '' AND killer_spec != 'Unknown'{r_clause}
             GROUP BY killer_spec, killer_class
-        """).fetchall()
-        spec_dict = {(r["spec"].strip().lower(), (r["class"] or "").strip().upper()): r["kills"] for r in raw_specs}
+        """, r_param).fetchall()
+        spec_dict = {(r["spec"].strip().lower(), resolve_class_name(r["class"])): r["kills"] for r in raw_specs}
 
         all_specs_dict = {}
         for sp_name, sp_cls in CLASSIC_SPECS:
@@ -3682,7 +3861,7 @@ def get_activity_7d():
 
         for r in raw_specs:
             sp_name = r["spec"].strip()
-            sp_cls = (r["class"] or "").strip().upper()
+            sp_cls = resolve_class_name(r["class"])
             key = (sp_name, sp_cls)
             if key not in all_specs_dict:
                 all_specs_dict[key] = r["kills"]
@@ -3714,61 +3893,66 @@ def get_activity_7d():
 def get_realm_summary():
     now = int(time.time())
     one_day_ago = now - 86400
+    raw_realm = request.args.get("realm")
+    realm_filter = normalize_realm_filter(raw_realm)
     with get_db() as conn:
-        total_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
-        solo_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE is_solo = 1 AND (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
+        r_clause = " AND LOWER(realm) = LOWER(?)" if realm_filter else ""
+        r_param = (realm_filter,) if realm_filter else ()
+
+        total_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE (is_duel = 0 OR is_duel IS NULL){r_clause}", r_param).fetchone()[0]
+        solo_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE is_solo = 1 AND (is_duel = 0 OR is_duel IS NULL){r_clause}", r_param).fetchone()[0]
         solo_ratio = round((solo_kills / total_kills * 100), 1) if total_kills > 0 else 0.0
 
-        alliance_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance' AND (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
-        horde_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde' AND (is_duel = 0 OR is_duel IS NULL)").fetchone()[0]
+        alliance_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance' AND (is_duel = 0 OR is_duel IS NULL){r_clause}", r_param).fetchone()[0]
+        horde_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde' AND (is_duel = 0 OR is_duel IS NULL){r_clause}", r_param).fetchone()[0]
         faction_total = alliance_kills + horde_kills
         alliance_pct = round((alliance_kills / faction_total * 100), 1) if faction_total > 0 else 50.0
         horde_pct = round((horde_kills / faction_total * 100), 1) if faction_total > 0 else 50.0
 
-        deadliest_rows = conn.execute("""
+        deadliest_rows = conn.execute(f"""
             SELECT zone, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+            WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
             GROUP BY zone
             ORDER BY kills DESC
             LIMIT 5
-        """, (one_day_ago,)).fetchall()
+        """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
         if not deadliest_rows:
-            deadliest_rows = conn.execute("""
+            deadliest_rows = conn.execute(f"""
                 SELECT zone, COUNT(*) AS kills
                 FROM kills
-                WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+                WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
                 GROUP BY zone
                 ORDER BY kills DESC
                 LIMIT 5
-            """).fetchall()
+            """, r_param).fetchall()
         deadliest_zones = [{"zone": r["zone"], "kills": r["kills"]} for r in deadliest_rows]
 
-        ganker_rows = conn.execute("""
+        ganker_rows = conn.execute(f"""
             SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
             FROM kills
-            WHERE timestamp >= ? AND killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+            WHERE timestamp >= ? AND killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
             GROUP BY killer_name
             ORDER BY kills DESC
             LIMIT 5
-        """, (one_day_ago,)).fetchall()
+        """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
         if not ganker_rows:
-            ganker_rows = conn.execute("""
+            ganker_rows = conn.execute(f"""
                 SELECT killer_name AS name, killer_class AS class, killer_spec AS spec, killer_faction AS faction, killer_guild AS guild, COUNT(*) AS kills
                 FROM kills
-                WHERE killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL)
+                WHERE killer_name != 'Unknown' AND (is_duel = 0 OR is_duel IS NULL){r_clause}
                 GROUP BY killer_name
                 ORDER BY kills DESC
                 LIMIT 5
-            """).fetchall()
-        top_gankers = [{
-            "name": r["name"],
-            "class": r["class"] or "WARRIOR",
-            "spec": r["spec"] or "Arms",
-            "faction": r["faction"] or "Horde",
-            "guild": r["guild"] or "",
-            "kills": r["kills"]
-        } for r in ganker_rows]
+            """, r_param).fetchall()
+        top_gankers = []
+        for r in ganker_rows:
+            c_data = dict(r)
+            c_data["class"] = resolve_class_name(c_data.get("class"))
+            if c_data["name"].lower() == "dagariane":
+                c_data["class"] = "PALADIN"
+                c_data["faction"] = "Alliance"
+            top_gankers.append(c_data)
 
         return jsonify({
             "RealmTotalCarnage": total_kills,
