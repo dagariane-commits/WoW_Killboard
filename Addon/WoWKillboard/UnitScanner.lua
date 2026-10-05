@@ -102,10 +102,11 @@ function US:ScanUnit(unit)
     charEntry.lastSeen = time()
     WoWKillboardDB.characters[name] = charEntry
 
-    -- KOS Blacklist & Hostile Radar Check (Hostile player units only, gated against InCombatLockdown)
+    -- KOS Blacklist, Bounty Proximity & Hostile Radar Check (Hostile player units only, gated against InCombatLockdown)
     if not InCombatLockdown() and UnitCanAttack and UnitCanAttack("player", unit) and UnitIsPlayer(unit) then
         local isKos = US:CheckKOS(info)
-        if not isKos then
+        local isBounty = US:CheckBountyProximity(info)
+        if not isKos and not isBounty then
             US:CheckHostileRadar(info)
         end
     end
@@ -114,6 +115,65 @@ function US:ScanUnit(unit)
 end
 
 US.LastAlertTime = {}
+US.MutedBounties = {}
+US.LastBountyAlertTime = {}
+
+-- Proximity evaluation for RareScanner-Style Wanted Bounty Target detection
+function US:CheckBountyProximity(info)
+    if not info or not info.name or InCombatLockdown() then return false end
+    local name = info.name
+    local lowerName = name:lower()
+    local now = time()
+
+    if US.MutedBounties[lowerName] and now < US.MutedBounties[lowerName] then
+        return false
+    end
+
+    if (now - (US.LastBountyAlertTime[lowerName] or 0)) < 60 then
+        return false
+    end
+
+    local matchedIds = {}
+    local totalCopper = 0
+    local targetClass = info.class or "UNKNOWN"
+    local targetGuild = info.guild or "No Guild"
+    local targetFaction = info.faction or "Unknown"
+
+    if WoWKillboardBounties then
+        for bId, b in pairs(WoWKillboardBounties) do
+            local tName = b.targetName or b.target_name
+            local bStatus = b.status or "ACTIVE"
+            if tName and tName:lower() == lowerName and (bStatus == "ACTIVE" or bStatus == (KB.STATUS and KB.STATUS.ACTIVE or "ACTIVE")) then
+                table.insert(matchedIds, bId)
+                local copper = tonumber(b.amountCopper or b.amount_copper or 0) or 0
+                if copper <= 0 and (b.amountGold or b.amount_gold) then
+                    copper = tonumber(b.amountGold or b.amount_gold) * 10000
+                end
+                totalCopper = totalCopper + copper
+                if (not targetGuild or targetGuild == "No Guild" or targetGuild == "None") and (b.targetGuild or b.target_guild) then
+                    targetGuild = b.targetGuild or b.target_guild
+                end
+                if targetClass == "UNKNOWN" and (b.targetClass or b.target_class) then
+                    targetClass = b.targetClass or b.target_class
+                end
+                if targetFaction == "Unknown" and (b.targetFaction or b.target_faction) then
+                    targetFaction = b.targetFaction or b.target_faction
+                end
+            end
+        end
+    end
+
+    if #matchedIds > 0 and totalCopper > 0 then
+        US.LastBountyAlertTime[lowerName] = now
+        PlaySound(8959)
+        local currentZone = (GetZoneText and GetZoneText()) or "Azeroth"
+        if KB.UI and KB.UI.ShowBountyProximityAlert then
+            KB.UI:ShowBountyProximityAlert(name, targetClass, targetGuild, targetFaction, totalCopper, currentZone, matchedIds)
+        end
+        return true
+    end
+    return false
+end
 
 -- Proximity evaluation for KOS Blacklist & Deserter stain
 function US:CheckKOS(info)

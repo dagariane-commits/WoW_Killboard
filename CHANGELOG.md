@@ -55,7 +55,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Instantly re-indexes local and shared aggregates, re-renders leaderboards, transforms the top stat cards, and updates the header badge in real-time.
 - **Automated Pipeline Validation & Verification (`test_pipeline.py`)**:
   - Added `test_29_channel_chatter_suppression_and_delivery_modes` validating simulated channel filter dropping, allowed telemetry passing, and UI preset bindings.
-  - Added `test_30_realm_isolation_and_stats_toggle` verifying strict realm matching, rejection of unverified records, RP classification, and header badge/button bindings.
+- **Settings & Alerts Aesthetic Overhaul (`UI.lua`)**:
+  - Removed outdated yellow border from Settings modal, adopting sleek dark gunmetal modal borders (`theme.modalBorder`).
+  - Dynamically synchronized all section header titles (`S1Title` through `S5Title`) and primary action buttons to the user's selected accent color (Class, Gold, or Custom RGB).
+  - Redesigned toggle buttons to match the clean, unified dark-slate aesthetic of Frontline Combat Alerts & Radar, eliminating high-contrast neon green/red buttons.
+  - Standardized Alert & Radar dialog (`/kb alerts`) action buttons and segment toggles with dynamic accent highlights.
+  - Synchronized main window top bar font colors (Title, Realm, Announce button) with the active accent color.
+  - Cleaned up Realm badge by eliminating duplicate ruleset suffixes (`[PvP]`, `[PvE]`), and replaced clunky mode toggle text with a refined `Mode: PvP Stats` / `Mode: PvE Stats` status pill.
+- **Marks of Spite (Bounty) Stacking & Open-World PvP Gating (`UI.lua`, `UnitScanner.lua`)**:
+  - Removed arbitrary `+ Place Bounty` button to prevent griefing/trolling; Marks of Spite can now exclusively be declared upon being killed in open-world PvP via the Death Dialog.
+  - Implemented bounty stacking: multiple bounties placed on the same target are summed into a single contract with aggregated gold/silver/copper rewards and a multi-placer hover tooltip breakdown.
+  - Expanded Bounty Board row height to 34px, displaying victim class icon, class-colored name, `<Guild Name>`, faction badge (`[A]` / `[H]`), coin formatted reward (`%dg %ds %dc`), and placer attribution.
+- **RareScanner-Style Bounty Proximity Radar (`UnitScanner.lua`, `UI.lua`)**:
+  - Integrated real-time proximity detection for active bounty targets in the player's vicinity with 60-second target throttling.
+  - Implemented 100% taint-free, pure Lua proximity alert dialog (`UI:ShowBountyProximityAlert`) with `"BackdropTemplate"` and combat lockdown gating (`InCombatLockdown()`).
+  - Displays target class icon, name, guild, and total bounty pool with 3 instant actions: `[ Accept & Hunt ]` (marks contract as tracked), `[ Alert Faction ]` (broadcasts local yell coordinate callout), and `[ Dismiss / Mute ]` (mutes alerts for that target for 5 minutes).
 
 ### Fixed
 - **Zero Blizzard UI Taint & Secret String Immunity (`Sync.lua`, `CombatTracker.lua`, `Reinforcements.lua`)**:
