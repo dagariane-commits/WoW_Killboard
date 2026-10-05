@@ -32,14 +32,23 @@ end
 -- Robust channel ID lookup across all client versions, channel order, and stride lengths
 function S:GetChannelId(chanName)
     chanName = chanName or "WoWKillboard"
+    -- 0. Fast-path: Return cached index if valid and confirmed by client
+    if S.channelIndex and S.channelIndex > 0 and GetChannelName then
+        local id = GetChannelName(S.channelIndex)
+        if id and tonumber(id) == S.channelIndex then
+            return S.channelIndex
+        end
+    end
     -- 1. Direct Blizzard lookup (O(1) fast-path, standard across Classic Era, Beta, Anniversary, Retail)
     if GetChannelName then
         local id = GetChannelName(chanName)
         if id and tonumber(id) and tonumber(id) > 0 then
+            S.channelIndex = tonumber(id)
             return tonumber(id)
         end
         id = GetChannelName("WoWKB")
         if id and tonumber(id) and tonumber(id) > 0 then
+            S.channelIndex = tonumber(id)
             return tonumber(id)
         end
     end
@@ -55,6 +64,7 @@ function S:GetChannelId(chanName)
                 if type(name) == "string" and type(id) == "number" and id > 0 then
                     local lowerName = name:lower()
                     if lowerName == lowerTarget or lowerName:find(lowerTarget, 1, true) then
+                        S.channelIndex = id
                         return id
                     end
                 end
@@ -119,7 +129,7 @@ function S:BroadcastToGlobalChannel(chatText, addonPayload)
     else
         S:JoinGlobalChannel()
         if C_Timer and C_Timer.After then
-            C_Timer.After(1.5, function()
+            C_Timer.After(0.4, function()
                 local retryId = S:GetChannelId("WoWKillboard")
                 if retryId and retryId > 0 then
                     S.channelIndex = retryId
@@ -130,7 +140,7 @@ function S:BroadcastToGlobalChannel(chatText, addonPayload)
                         KB.Utils.SendAddonMessage(KB.Prefix, addonPayload, "CHANNEL", retryId)
                     end
                 else
-                    C_Timer.After(2.0, function()
+                    C_Timer.After(1.0, function()
                         local secondRetryId = S:GetChannelId("WoWKillboard")
                         if secondRetryId and secondRetryId > 0 then
                             S.channelIndex = secondRetryId
@@ -356,20 +366,9 @@ function S:OnIncomingTestCasualty(testData, sender)
     pcall(PlaySound, 8959, "Master")
     pcall(PlaySound, 5274, "Master")
 
-    -- Trigger Kill Banner & Toast with isTest = true (Bypasses zone restrictions, guarantees zero database write)
+    -- Trigger Kill Banner with isTest = true (Bypasses zone restrictions, guarantees zero database write)
     if KB.UI and KB.UI.ShowKillBanner then
         KB.UI:ShowKillBanner(testData, true)
-    end
-    if KB.UI and KB.UI.TriggerToast then
-        local kName = (testData.killer and testData.killer.name) or "Hostile"
-        local vName = (testData.victim and testData.victim.name) or sender or "Combatant"
-        local locStr = (testData.location and (testData.location.subZone or testData.location.zone)) or "Wilderness"
-        KB.UI:TriggerToast({
-            type = "pve_casualty",
-            title = "NETWORK BROADCAST VERIFIED",
-            text = string.format("%s killed by %s in %s", vName, kName, locStr),
-            duration = 6,
-        })
     end
 
     local kName = (testData.killer and testData.killer.name) or "Hostile"

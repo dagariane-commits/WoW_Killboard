@@ -7421,7 +7421,9 @@ local function GetEventHeaderText(killmail, isNpc)
     local myName = UnitName("player") or "Dagariane"
     local isMyVictory = (killmail.killer and killmail.killer.name == myName)
 
-    if not isNpc and not killmail.isPveDeath then
+    if killmail.isTest then
+        eventTitle = "NETWORK TEST SIMULATION"
+    elseif not isNpc and not killmail.isPveDeath then
         if isMyVictory then
             eventTitle = "HONORABLE VICTORY"
         else
