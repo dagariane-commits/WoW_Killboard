@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=1.5.0">
+  <link rel="stylesheet" href="/static/style.css?v=1.5.1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -38,6 +38,7 @@
       <nav class="nav-links-rail" id="nav-rail">
         <button id="nav-intel" class="nav-btn active" onclick="switchTab('INTEL')">Intel</button>
         <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">Leaderboards</button>
+        <button id="nav-hazards" class="nav-btn" onclick="switchTab('HAZARDS')">Deadly Hazards</button>
         <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Bounties &amp; Manhunt</button>
         <button id="nav-zones" class="nav-btn" onclick="switchTab('ZONES')">Zone Intel</button>
       </nav>
@@ -52,13 +53,6 @@
 
       <!-- 4. Action Tools, Auth, CTA & Mobile -->
       <div class="header-tools-group">
-        <!-- 4-Way Mode Filter Pills -->
-        <div class="header-mode-filters" id="header-mode-filters">
-          <button class="header-mode-pill active" id="hdr-pill-world" onclick="setFilterMode('WORLD')" title="Open-World Combat">World</button>
-          <button class="header-mode-pill" id="hdr-pill-bg" onclick="setFilterMode('BG')" title="Battleground Matches">BGs</button>
-          <button class="header-mode-pill" id="hdr-pill-duel" onclick="setFilterMode('DUEL')" title="1v1 Sanctioned Duels">Duels</button>
-          <button class="header-mode-pill disabled" id="hdr-pill-arena" onclick="setFilterMode('ARENA')" title="Arena Matches">Arenas</button>
-        </div>
 
         <!-- War Archivist AI Trigger -->
         <button id="header-archivist-btn" class="header-icon-btn archivist-btn" onclick="toggleOracleChatModal()" title="Consult The War Archivist (AI Intelligence)">
@@ -123,6 +117,10 @@
         </button>
         <button class="mobile-nav-item" id="m-nav-legends" onclick="switchTab('LEGENDS'); toggleMobileDrawer(false);">
           <span>Leaderboards</span>
+          <span>&rarr;</span>
+        </button>
+        <button class="mobile-nav-item" id="m-nav-hazards" onclick="switchTab('HAZARDS'); toggleMobileDrawer(false);">
+          <span>Deadly Hazards</span>
           <span>&rarr;</span>
         </button>
         <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
@@ -208,79 +206,7 @@
 
     <!-- Sidebar Column -->
     <aside class="sidebar-column">
-      <!-- The Blood Ledger: Most Wanted Outlaws Sidebar Module -->
-      <section id="most-wanted-section" class="sidebar-card sidebar-wanted-card">
-        <div class="sidebar-wanted-header">
-          <div class="sidebar-wanted-title">
-            <span style="color: var(--wow-gold); font-family: var(--font-tactical); font-weight: 800; font-size: 0.82rem; letter-spacing: 0.5px;">THE BLOOD LEDGER</span>
-            <span style="font-size: 0.72rem; color: #94a3b8;">&bull; MOST WANTED</span>
-          </div>
-          <button class="see-all-marks-btn" onclick="switchTab('BOUNTIES')">All &rarr;</button>
-        </div>
-        <div id="most-wanted-cards-container" class="sidebar-wanted-grid">
-          <!-- Populated by app.js -->
-        </div>
-      </section>
-
-      <!-- Tabbed 24-Hour Leaderboard Widget (Zones / Gankers / Guilds) -->
-      <div class="sidebar-card" id="sidebar-tabbed-leaderboards">
-        <div class="sidebar-tab-pills">
-          <button class="sidebar-pill-btn active" id="pill-sb-zones" onclick="switchSidebarLeaderboardTab('zones')">Hot Zones</button>
-          <button class="sidebar-pill-btn" id="pill-sb-characters" onclick="switchSidebarLeaderboardTab('characters')">Top Gankers</button>
-          <button class="sidebar-pill-btn" id="pill-sb-guilds" onclick="switchSidebarLeaderboardTab('guilds')">Top Guilds</button>
-        </div>
-        <div class="sidebar-tab-content">
-          <!-- Deadliest Zones -->
-          <div id="sidebar-24h-zones" class="sidebar-rank-list">
-            <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
-          </div>
-          <!-- Top Active Gankers -->
-          <div id="sidebar-24h-characters" class="sidebar-rank-list" style="display: none;">
-            <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
-          </div>
-          <!-- Top Active Guilds -->
-          <div id="sidebar-24h-guilds" class="sidebar-rank-list" style="display: none;">
-            <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Context-Aware Dynamic Filter Widget (shown on LEGENDS view) -->
-      <div class="sidebar-card" id="sidebar-context-filters" style="display: none;">
-        <div class="section-header">
-          <div class="section-title">Champion Filters</div>
-        </div>
-        <div class="sidebar-filters-body" style="display:flex; flex-direction:column; gap:10px; font-size:0.8rem;">
-          <div>
-            <div style="color:#94a3b8; margin-bottom:4px; font-weight:700; font-size:0.75rem;">FACTION</div>
-            <div style="display:flex; gap:6px;">
-              <button class="sidebar-pill-btn active" id="filter-faction-all" onclick="filterLeaderboardsByFaction('ALL')">All</button>
-              <button class="sidebar-pill-btn" id="filter-faction-alliance" onclick="filterLeaderboardsByFaction('Alliance')" style="color:var(--alliance-blue);">Alliance</button>
-              <button class="sidebar-pill-btn" id="filter-faction-horde" onclick="filterLeaderboardsByFaction('Horde')" style="color:var(--horde-red);">Horde</button>
-            </div>
-          </div>
-          <div>
-            <div style="color:#94a3b8; margin-bottom:4px; font-weight:700; font-size:0.75rem;">TIMEFRAME</div>
-            <div style="display:flex; gap:6px;">
-              <button class="sidebar-pill-btn active" id="filter-time-24h" onclick="filterLeaderboardsByTime('24h')">24 Hours</button>
-              <button class="sidebar-pill-btn" id="filter-time-7d" onclick="filterLeaderboardsByTime('7d')">7 Days</button>
-              <button class="sidebar-pill-btn" id="filter-time-all" onclick="filterLeaderboardsByTime('ALL')">All-Time</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- All Classes (Compressed 2-Column Grid) -->
-      <div class="sidebar-card" id="sidebar-card-classes">
-        <div class="section-header">
-          <div class="section-title" id="sidebar-title-classes">Class Combat Matrix</div>
-        </div>
-        <div id="sidebar-top-classes" class="sidebar-rank-list class-matrix-grid">
-          <!-- Populated by app.js -->
-        </div>
-      </div>
-
-      <!-- Lifetime Combat Activity -->
+      <!-- 1. Top — Lifetime Combat Activity -->
       <div class="sidebar-card" id="sidebar-card-activity">
         <div class="section-header">
           <div class="section-title">Lifetime Combat Activity</div>
@@ -311,7 +237,82 @@
         </table>
       </div>
 
-      <!-- Top Active Specs (Preserved in DOM) -->
+      <!-- 2. Second — Active Bounties (The Marked) -->
+      <section id="most-wanted-section" class="sidebar-card sidebar-wanted-card">
+        <div class="sidebar-wanted-header">
+          <div class="sidebar-wanted-title">
+            <span style="color: var(--wow-gold); font-family: var(--font-cinzel, Cinzel, serif); font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px;">THE MARKED</span>
+            <span style="font-size: 0.72rem; color: #94a3b8;">&bull; ACTIVE BOUNTIES</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button class="issue-bounty-quick-btn" onclick="openPlaceBountyModal()" title="Issue a Mark of Spite">+ Issue Mark</button>
+            <button class="see-all-marks-btn" onclick="switchTab('BOUNTIES')" title="View All Bounties">All &rarr;</button>
+          </div>
+        </div>
+        <div id="most-wanted-cards-container" class="sidebar-wanted-grid">
+          <!-- Populated by app.js -->
+        </div>
+      </section>
+
+      <!-- 3. Third — Champion Filters (shown on LEGENDS view) -->
+      <div class="sidebar-card" id="sidebar-context-filters" style="display: none;">
+        <div class="section-header">
+          <div class="section-title">Champion Filters</div>
+        </div>
+        <div class="sidebar-filters-body" style="display:flex; flex-direction:column; gap:10px; font-size:0.8rem;">
+          <div>
+            <div style="color:#94a3b8; margin-bottom:4px; font-weight:700; font-size:0.75rem;">FACTION</div>
+            <div style="display:flex; gap:6px;">
+              <button class="sidebar-pill-btn active" id="filter-faction-all" onclick="filterLeaderboardsByFaction('ALL')">All</button>
+              <button class="sidebar-pill-btn" id="filter-faction-alliance" onclick="filterLeaderboardsByFaction('Alliance')" style="color:var(--alliance-blue);">Alliance</button>
+              <button class="sidebar-pill-btn" id="filter-faction-horde" onclick="filterLeaderboardsByFaction('Horde')" style="color:var(--horde-red);">Horde</button>
+            </div>
+          </div>
+          <div>
+            <div style="color:#94a3b8; margin-bottom:4px; font-weight:700; font-size:0.75rem;">TIMEFRAME</div>
+            <div style="display:flex; gap:6px;">
+              <button class="sidebar-pill-btn active" id="filter-time-24h" onclick="filterLeaderboardsByTime('24h')">24 Hours</button>
+              <button class="sidebar-pill-btn" id="filter-time-7d" onclick="filterLeaderboardsByTime('7d')">7 Days</button>
+              <button class="sidebar-pill-btn" id="filter-time-all" onclick="filterLeaderboardsByTime('ALL')">All-Time</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Fourth — Tabbed 24-Hour Leaderboard Widget (Zones / Gankers / Guilds) -->
+      <div class="sidebar-card" id="sidebar-tabbed-leaderboards">
+        <div class="sidebar-tab-pills">
+          <button class="sidebar-pill-btn active" id="pill-sb-zones" onclick="switchSidebarLeaderboardTab('zones')">Hot Zones</button>
+          <button class="sidebar-pill-btn" id="pill-sb-characters" onclick="switchSidebarLeaderboardTab('characters')">Top Gankers</button>
+          <button class="sidebar-pill-btn" id="pill-sb-guilds" onclick="switchSidebarLeaderboardTab('guilds')">Top Guilds</button>
+        </div>
+        <div class="sidebar-tab-content">
+          <!-- Deadliest Zones -->
+          <div id="sidebar-24h-zones" class="sidebar-rank-list">
+            <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
+          </div>
+          <!-- Top Active Gankers -->
+          <div id="sidebar-24h-characters" class="sidebar-rank-list" style="display: none;">
+            <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
+          </div>
+          <!-- Top Active Guilds -->
+          <div id="sidebar-24h-guilds" class="sidebar-rank-list" style="display: none;">
+            <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Bottom — All Classes Matrix (Compressed 2-Column Grid) -->
+      <div class="sidebar-card" id="sidebar-card-classes">
+        <div class="section-header">
+          <div class="section-title" id="sidebar-title-classes">Class Combat Matrix</div>
+        </div>
+        <div id="sidebar-top-classes" class="sidebar-rank-list class-matrix-grid">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+
+      <!-- 6. Top Active Specs (Preserved in DOM) -->
       <div class="sidebar-card" id="sidebar-card-specs" style="display: none;">
         <div class="section-header">
           <div class="section-title" id="sidebar-title-specs">Top Active Specs</div>
@@ -320,7 +321,6 @@
           <!-- Populated by app.js -->
         </div>
       </div>
-
     </aside>
   </div>
 
@@ -939,6 +939,6 @@
   <!-- Live Combat Slide-In Toast Notification Banner -->
   <div id="combat-toast-container" class="combat-toast-container"></div>
 
-  <script src="/static/app.js?v=1.5.0"></script>
+  <script src="/static/app.js?v=1.5.1"></script>
 </body>
 </html>

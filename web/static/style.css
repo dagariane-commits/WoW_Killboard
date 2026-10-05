@@ -1256,6 +1256,90 @@ body {
   gap: 8px;
 }
 
+/* Condensed Bounty Sidebar Rows */
+.sidebar-bounty-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-bounty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.sidebar-bounty-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(212, 163, 41, 0.35);
+  transform: translateX(2px);
+}
+
+.sidebar-bounty-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sidebar-bounty-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-bounty-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-bounty-realm {
+  font-size: 0.68rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-bounty-pot {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--wow-gold, #ffd100);
+  background: rgba(212, 163, 41, 0.1);
+  border: 1px solid rgba(212, 163, 41, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-family: var(--font-tactical);
+}
+
+.issue-bounty-quick-btn {
+  background: rgba(212, 163, 41, 0.15);
+  border: 1px solid var(--wow-gold, #c69b3a);
+  color: #ffd100;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-tactical);
+}
+
+.issue-bounty-quick-btn:hover {
+  background: rgba(212, 163, 41, 0.3);
+  color: #fff;
+}
+
 /* Compressed 2-Column Class Matrix */
 #sidebar-top-classes.class-matrix-grid {
   display: grid;

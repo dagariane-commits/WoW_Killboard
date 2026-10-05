@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2026-10-05
 
 ### Added
+- **Global Realm Isolation (Multi-Tenant Architecture) (`web/server.py`, `web/static/app.js`)**:
+  - Scoped all API routes (`/api/kills`, `/api/leaderboard`, `/api/guilds`, `/api/bounties`, `/api/bounties/most-wanted`, `/api/stats`, `/api/stats/activity-7d`, `/api/pve/deaths`, `/api/pve/leaderboard`) strictly by `realm_id` / `realm` parameter.
+  - Implemented `normalize_realm_filter` in `web/server.py` supporting standard realm names and short slugs (`PVP`, `PVE`, `RP`, `HARDCORE`).
+  - Added `getCurrentRealm()` and `flushAndReloadActiveRealm()` in `web/static/app.js`: when switching realms via `#nav-theater` or the realm server modal, local kill cache, known kill IDs, and benchmark cache are immediately wiped and re-fetched for the target tenant. Combatants on `Classic Beta PvP` (like Dagariane) never bleed into `Classic Beta PvE`.
+- **Header Cleanup & Mode De-duplication (`web/static/index.html`, `web/static/app.js`)**:
+  - Completely deleted duplicate `.header-mode-filters` (`[ WORLD | BGS | DUELS | ARENAS ]`) from the sticky `.site-header`.
+  - Embedded contextual in-page mode filter pills directly inside `#feed-mode-pills` (Recent Combat Feed) and `#champions-mode-pills` (Defender of Azeroth).
+  - Restored top-level PvE visibility by adding dedicated `[ Deadly Hazards ]` (`#nav-hazards` and `#m-nav-hazards`) button directly into `#nav-rail` and the mobile navigation drawer. Removed the confusing sub-toggle.
+- **Right Sidebar Hierarchy Optimization (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
+  - Restructured the 340px right rail in strict priority order:
+    1. Slot 1 (Top): Lifetime Combat Activity (`#sidebar-card-activity`), scoped strictly to selected realm.
+    2. Slot 2: Active Bounties (The Marked) (`#most-wanted-section`), condensed into a tight vertical list of top 3-4 marked outlaws/monsters with class crest badge, name, realm, bounty pot, and `+ Issue Mark` quick trigger.
+    3. Slot 3: Champion Filters (`#sidebar-context-filters`, visible on Defender of Azeroth view).
+    4. Slot 4: Tabbed 24-Hour Leaderboards (`#sidebar-tabbed-leaderboards`).
+    5. Slot 5 (Bottom): All Classes Matrix (`#sidebar-card-classes`, 2-column compact grid).
+- **Paladin Class Resolution Bug Fix (Dagariane) (`web/server.py`, `web/static/app.js`)**:
+  - Implemented 1-based Blizzard class ID indexing map (`BLIZZARD_CLASS_IDS`) and `resolveClassName` in both Python and JavaScript.
+  - Corrected benchmark profile lookup in `renderLeaderboardView` to read flat `benchmarkProfile.class` instead of `benchmarkProfile.character.class`.
+  - Guaranteed Dagariane resolves to PALADIN with pink class color `#f58cba` and Paladin crest icon across Defender of Azeroth, Champion Benchmark bar, and profile modal.
+  - Preserved `victim_class` and `realm` on PvE environmental fall damage and monster deaths without null overwriting.
 - **Global Omni-Search Engine (`web/static/app.js`, `web/static/index.html`, `web/static/style.css`)**:
   - Centralized global search bar (`#global-search-input`) in the sticky header with autofocus hotkey shortcut (`/`) and instant typeahead dropdown (`#search-results-dropdown`).
   - Search federation querying combatants (with class coloring and faction badges), guilds, and conflict zones.
