@@ -413,11 +413,16 @@ end
 function RF:OnWhisper(msg, sender)
     if not RF:IsBeaconActive() then return end
     if not msg or not sender then return end
+    if issecretvalue and (issecretvalue(msg) or issecretvalue(sender)) then return end
+    if KB.Utils and KB.Utils.CanAccess and (not KB.Utils.CanAccess(msg) or not KB.Utils.CanAccess(sender)) then return end
+    if type(msg) ~= "string" then return end
 
     local s = WoWKillboardSettings or (KB.DefaultSettings or {})
     if s.enableWhisperAutoInvite == false then return end
 
-    local cleanMsg = msg:lower():match("^%s*(.-)%s*$")
+    local ok, lowerMsg = pcall(string.lower, msg)
+    if not ok or not lowerMsg then return end
+    local cleanMsg = lowerMsg:match("^%s*(.-)%s*$")
     if AUTO_INVITE_KEYWORDS[cleanMsg] then
         -- Anti-spam debounce: limit whisper replies to once every 30 seconds per sender
         local now = time()
@@ -572,7 +577,9 @@ end
 frame:SetScript("OnEvent", function(self, event, ...)
     if event == "CHAT_MSG_WHISPER" then
         local msg, sender = ...
-        RF:OnWhisper(msg, sender)
+        if msg and type(msg) == "string" and (not issecretvalue or not issecretvalue(msg)) then
+            RF:OnWhisper(msg, sender)
+        end
     elseif event == "PLAYER_REGEN_ENABLED" then
         -- Deliver any queued reinforcement alerts safely outside combat lockdown
         if #RF.PendingAlerts > 0 and not InCombatLockdown() then
