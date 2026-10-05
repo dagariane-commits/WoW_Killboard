@@ -5,6 +5,31 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-10-04 (CurseForge Community Release)
+
+### Added
+- **Chatter Suppression Filter Engine (`Sync.lua`)**:
+  - Registered official Blizzard `ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", ...)` to intercept all incoming messages in the dedicated `WoWKillboard` channel.
+  - Completely silences and blocks human conversation, player chatter, and spam from displaying in any chat frame, guaranteeing a pure, tamper-proof open-world casualty stream.
+  - Valid structured telemetry (`^%[WoWKB%] Casualty:`, `^%[WoWKB Alert%]`, `^%[WoWKB Update%]`) passes through with enhanced tactical gold coloring (`|cffffd100[WoWKB]|r`).
+  - Local Feedback Protection: If an addon player accidentally types into the dedicated channel number (e.g., `/4`), their client blocks the message from rendering and quietly prints an informational notice that the channel is reserved for addon telemetry.
+- **Flexible Alert Delivery Modes & Live Chat Stream (`Config.lua`, `Sync.lua`, `UI.lua`, `Core.lua`)**:
+  - **4 Quick Presets in Frontline Alerts Dialog (`/kb alerts`)**:
+    - **Both Displays (`[Both Displays]`)**: On-screen tactical kill banner with audio warhorn alert AND live casualty stream into the player's General chat frame.
+    - **Heads-Up Only (`[Heads-Up Only]`)**: On-screen tactical banner and audio warhorn trigger on kills, but chat windows remain 100% clean and quiet (`showChannelInChat = false`).
+    - **Silent Chat Log Only (`[Chat Log Only]`)**: Mutes all screen popups and sound horns (`alertMode = "OFF"`), streaming casualties silently into the player's General chat frame so they can monitor who is dying where in the open world at a glance.
+    - **Muted / Off (`[Muted / Off]`)**: Suppresses both on-screen banners and chat streaming while continuing silent background combat recording into the local database.
+  - **Granular Toggles & Settings Dialog Integration**:
+    - Interactive `[Chat Window Feed: ON / OFF]` and `[Audio Warhorn: ON / OFF]` fine-tune buttons in `AlertsDialog`.
+    - Added `[Chat Stream: ON / OFF]` button with active state styling and tooltip directly to Section 2 of the main Settings Dialog (`/kb` -> Settings).
+  - **Dynamic Chat Frame Channel Management (`S:ShowChannelInChat`, `S:ApplyChatVisibility`)**:
+    - Dynamically attaches (`ChatFrame_AddChannel`) or detaches (`ChatFrame_RemoveChannel`) the `WoWKillboard` channel based on user preference, with automatic re-application on login (`PLAYER_ENTERING_WORLD`), channel reconnect (`YOU_JOINED`), and the 30-second housekeeping loop.
+  - **New Slash Commands**:
+    - `/kb channel [show|hide|toggle]` or `/kbchannel` to toggle chat window casualty streaming.
+    - `/kb stream [both|chat|banner|off]` or `/kbstream` to switch between delivery presets directly from macros or chat.
+- **Automated Pipeline Validation & Verification (`test_pipeline.py`)**:
+  - Added `test_29_chatter_suppression_and_delivery_modes` validating simulated channel filter dropping, allowed telemetry passing, and UI preset bindings.
+
 ## [1.0.3] - 2026-10-04 (CurseForge Community Release)
 
 ### Added

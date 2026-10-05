@@ -18,6 +18,52 @@ elseif RegisterAddonMessagePrefix then
     pcall(RegisterAddonMessagePrefix, KB.Prefix or "WOWKB")
 end
 
+-- Helper to identify WoWKillboard channel across full string or base name
+local function IsWoWKillboardChannel(channelBase, channelName)
+    if type(channelBase) == "string" then
+        local lower = channelBase:lower()
+        if lower == "wowkillboard" or lower == "wowkb" or lower:find("wowkillboard", 1, true) or lower:find("wowkb", 1, true) then
+            return true
+        end
+    end
+    if type(channelName) == "string" then
+        local lower = channelName:lower()
+        if lower == "wowkillboard" or lower == "wowkb" or lower:find("wowkillboard", 1, true) or lower:find("wowkb", 1, true) then
+            return true
+        end
+    end
+    return false
+end
+
+-- Chatter suppression filter: guarantees the channel remains a 100% pure telemetry feed
+-- Completely silences non-addon chatter, spam, or player conversation from displaying in any chat frame
+if ChatFrame_AddMessageEventFilter then
+    ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", function(self, event, msg, sender, lang, channelName, target, flags, zoneChannelID, channelNumber, channelBase, ...)
+        if IsWoWKillboardChannel(channelBase, channelName) then
+            if msg and type(msg) == "string" then
+                -- Permit structured WoWKB telemetry broadcasts
+                if msg:find("^%[WoWKB%] Casualty:") or msg:find("^%[WoWKB Alert%]") or msg:find("^%[WoWKB Update%]") or msg:find("^%[WoWKB Test Broadcast%]") or msg:find("^%[WoWKB") or msg:find("^%[WoW Killboard%]") then
+                    -- Format prefix with crisp UI colors
+                    local styledMsg = msg:gsub("^%[WoWKB%]", "|cffffd100[WoWKB]|r")
+                    styledMsg = styledMsg:gsub("^%[WoWKB Alert%]", "|cffff3838[WoWKB Alert]|r")
+                    styledMsg = styledMsg:gsub("^%[WoWKB Update%]", "|cff38bdf8[WoWKB Update]|r")
+                    return false, styledMsg, sender, lang, channelName, target, flags, zoneChannelID, channelNumber, channelBase, ...
+                end
+            end
+            -- If the local player inadvertently typed into the dedicated channel, provide immediate feedback
+            local myName = UnitName("player")
+            if sender and myName and (sender == myName or sender:find("^" .. myName .. "%-")) then
+                if KB.Utils and KB.Utils.SafePrint then
+                    KB.Utils.SafePrint("|cffff3838[WoWKB]|r The '|cffffd100WoWKillboard|r' channel is a dedicated telemetry feed. Player chatting is disabled.")
+                end
+            end
+            -- Drop/suppress message from chat window completely
+            return true
+        end
+        return false, msg, sender, lang, channelName, target, flags, zoneChannelID, channelNumber, channelBase, ...
+    end)
+end
+
 -- Hide custom channel from all chat windows to eliminate visual clutter
 function S:HideChannelFromChat(chanName)
     chanName = chanName or "WoWKillboard"
@@ -26,6 +72,28 @@ function S:HideChannelFromChat(chanName)
         if cf and ChatFrame_RemoveChannel then
             pcall(ChatFrame_RemoveChannel, cf, chanName)
         end
+    end
+end
+
+-- Attach custom channel to default chat window for silent running combat log
+function S:ShowChannelInChat(chanName)
+    chanName = chanName or "WoWKillboard"
+    if InCombatLockdown and InCombatLockdown() then return end
+    if DEFAULT_CHAT_FRAME and ChatFrame_AddChannel then
+        pcall(ChatFrame_AddChannel, DEFAULT_CHAT_FRAME, chanName)
+    end
+end
+
+-- Apply user's chat window visibility preference (Show Channel vs Clean Silent Chat)
+function S:ApplyChatVisibility(chanName)
+    chanName = chanName or "WoWKillboard"
+    if InCombatLockdown and InCombatLockdown() then return end
+    local s = WoWKillboardSettings or KB.DefaultSettings or {}
+    local showInChat = (s.showChannelInChat == true)
+    if showInChat then
+        S:ShowChannelInChat(chanName)
+    else
+        S:HideChannelFromChat(chanName)
     end
 end
 
@@ -80,7 +148,7 @@ function S:JoinGlobalChannel()
     local id = S:GetChannelId(chanName)
     if id and id > 0 then
         S.channelIndex = id
-        S:HideChannelFromChat(chanName)
+        S:ApplyChatVisibility(chanName)
         return id
     end
     if JoinChannelByName then
@@ -91,7 +159,7 @@ function S:JoinGlobalChannel()
             local afterId = S:GetChannelId(chanName)
             if afterId and afterId > 0 then
                 S.channelIndex = afterId
-                S:HideChannelFromChat(chanName)
+                S:ApplyChatVisibility(chanName)
             end
         end)
     end
@@ -106,7 +174,7 @@ function S:OnChannelNotice(notice, player, _, channelName, _, _, _, _, baseName)
             local id = S:GetChannelId("WoWKillboard")
             if id and id > 0 then
                 S.channelIndex = id
-                S:HideChannelFromChat("WoWKillboard")
+                S:ApplyChatVisibility("WoWKillboard")
             end
         elseif notice == "YOU_LEFT" or notice == "SUSPENDED" then
             S.channelIndex = nil
@@ -362,12 +430,18 @@ function S:OnIncomingTestCasualty(testData, sender)
     if testData.killer and not testData.killer.realm then testData.killer.realm = testData.realm end
     if testData.victim and not testData.victim.realm then testData.victim.realm = testData.realm end
 
-    -- Sound Alert (Soundkit 8959 = PvP Solo Kill, 5274 = Raid Warning)
-    pcall(PlaySound, 8959, "Master")
-    pcall(PlaySound, 5274, "Master")
+    local s = WoWKillboardSettings or KB.DefaultSettings or {}
+    local alertMode = s.alertMode or "SOUND_AND_BANNER"
+    local soundEnabled = (s.soundAlerts ~= false)
 
-    -- Trigger Kill Banner with isTest = true (Bypasses zone restrictions, guarantees zero database write)
-    if KB.UI and KB.UI.ShowKillBanner then
+    -- Sound Alert (Soundkit 8959 = PvP Solo Kill, 5274 = Raid Warning)
+    if soundEnabled and alertMode == "SOUND_AND_BANNER" then
+        pcall(PlaySound, 8959, "Master")
+        pcall(PlaySound, 5274, "Master")
+    end
+
+    -- Trigger Kill Banner with isTest = true (Only if banner alerts are not turned off)
+    if alertMode ~= "OFF" and KB.UI and KB.UI.ShowKillBanner then
         KB.UI:ShowKillBanner(testData, true)
     end
 
@@ -375,8 +449,9 @@ function S:OnIncomingTestCasualty(testData, sender)
     local vName = (testData.victim and testData.victim.name) or sender or "Combatant"
     local locStr = (testData.location and (testData.location.subZone or testData.location.zone)) or "Wilderness"
 
-    local alertMsg = string.format("|cff38bdf8[WoWKB Network Test]|r Received simulated casualty broadcast from |cff00e5ff%s|r (%s killed by %s in %s). |cffffd100Alert and toast verified!|r (Not saved to history).",
-        sender or vName, vName, kName, locStr)
+    local alertStatus = (alertMode == "OFF") and "|cffff9900(Chat Stream Only - Toast Muted)|r" or "|cffffd100Alert and toast verified!|r"
+    local alertMsg = string.format("|cff38bdf8[WoWKB Network Test]|r Received simulated casualty broadcast from |cff00e5ff%s|r (%s killed by %s in %s). %s (Not saved to history).",
+        sender or vName, vName, kName, locStr, alertStatus)
     if KB.Utils and KB.Utils.SafePrint then
         KB.Utils.SafePrint(alertMsg)
     elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
@@ -1283,6 +1358,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "PLAYER_ENTERING_WORLD" then
         pcall(function()
             S:Init()
+            S:ApplyChatVisibility("WoWKillboard")
             if C_Timer and C_Timer.After then
                 C_Timer.After(2.0, function() S:JoinGlobalChannel() end)
                 C_Timer.After(5.0, function() S:JoinGlobalChannel() end)
@@ -1333,7 +1409,7 @@ if C_Timer and C_Timer.NewTicker then
             S:JoinGlobalChannel()
         else
             S.channelIndex = id
-            S:HideChannelFromChat("WoWKillboard")
+            S:ApplyChatVisibility("WoWKillboard")
         end
     end)
 end

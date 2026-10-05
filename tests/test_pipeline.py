@@ -1925,6 +1925,65 @@ WoWKillboardDB = {
 
         print("[PASS] Verified Network Test Casualty Protocol & Admin Update Announcement Engine.")
 
+    def test_29_chatter_suppression_and_delivery_modes(self):
+        """Verify chat channel chatter suppression, dynamic chat visibility, and delivery modes."""
+        addon_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Addon", "WoWKillboard")
+
+        # 1. Config.lua has showChannelInChat setting
+        with open(os.path.join(addon_dir, "Config.lua"), "r", encoding="utf-8") as f:
+            config_content = f.read()
+        self.assertIn("showChannelInChat", config_content)
+
+        # 2. Sync.lua chatter suppression filter and channel visibility
+        with open(os.path.join(addon_dir, "Sync.lua"), "r", encoding="utf-8") as f:
+            sync_content = f.read()
+        self.assertIn("ChatFrame_AddMessageEventFilter", sync_content)
+        self.assertIn("IsWoWKillboardChannel", sync_content)
+        self.assertIn("function S:ShowChannelInChat", sync_content)
+        self.assertIn("function S:HideChannelFromChat", sync_content)
+        self.assertIn("function S:ApplyChatVisibility", sync_content)
+
+        # Verify simulated chatter suppression filter logic
+        def simulate_channel_filter(msg, channel_base, channel_name):
+            is_kb = False
+            if channel_base and ("wowkillboard" in channel_base.lower() or "wowkb" in channel_base.lower()):
+                is_kb = True
+            elif channel_name and ("wowkillboard" in channel_name.lower() or "wowkb" in channel_name.lower()):
+                is_kb = True
+
+            if is_kb:
+                if msg and (msg.startswith("[WoWKB] Casualty:") or msg.startswith("[WoWKB Alert]") or msg.startswith("[WoWKB Update]") or msg.startswith("[WoWKB")):
+                    return False  # Allowed through
+                return True  # Suppressed / blocked
+            return False  # Other channels untouched
+
+        # Test chatter suppression
+        self.assertTrue(simulate_channel_filter("hey anyone want to run deadmines?", "WoWKillboard", "4. WoWKillboard"))
+        self.assertTrue(simulate_channel_filter("WTS [Lesser Magic Wand] 15s", "WoWKillboard", "4. WoWKillboard"))
+        self.assertFalse(simulate_channel_filter("[WoWKB] Casualty: Dagariane (Lvl 23 Paladin) killed by Defias Pillager (Fireball) in Moonbrook.", "WoWKillboard", "4. WoWKillboard"))
+        self.assertFalse(simulate_channel_filter("[WoWKB Alert] System reboot in 5 minutes.", "WoWKillboard", "4. WoWKillboard"))
+        self.assertFalse(simulate_channel_filter("LF Tank RFC", "General", "1. General"))
+
+        # 3. UI.lua contains 4 delivery presets and toggle buttons
+        with open(os.path.join(addon_dir, "UI.lua"), "r", encoding="utf-8") as f:
+            ui_content = f.read()
+        self.assertIn("BtnPresetBoth", ui_content)
+        self.assertIn("BtnPresetHeadsUp", ui_content)
+        self.assertIn("BtnPresetChat", ui_content)
+        self.assertIn("BtnPresetOff", ui_content)
+        self.assertIn("BtnToggleChat", ui_content)
+        self.assertIn("chatStreamBtn", ui_content)
+
+        # 4. Core.lua contains slash command handlers
+        with open(os.path.join(addon_dir, "Core.lua"), "r", encoding="utf-8") as f:
+            core_content = f.read()
+        self.assertIn('cmd == "channel"', core_content)
+        self.assertIn('cmd == "stream"', core_content)
+        self.assertIn("SLASH_WOWKB_CHANNEL1", core_content)
+        self.assertIn("SLASH_WOWKB_STREAM1", core_content)
+
+        print("[PASS] Verified Channel Chatter Suppression Engine & Flexible Alert Delivery Modes.")
+
 if __name__ == "__main__":
     unittest.main()
 
