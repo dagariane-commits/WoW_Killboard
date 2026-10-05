@@ -60,7 +60,7 @@ function UI:IsPve()
         return KB.Utils.IsPveRuleset()
     end
     local r = UI:GetRuleset()
-    return (r == "PVE" or r == "HARDCORE")
+    return (r == "PVE" or r == "HARDCORE" or r == "RP")
 end
 
 -- Standard Blizzard Class Coordinates (safe fallback for all WoW versions)
@@ -822,10 +822,17 @@ function UI:CreateMainWindow()
     local verTag = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     verTag:SetPoint("LEFT", title, "RIGHT", 8, 0)
     verTag:SetTextColor(102/255, 102/255, 102/255, 1.0) -- #666666
-    verTag:SetText(string.format("v%s", KB.Version or "1.0.2"))
+    verTag:SetText(string.format("v%s", KB.Version or "1.0.3"))
     if verTag.SetFont then local f, s = verTag:GetFont(); verTag:SetFont(f, s or 10, "OUTLINE") end
     verTag:SetShadowOffset(0, 0)
     UI.VersionText = verTag
+
+    -- Active Realm Display: e.g. "Realm: Crusader Strike [PvP]"
+    local realmTag = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    realmTag:SetPoint("LEFT", verTag, "RIGHT", 14, 0)
+    if realmTag.SetFont then local f, s = realmTag:GetFont(); realmTag:SetFont(f, s or 10, "OUTLINE") end
+    realmTag:SetShadowOffset(0, 0)
+    UI.RealmBadge = realmTag
 
     -- Right Elements: Close (X), Settings, Sync, Mode Indicator
     local closeBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
@@ -917,9 +924,9 @@ function UI:CreateMainWindow()
     end)
     UI.SyncButton = syncBtn
 
-    -- Mode Indicator: Compact pill toggle for PvP / PvE
+    -- Mode Indicator: Interactive toggle button for PvP Stats vs PvE Stats
     local modePill = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
-    modePill:SetSize(96, 20)
+    modePill:SetSize(116, 20)
     modePill:SetPoint("RIGHT", syncBtn, "LEFT", -8, 0)
     modePill:EnableMouse(true)
     modePill:SetBackdrop({
@@ -937,20 +944,37 @@ function UI:CreateMainWindow()
     modePill.Label = modeLabel
 
     function UI:UpdateRulesetButton()
-        if not (UI.RulesetButton and UI.RulesetButton.Label) then return end
         local isPve = UI:IsPve()
-        if isPve then
-            UI.RulesetButton.Label:SetText("|cff666666PvP|r |cff10b981[PvE]|r")
-        else
-            UI.RulesetButton.Label:SetText("|cffef4444[PvP]|r |cff666666PvE|r")
+        if UI.RulesetButton and UI.RulesetButton.Label then
+            if isPve then
+                UI.RulesetButton.Label:SetText("|cff666666PvP|r |cff10b981[PVE STATS]|r")
+            else
+                UI.RulesetButton.Label:SetText("|cffef4444[PVP STATS]|r |cff666666PvE|r")
+            end
+        end
+
+        if UI.RealmBadge then
+            local realm = (GetRealmName and GetRealmName()) or "Unknown Realm"
+            local rawRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or (isPve and "PVE" or "PVP")
+            local rulesetLabel
+            if rawRuleset == "RP" then
+                rulesetLabel = isPve and "|cff10b981[RP - PvE]|r" or "|cffef4444[RP - PvP]|r"
+            elseif rawRuleset == "HARDCORE" then
+                rulesetLabel = isPve and "|cffff9900[Hardcore]|r" or "|cffef4444[PvP]|r"
+            elseif isPve then
+                rulesetLabel = "|cff10b981[PvE]|r"
+            else
+                rulesetLabel = "|cffef4444[PvP]|r"
+            end
+            UI.RealmBadge:SetText(string.format("|cff888888Realm:|r |cffffd100%s|r %s", realm, rulesetLabel))
         end
     end
 
     modePill:SetScript("OnEnter", function(self)
         self:SetBackdropColor(42/255, 42/255, 42/255, 1.0) -- #2A2A2A
         local isPve = UI:IsPve()
-        local title = isPve and "|cff10b981Campaign Mode: Wilderness PvE|r" or "|cffef4444Campaign Mode: Contested PvP|r"
-        local rDesc = "Click to toggle between Contested PvP and Wilderness PvE modes."
+        local title = isPve and "|cff10b981Active Mode: Wilderness PvE Stats|r" or "|cffef4444Active Mode: Contested PvP Stats|r"
+        local rDesc = "Click to toggle between Contested PvP and Wilderness PvE statistics."
         UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, title, rDesc)
     end)
     modePill:SetScript("OnLeave", function(self)
@@ -959,14 +983,17 @@ function UI:CreateMainWindow()
     end)
     modePill:SetScript("OnClick", function()
         WoWKillboardDB = WoWKillboardDB or {}
-        local cur = UI:GetRuleset()
-        local nextR = (cur == "PVE") and "PVP" or "PVE"
+        local isPve = UI:IsPve()
+        local nextR = isPve and "PVP" or "PVE"
         local realm = (GetRealmName and GetRealmName()) or ""
         WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
         if realm ~= "" then
             WoWKillboardDB.realmRulesets[realm] = nextR
         end
         WoWKillboardDB.campaignRuleset = nextR
+        if KB.Leaderboard and KB.Leaderboard.Rebuild then
+            KB.Leaderboard:Rebuild()
+        end
         UI:UpdateRulesetButton()
         UI:Refresh()
     end)

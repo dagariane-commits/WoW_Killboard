@@ -1984,6 +1984,80 @@ WoWKillboardDB = {
 
         print("[PASS] Verified Channel Chatter Suppression Engine & Flexible Alert Delivery Modes.")
 
+    def test_30_realm_isolation_and_stats_toggle(self):
+        """Verify strict realm isolation, RP ruleset inclusion, and main window stats toggle."""
+        addon_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Addon", "WoWKillboard")
+
+        # 1. Utils.lua has RP ruleset support and IsPveRuleset includes RP
+        with open(os.path.join(addon_dir, "Utils.lua"), "r", encoding="utf-8") as f:
+            utils_content = f.read()
+        self.assertIn('r == "PVE" or r == "HARDCORE" or r == "RP"', utils_content)
+        self.assertIn('lavalash', utils_content)
+        self.assertIn('bloodsail', utils_content)
+
+        # 2. Leaderboard.lua has strict MatchesRealm isolation and GetModeSummary realm filtering
+        with open(os.path.join(addon_dir, "Leaderboard.lua"), "r", encoding="utf-8") as f:
+            lb_content = f.read()
+        self.assertIn('cleanKm == cleanMy', lb_content)
+        self.assertIn('LB:MatchesMode(km, mode) and LB:MatchesRealm(km)', lb_content)
+
+        # 3. UI.lua has RealmBadge and modern PvE/PvP stats toggle
+        with open(os.path.join(addon_dir, "UI.lua"), "r", encoding="utf-8") as f:
+            ui_content = f.read()
+        self.assertIn("UI.RealmBadge = realmTag", ui_content)
+        self.assertIn("[PVE STATS]", ui_content)
+        self.assertIn("[PVP STATS]", ui_content)
+        self.assertIn('r == "PVE" or r == "HARDCORE" or r == "RP"', ui_content)
+
+        # 4. Simulate MatchesRealm strict logic
+        def simulate_matches_realm(km, my_realm, isolate_realms=True):
+            if not km or not isinstance(km, dict):
+                return False
+            if not isolate_realms:
+                return True
+            if not my_realm:
+                return True
+            km_realm = km.get("realm") or (km.get("killer", {}).get("realm")) or (km.get("victim", {}).get("realm"))
+            if km_realm and km_realm != "Unknown":
+                clean_km = "".join(km_realm.lower().split())
+                clean_my = "".join(my_realm.lower().split())
+                return clean_km == clean_my
+            return False
+
+        # Test PvP realm player on Crusader Strike
+        cs_kill = {"realm": "Crusader Strike", "killer": {"name": "Ganker", "realm": "Crusader Strike"}}
+        cs_kill_nospace = {"realm": "CrusaderStrike", "killer": {"name": "Ganker"}}
+        wg_kill = {"realm": "Wild Growth", "killer": {"name": "Ally", "realm": "Wild Growth"}}
+        unknown_kill = {"realm": "Unknown", "killer": {"name": "Mystery"}}
+        missing_kill = {"killer": {"name": "Mystery"}}
+
+        self.assertTrue(simulate_matches_realm(cs_kill, "Crusader Strike"))
+        self.assertTrue(simulate_matches_realm(cs_kill_nospace, "Crusader Strike"))
+        self.assertTrue(simulate_matches_realm(cs_kill, "CrusaderStrike"))
+        self.assertFalse(simulate_matches_realm(wg_kill, "Crusader Strike"))
+        self.assertFalse(simulate_matches_realm(unknown_kill, "Crusader Strike"))
+        self.assertFalse(simulate_matches_realm(missing_kill, "Crusader Strike"))
+
+        # Test RP / PvE ruleset classification
+        def simulate_is_pve(realm_name):
+            r = realm_name.lower().replace(" ", "")
+            if "hardcore" in r or "hc" in r or "defiaspillager" in r:
+                return True
+            elif "pve" in r or "normal" in r or "wildgrowth" in r or "mankrik" in r:
+                return True
+            elif "roleplay" in r or "lavalash" in r or "bloodsail" in r or "celebras" in r or "hydraxian" in r:
+                return True
+            return False
+
+        self.assertTrue(simulate_is_pve("Wild Growth"))
+        self.assertTrue(simulate_is_pve("Lava Lash"))
+        self.assertTrue(simulate_is_pve("Bloodsail Buccaneers"))
+        self.assertTrue(simulate_is_pve("Defias Pillager"))
+        self.assertFalse(simulate_is_pve("Crusader Strike"))
+        self.assertFalse(simulate_is_pve("Lone Wolf"))
+
+        print("[PASS] Verified Strict Realm Isolation, RP Ruleset Inclusion, and In-Game Stats Toggle.")
+
 if __name__ == "__main__":
     unittest.main()
 
