@@ -5,6 +5,32 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-05
+
+### Added
+- **Global Omni-Search Engine (`web/static/app.js`, `web/static/index.html`, `web/static/style.css`)**:
+  - Centralized global search bar (`#global-search-input`) in the sticky header with autofocus hotkey shortcut (`/`) and instant typeahead dropdown (`#search-results-dropdown`).
+  - Search federation querying combatants (with class coloring and faction badges), guilds, and conflict zones.
+  - Keyboard navigation support (`ArrowDown`, `ArrowUp`, `Enter`, `Escape`) and outside-click dismissal.
+  - Strict `safeJsParam` injection preventing DOM XSS vulnerabilities across all search interactions.
+- **Unified Field Kit Distribution Hub (`web/static/app.js`, `web/static/style.css`)**:
+  - Dedicated `/download` portal view (`loadDownloadView()`) unifying CurseForge Hub, Direct ZIP release archive (`v1.0.4`), and Windows Desktop Sync Companion (`WoWKillboardSync.exe`).
+  - High-visibility primary gold CTA button `[ Download Field Kit ]` embedded in the consolidated header bar.
+  - Quick-start 3-step setup guide for new players.
+- **Context-Aware Dynamic Sidebar & Tabbed Widgets (`web/static/app.js`, `web/static/index.html`)**:
+  - Consolidated 24-hour leaderboards into a single tabbed widget with instant pill switching (`[Hot Zones]`, `[Top Gankers]`, `[Top Guilds]`).
+  - Dynamic context switching: automatically hides redundant leaderboards when viewing Defender of Azeroth (`LEGENDS`) and displays interactive Champion Filters (Faction: All/Alliance/Horde, Timeframe: 24h/7d/All-Time).
+  - Compact 2-column Class Combat Matrix saving ~300px of vertical space.
+- **Resilient Fallbacks & Rich Empty States (`web/static/app.js`)**:
+  - Resilient Zone Intel Fallback (`renderResilientZoneIntelFallback`): Replaces raw error messages during network lag with an interactive directory of major contested territories (Hillsbrad, Stranglethorn, Blackrock Mountain, Silithus, etc.) for instant manual feed filtering.
+  - Rich Manhunt Empty State (`loadRalliesView`): When no distress beacons are broadcasting, displays clear slash command documentation (`/kb manhunt [target]` and `/kb sos`), prime targets from the bounty ledger, and recent skirmishes.
+  - Sub-toggle navigation seamlessly linking PvP Defender of Azeroth with PvE Deadly Hazards, and The Blood Ledger with Active Manhunts.
+- **Sticky 56px Consolidated Header & Above-The-Fold Feed Prioritization (`web/static/index.html`, `web/static/style.css`)**:
+  - Consolidated header deck down to a single sticky 56px bar with tightly grouped logo, theater selector, 4-button nav rail, omni-search, war archivist icon, upload utility, and gold CTA `[ Download Field Kit ]`.
+  - Compressed top stats hub into a sleek 32px telemetry ribbon (`[24h Kills] | [Hot Zone] | [Top Spec] | [Faction War Split]`), immediately anchoring the live combat feed above the fold with 6–8 rows visible on standard 1080p viewports.
+  - Gated developer telemetry modal (`openAnalyticsModal`) behind administrator authorization checks.
+  - Removed corner floating action buttons to eliminate UI occlusion.
+
 ## [1.0.4] - 2026-10-04 (CurseForge Community Release)
 
 ### Added

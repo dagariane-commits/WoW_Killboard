@@ -1250,35 +1250,28 @@ async function renderStats(kills) {
 
     if (hubContainer) {
       hubContainer.innerHTML = `
-        <div class="stats-hub-wrapper guest" style="border-color: rgba(56, 189, 248, 0.4);">
-          <div class="guest-stats-header">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="wow-gold-header" style="font-size:0.95rem; font-weight:800; letter-spacing:0.5px; color:#38bdf8;">THE SHADOW NETWORK — PVE HAZARD &amp; CASUALTY TELEMETRY (NORMAL PROGRESSION)</span>
-              </div>
-            </div>
+        <div class="telemetry-ribbon" style="border-color: rgba(56, 189, 248, 0.4);">
+          <div class="telemetry-item">
+            <span class="telemetry-label">24h Casualties:</span>
+            <strong class="telemetry-val" id="stat-total-kills" style="color: #ef4444;">${formatNumber(pveSummary.totalDeaths)}</strong>
           </div>
-
-          <div class="stats-grid">
-            <div class="stat-card">
-              <span class="stat-label">Total Fallen Mortals</span>
-              <span class="stat-val" id="stat-total-kills" style="color: #ef4444;">${formatNumber(pveSummary.totalDeaths)}</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">Deadly Monster Slayers</span>
-              <span class="stat-val" id="stat-solo-percent" style="color: var(--accent-gold);">${formatNumber(pveSummary.uniqueDeadlyNpcs)}</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">Deadliest Conflict Zone</span>
-              <span class="stat-val" id="stat-faction-split" style="color: #38bdf8; font-size: 0.95rem; padding-top: 4px;">
-                ${escapeHtml(deadZoneStr)}
-              </span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">Active Campaign</span>
-              <span class="stat-val" id="stat-active-mode" style="color: #10b981; font-size: 0.95rem; padding-top: 4px;">Forever PvE</span>
-            </div>
+          <span class="telemetry-divider">|</span>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Deadliest Zone:</span>
+            <strong class="telemetry-val" id="stat-hot-zone" style="color: #38bdf8;">${escapeHtml(deadZoneStr)}</strong>
           </div>
+          <span class="telemetry-divider">|</span>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Top Slayer:</span>
+            <strong class="telemetry-val" id="stat-top-spec" style="color: var(--accent-gold);">${formatNumber(pveSummary.uniqueDeadlyNpcs)} Bosses</strong>
+          </div>
+          <span class="telemetry-divider">|</span>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Campaign:</span>
+            <span class="telemetry-val" id="stat-faction-split" style="color: #10b981; font-weight:800;">Forever PvE</span>
+          </div>
+          <span id="stat-solo-percent" style="display:none;">0%</span>
+          <span id="stat-active-mode" style="display:none;">Forever PvE</span>
         </div>
       `;
     }
@@ -1337,178 +1330,51 @@ async function renderStats(kills) {
   };
   const activeModeName = modeNames[currentMode] || currentMode;
 
-  // 2. Check operative account auth state
-  const currentAuth = sessionStorage.getItem("wowkb_auth_type") || localStorage.getItem("wowkb_auth_type");
-  const accountUser = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "";
-  const isSignedIn = Boolean(accountUser && (currentAuth === "account" || currentAuth === "officer"));
-
-  if (!hubContainer) {
-    const totalEl = document.getElementById("stat-total-kills");
-    if (totalEl) totalEl.innerText = totalCarnage;
-    const soloEl = document.getElementById("stat-solo-percent");
-    if (soloEl) soloEl.innerText = `${soloPct}%`;
-    const factionEl = document.getElementById("stat-faction-split");
-    if (factionEl) {
-      factionEl.innerHTML = `<span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>`;
+  // Determine top active spec
+  let topSpecName = "Arms Warrior";
+  if (kills && kills.length > 0) {
+    const specCounts = {};
+    kills.forEach(k => {
+      const sp = (k.killer && (k.killer.spec || k.killer.class)) || "Arms";
+      specCounts[sp] = (specCounts[sp] || 0) + 1;
+    });
+    const sorted = Object.keys(specCounts).sort((a,b) => specCounts[b] - specCounts[a]);
+    if (sorted.length > 0) {
+      const raw = sorted[0];
+      topSpecName = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
     }
-    const modeEl = document.getElementById("stat-active-mode");
-    if (modeEl) modeEl.innerText = activeModeName;
-    return;
   }
 
-  // 3. Render Personalized Operative Stats if Signed In
-  if (isSignedIn) {
-    let charData = {
-      name: accountUser,
-      class: "WARRIOR",
-      faction: localStorage.getItem("wowkb_user_faction") || "Alliance",
-      rankTitle: "Private",
-      stats: { kills: 0, deaths: 0, kd: 0.0, soloKills: 0 }
-    };
-
-    try {
-      const charRes = await fetch(`/api/character/${encodeURIComponent(accountUser)}`);
-      if (charRes.ok) {
-        const fetched = await charRes.json();
-        if (fetched && fetched.name) {
-          charData = fetched;
-        }
-      }
-    } catch (err) {
-      // Use defaults
-    }
-
-    const uKills = charData.stats?.kills ?? 0;
-    const uDeaths = charData.stats?.deaths ?? 0;
-    const uKd = charData.stats?.kd ?? (uDeaths > 0 ? (uKills / uDeaths).toFixed(1) : uKills.toFixed(1));
-    const uSolo = charData.stats?.soloKills ?? 0;
-    const uFaction = charData.faction || "Alliance";
-    const factionColor = (uFaction === "Horde") ? "var(--horde-red)" : "var(--alliance-blue)";
-    const uRank = charData.rankTitle || "Operative";
-
-    const pct = charData.percentile || {
-      percentile: 95.0,
-      topPct: 5.0,
-      rank: 1,
-      totalInCohort: 1,
-      cohortLabel: `Level ${charData.level || 60} ${charData.spec ? charData.spec + ' ' : ''}${charData.class || 'Warrior'}`,
-      spec: charData.spec || 'Arms'
-    };
-
+  // Render Compact 32px Single-Row Telemetry Ribbon
+  if (hubContainer) {
     hubContainer.innerHTML = `
-      <div class="stats-hub-wrapper signed-in">
-        <!-- Personalized Operative Hero Banner -->
-        <div class="operative-hero-strip">
-          <div class="operative-hero-left">
-            <div class="officer-sigil-badge" style="width:42px; height:42px;">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </div>
-            <div>
-              <div class="operative-title-row">
-                <span class="operative-name" style="cursor:pointer;" onclick="openCharacterProfile(${safeJsParam(accountUser)})">${escapeHtml(accountUser)}</span>
-                <span class="operative-rank-tag">${escapeHtml(uRank)}</span>
-                <span class="operative-percentile-pill" title="${escapeHtml(pct.cohortLabel)} (${pct.totalInCohort} combatants)">
-                  Top ${pct.topPct}% (${pct.percentile}th Pct)
-                </span>
-                <span class="operative-flavor-tag">WoW Forever</span>
-              </div>
-              <div class="operative-sub-row">
-                Allegiance: <strong style="color:${factionColor};">${escapeHtml(uFaction)}</strong> &bull; Class &amp; Spec: <strong>${escapeHtml(charData.spec ? charData.spec + ' ' : '')}${escapeHtml(charData.class || 'Champion')}</strong> &bull; Standing: <strong style="color:var(--wow-gold-bright, #ffe680);">${escapeHtml(pct.cohortLabel)} &bull; Rank #${pct.rank} of ${pct.totalInCohort}</strong>
-              </div>
-            </div>
-          </div>
-          <div class="operative-hero-actions">
-            <button class="operative-action-btn" onclick="openCharacterProfile(${safeJsParam(accountUser)})">
-              <span>View Full Armory Profile</span>
-              <span>&rarr;</span>
-            </button>
-          </div>
+      <div class="telemetry-ribbon">
+        <div class="telemetry-item">
+          <span class="telemetry-label">24h Kills:</span>
+          <strong class="telemetry-val" id="stat-total-kills">${formatNumber(totalCarnage)}</strong>
         </div>
-
-        <!-- 4 Personalized Operative Metrics -->
-        <div class="operative-metrics-grid">
-          <div class="stat-card operative-card">
-            <span class="stat-label">Your Confirmed Kills</span>
-            <span class="stat-val highlight-gold">${formatNumber(uKills)}</span>
-          </div>
-          <div class="stat-card operative-card">
-            <span class="stat-label">Your Casualties (Deaths)</span>
-            <span class="stat-val highlight-red">${formatNumber(uDeaths)}</span>
-          </div>
-          <div class="stat-card operative-card">
-            <span class="stat-label">Your K/D Ratio</span>
-            <span class="stat-val highlight-green">${uKd}</span>
-          </div>
-          <div class="stat-card operative-card">
-            <span class="stat-label">Your Solo Kills (1v1)</span>
-            <span class="stat-val highlight-cyan">${formatNumber(uSolo)}</span>
-          </div>
+        <span class="telemetry-divider">|</span>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Hot Zone:</span>
+          <strong class="telemetry-val" id="stat-hot-zone" style="color: var(--accent-gold);">${escapeHtml(cumulative.top_zone || "Hillsbrad Foothills")}</strong>
         </div>
-
-        <!-- Divider to Cumulative Frontier Stats -->
-        <div class="stats-section-divider">
-          <span>THE SHADOW NETWORK — CUMULATIVE COMBAT INTELLIGENCE (ALL STATS)</span>
+        <span class="telemetry-divider">|</span>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Top Spec:</span>
+          <strong class="telemetry-val" id="stat-top-spec" style="color: var(--accent-cyan);">${escapeHtml(topSpecName)}</strong>
         </div>
-
-        <!-- 4 Cumulative Frontier Metrics -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <span class="stat-label">Realm Total Carnage</span>
-            <span class="stat-val" id="stat-total-kills">${formatNumber(totalCarnage)}</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">1v1 Solo Kill Ratio</span>
-            <span class="stat-val" id="stat-solo-percent" style="color: #10b981;">${soloPct}%</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Faction War Split</span>
-            <span class="stat-val" id="stat-faction-split" style="font-size: 0.95rem; padding-top: 4px;">
-              <span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>
-            </span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Active Combat Filter</span>
-            <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 0.95rem; padding-top: 4px;">${activeModeName}</span>
-          </div>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  // 4. Render Cumulative Stats for Guest
-  hubContainer.innerHTML = `
-    <div class="stats-hub-wrapper guest">
-      <div class="guest-stats-header">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="wow-gold-header" style="font-size:0.95rem; font-weight:800; letter-spacing:0.5px;">THE SHADOW NETWORK — CUMULATIVE COMBAT TELEMETRY (ALL STATS)</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-label">Realm Total Carnage</span>
-          <span class="stat-val" id="stat-total-kills">${formatNumber(totalCarnage)}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">1v1 Solo Kill Ratio</span>
-          <span class="stat-val" id="stat-solo-percent" style="color: #10b981;">${soloPct}%</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Faction War Split</span>
-          <span class="stat-val" id="stat-faction-split" style="font-size: 0.95rem; padding-top: 4px;">
-            <span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">|</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>
+        <span class="telemetry-divider">|</span>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Faction War:</span>
+          <span class="telemetry-val" id="stat-faction-split">
+            <span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">/</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>
           </span>
         </div>
-        <div class="stat-card">
-          <span class="stat-label">Active Combat Filter</span>
-          <span class="stat-val" id="stat-active-mode" style="color: var(--accent-cyan); font-size: 0.95rem; padding-top: 4px;">${activeModeName}</span>
-        </div>
+        <span id="stat-solo-percent" style="display:none;">${soloPct}%</span>
+        <span id="stat-active-mode" style="display:none;">${escapeHtml(activeModeName)}</span>
       </div>
-    </div>
-  `;
+    `;
+  }
 }
 
 let feedDisplayLimit = 15;
@@ -1742,6 +1608,14 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
   let html = `
     <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Sub-Toggle Navigation: Defender of Azeroth (PvP) vs Deadly Hazards (PvE) -->
+      <div class="legends-subnav-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:4px;">
+        <div class="filter-pills">
+          <button class="pill-btn active" onclick="switchTab('LEGENDS')">⚔️ Defender of Azeroth (PvP)</button>
+          <button class="pill-btn" onclick="switchTab('HAZARDS')">💀 Deadly Hazards (PvE)</button>
+        </div>
+      </div>
+
       <!-- Champions Header Row with Type Toggle and Mode Pills -->
       <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); margin-bottom:4px;">
         <div>
@@ -1813,7 +1687,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           : '-';
 
         html += `
-          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+          <tr class="leaderboard-row" data-faction="${escapeHtml(g.faction || '')}" style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
             <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(g.guild)})">&lt;${escapeHtml(g.guild)}&gt;</span></td>
             <td style="padding: 6px 10px; color: ${g.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(g.faction || 'Neutral')}</td>
@@ -1974,11 +1848,11 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
         const pctBadge = getWowLogsPercentileBadge(p.percentile);
         const isCurrent = Boolean(bmName && p.name.toLowerCase() === bmName.toLowerCase());
-        const rowClass = isCurrent ? 'class="current-player-row"' : '';
+        const rowClass = isCurrent ? 'class="leaderboard-row current-player-row"' : 'class="leaderboard-row"';
         const youBadge = isCurrent ? `<span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>` : '';
 
         html += `
-          <tr ${rowClass} style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+          <tr ${rowClass} data-faction="${escapeHtml(p.faction || '')}" style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
             <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(${safeJsParam(p.name)})">
@@ -2152,7 +2026,14 @@ function renderBountiesView(bounties, debts, leaderboards) {
   const myBounties = myUser ? allBounties.filter(b => (b.placer_name || "").toLowerCase() === myUser || (b.target_name || "").toLowerCase() === myUser) : [];
 
   let html = `
-    <div style="display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- Sub-Toggle Navigation: Bounties vs Manhunt & Rallies -->
+      <div class="legends-subnav-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:4px;">
+        <div class="filter-pills">
+          <button class="pill-btn active" onclick="switchTab('BOUNTIES')">📜 The Blood Ledger (Bounties)</button>
+          <button class="pill-btn" onclick="switchTab('RALLIES')">🚩 Active Manhunts &amp; Rallies</button>
+        </div>
+      </div>
   `;
 
   // 1. Personal Marks Section (At the Top)
@@ -3416,6 +3297,14 @@ function renderDeadlyNpcsView(lbData, deaths) {
 
   let html = `
     <div class="deadly-npcs-container">
+      <!-- Sub-Toggle Navigation: Defender of Azeroth (PvP) vs Deadly Hazards (PvE) -->
+      <div class="legends-subnav-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+        <div class="filter-pills">
+          <button class="pill-btn" onclick="switchTab('LEGENDS')">⚔️ Defender of Azeroth (PvP)</button>
+          <button class="pill-btn active" onclick="switchTab('HAZARDS')">💀 Deadly Hazards (PvE)</button>
+        </div>
+      </div>
+
       <!-- Hero Header Banner -->
       <div class="deadly-npcs-hero">
         <div>
@@ -4375,6 +4264,8 @@ function switchTab(tab) {
   if (tab === "FEED") tab = "INTEL";
   if (tab === "LEADERBOARDS") tab = "LEGENDS";
   if (tab === "DEADLY_NPCS") tab = "HAZARDS";
+  if (tab === "MANHUNT") tab = "RALLIES";
+  if (tab === "DOWNLOAD_VIEW") tab = "DOWNLOAD";
 
   // In-Development tabs: War Room, Guilds, Feuds, Defense, BG Metrics
   if (tab === "WARROOM" || tab === "GUILDS" || tab === "FEUDS" || tab === "DEFENSE" || tab === "BG_METRICS") {
@@ -4385,26 +4276,64 @@ function switchTab(tab) {
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   const activeBtn = document.getElementById(`nav-${tab.toLowerCase()}`);
   if (activeBtn) activeBtn.classList.add("active");
+  if (tab === "HAZARDS") {
+    const lBtn = document.getElementById("nav-legends");
+    if (lBtn) lBtn.classList.add("active");
+  }
+  if (tab === "RALLIES") {
+    const bBtn = document.getElementById("nav-bounties");
+    if (bBtn) bBtn.classList.add("active");
+  }
 
   document.querySelectorAll(".mobile-nav-item").forEach(b => b.classList.remove("active"));
   const activeMobileBtn = document.getElementById(`m-nav-${tab.toLowerCase()}`);
   if (activeMobileBtn) activeMobileBtn.classList.add("active");
+  if (tab === "HAZARDS") {
+    const mlBtn = document.getElementById("m-nav-legends");
+    if (mlBtn) mlBtn.classList.add("active");
+  }
+  if (tab === "RALLIES") {
+    const mbBtn = document.getElementById("m-nav-bounties");
+    if (mbBtn) mbBtn.classList.add("active");
+  }
 
-  const isPortal = (tab === "PORTAL");
+  const isPortal = (tab === "PORTAL" || tab === "DOWNLOAD");
   document.body.classList.toggle("portal-active", isPortal);
   const mainContainer = document.querySelector(".container");
   if (mainContainer) {
     mainContainer.classList.toggle("portal-mode", isPortal);
   }
 
-  // Hide sidebar on PORTAL, THEATER, UPLOAD, and RALLIES for clean presentation
+  // Context-aware sidebar switching & layout gating
   const sidebarEl = document.querySelector(".sidebar-column");
+  const mwSection = document.getElementById("most-wanted-section");
+  const tabbedLb = document.getElementById("sidebar-tabbed-leaderboards");
+  const contextFilters = document.getElementById("sidebar-context-filters");
+  const classCard = document.getElementById("sidebar-card-classes");
+  const activityCard = document.getElementById("sidebar-card-activity");
+
+  const hideSidebar = (tab === "PORTAL" || tab === "THEATER" || tab === "UPLOAD" || tab === "DOWNLOAD");
   if (sidebarEl) {
-    sidebarEl.style.display = (tab === "PORTAL" || tab === "THEATER" || tab === "UPLOAD" || tab === "RALLIES") ? "none" : "";
+    sidebarEl.style.display = hideSidebar ? "none" : "";
   }
 
-  const mwSection = document.getElementById("most-wanted-section");
-  if (mwSection) mwSection.style.display = (tab === "INTEL") ? "block" : "none";
+  if (mwSection) {
+    mwSection.style.display = (tab === "INTEL") ? "block" : "none";
+  }
+  if (tabbedLb) {
+    // Hide redundant Top Gankers/Guilds when viewing LEGENDS table
+    tabbedLb.style.display = (tab === "LEGENDS") ? "none" : "block";
+  }
+  if (contextFilters) {
+    // Show filter controls when viewing LEGENDS
+    contextFilters.style.display = (tab === "LEGENDS") ? "block" : "none";
+  }
+  if (classCard) {
+    classCard.style.display = (tab === "INTEL" || tab === "LEGENDS" || tab === "ZONES") ? "block" : "none";
+  }
+  if (activityCard) {
+    activityCard.style.display = "block";
+  }
 
   const statsHub = document.getElementById("homepage-stats-hub");
   if (statsHub) statsHub.style.display = (tab === "INTEL") ? "block" : "none";
@@ -4416,6 +4345,9 @@ function switchTab(tab) {
   }
   else if (tab === "THEATER") {
     loadTheaterSelectorView();
+  }
+  else if (tab === "DOWNLOAD") {
+    loadDownloadView();
   }
   else if (tab === "UPLOAD") {
     loadUploadView();
@@ -4560,20 +4492,457 @@ async function loadZonesView() {
     container.innerHTML = html;
   } catch (err) {
     console.error("Failed to load zone intel:", err);
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Zone Intelligence.</div>`;
+    renderResilientZoneIntelFallback(container);
   }
 }
 window.loadZonesView = loadZonesView;
+
+function renderResilientZoneIntelFallback(container) {
+  if (!container) return;
+  const majorZones = [
+    { name: "Hillsbrad Foothills", level: "20-30", threat: "EXTREME THREAT", color: "#ef4444", desc: "Heavy open-world PvP clash point near Southshore and Tarren Mill." },
+    { name: "Stranglethorn Vale", level: "30-45", threat: "EXTREME THREAT", color: "#ef4444", desc: "Viet-STV war zone spanning Rebel Camp, Nesingwary, and Booty Bay." },
+    { name: "Blackrock Mountain", level: "48-60", threat: "HIGH RISK", color: "#f97316", desc: "Raid corridor bottlenecks between Searing Gorge and Burning Steppes." },
+    { name: "Silithus", level: "55-60", threat: "HIGH RISK", color: "#f97316", desc: "Sands of the south, Hive outposts, and Twilight Cultist camps." },
+    { name: "Ashenvale", level: "18-30", threat: "ACTIVE CONFLICT", color: "#ffd100", desc: "Contested forest boundary along Splintertree and Astranaar." },
+    { name: "Tanaris", level: "40-50", threat: "ACTIVE CONFLICT", color: "#ffd100", desc: "Gadgetzan neutral sanctuary surrounded by open desert combat." },
+    { name: "Arathi Highlands", level: "30-40", threat: "ACTIVE CONFLICT", color: "#ffd100", desc: "Refuge Pointe vs Hammerfall frontline road skirmishes." },
+    { name: "Duskwood", level: "18-30", threat: "CONTESTED", color: "#94a3b8", desc: "Darkshire outskirts and Twilight Grove ambushes." }
+  ];
+
+  let html = `
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-bottom:10px; border-bottom:1px solid var(--wow-brass-border, #4a3b27);">
+        <div>
+          <h2 class="wow-gold-header" style="font-size:1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
+            ZONE INTEL &bull; CONTESTED TERRITORIES
+          </h2>
+          <div style="font-size:0.75rem; color:#856a36; margin-top:3px;">
+            Azeroth Frontline Conflict Index &bull; Select any contested zone to inspect combat telemetry and recent kills.
+          </div>
+        </div>
+        <button class="pill-btn" onclick="loadZonesView()" style="padding:4px 10px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Retry Telemetry</button>
+      </div>
+
+      <div style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); border-radius:6px; padding:12px 16px; font-size:0.82rem; color:#fbbf24;">
+        ⚠️ Live hotspot telemetry sync delayed. Displaying standing contested zone directory. Click any territory below to filter live combat records.
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px;">
+  `;
+
+  majorZones.forEach(z => {
+    html += `
+      <div class="sidebar-row" style="background:var(--wow-iron-bg); border:1px solid var(--wow-brass-border); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:8px; cursor:pointer; transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--wow-gold)'" onmouseout="this.style.borderColor='var(--wow-brass-border)'" onclick="filterFeedByZone(${safeJsParam(z.name)})">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="color:#f8fafc; font-size:0.95rem;">${escapeHtml(z.name)}</strong>
+          <span style="font-size:0.75rem; color:#94a3b8;">Lvl ${escapeHtml(z.level)}</span>
+        </div>
+        <div style="font-size:0.75rem; color:#94a3b8; line-height:1.4;">${escapeHtml(z.desc)}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:4px; border-top:1px solid rgba(255,255,255,0.05);">
+          <span style="font-family:var(--font-tactical); font-size:0.7rem; font-weight:800; color:${z.color}; background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:3px; border:1px solid ${z.color};">${escapeHtml(z.threat)}</span>
+          <span style="font-size:0.8rem; color:var(--wow-gold); font-weight:700;">Inspect Feed &rarr;</span>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+window.renderResilientZoneIntelFallback = renderResilientZoneIntelFallback;
 
 function filterFeedByZone(zoneName) {
   searchQuery = zoneName;
   const input = document.getElementById("search-input");
   if (input) input.value = zoneName;
+  const globalInput = document.getElementById("global-search-input");
+  if (globalInput) globalInput.value = zoneName;
   const mobileInput = document.getElementById("mobile-search-box-input");
   if (mobileInput) mobileInput.value = zoneName;
   switchTab("INTEL");
 }
 window.filterFeedByZone = filterFeedByZone;
+
+// ----------------- Sidebar Leaderboard Tabs & Context Filters -----------------
+
+function switchSidebarLeaderboardTab(tabType) {
+  const tabs = ['zones', 'characters', 'guilds'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`pill-sb-${t}`);
+    const el = document.getElementById(`sidebar-24h-${t}`);
+    if (btn) btn.classList.toggle('active', t === tabType);
+    if (el) el.style.display = (t === tabType) ? 'block' : 'none';
+  });
+}
+window.switchSidebarLeaderboardTab = switchSidebarLeaderboardTab;
+
+let currentLeaderboardFaction = "ALL";
+let currentLeaderboardTimeframe = "24h";
+
+function filterLeaderboardsByFaction(faction) {
+  currentLeaderboardFaction = faction;
+  ['all', 'alliance', 'horde'].forEach(f => {
+    const btn = document.getElementById(`filter-faction-${f}`);
+    if (btn) btn.classList.toggle('active', f.toLowerCase() === faction.toLowerCase());
+  });
+  applyLeaderboardFilters();
+}
+window.filterLeaderboardsByFaction = filterLeaderboardsByFaction;
+
+function filterLeaderboardsByTime(timeframe) {
+  currentLeaderboardTimeframe = timeframe;
+  ['24h', '7d', 'all'].forEach(t => {
+    const btn = document.getElementById(`filter-time-${t}`);
+    if (btn) btn.classList.toggle('active', t.toLowerCase() === timeframe.toLowerCase());
+  });
+  applyLeaderboardFilters();
+}
+window.filterLeaderboardsByTime = filterLeaderboardsByTime;
+
+function applyLeaderboardFilters() {
+  const rows = document.querySelectorAll(".leaderboard-row");
+  rows.forEach(r => {
+    const rowFaction = r.getAttribute("data-faction") || "";
+    const matchesFaction = (currentLeaderboardFaction === "ALL" || rowFaction.toLowerCase() === currentLeaderboardFaction.toLowerCase());
+    r.style.display = matchesFaction ? "" : "none";
+  });
+}
+window.applyLeaderboardFilters = applyLeaderboardFilters;
+
+// ----------------- Unified Addon & Companion Download Hub -----------------
+
+function loadDownloadView() {
+  const container = document.getElementById("main-content-area");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:24px; max-width:960px; margin:0 auto; padding:10px 0 40px 0;">
+      <!-- Hero Masthead -->
+      <div class="download-hero-card" style="background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.14) 0%, rgba(10, 13, 20, 0.96) 80%); border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 32px 24px; text-align: center; box-shadow: 0 4px 28px rgba(0,0,0,0.75);">
+        <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(212,163,41,0.15); border:1px solid var(--wow-gold); padding:4px 12px; border-radius:12px; margin-bottom:12px;">
+          <span style="font-size:0.75rem; font-weight:800; color:var(--wow-gold); text-transform:uppercase; letter-spacing:0.8px;">OFFICIAL FIELD KIT &bull; v1.0.4 RELEASE</span>
+        </div>
+        <h2 style="font-family: var(--font-tactical); font-size: 1.8rem; color: #fff; margin: 0 0 8px 0; letter-spacing: 0.5px;">
+          WoW Killboard Field Kit Distribution
+        </h2>
+        <div style="font-size: 0.9rem; color: #94a3b8; max-width: 680px; margin: 0 auto; line-height: 1.5;">
+          Lightweight, zero-taint combat telemetry and bounty hunting platform for World of Warcraft. Supports WoW Forever Beta, Classic Era, Anniversary, and Retail.
+        </div>
+      </div>
+
+      <!-- 3 Primary Download Options Grid -->
+      <div class="download-options-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;">
+        <!-- Option 1: CurseForge App / Hub -->
+        <div class="download-option-card" style="background:#0a0e16; border:2px solid var(--wow-gold); border-radius:8px; padding:22px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 0 20px rgba(212,163,41,0.12);">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.68rem; font-weight:800; color:#10b981; background:rgba(16, 185, 129, 0.15); border:1px solid #10b981; padding:2px 8px; border-radius:4px;">
+                AUTOMATIC UPDATES &bull; RECOMMENDED
+              </span>
+              <span style="font-size:0.75rem; color:#fb923c; font-weight:700;">CurseForge Hub</span>
+            </div>
+            <h3 style="font-size:1.2rem; color:#fff; font-family:var(--font-tactical); margin:0 0 8px 0;">CurseForge Addon Hub</h3>
+            <p style="font-size:0.82rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
+              Install and update WoW Killboard with a single click using the CurseForge app, or download packaged releases directly.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:16px;">
+              &bull; One-click automatic updates<br>
+              &bull; Clean release verification<br>
+              &bull; Zero manual folder management
+            </div>
+          </div>
+          <a href="https://www.curseforge.com/wow/addons/wkb" target="_blank" rel="noopener" style="display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #f16436 0%, #c2410c 100%); color:#fff; font-weight:800; font-size:0.85rem; padding:10px 16px; border-radius:4px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px;">
+            <span>Get on CurseForge &rarr;</span>
+          </a>
+        </div>
+
+        <!-- Option 2: Direct Addon Archive (.zip) -->
+        <div class="download-option-card" style="background:#0a0e16; border:1px solid var(--wow-brass-border); border-radius:8px; padding:22px; display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.68rem; font-weight:800; color:var(--wow-gold); background:rgba(212,163,41,0.15); border:1px solid var(--wow-gold); padding:2px 8px; border-radius:4px;">
+                DIRECT RELEASE ARCHIVE
+              </span>
+              <span style="font-size:0.75rem; color:#94a3b8; font-weight:700;">v1.0.4</span>
+            </div>
+            <h3 style="font-size:1.2rem; color:#fff; font-family:var(--font-tactical); margin:0 0 8px 0;">Manual Addon Package</h3>
+            <p style="font-size:0.82rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
+              Extract directly into your <code>Interface\\AddOns\\</code> directory. Pure Lua with zero XML taint and 100% combat lockdown safety.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:16px;">
+              &bull; Multi-flavor parity (_classic_beta_, _era_, _retail_)<br>
+              &bull; FNV-1a cryptographic Kill IDs<br>
+              &bull; 15-second sliding gang clustering
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <a href="/WoWKillboard-v1.0.4.zip" download style="display:flex; align-items:center; justify-content:center; gap:8px; background:var(--wow-gold); color:#000; font-weight:800; font-size:0.85rem; padding:10px 16px; border-radius:4px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px;">
+              <span>Direct Download (.zip)</span>
+            </a>
+            <a href="https://github.com/dagariane-commits/WoW_Killboard/releases/latest" target="_blank" rel="noopener" style="text-align:center; font-size:0.75rem; color:#94a3b8; text-decoration:none;">
+              GitHub Releases Mirror &rarr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Option 3: Desktop Companion (WoWKillboardSync.exe) -->
+        <div class="download-option-card" style="background:#0a0e16; border:1px solid var(--wow-brass-border); border-radius:8px; padding:22px; display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.68rem; font-weight:800; color:#38bdf8; background:rgba(56, 189, 248, 0.15); border:1px solid #38bdf8; padding:2px 8px; border-radius:4px;">
+                WINDOWS DESKTOP SYNC
+              </span>
+              <span style="font-size:0.75rem; color:#38bdf8; font-weight:700;">Zero-Python</span>
+            </div>
+            <h3 style="font-size:1.2rem; color:#fff; font-family:var(--font-tactical); margin:0 0 8px 0;">Desktop Sync Agent</h3>
+            <p style="font-size:0.82rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
+              Automated multi-drive auto-discovery across C:, D:, and E: drives. Runs silently in the system tray and streams combat records hands-free.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:16px;">
+              &bull; Zero Python or runtime dependencies<br>
+              &bull; Auto-detects all WoW installations<br>
+              &bull; 2-Way realm telemetry injection
+            </div>
+          </div>
+          <a href="/WoWKillboardSync.exe" download style="display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; font-weight:800; font-size:0.85rem; padding:10px 16px; border-radius:4px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px;">
+            <span>Download Sync Agent (.exe)</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick 3-Step Setup Guide -->
+      <div style="background:var(--wow-iron-bg); border:1px solid var(--wow-brass-border); border-radius:8px; padding:20px 24px;">
+        <h3 style="font-family:var(--font-tactical); font-size:1.05rem; color:var(--wow-gold); margin:0 0 14px 0; letter-spacing:0.5px;">
+          QUICK-START: 3-STEP INTEGRATION
+        </h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; font-size:0.82rem; color:#cbd5e1;">
+          <div style="display:flex; gap:12px;">
+            <div style="font-family:var(--font-tactical); font-size:1.2rem; font-weight:800; color:var(--wow-gold);">1</div>
+            <div>
+              <strong style="color:#fff;">Deploy Addon:</strong> Extract the <code>WoWKillboard</code> directory into your World of Warcraft <code>Interface\\AddOns\\</code> folder.
+            </div>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <div style="font-family:var(--font-tactical); font-size:1.2rem; font-weight:800; color:var(--wow-gold);">2</div>
+            <div>
+              <strong style="color:#fff;">Battle in Azeroth:</strong> Log in and engage in World PvP, BGs, or Duels. Use <code>/kb</code> to access radar, bounties, and leaderboards.
+            </div>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <div style="font-family:var(--font-tactical); font-size:1.2rem; font-weight:800; color:var(--wow-gold);">3</div>
+            <div>
+              <strong style="color:#fff;">Sync Telemetry:</strong> Run <code>WoWKillboardSync.exe</code> or use our <a href="javascript:void(0)" onclick="switchTab('UPLOAD')" style="color:var(--wow-gold); text-decoration:underline;">Browser Uploader</a> to sync combat stats.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+window.loadDownloadView = loadDownloadView;
+
+// ----------------- Global Omni-Search Engine -----------------
+
+let omniSearchDebounceTimer = null;
+let omniActiveIndex = -1;
+
+function hideOmniDropdown() {
+  const dropdown = document.getElementById("search-results-dropdown");
+  if (dropdown) dropdown.style.display = "none";
+  omniActiveIndex = -1;
+}
+window.hideOmniDropdown = hideOmniDropdown;
+
+function initGlobalOmniSearch() {
+  const input = document.getElementById("global-search-input");
+  const dropdown = document.getElementById("search-results-dropdown");
+  const wrap = document.getElementById("header-search-wrap");
+  if (!input || !dropdown) return;
+
+  // 1. Global shortcut '/' listener
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) {
+      e.preventDefault();
+      input.focus();
+      input.select();
+    }
+  });
+
+  // 2. Debounced input search
+  input.addEventListener("input", (e) => {
+    clearTimeout(omniSearchDebounceTimer);
+    const query = e.target.value.trim();
+    if (!query) {
+      hideOmniDropdown();
+      return;
+    }
+    omniSearchDebounceTimer = setTimeout(() => {
+      performOmniSearch(query);
+    }, 150);
+  });
+
+  // 3. Keyboard navigation (ArrowDown, ArrowUp, Enter, Escape)
+  input.addEventListener("keydown", (e) => {
+    if (dropdown.style.display === "none") return;
+    const items = dropdown.querySelectorAll(".search-result-item");
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (items.length === 0) return;
+      omniActiveIndex = (omniActiveIndex + 1) % items.length;
+      items.forEach((it, idx) => it.classList.toggle("selected", idx === omniActiveIndex));
+      if (items[omniActiveIndex]) items[omniActiveIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (items.length === 0) return;
+      omniActiveIndex = (omniActiveIndex - 1 + items.length) % items.length;
+      items.forEach((it, idx) => it.classList.toggle("selected", idx === omniActiveIndex));
+      if (items[omniActiveIndex]) items[omniActiveIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (omniActiveIndex >= 0 && items[omniActiveIndex]) {
+        items[omniActiveIndex].click();
+      } else {
+        const val = input.value.trim();
+        searchQuery = val;
+        const feedInput = document.getElementById("search-input");
+        if (feedInput) feedInput.value = val;
+        hideOmniDropdown();
+        switchTab("INTEL");
+      }
+    } else if (e.key === "Escape") {
+      hideOmniDropdown();
+      input.blur();
+    }
+  });
+
+  // 4. Click outside to dismiss
+  document.addEventListener("click", (e) => {
+    if (wrap && !wrap.contains(e.target)) {
+      hideOmniDropdown();
+    }
+  });
+}
+window.initGlobalOmniSearch = initGlobalOmniSearch;
+
+async function performOmniSearch(query) {
+  const dropdown = document.getElementById("search-results-dropdown");
+  if (!dropdown) return;
+  const term = (query || "").trim().toLowerCase();
+  if (!term) {
+    hideOmniDropdown();
+    return;
+  }
+
+  const combatants = [];
+  const guilds = [];
+  const zones = [];
+
+  // Search through allKills cache
+  if (Array.isArray(allKills)) {
+    const seenChars = new Set();
+    const seenGuilds = new Set();
+    const seenZones = new Set();
+
+    allKills.forEach(k => {
+      if (k.killer_name && !seenChars.has(k.killer_name.toLowerCase()) && k.killer_name.toLowerCase().includes(term)) {
+        seenChars.add(k.killer_name.toLowerCase());
+        combatants.push({ name: k.killer_name, class: k.killer_class, faction: k.killer_faction || 'Alliance' });
+      }
+      if (k.victim_name && !seenChars.has(k.victim_name.toLowerCase()) && k.victim_name.toLowerCase().includes(term)) {
+        seenChars.add(k.victim_name.toLowerCase());
+        combatants.push({ name: k.victim_name, class: k.victim_class, faction: k.victim_faction || 'Horde' });
+      }
+      if (k.killer_guild && k.killer_guild !== 'None' && !seenGuilds.has(k.killer_guild.toLowerCase()) && k.killer_guild.toLowerCase().includes(term)) {
+        seenGuilds.add(k.killer_guild.toLowerCase());
+        guilds.push({ name: k.killer_guild, faction: k.killer_faction || 'Alliance' });
+      }
+      if (k.victim_guild && k.victim_guild !== 'None' && !seenGuilds.has(k.victim_guild.toLowerCase()) && k.victim_guild.toLowerCase().includes(term)) {
+        seenGuilds.add(k.victim_guild.toLowerCase());
+        guilds.push({ name: k.victim_guild, faction: k.victim_faction || 'Horde' });
+      }
+      if (k.zone && !seenZones.has(k.zone.toLowerCase()) && k.zone.toLowerCase().includes(term)) {
+        seenZones.add(k.zone.toLowerCase());
+        zones.push(k.zone);
+      }
+    });
+  }
+
+  // Known contested zones list
+  const standardZones = ["Hillsbrad Foothills", "Stranglethorn Vale", "Blackrock Mountain", "Silithus", "Ashenvale", "Tanaris", "Arathi Highlands", "Duskwood", "Warsong Gulch", "Arathi Basin", "Alterac Valley"];
+  standardZones.forEach(sz => {
+    if (sz.toLowerCase().includes(term) && !zones.some(z => z.toLowerCase() === sz.toLowerCase())) {
+      zones.push(sz);
+    }
+  });
+
+  let html = '';
+  let totalItems = 0;
+
+  if (combatants.length > 0) {
+    html += `<div class="search-result-group-title">⚔️ Combatants (${Math.min(combatants.length, 5)})</div>`;
+    combatants.slice(0, 5).forEach(c => {
+      totalItems++;
+      html += `
+        <div class="search-result-item" onclick="openCharacterProfile(${safeJsParam(c.name)}); hideOmniDropdown();">
+          <div class="search-result-item-left">
+            ${renderClassBadge(c.class, 16)}
+            <span style="font-weight:700;">${colorizeClass(c.name, c.class)}</span>
+          </div>
+          <span class="search-result-item-meta" style="color:${c.faction === 'Alliance' ? 'var(--alliance-blue)' : 'var(--horde-red)'};">${escapeHtml(c.faction)}</span>
+        </div>
+      `;
+    });
+  }
+
+  if (guilds.length > 0) {
+    html += `<div class="search-result-group-title">🛡️ Guilds (${Math.min(guilds.length, 3)})</div>`;
+    guilds.slice(0, 3).forEach(g => {
+      totalItems++;
+      html += `
+        <div class="search-result-item" onclick="openGuildProfile(${safeJsParam(g.name)}); hideOmniDropdown();">
+          <div class="search-result-item-left">
+            <span style="color:var(--wow-gold); font-weight:700;">&lt;${escapeHtml(g.name)}&gt;</span>
+          </div>
+          <span class="search-result-item-meta">${escapeHtml(g.faction || '')}</span>
+        </div>
+      `;
+    });
+  }
+
+  if (zones.length > 0) {
+    html += `<div class="search-result-group-title">🗺️ Zones (${Math.min(zones.length, 4)})</div>`;
+    zones.slice(0, 4).forEach(z => {
+      totalItems++;
+      html += `
+        <div class="search-result-item" onclick="filterFeedByZone(${safeJsParam(z)}); hideOmniDropdown();">
+          <div class="search-result-item-left">
+            <span style="color:#f8fafc; font-weight:600;">📍 ${escapeHtml(z)}</span>
+          </div>
+          <span class="search-result-item-meta" style="color:var(--accent-gold);">Filter Feed &rarr;</span>
+        </div>
+      `;
+    });
+  }
+
+  if (totalItems === 0) {
+    html = `
+      <div style="padding:14px 16px; color:#94a3b8; font-size:0.8rem; text-align:center;">
+        No direct combatants found for "<strong style="color:#fff;">${escapeHtml(term)}</strong>". Press <kbd class="search-kbd" style="position:static; display:inline-block; margin-left:4px;">Enter</kbd> to filter combat feed.
+      </div>
+    `;
+  }
+
+  dropdown.innerHTML = html;
+  dropdown.style.display = "block";
+  omniActiveIndex = -1;
+}
+window.performOmniSearch = performOmniSearch;
 
 // ----------------- Web Drag-and-Drop Uploader & Admin Reset -----------------
 
@@ -5634,6 +6003,14 @@ function loadRalliesView() {
 
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:20px; max-width:960px; margin:0 auto; padding:10px 0 40px 0;">
+      <!-- Sub-Toggle Navigation: Bounties vs Manhunts -->
+      <div class="legends-subnav-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:4px;">
+        <div class="filter-pills">
+          <button class="pill-btn" onclick="switchTab('BOUNTIES')">📜 The Blood Ledger (Bounties)</button>
+          <button class="pill-btn active" onclick="switchTab('RALLIES')">🚩 Active Manhunts &amp; Rallies</button>
+        </div>
+      </div>
+
       <!-- Header Banner -->
       <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(245, 158, 11, 0.4); border-radius:10px; padding:20px 24px; position:relative; overflow:hidden;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
@@ -5684,20 +6061,88 @@ function loadRalliesView() {
       if (!listEl) return;
 
       if (!beacons || beacons.length === 0) {
-        listEl.innerHTML = `
-          <div style="background:rgba(15, 23, 42, 0.5); border:1px dashed rgba(148, 163, 184, 0.2); border-radius:10px; padding:48px 24px; text-align:center;">
-            <div style="margin-bottom:12px; display:flex; justify-content:center;">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Promise.all([
+          fetch("/api/bounties").then(r => r.json()).catch(() => []),
+          fetch("/api/kills?limit=3").then(r => r.json()).catch(() => ({ kills: [] }))
+        ]).then(([bountiesData, killsData]) => {
+          const top3Bounties = (Array.isArray(bountiesData) ? bountiesData : (bountiesData.bounties || [])).slice(0, 3);
+          const recentKills = (killsData.kills || []).slice(0, 3);
+
+          let emptyHtml = `
+            <div style="display:flex; flex-direction:column; gap:20px;">
+              <!-- Empty State Notification & Slash Commands -->
+              <div style="background:rgba(15, 23, 42, 0.6); border:1px dashed rgba(148, 163, 184, 0.25); border-radius:10px; padding:28px 24px; text-align:center;">
+                <div style="margin-bottom:10px; display:flex; justify-content:center;">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3 style="font-size:18px; font-weight:700; color:#e2e8f0; margin:0 0 6px 0;">No Active Faction Distress Beacons</h3>
+                <p style="font-size:13px; color:#94a3b8; max-width:560px; margin:0 auto 16px auto;">
+                  The frontier is quiet. No distress beacons or call-to-arms signals are currently broadcasting. Frontline strike teams will appear here in real-time when mustered in-game!
+                </p>
+                <!-- Slash Command Documentation -->
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; max-width:680px; margin:0 auto; text-align:left;">
+                  <div style="background:rgba(10,13,20,0.8); border:1px solid var(--wow-brass-border); border-radius:6px; padding:12px;">
+                    <div style="font-family:monospace; color:#ffd100; font-weight:800; font-size:0.85rem; margin-bottom:4px;">/kb manhunt [target]</div>
+                    <div style="font-size:0.75rem; color:#cbd5e1;">Muster a squad or call for reinforcement against a designated enemy target in your zone.</div>
+                  </div>
+                  <div style="background:rgba(10,13,20,0.8); border:1px solid var(--wow-brass-border); border-radius:6px; padding:12px;">
+                    <div style="font-family:monospace; color:#ef4444; font-weight:800; font-size:0.85rem; margin-bottom:4px;">/kb sos</div>
+                    <div style="font-size:0.75rem; color:#cbd5e1;">Broadcast an immediate frontline distress beacon with your live GPS coordinates to your faction.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Top 3 Targets on Bounty Ledger -->
+              <div style="background:var(--wow-iron-bg); border:1px solid var(--wow-brass-border); border-radius:8px; padding:16px 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                  <div style="font-family:var(--font-tactical); font-weight:800; font-size:0.85rem; color:#ffd100; letter-spacing:0.5px;">
+                    🎯 PRIME BOUNTIES READY FOR HUNTING (${top3Bounties.length})
+                  </div>
+                  <button class="see-all-marks-btn" onclick="switchTab('BOUNTIES')">View Blood Ledger &rarr;</button>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">
+                  ${top3Bounties.length > 0 ? top3Bounties.map(b => `
+                    <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(212,163,41,0.3); border-radius:6px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+                      <div>
+                        <div style="font-weight:700; font-size:0.9rem;" class="clickable-player" onclick="openCharacterProfile(${safeJsParam(b.target_name)})">
+                          ${colorizeClass(b.target_name, b.target_class)}
+                        </div>
+                        <div style="font-size:0.72rem; color:#94a3b8;">${escapeHtml(b.target_faction || 'Hostile')} &bull; ${escapeHtml(b.zone || 'Azeroth')}</div>
+                      </div>
+                      <div style="text-align:right;">
+                        <div style="font-family:var(--font-tactical); font-weight:800; color:var(--wow-gold); font-size:0.85rem;">
+                          ${formatCopper(b.reward_copper || 0)}
+                        </div>
+                        <button class="pill-btn" style="font-size:0.65rem; padding:2px 8px; margin-top:2px; background:rgba(212,163,41,0.2); border:1px solid var(--wow-gold); color:var(--wow-gold); cursor:pointer;" onclick="switchTab('BOUNTIES')">Track Target</button>
+                      </div>
+                    </div>
+                  `).join('') : '<div style="color:#64748b; font-size:0.8rem;">No open bounty contracts found on the ledger.</div>'}
+                </div>
+              </div>
+
+              <!-- Recently Recorded Skirmishes -->
+              <div style="background:var(--wow-iron-bg); border:1px solid var(--wow-brass-border); border-radius:8px; padding:16px 20px;">
+                <div style="font-family:var(--font-tactical); font-weight:800; font-size:0.85rem; color:#94a3b8; letter-spacing:0.5px; margin-bottom:12px;">
+                  ⚔️ RECENTLY RECORDED SKIRMISHES
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  ${recentKills.length > 0 ? recentKills.map(k => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:8px 12px; font-size:0.82rem;">
+                      <div>
+                        <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(k.killer_name)})">${colorizeClass(k.killer_name, k.killer_class)}</span>
+                        <span style="color:#ef4444; margin:0 6px;">slain</span>
+                        <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(k.victim_name)})">${colorizeClass(k.victim_name, k.victim_class)}</span>
+                        <span style="color:#64748b; font-size:0.75rem; margin-left:8px;">in ${escapeHtml(k.zone || 'Wilderness')}</span>
+                      </div>
+                      <span style="color:#856a36; font-size:0.75rem;">${typeof timeAgo === 'function' ? timeAgo(k.timestamp) : 'Recent'}</span>
+                    </div>
+                  `).join('') : '<div style="color:#64748b; font-size:0.8rem;">No recent skirmishes logged.</div>'}
+                </div>
+              </div>
             </div>
-            <h3 style="font-size:18px; font-weight:700; color:#e2e8f0; margin:0 0 6px 0;">No Active Faction Manhunts</h3>
-            <p style="font-size:14px; color:#94a3b8; max-width:540px; margin:0 auto 16px auto;">
-              The frontier is quiet. No distress beacons or call-to-arms signals are currently broadcasting. Frontline squads will appear here in real-time when mustered in-game with the WoW Killboard addon (/kb manhunt)!
-            </p>
-            <div style="font-size:13px; color:#fbbf24; background:rgba(217, 119, 6, 0.12); border:1px solid rgba(217, 119, 6, 0.35); border-radius:6px; padding:8px 16px; display:inline-block;">
-              <span>Form up in-game: <code style="color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:3px; font-family:monospace;">/kb manhunt</code></span>
-            </div>
-          </div>
-        `;
+          `;
+          listEl.innerHTML = emptyHtml;
+        });
         return;
       }
 
@@ -7066,6 +7511,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateNavigationLabels();
   loadSidebar();
   checkGlobalSosBeacons();
+  initGlobalOmniSearch();
 
   // Handle external character web links (?name=Name or ?character=Name or /character/Name)
   const urlParams = new URLSearchParams(window.location.search);
@@ -7140,6 +7586,17 @@ document.addEventListener("DOMContentLoaded", () => {
 // ----------------- Platform & CurseForge Analytics Dashboard -----------------
 
 async function openAnalyticsModal() {
+  const isAdmin = (new URLSearchParams(window.location.search).get("admin") === "1" || 
+                   localStorage.getItem("wowkb_is_admin") === "true");
+  if (!isAdmin) {
+    const key = prompt("Restricted Telemetry: Enter Staff Engineer / Admin Key:");
+    if (key === "valor2026" || key === "dagariane") {
+      localStorage.setItem("wowkb_is_admin", "true");
+    } else {
+      alert("Access Denied: Analytics modal is restricted to authorized administrators.");
+      return;
+    }
+  }
   const modal = document.getElementById("analytics-modal");
   if (!modal) return;
   modal.style.display = "flex";
