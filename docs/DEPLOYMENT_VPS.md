@@ -130,12 +130,12 @@ systemctl restart wowkillboard
 ```
 
 ### Updating to the Latest Code
-If local files have been modified or touched on the server, use `fetch` and `reset --hard` to cleanly synchronize:
+To synchronize the live Lightsail server to the latest commits on GitHub `main` while guaranteeing correct service-user permissions:
 ```bash
-sudo git config --global --add safe.directory /opt/wowkillboard
+sudo chown -R wowkillboard:wowkillboard /opt/wowkillboard
 cd /opt/wowkillboard
-sudo git fetch origin main
-sudo git reset --hard origin/main
+sudo -u wowkillboard git fetch origin main
+sudo -u wowkillboard git reset --hard origin/main
 sudo systemctl restart wowkillboard
 ```
 
