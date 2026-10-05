@@ -389,7 +389,7 @@ function U.GetRealmRuleset()
         return "HARDCORE"
     elseif rLower:find("pve") or rLower:find("normal") or rLower:find("wildgrowth") or rLower:find("mankrik") or rLower:find("pagle") or rLower:find("atiesh") or rLower:find("ashkandi") or rLower:find("westfall") or rLower:find("mirageraceway") or rLower:find("pyrewood") or rLower:find("nethergarde") or rLower:find("auberdine") or rLower:find("everlook") or rLower:find("chromie") then
         return "PVE"
-    elseif rLower:find("roleplay") or rLower:find("lavalash") or rLower:find("bloodsail") or rLower:find("celebras") or rLower:find("hydraxian") then
+    elseif rLower:find("roleplay") or rLower:find("lavalash") or rLower:find("bloodsail") or rLower:find("celebras") or rLower:find("hydraxian") or rLower:find("%-rp") or rLower:find("rp$") then
         return "RP"
     elseif rLower:find("pvp") or rLower:find("crusaderstrike") or rLower:find("lonewolf") or rLower:find("livingflame") or rLower:find("chaosbolt") or rLower:find("whitemane") or rLower:find("faerlina") or rLower:find("benediction") or rLower:find("grobbulus") or rLower:find("firemaw") or rLower:find("gehennas") then
         return "PVP"
@@ -404,10 +404,10 @@ function U.GetRealmRuleset()
     return "PVP"
 end
 
--- Check if active ruleset is PvE / Hardcore
+-- Check if active ruleset is PvE / Hardcore / RP
 function U.IsPveRuleset()
     local r = U.GetRealmRuleset()
-    return (r == "PVE" or r == "HARDCORE")
+    return (r == "PVE" or r == "HARDCORE" or r == "RP")
 end
 
 -- Retrieve standardized client flavor subtitle for UI Header (Cross-Client Parity)

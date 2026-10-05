@@ -46,29 +46,13 @@ function LB:MatchesRealm(km)
 
     local kmRealm = km.realm or (km.killer and km.killer.realm) or (km.victim and km.victim.realm)
     if kmRealm and kmRealm ~= "" and kmRealm ~= "Unknown" then
-        return kmRealm:lower() == myRealm:lower()
+        local cleanKm = kmRealm:lower():gsub("%s+", "")
+        local cleanMy = myRealm:lower():gsub("%s+", "")
+        return cleanKm == cleanMy
     end
 
-    -- If realm is unknown or missing (legacy record):
-    local myRuleset = (KB.Utils and KB.Utils.GetRealmRuleset and KB.Utils.GetRealmRuleset()) or "PVP"
-
-    -- PvE casualty records (executed by NPC/monster) naturally belong on PvE and Hardcore feeds
-    local isPve = km.isPveDeath or (km.npc ~= nil) or (km.deathId and tostring(km.deathId):find("^PVE")) or (km.death_id and tostring(km.death_id):find("^PVE")) or (km.killer and km.killer.faction == "Monster")
-    if isPve then
-        if myRuleset == "PVE" or myRuleset == "HARDCORE" then
-            return true
-        end
-    end
-
-    if km.ruleset and km.ruleset ~= "" then
-        return km.ruleset:upper() == myRuleset:upper()
-    end
-
-    -- Strict Isolation: If active realm is PvE or Hardcore, never display untagged legacy PvP records from other servers
-    if myRuleset == "PVE" or myRuleset == "HARDCORE" then
-        return false
-    end
-    return true
+    -- Strict Isolation: If realm cannot be verified to match active realm, strictly reject
+    return false
 end
 
 -- Rebuild all aggregate statistics from WoWKillboardDB and shared WoWKillboard_RealmData
@@ -543,7 +527,7 @@ function LB:GetModeSummary(mode)
         for _, km in pairs(WoWKillboardDB.kills) do
             if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
                 local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
-                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) and LB:MatchesRealm(km) then
                     seenKills[kId] = true
                     totalKills = totalKills + 1
                     if km.isSolo then soloKills = soloKills + 1 end
@@ -564,7 +548,7 @@ function LB:GetModeSummary(mode)
         for _, km in ipairs(rData.RecentKills) do
             if km and type(km) == "table" and km.killer and type(km.killer) == "table" and km.killer.name and km.victim and type(km.victim) == "table" and km.victim.name then
                 local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
-                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) then
+                if kId and not seenKills[kId] and LB:MatchesMode(km, mode) and LB:MatchesRealm(km) then
                     seenKills[kId] = true
                     totalKills = totalKills + 1
                     if km.isSolo then soloKills = soloKills + 1 end

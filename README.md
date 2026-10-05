@@ -82,6 +82,11 @@ flowchart TD
   - 100% template-free Lua design. Zero XML template dependencies. Zero `UISpecialFrames` pollution.
   - Safe ESC key event propagation (`SetPropagateKeyboardInput`).
   - Guaranteed **88px clear margin** eliminating navigation tab and filter button overlap.
+- **Strict Realm Isolation & Interactive PvE/PvP Stats Toggle**:
+  - **Active Realm Header Display**: Prominently displays the player's active realm and ruleset badge (e.g. `Realm: Crusader Strike [PvP]` or `Realm: Wild Growth [PvE]`).
+  - **Interactive Stats Toggle**: Header toggle button (`[PVP STATS]` / `[PVE STATS]`) switches between Contested PvP and Wilderness PvE statistics on the fly.
+  - **Default Ruleset Lockdown**: RP and PvE servers automatically default to PvE mode, displaying the Wilderness Bestiary and Fallen Mortals instead of PvP leaderboards.
+  - **Zero Cross-Realm Leakage**: Normalized realm-matching ensures players on a PvP realm only see combatants from their active realm.
 - **Balanced 3-Card Tactical Stat Header**:
   - `SESSION COMBAT K/D` (Cyan) — Active session kills, deaths, and K/D ratio.
   - `1v1 DUELS RECORD` (Gold) — Dedicated duel tracking (wins, losses, win %).

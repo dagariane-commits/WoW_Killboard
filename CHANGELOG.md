@@ -27,8 +27,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **New Slash Commands**:
     - `/kb channel [show|hide|toggle]` or `/kbchannel` to toggle chat window casualty streaming.
     - `/kb stream [both|chat|banner|off]` or `/kbstream` to switch between delivery presets directly from macros or chat.
+- **Strict Realm Isolation & Zero Cross-Realm Leakage (`Leaderboard.lua`, `UI.lua`)**:
+  - `LB:MatchesRealm(km)` now enforces strict normalized realm equality (`cleanKm == cleanMy`).
+  - Completely rejects records where realm is missing, unknown, or mismatched, preventing any unverified or other-server kills/deaths from leaking into PvP or PvE feeds.
+  - Updated `LB:GetModeSummary()` to filter both local account kills and shared realm kills by `LB:MatchesRealm(km)`, guaranteeing summary stats (Total Kills, 1v1 Solo %, Faction Split) reflect only active realm combatants.
+- **RP Server Classification & Default Ruleset Lockdown (`Utils.lua`, `UI.lua`)**:
+  - Included `"RP"` servers (Lava Lash, Bloodsail Buccaneers, Celebras, Hydraxian Waterlords) in `U.IsPveRuleset()` and `UI:IsPve()`.
+  - Automatically locks down RP and PvE servers to PvE Mode by default, displaying the Wilderness Bestiary, Fallen Mortals, and Deadliest Zones rather than PvP leaderboards.
+- **Active Realm Display & Header Realm Badge (`UI.lua`)**:
+  - Main window header now prominently displays the player's active realm and ruleset badge (e.g. `Realm: Crusader Strike [PvP]`, `Realm: Wild Growth [PvE]`, `Realm: Lava Lash [RP - PvE]`).
+- **Interactive PvE vs. PvP Stats Toggle (`UI.lua`)**:
+  - Modernized header mode toggle button (`UI.RulesetButton`, 116px width) allowing players on any realm to smoothly switch between `[PVE STATS]` and `[PVP STATS]`.
+  - Instantly re-indexes local and shared aggregates, re-renders leaderboards, transforms the top stat cards, and updates the header badge in real-time.
 - **Automated Pipeline Validation & Verification (`test_pipeline.py`)**:
-  - Added `test_29_chatter_suppression_and_delivery_modes` validating simulated channel filter dropping, allowed telemetry passing, and UI preset bindings.
+  - Added `test_29_channel_chatter_suppression_and_delivery_modes` validating simulated channel filter dropping, allowed telemetry passing, and UI preset bindings.
+  - Added `test_30_realm_isolation_and_stats_toggle` verifying strict realm matching, rejection of unverified records, RP classification, and header badge/button bindings.
 
 ## [1.0.3] - 2026-10-04 (CurseForge Community Release)
 
