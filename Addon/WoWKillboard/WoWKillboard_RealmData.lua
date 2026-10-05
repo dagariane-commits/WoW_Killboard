@@ -976,10 +976,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Blackfathom Deeps",
-                elapsedSeconds = 79806,
+                elapsedSeconds = 81105,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 1330,
+                minutesAgo = 1351,
                 subzone = nil,
                 timestamp = 1791160917,
                 zone = "Blackfathom Deeps",
@@ -1013,10 +1013,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Arathi Highlands",
-                elapsedSeconds = 146715,
+                elapsedSeconds = 148014,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 2445,
+                minutesAgo = 2466,
                 subzone = nil,
                 timestamp = 1791094008,
                 zone = "Arathi Highlands",
@@ -1342,5 +1342,5 @@ WoWKillboard_RealmData = {
         "Interactive PvE vs. PvP Stats Toggle: Seamlessly switch between Wilderness Bestiary and PvP War Room",
         "Strict Realm & Ruleset Isolation Architecture (PvP / PvE / RP / HC)",
     },
-    LastSync = 1791240723,
+    LastSync = 1791242022,
 }

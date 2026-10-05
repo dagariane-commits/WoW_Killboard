@@ -341,6 +341,35 @@ function CT:RecordDamage(timestamp, sourceGUID, sourceName, sourceFlags, destGUI
     local isHostile = HasFlag(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE)
     if isHostile and isSourcePlayer then
         CT.HostileCluster[sourceGUID] = now
+    elseif destGUID == playerGUID and (sourceName == "Environment" or sourceGUID == "Environment") then
+        local envSpell = spellName or "Fall Damage"
+        local envName = "Environmental Hazard"
+        local lowerSpell = envSpell:lower()
+        if lowerSpell:find("fall") then
+            envName = "Fatal Fall"
+            envSpell = "Lethal Impact from Height"
+        elseif lowerSpell:find("drown") then
+            envName = "Deep Water Hazard"
+            envSpell = "Asphyxiation / Drowning"
+        elseif lowerSpell:find("lava") then
+            envName = "Molten Lava"
+            envSpell = "Lava Incineration"
+        elseif lowerSpell:find("fire") then
+            envName = "Wildfire Hazard"
+            envSpell = "Fire Damage"
+        elseif lowerSpell:find("fatigue") then
+            envName = "Exhausting Depths"
+            envSpell = "Terminal Fatigue"
+        elseif lowerSpell:find("slime") then
+            envName = "Toxic Slime"
+            envSpell = "Slime Dissolution"
+        end
+        CT.LastEnvironmentalHazard = {
+            name = envName,
+            spell = envSpell,
+            damage = amount or 0,
+            lastSeen = now,
+        }
     elseif destGUID == playerGUID and not isSourcePlayer and sourceName and sourceName ~= "" and sourceName ~= "Environment" then
         local npcId = 0
         if sourceGUID then
@@ -828,6 +857,15 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
                         damage = 0,
                     }
                 end
+            end
+            if not fallbackNpc and CT.LastEnvironmentalHazard and (now - (CT.LastEnvironmentalHazard.lastSeen or 0)) <= 30 then
+                fallbackNpc = {
+                    name = CT.LastEnvironmentalHazard.name or "Environmental Hazard",
+                    id = 0,
+                    guid = "ENVIRONMENT",
+                    spell = CT.LastEnvironmentalHazard.spell or "Fatal Fall / Environmental Mishap",
+                    damage = CT.LastEnvironmentalHazard.damage or 0,
+                }
             end
             if not fallbackNpc then
                 fallbackNpc = {

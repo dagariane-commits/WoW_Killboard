@@ -66,11 +66,6 @@
           <span class="header-btn-text">Upload</span>
         </button>
 
-        <!-- Auth Badge -->
-        <div id="header-auth-badge" class="header-auth-badge">
-          <!-- Populated by app.js -->
-        </div>
-
         <!-- High-Visibility Primary Gold CTA -->
         <button id="header-download-btn" class="header-cta-gold" onclick="switchTab('DOWNLOAD')" title="Download Addon &amp; Windows Desktop Companion">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -165,12 +160,17 @@
   <div class="container">
     <!-- Main Center Column -->
     <main class="main-column">
-      <!-- Compact 32px Single-Row Telemetry Ribbon -->
+      <!-- Compact Single-Row Telemetry Ribbon (Overall Realm Statistics) -->
       <div id="homepage-stats-hub" class="homepage-stats-hub">
         <div class="telemetry-ribbon">
-          <div class="telemetry-item">
-            <span class="telemetry-label">24h Kills:</span>
+          <div class="telemetry-item" title="Overall Realm Kills (All-Time)">
+            <span class="telemetry-label">Realm Kills:</span>
             <strong class="telemetry-val" id="stat-total-kills">0</strong>
+          </div>
+          <span class="telemetry-divider">|</span>
+          <div class="telemetry-item" title="Combat Kills in Last 24 Hours">
+            <span class="telemetry-label">24h Kills:</span>
+            <strong class="telemetry-val" id="stat-24h-kills" style="color: #38bdf8;">0</strong>
           </div>
           <span class="telemetry-divider">|</span>
           <div class="telemetry-item">
@@ -208,8 +208,9 @@
     <aside class="sidebar-column">
       <!-- 1. Top — Lifetime Combat Activity -->
       <div class="sidebar-card" id="sidebar-card-activity">
-        <div class="section-header">
+        <div class="section-header" style="flex-direction:column; align-items:flex-start; gap:2px;">
           <div class="section-title">Lifetime Combat Activity</div>
+          <div style="font-size:0.68rem; color:#94a3b8; font-family:var(--font-tactical); letter-spacing:0.5px;">OVERALL REALM COMBAT (ALL PLAYERS)</div>
         </div>
         <table class="activity-table">
           <tbody>
@@ -245,7 +246,6 @@
             <span style="font-size: 0.72rem; color: #94a3b8;">&bull; ACTIVE BOUNTIES</span>
           </div>
           <div style="display:flex; align-items:center; gap:6px;">
-            <button class="issue-bounty-quick-btn" onclick="openPlaceBountyModal()" title="Issue a Mark of Spite">+ Issue Mark</button>
             <button class="see-all-marks-btn" onclick="switchTab('BOUNTIES')" title="View All Bounties">All &rarr;</button>
           </div>
         </div>

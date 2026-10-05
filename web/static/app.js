@@ -631,7 +631,7 @@ function renderMostWanted(outlaws) {
     container.innerHTML = `
       <div style="padding: 14px 8px; text-align: center; color: #64748b; font-size: 0.78rem;">
         <div>No active marks on <span style="color:var(--wow-gold); font-weight:700;">${escapeHtml(currentRealm)}</span></div>
-        <button class="issue-bounty-quick-btn" style="margin-top: 8px; padding: 4px 12px;" onclick="openPlaceBountyModal()">+ Issue Mark of Spite</button>
+        <div style="font-size:0.72rem; color:#475569; margin-top:6px; line-height:1.4;">Marks are placed in-game via the WoW Killboard addon.</div>
       </div>
     `;
     return;
@@ -853,34 +853,61 @@ function renderPveFeed(deaths) {
     const zoneStr = d.subzone ? `${d.zone} (${d.subzone})` : (d.zone || "Wilderness");
     const ago = timeAgo(d.timestamp);
 
+    // Generate realistic forensic fatality narrative
+    let deathNarrative = "";
+    const npcLower = (d.npc_name || "").toLowerCase();
+    const spellLower = (d.npc_spell || "").toLowerCase();
+    const isEnv = npcLower.includes("environment") || npcLower.includes("fall") || npcLower.includes("hazard");
+
+    if (spellLower.includes("fall") || npcLower.includes("fall") || spellLower.includes("impact")) {
+      deathNarrative = `Plunged from elevation suffering fatal fall impact while traversing high ground in ${zoneStr}.`;
+    } else if (spellLower.includes("drown") || spellLower.includes("asphyxiation")) {
+      deathNarrative = `Drowned in deep waters beneath the surface of ${zoneStr}.`;
+    } else if (spellLower.includes("lava") || spellLower.includes("fire")) {
+      deathNarrative = `Incinerated by molten environmental hazard in ${zoneStr}.`;
+    } else if (spellLower.includes("fatigue")) {
+      deathNarrative = `Succumbed to terminal oceanic fatigue while exploring beyond ${zoneStr}.`;
+    } else if (d.npc_name && d.npc_name !== "Unknown Monster" && !isEnv) {
+      const dmgStr = d.npc_damage > 0 ? ` for ${formatNumber(d.npc_damage)} lethal damage` : '';
+      deathNarrative = `Slain in combat by ${escapeHtml(d.npc_name)} executing ${escapeHtml(d.npc_spell || 'Fatal Strike')}${dmgStr} in ${zoneStr}.`;
+    } else {
+      deathNarrative = `Succumbed to fatal wilderness hazard while exploring ${zoneStr}.`;
+    }
+
     html += `
-      <div class="kill-card pve-hazard-card" style="border-left: 3px solid #ef4444; margin-bottom: 10px;">
-        <div class="kill-card-header" style="display:flex; justify-content:space-between; align-items:center; padding:6px 14px; background:rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.06);">
-          <span class="kill-zone" style="color:#e2e8f0; font-size:0.78rem;">📍 ${escapeHtml(zoneStr)}</span>
+      <div class="kill-card pve-hazard-card" style="border-left: 3px solid #ef4444; margin-bottom: 12px; background: rgba(8, 12, 18, 0.95); border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.25);">
+        <div class="kill-card-header" style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:rgba(239,68,68,0.08); border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span class="kill-zone" style="color:#e2e8f0; font-size:0.80rem; font-weight:700;">📍 ${escapeHtml(zoneStr)}</span>
           <span class="kill-time" style="color:#94a3b8; font-size:0.75rem;">${ago}</span>
         </div>
         <div class="kill-content" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px;">
           <!-- Monster / NPC Executioner -->
           <div class="combatant-block" style="display:flex; align-items:center; gap:12px;">
-            <div style="width:40px; height:40px; border-radius:4px; border:1px solid #ef4444; background:rgba(239,68,68,0.15); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">💀</div>
+            <div style="width:42px; height:42px; border-radius:6px; border:1px solid #ef4444; background:rgba(239,68,68,0.18); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">💀</div>
             <div>
-              <div style="font-weight:800; color:#ef4444; font-size:1.1rem;">${escapeHtml(d.npc_name)}</div>
-              <div style="font-size:0.75rem; color:#94a3b8;">${d.npc_spell ? escapeHtml(d.npc_spell) : 'Melee Strike'} &bull; <strong style="color:#fca5a5;">${formatNumber(d.npc_damage || 0)} dmg</strong></div>
+              <div style="font-weight:800; color:#ef4444; font-size:1.08rem;">${escapeHtml(d.npc_name)}</div>
+              <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">${d.npc_spell ? escapeHtml(d.npc_spell) : 'Melee Strike'} &bull; <strong style="color:#fca5a5;">${formatNumber(d.npc_damage || 0)} dmg</strong></div>
             </div>
           </div>
 
-          <div style="font-weight:900; color:#64748b; font-size:0.8rem; letter-spacing:1px; background:rgba(0,0,0,0.4); padding:4px 8px; border-radius:4px;">DEFEATED</div>
+          <div style="font-weight:900; color:#ef4444; font-size:0.75rem; letter-spacing:1px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:4px 10px; border-radius:4px;">FATALITY</div>
 
           <!-- Fallen Player Victim -->
           <div class="combatant-block" style="display:flex; align-items:center; gap:12px; text-align:right;">
             <div>
-              <div style="font-weight:800; font-size:1.1rem; cursor:pointer;" onclick="openCharacterProfile(${safeJsParam(d.victim_name)})">
+              <div style="font-weight:800; font-size:1.08rem; cursor:pointer;" onclick="openCharacterProfile(${safeJsParam(d.victim_name)})">
                 <span style="color:${vColor};">${escapeHtml(d.victim_name)}</span> <span style="font-size:0.75rem; color:#94a3b8;">(${vLvl})</span>
               </div>
-              <div style="font-size:0.72rem; color:#cbd5e1;">&lt;${escapeHtml(d.victim_guild || 'Unguilded')}&gt;</div>
+              <div style="font-size:0.72rem; color:#cbd5e1; margin-top:2px;">&lt;${escapeHtml(d.victim_guild || 'Unguilded')}&gt;</div>
             </div>
-            ${renderClassBadge(vCls, 36)}
+            ${renderClassBadge(vCls, 38)}
           </div>
+        </div>
+
+        <!-- Forensic Death Description Banner -->
+        <div style="margin: 0 16px 12px 16px; padding: 8px 12px; background: rgba(0, 0, 0, 0.45); border-left: 2px solid #ef4444; border-radius: 4px; font-size: 0.80rem; color: #e2e8f0; line-height: 1.45;">
+          <strong style="color: #ef4444; font-size: 0.72rem; letter-spacing: 0.5px; text-transform: uppercase; margin-right: 6px;">FORENSIC ANALYSIS:</strong>
+          <span>${deathNarrative}</span>
         </div>
       </div>
     `;
@@ -1122,14 +1149,15 @@ async function loadLeaderboards() {
   }
   const container = document.getElementById("main-content-area");
   const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
+  const tfParam = (currentLeaderboardTimeframe || "all").toLowerCase();
   try {
     if (legendsTabType === "GUILDS") {
-      const res = await fetch(`/api/guilds?mode=${currentMode}&realm=${encodeURIComponent(currentRealm)}`);
+      const res = await fetch(`/api/guilds?mode=${currentMode}&realm=${encodeURIComponent(currentRealm)}&timeframe=${encodeURIComponent(tfParam)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       renderLeaderboardView(null, null, data.guilds || []);
     } else {
-      const res = await fetch(`/api/leaderboard?mode=${currentMode}&realm=${encodeURIComponent(currentRealm)}`);
+      const res = await fetch(`/api/leaderboard?mode=${currentMode}&realm=${encodeURIComponent(currentRealm)}&timeframe=${encodeURIComponent(tfParam)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
@@ -1165,7 +1193,7 @@ async function loadLeaderboards() {
           <div style="font-size: 2rem; margin-bottom: 12px;">⚔️</div>
           <h2 style="color: #ef4444; font-family: var(--font-cinzel, Cinzel, serif); font-size: 1.25rem; margin-bottom: 8px;">Defender of Azeroth Offline</h2>
           <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.6; margin-bottom: 16px;">
-            The server was unable to retrieve combat records (${escapeHtml(err.message)}). If you are viewing on Render Cloud, click <strong>Manual Deploy &rarr; Deploy latest commit</strong> in your Render dashboard to complete database initialization, or view your local war room at <a href="http://localhost:8080" style="color: var(--wow-gold, #c69b3a); text-decoration: underline;">http://localhost:8080</a>.
+            The server was unable to retrieve combat records (${escapeHtml(err.message)}). Please verify your connection or click Retry Connection.
           </p>
           <button class="pill-btn active" onclick="loadLeaderboards()" style="padding: 8px 20px; font-size: 0.85rem;">🔄 Retry Connection</button>
         </div>
@@ -1220,7 +1248,7 @@ async function loadBounties() {
           <div style="font-size: 2rem; margin-bottom: 12px;">📜</div>
           <h2 style="color: #ef4444; font-family: var(--font-cinzel, Cinzel, serif); font-size: 1.25rem; margin-bottom: 8px;">Marks of Spite Offline</h2>
           <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.6; margin-bottom: 16px;">
-            The server was unable to retrieve bounty contracts (${escapeHtml(err.message)}). If you are viewing on Render Cloud, click <strong>Manual Deploy &rarr; Deploy latest commit</strong> in your Render dashboard to complete database initialization, or view your local war room at <a href="http://localhost:8080" style="color: var(--wow-gold, #c69b3a); text-decoration: underline;">http://localhost:8080</a>.
+            The server was unable to retrieve bounty contracts (${escapeHtml(err.message)}). Please verify your connection or click Retry Connection.
           </p>
           <button class="pill-btn active" onclick="loadBounties()" style="padding: 8px 20px; font-size: 0.85rem;">🔄 Retry Connection</button>
         </div>
@@ -1300,6 +1328,7 @@ async function renderStats(kills) {
         cumulative.active_bounties = statsData.counts.active_bounties ?? 0;
         cumulative.bounty_gold = statsData.counts.bounty_gold ?? 0;
         cumulative.top_zone = statsData.counts.top_zone ?? "Hillsbrad Foothills";
+        cumulative.kills_24h = statsData.counts.kills_24h;
       }
     }
   } catch (e) {
@@ -1309,6 +1338,10 @@ async function renderStats(kills) {
   // Calculate percentages
   const totalCarnage = cumulative.total;
   const soloPct = totalCarnage > 0 ? Math.round((cumulative.solo / totalCarnage) * 100) : 0;
+  const nowSec = Date.now() / 1000;
+  const kills24h = (typeof cumulative.kills_24h === "number")
+    ? cumulative.kills_24h
+    : (kills ? kills.filter(k => k.timestamp >= (nowSec - 86400)).length : 0);
 
   let aKills = cumulative.alliance;
   let hKills = cumulative.horde;
@@ -1345,26 +1378,31 @@ async function renderStats(kills) {
     }
   }
 
-  // Render Compact 32px Single-Row Telemetry Ribbon
+  // Render Compact 32px Single-Row Telemetry Ribbon (Overall Realm Statistics)
   if (hubContainer) {
     hubContainer.innerHTML = `
-      <div class="telemetry-ribbon">
-        <div class="telemetry-item">
-          <span class="telemetry-label">24h Kills:</span>
+      <div class="telemetry-ribbon" title="Overall Realm Combat Telemetry (${escapeHtml(currentRealm)})">
+        <div class="telemetry-item" title="Overall Realm Kills (All-Time)">
+          <span class="telemetry-label">Realm Kills:</span>
           <strong class="telemetry-val" id="stat-total-kills">${formatNumber(totalCarnage)}</strong>
         </div>
         <span class="telemetry-divider">|</span>
-        <div class="telemetry-item">
+        <div class="telemetry-item" title="Combat Kills in Last 24 Hours">
+          <span class="telemetry-label">24h Kills:</span>
+          <strong class="telemetry-val" id="stat-24h-kills" style="color: #38bdf8;">${formatNumber(kills24h)}</strong>
+        </div>
+        <span class="telemetry-divider">|</span>
+        <div class="telemetry-item" title="Contested Territory with Most Fatalities">
           <span class="telemetry-label">Hot Zone:</span>
           <strong class="telemetry-val" id="stat-hot-zone" style="color: var(--accent-gold);">${escapeHtml(cumulative.top_zone || "Hillsbrad Foothills")}</strong>
         </div>
         <span class="telemetry-divider">|</span>
-        <div class="telemetry-item">
-          <span class="telemetry-label">Top Spec:</span>
+        <div class="telemetry-item" title="Most Active Combat Class">
+          <span class="telemetry-label">Top Class:</span>
           <strong class="telemetry-val" id="stat-top-spec" style="color: var(--accent-cyan);">${escapeHtml(topSpecName)}</strong>
         </div>
         <span class="telemetry-divider">|</span>
-        <div class="telemetry-item">
+        <div class="telemetry-item" title="Realm Faction Balance Ratio">
           <span class="telemetry-label">Faction War:</span>
           <span class="telemetry-val" id="stat-faction-split">
             <span style="color: var(--alliance-blue); font-weight:800;">A: ${aPct}%</span> <span style="color:#64748b;">/</span> <span style="color: var(--horde-red); font-weight:800;">H: ${hPct}%</span>
@@ -1488,8 +1526,8 @@ function renderFeed(kills) {
     let modeTagText = "WORLD";
     if (km.isDuel) {
       modeClass = "km-duel";
-      modeLabel = "1v1 Duel";
-      modeTagText = "1v1 DUEL";
+      modeLabel = "Sanctioned 1v1 Duel";
+      modeTagText = "⚔️ 1v1 DUEL";
     } else if (km.isArena) {
       modeClass = "km-arena";
       modeLabel = "Arena Match";
@@ -1536,7 +1574,9 @@ function renderFeed(kills) {
       : `<span class="km-guild-none">&lt;Unguilded&gt;</span>`;
 
     const subzoneOrCoords = km.location.subZone ? km.location.subZone : `${(km.location.x || 0).toFixed(1)}, ${(km.location.y || 0).toFixed(1)}`;
-    const rowTooltip = `${km.killer.name} defeated ${km.victim.name} • ${modeLabel} • ${km.location.zone} • Click for Battle Report`;
+    const rowTooltip = km.isDuel
+      ? `${km.killer.name} defeated ${km.victim.name} in a Sanctioned 1v1 Duel (${killerFaction || 'Friendly'} Sparring) • ${km.location.zone} • Click for Battle Report`
+      : `${km.killer.name} defeated ${km.victim.name} • ${modeLabel} • ${km.location.zone} • Click for Battle Report`;
 
     const killerLvlStr = (km.killer && km.killer.level && km.killer.level > 0) ? `(${km.killer.level})` : '??';
     const victimLvlStr = (km.victim && km.victim.level && km.victim.level > 0) ? `(${km.victim.level})` : '??';
@@ -1551,6 +1591,7 @@ function renderFeed(kills) {
         <div class="km-left-meta">
           <span class="km-zone-name">${escapeHtml(km.location.zone)}</span>
           <span class="km-subzone-text">${escapeHtml(subzoneOrCoords)}</span>
+          ${km.isDuel ? `<span style="color:#f59e0b; font-size:0.68rem; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-top:2px; display:inline-block;">⚔️ 1v1 Sparring</span>` : ''}
         </div>
 
         <div class="km-combatants-center">
@@ -1566,7 +1607,7 @@ function renderFeed(kills) {
           </div>
 
           <div class="km-vs-wrapper">
-            <span class="km-vs" title="${km.isDuel ? 'Defeated in 1v1 Duel' : (km.isSolo ? 'Slew in 1v1 Combat' : 'Slew in Combat')}">VS</span>
+            <span class="km-vs" ${km.isDuel ? 'style="color:#f59e0b; border-color:rgba(245,158,11,0.5); font-weight:800;"' : ''} title="${km.isDuel ? 'Sanctioned 1v1 Duel (Friendly Sparring)' : (km.isSolo ? 'Slew in 1v1 Combat' : 'Slew in Combat')}">${km.isDuel ? 'DUEL' : 'VS'}</span>
           </div>
 
           <div class="km-combatant-col victim">
@@ -2042,7 +2083,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
   `;
 
   // 1. Personal Marks Section (At the Top)
-  if (myUser) {
+  if (myUser && myBounties.length > 0) {
     html += `
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
@@ -2054,32 +2095,10 @@ function renderBountiesView(bounties, debts, leaderboards) {
               Contracts issued by you or placed upon your head
             </div>
           </div>
-          <button class="see-all-marks-btn" onclick="openPlaceBountyModal()">+ Issue Mark</button>
         </div>
-    `;
-
-    if (myBounties.length === 0) {
-      html += `
-        <div style="color: #64748b; font-size:0.8rem; padding: 14px 16px; background: rgba(3,4,7,0.7); border-radius:6px; border: 1px dashed rgba(255,255,255,0.08);">
-          You have no active Marked contracts issued or placed against you. When ganked in the world, brand your killer with a Mark of Spite to dispatch the realm's hunters!
-        </div>
-      `;
-    } else {
-      html += `
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
           ${myBounties.map(b => renderSingleBountyCard(b, isSupporter)).join('')}
         </div>
-      `;
-    }
-
-    html += `</div>`;
-  } else {
-    html += `
-      <div style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85); border-radius: 6px; padding: 12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div style="font-size:0.82rem; color:#94a3b8;">
-          <strong style="color:var(--wow-gold);">Personal Marks:</strong> Sign in to pin contracts you issued or marks placed upon your head to the top.
-        </div>
-        <button class="header-signin-btn" onclick="switchTab('PORTAL')">Sign In &rarr;</button>
       </div>
     `;
   }
@@ -2090,15 +2109,14 @@ function renderBountiesView(bounties, debts, leaderboards) {
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
           <div>
             <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">The Marked — Execution Contracts</h2>
-            <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">Track and execute targets in open combat to claim the reward.</div>
+            <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">Track and execute targets in open combat to claim the reward. Place contracts in-game with <code style="color:var(--wow-gold);">/kb mark</code>.</div>
           </div>
-          <button class="see-all-marks-btn" onclick="openPlaceBountyModal()">+ Issue Mark</button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
   `;
 
   if (!allBounties || allBounties.length === 0) {
-    html += `<div style="color: #64748b; padding:16px;">No active marks right now. Place one to ignite a manhunt!</div>`;
+    html += `<div style="color: #64748b; padding:16px;">No active marks right now on this realm. Issue a contract in-game via the WoW Killboard addon (<code style="color:var(--wow-gold);">/kb mark &lt;target&gt; &lt;gold&gt;</code>) to ignite a manhunt.</div>`;
   } else {
     html += allBounties.map(b => renderSingleBountyCard(b, isSupporter)).join('');
   }
@@ -2329,10 +2347,11 @@ function openKillModal(killId) {
       </div>
     `;
   } else if (km.isDuel) {
+    const dFaction = (km.killer && km.killer.faction) ? km.killer.faction : 'Alliance';
     soloBanner = `
       <div class="battle-report-duel-banner">
         <span>⚔️ CERTIFIED 1v1 FORMAL DUEL</span>
-        <span style="font-size:0.75rem; color:#fde68a; font-weight:600;">Sanctioned Honor Duel Won</span>
+        <span style="font-size:0.75rem; color:#fde68a; font-weight:600;">Sanctioned Honor Duel Won (${escapeHtml(dFaction)} Friendly Sparring)</span>
       </div>
     `;
   }
@@ -4591,7 +4610,7 @@ function filterLeaderboardsByTime(timeframe) {
     const btn = document.getElementById(`filter-time-${t}`);
     if (btn) btn.classList.toggle('active', t.toLowerCase() === timeframe.toLowerCase());
   });
-  applyLeaderboardFilters();
+  loadLeaderboards();
 }
 window.filterLeaderboardsByTime = filterLeaderboardsByTime;
 
@@ -4613,6 +4632,13 @@ function loadDownloadView() {
 
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:24px; max-width:960px; margin:0 auto; padding:10px 0 40px 0;">
+      <!-- Top Navigation Return Button -->
+      <div style="display:flex; justify-content:flex-start; margin-bottom:-10px;">
+        <button class="pill-btn active" onclick="setLeaderboardCategory('PVP'); navigateToRoute('');" style="display:inline-flex; align-items:center; gap:8px; padding:8px 16px; font-size:0.85rem; cursor:pointer;">
+          <span>&larr; Return to Killboard</span>
+        </button>
+      </div>
+
       <!-- Hero Masthead -->
       <div class="download-hero-card" style="background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.14) 0%, rgba(10, 13, 20, 0.96) 80%); border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 32px 24px; text-align: center; box-shadow: 0 4px 28px rgba(0,0,0,0.75);">
         <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(212,163,41,0.15); border:1px solid var(--wow-gold); padding:4px 12px; border-radius:12px; margin-bottom:12px;">
@@ -4631,7 +4657,7 @@ function loadDownloadView() {
         <!-- Option 1: CurseForge App / Hub -->
         <div class="download-option-card" style="background:#0a0e16; border:2px solid var(--wow-gold); border-radius:8px; padding:22px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 0 20px rgba(212,163,41,0.12);">
           <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <span style="font-size:0.68rem; font-weight:800; color:#10b981; background:rgba(16, 185, 129, 0.15); border:1px solid #10b981; padding:2px 8px; border-radius:4px;">
                 AUTOMATIC UPDATES &bull; RECOMMENDED
               </span>
@@ -7028,7 +7054,7 @@ async function loadDefenseView() {
                 </div>
                 <div class="distress-actions">
                   <button class="nav-btn active" style="flex:1; font-size:0.75rem; padding:6px 10px; background:var(--accent-cyan); color:#000; font-weight:700;" onclick="copyWhisperCommand(${safeJsParam(b.character_name)})">
-                    📋 Whisper Auto-Invite
+                    📋 Copy Whisper Command
                   </button>
                   <button class="nav-btn" style="font-size:0.75rem; padding:6px 10px;" onclick="resolveDistressBeacon(${safeJsParam(b.id)})">
                     ✅ Clear
@@ -7068,8 +7094,8 @@ async function loadDefenseView() {
               <p style="font-size:0.8rem; color:#cbd5e1; margin:8px 0;">${escapeHtml(e.description)}</p>
               <div style="font-size:0.75rem; color:#94a3b8; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #1e293b; padding-top:8px; margin-top:8px;">
                 <span>📍 Rally Zone: <strong style="color:#fff;">${escapeHtml(e.zone)}</strong></span>
-                <button class="nav-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="copyWhisperCommand(${safeJsParam(e.creator_name)}, 'invite')">
-                  Join / Whisper
+                <button class="nav-btn" style="font-size:0.7rem; padding:2px 8px;" onclick="copyWhisperCommand(${safeJsParam(e.creator_name)}, 'whisper')">
+                  Copy Whisper
                 </button>
               </div>
             </div>
@@ -7161,7 +7187,7 @@ async function loadDefenseView() {
 function copyWhisperCommand(playerName, keyword = "backup") {
   const cmd = `/w ${playerName} ${keyword}`;
   navigator.clipboard.writeText(cmd).then(() => {
-    alert(`Copied in-game command: "${cmd}"\nPaste into World of Warcraft to trigger auto-invite!`);
+    alert(`Copied in-game command: "${cmd}"\nPaste into World of Warcraft chat to whisper this combatant.`);
   });
 }
 
@@ -7334,26 +7360,7 @@ function setFilterMode(mode) {
 }
 
 function openPlaceBountyModal() {
-  const target = prompt("Enter Target Outlaw Name (Open World PvP only):");
-  if (!target) return;
-  const gold = prompt("Enter Blood Bounty Gold Amount (e.g. 500):", "500");
-  if (!gold) return;
-  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
-
-  fetch("/api/bounties", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      targetName: target,
-      amountGold: parseInt(gold),
-      placerName: "WebUser",
-      realm: currentRealm
-    })
-  }).then(() => {
-    alert(`Blood Bounty of ${gold}g declared on ${target}! The execution contract is now active across ${currentRealm}.`);
-    loadBounties();
-    loadMostWanted();
-  });
+  alert("Mark of Spite contracts are issued directly in-game via the WoW Killboard addon.\n\nTarget an enemy player and type:\n/kb mark <target> <gold_amount>\n\nThe contract will immediately sync to the realm ledger upon your next combat record.");
 }
 
 // Supporter Mode & Subzone Intel Helpers
