@@ -217,6 +217,13 @@ function KB:Initialize()
                 end
             end
         end
+        if WoWKillboardBounties then
+            for _, b in pairs(WoWKillboardBounties) do
+                if type(b) == "table" and (not b.realm or b.realm == "" or b.realm == "Unknown") then
+                    b.realm = myRealm
+                end
+            end
+        end
     end
 
     -- Two-Way Sync Realm Data Linking & Player Historical Merge

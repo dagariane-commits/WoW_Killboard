@@ -47,6 +47,7 @@ function BE:InitDB()
                 b.amount_copper = b.amountCopper
                 b.amountGold = b.amountGold or b.amount_gold or math.floor(b.amountCopper / 10000)
                 b.amount_gold = b.amountGold
+                b.realm = (b.realm and b.realm ~= "" and b.realm ~= "Unknown") and b.realm or ((GetRealmName and GetRealmName()) or "Unknown")
                 if not WoWKillboardBounties[bId] or not WoWKillboardBounties[bId].targetName or WoWKillboardBounties[bId].targetName:lower() == "unknown" then
                     WoWKillboardBounties[bId] = b
                 end
@@ -55,6 +56,7 @@ function BE:InitDB()
     end
 
     -- Clean any corrupt dummy bounties out of local SavedVariables and normalize existing
+    local myRealm = (GetRealmName and GetRealmName()) or ""
     for bid, b in pairs(WoWKillboardBounties) do
         local tName = b.targetName or b.target_name
         if not tName or tName == "" or tName:lower() == "unknown" then
@@ -72,6 +74,9 @@ function BE:InitDB()
             b.amount_copper = b.amountCopper
             b.amountGold = b.amountGold or b.amount_gold or math.floor(b.amountCopper / 10000)
             b.amount_gold = b.amountGold
+            if (not b.realm or b.realm == "" or b.realm == "Unknown") and myRealm ~= "" then
+                b.realm = myRealm
+            end
         end
     end
 end
