@@ -1921,6 +1921,23 @@ def admin_deploy():
     import subprocess
     try:
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Attempt to ensure proper file permissions on .git if owned by process user
+        try:
+            import stat
+            for root, dirs, files in os.walk(os.path.join(repo_root, ".git")):
+                for d in dirs:
+                    try:
+                        os.chmod(os.path.join(root, d), stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH)
+                    except Exception:
+                        pass
+                for f in files:
+                    try:
+                        os.chmod(os.path.join(root, f), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
         fetch_res = subprocess.run(
             ["git", "-c", "safe.directory=*", "fetch", "origin", "main"],
             cwd=repo_root,
@@ -1928,6 +1945,15 @@ def admin_deploy():
             text=True,
             timeout=30
         )
+        if fetch_res.returncode != 0:
+            return jsonify({
+                "success": False,
+                "error": "Git fetch failed. Check repository permissions on the VPS.",
+                "stdout": fetch_res.stdout,
+                "stderr": fetch_res.stderr,
+                "returncode": fetch_res.returncode
+            }), 500
+
         reset_res = subprocess.run(
             ["git", "-c", "safe.directory=*", "reset", "--hard", "origin/main"],
             cwd=repo_root,
@@ -1935,6 +1961,15 @@ def admin_deploy():
             text=True,
             timeout=30
         )
+        if reset_res.returncode != 0:
+            return jsonify({
+                "success": False,
+                "error": "Git reset failed.",
+                "stdout": reset_res.stdout,
+                "stderr": reset_res.stderr,
+                "returncode": reset_res.returncode
+            }), 500
+
         # Schedule background process exit so systemd (Restart=always) automatically reloads the new server process
         def _deferred_restart():
             import time
@@ -1948,11 +1983,11 @@ def admin_deploy():
             "message": "Git fetch and reset executed successfully. Server process reloading.",
             "stdout": fetch_res.stdout + "\n" + reset_res.stdout,
             "stderr": fetch_res.stderr + "\n" + reset_res.stderr,
-            "returncode": reset_res.returncode
+            "returncode": 0
         }), 200
     except Exception as e:
         logger.error(f"Deploy execution failed: {e}")
-        return jsonify({"error": "Deploy execution failed. Internal server error."}), 500
+        return jsonify({"error": f"Deploy execution failed: {str(e)}"}), 500
 
 # ----------------- Stats & Telemetry API -----------------
 

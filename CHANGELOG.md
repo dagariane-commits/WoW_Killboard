@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Corrected benchmark profile lookup in `renderLeaderboardView` to read flat `benchmarkProfile.class` instead of `benchmarkProfile.character.class`.
   - Guaranteed Dagariane resolves to PALADIN with pink class color `#f58cba` and Paladin crest icon across Defender of Azeroth, Champion Benchmark bar, and profile modal.
   - Preserved `victim_class` and `realm` on PvE environmental fall damage and monster deaths without null overwriting.
+- **Production VPS Service-User Permissions & Remote Deploy (`web/server.py`, `docs/DEPLOYMENT_VPS.md`)**:
+  - Hardened `/api/admin/deploy` endpoint to inspect and recursively adjust `.git` directory/file permissions when owned by the service user.
+  - Added strict return code validation preventing silent reload failures when `git fetch` or `git reset` encounter permission faults.
+  - Updated dedicated VPS runbook with permission-safe update workflow (`sudo chown -R wowkillboard:wowkillboard /opt/wowkillboard` and `sudo -u wowkillboard git fetch origin main`).
 - **Global Omni-Search Engine (`web/static/app.js`, `web/static/index.html`, `web/static/style.css`)**:
   - Centralized global search bar (`#global-search-input`) in the sticky header with autofocus hotkey shortcut (`/`) and instant typeahead dropdown (`#search-results-dropdown`).
   - Search federation querying combatants (with class coloring and faction badges), guilds, and conflict zones.
