@@ -62,7 +62,7 @@ Visit **[wowkillboard.com](https://wowkillboard.com)** to check out realm-wide l
 
 ## 4. Screenshot Gallery & Upload Guide
 
-Upload the screenshots located in [`assets/curseforge/`](assets/curseforge/) in this specific order:
+Upload the screenshots located in [`../assets/curseforge/`](../assets/curseforge/) in this specific order:
 
 | File | Title / Caption | Description |
 | :--- | :--- | :--- |
@@ -79,18 +79,18 @@ Upload the screenshots located in [`assets/curseforge/`](assets/curseforge/) in 
 
 > [!IMPORTANT]
 > **CurseForge & Git Lockstep Parity (MANDATORY)**:
-> Whenever you push or upload an update to CurseForge, you **MUST** ensure the exact same code and zip are committed, tagged, and pushed to GitHub (`git tag -a v1.0.2 -m "..."` and `git push origin main --tags`). Users downloading from GitHub or CurseForge must always experience identical features, styling, and bug fixes.
+> Whenever you push or upload an update to CurseForge, you **MUST** ensure the exact same code and zip are committed, tagged, and pushed to GitHub (`git tag -a v1.0.4 -m "..."` and `git push origin main --tags`). Users downloading from GitHub or CurseForge must always experience identical features, styling, and bug fixes.
 
 1. Navigate to the **File** tab on your CurseForge project dashboard.
 2. Click **Upload File**.
-3. Select `WoWKillboard-v1.0.2.zip` (located in the project root: `WoWKillboard-v1.0.2.zip`).
-4. Set **Display Name**: `WKB v1.0.2 (Community Release)`
+3. Select `WoWKillboard-v1.0.4.zip` (located in the project root: `WoWKillboard-v1.0.4.zip`).
+4. Set **Display Name**: `WKB v1.0.4 (Community Release)`
 5. Set **Release Type**: `Release` (or `Beta` if you prefer).
 6. Under **Supported Game Versions**, select:
    - `World of Warcraft Classic` (Classic Era `1.15.x`)
    - `Classic Beta` / `Classic Anniversary`
    - `World of Warcraft Mainline` (Retail `11.0.x`)
-7. Paste the latest release notes from [`CHANGELOG.md`](CHANGELOG.md) into the **Changelog** field.
+7. Paste the latest release notes from [`../CHANGELOG.md`](../CHANGELOG.md) into the **Changelog** field.
 8. Click **Submit File**.
 
 > [!NOTE]

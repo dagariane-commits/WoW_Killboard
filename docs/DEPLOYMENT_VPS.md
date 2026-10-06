@@ -79,7 +79,7 @@ The installer configures four key components on the server:
                        │
               HTTP :8080 (Localhost)
                        ▼
-    [ systemd: wowkillboard.service (FastAPI) ]
+     [ systemd: wowkillboard.service (Flask API) ]
                        │
                        ▼
   [ Persistent SSD Storage: /opt/wowkillboard/data/killboard.db ]
@@ -114,7 +114,7 @@ Create a file named `wowkb_sync_config.json` in the same directory as `WoWKillbo
 
 ### Checking Service Health
 ```bash
-# Check FastAPI service status
+# Check Flask service status
 systemctl status wowkillboard
 
 # Tail live application logs

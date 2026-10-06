@@ -13,7 +13,7 @@ flowchart TD
     S1["1. Register Domain\n(e.g. wowkillboard.com via Cloudflare)"] --> S2["2. Point DNS A-Record\nMap @ and api to <YOUR_VPS_PUBLIC_IP>"]
     S2 --> S3["3. Automatic HTTPS / SSL\nCaddy provisions Let's Encrypt certificate"]
     S3 --> S4["4. Update In-Game URLs\nSet KB.WebDomain in Config.lua & recompile Sync.exe"]
-    S4 --> S5["5. Rebuild & Submit\nWoWKillboard-v1.0.1.zip to CurseForge"]
+    S4 --> S5["5. Rebuild & Submit\nWoWKillboard-v1.0.4.zip to CurseForge"]
 ```
 
 ### Why Domain First?
@@ -36,15 +36,15 @@ The `WoWKillboard.toc` manifest includes multi-client declarations:
 ## Interface: 11506, 11507, 110007, 16001
 ## Title: WoW Killboard
 ## Notes: Community killboard tracking PvP kills, 1v1 duels, battlegrounds, bounties, and PvE deaths.
-## Version: 1.0.1
+## Version: 1.0.4
 ## Author: Dagariane
 ## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties, WoWKillboardDistress, WoWKillboardEvents
 ```
 
 ### Packaging Script
-Run [`package_addon.bat`](package_addon.bat) or PowerShell:
+Run [`package_addon.bat`](../package_addon.bat) or PowerShell:
 ```powershell
-Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.1.zip" -Force
+Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.4.zip" -Force
 ```
 
 ---
@@ -57,7 +57,7 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
 > **CurseForge & Git Lockstep Parity (MANDATORY PROCEDURE)**:
 > Whenever you push or upload an update to CurseForge, you **MUST** ensure the exact identical release is committed, tagged (`git tag -a vX.Y.Z -m "Release vX.Y.Z"`), and pushed to GitHub (`git push origin main --tags`).
 > - CurseForge and GitHub must never drift out of sync.
-> - The packaged zip (e.g., `WoWKillboard-v1.0.2.zip`) must be generated from the exact committed source tree.
+> - The packaged zip (e.g., `WoWKillboard-v1.0.4.zip`) must be generated from the exact committed source tree.
 > - Release zips must be mirrored to repository root and `web/static/` via `python scripts/deploy.py` so the direct download button on wowkillboard.com delivers the same build.
 
 1. Log into the [CurseForge Author Portal](https://authors.curseforge.com/).
@@ -68,14 +68,14 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
    > **WoW Killboard** is a community killboard that tracks your open-world PvP kills, certified 1v1 duels, battleground stats, blood bounties, and wilderness PvE deaths. It works across WoW Forever, Classic Era, Anniversary, and Retail.
    >
    > I really hope you like it! Please drop your feedback, feature ideas, or bug reports on CurseForge or our website so I can continue enhancing it.
-4. Upload `WoWKillboard-v1.0.2.zip`.
+4. Upload `WoWKillboard-v1.0.4.zip`.
 5. Supported Flavors: Select `WoW Classic`, `Classic Era`, and `Mainline`.
-6. Upload promotional banner (`assets/curseforge/logo.png`) and in-game UI screenshots.
+6. Upload promotional banner (`../assets/curseforge/logo.png`) and in-game UI screenshots.
 
 ### B. Wago.io
 1. Access [Wago Addons](https://addons.wago.io/).
 2. Connect GitHub repository for automated release ingestion via webhooks.
-3. Every tagged GitHub release (`v1.0.0`) automatically updates Wago.
+3. Every tagged GitHub release (`v1.0.4`) automatically updates Wago.
 
 ### C. WowInterface
 1. Create listing under `PvP / Combat Log` category.
@@ -88,7 +88,7 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
 Players who want their combat data to sync automatically to the public web killboard do not need Python.
 
 ### Building the Executable
-Use [`Build_Desktop_Sync_EXE.bat`](Build_Desktop_Sync_EXE.bat):
+Use [`Build_Desktop_Sync_EXE.bat`](../Build_Desktop_Sync_EXE.bat):
 ```cmd
 pyinstaller --onefile --name "WoWKillboardSync" sync\watcher.py
 ```
@@ -104,7 +104,7 @@ pyinstaller --onefile --name "WoWKillboardSync" sync\watcher.py
 
 ## 4. Web Platform Deployment (Production Cloud)
 
-The web tier is containerized and cloud-ready via the included [`Dockerfile`](Dockerfile).
+The web tier is containerized and cloud-ready via the included [`Dockerfile`](../Dockerfile).
 
 ### Production Deployment Options
 
@@ -122,7 +122,7 @@ docker run -d \
 ```
 
 #### Option B: Platform as a Service (Railway / Render / Fly.io)
-Deploy directly using the repository's [`Procfile`](Procfile):
+Deploy directly using the repository's [`Procfile`](../Procfile):
 ```text
 web: gunicorn -w 4 -b 0.0.0.0:$PORT web.server:app
 ```

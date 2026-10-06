@@ -77,12 +77,12 @@ flowchart TD
   - `D:\World of Warcraft\_classic_era_\Interface\AddOns\WoWKillboard\`
   - `D:\World of Warcraft\_anniversary_\Interface\AddOns\WoWKillboard\`
   - `D:\World of Warcraft\_retail_\Interface\AddOns\WoWKillboard\`
-- Rebuild distribution package (`WoWKillboard-v1.0.1.zip` and `WoWKillboard-v1.0.0.zip`).
+- Rebuild distribution package (`WoWKillboard-v1.0.4.zip` and legacy aliases).
 - Recompile `WoWKillboardSync.exe` if sync logic was modified.
 
 ### Step 6: Zero-Drift Documentation, CurseForge/Git Parity & Clean Commit
 - Update [`CHANGELOG.md`](CHANGELOG.md) under appropriate semantic version headers.
 - Update relevant wiki documents in [`docs/`](docs/).
 - Commit changes to Git with clear Conventional Commit messages (`feat:`, `fix:`, `docs:`).
-- **CurseForge & Git Parity Gating**: Whenever an update is pushed to CurseForge, create the semantic git release tag (e.g., `git tag -a v1.0.2 -m "..."`) and push to remote (`git push origin main --tags`) so GitHub and CurseForge never drift.
+- **CurseForge & Git Parity Gating**: Whenever an update is pushed to CurseForge, create the semantic git release tag (e.g., `git tag -a v1.0.4 -m "..."`) and push to remote (`git push origin main --tags`) so GitHub and CurseForge never drift.
 - Deliver a concise, BLUF response highlighting verification proofs and exact in-game testing steps.

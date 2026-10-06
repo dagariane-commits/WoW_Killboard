@@ -84,6 +84,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Compressed top stats hub into a sleek 32px telemetry ribbon (`[24h Kills] | [Hot Zone] | [Top Spec] | [Faction War Split]`), immediately anchoring the live combat feed above the fold with 6–8 rows visible on standard 1080p viewports.
   - Gated developer telemetry modal (`openAnalyticsModal`) behind administrator authorization checks.
   - Removed corner floating action buttons to eliminate UI occlusion.
+- **Comprehensive Project Documentation Audit & Lockstep Parity (`README.md`, `docs/*.md`, `package_addon.bat`, `AGENTS.md`)**:
+  - Audited all 18 markdown documentation and specification files across the repository.
+  - Eliminated 10 broken relative hyperlinks in `docs/CURSEFORGE_LISTING.md`, `docs/LEGAL_AND_COMPLIANCE.md`, and `docs/PUBLIC_RELEASE_PLAYBOOK.md` by resolving missing `../` parent directory traversals.
+  - Synchronized all semantic version declarations to `v1.0.4` across `README.md`, `docs/BETA_TESTER_QUICKSTART.md`, `docs/CURSEFORGE_LISTING.md`, `docs/PUBLIC_RELEASE_PLAYBOOK.md`, `package_addon.bat`, `AGENTS.md`, and `.agent/rules/standard_operating_procedure.md`.
+  - Reconciled architecture and navigation specifications in `README.md` and `docs/ARCHITECTURE.md` to reflect the sticky 56px header with 5-button navigation rail, in-page feed mode pills, and purged residual `+ Issue Mark` web mentions.
+  - Corrected backend service framework nomenclature in `docs/DEPLOYMENT_VPS.md` from `FastAPI` to `Flask API`.
+  - Added `docs/CURSEFORGE_LISTING.md` to the master wiki table of contents in `docs/README.md`.
+  - Updated `docs/AI_SESSION_HANDOFF.md` to reflect the 2026-10-05 production state and dual telemetry unification.
 
 ## [1.0.4] - 2026-10-04 (CurseForge Community Release)
 

@@ -22,7 +22,7 @@ flowchart TD
 1. **[System Architecture](ARCHITECTURE.md)**
    - The 3-tier operational model (In-Game Lua Addon, Desktop File Watcher, Web Platform).
    - Data flow pipelines, FNV-1a cryptographic hashing, and state persistence contracts.
-   - Streamlined 7-item navigation architecture (`Theater`, `Intel`, `Hall of Legends`, `World Hazards`, `Armory`, `Bounties`, `Warroom`).
+   - Streamlined 5-button navigation architecture (`Intel`, `Leaderboards`, `Deadly Hazards`, `Bounties`, `Zone Intel`).
    - Class, Spec & Level Cohort Percentile Engine with mathematical standing.
 
 2. **[Combat Telemetry & Gang Clustering Engine](COMBAT_ENGINE.md)**
@@ -55,31 +55,34 @@ flowchart TD
    - Standalone Desktop Sync binary compilation with PyInstaller.
    - Production Docker containerization and Discord Webhook integration.
 
-7. **[Stress Testing & Performance Benchmarks](STRESS_TESTING.md)**
+7. **[CurseForge Project Listing & Submission Kit](CURSEFORGE_LISTING.md)**
+   - Official CurseForge copy, metadata settings, screenshot order, and lockstep parity rules.
+
+8. **[Stress Testing & Performance Benchmarks](STRESS_TESTING.md)**
    - Comprehensive multi-tier performance load testing and verification protocols.
    - SavedVariables LuaTableParser stress testing (escalating payloads up to 2,500 records at 7,200+ rec/s).
    - In-Game combat burst macro `/kb stress [N]` with microsecond profiling and memory delta analysis.
    - Multi-threaded REST API and SQLite WAL concurrency load testing (150+ RPS with 0 lock errors).
 
-8. **[Dedicated Linux VPS Deployment Runbook](DEPLOYMENT_VPS.md)**
+9. **[Dedicated Linux VPS Deployment Runbook](DEPLOYMENT_VPS.md)**
    - Production AWS Lightsail infrastructure setup, Ubuntu 24.04 LTS deployment, and Caddy reverse proxy.
    - Automatic SSL/TLS certificate issuance via Let's Encrypt / ZeroSSL.
    - Remote maintenance, zero-downtime updates, and automated daily backups.
 
-9. **[Beta Tester Quickstart Guide](BETA_TESTER_QUICKSTART.md)**
+10. **[Beta Tester Quickstart Guide](BETA_TESTER_QUICKSTART.md)**
    - 2-minute setup instructions for community players and guild officers.
    - Complete in-game command cheat-sheet, minimap controls, and Automated AI Bug Reporting dispatch.
 
-10. **[Semantic Change Log](../CHANGELOG.md)**
+11. **[Semantic Change Log](../CHANGELOG.md)**
    - Complete historical version log detailing every bug fix, feature addition, and refactor across semantic releases.
 
-11. **[Contributing Guide](../CONTRIBUTING.md)**
+12. **[Contributing Guide](../CONTRIBUTING.md)**
    - Standards, style rules, and verification requirements for open-source contributors.
 
-12. **[Legal, Safety & Compliance Guide](LEGAL_AND_COMPLIANCE.md)**
+13. **[Legal, Safety & Compliance Guide](LEGAL_AND_COMPLIANCE.md)**
    - Open-source governance, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
 
-13. **[Master AI Session Continuity Handoff](AI_SESSION_HANDOFF.md)**
+14. **[Master AI Session Continuity Handoff](AI_SESSION_HANDOFF.md)**
    - Architectural continuity, VPS state, operational guardrails, and active verification traces for AI engineering sessions.
 
 ---

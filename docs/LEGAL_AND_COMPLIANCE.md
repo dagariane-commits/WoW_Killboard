@@ -89,11 +89,11 @@ WoW Killboard enforces an absolute **Zero-PII** standard. The system does not co
 
 ## 5. Malware Prevention & Standalone Executable Verification
 
-The desktop sync utility ([`WoWKillboardSync.exe`](WoWKillboardSync.exe)) is compiled using standard PyInstaller from the fully audited source file [`sync/watcher.py`](sync/watcher.py).
+The desktop sync utility ([`WoWKillboardSync.exe`](../WoWKillboardSync.exe)) is compiled using standard PyInstaller from the fully audited source file [`../sync/watcher.py`](../sync/watcher.py).
 
 ### Verification & Reproducibility Standards:
-1. **Auditable Source Code**: The entire source code is available in plain text. Any developer or security analyst can inspect [`sync/watcher.py`](sync/watcher.py) line by line.
-2. **Reproducible Local Build**: Users can build the executable themselves at any time using [`Build_Desktop_Sync_EXE.bat`](Build_Desktop_Sync_EXE.bat):
+1. **Auditable Source Code**: The entire source code is available in plain text. Any developer or security analyst can inspect [`../sync/watcher.py`](../sync/watcher.py) line by line.
+2. **Reproducible Local Build**: Users can build the executable themselves at any time using [`Build_Desktop_Sync_EXE.bat`](../Build_Desktop_Sync_EXE.bat):
    ```cmd
    pyinstaller --onefile --name "WoWKillboardSync" sync\watcher.py
    ```
