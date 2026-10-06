@@ -2031,11 +2031,15 @@ def stats_endpoint():
 
             now_24h = int(time.time()) - 86400
             kills_24h = conn.execute(f"SELECT COUNT(*) FROM kills WHERE timestamp >= ?{r_where}", (now_24h,) + r_param).fetchone()[0]
+            pve_deaths = conn.execute(f"SELECT COUNT(*) FROM pve_deaths WHERE 1=1{r_where}", r_param).fetchone()[0]
+            pve_deaths_24h = conn.execute(f"SELECT COUNT(*) FROM pve_deaths WHERE timestamp >= ?{r_where}", (now_24h,) + r_param).fetchone()[0]
 
             stats["counts"] = {
                 "total": total_kills,
                 "kills_24h": kills_24h,
                 "lifetime_kills": total_kills,
+                "pve_deaths": pve_deaths,
+                "pve_deaths_24h": pve_deaths_24h,
                 "world": world_kills,
                 "bg": bg_kills,
                 "arena": arena_kills,
@@ -3608,154 +3612,7 @@ def get_activity_7d():
     with get_db() as conn:
         raw_realm = request.args.get("realm")
         server_param = (request.args.get("server") or "").upper()
-        flavor_param = (request.args.get("flavor") or "").upper()
         realm_filter = normalize_realm_filter(raw_realm)
-
-        is_pve_server = False
-        if server_param == "PVE" or (realm_filter and "pve" in realm_filter.lower()):
-            is_pve_server = True
-        elif not server_param and not realm_filter:
-            s_row = conn.execute("SELECT value FROM platform_stats WHERE key='forever_server'").fetchone()
-            if s_row and s_row[0]:
-                try:
-                    s_val = json.loads(s_row[0])
-                    if s_val == "PVE":
-                        is_pve_server = True
-                except Exception:
-                    if s_row[0] == "PVE":
-                        is_pve_server = True
-
-        if is_pve_server:
-            # Dedicated PvE Realm Telemetry (Casualties, Apex Monsters, Wilderness Hazards, and Guild Casualties)
-            p_clause = " WHERE LOWER(realm) = LOWER(?)" if realm_filter else ""
-            p_param = (realm_filter,) if realm_filter else ()
-            p_and = " AND LOWER(realm) = LOWER(?)" if realm_filter else ""
-
-            total_kills = conn.execute(f"SELECT COUNT(*) FROM pve_deaths{p_clause}", p_param).fetchone()[0]
-            char_count = conn.execute(f"""
-                SELECT COUNT(DISTINCT victim_name) FROM pve_deaths WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''{p_and}
-            """, p_param).fetchone()[0] or 0
-
-            guild_count = conn.execute(f"""
-                SELECT COUNT(DISTINCT victim_guild) FROM pve_deaths WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''{p_and}
-            """, p_param).fetchone()[0]
-
-            alliance_kills = conn.execute(f"SELECT COUNT(*) FROM pve_deaths WHERE victim_faction = 'Alliance'{p_and}", p_param).fetchone()[0]
-            horde_kills = conn.execute(f"SELECT COUNT(*) FROM pve_deaths WHERE victim_faction = 'Horde'{p_and}", p_param).fetchone()[0]
-
-            # 1. Deadliest Zones (Casualties in Last 24 Hours)
-            deadliest_zones_rows = conn.execute(f"""
-                SELECT zone, COUNT(*) AS kills, COUNT(*) AS deaths
-                FROM pve_deaths
-                WHERE timestamp >= ? AND zone IS NOT NULL AND zone != '' AND zone != 'Unknown'{p_and}
-                GROUP BY zone
-                ORDER BY deaths DESC
-                LIMIT 5
-            """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
-            if not deadliest_zones_rows:
-                deadliest_zones_rows = conn.execute(f"""
-                    SELECT zone, COUNT(*) AS kills, COUNT(*) AS deaths
-                    FROM pve_deaths
-                    WHERE zone IS NOT NULL AND zone != '' AND zone != 'Unknown'{p_and}
-                    GROUP BY zone
-                    ORDER BY deaths DESC
-                    LIMIT 5
-                """, p_param).fetchall()
-            top_zones_24h = [dict(r) for r in deadliest_zones_rows]
-
-            # 2. Deadliest Monsters & Hazards (Apex Predators in Last 24 Hours)
-            top_gankers_rows = conn.execute(f"""
-                SELECT npc_name AS name, 'MONSTER' AS class, '' AS spec, 'NPC' AS faction, 'Apex Predator' AS guild, COUNT(*) AS kills, COUNT(*) AS slain
-                FROM pve_deaths
-                WHERE timestamp >= ? AND npc_name IS NOT NULL AND npc_name != ''{p_and}
-                GROUP BY npc_name
-                ORDER BY kills DESC
-                LIMIT 5
-            """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
-            if not top_gankers_rows:
-                top_gankers_rows = conn.execute(f"""
-                    SELECT npc_name AS name, 'MONSTER' AS class, '' AS spec, 'NPC' AS faction, 'Apex Predator' AS guild, COUNT(*) AS kills, COUNT(*) AS slain
-                    FROM pve_deaths
-                    WHERE npc_name IS NOT NULL AND npc_name != ''{p_and}
-                    GROUP BY npc_name
-                    ORDER BY kills DESC
-                    LIMIT 5
-                """, p_param).fetchall()
-            top_chars_24h = [dict(r) for r in top_gankers_rows]
-
-            # 3. Guild Casualties (Last 24 Hours)
-            top_guilds_rows = conn.execute(f"""
-                SELECT victim_guild AS guild, victim_faction AS faction, COUNT(*) AS kills, COUNT(*) AS deaths
-                FROM pve_deaths
-                WHERE timestamp >= ? AND victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''{p_and}
-                GROUP BY victim_guild
-                ORDER BY deaths DESC
-                LIMIT 5
-            """, (one_day_ago, realm_filter) if realm_filter else (one_day_ago,)).fetchall()
-            if not top_guilds_rows:
-                top_guilds_rows = conn.execute(f"""
-                    SELECT victim_guild AS guild, victim_faction AS faction, COUNT(*) AS kills, COUNT(*) AS deaths
-                    FROM pve_deaths
-                    WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''{p_and}
-                    GROUP BY victim_guild
-                    ORDER BY deaths DESC
-                    LIMIT 5
-                """, p_param).fetchall()
-            top_guilds_24h = [dict(r) for r in top_guilds_rows]
-
-            # 4. Casualties by Class
-            CLASSIC_CLASSES = ["WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID"]
-            raw_classes = conn.execute(f"""
-                SELECT UPPER(victim_class) AS class, COUNT(*) AS kills, COUNT(*) AS deaths
-                FROM pve_deaths
-                WHERE victim_class IS NOT NULL AND victim_class != '' AND victim_class != 'UNKNOWN'{p_and}
-                GROUP BY UPPER(victim_class)
-            """, p_param).fetchall()
-            class_dict = {resolve_class_name(r["class"]): r["kills"] for r in raw_classes}
-            top_classes = []
-            for cls in CLASSIC_CLASSES:
-                top_classes.append({
-                    "class": cls,
-                    "kills": class_dict.get(cls, 0),
-                    "deaths": class_dict.get(cls, 0)
-                })
-            top_classes.sort(key=lambda x: x["class"])
-
-            # 5. Deadliest Creature Attacks & Spells
-            raw_spells = conn.execute(f"""
-                SELECT npc_spell AS spec, 'MONSTER' AS class, COUNT(*) AS kills, COUNT(*) AS slain
-                FROM pve_deaths
-                WHERE npc_spell IS NOT NULL AND npc_spell != ''{p_and}
-                GROUP BY npc_spell
-                ORDER BY kills DESC
-                LIMIT 10
-            """, p_param).fetchall()
-            top_specs = [dict(r) for r in raw_spells]
-            if not top_specs:
-                top_specs = [
-                    {"spec": "Fatal Impact / Mishap", "class": "MONSTER", "kills": 0},
-                    {"spec": "Cleave", "class": "MONSTER", "kills": 0},
-                    {"spec": "Fireball", "class": "MONSTER", "kills": 0},
-                    {"spec": "Sinister Strike", "class": "MONSTER", "kills": 0},
-                    {"spec": "Shadow Word: Pain", "class": "MONSTER", "kills": 0}
-                ]
-
-            return jsonify({
-                "isPve": True,
-                "kills": total_kills,
-                "characters": char_count,
-                "guilds": guild_count,
-                "allianceKills": alliance_kills,
-                "hordeKills": horde_kills,
-                "deadliestZones24h": top_zones_24h,
-                "topGankers24h": top_chars_24h,
-                "topGuilds24h": top_guilds_24h,
-                "topClasses": top_classes,
-                "topSpecs": top_specs,
-                "topCharacters": top_chars_24h,
-                "topGuilds": top_guilds_24h,
-                "topZones": top_zones_24h
-            })
 
         r_clause = " AND LOWER(realm) = LOWER(?)" if realm_filter else ""
         r_param = (realm_filter,) if realm_filter else ()
@@ -3763,14 +3620,20 @@ def get_activity_7d():
         # Lifetime total kills (All recorded combat on realm)
         total_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE 1=1{r_clause}", r_param).fetchone()[0]
 
-        # Lifetime active characters (active combatants from recorded kills)
+        # Lifetime PvE deaths on realm
+        pve_deaths = conn.execute(f"SELECT COUNT(*) FROM pve_deaths WHERE 1=1{r_clause}", r_param).fetchone()[0]
+        pve_deaths_24h = conn.execute(f"SELECT COUNT(*) FROM pve_deaths WHERE timestamp >= ?{r_clause}", (one_day_ago,) + r_param).fetchone()[0]
+
+        # Lifetime active characters (active combatants from recorded kills and PvE casualties)
         char_count = conn.execute(f"""
             SELECT COUNT(DISTINCT name) FROM (
                 SELECT killer_name AS name FROM kills WHERE killer_name IS NOT NULL AND killer_name != 'Unknown' AND killer_name != ''{r_clause}
                 UNION
                 SELECT victim_name AS name FROM kills WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''{r_clause}
+                UNION
+                SELECT victim_name AS name FROM pve_deaths WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''{r_clause}
             )
-        """, r_param + r_param).fetchone()[0]
+        """, r_param * 3).fetchone()[0]
 
         # Lifetime active guilds
         guild_count = conn.execute(f"""
@@ -3778,8 +3641,10 @@ def get_activity_7d():
                 SELECT killer_guild AS guild FROM kills WHERE killer_guild IS NOT NULL AND killer_guild != 'None' AND killer_guild != ''{r_clause}
                 UNION
                 SELECT victim_guild AS guild FROM kills WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''{r_clause}
+                UNION
+                SELECT victim_guild AS guild FROM pve_deaths WHERE victim_guild IS NOT NULL AND victim_guild != 'None' AND victim_guild != ''{r_clause}
             )
-        """, r_param + r_param).fetchone()[0]
+        """, r_param * 3).fetchone()[0]
 
         # Lifetime faction breakdown
         alliance_kills = conn.execute(
@@ -3932,12 +3797,14 @@ def get_activity_7d():
         top_specs.sort(key=lambda x: (x["spec"].lower(), x["class"]))
 
     return jsonify({
-        "isPve": False,
+        "isPve": (server_param == "PVE"),
         "kills": total_kills,
         "characters": char_count,
         "guilds": guild_count,
         "allianceKills": alliance_kills,
         "hordeKills": horde_kills,
+        "pveDeaths": pve_deaths,
+        "pveDeaths24h": pve_deaths_24h,
         "deadliestZones24h": top_zones_24h,
         "topGankers24h": top_chars_24h,
         "topGuilds24h": top_guilds_24h,

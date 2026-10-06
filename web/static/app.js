@@ -534,36 +534,15 @@ async function loadMostWanted() {
   const container = document.getElementById("most-wanted-cards-container");
   if (!container) return;
 
-  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
   const mwTitle = document.querySelector(".most-wanted-title");
   const mwSub = document.querySelector(".most-wanted-subtitle");
   const mwBtn = document.querySelector(".see-all-marks-btn");
 
-  if (isPve) {
-    if (mwTitle) mwTitle.innerText = "THE BESTIARY — AZEROTH'S DEADLIEST MONSTERS";
-    if (mwSub) mwSub.innerText = "Wilderness Executioners & World Bosses • Highest confirmed mortal kill counts";
-    if (mwBtn) {
-      mwBtn.innerText = "View Bestiary Records →";
-      mwBtn.onclick = () => switchTab('HAZARDS');
-    }
-
-    const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvE";
-    try {
-      const res = await fetch(`/api/pve/leaderboard?realm=${encodeURIComponent(currentRealm)}`);
-      if (!res.ok) return;
-      const lb = await res.json();
-      renderPveMostWanted(lb.topDeadlyNpcs || []);
-    } catch (e) {
-      console.error("Failed to load PvE Deadly NPCs:", e);
-    }
-    return;
-  }
-
-  if (mwTitle) mwTitle.innerText = "THE BLOOD LEDGER — AZEROTH'S MOST WANTED";
+  if (mwTitle) mwTitle.innerHTML = `<span style="color: var(--wow-gold); font-family: var(--font-cinzel, Cinzel, serif); font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px;">THE MARKED</span> <span style="font-size: 0.72rem; color: #94a3b8;">&bull; ACTIVE BOUNTIES</span>`;
   if (mwSub) mwSub.innerText = "Open World Execution Contracts & Certified Outlaws • Deliver the final blow to claim the bounty";
   if (mwBtn) {
-    mwBtn.innerText = "View The Marked →";
-    mwBtn.onclick = () => switchTab('BOUNTIES');
+    mwBtn.innerText = "+ Issue Mark";
+    mwBtn.onclick = () => openPlaceBountyModal();
   }
 
   const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
@@ -775,25 +754,7 @@ window.showCombatToast = showCombatToast;
 
 // Data Fetching
 async function loadKills() {
-  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
   const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
-
-  if (isPve) {
-    try {
-      const res = await fetch(`/api/pve/deaths?limit=30&realm=${encodeURIComponent(currentRealm)}`);
-      if (res.ok) {
-        const data = await res.json();
-        const incomingDeaths = data.deaths || [];
-        renderStats([]);
-        if (currentTab === "FEED" || currentTab === "INTEL") {
-          renderPveFeed(incomingDeaths);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load PvE casualties:", e);
-    }
-    return;
-  }
 
   try {
     const fetchMode = (currentMode || "WORLD").toUpperCase();
@@ -918,10 +879,8 @@ function renderPveFeed(deaths) {
 
 async function loadSidebar() {
   try {
-    const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
-    const activeServer = (typeof getCurrentForeverServer === "function") ? getCurrentForeverServer() : "PVP";
     const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
-    const res = await fetch(`/api/stats/activity-7d?flavor=${encodeURIComponent(currentFlavor)}&server=${encodeURIComponent(isPve ? "PVE" : activeServer)}&realm=${encodeURIComponent(currentRealm)}`);
+    const res = await fetch(`/api/stats/activity-7d?flavor=${encodeURIComponent(currentFlavor)}&realm=${encodeURIComponent(currentRealm)}`);
     if (!res.ok) return;
     const data = await res.json();
     renderSidebarActivity(data);
@@ -933,31 +892,31 @@ async function loadSidebar() {
 function renderSidebarActivity(data) {
   if (!data) return;
 
-  const isPve = Boolean(data.isPve) || (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
-
-  // Dynamically adapt activity table labels
+  // Canonical activity table labels
   const lblKills = document.getElementById("act-label-kills");
-  if (lblKills) lblKills.innerText = isPve ? "Total Casualties" : "Total Kills";
+  if (lblKills) lblKills.innerText = "Total Kills";
   const lblAlliance = document.getElementById("act-label-alliance");
-  if (lblAlliance) lblAlliance.innerText = isPve ? "Alliance Fallen" : "Alliance Kills";
+  if (lblAlliance) lblAlliance.innerText = "Alliance Kills";
   const lblHorde = document.getElementById("act-label-horde");
-  if (lblHorde) lblHorde.innerText = isPve ? "Horde Fallen" : "Horde Kills";
+  if (lblHorde) lblHorde.innerText = "Horde Kills";
+  const lblPve = document.getElementById("act-label-pve");
+  if (lblPve) lblPve.innerText = "PvE Casualties";
   const lblChars = document.getElementById("act-label-chars");
-  if (lblChars) lblChars.innerText = isPve ? "Active Mortals" : "Active Characters";
+  if (lblChars) lblChars.innerText = "Active Characters";
   const lblGuilds = document.getElementById("act-label-guilds");
-  if (lblGuilds) lblGuilds.innerText = isPve ? "Active Guilds" : "Active Guilds";
+  if (lblGuilds) lblGuilds.innerText = "Active Guilds";
 
-  // Dynamically adapt sidebar card titles
+  // Canonical sidebar card titles
   const titleZones = document.getElementById("sidebar-title-zones");
-  if (titleZones) titleZones.innerText = isPve ? "Deadliest Zones (Casualties)" : "Deadliest Zones (24 Hours)";
+  if (titleZones) titleZones.innerText = "Deadliest Zones (24 Hours)";
   const titleChars = document.getElementById("sidebar-title-characters");
-  if (titleChars) titleChars.innerText = isPve ? "Deadliest Monsters & Hazards" : "Top Active Gankers (24 Hours)";
+  if (titleChars) titleChars.innerText = "Top Active Gankers (24 Hours)";
   const titleGuilds = document.getElementById("sidebar-title-guilds");
-  if (titleGuilds) titleGuilds.innerText = isPve ? "Guild Casualties (24 Hours)" : "Top Active Guilds (24 Hours)";
+  if (titleGuilds) titleGuilds.innerText = "Top Active Guilds (24 Hours)";
   const titleClasses = document.getElementById("sidebar-title-classes");
-  if (titleClasses) titleClasses.innerText = isPve ? "Casualties by Class" : "All Classes";
+  if (titleClasses) titleClasses.innerText = "All Classes";
   const titleSpecs = document.getElementById("sidebar-title-specs");
-  if (titleSpecs) titleSpecs.innerText = isPve ? "Deadliest Creature Spells" : "Top Active Specs";
+  if (titleSpecs) titleSpecs.innerText = "Top Active Specs";
 
   // 1. Lifetime Combat Activity Table Numbers
   const charsEl = document.getElementById("act-7d-chars");
@@ -975,48 +934,37 @@ function renderSidebarActivity(data) {
   const hordeEl = document.getElementById("act-7d-horde");
   if (hordeEl) hordeEl.innerText = formatNumber(data.hordeKills || 0);
 
+  const pveEl = document.getElementById("act-7d-pve");
+  if (pveEl) pveEl.innerText = formatNumber(data.pveDeaths || 0);
+
   // 2. Deadliest Zones (Last 24 Hours)
   const zoneListEl = document.getElementById("sidebar-24h-zones") || document.getElementById("sidebar-7d-zones-list");
   if (zoneListEl) {
     const zones = data.deadliestZones24h || data.topZones || [];
     if (zones.length === 0) {
-      zoneListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">${isPve ? 'No casualty zones recorded' : 'No conflict zones logged in last 24h'}</div>`;
+      zoneListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No conflict zones logged in last 24h</div>`;
     } else {
       zoneListEl.innerHTML = zones.map((z, i) => {
-        const countVal = z.deaths !== undefined ? z.deaths : z.kills;
-        const countSuffix = isPve ? 'fallen' : 'kills';
+        const countVal = z.kills !== undefined ? z.kills : z.deaths;
         return `
           <div class="sidebar-rank-item zone-item">
             <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
               <span class="rank-badge">#${i + 1}</span>
               <span style="font-weight:700; color:#e2e8f0; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${escapeHtml(z.zone || 'Azeroth')}</span>
             </div>
-            <span style="color:#ef4444; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${countVal} ${countSuffix}</span>
+            <span style="color:#ef4444; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${countVal} kills</span>
           </div>
         `;
       }).join('');
     }
   }
 
-  // 3. Top Active Gankers (PvP) OR Deadliest Monsters & Hazards (PvE)
+  // 3. Top Active Gankers (PvP)
   const charListEl = document.getElementById("sidebar-24h-characters") || document.getElementById("sidebar-7d-characters");
   if (charListEl) {
     const chars = data.topGankers24h || data.topCharacters || [];
     if (chars.length === 0) {
-      charListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">${isPve ? 'No monster kills or hazards logged in last 24h' : 'No character kills logged in last 24h'}</div>`;
-    } else if (isPve) {
-      charListEl.innerHTML = chars.map((m, i) => {
-        const countVal = m.slain !== undefined ? m.slain : m.kills;
-        return `
-          <div class="sidebar-rank-item character-item" style="cursor:pointer;" onclick="switchTab('HAZARDS')">
-            <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
-              <span class="rank-badge">#${i + 1}</span>
-              <span style="font-weight:700; color:#ef4444; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">💀 ${escapeHtml(m.name)}</span>
-            </div>
-            <span style="color:var(--accent-gold); font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${countVal} slain</span>
-          </div>
-        `;
-      }).join('');
+      charListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No character kills logged in last 24h</div>`;
     } else {
       charListEl.innerHTML = chars.map((c, i) => {
         let faction = (c.faction || "").toLowerCase();
@@ -1039,31 +987,30 @@ function renderSidebarActivity(data) {
     }
   }
 
-  // 4. Top Active Guilds (PvP) OR Guild Casualties (PvE)
+  // 4. Top Active Guilds (PvP)
   const guildListEl = document.getElementById("sidebar-24h-guilds") || document.getElementById("sidebar-7d-guilds");
   if (guildListEl) {
     const guilds = data.topGuilds24h || data.topGuilds || [];
     if (guilds.length === 0) {
-      guildListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">${isPve ? 'No guild casualties in last 24h' : 'No active guild combat in last 24h'}</div>`;
+      guildListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No active guild combat in last 24h</div>`;
     } else {
       guildListEl.innerHTML = guilds.map((g, i) => {
         const factionClass = (g.faction || '').toLowerCase() === 'alliance' ? 'alliance' : ((g.faction || '').toLowerCase() === 'horde' ? 'horde' : '');
-        const countVal = g.deaths !== undefined ? g.deaths : g.kills;
-        const countSuffix = isPve ? 'fallen' : 'kills';
+        const countVal = g.kills !== undefined ? g.kills : g.deaths;
         return `
           <div class="sidebar-rank-item ${factionClass}">
             <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
               <span class="rank-badge">#${i + 1}</span>
               <span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(g.guild)})" style="font-weight:700; color:var(--text-main); white-space:nowrap;">&lt;${escapeHtml(g.guild)}&gt;</span>
             </div>
-            <span style="color:${isPve ? '#ef4444' : 'var(--accent-gold)'}; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${countVal} ${countSuffix}</span>
+            <span style="color:var(--accent-gold); font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${countVal} kills</span>
           </div>
         `;
       }).join('');
     }
   }
 
-  // 5. Top Classes (Lifetime / Casualties)
+  // 5. Top Classes (Lifetime)
   const classListEl = document.getElementById("sidebar-top-classes") || document.getElementById("sidebar-7d-classes");
   if (classListEl) {
     const classes = data.topClasses || [];
@@ -1074,35 +1021,25 @@ function renderSidebarActivity(data) {
         const rawCls = cls.class || '';
         const color = CLASS_COLORS[rawCls.toUpperCase()] || CLASS_COLORS.UNKNOWN;
         const formattedClassName = rawCls ? (rawCls.charAt(0).toUpperCase() + rawCls.slice(1).toLowerCase()) : 'Unknown';
-        const countVal = cls.deaths !== undefined ? cls.deaths : cls.kills;
-        const countSuffix = isPve ? 'fallen' : 'kills';
+        const countVal = cls.kills !== undefined ? cls.kills : cls.deaths;
         return `
           <div class="sidebar-rank-item">
             <span style="color:${color}; font-weight:700; display:flex; align-items:center; gap:6px;">
               ${renderClassBadge(rawCls, 16)} ${escapeHtml(formattedClassName)}
             </span>
-            <span style="color:${countVal > 0 ? (isPve ? '#f87171' : '#10b981') : '#64748b'}; font-weight:700; font-family:var(--font-tactical);">${countVal} ${countSuffix}</span>
+            <span style="color:${countVal > 0 ? '#10b981' : '#64748b'}; font-weight:700; font-family:var(--font-tactical);">${countVal} kills</span>
           </div>
         `;
       }).join('');
     }
   }
 
-  // 6. Top Specializations (Lifetime / Deadliest Creature Spells)
+  // 6. Top Specializations (Lifetime)
   const specListEl = document.getElementById("sidebar-top-specs");
   if (specListEl) {
     const specs = data.topSpecs || [];
     if (specs.length === 0) {
-      specListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">${isPve ? 'No monster spell telemetry' : 'No spec telemetry logged'}</div>`;
-    } else if (isPve) {
-      specListEl.innerHTML = specs.map((sp, i) => `
-        <div class="sidebar-rank-item">
-          <span style="color:#fbbf24; font-weight:700; display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-            ⚡ ${escapeHtml(sp.spec || sp.spell || 'Combat Strike')}
-          </span>
-          <span style="color:#ef4444; font-weight:700; font-family:var(--font-tactical); white-space:nowrap; margin-left:8px;">${sp.kills} lethal</span>
-        </div>
-      `).join('');
+      specListEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem;">No spec telemetry logged</div>`;
     } else {
       const sortedSpecs = specs.slice().sort((a, b) => {
         const cmp = (a.spec || '').localeCompare(b.spec || '');
@@ -1142,11 +1079,6 @@ function setBenchmarkPlayer(name) {
 }
 
 async function loadLeaderboards() {
-  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
-  if (isPve) {
-    loadDeadlyNpcsView();
-    return;
-  }
   const container = document.getElementById("main-content-area");
   const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
   const tfParam = (currentLeaderboardTimeframe || "all").toLowerCase();
@@ -1218,11 +1150,6 @@ async function loadBgGladiators() {
 }
 
 async function loadBounties() {
-  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
-  if (isPve) {
-    loadPveBountiesView();
-    return;
-  }
   const container = document.getElementById("main-content-area");
   if (container) {
     container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Gathering active bounty contracts and debt ledger...</div>`;
@@ -1260,60 +1187,18 @@ async function loadBounties() {
 // Rendering Functions
 async function renderStats(kills) {
   const hubContainer = document.getElementById("homepage-stats-hub");
-
-  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
-  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : (isPve ? "Classic Beta PvE" : "Classic Beta PvP");
-  if (isPve) {
-    let pveSummary = { totalDeaths: 10, uniqueDeadlyNpcs: 8, mostDangerousZone: { zone: "Elwynn Forest", deaths: 3 } };
-    try {
-      const lbRes = await fetch(`/api/pve/leaderboard?realm=${encodeURIComponent(currentRealm)}`);
-      if (lbRes.ok) {
-        const lb = await lbRes.json();
-        if (lb.summary) pveSummary = lb.summary;
-      }
-    } catch (e) {}
-
-    const deadZone = pveSummary.mostDangerousZone || { zone: "Elwynn Forest", deaths: 3 };
-    const deadZoneStr = (deadZone.zone && deadZone.zone !== "None") ? `${deadZone.zone} (${deadZone.deaths} Slain)` : "Elwynn Forest";
-
-    if (hubContainer) {
-      hubContainer.innerHTML = `
-        <div class="telemetry-ribbon" style="border-color: rgba(56, 189, 248, 0.4);">
-          <div class="telemetry-item">
-            <span class="telemetry-label">24h Casualties:</span>
-            <strong class="telemetry-val" id="stat-total-kills" style="color: #ef4444;">${formatNumber(pveSummary.totalDeaths)}</strong>
-          </div>
-          <span class="telemetry-divider">|</span>
-          <div class="telemetry-item">
-            <span class="telemetry-label">Deadliest Zone:</span>
-            <strong class="telemetry-val" id="stat-hot-zone" style="color: #38bdf8;">${escapeHtml(deadZoneStr)}</strong>
-          </div>
-          <span class="telemetry-divider">|</span>
-          <div class="telemetry-item">
-            <span class="telemetry-label">Top Slayer:</span>
-            <strong class="telemetry-val" id="stat-top-spec" style="color: var(--accent-gold);">${formatNumber(pveSummary.uniqueDeadlyNpcs)} Bosses</strong>
-          </div>
-          <span class="telemetry-divider">|</span>
-          <div class="telemetry-item">
-            <span class="telemetry-label">Campaign:</span>
-            <span class="telemetry-val" id="stat-faction-split" style="color: #10b981; font-weight:800;">${escapeHtml(currentRealm)}</span>
-          </div>
-          <span id="stat-solo-percent" style="display:none;">0%</span>
-          <span id="stat-active-mode" style="display:none;">${escapeHtml(currentRealm)}</span>
-        </div>
-      `;
-    }
-    return;
-  }
+  const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
 
   // 1. Fetch cumulative server telemetry
   let cumulative = {
-    total: kills.length,
-    solo: kills.filter(k => k.isSolo).length,
+    total: kills ? kills.length : 0,
+    solo: kills ? kills.filter(k => k.isSolo).length : 0,
     alliance: 0,
     horde: 0,
     active_bounties: 0,
-    top_zone: "Hillsbrad Foothills"
+    top_zone: "Hillsbrad Foothills",
+    pve_deaths: 0,
+    pve_deaths_24h: 0
   };
 
   try {
@@ -1321,14 +1206,16 @@ async function renderStats(kills) {
     if (statsRes.ok) {
       const statsData = await statsRes.json();
       if (statsData.counts) {
-        cumulative.total = statsData.counts.total ?? kills.length;
-        cumulative.solo = statsData.counts.solo ?? kills.filter(k => k.isSolo).length;
+        cumulative.total = statsData.counts.total ?? (kills ? kills.length : 0);
+        cumulative.solo = statsData.counts.solo ?? (kills ? kills.filter(k => k.isSolo).length : 0);
         cumulative.alliance = statsData.counts.alliance ?? 0;
         cumulative.horde = statsData.counts.horde ?? 0;
         cumulative.active_bounties = statsData.counts.active_bounties ?? 0;
         cumulative.bounty_gold = statsData.counts.bounty_gold ?? 0;
         cumulative.top_zone = statsData.counts.top_zone ?? "Hillsbrad Foothills";
         cumulative.kills_24h = statsData.counts.kills_24h;
+        cumulative.pve_deaths = statsData.counts.pve_deaths ?? 0;
+        cumulative.pve_deaths_24h = statsData.counts.pve_deaths_24h ?? 0;
       }
     }
   } catch (e) {
@@ -1345,7 +1232,7 @@ async function renderStats(kills) {
 
   let aKills = cumulative.alliance;
   let hKills = cumulative.horde;
-  if (aKills === 0 && hKills === 0) {
+  if (aKills === 0 && hKills === 0 && kills) {
     kills.forEach(k => {
       if (k.killer && k.killer.faction === "Alliance") aKills++;
       else if (k.killer && k.killer.faction === "Horde") hKills++;
@@ -1390,6 +1277,11 @@ async function renderStats(kills) {
         <div class="telemetry-item" title="Combat Kills in Last 24 Hours">
           <span class="telemetry-label">24h Kills:</span>
           <strong class="telemetry-val" id="stat-24h-kills" style="color: #38bdf8;">${formatNumber(kills24h)}</strong>
+        </div>
+        <span class="telemetry-divider">|</span>
+        <div class="telemetry-item" title="PvE Casualties &amp; Environmental Deaths">
+          <span class="telemetry-label">PvE Deaths:</span>
+          <strong class="telemetry-val" id="stat-pve-deaths" style="color: #ef4444;">${formatNumber(cumulative.pve_deaths || 0)}</strong>
         </div>
         <span class="telemetry-divider">|</span>
         <div class="telemetry-item" title="Contested Territory with Most Fatalities">
@@ -4367,8 +4259,6 @@ function switchTab(tab) {
   const statsHub = document.getElementById("homepage-stats-hub");
   if (statsHub) statsHub.style.display = (tab === "INTEL") ? "block" : "none";
 
-  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
-
   if (tab === "PORTAL") {
     loadPortalView();
   }
@@ -4383,7 +4273,7 @@ function switchTab(tab) {
   }
   else if (tab === "INTEL") {
     const container = document.getElementById("main-content-area");
-    if (cachedKills && cachedKills.length > 0 && !isPve) {
+    if (cachedKills && cachedKills.length > 0) {
       renderFeed(cachedKills);
     } else if (container) {
       container.innerHTML = `<div style="text-align: center; padding: 40px; color: #64748b;">Loading combat intelligence feed...</div>`;
@@ -4392,11 +4282,7 @@ function switchTab(tab) {
     loadMostWanted();
   }
   else if (tab === "LEGENDS") {
-    if (isPve) {
-      loadDeadlyNpcsView();
-    } else {
-      loadLeaderboards();
-    }
+    loadLeaderboards();
   }
   else if (tab === "HAZARDS") {
     loadDeadlyNpcsView();
@@ -4405,25 +4291,13 @@ function switchTab(tab) {
     handleArmoryNavClick();
   }
   else if (tab === "BOUNTIES") {
-    if (isPve) {
-      loadPveBountiesView();
-    } else {
-      loadBounties();
-    }
+    loadBounties();
   }
   else if (tab === "RALLIES") {
-    if (isPve) {
-      loadPveRalliesView();
-    } else {
-      loadRalliesView();
-    }
+    loadRalliesView();
   }
   else if (tab === "ZONES") {
-    if (isPve) {
-      loadPveZonesView();
-    } else {
-      loadZonesView();
-    }
+    loadZonesView();
   }
   else if (tab === "WARROOM") {
     loadWarroomView();
@@ -6319,11 +6193,6 @@ function updateTheaterNavLabel() {
 }
 
 function updateNavigationLabels() {
-  const activeSrv = (typeof getCurrentForeverServer === "function") ? getCurrentForeverServer() : "PVP";
-  const isPve = (currentFlavor === "FOREVER" && activeSrv === "PVE");
-  const isHc = (currentFlavor === "FOREVER" && activeSrv === "HARDCORE");
-  const isRp = (currentFlavor === "FOREVER" && activeSrv === "RP");
-
   // 1. Desktop Navigation Buttons
   const navIntel = document.getElementById("nav-intel");
   const navLegends = document.getElementById("nav-legends");
@@ -6331,6 +6200,13 @@ function updateNavigationLabels() {
   const navHazards = document.getElementById("nav-hazards");
   const navRallies = document.getElementById("nav-rallies");
   const navZones = document.getElementById("nav-zones");
+
+  if (navIntel) navIntel.innerText = "Intel";
+  if (navLegends) navLegends.innerText = "Leaderboards";
+  if (navBounties) navBounties.innerText = "Bounties & Manhunt";
+  if (navHazards) navHazards.innerText = "Deadly Hazards";
+  if (navRallies) navRallies.innerText = "Manhunt";
+  if (navZones) navZones.innerText = "Zone Intel";
 
   // 2. Mobile Drawer Navigation Items
   const mNavIntel = document.getElementById("m-nav-intel");
@@ -6340,151 +6216,50 @@ function updateNavigationLabels() {
   const mNavRallies = document.getElementById("m-nav-rallies");
   const mNavZones = document.getElementById("m-nav-zones");
 
-  // 4. Most Wanted Header
+  if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Intel";
+  if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Leaderboards";
+  if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "Bounties & Manhunt";
+  if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Deadly Hazards";
+  if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Manhunt";
+  if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Intel";
+
+  // 3. Most Wanted Header
   const mwTitle = document.querySelector(".most-wanted-title");
   const mwSub = document.querySelector(".most-wanted-subtitle");
-  const mwBtn = document.querySelector(".see-all-marks-btn");
 
-  if (isPve) {
-    if (navIntel) navIntel.innerText = "Casualties";
-    if (navLegends) navLegends.innerText = "Deadly Hazards";
-    if (navBounties) navBounties.innerText = "Notorious Elites";
-    if (navHazards) navHazards.innerText = "Bestiary";
-    if (navRallies) navRallies.innerText = "Rescue Beacons";
-    if (navZones) navZones.innerText = "Zone Mortality";
-
-    if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Casualties";
-    if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Deadly Hazards";
-    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "Notorious Elites";
-    if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Bestiary";
-    if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Rescue Beacons";
-    if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Mortality";
-
-    if (mwTitle) mwTitle.innerHTML = "NOTORIOUS ELITES &mdash; APEX PREDATORS";
-    if (mwSub) mwSub.innerHTML = "Notorious Beasts &amp; Executioners Responsible for Mortal Casualties &bull; Track realm hazards";
-    if (mwBtn) {
-      mwBtn.innerHTML = "View Notorious Elites &rarr;";
-      mwBtn.onclick = () => switchTab('BOUNTIES');
-    }
-  } else if (isHc) {
-    if (navIntel) navIntel.innerText = "Casualties";
-    if (navLegends) navLegends.innerText = "Graveyard of Champions";
-    if (navBounties) navBounties.innerText = "Apex Predators";
-    if (navHazards) navHazards.innerText = "Deadly Hazards";
-    if (navRallies) navRallies.innerText = "Rescue Beacons";
-    if (navZones) navZones.innerText = "Zone Mortality";
-
-    if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Casualties";
-    if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Graveyard of Champions";
-    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "Apex Predators";
-    if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Deadly Hazards";
-    if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Rescue Beacons";
-    if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Mortality";
-
-    if (modeFilters) {
-      modeFilters.innerHTML = `
-        <div class="header-mode-pill active" style="border-color:#f59e0b; color:#f59e0b; background:rgba(245, 158, 11, 0.15); font-weight:700; cursor:default; pointer-events:none;">💀 Hardcore (1 Life)</div>
-      `;
-    }
-
-    if (mwTitle) mwTitle.innerHTML = "AZEROTH'S EXECUTIONERS &mdash; RUN ENDERS";
-    if (mwSub) mwSub.innerHTML = "Monsters &amp; World Hazards that have permanently slain 1-Life characters across Azeroth";
-    if (mwBtn) {
-      mwBtn.innerHTML = "View Deadly Hazards &rarr;";
-      mwBtn.onclick = () => switchTab('HAZARDS');
-    }
-  } else if (isRp) {
-    if (navIntel) navIntel.innerText = "Intel";
-    if (navLegends) navLegends.innerText = "Defender of Azeroth";
-    if (navBounties) navBounties.innerText = "The Marked";
-    if (navHazards) navHazards.innerText = "Deadly Hazards";
-    if (navRallies) navRallies.innerText = "Chronicles";
-    if (navZones) navZones.innerText = "Zone Intel";
-
-    if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Intel";
-    if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Defender of Azeroth";
-    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "The Marked";
-    if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Deadly Hazards";
-    if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Chronicles";
-    if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Intel";
-
-    if (modeFilters) {
-      modeFilters.innerHTML = `
-        <div class="header-mode-pill active" style="border-color:#c084fc; color:#c084fc; background:rgba(192, 132, 252, 0.15); font-weight:700; cursor:default; pointer-events:none;">📜 Roleplay Realm</div>
-      `;
-    }
-
-    if (mwTitle) mwTitle.innerHTML = "THE BLOOD LEDGER &mdash; AZEROTH'S MOST WANTED";
-    if (mwSub) mwSub.innerHTML = "Open World Execution Contracts &amp; Certified Outlaws &bull; Deliver the final blow to claim the bounty";
-    if (mwBtn) {
-      mwBtn.innerHTML = "View The Marked &rarr;";
-      mwBtn.onclick = () => switchTab('BOUNTIES');
-    }
-  } else {
-    // PvP Default
-    if (navIntel) navIntel.innerText = "Intel";
-    if (navLegends) navLegends.innerText = "Defender of Azeroth";
-    if (navBounties) navBounties.innerText = "The Marked";
-    if (navHazards) navHazards.innerText = "Deadly Hazards";
-    if (navRallies) navRallies.innerText = "Manhunt";
-    if (navZones) navZones.innerText = "Zone Intel";
-
-    if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Intel";
-    if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Defender of Azeroth";
-    if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "The Marked";
-    if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Deadly Hazards";
-    if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Manhunt";
-    if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Intel";
-
-    if (mwTitle) mwTitle.innerHTML = "THE BLOOD LEDGER &mdash; AZEROTH'S MOST WANTED";
-    if (mwSub) mwSub.innerHTML = "Open World Execution Contracts &amp; Certified Outlaws &bull; Deliver the final blow to claim the bounty";
-    if (mwBtn) {
-      mwBtn.innerHTML = "View The Marked &rarr;";
-      mwBtn.onclick = () => switchTab('BOUNTIES');
-    }
-  }
+  if (mwTitle) mwTitle.innerHTML = `<span style="color: var(--wow-gold); font-family: var(--font-cinzel, Cinzel, serif); font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px;">THE MARKED</span> <span style="font-size: 0.72rem; color: #94a3b8;">&bull; ACTIVE BOUNTIES</span>`;
+  if (mwSub) mwSub.innerHTML = "Open World Execution Contracts &amp; Certified Outlaws &bull; Deliver the final blow to claim the bounty";
 }
 
 function reloadActiveView() {
   updateNavigationLabels();
   updateTheaterNavLabel();
-  const isPve = (currentFlavor === "FOREVER" && typeof getCurrentForeverServer === "function" && getCurrentForeverServer() === "PVE");
 
   if (currentTab === "INTEL") {
     loadKills();
     loadMostWanted();
     loadSidebar();
   } else if (currentTab === "LEGENDS" || currentTab === "LEADERBOARDS") {
-    if (isPve) {
-      loadDeadlyNpcsView();
-    } else {
-      loadLeaderboards();
-    }
-    loadSidebar();
-  } else if (currentTab === "BOUNTIES") {
-    if (isPve) {
-      loadPveBountiesView();
-    } else {
-      loadBounties();
-    }
-    loadSidebar();
-  } else if (currentTab === "ZONES") {
-    if (isPve) {
-      loadPveZonesView();
-    } else {
-      loadZonesView();
-    }
-    loadSidebar();
-  } else if (currentTab === "RALLIES") {
-    if (isPve) {
-      loadPveRalliesView();
-    } else {
-      loadRalliesView();
-    }
+    loadLeaderboards();
     loadSidebar();
   } else if (currentTab === "HAZARDS" || currentTab === "DEADLY_NPCS") {
     loadDeadlyNpcsView();
     loadSidebar();
+  } else if (currentTab === "BOUNTIES") {
+    loadBounties();
+    loadSidebar();
+  } else if (currentTab === "ZONES") {
+    loadZonesView();
+    loadSidebar();
+  } else if (currentTab === "RALLIES" || currentTab === "MANHUNT") {
+    loadRalliesView();
+    loadSidebar();
+  } else if (currentTab === "PORTAL") {
+    loadPortalView();
+  } else if (currentTab === "DOWNLOAD") {
+    loadDownloadView();
+  } else if (currentTab === "THEATER") {
+    loadTheaterSelectorView();
   } else if (currentTab === "ARMORY") {
     loadArmoryView();
   }
