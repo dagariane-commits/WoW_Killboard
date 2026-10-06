@@ -623,14 +623,7 @@ function renderMostWanted(outlaws) {
     const targetName = b.target_name || b.targetName || "Unknown";
     const realm = b.realm || currentRealm;
     const copper = Number(b.amount_copper) || (Number(b.amount_gold) * 10000) || 0;
-    let rewardText = "";
-    if (copper >= 10000) {
-      rewardText = `${(copper / 10000).toFixed(copper % 10000 === 0 ? 0 : 1)}g`;
-    } else if (copper >= 100) {
-      rewardText = `${Math.floor(copper / 100)}s ${copper % 100 > 0 ? (copper % 100) + 'c' : ''}`.trim();
-    } else {
-      rewardText = `${copper}c`;
-    }
+    const rewardText = formatMoneyGSC(copper, true);
 
     html += `
       <div class="sidebar-bounty-row" onclick="openCharacterProfile(${safeJsParam(targetName)})" title="Inspect Outlaw Dossier: ${escapeHtml(targetName)} (${escapeHtml(realm)})">
@@ -658,16 +651,25 @@ function formatNumber(num) {
   return Math.floor(num).toString();
 }
 
-function formatCopper(copper) {
+function formatMoneyGSC(copper, useIcons = false) {
   copper = Number(copper) || 0;
+  if (copper <= 0) {
+    return useIcons ? `0 ${renderWowCoin('copper')}` : `0c`;
+  }
   const g = Math.floor(copper / 10000);
   const s = Math.floor((copper % 10000) / 100);
   const c = copper % 100;
-  let out = "";
-  if (g > 0) out += `${g} ${renderWowCoin('gold')} `;
-  if (s > 0 || g > 0) out += `${s} ${renderWowCoin('silver')} `;
-  out += `${c} ${renderWowCoin('copper')}`;
-  return out.trim();
+
+  const parts = [];
+  if (g > 0) parts.push(useIcons ? `${g} ${renderWowCoin('gold')}` : `${g}g`);
+  if (s > 0) parts.push(useIcons ? `${s} ${renderWowCoin('silver')}` : `${s}s`);
+  if (c > 0 || parts.length === 0) parts.push(useIcons ? `${c} ${renderWowCoin('copper')}` : `${c}c`);
+
+  return parts.join(" ");
+}
+
+function formatCopper(copper) {
+  return formatMoneyGSC(copper, true);
 }
 
 function timeAgo(epoch) {
@@ -1383,16 +1385,6 @@ function renderFeed(kills) {
   const modeLabelHeader = currentMode === "BG" ? "Battleground" : (currentMode === "DUEL" ? "Duel" : (currentMode === "ARENA" ? "Arena" : "Open World"));
   const modePillText = currentMode === "BG" ? "Battlegrounds" : (currentMode === "DUEL" ? "1v1 Duels" : (currentMode === "ARENA" ? "Arenas" : "Open World"));
 
-  if (modeFilteredKills.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #64748b;">
-        <h3>No ${modeLabelHeader} PvP records found yet.</h3>
-        <p style="margin-top: 8px;">Engage in combat across Azeroth to populate the feed.</p>
-      </div>
-    `;
-    return;
-  }
-
   const visibleKills = modeFilteredKills.slice(0, feedDisplayLimit);
 
   let html = `
@@ -1412,6 +1404,18 @@ function renderFeed(kills) {
         <span style="font-size:0.75rem; color:#856a36;">The Shadow Network &bull; Type <code style="color:var(--wow-gold);">/reload</code> in WoW to sync</span>
       </div>
   `;
+
+  if (modeFilteredKills.length === 0) {
+    html += `
+      <div style="text-align: center; padding: 48px 20px; color: #94a3b8; background: rgba(10, 14, 23, 0.45); border: 1px dashed rgba(255, 255, 255, 0.08); border-radius: 8px; margin-top: 10px;">
+        <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.8;">⚔️</div>
+        <h3 style="color: #cbd5e1; font-size: 1.05rem; margin-bottom: 6px;">No ${modeLabelHeader} PvP records found yet.</h3>
+        <p style="font-size: 0.85rem; color: #64748b;">Engage in combat across Azeroth or switch modes above to inspect active skirmishes.</p>
+      </div>
+    </div>`;
+    container.innerHTML = html;
+    return;
+  }
   visibleKills.forEach(km => {
     let modeClass = "km-world";
     let modeLabel = "Open World";
@@ -1938,20 +1942,28 @@ function renderSingleBountyCard(b, isSupporter) {
     ? `<span class="bounty-faction-pill ${targetFaction.toLowerCase()}">${targetFaction.toUpperCase()} TARGET</span>`
     : `<span class="bounty-faction-pill neutral">WANTED TARGET</span>`;
 
+  // Check if current user placed or is target of this contract
+  const myUser = (localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "").toLowerCase();
+  const isPlacer = myUser && (b.placer_name || "").toLowerCase() === myUser;
+  const isTarget = myUser && (b.target_name || "").toLowerCase() === myUser;
+
+  let userCardClass = "";
+  let userBadgeHtml = "";
+  if (isPlacer) {
+    userCardClass = "bounty-card-user-placed";
+    userBadgeHtml = `<span class="bounty-user-tag">📜 Issued by You</span>`;
+  } else if (isTarget) {
+    userCardClass = "bounty-card-user-target";
+    userBadgeHtml = `<span class="bounty-user-tag danger">💀 Target is You!</span>`;
+  }
+
   // Format reward accurately for gold, silver, or copper
   const cardCopper = Number(b.amount_copper) || (Number(b.amount_gold) * 10000) || 0;
-  let cardRewardText = "";
-  if (cardCopper >= 10000) {
-    cardRewardText = `${(cardCopper / 10000).toFixed(cardCopper % 10000 === 0 ? 0 : 1)}g`;
-  } else if (cardCopper >= 100) {
-    cardRewardText = `${Math.floor(cardCopper / 100)}s ${cardCopper % 100 > 0 ? (cardCopper % 100) + 'c' : ''}`.trim();
-  } else {
-    cardRewardText = `${cardCopper}c`;
-  }
+  const cardRewardText = formatMoneyGSC(cardCopper, true);
   const displayTargetLevel = b.target_level || b.level || (b.targetLevel ? b.targetLevel : 60);
 
   return `
-    <div class="stat-card bounty-target-card ${factionCardClass}">
+    <div class="stat-card bounty-target-card ${factionCardClass} ${userCardClass}">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div style="display:flex; align-items:center; gap:8px;">
           ${renderClassBadge(b.target_class, 22)}
@@ -1962,7 +1974,10 @@ function renderSingleBountyCard(b, isSupporter) {
         </div>
         <div style="text-align:right;">
           <span style="color:var(--accent-gold); font-weight:800; font-size:1.15rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${cardRewardText}</span>
-          <div>${factionBadge}</div>
+          <div style="display:flex; justify-content:flex-end; gap:4px; margin-top:2px;">
+            ${userBadgeHtml}
+            ${factionBadge}
+          </div>
         </div>
       </div>
       <div style="font-size:0.75rem; color:#94a3b8; margin-top:8px;">
@@ -1978,9 +1993,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
   leaderboards = leaderboards || {};
   const isSupporter = isSupporterActive();
 
-  const myUser = (localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || "").toLowerCase();
   const allBounties = bounties || [];
-  const myBounties = myUser ? allBounties.filter(b => (b.placer_name || "").toLowerCase() === myUser || (b.target_name || "").toLowerCase() === myUser) : [];
 
   let html = `
     <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -1991,36 +2004,13 @@ function renderBountiesView(bounties, debts, leaderboards) {
           <button class="pill-btn" onclick="switchTab('RALLIES')">🚩 Active Manhunts &amp; Rallies</button>
         </div>
       </div>
-  `;
 
-  // 1. Personal Marks Section (At the Top)
-  if (myUser && myBounties.length > 0) {
-    html += `
-      <div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
-          <div>
-            <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; margin:0;">
-              Your Active Marked Contracts (${myBounties.length})
-            </h2>
-            <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">
-              Contracts issued by you or placed upon your head
-            </div>
-          </div>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
-          ${myBounties.map(b => renderSingleBountyCard(b, isSupporter)).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  // 2. All Realm Marks of Spite
-  html += `
+      <!-- Single Consolidated Execution Contracts List -->
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); flex-wrap:wrap; gap:8px;">
           <div>
             <h2 class="wow-gold-header" style="font-size: 1.15rem; font-weight:800; letter-spacing:0.5px; margin:0;">The Marked — Execution Contracts</h2>
-            <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">Track and execute targets in open combat to claim the reward. Place contracts in-game with <code style="color:var(--wow-gold);">/kb mark</code>.</div>
+            <div style="font-size:0.75rem; color:#856a36; margin-top:2px;">Track and execute targets in open combat to claim the reward. Place contracts in-game with <code style="color:var(--wow-gold);">/kb mark</code>. Contracts you issue are highlighted in gold.</div>
           </div>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
@@ -2057,7 +2047,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
                     <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(h.hunter_name)})">${escapeHtml(h.hunter_name)}</span></span>
                     <span style="text-align:right;">
                       <span style="color:#10b981; font-weight:700;">${h.claimed_count} Claimed</span>
-                      <small style="color:var(--accent-gold); margin-left:6px;">(${h.total_gold}g)</small>
+                      <small style="color:var(--accent-gold); margin-left:6px;">(${formatMoneyGSC(h.total_copper || (h.total_gold * 10000), true)})</small>
                     </span>
                   </div>
                 `).join('')
@@ -2078,7 +2068,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
                   <div class="leader-item">
                     <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(b.target_name)})">${escapeHtml(b.target_name)}</span></span>
                     <span style="text-align:right;">
-                      <span style="color:var(--accent-gold); font-weight:800;">${b.amount_gold}g</span>
+                      <span style="color:var(--accent-gold); font-weight:800;">${formatMoneyGSC(b.amount_copper || (b.amount_gold * 10000), true)}</span>
                       <small style="color:${b.status === 'CLAIMED' ? '#10b981' : '#f59e0b'}; margin-left:6px;">[${b.status}]</small>
                     </span>
                   </div>
@@ -2101,7 +2091,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
                     <span>#${i+1} <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(o.target_name)})">${escapeHtml(o.target_name)}</span></span>
                     <span style="text-align:right;">
                       <span style="color:#f97316; font-weight:700;">Survived ${formatDuration(o.elapsed_seconds)}</span>
-                      <small style="color:var(--accent-gold); margin-left:6px;">(${o.amount_gold}g)</small>
+                      <small style="color:var(--accent-gold); margin-left:6px;">(${formatMoneyGSC(o.amount_copper || (o.amount_gold * 10000), true)})</small>
                     </span>
                   </div>
                 `).join('')
@@ -3195,7 +3185,7 @@ function toggleMobileDrawer(forceState) {
 
 function handleMobileSearch(e) {
   searchQuery = e.target.value;
-  const deskBox = document.getElementById("search-box");
+  const deskBox = document.getElementById("global-search-input") || document.getElementById("search-input");
   if (deskBox) deskBox.value = searchQuery;
   loadKills();
 }
@@ -3750,6 +3740,7 @@ function handleSelectForeverServer(serverId) {
   localStorage.setItem("wowkb_forever_server", chosen);
   closeServerSelectorModal();
   handleFlavorChange("FOREVER", chosen);
+  switchTab("INTEL");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -3790,26 +3781,14 @@ function loadTheaterSelectorView() {
               </span>
               <span style="font-size:0.75rem; color:var(--wow-gold); font-weight:700;">Level 60 Cap</span>
             </div>
-            <h3 style="font-size:1.2rem; color:#fff; font-family:var(--font-tactical); margin:0 0 6px 0;">WoW Forever</h3>
-            <p style="font-size:0.78rem; color:#cbd5e1; line-height:1.45; margin:0 0 10px 0;">
-              Classic Beta (1.15.x) &bull; 4 dedicated server realms with specialized campaign rulesets.
+            <p style="font-size:0.78rem; color:#cbd5e1; line-height:1.45; margin:0 0 16px 0;">
+              Classic Beta (1.15.x) &bull; 4 dedicated server realms with specialized campaign rulesets (PvP, PvE, RP, Hardcore).
             </p>
-
-            <!-- 4 Realm Ruleset Selection Pills -->
-            <div style="margin: 12px 0 16px 0; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-                <span style="font-size:0.68rem; color:#94a3b8; font-weight:800; letter-spacing:0.04em;">CHOOSE REALM:</span>
-                <span style="font-size:0.68rem; color:var(--wow-gold); font-weight:800;">ACTIVE: ${activeSrvObj.name}</span>
-              </div>
-              <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
-                <button class="server-quick-pill ${activeSrv === 'PVP' ? 'active' : ''}" onclick="event.stopPropagation(); handleSelectForeverServer('PVP')">⚔️ PvP</button>
-                <button class="server-quick-pill ${activeSrv === 'PVE' ? 'active' : ''}" onclick="event.stopPropagation(); handleSelectForeverServer('PVE')">🛡️ PvE</button>
-                <button class="server-quick-pill ${activeSrv === 'RP' ? 'active' : ''}" onclick="event.stopPropagation(); handleSelectForeverServer('RP')">📜 RP</button>
-                <button class="server-quick-pill ${activeSrv === 'HARDCORE' ? 'active' : ''}" onclick="event.stopPropagation(); handleSelectForeverServer('HARDCORE')">💀 HC</button>
-              </div>
+            <div style="font-size:0.75rem; color:var(--wow-gold); font-weight:700; margin-bottom:14px; background:rgba(212,163,41,0.1); border:1px solid rgba(212,163,41,0.3); border-radius:4px; padding:6px 10px;">
+              Active Realm: <strong>${activeSrvObj.icon} ${activeSrvObj.name}</strong> (${escapeHtml(activeSrvObj.ruleset)})
             </div>
           </div>
-          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-weight:800; font-size:0.82rem; background:linear-gradient(135deg, #d97706, #b45309); border:1px solid var(--wow-gold); color:#fff; cursor:pointer; border-radius:6px; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none;" onclick="handleSelectTheaterVersion('FOREVER')">
+          <button style="width:100%; box-sizing:border-box; padding:10px 14px; font-weight:800; font-size:0.82rem; background:linear-gradient(135deg, #d97706, #b45309); border:1px solid var(--wow-gold); color:#fff; cursor:pointer; border-radius:6px; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none;" onclick="openServerSelectorModal()">
             <span>Select Realm &amp; Enter WoW Forever</span> <span>&rarr;</span>
           </button>
         </div>
@@ -4718,12 +4697,18 @@ function initGlobalOmniSearch() {
       if (omniActiveIndex >= 0 && items[omniActiveIndex]) {
         items[omniActiveIndex].click();
       } else {
-        const val = input.value.trim();
-        searchQuery = val;
-        const feedInput = document.getElementById("search-input");
-        if (feedInput) feedInput.value = val;
-        hideOmniDropdown();
-        switchTab("INTEL");
+        const firstClickable = dropdown.querySelector(".search-result-item");
+        if (firstClickable) {
+          firstClickable.click();
+        } else {
+          const val = input.value.trim();
+          searchQuery = val;
+          const feedInput = document.getElementById("search-input");
+          if (feedInput) feedInput.value = val;
+          hideOmniDropdown();
+          switchTab("INTEL");
+          loadKills();
+        }
       }
     } else if (e.key === "Escape") {
       hideOmniDropdown();
@@ -4752,41 +4737,74 @@ async function performOmniSearch(query) {
   const combatants = [];
   const guilds = [];
   const zones = [];
+  const seenChars = new Set();
+  const seenGuilds = new Set();
+  const seenZones = new Set();
 
-  // Search through allKills cache
-  if (Array.isArray(allKills)) {
-    const seenChars = new Set();
-    const seenGuilds = new Set();
-    const seenZones = new Set();
+  // 1. Search through active in-memory cachedKills
+  if (Array.isArray(cachedKills)) {
+    cachedKills.forEach(k => {
+      const kName = (k.killer && k.killer.name) || k.killer_name;
+      const vName = (k.victim && k.victim.name) || k.victim_name;
+      const kClass = (k.killer && k.killer.class) || k.killer_class;
+      const vClass = (k.victim && k.victim.class) || k.victim_class;
+      const kFaction = (k.killer && k.killer.faction) || k.killer_faction || 'Alliance';
+      const vFaction = (k.victim && k.victim.faction) || k.victim_faction || 'Horde';
+      const kGuild = (k.killer && k.killer.guild) || k.killer_guild;
+      const vGuild = (k.victim && k.victim.guild) || k.victim_guild;
+      const zone = (k.location && k.location.zone) || k.zone;
 
-    allKills.forEach(k => {
-      if (k.killer_name && !seenChars.has(k.killer_name.toLowerCase()) && k.killer_name.toLowerCase().includes(term)) {
-        seenChars.add(k.killer_name.toLowerCase());
-        combatants.push({ name: k.killer_name, class: k.killer_class, faction: k.killer_faction || 'Alliance' });
+      if (kName && !seenChars.has(kName.toLowerCase()) && kName.toLowerCase().includes(term)) {
+        seenChars.add(kName.toLowerCase());
+        combatants.push({ name: kName, class: kClass, faction: kFaction });
       }
-      if (k.victim_name && !seenChars.has(k.victim_name.toLowerCase()) && k.victim_name.toLowerCase().includes(term)) {
-        seenChars.add(k.victim_name.toLowerCase());
-        combatants.push({ name: k.victim_name, class: k.victim_class, faction: k.victim_faction || 'Horde' });
+      if (vName && !seenChars.has(vName.toLowerCase()) && vName.toLowerCase().includes(term)) {
+        seenChars.add(vName.toLowerCase());
+        combatants.push({ name: vName, class: vClass, faction: vFaction });
       }
-      if (k.killer_guild && k.killer_guild !== 'None' && !seenGuilds.has(k.killer_guild.toLowerCase()) && k.killer_guild.toLowerCase().includes(term)) {
-        seenGuilds.add(k.killer_guild.toLowerCase());
-        guilds.push({ name: k.killer_guild, faction: k.killer_faction || 'Alliance' });
+      if (kGuild && kGuild !== 'None' && !seenGuilds.has(kGuild.toLowerCase()) && kGuild.toLowerCase().includes(term)) {
+        seenGuilds.add(kGuild.toLowerCase());
+        guilds.push({ name: kGuild, faction: kFaction });
       }
-      if (k.victim_guild && k.victim_guild !== 'None' && !seenGuilds.has(k.victim_guild.toLowerCase()) && k.victim_guild.toLowerCase().includes(term)) {
-        seenGuilds.add(k.victim_guild.toLowerCase());
-        guilds.push({ name: k.victim_guild, faction: k.victim_faction || 'Horde' });
+      if (vGuild && vGuild !== 'None' && !seenGuilds.has(vGuild.toLowerCase()) && vGuild.toLowerCase().includes(term)) {
+        seenGuilds.add(vGuild.toLowerCase());
+        guilds.push({ name: vGuild, faction: vFaction });
       }
-      if (k.zone && !seenZones.has(k.zone.toLowerCase()) && k.zone.toLowerCase().includes(term)) {
-        seenZones.add(k.zone.toLowerCase());
-        zones.push(k.zone);
+      if (zone && !seenZones.has(zone.toLowerCase()) && zone.toLowerCase().includes(term)) {
+        seenZones.add(zone.toLowerCase());
+        zones.push(zone);
       }
     });
   }
 
-  // Known contested zones list
-  const standardZones = ["Hillsbrad Foothills", "Stranglethorn Vale", "Blackrock Mountain", "Silithus", "Ashenvale", "Tanaris", "Arathi Highlands", "Duskwood", "Warsong Gulch", "Arathi Basin", "Alterac Valley"];
+  // 2. Query Realm Armory for character and guild matches across the full database
+  try {
+    const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvE";
+    const armoryRes = await fetch(`/api/armory?search=${encodeURIComponent(term)}&realm=${encodeURIComponent(currentRealm)}&limit=6`);
+    if (armoryRes.ok) {
+      const armoryChars = await armoryRes.json();
+      if (Array.isArray(armoryChars)) {
+        armoryChars.forEach(c => {
+          if (c.name && !seenChars.has(c.name.toLowerCase())) {
+            seenChars.add(c.name.toLowerCase());
+            combatants.push({ name: c.name, class: c.class, faction: c.faction || 'Alliance' });
+          }
+          if (c.guild && c.guild !== 'None' && !seenGuilds.has(c.guild.toLowerCase()) && c.guild.toLowerCase().includes(term)) {
+            seenGuilds.add(c.guild.toLowerCase());
+            guilds.push({ name: c.guild, faction: c.faction });
+          }
+        });
+      }
+    }
+  } catch (err) {
+    // Non-blocking typeahead error
+  }
+
+  // 3. Standard Contested Zones
+  const standardZones = ["Hillsbrad Foothills", "Stranglethorn Vale", "Blackrock Mountain", "Silithus", "Ashenvale", "Tanaris", "Arathi Highlands", "Duskwood", "Warsong Gulch", "Arathi Basin", "Alterac Valley", "The Barrens", "Winterspring", "Western Plaguelands", "Eastern Plaguelands"];
   standardZones.forEach(sz => {
-    if (sz.toLowerCase().includes(term) && !zones.some(z => z.toLowerCase() === sz.toLowerCase())) {
+    if (sz.toLowerCase().includes(term) && !seenZones.has(sz.toLowerCase())) {
+      seenZones.add(sz.toLowerCase());
       zones.push(sz);
     }
   });
@@ -4795,8 +4813,8 @@ async function performOmniSearch(query) {
   let totalItems = 0;
 
   if (combatants.length > 0) {
-    html += `<div class="search-result-group-title">⚔️ Combatants (${Math.min(combatants.length, 5)})</div>`;
-    combatants.slice(0, 5).forEach(c => {
+    html += `<div class="search-result-group-title">⚔️ Combatants (${Math.min(combatants.length, 6)})</div>`;
+    combatants.slice(0, 6).forEach(c => {
       totalItems++;
       html += `
         <div class="search-result-item" onclick="openCharacterProfile(${safeJsParam(c.name)}); hideOmniDropdown();">

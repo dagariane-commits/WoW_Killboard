@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2026-10-05
 
+### Changed
+- **Header Navigation Access & Responsive Hamburger Drawer (`web/static/style.css`, `web/static/index.html`)**:
+  - Unified desktop and mobile/tablet navigation breakpoints at 1180px.
+  - On screens <= 1180px (tablets, small laptops, and mobile devices), the inline navigation rail gracefully hides and the tactile hamburger button (`#mobile-menu-btn`) activates, opening the slide-in drawer containing all sections without any cutoff.
+  - On full desktop screens (> 1180px), `.nav-links-rail` displays with unconstrained width and zero overflow cutoff.
+  - Streamlined the header brand area by removing the Alliance and Horde crest images and subtitle, displaying clean, authoritative "WoW Killboard" typography and saving 120px of horizontal space.
+  - Renamed `Download Field Kit` CTA button to `Get the Addon` across the header and mobile drawer.
+- **The Marked Page Consolidation & Contract Highlights (`web/static/app.js`, `web/static/style.css`)**:
+  - Consolidated duplicate "Your Active Marked Contracts" and "The Marked" lists into a single unified "The Marked — Execution Contracts" view.
+  - Contracts issued by the active player are automatically distinguished with a prominent gold border, warm ambient glow (`.bounty-card-user-placed`), and a `📜 Issued by You` badge.
+  - Contracts targeting the active player are highlighted with a crimson warning border and a `💀 Target is You!` badge.
+- **Theater & Realm Selection Streamlining (`web/static/app.js`)**:
+  - Removed redundant server quick-pills from the WoW Forever theater card.
+  - The primary `[ Select Realm & Enter WoW Forever → ]` CTA directly opens the realm selection modal.
+  - Selecting any realm (`handleSelectForeverServer`) immediately persists the choice, closes the modal, and transitions directly to the main Intel combat feed (`switchTab("INTEL")`) instead of looping back to the theater selector.
+- **Universal WoW Currency Formatting (G / S / C) (`web/server.py`, `web/static/app.js`)**:
+  - Implemented `formatMoneyGSC(copper, useIcons)` to accurately display rewards in Gold, Silver, and Copper (e.g. `1c`, `50s 1c`, `1g 25s 5c`).
+  - Completely eliminated `0g` displays for low-denomination bounties across bounty cards, Most Wanted cards, Top Mark Hunters, Highest Marked Rewards, and Most Elusive Outlaws.
+  - Included `amount_copper` in all database queries and API responses for bounties and armory endpoints.
+
+### Fixed
+- **Intel BGs Mode Menu Disappearance Bug (`web/static/app.js`)**:
+  - Fixed an issue where switching to Battlegrounds mode when 0 BG kills existed wiped the entire `#main-content-area`, destroying the `#feed-mode-pills` header.
+  - Ensured `.feed-header-wrap` is always rendered before checking kill count, keeping World, BGs, Duels, and Arenas filter pills permanently interactive.
+- **Global Search Box & Typeahead Auto-Complete (`web/static/app.js`)**:
+  - Fixed broken `performOmniSearch()` which previously referenced non-existent `allKills`.
+  - Upgraded typeahead search to query both in-memory `cachedKills` and the backend `/api/armory` directory, matching combatants, guilds, and contested zones across the entire database.
+  - Added Enter key shortcut support to automatically open the top matching combatant profile or filter the feed.
+
 ### Added
 - **Dual PvP & PvE Telemetry Across All Realm Tenants (`web/server.py`, `web/static/app.js`, `web/static/index.html`)**:
   - Unified all realm tenants (PvP, PvE, RP, Hardcore, Classic Era, Anniversary, Retail) to track and display BOTH PvP metrics (world PvP, opt-in world PvP, battlegrounds, duels, arenas) and PvE casualties (world hazards, mob executions, boss fatalities) simultaneously.

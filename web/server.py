@@ -2477,9 +2477,10 @@ def get_armory_directory():
 
         # Preload active bounties map
         bounties_map = {}
-        b_rows = conn.execute("SELECT target_name, amount_gold FROM bounties WHERE status = 'ACTIVE'").fetchall()
+        b_rows = conn.execute("SELECT target_name, amount_gold, amount_copper FROM bounties WHERE status = 'ACTIVE'").fetchall()
         for b in b_rows:
-            bounties_map[b["target_name"]] = b["amount_gold"]
+            b_cop = b["amount_copper"] if b["amount_copper"] else ((b["amount_gold"] or 0) * 10000)
+            bounties_map[b["target_name"]] = b_cop
 
         # Preload KOS and Deserter sets
         kos_set = {r[0] for r in conn.execute("SELECT entity_name FROM kos_blacklist WHERE status = 'KOS'").fetchall()}
@@ -2565,7 +2566,8 @@ def get_armory_directory():
                 "totalDamage": k_stat["total_damage"] or 0,
                 "totalHealing": k_stat["total_healing"] or 0,
                 "rankTitle": rank_title,
-                "activeBountyGold": bounties_map.get(name, 0),
+                "activeBountyGold": bounties_map.get(name, 0) // 10000,
+                "activeBountyCopper": bounties_map.get(name, 0),
                 "isKos": (name in kos_set) or (c_guild in kos_set),
                 "deserter": deserter_map.get(name),
                 "lastSeen": {
@@ -3039,8 +3041,9 @@ def get_character_profile(name):
         rank_title = calculate_pvp_rank_title(total_kills, kd, faction)
 
         # Active Bounty Check
-        bounty_row = conn.execute("SELECT amount_gold FROM bounties WHERE target_name = ? AND status = 'ACTIVE' LIMIT 1", (name,)).fetchone()
+        bounty_row = conn.execute("SELECT amount_gold, amount_copper FROM bounties WHERE target_name = ? AND status = 'ACTIVE' LIMIT 1", (name,)).fetchone()
         active_bounty_gold = bounty_row[0] if bounty_row else 0
+        active_bounty_copper = (bounty_row[1] if (bounty_row and bounty_row[1]) else (bounty_row[0] * 10000 if bounty_row else 0))
 
         # KOS & Deserter Check
         now_ts = int(time.time())
@@ -3123,6 +3126,7 @@ def get_character_profile(name):
             "rankTitle": rank_title,
             "percentile": percentile_data,
             "activeBountyGold": active_bounty_gold,
+            "activeBountyCopper": active_bounty_copper,
             "isKos": is_kos,
             "bloodDebtor": blood_debt_data,
             "reputation": reputation,
@@ -3376,21 +3380,22 @@ def get_bounties_leaderboards():
 
         # 1. Top Bounty Hunters
         top_hunters_rows = conn.execute(f"""
-            SELECT hunter_name, COUNT(*) AS claimed_count, SUM(amount_gold) AS total_gold
+            SELECT hunter_name, COUNT(*) AS claimed_count, SUM(amount_gold) AS total_gold,
+                   SUM(COALESCE(amount_copper, amount_gold * 10000, 0)) AS total_copper
             FROM bounties
             WHERE status = 'CLAIMED' AND hunter_name IS NOT NULL AND hunter_name != ''{r_clause}
             GROUP BY hunter_name
-            ORDER BY claimed_count DESC, total_gold DESC
+            ORDER BY claimed_count DESC, total_copper DESC
             LIMIT 10
         """, r_param).fetchall()
         top_hunters = [dict(r) for r in top_hunters_rows]
 
         # 2. Highest Bounty Contracts
         highest_rows = conn.execute(f"""
-            SELECT id, target_name, target_class, target_faction, placer_name, amount_gold, status, hunter_name, timestamp
+            SELECT id, target_name, target_class, target_faction, placer_name, amount_gold, amount_copper, status, hunter_name, timestamp
             FROM bounties
             WHERE 1=1{r_clause}
-            ORDER BY amount_gold DESC
+            ORDER BY (COALESCE(amount_copper, 0) + amount_gold * 10000) DESC
             LIMIT 10
         """, r_param).fetchall()
         highest_bounties = [dict(r) for r in highest_rows]
@@ -3399,7 +3404,7 @@ def get_bounties_leaderboards():
 
         # 3. Longest Outstanding Bounties (Most Elusive Outlaws)
         longest_rows = conn.execute(f"""
-            SELECT id, target_name, target_class, target_faction, placer_name, amount_gold, timestamp,
+            SELECT id, target_name, target_class, target_faction, placer_name, amount_gold, amount_copper, timestamp,
                    (? - timestamp) AS elapsed_seconds
             FROM bounties
             WHERE status = 'ACTIVE'{r_clause}
@@ -3412,7 +3417,7 @@ def get_bounties_leaderboards():
 
         # 4. Fastest Collected Bounties
         fastest_rows = conn.execute(f"""
-            SELECT id, target_name, target_class, placer_name, hunter_name, amount_gold, timestamp, payment_deadline,
+            SELECT id, target_name, target_class, placer_name, hunter_name, amount_gold, amount_copper, timestamp, payment_deadline,
                    (payment_deadline - timestamp) AS duration_seconds
             FROM bounties
             WHERE status = 'CLAIMED' AND payment_deadline IS NOT NULL AND payment_deadline >= timestamp{r_clause}
