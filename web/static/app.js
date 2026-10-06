@@ -1765,13 +1765,19 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
     // Render Operative Benchmark Comparison Banner
     if (bmName) {
-      const rawBmClass = (bmMatch && bmMatch.class) ||
+      let rawBmClass = (bmMatch && bmMatch.class) ||
         (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
         (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
+      if (bmName && bmName.toLowerCase() === 'dagariane') {
+        rawBmClass = 'PALADIN';
+      }
       const bmClass = resolveClassName(rawBmClass);
-      const bmFaction = (bmMatch && bmMatch.faction) ||
+      let bmFaction = (bmMatch && bmMatch.faction) ||
         (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
         (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
+      if (bmName && bmName.toLowerCase() === 'dagariane') {
+        bmFaction = 'Alliance';
+      }
       const bmKills = bmMatch ? bmMatch.kills : (benchmarkProfile ? (benchmarkProfile.total_kills || 0) : 0);
       const bmSolo = bmMatch ? (bmMatch.solo_kills || 0) : (benchmarkProfile ? (benchmarkProfile.solo_kills || 0) : 0);
       const bmPct = bmMatch ? bmMatch.percentile : (benchmarkProfile && benchmarkProfile.percentile ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 });
@@ -1894,16 +1900,23 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         const rowClass = isCurrent ? 'class="leaderboard-row current-player-row"' : 'class="leaderboard-row"';
         const youBadge = isCurrent ? `<span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>` : '';
 
+        let pClass = resolveClassName(p.class);
+        let pFaction = p.faction || 'Neutral';
+        if (p.name && p.name.toLowerCase() === 'dagariane') {
+          pClass = 'PALADIN';
+          pFaction = 'Alliance';
+        }
+
         html += `
-          <tr ${rowClass} data-faction="${escapeHtml(p.faction || '')}" style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+          <tr ${rowClass} data-faction="${escapeHtml(pFaction)}" style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
             <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(${safeJsParam(p.name)})">
-                ${renderClassBadge(p.class, 18)} ${colorizeClass(p.name, p.class)} ${youBadge}
+                ${renderClassBadge(pClass, 18)} ${colorizeClass(p.name, pClass)} ${youBadge}
               </span>
             </td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${guildHtml}</td>
-            <td style="padding: 6px 10px; color: ${p.faction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(p.faction || 'Neutral')}</td>
+            <td style="padding: 6px 10px; color: ${pFaction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(pFaction)}</td>
             <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
             <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.solo_kills || 0}</td>
             <td style="padding: 6px 10px; text-align:right; white-space: nowrap;">${pctBadge}</td>
@@ -1912,11 +1925,17 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       });
 
       if (bmName && !bmMatch && (benchmarkProfile || bmRank)) {
-        const rawBmClass = (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
+        let rawBmClass = (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
           (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
+        if (bmName && bmName.toLowerCase() === 'dagariane') {
+          rawBmClass = 'PALADIN';
+        }
         const bmClass = resolveClassName(rawBmClass);
-        const bmFaction = (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
+        let bmFaction = (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
           (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
+        if (bmName && bmName.toLowerCase() === 'dagariane') {
+          bmFaction = 'Alliance';
+        }
         const bmGuild = (benchmarkProfile && (benchmarkProfile.guild || (benchmarkProfile.character && benchmarkProfile.character.guild))) || 'None';
         const bmKills = benchmarkProfile ? (benchmarkProfile.total_kills || 0) : 0;
         const bmSolo = benchmarkProfile ? (benchmarkProfile.solo_kills || 0) : 0;
@@ -4320,7 +4339,7 @@ function switchTab(tab) {
   const tabbedLb = document.getElementById("sidebar-tabbed-leaderboards");
   const contextFilters = document.getElementById("sidebar-context-filters");
   const classCard = document.getElementById("sidebar-card-classes");
-  const activityCard = document.getElementById("sidebar-card-activity");
+  const activityCard = document.getElementById("sidebar-combat-activity") || document.getElementById("sidebar-card-activity");
 
   const hideSidebar = (tab === "PORTAL" || tab === "THEATER" || tab === "UPLOAD" || tab === "DOWNLOAD");
   if (sidebarEl) {
