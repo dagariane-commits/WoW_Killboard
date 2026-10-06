@@ -3708,6 +3708,50 @@ function toggleMobileDrawer(forceState) {
     document.body.style.overflow = "";
   }
 }
+window.toggleMobileDrawer = toggleMobileDrawer;
+
+function initMobileDrawer() {
+  window.toggleMobileDrawer = toggleMobileDrawer;
+
+  const btn = document.getElementById("mobile-menu-btn");
+  if (btn) {
+    btn.onclick = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      toggleMobileDrawer();
+    };
+  }
+
+  const backdrop = document.getElementById("mobile-drawer-backdrop");
+  if (backdrop) {
+    backdrop.onclick = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      toggleMobileDrawer(false);
+    };
+  }
+
+  const closeBtn = document.querySelector(".drawer-close-btn");
+  if (closeBtn) {
+    closeBtn.onclick = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      toggleMobileDrawer(false);
+    };
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      toggleMobileDrawer(false);
+    }
+  });
+}
 
 function handleMobileSearch(e) {
   searchQuery = e.target.value;
@@ -8138,6 +8182,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSidebar();
   checkGlobalSosBeacons();
   initGlobalOmniSearch();
+  initMobileDrawer();
 
   // Handle external character web links (?name=Name or ?character=Name or /character/Name)
   const urlParams = new URLSearchParams(window.location.search);
