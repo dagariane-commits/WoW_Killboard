@@ -45,10 +45,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Right Sidebar Hierarchy Optimization (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
   - Restructured the 340px right rail in strict priority order:
     1. Slot 1 (Top): Lifetime Combat Activity (`#sidebar-card-activity`), scoped strictly to selected realm.
-    2. Slot 2: Active Bounties (The Marked) (`#most-wanted-section`), condensed into a tight vertical list of top 3-4 marked outlaws/monsters with class crest badge, name, realm, bounty pot, and `+ Issue Mark` quick trigger.
+    2. Slot 2: Active Bounties (The Marked) (`#most-wanted-section`), condensed into a tight vertical list of top 3-4 marked outlaws/monsters with class crest badge, name, realm, bounty pot, and `All →` navigation.
     3. Slot 3: Champion Filters (`#sidebar-context-filters`, visible on Defender of Azeroth view).
     4. Slot 4: Tabbed 24-Hour Leaderboards (`#sidebar-tabbed-leaderboards`).
     5. Slot 5 (Bottom): All Classes Matrix (`#sidebar-card-classes`, 2-column compact grid).
+- **Client Cache Invalidation & Asset Versioning (`web/static/index.html`)**:
+  - Bumped stylesheet and JavaScript asset version query strings from `?v=1.5.1` to `?v=2.0.0` (`/static/style.css?v=2.0.0` and `/static/app.js?v=2.0.0`).
+  - Guarantees immediate cache busting across visitor browsers, Caddy reverse-proxy (24-hour static cache), and Cloudflare CDN without requiring manual hard refreshes (`Ctrl+F5`).
+  - Purged residual `+ Issue Mark` button from `#most-wanted-section` header to preserve the strict viewer-only web architecture.
 - **Paladin Class Resolution Bug Fix (Dagariane) (`web/server.py`, `web/static/app.js`)**:
   - Implemented 1-based Blizzard class ID indexing map (`BLIZZARD_CLASS_IDS`) and `resolveClassName` in both Python and JavaScript.
   - Corrected benchmark profile lookup in `renderLeaderboardView` to read flat `benchmarkProfile.class` instead of `benchmarkProfile.character.class`.
