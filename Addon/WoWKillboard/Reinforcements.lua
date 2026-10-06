@@ -272,10 +272,10 @@ function RF:TriggerCallForBackup()
         SendChatMessage(backupMsg, IsInRaid() and "RAID" or "PARTY")
     end
 
-    -- Local Yell (Default: Off / Opt-in)
+    -- Local Yell (Default: Off / Opt-in, strictly outside combat)
     local inInstance = IsInInstance and IsInInstance()
-    if enableChat and not inInstance then
-        SendChatMessage(yellMsg, "YELL")
+    if enableChat and not inInstance and not InCombatLockdown() then
+        pcall(SendChatMessage, yellMsg, "YELL")
     end
 
     -- Broadcast via P2P Addon Network across Guild and Party

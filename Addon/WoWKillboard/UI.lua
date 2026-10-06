@@ -5941,44 +5941,44 @@ function UI:ShowWelcomeModal(isManual)
         end)
 
         -- Bottom Row: Checkbox & Dismiss Button
-        dlg.DoNotShowAgain = true
+        local s = WoWKillboardSettings or {}
+        dlg.DoNotShowAgain = (s.hasSeenBetaWelcome == true)
 
         local chkBtn = CreateFrame("Button", nil, dlg)
-        chkBtn:SetSize(280, 22)
+        chkBtn:SetSize(320, 22)
         chkBtn:SetPoint("BOTTOMLEFT", 16, 14)
         chkBtn:EnableMouse(true)
 
         local chkText = chkBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         chkText:SetPoint("LEFT", 0, 0)
-        chkText:SetText("|cff00ff00[X]|r |cffccccccDo not show again on login|r")
+        chkText:SetText(dlg.DoNotShowAgain and "|cff00ff00[X]|r |cffccccccDo not show again on login|r" or "|cff64748b[  ]|r |cff888888Show on login (Will appear on next login)|r")
         chkBtn.Label = chkText
+        dlg.ChkBtn = chkBtn
 
         chkBtn:SetScript("OnClick", function()
             dlg.DoNotShowAgain = not dlg.DoNotShowAgain
+            WoWKillboardSettings = WoWKillboardSettings or {}
+            WoWKillboardSettings.hasSeenBetaWelcome = dlg.DoNotShowAgain
             if dlg.DoNotShowAgain then
                 chkText:SetText("|cff00ff00[X]|r |cffccccccDo not show again on login|r")
             else
-                chkText:SetText("|cff64748b[  ]|r |cff888888Do not show again on login|r")
+                chkText:SetText("|cff64748b[  ]|r |cff888888Show on login (Will appear on next login)|r")
             end
         end)
 
         local closeBtn = UI:CreateButton(dlg, 100, 26, "Got It!", "GameFontHighlightSmall")
         closeBtn:SetPoint("BOTTOMRIGHT", -16, 12)
         closeBtn:SetScript("OnClick", function()
-            if dlg.DoNotShowAgain then
-                WoWKillboardSettings = WoWKillboardSettings or {}
-                WoWKillboardSettings.hasSeenBetaWelcome = true
-            end
+            WoWKillboardSettings = WoWKillboardSettings or {}
+            WoWKillboardSettings.hasSeenBetaWelcome = (dlg.DoNotShowAgain == true)
             dlg:Hide()
         end)
 
         -- ESC handler
         dlg:SetScript("OnKeyDown", function(self, key)
             if key == "ESCAPE" then
-                if dlg.DoNotShowAgain then
-                    WoWKillboardSettings = WoWKillboardSettings or {}
-                    WoWKillboardSettings.hasSeenBetaWelcome = true
-                end
+                WoWKillboardSettings = WoWKillboardSettings or {}
+                WoWKillboardSettings.hasSeenBetaWelcome = (dlg.DoNotShowAgain == true)
                 self:SetPropagateKeyboardInput(false)
                 self:Hide()
             else
@@ -5990,6 +5990,16 @@ function UI:ShowWelcomeModal(isManual)
     end
 
     local dlg = UI.WelcomeDialog
+    local currentSettings = WoWKillboardSettings or {}
+    dlg.DoNotShowAgain = (currentSettings.hasSeenBetaWelcome == true)
+    if dlg.ChkBtn and dlg.ChkBtn.Label then
+        if dlg.DoNotShowAgain then
+            dlg.ChkBtn.Label:SetText("|cff00ff00[X]|r |cffccccccDo not show again on login|r")
+        else
+            dlg.ChkBtn.Label:SetText("|cff64748b[  ]|r |cff888888Show on login (Will appear on next login)|r")
+        end
+    end
+
     local domain = (KB.WebDomain and KB.WebDomain ~= "") and KB.WebDomain or "wowkillboard.com"
     if dlg.DownloadUrlEditBox then
         dlg.DownloadUrlEditBox:SetText(string.format("https://%s/download", domain))

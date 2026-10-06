@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dynamically recalculated the Leaderboard Operative Benchmark Comparison banner based on the active mode (`currentMode`).
 
 ### Fixed
+- **Addon Action Blocked & UI Taint Prevention (`Addon/WoWKillboard/Killmail.lua`, `Sync.lua`, `CombatTracker.lua`, `IntelScanner.lua`, `Reinforcements.lua`)**:
+  - Eliminated `ADDON_ACTION_BLOCKED: Blocked UNKNOWN() by WoWKillboard (InCombat: YES)` and Blizzard's yellow "Interface action failed because of an AddOn" error when players die in combat.
+  - Strictly gated all programmatic `SendChatMessage` transmissions to restricted chat channels (`"CHANNEL"`, `"SAY"`, `"YELL"`) behind `not InCombatLockdown()`.
+  - Hardened all `GetGuildInfo("player")` lookups in `CombatTracker.lua` with `not InCombatLockdown()` checks to eliminate combat execution taint.
+- **Welcome & Onboarding Login Popup Controls (`Addon/WoWKillboard/UI.lua`, `Addon/WoWKillboard/Core.lua`)**:
+  - Fixed Welcome Dialog checkbox synchronization so unchecking "Do not show again on login" explicitly updates `WoWKillboardSettings.hasSeenBetaWelcome = false`.
+  - Added `/kb welcome [reset|on|off]` slash command to quickly re-enable, inspect, or toggle the welcome dialog for subsequent character logins.
 - **Responsive Header Layout & Hamburger Menu Accessibility (`web/static/style.css`, `web/static/app.js`, `web/static/index.html`)**:
   - Fixed mobile top header cutoff where search, archivist, upload, and download action buttons caused horizontal flex overflow (~500px on a 375px screen), pushing the hamburger menu button off-screen into the hidden overflow area.
   - Streamlined the mobile top header (<= 768px) to contain exclusively the clean brand title, compact active character badge / claim hero pill, and the tactile hamburger menu toggle.

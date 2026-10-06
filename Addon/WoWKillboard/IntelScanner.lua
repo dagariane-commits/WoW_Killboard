@@ -141,7 +141,7 @@ function IS:SpotTarget(notes)
     if IsInGroup() then
         SendChatMessage(broadcastMsg, IsInRaid() and "RAID" or "PARTY")
     end
-    if enableChat and not (IsInInstance and IsInInstance()) then
+    if enableChat and not (IsInInstance and IsInInstance()) and not InCombatLockdown() then
         pcall(SendChatMessage, broadcastMsg, "YELL")
     end
 

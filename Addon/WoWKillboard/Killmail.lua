@@ -221,16 +221,18 @@ function KM:BroadcastCasualty(victim, killer, location, spell, isTest)
         pcall(SendChatMessage, casualtyMsg, (IsInRaid and IsInRaid()) and "RAID" or "PARTY")
     end
 
-    -- Broadcast to dedicated WoWKillboard channel across the realm
-    local chanId = (KB.Sync and KB.Sync.GetChannelId and KB.Sync:GetChannelId("WoWKillboard")) or (GetChannelName and (GetChannelName("WoWKillboard") or GetChannelName("WoWKB")))
-    if chanId and chanId > 0 then
-        pcall(SendChatMessage, casualtyMsg, "CHANNEL", nil, chanId)
-    end
+    -- Broadcast to dedicated WoWKillboard channel across the realm (Gated strictly against InCombatLockdown to prevent ADDON_ACTION_BLOCKED)
+    if not InCombatLockdown() then
+        local chanId = (KB.Sync and KB.Sync.GetChannelId and KB.Sync:GetChannelId("WoWKillboard")) or (GetChannelName and (GetChannelName("WoWKillboard") or GetChannelName("WoWKB")))
+        if chanId and chanId > 0 then
+            pcall(SendChatMessage, casualtyMsg, "CHANNEL", nil, chanId)
+        end
 
-    -- Broadcast to Say (Opt-in only)
-    local inInstance = IsInInstance and IsInInstance()
-    if enableChat and not inInstance then
-        pcall(SendChatMessage, casualtyMsg, "SAY")
+        -- Broadcast to Say (Opt-in only, strictly outside combat)
+        local inInstance = IsInInstance and IsInInstance()
+        if enableChat and not inInstance then
+            pcall(SendChatMessage, casualtyMsg, "SAY")
+        end
     end
 
     return casualtyMsg
