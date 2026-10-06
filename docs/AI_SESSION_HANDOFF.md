@@ -1,11 +1,11 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-04 05:05:00 EDT  
-> **Git Status**: Branch `main` (Release `v1.0.2` prepared).  
+> **Last Synchronized**: 2026-10-05 23:15:00 EDT  
+> **Git Status**: Branch `main` (Release `v1.0.4` prepared).  
 > **Developer & Lead**: Dagariane.  
-> **Active Release**: `v1.0.2` (CurseForge Community Release).  
-> **Active Focus**: **v1.0.2 Distribution Package, Sanitization, and CurseForge Upload**.  
+> **Active Release**: `v1.0.4` (CurseForge Community Release).  
+> **Active Focus**: **Unified Dual Telemetry across all Realm Tenants, Asset Cache Busting v2.0.0, and Responsive Header Containment**.  
 > **Live Production Domain**: [`https://wowkillboard.com/`](https://wowkillboard.com/)
 
 ---
@@ -30,8 +30,8 @@
    - **CurseForge & Git Lockstep Parity (P0 Invariant)**: Whenever an update or release archive is uploaded or pushed to CurseForge, it **MUST** simultaneously be committed, tagged (`git tag -a vX.Y.Z`), and pushed to GitHub (`git push origin main --tags`). Never allow CurseForge and GitHub releases to drift out of sync.
 6. **Mandatory Automated Verification**:
    - Run `python tests/validate_lua.py` (Must return `[PASS]` for all 13 Lua files).
-   - Run `python -m unittest discover tests` (Must return `OK` across all 26 pipeline/security tests).
-   - Run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.2.zip`, `WoWKillboard-v1.0.1.zip`, and `WoWKillboard-v1.0.0.zip`.
+   - Run `python -m unittest discover tests` (Must return `OK` across all 30 pipeline/security tests).
+   - Run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.4.zip` (and legacy aliases `v1.0.3`, `v1.0.2`, `v1.0.1`, `v1.0.0`).
 
 ---
 
@@ -40,6 +40,24 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Unified Dual PvP & PvE Telemetry Across All Realm Tenants (`web/server.py`, `web/static/app.js`, `web/static/index.html`)**:
+  - Unified all realm tenants (PvP, PvE, RP, Hardcore, Classic Era, Anniversary, Retail) to track and display BOTH PvP metrics (world PvP, opt-in world PvP, battlegrounds, duels, arenas) and PvE casualties (world hazards, mob executions, boss fatalities) simultaneously.
+  - Purged legacy `isPve` view hijacking across the client: eliminated destructive tab relabeling (`Casualties`, `Deadly Hazards`, `Notorious Elites`), removed redirection in `switchTab()`, `loadLeaderboards()`, `loadBounties()`, and `reloadActiveView()`.
+  - Added dedicated `PvE Deaths` metric (`#stat-pve-deaths`) to the Top Telemetry Ribbon and `PvE Casualties` row (`#act-label-pve`) to Lifetime Combat Activity.
+  - Scoped `/api/stats` and `/api/stats/activity-7d` to return complete PvP and PvE telemetry concurrently.
+- **Responsive Site Header & Zero Viewport Clipping (`web/static/style.css`, `web/static/index.html`)**:
+  - Added responsive rules for `@media (max-width: 1280px)`, `(max-width: 1024px)`, and `(max-width: 900px)`.
+  - Replaced rigid width on `.nav-links-rail` with responsive flex containment (`max-width: 40% !important; flex-shrink: 1 !important; overflow-x: auto;`).
+  - Guaranteed zero navigation bar cutoff or blowout between 900px and 1366px viewports.
+- **Strict Viewer Scope & Web Action Boundary (`web/static/app.js`, `web/static/index.html`)**:
+  - Removed all web-based `+ Issue Mark` creation buttons, character claim triggers, and auto-invite buttons from the website, aligning with the architecture that the website is strictly an intelligence viewer and log uploader while all social and gameplay interactions belong inside the in-game addon.
+- **Timeframe Filtering Engine (`web/server.py`, `web/static/app.js`)**:
+  - Added `timeframe` parameter support (`24H`, `7D`, `ALL`) to `/api/leaderboard` and `/api/guilds`.
+  - Connected `filterLeaderboardsByTime(timeframe)` in `app.js` and true `kills_24h` calculation in `/api/stats`.
+- **Paladin Class Resolution & Fall Damage Bug Fix (`web/server.py`, `web/static/app.js`)**:
+  - Corrected Blizzard 1-based class ID map (`BLIZZARD_CLASS_IDS`) and flattened profile lookup in `renderLeaderboardView`, guaranteeing Dagariane resolves to PALADIN with pink class color `#f58cba`.
+- **Client Cache Invalidation & Asset Versioning (`web/static/index.html`)**:
+  - Bumped stylesheet and JavaScript asset version query strings to `?v=2.0.0` (`/static/style.css?v=2.0.0` and `/static/app.js?v=2.0.0`), preventing stale client-side caches.
 - **Complete Clean ElvUI Specification Across All Tabs & Dynamic Accent Engine (`UI.lua`, `Config.lua`, `Utils.lua`)**:
   - **Dynamic Accent Color Engine (`WoWKB.AccentColor`)**:
     - Added user-selectable accent modes in Addon Settings: `Classic Gold` (`#FFD100`, default), `Player Class Color` (auto-detected from logged-in character class), and `Custom Hex / Color Picker` (cross-client color wheel integration supporting Retail `SetupColorPickerAndShow` and Classic Era/Beta fallback).
@@ -250,7 +268,7 @@ sudo journalctl -u wowkillboard.service -f
 
 ### Tabled Item 1: Community Release Strategy (Option 1: Zero-Executable Primary)
 - **The Core Decision**: The community release focuses on **Option 1**:
-  - **In-Game Addon (`WoWKillboard-v1.0.1.zip`)**: Distributed via CurseForge (`wkb`) and GitHub Releases. 100% pure Lua, running in Blizzard's locked sandbox. Zero OS file access, zero external network connections, zero executables.
+  - **In-Game Addon (`WoWKillboard-v1.0.4.zip`)**: Distributed via CurseForge (`wkb`) and GitHub Releases. 100% pure Lua, running in Blizzard's locked sandbox. Zero OS file access, zero external network connections, zero executables.
   - **Web Sync via Drag-and-Drop**: Players sync combat data directly by dragging `WTF\...\SavedVariables\WoWKillboard.lua` onto [`wowkillboard.com/upload`](https://wowkillboard.com/upload) in any browser.
   - **Desktop Companion (`WoWKillboardSync.exe`)**: Positioned strictly as an **optional convenience tool for power users** who want automated background syncing on `/reload` or logout.
 
@@ -289,7 +307,7 @@ sudo journalctl -u wowkillboard.service -f
 | **In-Game Addon** | `Addon/WoWKillboard/*.lua`<br>`WoWKillboard.toc` | Pure Lua 5.1, zero XML taint, `BackdropTemplate`, 15s temporal gang clustering, 1v1 duel validation, bounty engine, in-game leaderboards. |
 | **Desktop Companion** | `sync/watcher.py`<br>`sync/gui.py`<br>`sync/version_info.txt`<br>`assets/icon.ico` | Standalone Python watcher. Multi-drive discovery across C:, D:, E:, verified TLS/SSL, native `.url` shortcuts in Startup folder, embedded PE metadata. |
 | **Web Server & API** | `web/server.py`<br>`web/static/app.js`<br>`web/static/index.html` | Flask API + SQLite WAL mode. CDN-first 302 redirects, sliding-window IP rate limiting, DOM XSS immunity via `escapeHtml()` and `safeJsParam()`, 16MB request limits. |
-| **Distribution Packages** | `WoWKillboard-v1.0.1.zip`<br>`WoWKillboard-v1.0.0.zip`<br>`WoWKillboardSync.exe` | Mirror archives in root and `web/static/`. Standalone binary verified. |
+| **Distribution Packages** | `WoWKillboard-v1.0.4.zip`<br>`WoWKillboard-v1.0.3.zip`<br>`WoWKillboard-v1.0.2.zip`<br>`WoWKillboardSync.exe` | Mirror archives in root and `web/static/`. Standalone binary verified. |
 
 ---
 

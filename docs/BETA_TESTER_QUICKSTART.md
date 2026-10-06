@@ -13,7 +13,7 @@ flowchart LR
 ```
 
 ### Step 1: Install the In-Game Addon (100% Pure Lua)
-1. Download **`WoWKillboard-v1.0.1.zip`** (or install via CurseForge: search `wkb`).
+1. Download **`WoWKillboard-v1.0.4.zip`** (or install via CurseForge: search `wkb`).
 2. Extract the `WoWKillboard` folder directly into your World of Warcraft AddOns directory:
    - **WoW Forever / Classic Beta**: `World of Warcraft\_classic_beta_\Interface\AddOns\`
    - **Classic Era**: `World of Warcraft\_classic_era_\Interface\AddOns\`
@@ -79,11 +79,9 @@ For automated background syncing whenever you reload or log out:
 ## 🛠️ Frequently Asked Questions & Troubleshooting
 
 ### Q: How do I verify and lock character ownership?
-1. On the web platform, click **"Select / Claim Character"** &rarr; find your character &rarr; click **"Claim Champion"**.
-2. Copy the generated code (e.g. `KB-5ACD`).
-3. In World of Warcraft on that character, enter: `/kb claim <CODE>`.
-4. Type **`/reload`** in game. `WoWKillboardSync.exe` ingests the token and locks ownership.
-5. In the web modal, click **"⚡ Check Verification Status"** to receive instant confirmation (`🛡️ Verified Owner`).
+1. In World of Warcraft on your character, enter: `/kb claim <CODE>` (e.g. your secret ownership token).
+2. Type **`/reload`** in game. `WoWKillboardSync.exe` (or the web uploader) ingests the token and locks ownership to your character GUID.
+3. The platform authenticates your character dossier, unlocking verified owner badge indicators.
 
 ### Q: Does the desktop sync require Python installed?
 **No.** `WoWKillboardSync.exe` is a standalone, self-contained Windows binary. No Python, terminal, or environment setup is needed. You can also skip the desktop app entirely by using the browser uploader at [wowkillboard.com/upload](https://wowkillboard.com/upload).

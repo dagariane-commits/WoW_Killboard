@@ -1,6 +1,6 @@
 # WoW Killboard — Frontline War Room
 
-[![Release](https://img.shields.io/badge/Release-v1.0.2-00e5ff.svg)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/Release-v1.0.4-00e5ff.svg)](CHANGELOG.md)
 [![CI](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml)
 [![WoW Flavors](https://img.shields.io/badge/WoW-Forever%20%7C%20Classic%20Era%20%7C%20Anniversary%20%7C%20Retail-ffd700.svg)](docs/TAINT_AND_COMPATIBILITY.md)
@@ -32,7 +32,7 @@ Comprehensive technical documentation is maintained in the [`docs/`](docs/) dire
 - ☁️ **[Dedicated Linux VPS Deployment](docs/DEPLOYMENT_VPS.md)** — AWS Lightsail runbook, automated SSL/TLS via Caddy, and backup automation.
 - 🗺️ **[Forward Strategic Roadmap](docs/ROADMAP.md)** — Phased roadmap covering public launch, guild war rooms, and ranked seasons.
 - 🚀 **[Public Release & Distribution Playbook](docs/PUBLIC_RELEASE_PLAYBOOK.md)** — Guide for packaging, CurseForge/Wago distribution, and hosting.
-- 📝 **[Semantic Version Change Log](CHANGELOG.md)** — Full changelog trail from initial prototype to v1.0.1 release.
+- 📝 **[Semantic Version Change Log](CHANGELOG.md)** — Full changelog trail from initial prototype to v1.0.4 release.
 - 🤝 **[Contributing Guidelines](CONTRIBUTING.md)** — Development standards and PR checklist for open-source contributors.
 - ⚖️ **[Legal, Safety & Compliance Guide](docs/LEGAL_AND_COMPLIANCE.md)** — Authorship, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
 
@@ -147,11 +147,11 @@ flowchart TD
 - **Streaming Lua Tokenizer**: High-speed recursive-descent parser.
 
 ### 3. Frontline War Room Web Intelligence Platform (`web/`)
-- **Decoupled Dual-Tier Header & 150%+ Zoom Resilience**:
-  - Restructured site header into an intentional two-tier visual hierarchy:
-    - **Tier 1 (Main Row)**: Brand logo, faction crests, active Theater selector, 4-way combat mode filter pills (`WORLD` | `BGS` | `DUELS` | `ARENAS`), and `Select / Claim Character` button.
-    - **Tier 2 (Sub-Navigation Bar)**: Dedicated sub-rail containing all platform tabs (`Intel`, `Defender of Azeroth`, `The Marked`, `Manhunt`, `Zone Intel`, `Upload`).
-  - Eliminates tab squishing, label truncation (e.g. `Def`), and overflow blowout on 1080p screens and 150%+ browser zoom levels.
+- **Consolidated 56px Sticky Header & Global Omni-Search**:
+  - Restructured site navigation into an intentional high-density command bridge:
+    - **Header Row**: Brand crests, faction badges, active Theater selector, global typeahead Omni-Search bar (`/` shortcut), real-time Auth Status, and core combat tabs (`Intel`, `Leaderboards`, `Deadly Hazards`, `Bounties`, `Zone Intel`).
+    - **Contextual In-Page Mode Filters**: Dedicated filter pills (`[ ALL | WORLD | BGS | ARENAS | DUELS ]`) embedded directly inside the Recent Combat Feed (`#feed-mode-pills`) and Champions Leaderboard (`#champions-mode-pills`), eliminating sticky header duplication.
+  - Guarantees 6–8 live combat rows remain above the fold on standard 1080p viewports and 150%+ browser zoom levels.
 - **Dynamic Most Wanted Grid Sizing**:
   - Automatically scales the Most Wanted showcase: renders as a single, sleek row of 5 slots when 5 or fewer bounties exist, pulling the combat feed up by ~180px and eliminating empty-state clutter.
 - **High-Concurrency SQLite WAL Engine & Web Admin Console**:
@@ -238,7 +238,7 @@ WoW_Killboard/
 ├── CHANGELOG.md                     # Semantic version change log
 ├── CONTRIBUTING.md                  # Open-source contribution guidelines
 ├── WoWKillboardSync.exe             # Pre-compiled standalone sync binary (8.8 MB)
-└── WoWKillboard-v1.0.1.zip          # Production-ready addon release package
+└── WoWKillboard-v1.0.4.zip          # Production-ready addon release package
 ```
 
 ---
@@ -246,7 +246,7 @@ WoW_Killboard/
 ## Quickstart Guide
 
 ### 1. In-Game Addon Installation
-1. Download [`WoWKillboard-v1.0.1.zip`](WoWKillboard-v1.0.1.zip) and extract it into your World of Warcraft AddOns directory:
+1. Download [`WoWKillboard-v1.0.4.zip`](WoWKillboard-v1.0.4.zip) and extract it into your World of Warcraft AddOns directory:
    - **Forever Beta**: `World of Warcraft/_classic_beta_/Interface/AddOns/WoWKillboard`
    - **Classic Era**: `World of Warcraft/_classic_era_/Interface/AddOns/WoWKillboard`
    - **Anniversary**: `World of Warcraft/_anniversary_/Interface/AddOns/WoWKillboard`
