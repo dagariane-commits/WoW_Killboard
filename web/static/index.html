@@ -207,7 +207,7 @@
     <!-- Sidebar Column -->
     <aside class="sidebar-column">
       <!-- 1. Top — Lifetime Combat Activity -->
-      <div class="sidebar-card" id="sidebar-card-activity">
+      <div class="sidebar-card" id="sidebar-combat-activity">
         <div class="section-header" style="flex-direction:column; align-items:flex-start; gap:2px;">
           <div class="section-title">Lifetime Combat Activity</div>
           <div style="font-size:0.68rem; color:#94a3b8; font-family:var(--font-tactical); letter-spacing:0.5px;">OVERALL REALM COMBAT (ALL PLAYERS)</div>
@@ -246,6 +246,7 @@
             <span style="font-size: 0.72rem; color: #94a3b8;">&bull; ACTIVE BOUNTIES</span>
           </div>
           <div style="display:flex; align-items:center; gap:6px;">
+            <button class="see-all-marks-btn" onclick="openPlaceBountyModal()" title="Issue Mark of Spite" style="color:var(--wow-gold); border-color:rgba(212,163,41,0.5); font-weight:700;">+ Issue Mark</button>
             <button class="see-all-marks-btn" onclick="switchTab('BOUNTIES')" title="View All Bounties">All &rarr;</button>
           </div>
         </div>
@@ -279,7 +280,17 @@
         </div>
       </div>
 
-      <!-- 4. Fourth — Tabbed 24-Hour Leaderboard Widget (Zones / Gankers / Guilds) -->
+      <!-- 4. Bottom — All Classes Matrix (Compressed 2-Column Grid) -->
+      <div class="sidebar-card" id="sidebar-card-classes">
+        <div class="section-header">
+          <div class="section-title" id="sidebar-title-classes">All Classes</div>
+        </div>
+        <div id="sidebar-top-classes" class="sidebar-rank-list class-matrix-grid">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+
+      <!-- 5. Tabbed 24-Hour Leaderboard Widget (Zones / Gankers / Guilds) -->
       <div class="sidebar-card" id="sidebar-tabbed-leaderboards">
         <div class="sidebar-tab-pills">
           <button class="sidebar-pill-btn active" id="pill-sb-zones" onclick="switchSidebarLeaderboardTab('zones')">Hot Zones</button>
@@ -299,16 +310,6 @@
           <div id="sidebar-24h-guilds" class="sidebar-rank-list" style="display: none;">
             <div style="color:#64748b; font-size:0.8rem;">Scanning the battlefield...</div>
           </div>
-        </div>
-      </div>
-
-      <!-- 5. Bottom — All Classes Matrix (Compressed 2-Column Grid) -->
-      <div class="sidebar-card" id="sidebar-card-classes">
-        <div class="section-header">
-          <div class="section-title" id="sidebar-title-classes">Class Combat Matrix</div>
-        </div>
-        <div id="sidebar-top-classes" class="sidebar-rank-list class-matrix-grid">
-          <!-- Populated by app.js -->
         </div>
       </div>
 

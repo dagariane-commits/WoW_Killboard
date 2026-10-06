@@ -2216,8 +2216,9 @@ def pve_deaths_endpoint():
         p_ruleset = str(data.get("ruleset") or "PVE").strip()[:32]
 
         with get_db() as conn:
-            if victim_class in ("UNKNOWN", "") and victim_name.lower() == "dagariane":
+            if victim_name.lower() == "dagariane":
                 victim_class = "PALADIN"
+                victim_faction = "Alliance"
             elif victim_class in ("UNKNOWN", ""):
                 past_char = conn.execute("SELECT class FROM characters WHERE name = ? LIMIT 1", (victim_name,)).fetchone()
                 if past_char and past_char["class"] and past_char["class"] != "UNKNOWN":
@@ -3759,8 +3760,8 @@ def get_activity_7d():
         r_clause = " AND LOWER(realm) = LOWER(?)" if realm_filter else ""
         r_param = (realm_filter,) if realm_filter else ()
 
-        # Lifetime total kills (Open World & BGs, Duels isolated)
-        total_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE (is_duel = 0 OR is_duel IS NULL){r_clause}", r_param).fetchone()[0]
+        # Lifetime total kills (All recorded combat on realm)
+        total_kills = conn.execute(f"SELECT COUNT(*) FROM kills WHERE 1=1{r_clause}", r_param).fetchone()[0]
 
         # Lifetime active characters (active combatants from recorded kills)
         char_count = conn.execute(f"""
@@ -3780,13 +3781,13 @@ def get_activity_7d():
             )
         """, r_param + r_param).fetchone()[0]
 
-        # Lifetime faction breakdown (excluding duels)
+        # Lifetime faction breakdown
         alliance_kills = conn.execute(
-            f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance' AND (is_duel = 0 OR is_duel IS NULL){r_clause}",
+            f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Alliance'{r_clause}",
             r_param
         ).fetchone()[0]
         horde_kills = conn.execute(
-            f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde' AND (is_duel = 0 OR is_duel IS NULL){r_clause}",
+            f"SELECT COUNT(*) FROM kills WHERE killer_faction = 'Horde'{r_clause}",
             r_param
         ).fetchone()[0]
 
