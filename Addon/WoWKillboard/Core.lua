@@ -1055,6 +1055,16 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             KB.UI:ShowCharacterWebLink(pTarget)
         end
     elseif cmd == "welcome" or cmd == "beta" or cmd == "about" then
+        local sub = arg and arg:lower():match("^%s*(.-)%s*$") or ""
+        if sub == "reset" or sub == "on" or sub == "enable" then
+            WoWKillboardSettings = WoWKillboardSettings or {}
+            WoWKillboardSettings.hasSeenBetaWelcome = false
+            SafePrint("|cff00ff00[WoWKB]|r Welcome dialog reset! It will now appear automatically on your next login.")
+        elseif sub == "off" or sub == "disable" then
+            WoWKillboardSettings = WoWKillboardSettings or {}
+            WoWKillboardSettings.hasSeenBetaWelcome = true
+            SafePrint("|cffff9900[WoWKB]|r Welcome dialog disabled on login. (Type |cffffd100/kb welcome|r to view anytime).")
+        end
         if KB.UI and KB.UI.ShowWelcomeModal then
             KB.UI:ShowWelcomeModal(true)
         end
@@ -1118,7 +1128,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/kb net|r or |cffffd100/kb channel|r - Inspect Realm Network connection and channel state")
         SafePrint("  |cffffd100/kb changelog|r or |cffffd100/kb update|r - Open What's New & Version Changelog")
         SafePrint("  |cffffd100/kb promo|r or |cffffd100/kb macro|r - Open Promotional In-Game Macros & Community Sharing Hub")
-        SafePrint("  |cffffd100/kb welcome|r or |cffffd100/kb beta|r - Open Early Preview & Feedback Guide")
+        SafePrint("  |cffffd100/kb welcome [reset|on|off]|r or |cffffd100/kb beta|r - Open or toggle Early Preview & Feedback Guide")
         SafePrint("  |cffffd100/kb feedback|r or |cffffd100/kb bug|r - Submit feedback or report an issue")
         SafePrint("  |cffffd100/kb wire|r or |cffffd100/kb feed|r - Toggle The Shadow Network floating feed window")
         SafePrint("  |cffffd100/kb manhunt|r or |cffffd100/kb rally|r - Muster a Vanguard hunting squad")

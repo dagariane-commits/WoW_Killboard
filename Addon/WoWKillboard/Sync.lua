@@ -223,7 +223,8 @@ function S:BroadcastToGlobalChannel(chatText, addonPayload)
     local chanId = S:GetChannelId("WoWKillboard")
     if chanId and chanId > 0 then
         S.channelIndex = chanId
-        if chatText and chatText ~= "" then
+        -- Strict Combat Gating: SendChatMessage to custom CHANNEL throws ADDON_ACTION_BLOCKED in combat
+        if chatText and chatText ~= "" and not InCombatLockdown() then
             pcall(SendChatMessage, chatText, "CHANNEL", nil, chanId)
         end
         if addonPayload and addonPayload ~= "" and KB.Utils and KB.Utils.SendAddonMessage then
@@ -231,13 +232,17 @@ function S:BroadcastToGlobalChannel(chatText, addonPayload)
         end
         return true
     else
+        if InCombatLockdown() then
+            return false
+        end
         S:JoinGlobalChannel()
         if C_Timer and C_Timer.After then
             C_Timer.After(0.4, function()
+                if InCombatLockdown() then return end
                 local retryId = S:GetChannelId("WoWKillboard")
                 if retryId and retryId > 0 then
                     S.channelIndex = retryId
-                    if chatText and chatText ~= "" then
+                    if chatText and chatText ~= "" and not InCombatLockdown() then
                         pcall(SendChatMessage, chatText, "CHANNEL", nil, retryId)
                     end
                     if addonPayload and addonPayload ~= "" and KB.Utils and KB.Utils.SendAddonMessage then
@@ -245,10 +250,11 @@ function S:BroadcastToGlobalChannel(chatText, addonPayload)
                     end
                 else
                     C_Timer.After(1.0, function()
+                        if InCombatLockdown() then return end
                         local secondRetryId = S:GetChannelId("WoWKillboard")
                         if secondRetryId and secondRetryId > 0 then
                             S.channelIndex = secondRetryId
-                            if chatText and chatText ~= "" then
+                            if chatText and chatText ~= "" and not InCombatLockdown() then
                                 pcall(SendChatMessage, chatText, "CHANNEL", nil, secondRetryId)
                             end
                             if addonPayload and addonPayload ~= "" and KB.Utils and KB.Utils.SendAddonMessage then
@@ -731,7 +737,7 @@ function S:BroadcastBounty(bounty)
         bounty.placerName, goldStr, bounty.targetName, tClass)
 
     local chanId = (KB.Sync and KB.Sync.GetChannelId and KB.Sync:GetChannelId("WoWKillboard")) or (GetChannelName and (GetChannelName("WoWKillboard") or GetChannelName("WoWKB")))
-    if chanId and chanId > 0 then
+    if chanId and chanId > 0 and not InCombatLockdown() then
         pcall(SendChatMessage, bountyChatMsg, "CHANNEL", nil, chanId)
     end
     if IsInGuild and IsInGuild() then

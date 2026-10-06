@@ -562,7 +562,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             local _, pClass = UnitClass("player")
             attClass = pClass or "UNKNOWN"
             attLevel = UnitLevel("player") or 0
-            local pGuild = GetGuildInfo("player")
+            local pGuild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
             attGuild = pGuild or "None"
             attFaction = UnitFactionGroup("player") or "Unknown"
         elseif unitInfo then
@@ -606,7 +606,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
             local _, pClass = UnitClass("player")
             attClass = pClass or "UNKNOWN"
             attLevel = UnitLevel("player") or 0
-            local pGuild = GetGuildInfo("player")
+            local pGuild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
             attGuild = pGuild or "None"
             attFaction = UnitFactionGroup("player") or "Unknown"
         elseif unitInfo then
@@ -976,7 +976,7 @@ function CT:ProcessDeath(victimGUID, victimName, victimFlags, killerGUID, killer
                 local _, pClass = UnitClass("player")
                 victimInfo.class = pClass or "UNKNOWN"
                 victimInfo.faction = UnitFactionGroup("player") or "Unknown"
-                victimInfo.guild = GetGuildInfo("player") or "None"
+                victimInfo.guild = (not InCombatLockdown() and GetGuildInfo("player")) or "None"
                 CT.SessionStats.pveDeaths = (CT.SessionStats.pveDeaths or 0) + 1
             end
 
@@ -2201,7 +2201,7 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
             name = winnerName,
             level = UnitLevel("player") or 0,
             class = select(2, UnitClass("player")) or "UNKNOWN",
-            guild = GetGuildInfo("player") or "None",
+            guild = (not InCombatLockdown() and GetGuildInfo("player")) or "None",
             faction = UnitFactionGroup("player") or "Unknown",
             partySize = 1,
             damageDone = CT.SessionStats.damageDone or 0,
@@ -2220,7 +2220,7 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
             name = loserName,
             level = UnitLevel("player") or 0,
             class = select(2, UnitClass("player")) or "UNKNOWN",
-            guild = GetGuildInfo("player") or "None",
+            guild = (not InCombatLockdown() and GetGuildInfo("player")) or "None",
             faction = UnitFactionGroup("player") or "Unknown",
             partySize = 1,
         }
