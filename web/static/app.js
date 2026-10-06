@@ -541,8 +541,8 @@ async function loadMostWanted() {
   if (mwTitle) mwTitle.innerHTML = `<span style="color: var(--wow-gold); font-family: var(--font-cinzel, Cinzel, serif); font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px;">THE MARKED</span> <span style="font-size: 0.72rem; color: #94a3b8;">&bull; ACTIVE BOUNTIES</span>`;
   if (mwSub) mwSub.innerText = "Open World Execution Contracts & Certified Outlaws • Deliver the final blow to claim the bounty";
   if (mwBtn) {
-    mwBtn.innerText = "+ Issue Mark";
-    mwBtn.onclick = () => openPlaceBountyModal();
+    mwBtn.innerText = "All →";
+    mwBtn.onclick = () => switchTab('BOUNTIES');
   }
 
   const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
