@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=2.1.0">
+  <link rel="stylesheet" href="/static/style.css?v=2.2.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -48,6 +48,9 @@
       <!-- 4. Action Tools, Auth, CTA & Mobile -->
       <div class="header-tools-group">
 
+        <!-- Character Authentication & Roster Switcher Badge -->
+        <div id="header-auth-badge" class="header-auth-badge"></div>
+
         <!-- War Archivist AI Trigger -->
         <button id="header-archivist-btn" class="header-icon-btn archivist-btn" onclick="toggleOracleChatModal()" title="Consult The War Archivist (AI Intelligence)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -88,6 +91,9 @@
     </div>
 
     <div class="mobile-drawer-body">
+      <!-- Mobile Active Character Switcher -->
+      <div id="mobile-auth-badge" class="mobile-auth-badge" style="margin-bottom: 12px;"></div>
+
       <!-- Mobile Search -->
       <div class="mobile-search-box">
         <input type="text" id="mobile-search-box-input" class="search-input" style="width:100%;" placeholder="Search Player, Guild, Zone..." oninput="handleMobileSearch(event)">
@@ -274,9 +280,9 @@
           <div>
             <div style="color:#94a3b8; margin-bottom:4px; font-weight:700; font-size:0.75rem;">TIMEFRAME</div>
             <div style="display:flex; gap:6px;">
-              <button class="sidebar-pill-btn active" id="filter-time-24h" onclick="filterLeaderboardsByTime('24h')">24 Hours</button>
+              <button class="sidebar-pill-btn" id="filter-time-24h" onclick="filterLeaderboardsByTime('24h')">24 Hours</button>
               <button class="sidebar-pill-btn" id="filter-time-7d" onclick="filterLeaderboardsByTime('7d')">7 Days</button>
-              <button class="sidebar-pill-btn" id="filter-time-all" onclick="filterLeaderboardsByTime('ALL')">All-Time</button>
+              <button class="sidebar-pill-btn active" id="filter-time-all" onclick="filterLeaderboardsByTime('ALL')">All-Time</button>
             </div>
           </div>
         </div>
@@ -758,17 +764,44 @@
       </div>
 
       <!-- Tab Buttons -->
-      <div class="char-modal-tabs" style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px;">
-        <button id="char-tab-btn-known" class="pill-btn active" onclick="switchCharModalTab('known')">
-          📋 Realm Combatants (<span id="char-known-count">0</span>)
+      <div class="char-modal-tabs" style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px; flex-wrap:wrap;">
+        <button id="char-tab-btn-roster" class="pill-btn active" onclick="switchCharModalTab('roster')">
+          ⭐ My Characters &amp; Realm Mains (<span id="char-roster-count">0</span>)
+        </button>
+        <button id="char-tab-btn-known" class="pill-btn" onclick="switchCharModalTab('known')">
+          🌐 All Realm Combatants (<span id="char-known-count">0</span>)
         </button>
         <button id="char-tab-btn-custom" class="pill-btn" onclick="switchCharModalTab('custom')">
-          ✏️ Register Hero Identity
+          ➕ Register / Claim Hero
         </button>
       </div>
 
+      <!-- Tab 0: My Roster & Realm Mains Panel -->
+      <div id="char-panel-roster" class="char-modal-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:0.8rem; color:#94a3b8;">
+            Select any character to view stats or designate a <strong style="color:var(--wow-gold);">⭐ Realm Main</strong> for each realm:
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <select id="char-roster-realm-filter" class="search-input" style="width:170px; padding:4px 8px; font-size:0.75rem;" onchange="renderRosterList()">
+              <option value="">All Realms</option>
+              <option value="Classic Beta PvP">WoW Forever (PvP)</option>
+              <option value="Classic Era">Classic Era</option>
+              <option value="Anniversary">Anniversary</option>
+              <option value="Retail">Retail</option>
+            </select>
+            <button class="pill-btn" style="padding:4px 10px; font-size:0.75rem; background:rgba(0,229,255,0.12); color:var(--accent-cyan); border:1px solid rgba(0,229,255,0.3);" onclick="switchCharModalTab('custom')">
+              + Add Hero
+            </button>
+          </div>
+        </div>
+        <div id="char-roster-list" class="char-known-list" style="display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto; padding-right:4px;">
+          <div style="text-align:center; padding:30px; color:#64748b;">Loading your character roster...</div>
+        </div>
+      </div>
+
       <!-- Tab 1: Known Combatants List -->
-      <div id="char-panel-known" class="char-modal-panel">
+      <div id="char-panel-known" class="char-modal-panel" style="display:none;">
         <div class="char-modal-search-row" style="display:flex; gap:8px; margin-bottom:12px;">
           <input type="text" id="char-search-input" class="search-input" style="flex:1;" placeholder="Search your character by name or guild..." oninput="filterKnownCharacters(this.value)">
           <select id="char-faction-filter" class="search-input" style="width:130px;" onchange="filterKnownCharacters()">
@@ -942,6 +975,6 @@
   <!-- Live Combat Slide-In Toast Notification Banner -->
   <div id="combat-toast-container" class="combat-toast-container"></div>
 
-  <script src="/static/app.js?v=2.1.0"></script>
+  <script src="/static/app.js?v=2.2.0"></script>
 </body>
 </html>

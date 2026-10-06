@@ -5,7 +5,31 @@ All notable changes to the **WoW Killboard** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-10-05
+## [Unreleased] - 2026-10-06
+
+### Added
+- **Multi-Character Roster & Realm Mains (`web/static/app.js`, `web/static/style.css`, `web/static/index.html`)**:
+  - Implemented multi-character roster management tab (`⭐ My Characters & Realm Mains`) in the Champion Identity modal (`#character-link-modal`).
+  - Players can claim and register all their characters across different realms, toggle between them with a single click, and designate a `⭐ Realm Main` per realm.
+  - Active character badge in the desktop header and mobile slide-in drawer displays the character's faction, class icon with class coloring, name, level, realm, and a prominent gold `⭐ Main` badge if set as the realm main.
+  - Seamlessly syncs the active operative with the Operative Benchmark Comparison card and profile dossier.
+- **Mode-Specific Leaderboards & Parity Metrics (`web/server.py`, `web/static/app.js`)**:
+  - Re-architected `/api/leaderboard` and the champions table to render exact mode-specific column sets:
+    - **World**: Kills, Solo Kills, Deaths, K/D Ratio, Percentile
+    - **Battlegrounds (BGs)**: Kills, Deaths, K/D Ratio, W/L Ratio, Percentile
+    - **Duels**: Wins, Losses, W/L Ratio, Percentile (with documented parity noting that WoW engine duels conclude strictly in victory or defeat/forfeit; draws do not exist in the engine)
+    - **Arenas**: Kills, Deaths, K/D Ratio, W/L Ratio, Percentile
+  - Added all-time fallback query resolution in `/api/leaderboard` so players never encounter an empty leaderboard when 24h combat is quiet.
+- **Dynamic Instance-Aware Dossier & Benchmark Cards (`web/server.py`, `web/static/app.js`)**:
+  - Enhanced `/api/character/<name>` to return per-mode aggregations (`WORLD`, `BG`, `DUEL`, `ARENA`).
+  - Added interactive instance switcher pills (`World`, `Battlegrounds`, `Duels`, `Arenas`, `Overall`) inside the Character Profile Dossier to view tailored stats, combat ratings, and damage/healing per instance.
+  - Dynamically recalculated the Leaderboard Operative Benchmark Comparison banner based on the active mode (`currentMode`).
+
+### Fixed
+- **Field Kit Return Navigation (`web/static/app.js`)**:
+  - Fixed dead `[← Return to Killboard]` button in the `/download` field kit view by binding it to `switchTab('INTEL')`.
+- **Top Telemetry Ribbon Truncation (`web/static/style.css`)**:
+  - Replaced rigid fixed height and hidden overflow on `.telemetry-ribbon` with responsive auto-wrapping (`min-height: 32px; height: auto; flex-wrap: wrap; gap: 8px 14px;`), preventing stats (`REALM KILLS`, `24H KILLS`, `PVE CASUALTIES`, `ACTIVE MARKS`) from being cut off on different screen sizes.
 
 ### Changed
 - **Header Navigation Access & Responsive Hamburger Drawer (`web/static/style.css`, `web/static/index.html`)**:

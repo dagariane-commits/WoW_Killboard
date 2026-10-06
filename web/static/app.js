@@ -1674,24 +1674,195 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       if (bmName && bmName.toLowerCase() === 'dagariane') {
         bmFaction = 'Alliance';
       }
-      const bmKills = bmMatch ? bmMatch.kills : (benchmarkProfile ? (benchmarkProfile.total_kills || 0) : 0);
-      const bmSolo = bmMatch ? (bmMatch.solo_kills || 0) : (benchmarkProfile ? (benchmarkProfile.solo_kills || 0) : 0);
-      const bmPct = bmMatch ? bmMatch.percentile : (benchmarkProfile && benchmarkProfile.percentile ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 });
-      const pctBadge = getWowLogsPercentileBadge(bmPct);
-      const factionThemeClass = bmFaction === 'Horde' ? 'benchmark-horde' : 'benchmark-alliance';
+      // Mode-specific metrics for Benchmark Card
+      const pModes = (benchmarkProfile && benchmarkProfile.modes) || {};
+      const curModeStats = pModes[currentMode] || {};
 
-      const rankDisplay = bmRank ? `#${bmRank}` : '#>15';
-      let deltaDisplay = '-';
-      let deltaColor = '#94a3b8';
-      if (topRank1) {
-        if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
-          deltaDisplay = '⭐ #1 Apex Leader';
-          deltaColor = 'var(--accent-gold)';
-        } else {
-          const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
-          deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
-          deltaColor = '#ef4444';
+      let bmStatsHtml = '';
+      if (currentMode === 'DUEL') {
+        const bmWins = bmMatch ? (bmMatch.wins !== undefined ? bmMatch.wins : bmMatch.kills) : (curModeStats.wins !== undefined ? curModeStats.wins : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelWins || 0 : 0));
+        const bmLosses = bmMatch ? (bmMatch.losses || 0) : (curModeStats.losses !== undefined ? curModeStats.losses : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelLosses || 0 : 0));
+        const bmWl = bmMatch ? (bmMatch.wl_ratio !== undefined ? bmMatch.wl_ratio : (bmLosses > 0 ? (bmWins / bmLosses).toFixed(2) : bmWins)) : (curModeStats.wl !== undefined ? curModeStats.wl : (bmLosses > 0 ? (bmWins / bmLosses).toFixed(2) : bmWins));
+
+        if (topRank1) {
+          const topWins = topRank1.wins !== undefined ? topRank1.wins : (topRank1.kills || 0);
+          if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
+            deltaDisplay = '⭐ #1 Apex Leader';
+            deltaColor = 'var(--accent-gold)';
+          } else {
+            const diff = Math.max(0, topWins - bmWins);
+            deltaDisplay = `-${diff} wins to #1 (${escapeHtml(topRank1.name)})`;
+            deltaColor = '#ef4444';
+          }
         }
+
+        bmStatsHtml = `
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
+            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">WINS</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmWins}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">LOSSES</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#ef4444;">${bmLosses}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">W/L RATIO</div>
+            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${bmWl}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
+            <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
+            <div>${pctBadge}</div>
+          </div>
+        `;
+      } else if (currentMode === 'BG') {
+        const bmKills = bmMatch ? bmMatch.kills : (curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.bgKills || 0 : 0));
+        const bmDeaths = bmMatch ? (bmMatch.deaths || 0) : (curModeStats.deaths !== undefined ? curModeStats.deaths : 0);
+        const bmKd = bmMatch ? (bmMatch.kd || 0) : (curModeStats.kd !== undefined ? curModeStats.kd : (bmDeaths > 0 ? (bmKills / bmDeaths).toFixed(2) : bmKills));
+        const bmWl = bmMatch ? (bmMatch.wl_ratio || '-') : (curModeStats.wl || '-');
+
+        if (topRank1) {
+          if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
+            deltaDisplay = '⭐ #1 Apex Leader';
+            deltaColor = 'var(--accent-gold)';
+          } else {
+            const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
+            deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
+            deltaColor = '#ef4444';
+          }
+        }
+
+        bmStatsHtml = `
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
+            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">KILLS</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmKills}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DEATHS</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#ef4444;">${bmDeaths}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">K/D RATIO</div>
+            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${bmKd}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">W/L RATIO</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#00e5ff;">${bmWl}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
+            <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
+            <div>${pctBadge}</div>
+          </div>
+        `;
+      } else if (currentMode === 'ARENA') {
+        const bmKills = bmMatch ? bmMatch.kills : (curModeStats.kills || 0);
+        const bmDeaths = bmMatch ? (bmMatch.deaths || 0) : (curModeStats.deaths || 0);
+        const bmKd = bmMatch ? (bmMatch.kd || 0) : (curModeStats.kd || (bmDeaths > 0 ? (bmKills / bmDeaths).toFixed(2) : bmKills));
+        const bmWl = bmMatch ? (bmMatch.wl_ratio || '-') : (curModeStats.wl || '-');
+
+        if (topRank1) {
+          if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
+            deltaDisplay = '⭐ #1 Apex Leader';
+            deltaColor = 'var(--accent-gold)';
+          } else {
+            const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
+            deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
+            deltaColor = '#ef4444';
+          }
+        }
+
+        bmStatsHtml = `
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
+            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">KILLS</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmKills}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DEATHS</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#ef4444;">${bmDeaths}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">K/D RATIO</div>
+            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${bmKd}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">W/L RATIO</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#00e5ff;">${bmWl}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
+            <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
+            <div>${pctBadge}</div>
+          </div>
+        `;
+      } else { // WORLD
+        const bmKills = bmMatch ? bmMatch.kills : (curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.kills || 0 : 0));
+        const bmSolo = bmMatch ? (bmMatch.solo_kills || 0) : (curModeStats.soloKills !== undefined ? curModeStats.soloKills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.soloKills || 0 : 0));
+        const bmDeaths = bmMatch ? (bmMatch.deaths || 0) : (curModeStats.deaths !== undefined ? curModeStats.deaths : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.deaths || 0 : 0));
+        const bmKd = bmMatch ? (bmMatch.kd || 0) : (curModeStats.kd !== undefined ? curModeStats.kd : (bmDeaths > 0 ? (bmKills / bmDeaths).toFixed(2) : bmKills));
+
+        if (topRank1) {
+          if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
+            deltaDisplay = '⭐ #1 Apex Leader';
+            deltaColor = 'var(--accent-gold)';
+          } else {
+            const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
+            deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
+            deltaColor = '#ef4444';
+          }
+        }
+
+        bmStatsHtml = `
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
+            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">KILLS</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmKills}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">SOLO</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#00e5ff;">${bmSolo}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DEATHS</div>
+            <div style="font-size:0.9rem; font-weight:800; color:#ef4444;">${bmDeaths}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">K/D RATIO</div>
+            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${bmKd}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
+            <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
+            <div>${pctBadge}</div>
+          </div>
+        `;
       }
 
       html += `
@@ -1700,7 +1871,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:1.15rem;">⚔️</span>
               <div>
-                <div style="font-size:0.68rem; color:var(--wow-gold, #f59e0b); font-weight:800; letter-spacing:0.5px;">CHAMPION BENCHMARK COMPARISON</div>
+                <div style="font-size:0.68rem; color:var(--wow-gold, #f59e0b); font-weight:800; letter-spacing:0.5px;">CHAMPION BENCHMARK COMPARISON &bull; ${escapeHtml(currentMode)}</div>
                 <div style="font-size:0.95rem; font-weight:700;">
                   <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(bmName)})">${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}</span>
                   <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
@@ -1710,26 +1881,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           </div>
 
           <div class="benchmark-stats-row" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-            <div>
-              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
-              <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
-            </div>
-            <div>
-              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">KILLS</div>
-              <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmKills}</div>
-            </div>
-            <div>
-              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">SOLO</div>
-              <div style="font-size:0.9rem; font-weight:800; color:#00e5ff;">${bmSolo}</div>
-            </div>
-            <div>
-              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
-              <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
-            </div>
-            <div>
-              <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
-              <div>${pctBadge}</div>
-            </div>
+            ${bmStatsHtml}
             <div class="benchmark-input-wrap" style="display:flex; align-items:center; gap:6px;">
               <input type="text" id="benchmark-callsign-input" placeholder="Compare champion..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 8px; border-radius:4px; width:130px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
               <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn" style="padding:4px 8px; font-size:0.72rem;">Compare</button>
@@ -1743,7 +1895,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         <div class="legends-comparison-banner" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px dashed rgba(212, 163, 41, 0.45); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 12px 16px; margin-bottom: 4px;">
           <div style="display:flex; align-items:center; gap:10px;">
             <span style="font-size:1.1rem;">⚔️</span>
-            <span style="font-size:0.82rem; color:#cbd5e1;">Benchmark your champion standing against realm leaders:</span>
+            <span style="font-size:0.82rem; color:#cbd5e1;">Benchmark your champion standing against realm leaders in ${escapeHtml(currentMode)}:</span>
           </div>
           <div class="benchmark-input-wrap" style="display:flex; align-items:center; gap:8px;">
             <input type="text" id="benchmark-callsign-input" placeholder="Enter Champion Name..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 10px; border-radius:4px; width:180px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
@@ -1753,38 +1905,137 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       `;
     }
 
+    // Generate Mode-Specific Table Headers and Colgroup
+    let colgroupHtml = '';
+    let theadHtml = '';
+    let totalCols = 9;
+
+    if (currentMode === 'DUEL') {
+      totalCols = 8;
+      colgroupHtml = `
+        <col style="width: 55px;">
+        <col style="width: 180px;">
+        <col style="width: 120px;">
+        <col style="width: 85px;">
+        <col style="width: 70px;">
+        <col style="width: 70px;">
+        <col style="width: 85px;">
+        <col style="width: 105px;">
+      `;
+      theadHtml = `
+        <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+          <th style="padding: 6px 10px; width: 55px;">Rank</th>
+          <th style="padding: 6px 10px;">Duelist</th>
+          <th style="padding: 6px 10px;">Guild</th>
+          <th style="padding: 6px 10px;">Faction</th>
+          <th style="padding: 6px 10px;">Wins</th>
+          <th style="padding: 6px 10px;">Losses</th>
+          <th style="padding: 6px 10px;">W/L Ratio</th>
+          <th style="padding: 6px 10px; text-align:right;">Percentile</th>
+        </tr>
+      `;
+    } else if (currentMode === 'BG') {
+      totalCols = 9;
+      colgroupHtml = `
+        <col style="width: 55px;">
+        <col style="width: 170px;">
+        <col style="width: 110px;">
+        <col style="width: 80px;">
+        <col style="width: 65px;">
+        <col style="width: 65px;">
+        <col style="width: 70px;">
+        <col style="width: 70px;">
+        <col style="width: 105px;">
+      `;
+      theadHtml = `
+        <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+          <th style="padding: 6px 10px; width: 55px;">Rank</th>
+          <th style="padding: 6px 10px;">Combatant</th>
+          <th style="padding: 6px 10px;">Guild</th>
+          <th style="padding: 6px 10px;">Faction</th>
+          <th style="padding: 6px 10px;">Kills</th>
+          <th style="padding: 6px 10px;">Deaths</th>
+          <th style="padding: 6px 10px;">K/D Ratio</th>
+          <th style="padding: 6px 10px;">W/L Ratio</th>
+          <th style="padding: 6px 10px; text-align:right;">Percentile</th>
+        </tr>
+      `;
+    } else if (currentMode === 'ARENA') {
+      totalCols = 9;
+      colgroupHtml = `
+        <col style="width: 55px;">
+        <col style="width: 170px;">
+        <col style="width: 110px;">
+        <col style="width: 80px;">
+        <col style="width: 65px;">
+        <col style="width: 65px;">
+        <col style="width: 70px;">
+        <col style="width: 70px;">
+        <col style="width: 105px;">
+      `;
+      theadHtml = `
+        <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+          <th style="padding: 6px 10px; width: 55px;">Rank</th>
+          <th style="padding: 6px 10px;">Gladiator</th>
+          <th style="padding: 6px 10px;">Guild</th>
+          <th style="padding: 6px 10px;">Faction</th>
+          <th style="padding: 6px 10px;">Kills</th>
+          <th style="padding: 6px 10px;">Deaths</th>
+          <th style="padding: 6px 10px;">K/D Ratio</th>
+          <th style="padding: 6px 10px;">W/L Ratio</th>
+          <th style="padding: 6px 10px; text-align:right;">Percentile</th>
+        </tr>
+      `;
+    } else { // WORLD
+      totalCols = 9;
+      colgroupHtml = `
+        <col style="width: 55px;">
+        <col style="width: 160px;">
+        <col style="width: 110px;">
+        <col style="width: 80px;">
+        <col style="width: 60px;">
+        <col style="width: 70px;">
+        <col style="width: 65px;">
+        <col style="width: 65px;">
+        <col style="width: 105px;">
+      `;
+      theadHtml = `
+        <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+          <th style="padding: 6px 10px; width: 55px;">Rank</th>
+          <th style="padding: 6px 10px;">Combatant</th>
+          <th style="padding: 6px 10px;">Guild</th>
+          <th style="padding: 6px 10px;">Faction</th>
+          <th style="padding: 6px 10px;">Kills</th>
+          <th style="padding: 6px 10px;">Solo Kills</th>
+          <th style="padding: 6px 10px;">Deaths</th>
+          <th style="padding: 6px 10px;">K/D Ratio</th>
+          <th style="padding: 6px 10px; text-align:right;">Percentile</th>
+        </tr>
+      `;
+    }
+
     html += `
       <div class="legends-table-wrapper" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
         <div class="mobile-table-scroll-hint" style="display:none; justify-content:space-between; align-items:center; font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); padding-bottom:6px; letter-spacing:0.3px;">
           <span>⟵ Drag table to view all combat stats</span>
-          <span>7 Columns ⟶</span>
+          <span>${totalCols} Columns ⟶</span>
         </div>
-        <table class="legends-table" style="width: 100%; min-width: 710px; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">
+        <table class="legends-table" style="width: 100%; min-width: 740px; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">
           <colgroup>
-            <col style="width: 55px;">
-            <col style="width: 180px;">
-            <col style="width: 130px;">
-            <col style="width: 90px;">
-            <col style="width: 70px;">
-            <col style="width: 75px;">
-            <col style="width: 110px;">
+            ${colgroupHtml}
           </colgroup>
           <thead>
-            <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
-              <th style="padding: 6px 10px; width: 55px;">Rank</th>
-              <th style="padding: 6px 10px;">Combatant</th>
-              <th style="padding: 6px 10px;">Guild</th>
-              <th style="padding: 6px 10px;">Faction</th>
-              <th style="padding: 6px 10px;">Kills</th>
-              <th style="padding: 6px 10px;">Solo Kills</th>
-              <th style="padding: 6px 10px; text-align:right;">Percentile</th>
-            </tr>
+            ${theadHtml}
           </thead>
           <tbody>
     `;
 
     if (killers.length === 0) {
-      html += `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No combatant kills logged for mode [${escapeHtml(currentMode)}].</td></tr>`;
+      let emptyMsg = `No combat records logged for mode [${escapeHtml(currentMode)}].`;
+      if (currentLeaderboardTimeframe !== 'all') {
+        emptyMsg = `No combat records logged for mode [${escapeHtml(currentMode)}] in timeframe [${escapeHtml(currentLeaderboardTimeframe)}]. <button class="pill-btn" onclick="filterLeaderboardsByTime('ALL')" style="margin-left:8px; padding:3px 8px; font-size:0.75rem; background:rgba(212,163,41,0.2); color:var(--wow-gold); border:1px solid var(--wow-gold);">View All-Time Champions &rarr;</button>`;
+      }
+      html += `<tr><td colspan="${totalCols}" style="text-align:center; padding:30px; color:#64748b;">${emptyMsg}</td></tr>`;
     } else {
       killers.forEach((p, idx) => {
         const guildHtml = (p.guild && p.guild !== 'None')
@@ -1803,6 +2054,39 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           pFaction = 'Alliance';
         }
 
+        let rowCellsHtml = '';
+        if (currentMode === 'DUEL') {
+          const wins = p.wins !== undefined ? p.wins : p.kills;
+          const losses = p.losses || 0;
+          const wl = p.wl_ratio !== undefined ? p.wl_ratio : (losses > 0 ? (wins / losses).toFixed(2) : wins);
+          rowCellsHtml = `
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${wins}</td>
+            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${losses}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${wl}</td>
+          `;
+        } else if (currentMode === 'BG') {
+          rowCellsHtml = `
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
+            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${p.deaths || 0}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${p.kd || 0}</td>
+            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.wl_ratio !== undefined ? p.wl_ratio : '-'}</td>
+          `;
+        } else if (currentMode === 'ARENA') {
+          rowCellsHtml = `
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
+            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${p.deaths || 0}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${p.kd || 0}</td>
+            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.wl_ratio !== undefined ? p.wl_ratio : '-'}</td>
+          `;
+        } else { // WORLD
+          rowCellsHtml = `
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
+            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.solo_kills || 0}</td>
+            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${p.deaths || 0}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${p.kd || 0}</td>
+          `;
+        }
+
         html += `
           <tr ${rowClass} data-faction="${escapeHtml(pFaction)}" style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
             <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
@@ -1813,8 +2097,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             </td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${guildHtml}</td>
             <td style="padding: 6px 10px; color: ${pFaction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(pFaction)}</td>
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
-            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.solo_kills || 0}</td>
+            ${rowCellsHtml}
             <td style="padding: 6px 10px; text-align:right; white-space: nowrap;">${pctBadge}</td>
           </tr>
         `;
@@ -1833,13 +2116,56 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           bmFaction = 'Alliance';
         }
         const bmGuild = (benchmarkProfile && (benchmarkProfile.guild || (benchmarkProfile.character && benchmarkProfile.character.guild))) || 'None';
-        const bmKills = benchmarkProfile ? (benchmarkProfile.total_kills || 0) : 0;
-        const bmSolo = benchmarkProfile ? (benchmarkProfile.solo_kills || 0) : 0;
         const bmPct = (benchmarkProfile && benchmarkProfile.percentile) ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 };
         const pctBadge = getWowLogsPercentileBadge(bmPct);
         const bmGuildHtml = (bmGuild && bmGuild !== 'None')
           ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(bmGuild)})">${escapeHtml(bmGuild)}</span>`
           : '-';
+
+        let bmRowCellsHtml = '';
+        if (currentMode === 'DUEL') {
+          const wins = curModeStats.wins !== undefined ? curModeStats.wins : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelWins || 0 : 0);
+          const losses = curModeStats.losses !== undefined ? curModeStats.losses : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelLosses || 0 : 0);
+          const wl = curModeStats.wl !== undefined ? curModeStats.wl : (losses > 0 ? (wins / losses).toFixed(2) : wins);
+          bmRowCellsHtml = `
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${wins}</td>
+            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${losses}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${wl}</td>
+          `;
+        } else if (currentMode === 'BG') {
+          const kills = curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.bgKills || 0 : 0);
+          const deaths = curModeStats.deaths || 0;
+          const kd = curModeStats.kd !== undefined ? curModeStats.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
+          const wl = curModeStats.wl || '-';
+          bmRowCellsHtml = `
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${kills}</td>
+            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${deaths}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${kd}</td>
+            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${wl}</td>
+          `;
+        } else if (currentMode === 'ARENA') {
+          const kills = curModeStats.kills || 0;
+          const deaths = curModeStats.deaths || 0;
+          const kd = curModeStats.kd !== undefined ? curModeStats.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
+          const wl = curModeStats.wl || '-';
+          bmRowCellsHtml = `
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${kills}</td>
+            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${deaths}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${kd}</td>
+            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${wl}</td>
+          `;
+        } else { // WORLD
+          const kills = curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.kills || 0 : 0);
+          const solo = curModeStats.soloKills !== undefined ? curModeStats.soloKills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.soloKills || 0 : 0);
+          const deaths = curModeStats.deaths !== undefined ? curModeStats.deaths : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.deaths || 0 : 0);
+          const kd = curModeStats.kd !== undefined ? curModeStats.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
+          bmRowCellsHtml = `
+            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${kills}</td>
+            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${solo}</td>
+            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${deaths}</td>
+            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${kd}</td>
+          `;
+        }
 
         html += `
           <tr style="border-top: 2px dashed rgba(245, 158, 11, 0.4); background: rgba(212, 163, 41, 0.08);" class="current-player-row">
@@ -1852,8 +2178,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             </td>
             <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${bmGuildHtml}</td>
             <td style="padding: 6px 10px; color: ${bmFaction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(bmFaction || 'Neutral')}</td>
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${bmKills}</td>
-            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${bmSolo}</td>
+            ${bmRowCellsHtml}
             <td style="padding: 6px 10px; text-align:right; white-space: nowrap;">${pctBadge}</td>
           </tr>
         `;
@@ -2429,6 +2754,8 @@ function closeModal() {
 }
 
 function buildCharacterDossierHtml(data) {
+  window._activeDossierData = data;
+  const dossierInitMode = (currentMode && ['WORLD', 'BG', 'DUEL', 'ARENA'].includes(currentMode)) ? currentMode : 'ALL';
   const stats = data.stats || {};
   const guildText = (data.currentGuild && data.currentGuild !== 'None') 
     ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(data.currentGuild)})">&lt;${escapeHtml(data.currentGuild)}&gt;</span>` 
@@ -2556,26 +2883,182 @@ function buildCharacterDossierHtml(data) {
       </div>
     </div>
 
-    <div class="dossier-grid">
+    <div class="dossier-mode-pills" style="margin-top:14px; margin-bottom:8px;">
+      <button class="dossier-mode-pill ${dossierInitMode === 'ALL' ? 'active' : ''}" onclick="switchDossierInstance('ALL', this)">⚡ Overall Combat</button>
+      <button class="dossier-mode-pill ${dossierInitMode === 'WORLD' ? 'active' : ''}" onclick="switchDossierInstance('WORLD', this)">⚔️ World PvP</button>
+      <button class="dossier-mode-pill ${dossierInitMode === 'BG' ? 'active' : ''}" onclick="switchDossierInstance('BG', this)">🛡️ Battlegrounds</button>
+      <button class="dossier-mode-pill ${dossierInitMode === 'DUEL' ? 'active' : ''}" onclick="switchDossierInstance('DUEL', this)">⚔️ 1v1 Duels</button>
+      <button class="dossier-mode-pill ${dossierInitMode === 'ARENA' ? 'active' : ''}" onclick="switchDossierInstance('ARENA', this)">🏆 Arenas</button>
+    </div>
+
+    <div id="dossier-grid-container" class="dossier-grid">
+      ${buildDossierGridTiles(data, dossierInitMode)}
+    </div>
+
+    ${historyHtml}
+    ${killsHtml}
+    ${deathsHtml}
+  `;
+}
+
+function buildDossierGridTiles(data, mode) {
+  const stats = data.stats || {};
+  const modes = data.modes || {};
+  const m = modes[mode] || {};
+
+  if (mode === 'DUEL') {
+    const wins = m.wins !== undefined ? m.wins : (stats.duelWins !== undefined ? stats.duelWins : stats.duelKills || 0);
+    const losses = m.losses !== undefined ? m.losses : (stats.duelLosses || 0);
+    const wl = m.wl !== undefined ? m.wl : (losses > 0 ? (wins / losses).toFixed(2) : wins);
+    const totalD = wins + losses;
+    const winRate = totalD > 0 ? Math.round((wins / totalD) * 100) + '%' : '100%';
+    return `
       <div class="dossier-stat">
-        <div style="font-size:0.7rem; color:#94a3b8;">KILLS</div>
-        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${stats.kills || 0}</div>
+        <div style="font-size:0.7rem; color:#94a3b8;">DUEL WINS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${wins}</div>
       </div>
       <div class="dossier-stat">
-        <div style="font-size:0.7rem; color:#94a3b8;">DEATHS</div>
-        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${stats.deaths || 0}</div>
+        <div style="font-size:0.7rem; color:#94a3b8;">DUEL LOSSES</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${losses}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">W/L RATIO</div>
+        <div style="font-size:1.2rem; font-weight:800; color:var(--accent-gold);">${wl}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">WIN RATE</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#00e5ff;">${winRate}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">TOTAL DUELS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#cbd5e1;">${totalD}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">DUEL K/D</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ffd700;">${wl}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">TOTAL DAMAGE</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#f97316;">${formatNumber(stats.totalDamage || 0)}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">TOTAL HEALING</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${formatNumber(stats.totalHealing || 0)}</div>
+      </div>
+    `;
+  }
+
+  if (mode === 'BG') {
+    const kills = m.kills !== undefined ? m.kills : (stats.bgKills || 0);
+    const deaths = m.deaths !== undefined ? m.deaths : 0;
+    const kd = m.kd !== undefined ? m.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
+    const wins = m.wins || 0;
+    const losses = m.losses || 0;
+    const wl = m.wl || '-';
+    return `
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">BG KILLS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${kills}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">BG DEATHS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${deaths}</div>
       </div>
       <div class="dossier-stat">
         <div style="font-size:0.7rem; color:#94a3b8;">K/D RATIO</div>
-        <div style="font-size:1.2rem; font-weight:800; color:var(--accent-gold);">${stats.kd || 0}</div>
+        <div style="font-size:1.2rem; font-weight:800; color:var(--accent-gold);">${kd}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">MATCH WINS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${wins}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">MATCH LOSSES</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${losses}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">W/L RATIO</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#00e5ff;">${wl}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">TOTAL DAMAGE</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#f97316;">${formatNumber(stats.totalDamage || 0)}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">TOTAL HEALING</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${formatNumber(stats.totalHealing || 0)}</div>
+      </div>
+    `;
+  }
+
+  if (mode === 'ARENA') {
+    const kills = m.kills !== undefined ? m.kills : 0;
+    const deaths = m.deaths !== undefined ? m.deaths : 0;
+    const kd = m.kd !== undefined ? m.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
+    const wins = m.wins || 0;
+    const losses = m.losses || 0;
+    const wl = m.wl || '-';
+    return `
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">ARENA KILLS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${kills}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">ARENA DEATHS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${deaths}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">K/D RATIO</div>
+        <div style="font-size:1.2rem; font-weight:800; color:var(--accent-gold);">${kd}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">MATCH WINS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${wins}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">MATCH LOSSES</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${losses}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">W/L RATIO</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#00e5ff;">${wl}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">TOTAL DAMAGE</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#f97316;">${formatNumber(stats.totalDamage || 0)}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">TOTAL HEALING</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${formatNumber(stats.totalHealing || 0)}</div>
+      </div>
+    `;
+  }
+
+  if (mode === 'WORLD') {
+    const kills = m.kills !== undefined ? m.kills : (stats.kills || 0);
+    const solo = m.soloKills !== undefined ? m.soloKills : (stats.soloKills || 0);
+    const deaths = m.deaths !== undefined ? m.deaths : (stats.deaths || 0);
+    const kd = m.kd !== undefined ? m.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
+    return `
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">WORLD KILLS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${kills}</div>
       </div>
       <div class="dossier-stat">
         <div style="font-size:0.7rem; color:#94a3b8;">SOLO KILLS</div>
-        <div style="font-size:1.2rem; font-weight:800; color:#00e5ff;">${stats.soloKills || 0}</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#00e5ff;">${solo}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">WORLD DEATHS</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${deaths}</div>
+      </div>
+      <div class="dossier-stat">
+        <div style="font-size:0.7rem; color:#94a3b8;">K/D RATIO</div>
+        <div style="font-size:1.2rem; font-weight:800; color:var(--accent-gold);">${kd}</div>
       </div>
       <div class="dossier-stat">
         <div style="font-size:0.7rem; color:#94a3b8;">DUEL WINS</div>
-        <div style="font-size:1.2rem; font-weight:800; color:#ffd700;">${stats.duelKills || 0}</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ffd700;">${stats.duelWins !== undefined ? stats.duelWins : stats.duelKills || 0}</div>
       </div>
       <div class="dossier-stat">
         <div style="font-size:0.7rem; color:#94a3b8;">BG KILLS</div>
@@ -2589,13 +3072,56 @@ function buildCharacterDossierHtml(data) {
         <div style="font-size:0.7rem; color:#94a3b8;">TOTAL HEALING</div>
         <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${formatNumber(stats.totalHealing || 0)}</div>
       </div>
-    </div>
+    `;
+  }
 
-    ${historyHtml}
-    ${killsHtml}
-    ${deathsHtml}
+  // ALL COMBAT (Default)
+  return `
+    <div class="dossier-stat">
+      <div style="font-size:0.7rem; color:#94a3b8;">KILLS</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${stats.kills || 0}</div>
+    </div>
+    <div class="dossier-stat">
+      <div style="font-size:0.7rem; color:#94a3b8;">DEATHS</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${stats.deaths || 0}</div>
+    </div>
+    <div class="dossier-stat">
+      <div style="font-size:0.7rem; color:#94a3b8;">K/D RATIO</div>
+      <div style="font-size:1.2rem; font-weight:800; color:var(--accent-gold);">${stats.kd || 0}</div>
+    </div>
+    <div class="dossier-stat">
+      <div style="font-size:0.7rem; color:#94a3b8;">SOLO KILLS</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#00e5ff;">${stats.soloKills || 0}</div>
+    </div>
+    <div class="dossier-stat">
+      <div style="font-size:0.7rem; color:#94a3b8;">DUEL WINS</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#ffd700;">${stats.duelWins !== undefined ? stats.duelWins : stats.duelKills || 0}</div>
+    </div>
+    <div class="dossier-stat">
+      <div style="font-size:0.7rem; color:#94a3b8;">BG KILLS</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#3b82f6;">${stats.bgKills || 0}</div>
+    </div>
+    <div class="dossier-stat">
+      <div style="font-size:0.7rem; color:#94a3b8;">TOTAL DAMAGE</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#f97316;">${formatNumber(stats.totalDamage || 0)}</div>
+    </div>
+    <div class="dossier-stat">
+      <div style="font-size:0.7rem; color:#94a3b8;">TOTAL HEALING</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${formatNumber(stats.totalHealing || 0)}</div>
+    </div>
   `;
 }
+
+function switchDossierInstance(mode, btn) {
+  document.querySelectorAll('.dossier-mode-pill').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const container = document.getElementById('dossier-grid-container');
+  if (container && window._activeDossierData) {
+    container.innerHTML = buildDossierGridTiles(window._activeDossierData, mode);
+  }
+}
+window.switchDossierInstance = switchDossierInstance;
+
 
 // Standalone Active Operative Telemetry Sync
 async function syncActiveCharacterTelemetry(charName) {
@@ -4464,7 +4990,7 @@ function switchSidebarLeaderboardTab(tabType) {
 window.switchSidebarLeaderboardTab = switchSidebarLeaderboardTab;
 
 let currentLeaderboardFaction = "ALL";
-let currentLeaderboardTimeframe = "24h";
+let currentLeaderboardTimeframe = "all";
 
 function filterLeaderboardsByFaction(faction) {
   currentLeaderboardFaction = faction;
@@ -4506,7 +5032,7 @@ function loadDownloadView() {
     <div style="display:flex; flex-direction:column; gap:24px; max-width:960px; margin:0 auto; padding:10px 0 40px 0;">
       <!-- Top Navigation Return Button -->
       <div style="display:flex; justify-content:flex-start; margin-bottom:-10px;">
-        <button class="pill-btn active" onclick="setLeaderboardCategory('PVP'); navigateToRoute('');" style="display:inline-flex; align-items:center; gap:8px; padding:8px 16px; font-size:0.85rem; cursor:pointer;">
+        <button class="pill-btn active" onclick="switchTab('INTEL');" style="display:inline-flex; align-items:center; gap:8px; padding:8px 16px; font-size:0.85rem; cursor:pointer;">
           <span>&larr; Return to Killboard</span>
         </button>
       </div>
@@ -5236,11 +5762,216 @@ function getOwnerToken() {
   return token;
 }
 
+// ----------------- Multi-Character Roster & Realm Mains -----------------
+
+function getUserRoster() {
+  let roster = [];
+  try {
+    const raw = localStorage.getItem("wowkb_user_roster");
+    if (raw) roster = JSON.parse(raw);
+    if (!Array.isArray(roster)) roster = [];
+  } catch (e) {
+    roster = [];
+  }
+
+  // Auto-migrate active character into roster if not already present
+  const activeName = localStorage.getItem("wowkb_user_character") || localStorage.getItem("wowkb_account_username");
+  if (activeName && activeName.toLowerCase() !== "unknown") {
+    const activeRealm = localStorage.getItem("wowkb_user_realm") || "WoW Forever";
+    const exists = roster.some(c => c.name.toLowerCase() === activeName.toLowerCase() && (c.realm || "WoW Forever").toLowerCase() === activeRealm.toLowerCase());
+    if (!exists) {
+      const charObj = {
+        name: activeName,
+        realm: activeRealm,
+        class: (localStorage.getItem("wowkb_user_class") || "WARRIOR").toUpperCase(),
+        level: parseInt(localStorage.getItem("wowkb_user_level") || "60", 10) || 60,
+        faction: localStorage.getItem("wowkb_user_faction") || "Alliance",
+        guild: localStorage.getItem("wowkb_user_guild") || "None"
+      };
+      roster.push(charObj);
+      saveUserRoster(roster);
+
+      const mains = getRealmMains();
+      if (!mains[activeRealm]) {
+        mains[activeRealm] = activeName;
+        saveRealmMains(mains);
+      }
+    }
+  }
+
+  return roster;
+}
+
+function saveUserRoster(roster) {
+  try {
+    localStorage.setItem("wowkb_user_roster", JSON.stringify(roster));
+    const countEl = document.getElementById("char-roster-count");
+    if (countEl) countEl.innerText = roster.length;
+  } catch (e) {}
+}
+
+function getRealmMains() {
+  let mains = {};
+  try {
+    const raw = localStorage.getItem("wowkb_realm_mains");
+    if (raw) mains = JSON.parse(raw);
+    if (typeof mains !== "object" || mains === null) mains = {};
+  } catch (e) {
+    mains = {};
+  }
+  return mains;
+}
+
+function saveRealmMains(mains) {
+  try {
+    localStorage.setItem("wowkb_realm_mains", JSON.stringify(mains));
+  } catch (e) {}
+}
+
+function setRealmMain(realm, charName) {
+  const mains = getRealmMains();
+  mains[realm] = charName;
+  saveRealmMains(mains);
+  renderRosterList();
+  renderHeaderAuthBadge();
+}
+
+function removeCharacterFromRoster(name, realm) {
+  let roster = getUserRoster();
+  roster = roster.filter(c => !(c.name.toLowerCase() === name.toLowerCase() && (c.realm || "WoW Forever").toLowerCase() === (realm || "WoW Forever").toLowerCase()));
+  saveUserRoster(roster);
+
+  const mains = getRealmMains();
+  if (mains[realm] && mains[realm].toLowerCase() === name.toLowerCase()) {
+    delete mains[realm];
+    const nextInRealm = roster.find(c => (c.realm || "WoW Forever").toLowerCase() === (realm || "WoW Forever").toLowerCase());
+    if (nextInRealm) {
+      mains[realm] = nextInRealm.name;
+    }
+    saveRealmMains(mains);
+  }
+
+  const activeChar = localStorage.getItem("wowkb_user_character") || "";
+  if (activeChar.toLowerCase() === name.toLowerCase()) {
+    if (roster.length > 0) {
+      const nextChar = roster[0];
+      selectKnownCharacter(nextChar.name, nextChar.class, nextChar.level, nextChar.faction, nextChar.guild, nextChar.realm);
+    } else {
+      portalSignOut();
+    }
+  }
+
+  renderRosterList();
+  renderHeaderAuthBadge();
+}
+
+function renderRosterList() {
+  const listEl = document.getElementById("char-roster-list");
+  const countEl = document.getElementById("char-roster-count");
+  const filterSelect = document.getElementById("char-roster-realm-filter");
+  if (!listEl) return;
+
+  const roster = getUserRoster();
+  if (countEl) countEl.innerText = roster.length;
+
+  const activeChar = (localStorage.getItem("wowkb_user_character") || "").toLowerCase();
+  const mains = getRealmMains();
+  const filterRealm = filterSelect ? filterSelect.value.trim().toLowerCase() : "";
+
+  const filtered = roster.filter(c => {
+    if (!filterRealm) return true;
+    const r = (c.realm || "WoW Forever").toLowerCase();
+    return r.includes(filterRealm) || filterRealm.includes(r);
+  });
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = `
+      <div style="text-align:center; padding:30px 15px; color:#64748b; background:rgba(0,0,0,0.2); border-radius:6px; border:1px dashed rgba(255,255,255,0.08);">
+        <div style="font-size:1rem; font-weight:700; color:#cbd5e1; margin-bottom:6px;">No Characters in Roster</div>
+        <div style="font-size:0.8rem; margin-bottom:14px;">You haven't claimed or registered characters for this realm yet. Choose from existing combatants or register a new hero!</div>
+        <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="pill-btn" style="background:var(--accent-cyan); color:#000; font-weight:700; font-size:0.75rem;" onclick="switchCharModalTab('known')">
+            🌐 Browse Realm Combatants
+          </button>
+          <button type="button" class="pill-btn" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.2); font-size:0.75rem;" onclick="switchCharModalTab('custom')">
+            ➕ Register Custom Hero
+          </button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(c => {
+    const cls = (c.class || "WARRIOR").toUpperCase();
+    const clsColor = CLASS_COLORS[cls] || CLASS_COLORS.UNKNOWN;
+    const isAct = (c.name.toLowerCase() === activeChar);
+    const realm = c.realm || "WoW Forever";
+    const isMain = (mains[realm] && mains[realm].toLowerCase() === c.name.toLowerCase());
+    const isAlliance = (c.faction && c.faction.toLowerCase() === "alliance");
+    const factionIcon = isAlliance ? "/static/icons/factions/alliance.jpg" : "/static/icons/factions/horde.jpg";
+    const lvlStr = (c.level && c.level > 0 && c.level <= 85) ? `Level ${c.level}` : "Level ??";
+    const guildStr = (c.guild && c.guild !== "None") ? `&lt;${escapeHtml(c.guild)}&gt;` : "";
+
+    return `
+      <div class="roster-card ${isAct ? 'active' : ''} ${isMain ? 'is-main' : ''}">
+        <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1;">
+          <img src="${factionIcon}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'}; flex-shrink:0;" alt="${c.faction || 'Faction'}">
+          <div style="border:1px solid ${clsColor}; border-radius:4px; overflow:hidden; width:30px; height:30px; flex-shrink:0;">
+            <img src="/static/icons/classes/${cls.toLowerCase()}.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/static/icons/classes/warrior.jpg'" alt="${cls}">
+          </div>
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:800; font-size:0.95rem; display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+              <span style="color:${clsColor}; cursor:pointer;" onclick="closeCharacterLinkModal(); openCharacterProfile(${safeJsParam(c.name)})">${escapeHtml(c.name)}</span>
+              ${isAct ? '<span style="background:var(--accent-cyan); color:#000; font-size:0.65rem; font-weight:800; padding:1px 6px; border-radius:3px;">ACTIVE</span>' : ''}
+              ${isMain ? '<span class="roster-main-badge" style="font-size:0.65rem; padding:1px 6px; border-radius:3px;">⭐ Main</span>' : ''}
+              <span style="background:rgba(255,255,255,0.06); color:#94a3b8; font-size:0.65rem; padding:1px 6px; border-radius:3px; border:1px solid rgba(255,255,255,0.1);">${escapeHtml(realm)}</span>
+            </div>
+            <div style="font-size:0.75rem; color:#94a3b8; display:flex; align-items:center; gap:6px; margin-top:2px; flex-wrap:wrap;">
+              <span>${lvlStr} ${cls.charAt(0) + cls.slice(1).toLowerCase()}</span>
+              <span>&bull;</span>
+              <span style="color:${isAlliance ? '#60a5fa' : '#f87171'};">${escapeHtml(c.faction || 'Neutral')}</span>
+              ${guildStr ? `<span>&bull;</span> <span style="color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">${guildStr}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+          ${!isAct ? `
+            <button class="pill-btn" style="background:#10b981; color:#fff; font-weight:700; font-size:0.75rem; padding:4px 10px; border:none; cursor:pointer;" onclick="selectKnownCharacter(${safeJsParam(c.name)}, ${safeJsParam(cls)}, ${c.level || 60}, ${safeJsParam(c.faction || 'Alliance')}, ${safeJsParam(c.guild || 'None')}, ${safeJsParam(realm)})" title="Switch active stats to this character">
+              Select
+            </button>
+          ` : `
+            <span class="pill-btn active" style="background:#10b981; color:#fff; font-size:0.75rem; padding:4px 10px; cursor:default;">
+              ✓ Active
+            </span>
+          `}
+          ${!isMain ? `
+            <button class="pill-btn" style="background:rgba(212, 163, 41, 0.15); color:var(--wow-gold); border:1px solid rgba(212, 163, 41, 0.4); font-size:0.75rem; padding:4px 10px; cursor:pointer;" onclick="setRealmMain(${safeJsParam(realm)}, ${safeJsParam(c.name)})" title="Make this your designated main character on ${escapeHtml(realm)}">
+              ⭐ Set Main
+            </button>
+          ` : ''}
+          <button class="pill-btn" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.2); font-size:0.75rem; padding:4px 8px; cursor:pointer;" onclick="closeCharacterLinkModal(); openCharacterProfile(${safeJsParam(c.name)})" title="View Full Dossier">
+            📊
+          </button>
+          <button class="pill-btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); font-size:0.75rem; padding:4px 8px; cursor:pointer;" onclick="removeCharacterFromRoster(${safeJsParam(c.name)}, ${safeJsParam(realm)})" title="Remove from Roster">
+            &times;
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function openCharacterLinkModal() {
   const modal = document.getElementById("character-link-modal");
   if (!modal) return;
   modal.style.display = "flex";
-  switchCharModalTab("known");
+  const roster = getUserRoster();
+  if (roster && roster.length > 0) {
+    switchCharModalTab("roster");
+  } else {
+    switchCharModalTab("known");
+  }
   loadKnownCharacters();
 }
 
@@ -5256,13 +5987,18 @@ function handleCharacterModalBackdrop(event) {
 }
 
 function switchCharModalTab(tab) {
-  const tabs = ["known", "custom"];
+  const tabs = ["roster", "known", "custom"];
   tabs.forEach(t => {
     const btn = document.getElementById(`char-tab-btn-${t}`);
     const panel = document.getElementById(`char-panel-${t}`);
     if (btn) btn.classList.toggle("active", t === tab);
     if (panel) panel.style.display = (t === tab) ? "block" : "none";
   });
+  if (tab === "roster") {
+    renderRosterList();
+  } else if (tab === "known") {
+    loadKnownCharacters();
+  }
 }
 
 function showClaimCodeModal(name, code) {
@@ -5545,6 +6281,7 @@ async function releaseClaim(name) {
 }
 
 function selectKnownCharacter(name, cls, lvl, faction, guild, realm) {
+  const chosenRealm = realm || localStorage.getItem("wowkb_user_realm") || "WoW Forever";
   localStorage.setItem("wowkb_account_username", name);
   localStorage.setItem("wowkb_user_character", name);
   localStorage.setItem("wow_killboard_hunter_name", name);
@@ -5552,11 +6289,39 @@ function selectKnownCharacter(name, cls, lvl, faction, guild, realm) {
   localStorage.setItem("wowkb_user_faction", faction || "Alliance");
   localStorage.setItem("wowkb_user_level", lvl || 60);
   localStorage.setItem("wowkb_user_guild", guild || "None");
-  localStorage.setItem("wowkb_user_realm", realm || "WoW Forever");
+  localStorage.setItem("wowkb_user_realm", chosenRealm);
   localStorage.setItem("wowkb_supporter_active", "1");
   sessionStorage.setItem("wowkb_auth_type", "account");
   sessionStorage.setItem("wowkb_has_entered_feed", "1");
   portalAccessMode = "account";
+
+  // Update Roster
+  let roster = getUserRoster();
+  const idx = roster.findIndex(c => c.name.toLowerCase() === name.toLowerCase() && (c.realm || "WoW Forever").toLowerCase() === chosenRealm.toLowerCase());
+  const entry = {
+    name: name,
+    realm: chosenRealm,
+    class: (cls || "WARRIOR").toUpperCase(),
+    level: parseInt(lvl || 60, 10) || 60,
+    faction: faction || "Alliance",
+    guild: guild || "None"
+  };
+  if (idx >= 0) {
+    roster[idx] = entry;
+  } else {
+    roster.push(entry);
+  }
+  saveUserRoster(roster);
+
+  // If no realm main exists for this realm, designate as main
+  const mains = getRealmMains();
+  if (!mains[chosenRealm]) {
+    mains[chosenRealm] = name;
+    saveRealmMains(mains);
+  }
+
+  // Clear manual benchmark override so benchmark comparison follows active hero
+  sessionStorage.removeItem("wowkb_benchmark_player");
 
   closeCharacterLinkModal();
   renderHeaderAuthBadge();
@@ -5564,6 +6329,8 @@ function selectKnownCharacter(name, cls, lvl, faction, guild, realm) {
 
   if (currentTab === "PORTAL") {
     portalLaunchFront("FOREVER");
+  } else if (currentTab === "LEADERBOARD") {
+    loadLeaderboards(currentMode);
   } else {
     loadKills();
     loadSidebar();
@@ -5608,7 +6375,14 @@ async function handleCustomCharacterClaim(event) {
     });
     const d = await res.json();
     if (d.success) {
-      switchCharModalTab("known");
+      // Add to user roster immediately
+      let roster = getUserRoster();
+      const exists = roster.some(c => c.name.toLowerCase() === name.toLowerCase() && (c.realm || "WoW Forever").toLowerCase() === realm.toLowerCase());
+      if (!exists) {
+        roster.push({ name, realm, level, class: cls, faction, guild });
+        saveUserRoster(roster);
+      }
+      switchCharModalTab("roster");
       loadKnownCharacters();
       if (d.claim_code) {
         showClaimCodeModal(name, d.claim_code);
@@ -5625,7 +6399,8 @@ async function handleCustomCharacterClaim(event) {
 
 function renderHeaderAuthBadge() {
   const badge = document.getElementById("header-auth-badge");
-  if (!badge) return;
+  const mobileBadge = document.getElementById("mobile-auth-badge");
+  if (!badge && !mobileBadge) return;
 
   const authType = sessionStorage.getItem("wowkb_auth_type");
   const rawUsername = localStorage.getItem("wowkb_account_username") || localStorage.getItem("wowkb_user_character") || sessionStorage.getItem("wowkb_character_name");
@@ -5636,83 +6411,143 @@ function renderHeaderAuthBadge() {
   const faction = ((localStorage.getItem("wowkb_user_faction") || "Alliance").toLowerCase() === "horde") ? "horde" : "alliance";
   const isAlliance = (faction === "alliance");
   const factionIcon = isAlliance ? "/static/icons/factions/alliance.jpg" : "/static/icons/factions/horde.jpg";
+  const realm = localStorage.getItem("wowkb_user_realm") || "WoW Forever";
+  const mains = getRealmMains();
+  const isMain = rawUsername && (mains[realm] && mains[realm].toLowerCase() === rawUsername.trim().toLowerCase());
 
-  badge.textContent = "";
+  if (badge) badge.textContent = "";
+  if (mobileBadge) mobileBadge.textContent = "";
 
   if (authType && rawUsername) {
     const username = rawUsername.trim();
-    const pill = document.createElement("div");
-    pill.className = "header-user-pill";
-    pill.style.cssText = "display:flex; align-items:center; gap:8px;";
 
-    const fImg = document.createElement("img");
-    fImg.src = factionIcon;
-    fImg.style.cssText = `width:20px; height:20px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'};`;
-    fImg.alt = faction;
-    pill.appendChild(fImg);
+    // 1. Desktop Badge
+    if (badge) {
+      const pill = document.createElement("div");
+      pill.className = "header-user-pill";
+      pill.style.cssText = "display:flex; align-items:center; gap:8px;";
 
-    const cWrap = document.createElement("div");
-    cWrap.style.cssText = `border:1px solid ${clsColor}; border-radius:3px; overflow:hidden; width:20px; height:20px;`;
-    const cImg = document.createElement("img");
-    cImg.src = `/static/icons/classes/${cls.toLowerCase()}.jpg`;
-    cImg.style.cssText = "width:100%; height:100%; object-fit:cover;";
-    cImg.onerror = function() { this.src = '/static/icons/classes/warrior.jpg'; };
-    cImg.alt = cls;
-    cWrap.appendChild(cImg);
-    pill.appendChild(cWrap);
+      const fImg = document.createElement("img");
+      fImg.src = factionIcon;
+      fImg.style.cssText = `width:20px; height:20px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'};`;
+      fImg.alt = faction;
+      pill.appendChild(fImg);
 
-    const playerSpan = document.createElement("span");
-    playerSpan.className = "clickable-player";
-    playerSpan.style.cursor = "pointer";
-    playerSpan.title = "View Profile";
-    playerSpan.onclick = () => openCharacterProfile(username);
+      const cWrap = document.createElement("div");
+      cWrap.style.cssText = `border:1px solid ${clsColor}; border-radius:3px; overflow:hidden; width:20px; height:20px;`;
+      const cImg = document.createElement("img");
+      cImg.src = `/static/icons/classes/${cls.toLowerCase()}.jpg`;
+      cImg.style.cssText = "width:100%; height:100%; object-fit:cover;";
+      cImg.onerror = function() { this.src = '/static/icons/classes/warrior.jpg'; };
+      cImg.alt = cls;
+      cWrap.appendChild(cImg);
+      pill.appendChild(cWrap);
 
-    const strongName = document.createElement("strong");
-    strongName.style.color = clsColor;
-    strongName.textContent = username;
-    playerSpan.appendChild(strongName);
+      const playerSpan = document.createElement("span");
+      playerSpan.className = "clickable-player";
+      playerSpan.style.cursor = "pointer";
+      playerSpan.title = "View Profile Dossier";
+      playerSpan.onclick = () => openCharacterProfile(username);
 
-    const lvlSpan = document.createElement("span");
-    lvlSpan.style.cssText = "font-size:0.75rem; color:#94a3b8; margin-left:4px;";
-    lvlSpan.textContent = `(${lvl})`;
-    playerSpan.appendChild(lvlSpan);
+      const strongName = document.createElement("strong");
+      strongName.style.color = clsColor;
+      strongName.textContent = username;
+      playerSpan.appendChild(strongName);
 
-    pill.appendChild(playerSpan);
+      const lvlSpan = document.createElement("span");
+      lvlSpan.style.cssText = "font-size:0.75rem; color:#94a3b8; margin-left:4px;";
+      lvlSpan.textContent = `(${lvl})`;
+      playerSpan.appendChild(lvlSpan);
 
-    const switchBtn = document.createElement("button");
-    switchBtn.className = "header-switch-btn";
-    switchBtn.title = "Switch or Claim Character";
-    switchBtn.style.cssText = "background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; border-radius:4px; padding:2px 8px; font-size:0.72rem; cursor:pointer;";
-    switchBtn.textContent = "Switch";
-    switchBtn.onclick = () => openCharacterLinkModal();
-    pill.appendChild(switchBtn);
+      if (isMain) {
+        const starSpan = document.createElement("span");
+        starSpan.className = "roster-main-badge";
+        starSpan.style.cssText = "font-size:0.65rem; padding:1px 5px; margin-left:4px;";
+        starSpan.title = `Designated Main for ${realm}`;
+        starSpan.textContent = "⭐ Main";
+        playerSpan.appendChild(starSpan);
+      }
 
-    const signoutBtn = document.createElement("button");
-    signoutBtn.className = "header-signout-btn";
-    signoutBtn.title = "Sign out";
-    signoutBtn.textContent = "Sign Out";
-    signoutBtn.onclick = () => handleHeaderSignOut();
-    pill.appendChild(signoutBtn);
+      pill.appendChild(playerSpan);
 
-    badge.appendChild(pill);
+      const switchBtn = document.createElement("button");
+      switchBtn.className = "header-switch-btn";
+      switchBtn.title = "Switch Roster Character or Realm Main";
+      switchBtn.style.cssText = "background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; border-radius:4px; padding:2px 8px; font-size:0.72rem; cursor:pointer;";
+      switchBtn.textContent = "Switch";
+      switchBtn.onclick = () => openCharacterLinkModal();
+      pill.appendChild(switchBtn);
+
+      const signoutBtn = document.createElement("button");
+      signoutBtn.className = "header-signout-btn";
+      signoutBtn.title = "Sign out";
+      signoutBtn.textContent = "Sign Out";
+      signoutBtn.onclick = () => handleHeaderSignOut();
+      pill.appendChild(signoutBtn);
+
+      badge.appendChild(pill);
+    }
+
+    // 2. Mobile Drawer Badge
+    if (mobileBadge) {
+      const mobCard = document.createElement("div");
+      mobCard.className = "roster-card active";
+      mobCard.style.cssText = "padding:8px 12px; margin-bottom:10px; border-radius:6px; display:flex; align-items:center; justify-content:space-between;";
+      mobCard.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+          <img src="${factionIcon}" style="width:22px; height:22px; border-radius:50%; object-fit:cover; border:1px solid ${isAlliance ? '#38bdf8' : '#ef4444'}; flex-shrink:0;" alt="${faction}">
+          <div style="border:1px solid ${clsColor}; border-radius:3px; overflow:hidden; width:22px; height:22px; flex-shrink:0;">
+            <img src="/static/icons/classes/${cls.toLowerCase()}.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/static/icons/classes/warrior.jpg'" alt="${cls}">
+          </div>
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:700; font-size:0.85rem; color:${clsColor}; display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+              <span>${escapeHtml(username)}</span>
+              ${isMain ? '<span class="roster-main-badge" style="font-size:0.6rem; padding:1px 4px;">⭐ Main</span>' : ''}
+            </div>
+            <div style="font-size:0.7rem; color:#94a3b8;">${lvl} ${cls.charAt(0) + cls.slice(1).toLowerCase()} &bull; ${escapeHtml(realm)}</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="pill-btn" style="padding:3px 8px; font-size:0.7rem; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; cursor:pointer;" onclick="if(typeof toggleMobileDrawer==='function')toggleMobileDrawer(false); openCharacterLinkModal();">Switch</button>
+        </div>
+      `;
+      mobileBadge.appendChild(mobCard);
+    }
   } else {
-    const signInBtn = document.createElement("button");
-    signInBtn.className = "header-signin-btn";
-    signInBtn.onclick = () => openCharacterLinkModal();
+    // Desktop Sign In
+    if (badge) {
+      const signInBtn = document.createElement("button");
+      signInBtn.className = "header-signin-btn";
+      signInBtn.onclick = () => openCharacterLinkModal();
 
-    const spanDesktop = document.createElement("span");
-    spanDesktop.className = "btn-text-desktop";
-    spanDesktop.textContent = "Select / Claim Character";
-    signInBtn.appendChild(spanDesktop);
+      const spanDesktop = document.createElement("span");
+      spanDesktop.className = "btn-text-desktop";
+      spanDesktop.textContent = "Select / Claim Character";
+      signInBtn.appendChild(spanDesktop);
 
-    const spanMobile = document.createElement("span");
-    spanMobile.className = "btn-text-mobile";
-    spanMobile.textContent = "⚔️ Claim Hero";
-    signInBtn.appendChild(spanMobile);
+      const spanMobile = document.createElement("span");
+      spanMobile.className = "btn-text-mobile";
+      spanMobile.textContent = "⚔️ Claim Hero";
+      signInBtn.appendChild(spanMobile);
 
-    badge.appendChild(signInBtn);
+      badge.appendChild(signInBtn);
+    }
+
+    // Mobile Sign In
+    if (mobileBadge) {
+      const mobSignInBtn = document.createElement("button");
+      mobSignInBtn.className = "pill-btn";
+      mobSignInBtn.style.cssText = "width:100%; padding:8px 12px; font-weight:700; font-size:0.85rem; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:10px;";
+      mobSignInBtn.textContent = "⚔️ Select / Claim Character";
+      mobSignInBtn.onclick = () => {
+        if (typeof toggleMobileDrawer === "function") toggleMobileDrawer(false);
+        openCharacterLinkModal();
+      };
+      mobileBadge.appendChild(mobSignInBtn);
+    }
   }
 }
+
 
 // ----------------- Web War Rallies Telemetry View & Muster Modal -----------------
 
