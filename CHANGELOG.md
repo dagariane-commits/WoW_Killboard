@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2026-10-05
 
 ### Added
+- **Dual PvP & PvE Telemetry Across All Realm Tenants (`web/server.py`, `web/static/app.js`, `web/static/index.html`)**:
+  - Unified all realm tenants (PvP, PvE, RP, Hardcore, Classic Era, Anniversary, Retail) to track and display BOTH PvP metrics (world PvP, opt-in world PvP, battlegrounds, duels, arenas) and PvE casualties (world hazards, mob executions, boss fatalities) simultaneously.
+  - Purged legacy `isPve` view hijacking across the client: eliminated destructive tab relabeling (`Casualties`, `Deadly Hazards`, `Notorious Elites`), removed redirection in `switchTab()`, `loadLeaderboards()`, `loadBounties()`, and `reloadActiveView()`, and normalized `#most-wanted-section` to always display active realm bounty contracts.
+  - Added dedicated `PvE Deaths` metric (`#stat-pve-deaths`) to the Top Telemetry Ribbon alongside `Realm Kills` and `24h Kills`.
+  - Added dedicated `PvE Casualties` row (`#act-label-pve` / `#act-7d-pve`) to the Lifetime Combat Activity card, providing a unified single-pane breakdown of combat and casualties on every realm.
+  - Scoped `/api/stats` and `/api/stats/activity-7d` to return complete PvP and PvE telemetry concurrently in a single response without mode bifurcation.
 - **Official Field Kit Return Navigation & Responsive Badges (`web/static/app.js`)**:
   - Added dedicated `[← Return to Killboard]` navigation button to the top of the `/download` field kit view (`loadDownloadView()`).
   - Added responsive `flex-wrap: wrap; gap: 8px;` styling to the CurseForge option card header to prevent badge pill collision on smaller viewports.
