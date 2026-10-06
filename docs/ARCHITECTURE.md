@@ -106,10 +106,16 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - `debt_ledger`: The public Oathbreaker registry recording default amounts and days in default.
    - `character_guild_history`: Historical ledger tracking character guild transfers, memberships, factions, and tenure timestamps (`first_seen`, `last_seen`).
 2. **Query & Ranking Engine**:
-   - Filter modes: `ALL`, `WORLD`, `BG`, `DUEL`.
-   - Aggregated telemetry: Top Killers, Top Victims, Deadliest Zones, Battleground Gladiators (Damage vs Healing).
+   - Filter modes: `ALL`, `WORLD`, `BG`, `DUEL`, `ARENA`.
+   - **Mode-Specific Leaderboards**: Tailored KPI columns reflecting exact gameplay context:
+     - `WORLD`: Kills, Solo Kills, Deaths, K/D Ratio, Percentile
+     - `BG`: Kills, Deaths, K/D Ratio, W/L Ratio, Percentile
+     - `DUEL`: Wins, Losses, W/L Ratio, Percentile (Note: WoW engine duels conclude strictly in victory or defeat/forfeit; draws do not exist in the engine)
+     - `ARENA`: Kills, Deaths, K/D Ratio, W/L Ratio, Percentile
+   - Dynamic instance-aware character dossier with interactive instance pills (`World`, `Battlegrounds`, `Duels`, `Arenas`, `Overall`).
    - Guild War Intelligence (`GET /api/guilds`, `GET /api/guild/<name>`): Guild K/D rankings, member counts, rosters, and recent guild combat records.
    - Character Intelligence & Armory Integration (`GET /api/character/<name>`): Lifetime combat KPI stats, historical guild timeline, recent kills/deaths, and external Armory links (Blizzard Armory, Classic Ironforge.pro, and Warcraft Logs).
+   - **Multi-Character Roster & Realm Mains**: Multi-character identity tracking supporting hero switching across realms and designated `⭐ Realm Main` tags per realm.
 3. **Supporter Framework & 100% Ad-Free Architecture**:
    - Zero commercial ad units, banners, or tracking networks.
    - Community-supported infrastructure with voluntary player and guild patron options.
@@ -118,14 +124,14 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
    - Real-time aggregation of Top Bounty Hunters, Highest Bounty Contracts, Most Elusive Outlaws, and Fastest Collected Manhunts.
    - Ingestion-driven auto-claim pipeline that transitions active bounties on slain targets to claimed status automatically.
 
-5. **Consolidated 56px Sticky Header, Global Omni-Search & Core Combat Views**:
-   - Replaced multi-row header deck with a single 56px sticky header (`position: sticky`, `top: 0`, `z-index: 1000`):
-     - **Brand & Theater**: Grouped brand crests, title, and active theater badge tightly on the left.
+5. **Consolidated Sticky Header, Multi-Character Auth & Core Combat Views**:
+   - Replaced multi-row header deck with a single responsive sticky header (`position: sticky`, `top: 0`, `z-index: 1000`):
+     - **Brand & Theater**: Grouped title and active theater badge tightly on the left.
      - **Global Omni-Search (`#global-search-input`)**: Centralized typeahead search bar with `/` keyboard shortcut, instant dropdown (`#search-results-dropdown`), search federation across combatants, guilds, and zones, and keyboard arrow/enter navigation.
-     - **Core Combat Views**: Streamlined 5-button nav rail (`Intel`, `Leaderboards`, `Deadly Hazards`, `Bounties`, `Zone Intel`) with dedicated top-level visibility for PvE hazards.
-     - **Contextual In-Page Mode Filtering**: Replaced redundant header mode pills with in-page filters (`[ World | BGs | Duels | Arenas ]`) located directly on the combat feed header (`#feed-mode-pills`) and leaderboard (`#champions-mode-pills`).
-     - **Action Tools & Gold CTA**: War Archivist AI trigger, Upload utility link, real-time Auth Badge, and primary gold CTA button `[ Download Field Kit ]` linking to `/download`.
-     - **32px Telemetry Ribbon**: Replaced heavy stat cards with a compact single-row ribbon, anchoring the live combat feed above the fold with 6–8 rows visible on standard 1080p viewports.
+     - **Core Combat Views**: Streamlined 5-button nav rail (`Intel`, `Leaderboards`, `Deadly Hazards`, `Bounties`, `Zone Intel`) with responsive hamburger drawer under 1180px.
+     - **Contextual In-Page Mode Filtering**: In-page filters (`[ World | BGs | Duels | Arenas ]`) located directly on the combat feed header (`#feed-mode-pills`) and leaderboard (`#champions-mode-pills`).
+     - **Action Tools & Gold CTA**: War Archivist AI trigger, Upload utility link, real-time Multi-Character Auth Badge (with `⭐ Main` indicator), and primary gold CTA button `[ Get the Addon ]` linking to `/download`.
+     - **Responsive Telemetry Ribbon**: Compact, auto-wrapping ribbon (`min-height: 32px; height: auto; flex-wrap: wrap;`), anchoring the live combat feed above the fold with zero horizontal cutoff on any viewport.
      - **5-Slot Right Sidebar Hierarchy**:
        1. *Lifetime Combat Activity*: Scoped strictly to the active realm tenant.
        2. *The Marked (Active Bounties)*: Condensed vertical ledger with class crests, realm, bounty pot, and `All →` navigation link.

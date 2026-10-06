@@ -2088,7 +2088,7 @@ def get_leaderboard():
         realm_params.append(realm_filter)
 
     with get_db() as conn:
-        # Top Killers
+        # Top Killers / Duelists
         top_killers_query = f"""
             SELECT killer_name AS name,
                    COALESCE(NULLIF(killer_class, 'UNKNOWN'), (SELECT class FROM characters WHERE name = kills.killer_name), 'UNKNOWN') AS class,
@@ -2099,13 +2099,53 @@ def get_leaderboard():
                        WHEN is_duel = 1 AND victim_faction != 'Unknown' AND victim_faction IS NOT NULL THEN victim_faction
                        ELSE 'Unknown'
                    END AS faction,
-                   COUNT(*) AS kills, SUM(is_solo) AS solo_kills
+                   COUNT(*) AS kills, SUM(is_solo) AS solo_kills,
+                   COUNT(*) AS wins
             FROM kills {where}
             GROUP BY killer_name
             ORDER BY kills DESC, solo_kills DESC
-            LIMIT 15
+            LIMIT 25
         """
         top_killers = [dict(r) for r in conn.execute(top_killers_query, tuple(realm_params)).fetchall()]
+        
+        is_fallback = False
+        if len(top_killers) == 0 and timeframe in ("24H", "7D"):
+            # Provide graceful all-time fallback so players never see an empty leaderboard
+            fallback_where = "WHERE 1=1"
+            if mode == "WORLD":
+                fallback_where += " AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)"
+            elif mode == "BG":
+                fallback_where += " AND is_battleground = 1 AND (is_duel = 0 OR is_duel IS NULL)"
+            elif mode == "ARENA":
+                fallback_where += " AND is_arena = 1 AND (is_duel = 0 OR is_duel IS NULL)"
+            elif mode == "DUEL":
+                fallback_where += " AND is_duel = 1"
+            else:
+                fallback_where += " AND (is_duel = 0 OR is_duel IS NULL)"
+            if realm_filter:
+                fallback_where += " AND LOWER(realm) = LOWER(?)"
+            fb_params = (realm_filter,) if realm_filter else ()
+            fb_query = f"""
+                SELECT killer_name AS name,
+                       COALESCE(NULLIF(killer_class, 'UNKNOWN'), (SELECT class FROM characters WHERE name = kills.killer_name), 'UNKNOWN') AS class,
+                       COALESCE(NULLIF(killer_guild, 'None'), (SELECT guild FROM characters WHERE name = kills.killer_name), 'None') AS guild,
+                       CASE 
+                           WHEN killer_faction != 'Unknown' AND killer_faction IS NOT NULL THEN killer_faction
+                           WHEN (SELECT faction FROM characters WHERE name = kills.killer_name) IS NOT NULL AND (SELECT faction FROM characters WHERE name = kills.killer_name) != 'Unknown' THEN (SELECT faction FROM characters WHERE name = kills.killer_name)
+                           WHEN is_duel = 1 AND victim_faction != 'Unknown' AND victim_faction IS NOT NULL THEN victim_faction
+                           ELSE 'Unknown'
+                       END AS faction,
+                       COUNT(*) AS kills, SUM(is_solo) AS solo_kills,
+                       COUNT(*) AS wins
+                FROM kills {fallback_where}
+                GROUP BY killer_name
+                ORDER BY kills DESC, solo_kills DESC
+                LIMIT 25
+            """
+            top_killers = [dict(r) for r in conn.execute(fb_query, fb_params).fetchall()]
+            if len(top_killers) > 0:
+                is_fallback = True
+
         for p in top_killers:
             p["class"] = resolve_class_name(p.get("class"))
             if p["name"].lower() == "dagariane":
@@ -2113,18 +2153,48 @@ def get_leaderboard():
                 p["faction"] = "Alliance"
 
             k_stat = p.get("kills") or 0
-            d_query = "SELECT COUNT(*) FROM kills WHERE victim_name = ?" + (" AND LOWER(realm) = LOWER(?)" if realm_filter else "")
-            d_params = (p["name"], realm_filter) if realm_filter else (p["name"],)
-            d_stat = conn.execute(d_query, d_params).fetchone()
-            victim_count = d_stat[0] if d_stat else 0
-            kd = round(k_stat / victim_count, 2) if victim_count > 0 else float(k_stat)
+            if mode == "DUEL":
+                l_query = "SELECT COUNT(*) FROM kills WHERE victim_name = ? AND is_duel = 1" + (" AND LOWER(realm) = LOWER(?)" if realm_filter else "")
+                l_params = (p["name"], realm_filter) if realm_filter else (p["name"],)
+                losses = conn.execute(l_query, l_params).fetchone()[0]
+                p["wins"] = k_stat
+                p["losses"] = losses
+                p["deaths"] = losses
+                p["wl_ratio"] = round(k_stat / losses, 2) if losses > 0 else float(k_stat)
+                p["kd"] = p["wl_ratio"]
+            elif mode == "BG":
+                d_query = "SELECT COUNT(*) FROM kills WHERE victim_name = ? AND is_battleground = 1" + (" AND LOWER(realm) = LOWER(?)" if realm_filter else "")
+                d_params = (p["name"], realm_filter) if realm_filter else (p["name"],)
+                victim_count = conn.execute(d_query, d_params).fetchone()[0]
+                p["deaths"] = victim_count
+                p["kd"] = round(k_stat / victim_count, 2) if victim_count > 0 else float(k_stat)
+                p["wins"] = 0
+                p["losses"] = 0
+                p["wl_ratio"] = 0.0
+            elif mode == "ARENA":
+                d_query = "SELECT COUNT(*) FROM kills WHERE victim_name = ? AND is_arena = 1" + (" AND LOWER(realm) = LOWER(?)" if realm_filter else "")
+                d_params = (p["name"], realm_filter) if realm_filter else (p["name"],)
+                victim_count = conn.execute(d_query, d_params).fetchone()[0]
+                p["deaths"] = victim_count
+                p["kd"] = round(k_stat / victim_count, 2) if victim_count > 0 else float(k_stat)
+                p["wins"] = 0
+                p["losses"] = 0
+                p["wl_ratio"] = 0.0
+            else: # WORLD
+                d_query = "SELECT COUNT(*) FROM kills WHERE victim_name = ? AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)" + (" AND LOWER(realm) = LOWER(?)" if realm_filter else "")
+                d_params = (p["name"], realm_filter) if realm_filter else (p["name"],)
+                d_stat = conn.execute(d_query, d_params).fetchone()
+                victim_count = d_stat[0] if d_stat else 0
+                kd = round(k_stat / victim_count, 2) if victim_count > 0 else float(k_stat)
+                p["deaths"] = victim_count
+                p["kd"] = kd
 
             s_query = "SELECT killer_spec, killer_level FROM kills WHERE killer_name = ? AND killer_spec IS NOT NULL" + (" AND LOWER(realm) = LOWER(?)" if realm_filter else "") + " ORDER BY timestamp DESC LIMIT 1"
             s_params = (p["name"], realm_filter) if realm_filter else (p["name"],)
             spec_row = conn.execute(s_query, s_params).fetchone()
             p_spec = spec_row[0] if spec_row else None
             p_lvl = spec_row[1] if spec_row and spec_row[1] else 60
-            p["percentile"] = compute_character_percentile(conn, p["name"], p["class"], p_spec, p_lvl, k_stat, kd)
+            p["percentile"] = compute_character_percentile(conn, p["name"], p["class"], p_spec, p_lvl, k_stat, p.get("kd", 1.0))
 
         # Top Solo Hunters
         top_solo_query = f"""
@@ -3115,6 +3185,28 @@ def get_character_profile(name):
             conn, name, char_data.get("class", "WARRIOR"), char_spec, char_data.get("level", 60), total_kills, kd
         )
 
+        # Mode-specific breakdowns for interactive instance widget
+        w_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_name = ? AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)", (name,)).fetchone()[0]
+        w_solo = conn.execute("SELECT COALESCE(SUM(is_solo), 0) FROM kills WHERE killer_name = ? AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)", (name,)).fetchone()[0]
+        w_deaths = conn.execute("SELECT COUNT(*) FROM kills WHERE victim_name = ? AND is_battleground = 0 AND is_arena = 0 AND (is_duel = 0 OR is_duel IS NULL)", (name,)).fetchone()[0]
+        w_kd = round(w_kills / w_deaths, 2) if w_deaths > 0 else float(w_kills)
+
+        b_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_name = ? AND is_battleground = 1", (name,)).fetchone()[0]
+        b_deaths = conn.execute("SELECT COUNT(*) FROM kills WHERE victim_name = ? AND is_battleground = 1", (name,)).fetchone()[0]
+        b_kd = round(b_kills / b_deaths, 2) if b_deaths > 0 else float(b_kills)
+        b_wins = 0
+        b_losses = 0
+
+        d_wins = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_name = ? AND is_duel = 1", (name,)).fetchone()[0]
+        d_losses = conn.execute("SELECT COUNT(*) FROM kills WHERE victim_name = ? AND is_duel = 1", (name,)).fetchone()[0]
+        d_wl = round(d_wins / d_losses, 2) if d_losses > 0 else float(d_wins)
+
+        a_kills = conn.execute("SELECT COUNT(*) FROM kills WHERE killer_name = ? AND is_arena = 1", (name,)).fetchone()[0]
+        a_deaths = conn.execute("SELECT COUNT(*) FROM kills WHERE victim_name = ? AND is_arena = 1", (name,)).fetchone()[0]
+        a_kd = round(a_kills / a_deaths, 2) if a_deaths > 0 else float(a_kills)
+        a_wins = 0
+        a_losses = 0
+
         return jsonify({
             "name": name,
             "guid": char_guid,
@@ -3137,9 +3229,45 @@ def get_character_profile(name):
                 "kd": kd,
                 "soloKills": kills_stat["solo_kills"] or 0,
                 "duelKills": kills_stat["duel_kills"] or 0,
+                "duelWins": d_wins,
+                "duelLosses": d_losses,
+                "duelWl": d_wl,
                 "bgKills": kills_stat["bg_kills"] or 0,
                 "totalDamage": kills_stat["total_damage"] or 0,
                 "totalHealing": kills_stat["total_healing"] or 0,
+            },
+            "modes": {
+                "WORLD": {
+                    "kills": w_kills,
+                    "soloKills": w_solo,
+                    "deaths": w_deaths,
+                    "kd": w_kd,
+                    "percentile": percentile_data
+                },
+                "BG": {
+                    "kills": b_kills,
+                    "deaths": b_deaths,
+                    "kd": b_kd,
+                    "wins": b_wins,
+                    "losses": b_losses,
+                    "wl": round(b_wins / b_losses, 2) if b_losses > 0 else float(b_wins)
+                },
+                "DUEL": {
+                    "wins": d_wins,
+                    "losses": d_losses,
+                    "wl": d_wl,
+                    "kills": d_wins,
+                    "deaths": d_losses,
+                    "kd": d_wl
+                },
+                "ARENA": {
+                    "kills": a_kills,
+                    "deaths": a_deaths,
+                    "kd": a_kd,
+                    "wins": a_wins,
+                    "losses": a_losses,
+                    "wl": round(a_wins / a_losses, 2) if a_losses > 0 else float(a_wins)
+                }
             },
             "guildHistory": guild_history,
             "recentKills": recent_kills,
