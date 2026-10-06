@@ -588,6 +588,7 @@ body {
   background-color: var(--text-main);
   border-radius: 2px;
   transition: all 0.2s;
+  pointer-events: none;
 }
 
 .btn-text-desktop {
@@ -4193,36 +4194,25 @@ body {
 
 /* ----------------- Responsive Media Queries ----------------- */
 
-/* Desktop Narrow / Tablet Landscape (1024px to 1280px) */
-@media (max-width: 1280px) {
+/* 1. Compact Desktop & Laptops (1201px to 1366px) */
+@media (max-width: 1366px) {
   .site-header {
     width: 100% !important;
-    max-width: 100vw !important;
-    overflow-x: clip !important;
     box-sizing: border-box !important;
+    overflow: visible !important;
   }
-  .container {
-    padding: 18px 16px;
-    gap: 18px;
-  }
-  .sidebar-column {
-    width: 300px;
-  }
-  .stats-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  .logo-subtitle {
-    display: none !important;
+  .header-main-row,
+  .header-top-row {
+    width: 100% !important;
+    padding: 0 14px !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
   }
   .theater-label {
     display: none !important;
   }
-  .header-main-row,
-  .header-top-row {
-    padding: 0 12px !important;
-    gap: 8px !important;
-    max-width: 100vw !important;
-    box-sizing: border-box !important;
+  .logo-subtitle {
+    display: none !important;
   }
   .header-icon-btn .header-btn-text {
     display: none !important;
@@ -4230,175 +4220,138 @@ body {
   .header-icon-btn {
     padding: 6px 8px !important;
   }
+  .header-signout-btn {
+    display: none !important;
+  }
   .header-search-wrap {
     max-width: 220px !important;
-    min-width: 110px !important;
-    flex-shrink: 1 !important;
+    min-width: 120px !important;
+    flex: 1 1 160px !important;
   }
   .header-search-wrap .search-kbd {
     display: none !important;
   }
-  .header-sub-row {
-    padding: 0 12px !important;
-  }
-}
-
-/* Tablet & Medium Screen Hamburger Breakpoint (1025px to 1180px) */
-@media (max-width: 1180px) {
-  .nav-links-rail {
-    display: none !important;
+  .nav-btn {
+    padding: 6px 8px !important;
+    font-size: 0.8rem !important;
   }
   .mobile-menu-btn {
-    display: flex !important;
-    padding: 6px 8px !important;
-    flex-shrink: 0 !important;
+    display: none !important;
   }
 }
 
-/* Tablet Portrait & Small Laptops (769px to 1024px) */
-@media (max-width: 1024px) {
+/* 2. Tablet Landscape & Small Laptops (769px to 1200px) — Hamburger Takes Over */
+@media (max-width: 1200px) {
   .site-header {
     position: sticky;
     top: 0;
     z-index: 1000;
     width: 100% !important;
-    max-width: 100vw !important;
-    overflow-x: clip !important;
     box-sizing: border-box !important;
+    overflow: visible !important;
   }
-
-  .logo-subtitle {
-    display: none !important;
-  }
-
-  .theater-label {
-    display: none !important;
-  }
-
   .header-main-row,
   .header-top-row {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
     flex-wrap: nowrap !important;
-    padding: 0 10px !important;
+    padding: 0 12px !important;
     gap: 8px !important;
     height: 56px !important;
     min-height: 56px !important;
     width: 100% !important;
-    max-width: 100vw !important;
     box-sizing: border-box !important;
   }
-
-  .header-icon-btn .header-btn-text {
+  .nav-links-rail {
     display: none !important;
   }
-
-  .header-icon-btn {
-    padding: 6px 8px !important;
+  .mobile-menu-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    background: rgba(15, 23, 42, 0.95) !important;
+    border: 1px solid var(--wow-brass-border, #4a3b27) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    z-index: 1010 !important;
+    position: relative !important;
+    margin-left: 6px !important;
   }
-
+  .header-cta-gold span {
+    display: none !important;
+  }
+  .header-cta-gold {
+    padding: 6px 10px !important;
+  }
   .header-search-wrap {
     max-width: 180px !important;
     min-width: 90px !important;
     flex-shrink: 1 !important;
   }
-
   .header-search-wrap .search-kbd {
     display: none !important;
   }
-
   .header-sub-row {
     display: none !important;
   }
-
-  .nav-links-rail {
-    display: none !important;
+  .container {
+    padding: 16px 14px;
+    gap: 16px;
   }
-
-  .nav-btn {
-    padding: 5px 8px !important;
-    font-size: 0.78rem !important;
-    flex-shrink: 0 !important;
+  .sidebar-column {
+    width: 280px;
   }
+}
 
-  .mobile-menu-btn {
-    display: flex !important;
-    padding: 6px 8px !important;
-    flex-shrink: 0 !important;
-  }
-
+/* 3. Medium-Small Viewports (769px to 900px) */
+@media (max-width: 900px) {
   .container {
     flex-direction: column;
-    padding: 16px 14px;
   }
-
   .sidebar-column {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
     gap: 16px;
   }
-
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .most-wanted-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
-  }
-
-  .km-combatants {
-    gap: 8px;
-  }
 }
 
-/* Medium-Small Viewports (769px to 900px) */
-@media (max-width: 900px) {
-  .nav-links-rail {
-    display: none !important;
-  }
-  .header-search-wrap {
-    max-width: 200px !important;
-  }
-}
-
-/* Mobile Phones & Phablets (up to 768px) */
+/* 4. Mobile Phones & Phablets (<= 768px) — Clean Header: Brand + Auth + Tactile Hamburger */
 @media (max-width: 768px) {
-  /* 1. Global expansion switcher is completely housed in slide-in drawer on mobile */
   .wowhead-top-bar {
     display: none !important;
   }
 
-  /* Mobile Viewport & Page-wide Horizontal Overflow Lock */
-  html {
-    scrollbar-gutter: auto !important;
-    width: 100% !important;
-    max-width: 100vw !important;
-    overflow-x: hidden !important;
-  }
-
+  html,
   body {
     width: 100% !important;
-    max-width: 100vw !important;
+    max-width: 100% !important;
     overflow-x: hidden !important;
     position: relative !important;
   }
 
-  /* 2. Streamlined Ultra-Compact Header */
   .site-header {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
     width: 100% !important;
-    max-width: 100vw !important;
-    overflow-x: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
   }
 
   .header-main-row,
   .header-top-row {
-    padding: 0 10px !important;
+    padding: 0 12px !important;
     height: 56px !important;
     min-height: 56px !important;
     display: flex !important;
@@ -4407,99 +4360,60 @@ body {
     flex-wrap: nowrap !important;
     gap: 8px !important;
     width: 100% !important;
-    max-width: 100vw !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
+    overflow: visible !important;
   }
 
-  .header-search-wrap {
-    max-width: 130px;
-    min-width: 90px;
-  }
-
-  .header-search-wrap .search-kbd {
-    display: none !important;
-  }
-
-  .header-cta-gold {
-    padding: 6px 8px !important;
-    font-size: 0.72rem !important;
-  }
-
-  .header-cta-gold span,
-  .header-icon-btn .header-btn-text {
-    display: none !important;
-  }
-
-  .logo-group {
-    order: 1 !important;
+  /* Left: Brand Group (Logo Only) */
+  .header-brand-group {
+    display: flex !important;
+    align-items: center !important;
     gap: 6px !important;
     flex-shrink: 0 !important;
-    cursor: pointer;
-  }
-
-  .header-faction-crest {
-    width: 22px !important;
-    height: 22px !important;
-  }
-
-  .logo-swords-icon {
-    width: 16px !important;
-    height: 16px !important;
-  }
-
-  .logo-crest {
-    font-size: 1.0rem !important;
+    min-width: 0 !important;
   }
 
   .logo-title {
     font-size: 1.05rem !important;
     letter-spacing: 0.5px !important;
     line-height: 1.1 !important;
+    white-space: nowrap !important;
   }
 
-  /* Hide bloated subtitles and desktop pills from mobile top row */
-  .logo-subtitle {
-    display: none !important;
-  }
-
-  .live-status-pill {
-    display: none !important;
-  }
-
-  /* Completely hide redundant horizontal sub-menu rail on mobile: all pages/modes live in the slide-in drawer */
-  .header-sub-row,
-  .nav-links-rail {
-    display: none !important;
-  }
-
+  .logo-subtitle,
+  .live-status-pill,
   .header-theater-wrap {
-    display: none !important; /* Managed via mobile drawer */
+    display: none !important;
   }
 
-  /* Unroll tools group so auth badge and hamburger participate in Row 1, and mode pills take Row 2 */
+  /* Middle Elements: Hidden from Top Bar (All Housed in Mobile Slide-In Drawer) */
+  .nav-links-rail,
+  .header-search-wrap,
+  #header-archivist-btn,
+  #nav-upload,
+  #header-download-btn,
+  .header-sub-row {
+    display: none !important;
+  }
+
+  /* Right: Tools Group (Auth Badge + Hamburger Toggle Only) */
   .header-tools-group {
-    display: contents !important;
-  }
-
-  .header-tools-group .search-wrap {
-    display: none !important; /* Accessible in mobile drawer */
-  }
-
-  .supporter-btn {
-    display: none !important; /* Accessible in mobile drawer */
-  }
-
-  /* Mobile Row 1 Right: Compact Claim Hero / Active Character Badge */
-  #header-auth-badge {
-    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
     margin-left: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  #header-auth-badge {
     display: flex !important;
     align-items: center !important;
     flex-shrink: 0 !important;
   }
 
   .header-signin-btn {
-    padding: 5px 9px !important;
+    padding: 6px 10px !important;
     font-size: 0.74rem !important;
     letter-spacing: 0.3px !important;
     white-space: nowrap !important;
@@ -4507,61 +4421,25 @@ body {
 
   .header-user-pill {
     gap: 5px !important;
-    padding: 2px 6px !important;
-  }
-
-  .header-user-pill .header-signout-btn {
-    display: none !important; /* Sign out is inside the mobile drawer */
+    padding: 3px 8px !important;
+    max-width: 160px !important;
   }
 
   .header-user-pill .clickable-player strong {
-    max-width: 85px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: inline-block;
-    vertical-align: bottom;
+    max-width: 75px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
   }
 
-  /* Mobile Row 1 Far Right: Tactile Hamburger Toggle */
-  .mobile-menu-btn {
-    order: 3 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 32px !important;
-    height: 32px !important;
-    margin-left: 6px !important;
-    padding: 6px !important;
-    border: 1px solid var(--wow-brass-border, #4a3b27) !important;
-    background: rgba(10, 13, 20, 0.9) !important;
-    border-radius: 4px !important;
-    cursor: pointer !important;
-    flex-shrink: 0 !important;
+  .header-user-pill .header-signout-btn {
+    display: none !important;
   }
 
-  /* Mobile Row 2: 4-Way Mode Filter Strip (Full Width, Centered, Touch-Friendly) */
-  .header-mode-filters {
-    order: 4 !important;
-    width: 100% !important;
-    flex: 1 1 100% !important;
-    margin-top: 4px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    gap: 3px !important;
-    padding: 3px !important;
-    background: rgba(8, 12, 18, 0.95) !important;
-    border: 1px solid rgba(197, 160, 89, 0.3) !important;
-    border-radius: 6px !important;
-    box-sizing: border-box !important;
-  }
-
-  .header-mode-pill {
-    flex: 1 !important;
-    text-align: center !important;
-    padding: 6px 2px !important;
-    font-size: 0.76rem !important;
-    letter-spacing: 0.4px !important;
-    border-radius: 4px !important;
+  .header-user-pill .roster-main-badge {
+    font-size: 0.6rem !important;
+    padding: 1px 4px !important;
   }
 
   .btn-text-desktop {
@@ -4571,6 +4449,44 @@ body {
   .btn-text-mobile {
     display: inline !important;
   }
+
+  /* Tactile High-Contrast Hamburger Menu Button */
+  .mobile-menu-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    height: 40px !important;
+    min-width: 44px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    border: 1px solid var(--wow-brass-border, #4a3b27) !important;
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    z-index: 1010 !important;
+    position: relative !important;
+    margin-left: 4px !important;
+  }
+
+  .mobile-menu-btn:hover,
+  .mobile-menu-btn:active {
+    background: rgba(25, 33, 52, 0.98) !important;
+    border-color: var(--wow-gold) !important;
+    box-shadow: 0 0 12px rgba(212, 163, 41, 0.4) !important;
+  }
+
+  .menu-bar {
+    width: 22px !important;
+    height: 2.5px !important;
+    background-color: var(--wow-gold, #ffd100) !important;
+    border-radius: 2px !important;
+    pointer-events: none !important;
+  }
+}
+
 
   .mobile-flavor-badge {
     display: inline-flex !important;

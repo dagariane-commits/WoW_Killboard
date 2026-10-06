@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dynamically recalculated the Leaderboard Operative Benchmark Comparison banner based on the active mode (`currentMode`).
 
 ### Fixed
+- **Responsive Header Layout & Hamburger Menu Accessibility (`web/static/style.css`, `web/static/app.js`, `web/static/index.html`)**:
+  - Fixed mobile top header cutoff where search, archivist, upload, and download action buttons caused horizontal flex overflow (~500px on a 375px screen), pushing the hamburger menu button off-screen into the hidden overflow area.
+  - Streamlined the mobile top header (<= 768px) to contain exclusively the clean brand title, compact active character badge / claim hero pill, and the tactile hamburger menu toggle.
+  - Raised the mobile menu button size to 44px x 40px with a high-contrast gold outline and `pointer-events: none` on internal menu bar spans, meeting mobile touch target standards and ensuring immediate responsiveness.
+  - Eliminated small desktop / laptop header clipping (1024px to 1366px) by activating the hamburger menu at 1200px and compacting icon button labels, search width, and character pill padding so buttons never get cut off or disabled.
+  - Added failsafe event listener initialization (`initMobileDrawer()`) in `app.js` and explicitly attached `window.toggleMobileDrawer` to guarantee 100% reliable drawer opening via mouse, touch, backdrop tap, and keyboard Escape.
+  - Added War Archivist AI trigger directly to the mobile slide-in drawer for instant mobile access.
 - **Field Kit Return Navigation (`web/static/app.js`)**:
   - Fixed dead `[← Return to Killboard]` button in the `/download` field kit view by binding it to `switchTab('INTEL')`.
 - **Top Telemetry Ribbon Truncation (`web/static/style.css`)**:
