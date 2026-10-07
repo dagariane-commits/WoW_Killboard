@@ -71,6 +71,13 @@ RATE_LIMIT_STORES = {
     "stats": {},
     "pve_deaths": {},
     "client_flavor": {},
+    "characters": {},
+    "claim_character": {},
+    "release_claim": {},
+    "debt_pay": {},
+    "events_cancel": {},
+    "discord_config": {},
+    "kos_blacklist": {},
 }
 
 def check_ip_rate_limit(bucket_name: str, ip: str, max_requests: int, window_seconds: int) -> bool:
@@ -2701,18 +2708,24 @@ def get_armory_directory():
 def get_characters_directory():
     """Returns or ingests indexed characters known to the platform for character selection/linking."""
     if request.method == "POST":
+        client_ip = get_client_ip()
+        if not check_ip_rate_limit("characters", client_ip, max_requests=30, window_seconds=60):
+            return jsonify({"error": "Rate limit exceeded. Maximum 30 character updates per minute."}), 429
         data = request.json or {}
         chars = data if isinstance(data, list) else list(data.values()) if isinstance(data, dict) else []
         saved_count = 0
         with get_db() as conn:
-            for c in chars:
+            for c in chars[:100]:
                 if isinstance(c, dict) and c.get("name"):
-                    c_name = c.get("name")
-                    if c_name and c_name != "Unknown" and c_name.strip() != "":
-                        c_class = c.get("class", "UNKNOWN")
-                        c_level = int(c.get("level") or 0)
-                        c_guild = c.get("guild", "None")
-                        c_faction = c.get("faction", "Unknown")
+                    c_name = str(c.get("name") or "").strip()[:48]
+                    if c_name and c_name != "Unknown" and c_name != "":
+                        c_class = str(c.get("class") or "UNKNOWN").strip()[:32]
+                        c_level = max(0, min(int(c.get("level") or 0), 85))
+                        c_guild = str(c.get("guild") or "None").strip()[:64]
+                        c_faction = str(c.get("faction") or "Unknown").strip()[:32]
+                        c_realm = str(c.get("realm") or "").strip()[:48]
+                        c_guid = str(c.get("guid") or "").strip()[:64]
+                        c_race = str(c.get("race") or "Unknown").strip()[:32]
                         conn.execute("""
                             INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -2726,8 +2739,8 @@ def get_characters_directory():
                                 guild = CASE WHEN excluded.guild != 'None' THEN excluded.guild ELSE characters.guild END,
                                 last_seen = MAX(characters.last_seen, excluded.last_seen)
                         """, (
-                            c_name, c.get("realm"), c.get("guid"), c_class,
-                            c.get("race", "Unknown"), c_level, c_faction,
+                            c_name, c_realm, c_guid, c_class,
+                            c_race, c_level, c_faction,
                             c_guild, c.get("lastSeen", int(time.time()))
                         ))
                         # Backfill past kills where this character had unknown attributes
@@ -2802,21 +2815,27 @@ def get_characters_directory():
 @app.route("/api/auth/claim-character", methods=["POST"])
 def claim_character():
     """Allows a user to claim or register a character with cryptographic ownership protection."""
+    client_ip = get_client_ip()
+    if not app.config.get("TESTING") and not check_ip_rate_limit("claim_character", client_ip, max_requests=15, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Too many claim requests from this network. Try again shortly."}), 429
     data = request.json or {}
-    name = (data.get("name") or data.get("characterName") or "").strip()
+    name = (data.get("name") or data.get("characterName") or "").strip()[:48]
     if not name or name.lower() == "unknown":
         return jsonify({"error": "Valid character name required"}), 400
 
-    owner_token = (data.get("owner_token") or request.headers.get("X-Owner-Token") or "").strip()
+    owner_token = (data.get("owner_token") or request.headers.get("X-Owner-Token") or "").strip()[:64]
     if not owner_token:
         import uuid
         owner_token = f"tok_{uuid.uuid4().hex[:16]}"
 
-    realm = (data.get("realm") or "WoW Forever").strip()
-    char_class = (data.get("class") or "UNKNOWN").strip().upper()
-    faction = (data.get("faction") or "Alliance").strip().capitalize()
-    level = int(data.get("level") or 60)
-    guild = (data.get("guild") or "None").strip()
+    realm = (data.get("realm") or "WoW Forever").strip()[:48]
+    char_class = (data.get("class") or "UNKNOWN").strip().upper()[:32]
+    faction = (data.get("faction") or "Alliance").strip().capitalize()[:32]
+    try:
+        level = max(1, min(int(data.get("level") or 60), 85))
+    except (ValueError, TypeError):
+        level = 60
+    guild = (data.get("guild") or "None").strip()[:64]
     now_ts = int(time.time())
 
     try:
@@ -2937,11 +2956,17 @@ def verify_claim():
 @app.route("/api/auth/release-claim", methods=["POST"])
 def release_claim():
     """Allows an owner or claimant to release/cancel a pending or owned claim."""
+    client_ip = get_client_ip()
+    if not app.config.get("TESTING") and not check_ip_rate_limit("release_claim", client_ip, max_requests=15, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Too many release attempts from this network."}), 429
     data = request.json or {}
-    name = (data.get("name") or data.get("character_name") or data.get("characterName") or "").strip()
-    owner_token = (data.get("owner_token") or request.headers.get("X-Owner-Token") or "").strip()
+    name = (data.get("name") or data.get("character_name") or data.get("characterName") or "").strip()[:48]
+    owner_token = (data.get("owner_token") or request.headers.get("X-Owner-Token") or "").strip()[:64]
     if not name:
         return jsonify({"error": "Character name required"}), 400
+
+    secret = (request.headers.get("X-Admin-Secret") or data.get("secret") or "").strip()
+    is_admin = bool(secret and ADMIN_SECRET_KEY and hmac.compare_digest(secret, ADMIN_SECRET_KEY))
 
     try:
         with get_db() as conn:
@@ -2952,9 +2977,11 @@ def release_claim():
             if not existing:
                 return jsonify({"success": True, "message": "No claim found for this character"})
 
-            # If owner_token provided and matches or if unverified, allow releasing
-            if existing["owner_token"] and owner_token and existing["owner_token"] != owner_token:
-                return jsonify({"error": "Unauthorized: Owner token does not match"}), 403
+            # Releasing a claim requires legitimate owner_token or administrator authorization
+            if not is_admin:
+                if existing["owner_token"]:
+                    if not owner_token or not hmac.compare_digest(str(existing["owner_token"]), str(owner_token)):
+                        return jsonify({"error": "Unauthorized: Owner token does not match"}), 403
 
             conn.execute("DELETE FROM character_claims WHERE LOWER(character_name) = LOWER(?)", (name,))
             conn.commit()
@@ -4108,9 +4135,12 @@ def post_debt_ledger():
 
 @app.route("/api/debt/pay", methods=["POST"])
 def pay_debt():
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("debt_pay", client_ip, max_requests=15, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 15 debt settlements per minute."}), 429
     data = request.json or {}
-    player_name = data.get("playerName")
-    player_guid = data.get("playerGuid") or data.get("player_guid")
+    player_name = str(data.get("playerName") or "").strip()[:48] or None
+    player_guid = str(data.get("playerGuid") or data.get("player_guid") or "").strip()[:64] or None
     if not player_name and not player_guid:
         return jsonify({"error": "Missing playerName or playerGuid"}), 400
 
@@ -4431,6 +4461,10 @@ def get_guild_events():
 @app.route("/api/events/<event_id>/cancel", methods=["POST"])
 def cancel_guild_event(event_id):
     """Cancels a guild event with authorization check."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("events_cancel", client_ip, max_requests=15, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 15 event cancellations per minute."}), 429
+    event_id = str(event_id)[:64]
     data = request.json or {}
     secret = (request.headers.get("X-Admin-Secret") or data.get("secret") or "").strip()
     is_admin = bool(secret and ADMIN_SECRET_KEY and hmac.compare_digest(secret, ADMIN_SECRET_KEY))
@@ -4457,8 +4491,11 @@ def cancel_guild_event(event_id):
 @app.route("/api/discord/config", methods=["POST"])
 def set_discord_config():
     """Configures Discord webhook URL for a guild or global default."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("discord_config", client_ip, max_requests=10, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 10 discord configurations per minute."}), 429
     data = request.json or {}
-    guild_name = data.get("guild_name") or "default"
+    guild_name = str(data.get("guild_name") or "default").strip()[:64]
     webhook_url = data.get("webhook_url", "").strip()
     alerts_enabled = 1 if data.get("alerts_enabled", True) else 0
     events_enabled = 1 if data.get("events_enabled", True) else 0
@@ -4758,8 +4795,11 @@ def get_kos_blacklist():
 @app.route("/api/kos/blacklist", methods=["POST"])
 def add_kos_blacklist():
     """Brands a guild or player onto the KOS Blacklist."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("kos_blacklist", client_ip, max_requests=15, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 15 KOS blacklist operations per minute."}), 429
     data = request.json or {}
-    entity_name = data.get("entity_name")
+    entity_name = str(data.get("entity_name") or "").strip()[:64]
     if not entity_name:
         return jsonify({"error": "Missing entity_name"}), 400
 
@@ -4777,8 +4817,8 @@ def add_kos_blacklist():
         if not is_officer:
             return jsonify({"error": "Unauthorized. KOS branding requires an administrator secret or verified character claim."}), 403
 
-    entity_type = data.get("entity_type", "GUILD")
-    reason = data.get("reason", "Branded KOS by Realm War Council")
+    entity_type = str(data.get("entity_type", "GUILD")).strip().upper()[:16]
+    reason = str(data.get("reason", "Branded KOS by Realm War Council")).strip()[:256]
     now_ts = int(time.time())
 
     with get_db() as conn:
@@ -4805,8 +4845,11 @@ def add_kos_blacklist():
 @app.route("/api/kos/pardon", methods=["POST"])
 def pardon_kos_entity():
     """Pardons an entity or deserter from the KOS Blacklist."""
+    client_ip = get_client_ip()
+    if not check_ip_rate_limit("kos_blacklist", client_ip, max_requests=15, window_seconds=60):
+        return jsonify({"error": "Rate limit exceeded. Maximum 15 KOS blacklist operations per minute."}), 429
     data = request.json or {}
-    entity_name = data.get("entity_name")
+    entity_name = str(data.get("entity_name") or "").strip()[:64]
     if not entity_name:
         return jsonify({"error": "Missing entity_name"}), 400
 
