@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=2.3.1">
+  <link rel="stylesheet" href="/static/style.css?v=1.4.75">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -51,12 +51,6 @@
         <!-- Character Authentication & Roster Switcher Badge -->
         <div id="header-auth-badge" class="header-auth-badge"></div>
 
-        <!-- War Archivist AI Trigger -->
-        <button id="header-archivist-btn" class="header-icon-btn archivist-btn" onclick="toggleOracleChatModal()" title="Consult The War Archivist (AI Intelligence)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          <span class="header-btn-text">Archivist</span>
-        </button>
-
         <!-- Upload Combat Log Utility -->
         <button id="nav-upload" class="header-icon-btn upload-btn" onclick="switchTab('UPLOAD')" title="Upload Combat Log">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -69,11 +63,12 @@
           <span>Get the Addon</span>
         </button>
 
-        <!-- Mobile Drawer Toggle -->
-        <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleMobileDrawer()" aria-label="Toggle Navigation Drawer">
-          <span class="menu-bar"></span>
-          <span class="menu-bar"></span>
-          <span class="menu-bar"></span>
+        <!-- War Archivist AI Trigger -->
+        <button id="oracle-chat-trigger" class="header-util-btn" onclick="toggleOracleChat()">
+          <span class="icon">&#128214;</span> Archivist
+        </button>
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Open Navigation Menu" onclick="toggleMobileDrawer()">
+          &#9776;
         </button>
       </div>
     </div>

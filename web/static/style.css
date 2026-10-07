@@ -302,7 +302,8 @@ body {
 }
 
 /* Header Utility and CTA Buttons */
-.header-icon-btn {
+.header-icon-btn,
+.header-util-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -318,13 +319,16 @@ body {
   white-space: nowrap;
 }
 
-.header-icon-btn:hover {
+.header-icon-btn:hover,
+.header-util-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.25);
   color: #fff;
 }
 
-.header-icon-btn.archivist-btn:hover {
+.header-icon-btn.archivist-btn:hover,
+.header-util-btn:hover,
+#oracle-chat-trigger:hover {
   border-color: var(--wow-gold);
   color: var(--wow-gold);
   box-shadow: 0 0 10px rgba(212, 163, 41, 0.25);
@@ -568,17 +572,31 @@ body {
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
 }
 
+/* Force hamburger trigger to remain visible on all screen sizes */
+#mobile-menu-btn,
 .mobile-menu-btn {
-  display: none;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 7px 10px;
-  cursor: pointer;
-  flex-direction: column;
-  gap: 4px;
+  display: flex !important;
   align-items: center;
   justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 1.25rem;
+  cursor: pointer;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: all 0.15s ease-in-out;
+  flex-shrink: 0;
+}
+
+#mobile-menu-btn:hover,
+.mobile-menu-btn:hover {
+  background: rgba(30, 41, 59, 1);
+  border-color: rgba(148, 115, 56, 0.9);
+  color: #f1c40f;
 }
 
 .menu-bar {
@@ -967,7 +985,8 @@ body {
   transition: opacity 0.3s ease;
 }
 
-.mobile-drawer-backdrop.open {
+.mobile-drawer-backdrop.open,
+.mobile-drawer-backdrop.active {
   display: block;
   opacity: 1;
 }
@@ -992,7 +1011,8 @@ body {
   overflow-y: auto;
 }
 
-.mobile-drawer.open {
+.mobile-drawer.open,
+.mobile-drawer.active {
   transform: translateX(0);
   visibility: visible;
   pointer-events: auto;
@@ -4341,9 +4361,6 @@ body {
   #nav-bounties {
     display: inline-flex !important;
   }
-  .mobile-menu-btn {
-    display: none !important;
-  }
   .header-search-wrap {
     flex: 1 !important;
     max-width: 400px !important;
@@ -4542,6 +4559,8 @@ body {
   .nav-links-rail,
   .header-search-wrap,
   #header-archivist-btn,
+  #oracle-chat-trigger,
+  .header-util-btn,
   #nav-upload,
   #header-download-btn,
   .header-sub-row {
