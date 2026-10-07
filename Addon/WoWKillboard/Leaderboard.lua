@@ -20,19 +20,24 @@ LB.Aggregates = {
 -- Check if a kill matches the requested filter mode
 function LB:MatchesMode(km, mode)
     if not km or type(km) ~= "table" then return false end
-    mode = mode or "WORLD"
+    mode = (mode or "WORLD"):upper()
+    local zType = km.zone_type or km.zoneType
+    local isBG = (km.isBattleground == true) or (zType == "pvp")
+    local isArena = (km.isArena == true) or (zType == "arena") or (km.mode == "ARENA")
+    local isDuel = (km.isDuel == true) or (km.is_duel == true) or (km.mode == "DUEL")
+
     if mode == "WORLD" then
-        return (not km.isBattleground and not km.isArena and not km.isDuel)
+        return (not isBG and not isArena and not isDuel and (not zType or zType == "none" or zType == ""))
     elseif mode == "BG" then
-        return (km.isBattleground == true)
+        return isBG
     elseif mode == "ARENA" then
-        return (km.isArena == true)
+        return isArena
     elseif mode == "DUEL" then
-        return (km.isDuel == true)
+        return isDuel
     elseif mode == "ALL" then
-        return (not km.isDuel)
+        return (not isDuel)
     end
-    return (not km.isDuel)
+    return (not isDuel)
 end
 
 -- Check if a combat record belongs to the active realm / ruleset
@@ -94,14 +99,19 @@ function LB:Rebuild()
                 local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
                 if kId and not seenKills[kId] and LB:MatchesRealm(km) then
                     seenKills[kId] = true
-                    if not km.isDuel then
+                    local zType = km.zone_type or km.zoneType
+                    local isBG = (km.isBattleground == true) or (zType == "pvp")
+                    local isArena = (km.isArena == true) or (zType == "arena") or (km.mode == "ARENA")
+                    local isDuel = (km.isDuel == true) or (km.is_duel == true) or (km.mode == "DUEL")
+
+                    if not isDuel then
                         LB:IndexKillmail(km, "ALL")
                     end
-                    if km.isDuel then
+                    if isDuel then
                         LB:IndexKillmail(km, "DUEL")
-                    elseif km.isArena then
+                    elseif isArena then
                         LB:IndexKillmail(km, "ARENA")
-                    elseif km.isBattleground then
+                    elseif isBG then
                         LB:IndexKillmail(km, "BG")
                     else
                         LB:IndexKillmail(km, "WORLD")
@@ -119,14 +129,19 @@ function LB:Rebuild()
                 local kId = km.killId or (km.killer.name .. (km.victim.name or "") .. tostring(km.timestamp or 0))
                 if kId and not seenKills[kId] and LB:MatchesRealm(km) then
                     seenKills[kId] = true
-                    if not km.isDuel then
+                    local zType = km.zone_type or km.zoneType
+                    local isBG = (km.isBattleground == true) or (zType == "pvp")
+                    local isArena = (km.isArena == true) or (zType == "arena") or (km.mode == "ARENA")
+                    local isDuel = (km.isDuel == true) or (km.is_duel == true) or (km.mode == "DUEL")
+
+                    if not isDuel then
                         LB:IndexKillmail(km, "ALL")
                     end
-                    if km.isDuel then
+                    if isDuel then
                         LB:IndexKillmail(km, "DUEL")
-                    elseif km.isArena then
+                    elseif isArena then
                         LB:IndexKillmail(km, "ARENA")
-                    elseif km.isBattleground then
+                    elseif isBG then
                         LB:IndexKillmail(km, "BG")
                     else
                         LB:IndexKillmail(km, "WORLD")
@@ -293,12 +308,19 @@ function LB:IndexKillmail(km, mode)
 end
 
 function LB:OnNewKill(km)
-    LB:IndexKillmail(km, "ALL")
-    if km.isDuel then
+    local zType = km.zone_type or km.zoneType
+    local isBG = (km.isBattleground == true) or (zType == "pvp")
+    local isArena = (km.isArena == true) or (zType == "arena") or (km.mode == "ARENA")
+    local isDuel = (km.isDuel == true) or (km.is_duel == true) or (km.mode == "DUEL")
+
+    if not isDuel then
+        LB:IndexKillmail(km, "ALL")
+    end
+    if isDuel then
         LB:IndexKillmail(km, "DUEL")
-    elseif km.isArena then
+    elseif isArena then
         LB:IndexKillmail(km, "ARENA")
-    elseif km.isBattleground then
+    elseif isBG then
         LB:IndexKillmail(km, "BG")
     else
         LB:IndexKillmail(km, "WORLD")

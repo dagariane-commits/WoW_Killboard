@@ -2106,6 +2106,68 @@ WoWKillboardDB = {
 
         print("[PASS] Verified Strict Realm Isolation, RP Ruleset Inclusion, and In-Game Stats Toggle.")
 
+    def test_31_mode_filter_pills_tab_cleanup_and_theme3(self):
+        """Verify Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, and Theme 3 (Web 1:1 Flat Slate)."""
+        addon_dir = os.path.join(BASE_DIR, "Addon", "WoWKillboard")
+
+        # 1. Config.lua has combatFilter default and Theme 3 definition
+        with open(os.path.join(addon_dir, "Config.lua"), "r", encoding="utf-8") as f:
+            cfg_content = f.read()
+        self.assertIn('combatFilter = "WORLD"', cfg_content)
+        self.assertIn('["web"]', cfg_content)
+        self.assertIn('Theme: Shadow Network (Web 1:1)', cfg_content)
+        self.assertIn('0.043, 0.059, 0.090, 0.98', cfg_content) # #0B0F17 Main Canvas
+        self.assertIn('0.067, 0.094, 0.153, 1.00', cfg_content) # #111827 Card / Panel Background
+        self.assertIn('0.086, 0.122, 0.188, 0.60', cfg_content) # #161F30 Sub-Panel
+        self.assertIn('0.122, 0.161, 0.216, 1.00', cfg_content) # #1F2937 Flat 1px Border (Muted)
+        self.assertIn('0.831, 0.686, 0.216, 0.85', cfg_content) # #D4AF37 Flat 1px Border (Gold Sheen)
+        self.assertIn('0.051, 0.075, 0.122, 1.00', cfg_content) # #0D131F Telemetry Ribbon
+        self.assertIn('0.984, 0.749, 0.141, 1.00', cfg_content) # #FBBF24 Primary Text (Gold Title)
+        self.assertIn('0.612, 0.639, 0.686, 1.00', cfg_content) # #9CA3AF Secondary Text (Slate Muted)
+
+        # 2. Leaderboard.lua has enhanced zone_type and mode matching
+        with open(os.path.join(addon_dir, "Leaderboard.lua"), "r", encoding="utf-8") as f:
+            lb_content = f.read()
+        self.assertIn('function LB:MatchesMode(km, mode)', lb_content)
+        self.assertIn('mode = (mode or "WORLD"):upper()', lb_content)
+        self.assertIn('local zType = km.zone_type or km.zoneType', lb_content)
+        self.assertIn('not isBG and not isArena and not isDuel and (not zType or zType == "none" or zType == "")', lb_content)
+
+        # 3. UI.lua has ApplyWebTheme and CreateWebPillButton helpers
+        with open(os.path.join(addon_dir, "UI.lua"), "r", encoding="utf-8") as f:
+            ui_content = f.read()
+        self.assertIn('local function ApplyWebTheme(frame, bgColor, borderColor)', ui_content)
+        self.assertIn('local function CreateWebPillButton(parent, text, width, height)', ui_content)
+        self.assertIn('UI.ApplyWebTheme = ApplyWebTheme', ui_content)
+        self.assertIn('UI.CreateWebPillButton = CreateWebPillButton', ui_content)
+
+        # 4. UI.lua has exactly 4 Mode Filter Pills: [World, BGs, Duels, Arenas]
+        self.assertIn('{ id = "ARENA", text = "Arenas"', ui_content)
+        self.assertIn('{ id = "DUEL",  text = "Duels"', ui_content)
+        self.assertIn('{ id = "BG",    text = "BGs"', ui_content)
+        self.assertIn('{ id = "WORLD", text = "World"', ui_content)
+        self.assertIn('WoWKillboardDB.combatFilter = filterId', ui_content)
+
+        # 5. UI.lua has exactly 5 tabs in PvP and exactly 5 tabs in PvE (Zero redundant Hazards tab)
+        self.assertIn('local tabOrder = { "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES" }', ui_content)
+        self.assertIn('FEED        = { text = "Casualties",', ui_content)
+        self.assertIn('LEADERBOARD = { text = "Deadly Hazards",', ui_content)
+        self.assertIn('BOUNTIES    = { text = "Notorious Elites",', ui_content)
+        self.assertIn('RALLIES     = { text = "Rescue Beacons",', ui_content)
+        self.assertIn('ZONES       = { text = "Zone Mortality",', ui_content)
+
+        self.assertIn('FEED        = { text = "Intel",', ui_content)
+        self.assertIn('LEADERBOARD = { text = "Leaderboards",', ui_content)
+        self.assertIn('BOUNTIES    = { text = "The Marked",', ui_content)
+        self.assertIn('RALLIES     = { text = "Call to Arms",', ui_content)
+        self.assertIn('ZONES       = { text = "Danger Zones",', ui_content)
+
+        # Confirm no HAZARDS tab in tabOrder
+        self.assertNotIn('"HAZARDS", "RALLIES"', ui_content)
+        self.assertNotIn('HAZARDS     = { text = "Hazards",', ui_content)
+
+        print("[PASS] Verified Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, and Theme 3 (Web 1:1 Flat Slate).")
+
 if __name__ == "__main__":
     unittest.main()
 

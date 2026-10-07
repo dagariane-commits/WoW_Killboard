@@ -70,6 +70,7 @@ function KM:RecordKill(data)
         isDuel = isDuel,
         isBattleground = isBattleground,
         isArena = isArena,
+        zone_type = data.zone_type or (isBattleground and "pvp") or (isArena and "arena") or "none",
         battlegroundName = data.battlegroundName,
         isSolo = isSolo,
         attackersCount = attackersCount,
