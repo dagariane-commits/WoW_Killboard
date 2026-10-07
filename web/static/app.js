@@ -1643,6 +1643,8 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
     const killers = (data && data.topKillers) ? data.topKillers : [];
     const topRank1 = killers.length > 0 ? killers[0] : null;
     const bmName = getBenchmarkPlayerName();
+    const pModes = (benchmarkProfile && benchmarkProfile.modes) || {};
+    const curModeStats = pModes[currentMode] || {};
 
     let bmMatch = null;
     let bmRank = null;
@@ -1674,9 +1676,14 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       if (bmName && bmName.toLowerCase() === 'dagariane') {
         bmFaction = 'Alliance';
       }
-      // Mode-specific metrics for Benchmark Card
-      const pModes = (benchmarkProfile && benchmarkProfile.modes) || {};
-      const curModeStats = pModes[currentMode] || {};
+
+      const isAlliance = (bmFaction || '').toLowerCase() === 'alliance';
+      const factionThemeClass = isAlliance ? 'banner-alliance' : 'banner-horde';
+      const rankDisplay = bmRank ? `#${bmRank}` : '#>15';
+      const bmPct = bmMatch ? bmMatch.percentile : (curModeStats && curModeStats.percentile ? curModeStats.percentile : (benchmarkProfile && benchmarkProfile.percentile ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 }));
+      const pctBadge = getWowLogsPercentileBadge(bmPct);
+      let deltaDisplay = '-';
+      let deltaColor = '#94a3b8';
 
       let bmStatsHtml = '';
       if (currentMode === 'DUEL') {
