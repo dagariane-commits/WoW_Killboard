@@ -1037,6 +1037,26 @@ function renderSidebarActivity(data) {
 
 let legendsTabType = "PLAYERS"; // "PLAYERS" or "GUILDS"
 let benchmarkPlayerCache = {};
+let currentLeaderboardClass = "ALL";
+let leaderboardSortKey = "rank";
+let leaderboardSortDir = "asc";
+let rawLeaderboardKillers = [];
+let cachedLeaderboardBenchmarkProfile = null;
+let currentLeaderboardFaction = "ALL";
+let currentLeaderboardTimeframe = "all";
+
+const CLASSIC_CLASSES = [
+  { id: "ALL", name: "All Classes", color: "#d4af37" },
+  { id: "WARRIOR", name: "Warrior", color: "#c79c6e" },
+  { id: "PALADIN", name: "Paladin", color: "#f58cba" },
+  { id: "HUNTER", name: "Hunter", color: "#abd473" },
+  { id: "ROGUE", name: "Rogue", color: "#fff569" },
+  { id: "PRIEST", name: "Priest", color: "#ffffff" },
+  { id: "SHAMAN", name: "Shaman", color: "#0070de" },
+  { id: "MAGE", name: "Mage", color: "#40c7eb" },
+  { id: "WARLOCK", name: "Warlock", color: "#8787ed" },
+  { id: "DRUID", name: "Druid", color: "#ff7d0a" }
+];
 
 function getBenchmarkPlayerName() {
   const raw = sessionStorage.getItem("wowkb_benchmark_player") || 
@@ -1428,72 +1448,87 @@ function renderFeed(kills) {
     if (killerFaction.toLowerCase() === 'alliance') victorClass = 'winner-alliance';
     else if (killerFaction.toLowerCase() === 'horde') victorClass = 'winner-horde';
 
-    const killerBadge = renderClassBadge(km.killer.class, 26);
-    const victimBadge = renderClassBadge(km.victim.class, 26);
+    const killerBadge = renderClassBadge(km.killer.class, 20);
+    const victimBadge = renderClassBadge(km.victim.class, 20);
     const killerSpan = colorizeClass(km.killer.name, km.killer.class);
     const victimSpan = colorizeClass(km.victim.name, km.victim.class);
+
+    // Infer killer spec and victim spec
+    let killerSpell = "Combat";
+    let attackersList = (km.attackers && km.attackers.length > 0) ? km.attackers : [];
+    if (attackersList.length > 0) {
+      const kAtt = attackersList.find(a => a.name === km.killer.name) || attackersList[0];
+      if (kAtt && kAtt.spell) killerSpell = kAtt.spell;
+    }
+    const killerSpec = inferSpec(km.killer.class, killerSpell);
+    const killerSpecBadge = renderSpecBadge(killerSpec.id, killerSpec.name, 18);
+
+    const victimSpec = inferSpec(km.victim.class, "Combat");
+    const victimSpecBadge = renderSpecBadge(victimSpec.id, victimSpec.name, 18);
 
     const killerGuildName = (km.killer.guild && km.killer.guild !== 'None') ? km.killer.guild : '';
     const victimGuildName = (km.victim.guild && km.victim.guild !== 'None') ? km.victim.guild : '';
 
     const killerGuildHtml = killerGuildName
-      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(killerGuildName)})">&lt;${escapeHtml(killerGuildName)}&gt;</span>`
-      : `<span class="km-guild-none">&lt;Unguilded&gt;</span>`;
+      ? `<span class="clickable-guild km-guild-tag" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(killerGuildName)})">&lt;${escapeHtml(killerGuildName)}&gt;</span>`
+      : `<span class="km-guild-tag unguilded">&lt;Unguilded&gt;</span>`;
 
     const victimGuildHtml = victimGuildName
-      ? `<span class="clickable-guild km-guild-sub-text" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(victimGuildName)})">&lt;${escapeHtml(victimGuildName)}&gt;</span>`
-      : `<span class="km-guild-none">&lt;Unguilded&gt;</span>`;
+      ? `<span class="clickable-guild km-guild-tag" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(victimGuildName)})">&lt;${escapeHtml(victimGuildName)}&gt;</span>`
+      : `<span class="km-guild-tag unguilded">&lt;Unguilded&gt;</span>`;
 
     const subzoneOrCoords = km.location.subZone ? km.location.subZone : `${(km.location.x || 0).toFixed(1)}, ${(km.location.y || 0).toFixed(1)}`;
     const rowTooltip = km.isDuel
       ? `${km.killer.name} defeated ${km.victim.name} in a Sanctioned 1v1 Duel (${killerFaction || 'Friendly'} Sparring) • ${km.location.zone} • Click for Battle Report`
       : `${km.killer.name} defeated ${km.victim.name} • ${modeLabel} • ${km.location.zone} • Click for Battle Report`;
 
-    const killerLvlStr = (km.killer && km.killer.level && km.killer.level > 0) ? `(${km.killer.level})` : '??';
-    const victimLvlStr = (km.victim && km.victim.level && km.victim.level > 0) ? `(${km.victim.level})` : '??';
+    const killerLvlStr = (km.killer && km.killer.level && km.killer.level > 0) ? `${km.killer.level}` : '??';
+    const victimLvlStr = (km.victim && km.victim.level && km.victim.level > 0) ? `${km.victim.level}` : '??';
 
     const isBounty = km.isBountyClaim || (km.bountyRewardGold && km.bountyRewardGold > 0) || (km.bounty && (km.bounty.amountGold > 0 || km.bounty.amountCopper > 0));
     const bountyRowClass = isBounty ? "bounty-claimed-row" : "";
     const bountyGoldVal = km.bountyRewardGold || (km.bounty && km.bounty.amountGold) || 0;
-    const bountyTag = isBounty ? `<span class="km-bounty-claimed-tag">💰 BOUNTY CLAIMED${bountyGoldVal > 0 ? ` (${formatNumber(bountyGoldVal)}g)` : ''}</span>` : "";
+    const bountyTag = isBounty ? `<span class="km-bounty-claimed-tag" title="Bounty Claimed: ${bountyGoldVal}g">💰${bountyGoldVal > 0 ? ` ${formatNumber(bountyGoldVal)}g` : ''}</span>` : "";
+
+    const fLower = killerFaction.toLowerCase();
+    const factionBadge = `<span class="km-faction-badge-sm ${fLower === 'alliance' ? 'alliance' : (fLower === 'horde' ? 'horde' : 'neutral')}" title="${escapeHtml(killerFaction || 'Neutral')}">${fLower === 'alliance' ? 'A' : (fLower === 'horde' ? 'H' : '•')}</span>`;
 
     html += `
       <div class="killmail-row ${modeClass} ${victorClass} ${bountyRowClass}" onclick="openKillModal(${safeJsParam(km.killId)})" title="${escapeHtml(rowTooltip)}">
-        <div class="km-left-meta">
-          <span class="km-zone-name">${escapeHtml(km.location.zone)}</span>
-          <span class="km-subzone-text">${escapeHtml(subzoneOrCoords)}</span>
-          ${km.isDuel ? `<span style="color:#f59e0b; font-size:0.68rem; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-top:2px; display:inline-block;">⚔️ 1v1 Sparring</span>` : ''}
-        </div>
-
-        <div class="km-combatants-center">
-          <div class="km-combatant-col killer">
-            <div class="km-player-row">
-              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.killer.name)})">${killerSpan}</span>
-              <span class="km-lvl">${killerLvlStr}</span>
-              ${killerBadge}
-            </div>
-            <div class="km-guild-sub">
-              ${killerGuildHtml}
-            </div>
-          </div>
-
-          <div class="km-vs-wrapper">
-            <span class="km-vs" ${km.isDuel ? 'style="color:#f59e0b; border-color:rgba(245,158,11,0.5); font-weight:800;"' : ''} title="${km.isDuel ? 'Sanctioned 1v1 Duel (Friendly Sparring)' : (km.isSolo ? 'Slew in 1v1 Combat' : 'Slew in Combat')}">${km.isDuel ? 'DUEL' : 'VS'}</span>
-          </div>
-
-          <div class="km-combatant-col victim">
-            <div class="km-player-row">
-              ${victimBadge}
-              <span class="clickable-player" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.victim.name)})">${victimSpan}</span>
-              <span class="km-lvl">${victimLvlStr}</span>
-            </div>
-            <div class="km-guild-sub">
-              ${victimGuildHtml}
-            </div>
+        <!-- Col 1: Faction border/badge + Zone/Coords -->
+        <div class="km-col-location">
+          ${factionBadge}
+          <div class="km-location-meta">
+            <span class="km-zone-name">${escapeHtml(km.location.zone)}</span>
+            <span class="km-coords">${escapeHtml(subzoneOrCoords)}</span>
           </div>
         </div>
 
-        <div class="km-right-meta">
+        <!-- Col 2: Killer name (class-colored), Level badge, Spec icon, Guild in <brackets> -->
+        <div class="km-col-killer">
+          ${killerBadge}
+          ${killerSpecBadge}
+          <span class="clickable-player km-player-name" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.killer.name)})">${killerSpan}</span>
+          <span class="km-lvl-pill">${killerLvlStr}</span>
+          ${killerGuildHtml}
+        </div>
+
+        <!-- Col 3: VS / Fatal Ability icon -->
+        <div class="km-col-vs">
+          <span class="km-vs-badge" title="${escapeHtml(killerSpell || (km.isDuel ? '1v1 Sparring' : 'Fatal Blow'))}">${km.isDuel ? 'DUEL' : 'VS'}</span>
+        </div>
+
+        <!-- Col 4: Victim name (class-colored), Level badge, Spec icon, Guild in <brackets> -->
+        <div class="km-col-victim">
+          ${victimBadge}
+          ${victimSpecBadge}
+          <span class="clickable-player km-player-name" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.victim.name)})">${victimSpan}</span>
+          <span class="km-lvl-pill">${victimLvlStr}</span>
+          ${victimGuildHtml}
+        </div>
+
+        <!-- Col 5: Relative timestamp + Mode tag -->
+        <div class="km-col-time">
           ${bountyTag}
           <span class="km-mode-tag ${modeClass}">${modeTagText}</span>
           <span class="km-time">${timeAgo(km.timestamp)}</span>
@@ -1517,6 +1552,481 @@ function renderFeed(kills) {
   container.innerHTML = html;
 }
 
+function getSortIndicator(key) {
+  if (leaderboardSortKey !== key) {
+    return `<span class="sort-arrow muted">&updownarrow;</span>`;
+  }
+  return `<span class="sort-arrow active">${leaderboardSortDir === "asc" ? "▲" : "▼"}</span>`;
+}
+
+function getSortedAndFilteredKillers() {
+  let list = (rawLeaderboardKillers || []).slice();
+
+  // 1. Filter by Class
+  if (currentLeaderboardClass && currentLeaderboardClass !== "ALL") {
+    list = list.filter(p => resolveClassName(p.class) === currentLeaderboardClass);
+  }
+
+  // 2. Filter by Faction
+  if (currentLeaderboardFaction && currentLeaderboardFaction !== "ALL") {
+    list = list.filter(p => {
+      let fac = (p.faction || "Neutral").toUpperCase();
+      if (!p.faction && p.class) {
+        const c = resolveClassName(p.class);
+        if (c === "PALADIN") fac = "ALLIANCE";
+        if (c === "SHAMAN") fac = "HORDE";
+      }
+      return fac === currentLeaderboardFaction.toUpperCase();
+    });
+  }
+
+  // 3. Sorting
+  const key = leaderboardSortKey || "rank";
+  const dir = leaderboardSortDir || "asc";
+
+  list.sort((a, b) => {
+    if (key === "kd") {
+      // Require kills >= 5 to qualify for K/D leaderboard to prevent 1-0 outliers
+      const aQual = (Number(a.kills) || 0) >= 5;
+      const bQual = (Number(b.kills) || 0) >= 5;
+      if (aQual && !bQual) return -1;
+      if (!aQual && bQual) return 1;
+
+      const aKd = parseFloat(a.kd) || 0;
+      const bKd = parseFloat(b.kd) || 0;
+      if (aKd !== bKd) {
+        return dir === "asc" ? aKd - bKd : bKd - aKd;
+      }
+      return (Number(b.kills) || 0) - (Number(a.kills) || 0);
+    }
+
+    if (key === "kills") {
+      const vA = Number(a.kills) || 0;
+      const vB = Number(b.kills) || 0;
+      return dir === "asc" ? vA - vB : vB - vA;
+    }
+
+    if (key === "solo_kills") {
+      const vA = Number(a.solo_kills) || 0;
+      const vB = Number(b.solo_kills) || 0;
+      return dir === "asc" ? vA - vB : vB - vA;
+    }
+
+    if (key === "deaths") {
+      const vA = Number(a.deaths) || 0;
+      const vB = Number(b.deaths) || 0;
+      return dir === "asc" ? vA - vB : vB - vA;
+    }
+
+    if (key === "wins") {
+      const vA = Number(a.wins !== undefined ? a.wins : a.kills) || 0;
+      const vB = Number(b.wins !== undefined ? b.wins : b.kills) || 0;
+      return dir === "asc" ? vA - vB : vB - vA;
+    }
+
+    if (key === "losses") {
+      const vA = Number(a.losses) || 0;
+      const vB = Number(b.losses) || 0;
+      return dir === "asc" ? vA - vB : vB - vA;
+    }
+
+    if (key === "wl_ratio") {
+      const aWins = Number(a.wins !== undefined ? a.wins : a.kills) || 0;
+      const aLosses = Number(a.losses) || 0;
+      const aWl = parseFloat(a.wl_ratio) || (aLosses > 0 ? (aWins / aLosses) : aWins);
+
+      const bWins = Number(b.wins !== undefined ? b.wins : b.kills) || 0;
+      const bLosses = Number(b.losses) || 0;
+      const bWl = parseFloat(b.wl_ratio) || (bLosses > 0 ? (bWins / bLosses) : bWins);
+
+      return dir === "asc" ? aWl - bWl : bWl - aWl;
+    }
+
+    if (key === "percentile") {
+      const pA = a.percentile ? (a.percentile.percentile || (100 - (a.percentile.topPct || 50))) : 50;
+      const pB = b.percentile ? (b.percentile.percentile || (100 - (b.percentile.topPct || 50))) : 50;
+      return dir === "asc" ? pA - pB : pB - pA;
+    }
+
+    if (key === "combatant" || key === "name") {
+      const nA = (a.name || "").toLowerCase();
+      const nB = (b.name || "").toLowerCase();
+      return dir === "asc" ? nA.localeCompare(nB) : nB.localeCompare(nA);
+    }
+
+    if (key === "guild") {
+      const gA = (a.guild && a.guild !== "None" ? a.guild : "zzz").toLowerCase();
+      const gB = (b.guild && b.guild !== "None" ? b.guild : "zzz").toLowerCase();
+      return dir === "asc" ? gA.localeCompare(gB) : gB.localeCompare(gA);
+    }
+
+    if (key === "faction") {
+      const fA = (a.faction || "Neutral").toLowerCase();
+      const fB = (b.faction || "Neutral").toLowerCase();
+      return dir === "asc" ? fA.localeCompare(fB) : fB.localeCompare(fA);
+    }
+
+    // Default: 'rank'
+    const origA = rawLeaderboardKillers.indexOf(a);
+    const origB = rawLeaderboardKillers.indexOf(b);
+    return dir === "asc" ? origA - origB : origB - origA;
+  });
+
+  return list;
+}
+
+function renderClassSelectorBar() {
+  return `
+    <div class="leaderboard-class-bar">
+      ${CLASSIC_CLASSES.map(c => {
+        const isActive = (currentLeaderboardClass === c.id);
+        const iconHtml = (c.id === "ALL")
+          ? `<span style="font-size:0.8rem;">⚔️</span>`
+          : renderClassBadge(c.id, 16);
+        return `
+          <button class="class-filter-pill ${isActive ? 'active' : ''}"
+                  style="--cls-color: ${c.color};"
+                  onclick="setLeaderboardClass('${c.id}')"
+                  title="Filter by ${c.name}">
+            ${iconHtml}
+            <span>${c.name}</span>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function setLeaderboardClass(cls) {
+  currentLeaderboardClass = cls;
+  updateLeaderboardDisplay();
+}
+window.setLeaderboardClass = setLeaderboardClass;
+
+function toggleLeaderboardSort(key) {
+  if (leaderboardSortKey === key) {
+    leaderboardSortDir = (leaderboardSortDir === "asc") ? "desc" : "asc";
+  } else {
+    leaderboardSortKey = key;
+    if (["rank", "combatant", "name", "guild", "faction"].includes(key)) {
+      leaderboardSortDir = "asc";
+    } else {
+      leaderboardSortDir = "desc";
+    }
+  }
+  updateLeaderboardDisplay();
+}
+window.toggleLeaderboardSort = toggleLeaderboardSort;
+
+function renderPodiumShowcase(killers) {
+  if (!killers || killers.length === 0) return "";
+  const podiumSpots = [
+    { tier: "champion", badgeClass: "gold", icon: "👑", title: "#1 Champion" },
+    { tier: "contender", badgeClass: "silver", icon: "🥈", title: "#2 Contender" },
+    { tier: "executioner", badgeClass: "bronze", icon: "⚔️", title: "#3 Executioner" },
+  ];
+
+  const topThree = killers.slice(0, 3);
+  const metricLabel = (currentMode === "DUEL") ? "DUEL WINS" : "KILLS";
+
+  const cardsHtml = topThree.map((p, idx) => {
+    const spot = podiumSpots[idx];
+    let pClass = resolveClassName(p.class);
+    if (p.name && p.name.toLowerCase() === 'dagariane') {
+      pClass = 'PALADIN';
+    }
+    const guildText = (p.guild && p.guild !== "None") ? `&lt;${escapeHtml(p.guild)}&gt;` : "Unguilded";
+    const metricCount = (currentMode === "DUEL")
+      ? (p.wins !== undefined ? p.wins : p.kills)
+      : (p.kills || 0);
+
+    return `
+      <div class="podium-card ${spot.tier}" onclick="openCharacterProfile(${safeJsParam(p.name)})" title="View combat profile for ${escapeHtml(p.name)}">
+        <div class="podium-card-badge ${spot.badgeClass}">
+          <span>${spot.icon}</span> ${spot.title}
+        </div>
+        <div class="podium-card-body">
+          <div class="podium-combatant-group">
+            ${renderClassBadge(pClass, 26)}
+            <div class="podium-card-info">
+              <span class="podium-card-name">${colorizeClass(p.name, pClass)}</span>
+              <span class="podium-card-guild">${guildText}</span>
+            </div>
+          </div>
+          <div class="podium-card-metric">
+            <span class="podium-count">${formatNumber(metricCount)}</span>
+            <span class="podium-label">${metricLabel}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `<div class="podium-banner-grid">${cardsHtml}</div>`;
+}
+
+function renderLeaderboardThead() {
+  if (currentMode === 'DUEL') {
+    return `
+      <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+        <th class="sortable-th" onclick="toggleLeaderboardSort('rank')" style="padding: 6px 10px; width: 55px;" title="Sort by Rank">Rank ${getSortIndicator('rank')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('combatant')" style="padding: 6px 10px;" title="Sort alphabetically by Duelist">Duelist ${getSortIndicator('combatant')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('guild')" style="padding: 6px 10px;" title="Sort alphabetically by Guild">Guild ${getSortIndicator('guild')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('faction')" style="padding: 6px 10px;" title="Sort by Faction">Faction ${getSortIndicator('faction')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('wins')" style="padding: 6px 10px;" title="Sort by Duel Wins">Wins ${getSortIndicator('wins')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('losses')" style="padding: 6px 10px;" title="Sort by Duel Losses">Losses ${getSortIndicator('losses')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('wl_ratio')" style="padding: 6px 10px;" title="Sort by Win/Loss Ratio">W/L Ratio ${getSortIndicator('wl_ratio')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('percentile')" style="padding: 6px 10px; text-align:right;" title="Sort by Standing Percentile">Percentile ${getSortIndicator('percentile')}</th>
+      </tr>
+    `;
+  } else if (currentMode === 'BG') {
+    return `
+      <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+        <th class="sortable-th" onclick="toggleLeaderboardSort('rank')" style="padding: 6px 10px; width: 55px;" title="Sort by Rank">Rank ${getSortIndicator('rank')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('combatant')" style="padding: 6px 10px;" title="Sort alphabetically by Combatant">Combatant ${getSortIndicator('combatant')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('guild')" style="padding: 6px 10px;" title="Sort alphabetically by Guild">Guild ${getSortIndicator('guild')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('faction')" style="padding: 6px 10px;" title="Sort by Faction">Faction ${getSortIndicator('faction')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('kills')" style="padding: 6px 10px;" title="Sort by Total Kills">Kills ${getSortIndicator('kills')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('deaths')" style="padding: 6px 10px;" title="Sort by Deaths">Deaths ${getSortIndicator('deaths')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('kd')" style="padding: 6px 10px;" title="Sort by K/D Ratio (Minimum 5 kills required)">K/D Ratio ${getSortIndicator('kd')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('wl_ratio')" style="padding: 6px 10px;" title="Sort by Win/Loss Ratio">W/L Ratio ${getSortIndicator('wl_ratio')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('percentile')" style="padding: 6px 10px; text-align:right;" title="Sort by Standing Percentile">Percentile ${getSortIndicator('percentile')}</th>
+      </tr>
+    `;
+  } else if (currentMode === 'ARENA') {
+    return `
+      <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+        <th class="sortable-th" onclick="toggleLeaderboardSort('rank')" style="padding: 6px 10px; width: 55px;" title="Sort by Rank">Rank ${getSortIndicator('rank')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('combatant')" style="padding: 6px 10px;" title="Sort alphabetically by Gladiator">Gladiator ${getSortIndicator('combatant')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('guild')" style="padding: 6px 10px;" title="Sort alphabetically by Guild">Guild ${getSortIndicator('guild')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('faction')" style="padding: 6px 10px;" title="Sort by Faction">Faction ${getSortIndicator('faction')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('kills')" style="padding: 6px 10px;" title="Sort by Total Kills">Kills ${getSortIndicator('kills')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('deaths')" style="padding: 6px 10px;" title="Sort by Deaths">Deaths ${getSortIndicator('deaths')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('kd')" style="padding: 6px 10px;" title="Sort by K/D Ratio (Minimum 5 kills required)">K/D Ratio ${getSortIndicator('kd')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('wl_ratio')" style="padding: 6px 10px;" title="Sort by Win/Loss Ratio">W/L Ratio ${getSortIndicator('wl_ratio')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('percentile')" style="padding: 6px 10px; text-align:right;" title="Sort by Standing Percentile">Percentile ${getSortIndicator('percentile')}</th>
+      </tr>
+    `;
+  } else { // WORLD
+    return `
+      <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
+        <th class="sortable-th" onclick="toggleLeaderboardSort('rank')" style="padding: 6px 10px; width: 55px;" title="Sort by Rank">Rank ${getSortIndicator('rank')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('combatant')" style="padding: 6px 10px;" title="Sort alphabetically by Combatant">Combatant ${getSortIndicator('combatant')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('guild')" style="padding: 6px 10px;" title="Sort alphabetically by Guild">Guild ${getSortIndicator('guild')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('faction')" style="padding: 6px 10px;" title="Sort by Faction">Faction ${getSortIndicator('faction')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('kills')" style="padding: 6px 10px;" title="Sort by Total Kills">Kills ${getSortIndicator('kills')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('solo_kills')" style="padding: 6px 10px;" title="Sort by Solo 1v1 Kills">Solo Kills ${getSortIndicator('solo_kills')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('deaths')" style="padding: 6px 10px;" title="Sort by Deaths">Deaths ${getSortIndicator('deaths')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('kd')" style="padding: 6px 10px;" title="Sort by K/D Ratio (Minimum 5 kills required)">K/D Ratio ${getSortIndicator('kd')}</th>
+        <th class="sortable-th" onclick="toggleLeaderboardSort('percentile')" style="padding: 6px 10px; text-align:right;" title="Sort by Standing Percentile">Percentile ${getSortIndicator('percentile')}</th>
+      </tr>
+    `;
+  }
+}
+
+function renderLeaderboardRowsHtml(sortedKillers, totalCols, bmName, isAccountUser) {
+  let html = "";
+  if (!sortedKillers || sortedKillers.length === 0) {
+    let emptyMsg = `No combat records logged for mode [${escapeHtml(currentMode)}].`;
+    if (currentLeaderboardClass !== "ALL") {
+      emptyMsg = `No combat records found for class [${escapeHtml(currentLeaderboardClass)}] in mode [${escapeHtml(currentMode)}]. <button class="pill-btn" onclick="setLeaderboardClass('ALL')" style="margin-left:8px; padding:3px 8px; font-size:0.75rem; background:rgba(212,163,41,0.2); color:var(--wow-gold); border:1px solid var(--wow-gold);">View All Classes &rarr;</button>`;
+    } else if (currentLeaderboardTimeframe !== 'all') {
+      emptyMsg = `No combat records logged for mode [${escapeHtml(currentMode)}] in timeframe [${escapeHtml(currentLeaderboardTimeframe)}]. <button class="pill-btn" onclick="filterLeaderboardsByTime('all')" style="margin-left:8px; padding:3px 8px; font-size:0.75rem; background:rgba(212,163,41,0.2); color:var(--wow-gold); border:1px solid var(--wow-gold);">View All-Time Champions &rarr;</button>`;
+    }
+    return `<tr><td colspan="${totalCols}" style="text-align:center; padding:30px; color:#64748b;">${emptyMsg}</td></tr>`;
+  }
+
+  const bmMatch = sortedKillers.find(p => bmName && p.name.toLowerCase() === bmName.toLowerCase());
+
+  sortedKillers.forEach((p, idx) => {
+    const guildHtml = (p.guild && p.guild !== 'None')
+      ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(p.guild)})">&lt;${escapeHtml(p.guild)}&gt;</span>`
+      : '-';
+
+    const pctBadge = getWowLogsPercentileBadge(p.percentile);
+    const isCurrent = Boolean(bmName && p.name.toLowerCase() === bmName.toLowerCase());
+    const rowClass = isCurrent ? 'class="leaderboard-row current-player-row"' : 'class="leaderboard-row"';
+    const youBadge = isCurrent ? `<span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>` : '';
+
+    let pClass = resolveClassName(p.class);
+    let pFaction = p.faction || 'Neutral';
+    if (p.name && p.name.toLowerCase() === 'dagariane') {
+      pClass = 'PALADIN';
+      pFaction = 'Alliance';
+    }
+
+    let rowCellsHtml = '';
+    if (currentMode === 'DUEL') {
+      const wins = p.wins !== undefined ? p.wins : p.kills;
+      const losses = p.losses || 0;
+      const wl = p.wl_ratio !== undefined ? p.wl_ratio : (losses > 0 ? (wins / losses).toFixed(2) : wins);
+      rowCellsHtml = `
+        <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${wins}</td>
+        <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${losses}</td>
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${wl}</td>
+      `;
+    } else if (currentMode === 'BG') {
+      rowCellsHtml = `
+        <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
+        <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${p.deaths || 0}</td>
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${p.kd || 0}</td>
+        <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.wl_ratio !== undefined ? p.wl_ratio : '-'}</td>
+      `;
+    } else if (currentMode === 'ARENA') {
+      rowCellsHtml = `
+        <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
+        <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${p.deaths || 0}</td>
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${p.kd || 0}</td>
+        <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.wl_ratio !== undefined ? p.wl_ratio : '-'}</td>
+      `;
+    } else { // WORLD
+      rowCellsHtml = `
+        <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
+        <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.solo_kills || 0}</td>
+        <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${p.deaths || 0}</td>
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${p.kd || 0}</td>
+      `;
+    }
+
+    html += `
+      <tr ${rowClass} data-faction="${escapeHtml(pFaction)}" style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
+        <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(${safeJsParam(p.name)})">
+            ${renderClassBadge(pClass, 18)} ${colorizeClass(p.name, pClass)} ${youBadge}
+          </span>
+        </td>
+        <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${guildHtml}</td>
+        <td style="padding: 6px 10px; color: ${pFaction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(pFaction)}</td>
+        ${rowCellsHtml}
+        <td style="padding: 6px 10px; text-align:right; white-space: nowrap;">${pctBadge}</td>
+      </tr>
+    `;
+  });
+
+  // Pinned benchmark user row if outside filtered list
+  const benchmarkProfile = cachedLeaderboardBenchmarkProfile;
+  if (bmName && !bmMatch && benchmarkProfile) {
+    let rawBmClass = (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
+      (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
+    if (bmName && bmName.toLowerCase() === 'dagariane') {
+      rawBmClass = 'PALADIN';
+    }
+    const bmClass = resolveClassName(rawBmClass);
+    let bmFaction = (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
+      (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
+    if (bmName && bmName.toLowerCase() === 'dagariane') {
+      bmFaction = 'Alliance';
+    }
+    const bmGuild = (benchmarkProfile && (benchmarkProfile.guild || (benchmarkProfile.character && benchmarkProfile.character.guild))) || 'None';
+    const bmPct = (benchmarkProfile && benchmarkProfile.percentile) ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 };
+    const pctBadge = getWowLogsPercentileBadge(bmPct);
+    const bmGuildHtml = (bmGuild && bmGuild !== 'None')
+      ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(bmGuild)})">&lt;${escapeHtml(bmGuild)}&gt;</span>`
+      : '-';
+
+    const pModes = (benchmarkProfile && benchmarkProfile.modes) || {};
+    const curModeStats = pModes[currentMode] || {};
+
+    let bmRowCellsHtml = '';
+    if (currentMode === 'DUEL') {
+      const wins = curModeStats.wins !== undefined ? curModeStats.wins : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelWins || 0 : 0);
+      const losses = curModeStats.losses !== undefined ? curModeStats.losses : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelLosses || 0 : 0);
+      const wl = curModeStats.wl !== undefined ? curModeStats.wl : (losses > 0 ? (wins / losses).toFixed(2) : wins);
+      bmRowCellsHtml = `
+        <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${wins}</td>
+        <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${losses}</td>
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${wl}</td>
+      `;
+    } else if (currentMode === 'BG') {
+      const kills = curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.bgKills || 0 : 0);
+      const deaths = curModeStats.deaths || 0;
+      const kd = curModeStats.kd !== undefined ? curModeStats.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
+      const wl = curModeStats.wl || '-';
+      bmRowCellsHtml = `
+        <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${kills}</td>
+        <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${deaths}</td>
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${kd}</td>
+        <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${wl}</td>
+      `;
+    } else if (currentMode === 'ARENA') {
+      const kills = curModeStats.kills || 0;
+      const deaths = curModeStats.deaths || 0;
+      const kd = curModeStats.kd !== undefined ? curModeStats.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
+      const wl = curModeStats.wl || '-';
+      bmRowCellsHtml = `
+        <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${kills}</td>
+        <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${deaths}</td>
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${kd}</td>
+        <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${wl}</td>
+      `;
+    } else { // WORLD
+      const kills = curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.kills || 0 : 0);
+      const solo = curModeStats.soloKills !== undefined ? curModeStats.soloKills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.soloKills || 0 : 0);
+      const deaths = curModeStats.deaths !== undefined ? curModeStats.deaths : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.deaths || 0 : 0);
+      const kd = curModeStats.kd !== undefined ? curModeStats.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
+      bmRowCellsHtml = `
+        <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${kills}</td>
+        <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${solo}</td>
+        <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${deaths}</td>
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${kd}</td>
+      `;
+    }
+
+    html += `
+      <tr style="border-top: 2px dashed rgba(245, 158, 11, 0.4); background: rgba(212, 163, 41, 0.08);" class="current-player-row">
+        <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#&gt;15</td>
+        <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(${safeJsParam(bmName)})">
+            ${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}
+            <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
+          </span>
+        </td>
+        <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${bmGuildHtml}</td>
+        <td style="padding: 6px 10px; color: ${bmFaction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(bmFaction || 'Neutral')}</td>
+        ${bmRowCellsHtml}
+        <td style="padding: 6px 10px; text-align:right; white-space: nowrap;">${pctBadge}</td>
+      </tr>
+    `;
+  }
+
+  return html;
+}
+
+function updateLeaderboardDisplay() {
+  if (legendsTabType === "GUILDS") return;
+
+  const sortedKillers = getSortedAndFilteredKillers();
+  const bmName = getBenchmarkPlayerName();
+  const isAccountUser = Boolean(
+    (localStorage.getItem("wowkb_account_username") && localStorage.getItem("wowkb_account_username").toLowerCase() === (bmName || '').toLowerCase()) ||
+    (localStorage.getItem("wowkb_user_character") && localStorage.getItem("wowkb_user_character").toLowerCase() === (bmName || '').toLowerCase())
+  );
+
+  const totalCols = (currentMode === 'DUEL') ? 8 : 9;
+
+  const podWrap = document.getElementById("leaderboard-podium-wrap");
+  if (podWrap) {
+    podWrap.innerHTML = renderPodiumShowcase(sortedKillers);
+  }
+
+  const classBarWrap = document.getElementById("leaderboard-class-bar-wrap");
+  if (classBarWrap) {
+    classBarWrap.innerHTML = renderClassSelectorBar();
+  }
+
+  const thead = document.getElementById("legends-table-head");
+  if (thead) {
+    thead.innerHTML = renderLeaderboardThead();
+  }
+
+  const tbody = document.getElementById("legends-table-body");
+  if (tbody) {
+    tbody.innerHTML = renderLeaderboardRowsHtml(sortedKillers, totalCols, bmName, isAccountUser);
+  }
+}
+window.updateLeaderboardDisplay = updateLeaderboardDisplay;
+
 function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
   const container = document.getElementById("main-content-area");
   if (!container) return;
@@ -1525,7 +2035,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
 
   let html = `
     <div style="display: flex; flex-direction: column; gap: 16px;">
-      <!-- Champions Header Row with Type Toggle and Mode Pills -->
+      <!-- Champions Header Row with Type Toggle, Timeframe Intervals, and Mode Pills -->
       <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); margin-bottom:4px;">
         <div>
           <h2 class="wow-gold-header" style="font-size: 1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
@@ -1541,6 +2051,14 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           <div class="filter-pills" id="legends-type-pills">
             <button class="pill-btn ${!isGuilds ? 'active' : ''}" onclick="setLegendsTabType('PLAYERS')">Player Ranks</button>
             <button class="pill-btn ${isGuilds ? 'active' : ''}" onclick="setLegendsTabType('GUILDS')">Guild Ranks</button>
+          </div>
+
+          <!-- Timeframe Interval Toggle: 24h / 7d / 30d / All-Time -->
+          <div class="filter-pills" id="legends-time-pills" style="display:flex; align-items:center; gap:4px;">
+            <button class="pill-btn ${(currentLeaderboardTimeframe || 'all').toLowerCase() === '24h' ? 'active' : ''}" onclick="filterLeaderboardsByTime('24h')">24 Hours</button>
+            <button class="pill-btn ${(currentLeaderboardTimeframe || 'all').toLowerCase() === '7d' ? 'active' : ''}" onclick="filterLeaderboardsByTime('7d')">7 Days</button>
+            <button class="pill-btn ${(currentLeaderboardTimeframe || 'all').toLowerCase() === '30d' ? 'active' : ''}" onclick="filterLeaderboardsByTime('30d')">30 Days</button>
+            <button class="pill-btn ${(currentLeaderboardTimeframe || 'all').toLowerCase() === 'all' ? 'active' : ''}" onclick="filterLeaderboardsByTime('all')">All-Time</button>
           </div>
 
           <!-- Mode Toggle: World / BGs / Duels / Arenas (greyed out) -->
@@ -1615,18 +2133,20 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       </div>
     `;
   } else {
-    const killers = (data && data.topKillers) ? data.topKillers : [];
-    const topRank1 = killers.length > 0 ? killers[0] : null;
+    rawLeaderboardKillers = (data && data.topKillers) ? data.topKillers : [];
+    cachedLeaderboardBenchmarkProfile = benchmarkProfile;
+    const sortedKillers = getSortedAndFilteredKillers();
+    const topRank1 = rawLeaderboardKillers.length > 0 ? rawLeaderboardKillers[0] : null;
     const bmName = getBenchmarkPlayerName();
     const pModes = (benchmarkProfile && benchmarkProfile.modes) || {};
     const curModeStats = pModes[currentMode] || {};
 
     let bmMatch = null;
     let bmRank = null;
-    if (bmName && killers.length > 0) {
-      const foundIdx = killers.findIndex(p => p.name.toLowerCase() === bmName.toLowerCase());
+    if (bmName && rawLeaderboardKillers.length > 0) {
+      const foundIdx = rawLeaderboardKillers.findIndex(p => p.name.toLowerCase() === bmName.toLowerCase());
       if (foundIdx !== -1) {
-        bmMatch = killers[foundIdx];
+        bmMatch = rawLeaderboardKillers[foundIdx];
         bmRank = foundIdx + 1;
       }
     }
@@ -1887,9 +2407,8 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
       `;
     }
 
-    // Generate Mode-Specific Table Headers and Colgroup
+    // Generate Mode-Specific Colgroup and Total Columns
     let colgroupHtml = '';
-    let theadHtml = '';
     let totalCols = 9;
 
     if (currentMode === 'DUEL') {
@@ -1904,18 +2423,6 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         <col style="width: 85px;">
         <col style="width: 105px;">
       `;
-      theadHtml = `
-        <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
-          <th style="padding: 6px 10px; width: 55px;">Rank</th>
-          <th style="padding: 6px 10px;">Duelist</th>
-          <th style="padding: 6px 10px;">Guild</th>
-          <th style="padding: 6px 10px;">Faction</th>
-          <th style="padding: 6px 10px;">Wins</th>
-          <th style="padding: 6px 10px;">Losses</th>
-          <th style="padding: 6px 10px;">W/L Ratio</th>
-          <th style="padding: 6px 10px; text-align:right;">Percentile</th>
-        </tr>
-      `;
     } else if (currentMode === 'BG') {
       totalCols = 9;
       colgroupHtml = `
@@ -1928,19 +2435,6 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         <col style="width: 70px;">
         <col style="width: 70px;">
         <col style="width: 105px;">
-      `;
-      theadHtml = `
-        <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
-          <th style="padding: 6px 10px; width: 55px;">Rank</th>
-          <th style="padding: 6px 10px;">Combatant</th>
-          <th style="padding: 6px 10px;">Guild</th>
-          <th style="padding: 6px 10px;">Faction</th>
-          <th style="padding: 6px 10px;">Kills</th>
-          <th style="padding: 6px 10px;">Deaths</th>
-          <th style="padding: 6px 10px;">K/D Ratio</th>
-          <th style="padding: 6px 10px;">W/L Ratio</th>
-          <th style="padding: 6px 10px; text-align:right;">Percentile</th>
-        </tr>
       `;
     } else if (currentMode === 'ARENA') {
       totalCols = 9;
@@ -1955,19 +2449,6 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         <col style="width: 70px;">
         <col style="width: 105px;">
       `;
-      theadHtml = `
-        <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
-          <th style="padding: 6px 10px; width: 55px;">Rank</th>
-          <th style="padding: 6px 10px;">Gladiator</th>
-          <th style="padding: 6px 10px;">Guild</th>
-          <th style="padding: 6px 10px;">Faction</th>
-          <th style="padding: 6px 10px;">Kills</th>
-          <th style="padding: 6px 10px;">Deaths</th>
-          <th style="padding: 6px 10px;">K/D Ratio</th>
-          <th style="padding: 6px 10px;">W/L Ratio</th>
-          <th style="padding: 6px 10px; text-align:right;">Percentile</th>
-        </tr>
-      `;
     } else { // WORLD
       totalCols = 9;
       colgroupHtml = `
@@ -1981,22 +2462,19 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
         <col style="width: 65px;">
         <col style="width: 105px;">
       `;
-      theadHtml = `
-        <tr style="border-bottom: 1px solid var(--wow-brass-border, #4a3b27); color: #856a36; font-family: var(--font-tactical); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: left; height: 36px;">
-          <th style="padding: 6px 10px; width: 55px;">Rank</th>
-          <th style="padding: 6px 10px;">Combatant</th>
-          <th style="padding: 6px 10px;">Guild</th>
-          <th style="padding: 6px 10px;">Faction</th>
-          <th style="padding: 6px 10px;">Kills</th>
-          <th style="padding: 6px 10px;">Solo Kills</th>
-          <th style="padding: 6px 10px;">Deaths</th>
-          <th style="padding: 6px 10px;">K/D Ratio</th>
-          <th style="padding: 6px 10px; text-align:right;">Percentile</th>
-        </tr>
-      `;
     }
 
     html += `
+      <!-- Top 3 Podium Showcase -->
+      <div id="leaderboard-podium-wrap">
+        ${renderPodiumShowcase(sortedKillers)}
+      </div>
+
+      <!-- Class Selector Bar -->
+      <div id="leaderboard-class-bar-wrap">
+        ${renderClassSelectorBar()}
+      </div>
+
       <div class="legends-table-wrapper" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 14px 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
         <div class="mobile-table-scroll-hint" style="display:none; justify-content:space-between; align-items:center; font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); padding-bottom:6px; letter-spacing:0.3px;">
           <span>⟵ Drag table to view all combat stats</span>
@@ -2006,171 +2484,14 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
           <colgroup>
             ${colgroupHtml}
           </colgroup>
-          <thead>
-            ${theadHtml}
+          <thead id="legends-table-head">
+            ${renderLeaderboardThead()}
           </thead>
-          <tbody>
-    `;
-
-    if (killers.length === 0) {
-      let emptyMsg = `No combat records logged for mode [${escapeHtml(currentMode)}].`;
-      if (currentLeaderboardTimeframe !== 'all') {
-        emptyMsg = `No combat records logged for mode [${escapeHtml(currentMode)}] in timeframe [${escapeHtml(currentLeaderboardTimeframe)}]. <button class="pill-btn" onclick="filterLeaderboardsByTime('ALL')" style="margin-left:8px; padding:3px 8px; font-size:0.75rem; background:rgba(212,163,41,0.2); color:var(--wow-gold); border:1px solid var(--wow-gold);">View All-Time Champions &rarr;</button>`;
-      }
-      html += `<tr><td colspan="${totalCols}" style="text-align:center; padding:30px; color:#64748b;">${emptyMsg}</td></tr>`;
-    } else {
-      killers.forEach((p, idx) => {
-        const guildHtml = (p.guild && p.guild !== 'None')
-          ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(p.guild)})">${escapeHtml(p.guild)}</span>`
-          : '-';
-
-        const pctBadge = getWowLogsPercentileBadge(p.percentile);
-        const isCurrent = Boolean(bmName && p.name.toLowerCase() === bmName.toLowerCase());
-        const rowClass = isCurrent ? 'class="leaderboard-row current-player-row"' : 'class="leaderboard-row"';
-        const youBadge = isCurrent ? `<span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>` : '';
-
-        let pClass = resolveClassName(p.class);
-        let pFaction = p.faction || 'Neutral';
-        if (p.name && p.name.toLowerCase() === 'dagariane') {
-          pClass = 'PALADIN';
-          pFaction = 'Alliance';
-        }
-
-        let rowCellsHtml = '';
-        if (currentMode === 'DUEL') {
-          const wins = p.wins !== undefined ? p.wins : p.kills;
-          const losses = p.losses || 0;
-          const wl = p.wl_ratio !== undefined ? p.wl_ratio : (losses > 0 ? (wins / losses).toFixed(2) : wins);
-          rowCellsHtml = `
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${wins}</td>
-            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${losses}</td>
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${wl}</td>
-          `;
-        } else if (currentMode === 'BG') {
-          rowCellsHtml = `
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
-            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${p.deaths || 0}</td>
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${p.kd || 0}</td>
-            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.wl_ratio !== undefined ? p.wl_ratio : '-'}</td>
-          `;
-        } else if (currentMode === 'ARENA') {
-          rowCellsHtml = `
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
-            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${p.deaths || 0}</td>
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${p.kd || 0}</td>
-            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.wl_ratio !== undefined ? p.wl_ratio : '-'}</td>
-          `;
-        } else { // WORLD
-          rowCellsHtml = `
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${p.kills}</td>
-            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${p.solo_kills || 0}</td>
-            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${p.deaths || 0}</td>
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${p.kd || 0}</td>
-          `;
-        }
-
-        html += `
-          <tr ${rowClass} data-faction="${escapeHtml(pFaction)}" style="border-bottom: 1px solid rgba(255,255,255,0.04); height: 38px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#${idx + 1}</td>
-            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(${safeJsParam(p.name)})">
-                ${renderClassBadge(pClass, 18)} ${colorizeClass(p.name, pClass)} ${youBadge}
-              </span>
-            </td>
-            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${guildHtml}</td>
-            <td style="padding: 6px 10px; color: ${pFaction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(pFaction)}</td>
-            ${rowCellsHtml}
-            <td style="padding: 6px 10px; text-align:right; white-space: nowrap;">${pctBadge}</td>
-          </tr>
-        `;
-      });
-
-      if (bmName && !bmMatch && (benchmarkProfile || bmRank)) {
-        let rawBmClass = (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
-          (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
-        if (bmName && bmName.toLowerCase() === 'dagariane') {
-          rawBmClass = 'PALADIN';
-        }
-        const bmClass = resolveClassName(rawBmClass);
-        let bmFaction = (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
-          (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
-        if (bmName && bmName.toLowerCase() === 'dagariane') {
-          bmFaction = 'Alliance';
-        }
-        const bmGuild = (benchmarkProfile && (benchmarkProfile.guild || (benchmarkProfile.character && benchmarkProfile.character.guild))) || 'None';
-        const bmPct = (benchmarkProfile && benchmarkProfile.percentile) ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 };
-        const pctBadge = getWowLogsPercentileBadge(bmPct);
-        const bmGuildHtml = (bmGuild && bmGuild !== 'None')
-          ? `<span class="clickable-guild" onclick="openGuildProfile(${safeJsParam(bmGuild)})">${escapeHtml(bmGuild)}</span>`
-          : '-';
-
-        let bmRowCellsHtml = '';
-        if (currentMode === 'DUEL') {
-          const wins = curModeStats.wins !== undefined ? curModeStats.wins : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelWins || 0 : 0);
-          const losses = curModeStats.losses !== undefined ? curModeStats.losses : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelLosses || 0 : 0);
-          const wl = curModeStats.wl !== undefined ? curModeStats.wl : (losses > 0 ? (wins / losses).toFixed(2) : wins);
-          bmRowCellsHtml = `
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${wins}</td>
-            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${losses}</td>
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${wl}</td>
-          `;
-        } else if (currentMode === 'BG') {
-          const kills = curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.bgKills || 0 : 0);
-          const deaths = curModeStats.deaths || 0;
-          const kd = curModeStats.kd !== undefined ? curModeStats.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
-          const wl = curModeStats.wl || '-';
-          bmRowCellsHtml = `
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${kills}</td>
-            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${deaths}</td>
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${kd}</td>
-            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${wl}</td>
-          `;
-        } else if (currentMode === 'ARENA') {
-          const kills = curModeStats.kills || 0;
-          const deaths = curModeStats.deaths || 0;
-          const kd = curModeStats.kd !== undefined ? curModeStats.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
-          const wl = curModeStats.wl || '-';
-          bmRowCellsHtml = `
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${kills}</td>
-            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${deaths}</td>
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${kd}</td>
-            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${wl}</td>
-          `;
-        } else { // WORLD
-          const kills = curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.kills || 0 : 0);
-          const solo = curModeStats.soloKills !== undefined ? curModeStats.soloKills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.soloKills || 0 : 0);
-          const deaths = curModeStats.deaths !== undefined ? curModeStats.deaths : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.deaths || 0 : 0);
-          const kd = curModeStats.kd !== undefined ? curModeStats.kd : (deaths > 0 ? (kills / deaths).toFixed(2) : kills);
-          bmRowCellsHtml = `
-            <td style="padding: 6px 10px; color: #10b981; font-weight: 700; white-space: nowrap;">${kills}</td>
-            <td style="padding: 6px 10px; color: #00e5ff; font-weight: 700; white-space: nowrap;">${solo}</td>
-            <td style="padding: 6px 10px; color: #ef4444; font-weight: 700; white-space: nowrap;">${deaths}</td>
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700; white-space: nowrap;">${kd}</td>
-          `;
-        }
-
-        html += `
-          <tr style="border-top: 2px dashed rgba(245, 158, 11, 0.4); background: rgba(212, 163, 41, 0.08);" class="current-player-row">
-            <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 800; white-space: nowrap;">#&gt;15</td>
-            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              <span class="clickable-player" style="display:inline-flex; align-items:center; gap:6px;" onclick="openCharacterProfile(${safeJsParam(bmName)})">
-                ${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}
-                <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
-              </span>
-            </td>
-            <td style="padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${bmGuildHtml}</td>
-            <td style="padding: 6px 10px; color: ${bmFaction === 'Alliance' ? '#3b82f6' : '#ef4444'}; white-space: nowrap;">${escapeHtml(bmFaction || 'Neutral')}</td>
-            ${bmRowCellsHtml}
-            <td style="padding: 6px 10px; text-align:right; white-space: nowrap;">${pctBadge}</td>
-          </tr>
-        `;
-      }
-    }
-
-    html += `
-            </tbody>
-          </table>
-        </div>
+          <tbody id="legends-table-body">
+            ${renderLeaderboardRowsHtml(sortedKillers, totalCols, bmName, isAccountUser)}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
@@ -5033,25 +5354,35 @@ function switchSidebarLeaderboardTab(tabType) {
 }
 window.switchSidebarLeaderboardTab = switchSidebarLeaderboardTab;
 
-let currentLeaderboardFaction = "ALL";
-let currentLeaderboardTimeframe = "all";
-
 function filterLeaderboardsByFaction(faction) {
   currentLeaderboardFaction = faction;
   ['all', 'alliance', 'horde'].forEach(f => {
     const btn = document.getElementById(`filter-faction-${f}`);
     if (btn) btn.classList.toggle('active', f.toLowerCase() === faction.toLowerCase());
   });
-  applyLeaderboardFilters();
+  if (typeof updateLeaderboardDisplay === "function" && legendsTabType !== "GUILDS" && rawLeaderboardKillers && rawLeaderboardKillers.length > 0) {
+    updateLeaderboardDisplay();
+  } else {
+    applyLeaderboardFilters();
+  }
 }
 window.filterLeaderboardsByFaction = filterLeaderboardsByFaction;
 
 function filterLeaderboardsByTime(timeframe) {
-  currentLeaderboardTimeframe = timeframe;
-  ['24h', '7d', 'all'].forEach(t => {
+  currentLeaderboardTimeframe = (timeframe || "all").toLowerCase();
+  ['24h', '7d', '30d', 'all'].forEach(t => {
     const btn = document.getElementById(`filter-time-${t}`);
-    if (btn) btn.classList.toggle('active', t.toLowerCase() === timeframe.toLowerCase());
+    if (btn) btn.classList.toggle('active', t === currentLeaderboardTimeframe);
   });
+  const headerTimePills = document.querySelectorAll("#legends-time-pills .pill-btn");
+  if (headerTimePills && headerTimePills.length > 0) {
+    const tfList = ['24h', '7d', '30d', 'all'];
+    headerTimePills.forEach((btn, idx) => {
+      if (tfList[idx]) {
+        btn.classList.toggle('active', tfList[idx] === currentLeaderboardTimeframe);
+      }
+    });
+  }
   loadLeaderboards();
 }
 window.filterLeaderboardsByTime = filterLeaderboardsByTime;

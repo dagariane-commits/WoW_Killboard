@@ -2272,86 +2272,51 @@ body {
 /* ----------------- Killmail Feed Rows (Streamlined Minimal WoW) ----------------- */
 
 .killmail-row {
-  background: var(--wow-iron-bg);
-  border: 1px solid var(--wow-brass-border);
-  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.9), 0 2px 8px rgba(0, 0, 0, 0.65);
-  border-radius: 5px;
-  padding: 10px 16px;
-  display: flex;
+  height: 44px;
+  min-height: 42px;
+  max-height: 46px;
+  padding: 0 12px;
+  display: grid;
+  grid-template-columns: 180px 1fr 44px 1fr 110px;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+  background: rgba(11, 15, 23, 0.95);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+  border-left: 3.5px solid #64748b;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.killmail-row::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3.5px;
-  background-color: var(--wow-brass-border-light);
-}
-
-/* Victor Faction Accent on Left Edge (Alliance Blue vs Horde Red) */
-.killmail-row.winner-alliance::before {
-  background-color: var(--alliance-blue, #3b82f6) !important;
-}
-.killmail-row.winner-horde::before {
-  background-color: var(--horde-red, #dc2626) !important;
-}
-.killmail-row.winner-neutral::before { background-color: #64748b !important; }
-.killmail-row.km-solo::before { background-color: var(--alliance-blue, #3b82f6); }
-.killmail-row.km-gang::before { background-color: var(--horde-red, #dc2626); }
-
-/* Victor Faction Full-Row Banner Backdrops (Dark Gritty Tactical Map & Crest Banners) */
+/* Victor Faction Accent on Left Edge */
 .killmail-row.winner-alliance {
-  background: 
-    linear-gradient(90deg, rgba(6, 12, 24, 0.92) 0%, rgba(4, 8, 16, 0.95) 45%, rgba(2, 4, 9, 0.98) 100%),
-    url('/static/images/banner_alliance_tactical.jpg') center center / cover no-repeat !important;
-  border-color: rgba(37, 75, 140, 0.3) !important;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85), 0 2px 6px rgba(0, 0, 0, 0.6) !important;
-}
-
-.killmail-row.winner-alliance:hover {
-  background: 
-    linear-gradient(90deg, rgba(10, 20, 40, 0.94) 0%, rgba(6, 12, 24, 0.96) 45%, rgba(3, 6, 14, 0.99) 100%),
-    url('/static/images/banner_alliance_tactical.jpg') center center / cover no-repeat !important;
-  border-color: rgba(59, 130, 246, 0.5) !important;
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.92), 0 0 8px rgba(59, 130, 246, 0.2) !important;
-  transform: translateY(-1px);
+  border-left-color: var(--alliance-blue, #3b82f6) !important;
+  background: linear-gradient(90deg, rgba(16, 56, 148, 0.18) 0%, rgba(11, 15, 23, 0.95) 25%) !important;
 }
 
 .killmail-row.winner-horde {
-  background: 
-    linear-gradient(90deg, rgba(22, 6, 8, 0.92) 0%, rgba(15, 4, 6, 0.95) 45%, rgba(8, 2, 3, 0.98) 100%),
-    url('/static/images/banner_horde_tactical.png') center center / cover no-repeat !important;
-  border-color: rgba(135, 22, 22, 0.3) !important;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85), 0 2px 6px rgba(0, 0, 0, 0.6) !important;
+  border-left-color: var(--horde-red, #dc2626) !important;
+  background: linear-gradient(90deg, rgba(140, 20, 20, 0.18) 0%, rgba(11, 15, 23, 0.95) 25%) !important;
 }
 
-.killmail-row.winner-horde:hover {
-  background: 
-    linear-gradient(90deg, rgba(38, 10, 14, 0.94) 0%, rgba(22, 6, 8, 0.96) 45%, rgba(12, 3, 4, 0.99) 100%),
-    url('/static/images/banner_horde_tactical.png') center center / cover no-repeat !important;
-  border-color: rgba(220, 38, 38, 0.5) !important;
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.92), 0 0 8px rgba(220, 38, 38, 0.2) !important;
-  transform: translateY(-1px);
+.killmail-row.winner-neutral {
+  border-left-color: #64748b !important;
 }
 
 .killmail-row:hover {
-  background: linear-gradient(90deg, rgba(16, 20, 30, 0.98) 0%, rgba(8, 10, 16, 0.98) 100%);
-  border-color: var(--wow-brass-border-light);
-  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.8), 0 0 10px rgba(212, 163, 41, 0.15);
+  background: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(148, 115, 56, 0.8) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
   transform: translateY(-1px);
 }
 
 .killmail-row.bounty-claimed-row {
   border: 1px solid #ffd100 !important;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.88), 0 0 12px rgba(255, 209, 0, 0.35) !important;
+  border-left: 3.5px solid #ffd100 !important;
+  box-shadow: inset 0 0 12px rgba(255, 209, 0, 0.2), 0 0 8px rgba(255, 209, 0, 0.3) !important;
 }
 
 .km-bounty-claimed-tag {
@@ -2566,155 +2531,405 @@ body {
   vertical-align: middle;
 }
 
-.km-left-meta {
-  width: 200px;
-  min-width: 200px;
-  max-width: 200px;
-  flex: 0 0 200px;
+/* Feed Row Column Definitions (High-Density 5-Column Grid) */
+.km-col-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.km-faction-badge-sm {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  font-family: var(--font-tactical);
+}
+.km-faction-badge-sm.alliance {
+  background: rgba(16, 56, 148, 0.85);
+  border: 1px solid #3b82f6;
+  color: #fff;
+}
+.km-faction-badge-sm.horde {
+  background: rgba(140, 20, 20, 0.85);
+  border: 1px solid #ef4444;
+  color: #fff;
+}
+.km-faction-badge-sm.neutral {
+  background: rgba(100, 116, 139, 0.5);
+  border: 1px solid #64748b;
+  color: #e2e8f0;
+}
+
+.km-location-meta {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.15;
 }
 
 .km-zone-name {
   color: #e2e8f0;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
 }
 
-.km-subzone-text {
+.km-coords {
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.70rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
 }
 
-.km-combatants-center {
-  flex: 1;
+.km-col-killer,
+.km-col-victim {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
+  gap: 6px;
   min-width: 0;
-  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.km-combatant-col {
-  flex: 1;
-  max-width: 250px;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.km-col-killer {
+  justify-content: flex-end;
 }
 
-.km-combatant-col.killer {
-  align-items: flex-end;
-  text-align: right;
+.km-col-victim {
+  justify-content: flex-start;
 }
 
-.km-combatant-col.victim {
-  align-items: flex-start;
-  text-align: left;
-}
-
-.km-player-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 1.0rem;
+.km-player-name {
+  font-size: 0.88rem;
   font-weight: 700;
-  white-space: nowrap;
-}
-
-.km-combatant-col.killer .km-player-row {
-  justify-content: flex-end;
-}
-
-.km-combatant-col.victim .km-player-row {
-  justify-content: flex-start;
-}
-
-.km-lvl {
-  color: #64748b;
-  font-size: 0.80rem;
-  font-weight: 600;
-}
-
-.km-guild-sub {
-  display: flex;
-  font-size: 0.78rem;
-  margin-top: 2px;
-  line-height: 1.1;
-}
-
-.km-combatant-col.killer .km-guild-sub {
-  justify-content: flex-end;
-}
-
-.km-combatant-col.victim .km-guild-sub {
-  justify-content: flex-start;
-}
-
-.km-guild-sub-text {
-  color: #856a36;
-  font-style: italic;
-  transition: color 0.15s ease;
-  cursor: pointer;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 220px;
+  white-space: nowrap;
 }
 
-.km-guild-sub-text:hover {
+.km-lvl-pill {
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.km-guild-tag {
+  color: #856a36;
+  font-size: 0.75rem;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+.km-guild-tag:hover {
   color: var(--wow-gold);
   text-decoration: underline;
 }
-
-.km-guild-none {
+.km-guild-tag.unguilded {
   color: #475569;
-  font-style: italic;
 }
 
-.km-vs-wrapper {
-  flex: 0 0 36px;
+.km-col-vs {
   display: flex;
   align-items: center;
   justify-content: center;
-  user-select: none;
   flex-shrink: 0;
 }
 
-.km-vs {
-  font-size: 1.25rem;
+.km-vs-badge {
+  font-size: 0.70rem;
+  font-weight: 800;
+  font-family: var(--font-tactical);
   color: #94a3b8;
-  filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.4));
-  transition: transform 0.15s ease;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: 3px;
+  padding: 2px 6px;
+  letter-spacing: 0.5px;
+  transition: all 0.15s ease;
 }
 
-.killmail-row:hover .km-vs {
-  transform: scale(1.15);
+.killmail-row:hover .km-vs-badge {
+  border-color: rgba(212, 163, 41, 0.6);
+  color: var(--wow-gold);
 }
 
-.km-right-meta {
-  width: 130px;
-  min-width: 130px;
-  max-width: 130px;
-  flex: 0 0 130px;
+.km-col-time {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.km-time {
+  color: #94a3b8;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+/* ----------------- Visual Polish: Leaderboard Controls ----------------- */
+#legends-type-pills,
+#legends-time-pills,
+#champions-mode-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#legends-type-pills .pill-btn,
+#legends-time-pills .pill-btn,
+#champions-mode-pills .pill-btn {
+  background: rgba(15, 23, 42, 0.7);
+  color: #94a3b8;
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  border-bottom: 2px solid transparent;
+  padding: 5px 14px;
+  font-size: 0.80rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#legends-type-pills .pill-btn:hover,
+#legends-time-pills .pill-btn:hover,
+#champions-mode-pills .pill-btn:hover {
+  background: rgba(30, 41, 59, 0.9);
+  color: #f1f5f9;
+}
+
+#legends-type-pills .pill-btn.active,
+#legends-time-pills .pill-btn.active,
+#champions-mode-pills .pill-btn.active {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: rgba(51, 65, 85, 0.8) rgba(51, 65, 85, 0.8) #d4af37 rgba(51, 65, 85, 0.8) !important;
+  border-bottom: 2px solid #d4af37 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  font-weight: 700 !important;
+}
+
+/* Interactive Sortable Column Headers */
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+.sortable-th:hover {
+  color: var(--wow-gold) !important;
+}
+.sort-arrow {
+  display: inline-block;
+  font-size: 0.65rem;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+.sort-arrow.active {
+  color: var(--wow-gold);
+}
+.sort-arrow.muted {
+  opacity: 0.3;
+}
+
+/* ----------------- Top 3 Podium Showcase ----------------- */
+.podium-banner-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.podium-card {
+  position: relative;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.podium-card:hover {
+  transform: translateY(-2px);
+}
+
+.podium-card.champion {
+  border-color: rgba(212, 175, 55, 0.8);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(15, 23, 42, 0.95) 75%);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(212, 175, 55, 0.15);
+}
+
+.podium-card.contender {
+  border-color: rgba(203, 213, 225, 0.7);
+  background: linear-gradient(135deg, rgba(203, 213, 225, 0.10) 0%, rgba(15, 23, 42, 0.95) 75%);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(203, 213, 225, 0.10);
+}
+
+.podium-card.executioner {
+  border-color: rgba(205, 127, 50, 0.7);
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.10) 0%, rgba(15, 23, 42, 0.95) 75%);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(205, 127, 50, 0.10);
+}
+
+.podium-card-badge {
+  font-family: var(--font-tactical);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.podium-card-badge.gold {
+  color: #ffd100;
+  text-shadow: 0 0 8px rgba(255, 209, 0, 0.4);
+}
+
+.podium-card-badge.silver {
+  color: #e2e8f0;
+  text-shadow: 0 0 6px rgba(226, 232, 240, 0.3);
+}
+
+.podium-card-badge.bronze {
+  color: #f59e0b;
+  text-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
+}
+
+.podium-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.podium-combatant-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.podium-card-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.podium-card-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.podium-card-guild {
+  font-size: 0.72rem;
+  color: #856a36;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.podium-card-metric {
+  text-align: right;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 3px;
-  flex-shrink: 0;
-  text-align: right;
+}
+
+.podium-count {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-family: var(--font-tactical);
+  color: #10b981;
+  line-height: 1;
+}
+
+.podium-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+/* ----------------- Class Selector Bar ----------------- */
+.leaderboard-class-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.class-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.class-filter-pill:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: var(--cls-color, var(--wow-gold));
+  color: #fff;
+}
+
+.class-filter-pill.active {
+  background: rgba(30, 41, 59, 1);
+  border-color: var(--cls-color, var(--wow-gold));
+  color: var(--cls-color, var(--wow-gold));
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+  .podium-banner-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .km-mode-tag {
@@ -4817,28 +5032,24 @@ body {
     font-size: 0.82rem;
   }
 
-  /* 6. Precision Mobile Killmail Row (Card void permanently eliminated) */
+  /* 6. Precision Mobile Killmail Row */
   .killmail-row {
+    display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 4px !important;
     padding: 7px 10px !important;
-    min-height: unset !important;
+    height: auto !important;
+    min-height: 44px !important;
+    max-height: none !important;
     border-radius: 4px;
   }
 
-  .km-left-meta {
+  .km-col-location {
     width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    flex: 0 0 auto !important;
-    height: auto !important;
-    flex-direction: row !important;
     justify-content: space-between !important;
-    align-items: center !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
-    padding: 0 0 3px 0 !important;
-    margin: 0 !important;
+    padding-bottom: 3px !important;
   }
 
   .km-zone-name {
@@ -4851,7 +5062,7 @@ body {
     text-overflow: ellipsis !important;
   }
 
-  .km-subzone-text {
+  .km-coords {
     font-size: 0.70rem !important;
     color: #64748b !important;
     max-width: 40% !important;
@@ -4861,72 +5072,24 @@ body {
     text-overflow: ellipsis !important;
   }
 
-  .km-combatants-center {
+  .km-col-killer,
+  .km-col-victim {
     width: 100% !important;
-    flex: 0 0 auto !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    gap: 4px !important;
-    padding: 3px 0 !important;
-    min-width: 0 !important;
-  }
-
-  .km-combatant-col {
-    min-width: 0 !important;
-    max-width: 44% !important;
-    flex: 1 1 0% !important;
-  }
-
-  .km-player-row {
+    justify-content: flex-start !important;
     font-size: 0.82rem !important;
     gap: 5px !important;
   }
 
-  .km-player-row .class-badge-img {
-    width: 20px !important;
-    height: 20px !important;
+  .km-col-vs {
+    align-self: center !important;
   }
 
-  .km-lvl {
-    font-size: 0.70rem !important;
-  }
-
-  .km-guild-sub {
-    font-size: 0.68rem !important;
-    margin-top: 1px !important;
-  }
-
-  .km-guild-sub-text {
-    max-width: 125px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  .km-vs-wrapper {
-    flex: 0 0 22px !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-  }
-
-  .km-vs {
-    font-size: 0.95rem !important;
-  }
-
-  .km-right-meta {
+  .km-col-time {
     width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    flex: 0 0 auto !important;
-    height: auto !important;
-    flex-direction: row !important;
     justify-content: space-between !important;
-    align-items: center !important;
     border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
-    padding: 3px 0 0 0 !important;
-    margin: 0 !important;
-    text-align: left !important;
+    padding-top: 3px !important;
+    margin-top: 2px !important;
   }
 
   .km-mode-tag {
