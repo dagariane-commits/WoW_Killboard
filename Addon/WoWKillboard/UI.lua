@@ -114,30 +114,46 @@ local function CreateWebPillButton(parent, text, width, height)
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
     
-    -- Inactive default state
-    btn:SetBackdropColor(0.086, 0.122, 0.188, 0.6)
-    btn:SetBackdropBorderColor(0.122, 0.161, 0.216, 1.0)
+    local bg = btn:CreateTexture(nil, "BACKGROUND", nil, -1)
+    bg:SetAllPoints(btn)
+    bg:SetColorTexture(0.06, 0.08, 0.12, 0.8)
+    btn.bg = bg
+    
+    -- Inactive default state: dark slate fill with muted gray text
+    btn:SetBackdropColor(0.06, 0.08, 0.12, 0.8)
+    btn:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
     
     local fontString = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     fontString:SetPoint("CENTER", 0, 0)
     fontString:SetText(text or "")
-    fontString:SetTextColor(0.612, 0.639, 0.686, 1.0)
+    fontString:SetTextColor(0.65, 0.65, 0.65, 1.0)
     if fontString.SetFont then local f, s = fontString:GetFont(); fontString:SetFont(f, s or 10, "OUTLINE") end
     fontString:SetShadowOffset(0, 0)
     btn.text = fontString
     btn.Label = fontString
     
     btn:SetScript("OnEnter", function(self)
-        self:SetBackdropBorderColor(0.831, 0.686, 0.216, 0.8)
-        self.text:SetTextColor(1, 1, 1, 1)
+        if not self.isActive then
+            if self.bg then self.bg:SetColorTexture(0.12, 0.16, 0.24, 1.0) end
+            self:SetBackdropColor(0.12, 0.16, 0.24, 1.0)
+            self:SetBackdropBorderColor(0.78, 0.60, 0.24, 0.8)
+            if self.Label then self.Label:SetTextColor(1, 1, 1, 1) end
+            if self.text then self.text:SetTextColor(1, 1, 1, 1) end
+        end
     end)
     btn:SetScript("OnLeave", function(self)
         if not self.isActive then
-            self:SetBackdropBorderColor(0.122, 0.161, 0.216, 1.0)
-            self.text:SetTextColor(0.612, 0.639, 0.686, 1.0)
+            if self.bg then self.bg:SetColorTexture(0.06, 0.08, 0.12, 0.8) end
+            self:SetBackdropColor(0.06, 0.08, 0.12, 0.8)
+            self:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
+            if self.Label then self.Label:SetTextColor(0.65, 0.65, 0.65, 1.0) end
+            if self.text then self.text:SetTextColor(0.65, 0.65, 0.65, 1.0) end
         else
-            self:SetBackdropBorderColor(0.831, 0.686, 0.216, 0.85)
-            self.text:SetTextColor(0.984, 0.749, 0.141, 1.0)
+            if self.bg then self.bg:SetColorTexture(0.78, 0.60, 0.24, 1.0) end
+            self:SetBackdropColor(0.78, 0.60, 0.24, 1.0)
+            self:SetBackdropBorderColor(0.78, 0.60, 0.24, 1.0)
+            if self.Label then self.Label:SetTextColor(0.05, 0.05, 0.05, 1.0) end
+            if self.text then self.text:SetTextColor(0.05, 0.05, 0.05, 1.0) end
         end
     end)
     
@@ -145,33 +161,34 @@ local function CreateWebPillButton(parent, text, width, height)
 end
 UI.CreateWebPillButton = CreateWebPillButton
 
--- Theme Engine: Shadow Network (Web 1:1) vs Slate vs Classic Blizzard Stone
+-- Theme Engine: Shadow Network (Web 1:1) vs Slate vs ElvUI vs Classic Blizzard Stone
 function UI:GetCurrentThemeName()
     if WoWKillboardDB and WoWKillboardDB.theme then
         local t = WoWKillboardDB.theme:lower()
         if t == "web" or t == "shadownetwork" or t == "web11" or t == "web_slate" then return "web" end
         if t == "classic" then return "classic" end
-        if t == "slate" or t == "elvui" then return "slate" end
+        if t == "slate" then return "slate" end
+        if t == "elvui" then return "elvui" end
     end
     if WoWKillboardSettings and WoWKillboardSettings.theme then
         local t = WoWKillboardSettings.theme:lower()
         if t == "web" or t == "shadownetwork" or t == "web11" or t == "web_slate" then return "web" end
         if t == "classic" then return "classic" end
-        if t == "slate" or t == "elvui" then return "slate" end
+        if t == "slate" then return "slate" end
+        if t == "elvui" then return "elvui" end
     end
     return "web"
 end
 
 function UI:GetTheme()
     local name = UI:GetCurrentThemeName()
-    return (KB.Themes and KB.Themes[name]) or (KB.Themes and KB.Themes["web"]) or (KB.Themes and KB.Themes["slate"]) or (KB.Themes and KB.Themes["classic"]) or {}
+    return (KB.Themes and KB.Themes[name]) or (KB.Themes and KB.Themes["web"]) or (KB.Themes and KB.Themes["slate"]) or (KB.Themes and KB.Themes["elvui"]) or (KB.Themes and KB.Themes["classic"]) or {}
 end
 
 function UI:SetTheme(themeName)
     themeName = (themeName or ""):lower()
-    if themeName == "elvui" then themeName = "slate" end
     if themeName == "shadownetwork" or themeName == "web11" or themeName == "web_slate" then themeName = "web" end
-    if themeName ~= "classic" and themeName ~= "slate" and themeName ~= "web" then
+    if themeName ~= "classic" and themeName ~= "slate" and themeName ~= "web" and themeName ~= "elvui" then
         themeName = "web"
     end
 
@@ -199,6 +216,8 @@ function UI:CycleTheme()
     if current == "web" then
         nextTheme = "slate"
     elseif current == "slate" then
+        nextTheme = "elvui"
+    elseif current == "elvui" then
         nextTheme = "classic"
     else
         nextTheme = "web"
@@ -275,7 +294,7 @@ function UI:ApplyTheme()
                     UI.ContentInset.Vignette:Show()
                 end
                 UI.ContentInset.BgArt:Show()
-            elseif theme.id == "web" then
+            elseif theme.id == "web" or theme.id == "elvui" then
                 UI.ContentInset.BgArt:Hide()
                 if UI.ContentInset.Vignette then
                     UI.ContentInset.Vignette:Hide()
@@ -299,8 +318,16 @@ function UI:ApplyTheme()
         UI.MainContainer:SetBackdropBorderColor(unpack(theme.insetBorder or theme.cardBorder))
     end
     if UI.SidebarContainer then
-        UI.SidebarContainer:SetBackdropColor(unpack(theme.cardBg or theme.insetBg))
-        UI.SidebarContainer:SetBackdropBorderColor(unpack(theme.cardBorder or theme.insetBorder))
+        if theme.sidebarContainerBg then
+            UI.SidebarContainer:SetBackdropColor(unpack(theme.sidebarContainerBg))
+            UI.SidebarContainer:SetBackdropBorderColor(unpack(theme.sidebarContainerBorder))
+        elseif theme.id == "web" then
+            UI.SidebarContainer:SetBackdropColor(0.02, 0.025, 0.035, 0.0)
+            UI.SidebarContainer:SetBackdropBorderColor(0.02, 0.025, 0.035, 0.0)
+        else
+            UI.SidebarContainer:SetBackdropColor(unpack(theme.cardBg or theme.insetBg))
+            UI.SidebarContainer:SetBackdropBorderColor(unpack(theme.cardBorder or theme.insetBorder))
+        end
     end
 
     if UI.HeaderPlate then
@@ -1293,7 +1320,7 @@ function UI:CreateMainWindow()
     ribbonText:SetTextColor(1.0, 1.0, 1.0, 1.0)
     if ribbonText.SetFont then local f, s = ribbonText:GetFont(); ribbonText:SetFont(f, (s or 10), "OUTLINE") end
     ribbonText:SetShadowOffset(0, 0)
-    ribbonText:SetText("REALM: 0 | 24H: 0 | PVE CASUALTIES: 0 | HOT ZONE: Scanning... | FACTION: 50% A / 50% H")
+    ribbonText:SetText("|cff888888REALM:|r |cffffffff0|r  |cff444444|  |cff88888824H:|r |cffffffff0|r  |cff444444|  |cff888888PVE CASUALTIES:|r |cffffffff0|r  |cff444444|  |cff888888HOT ZONE:|r |cffffd200Scanning...|r  |cff444444|  |cff888888FACTION:|r |cff0080ff50% A|r / |cffff202050% H|r")
     UI.TelemetryText = ribbonText
 
     -- 4. Nav Tabs Bar (30px height) - Exactly 5 clean tabs
@@ -1365,8 +1392,8 @@ function UI:CreateMainWindow()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    mainContainer:SetBackdropColor(18/255, 18/255, 18/255, 1.0)
-    mainContainer:SetBackdropBorderColor(0, 0, 0, 1.0)
+    mainContainer:SetBackdropColor(0.05, 0.075, 0.12, 0.90)
+    mainContainer:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
     UI.MainContainer = mainContainer
     UI.ContentInset = mainContainer
 
@@ -1455,8 +1482,8 @@ function UI:CreateMainWindow()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    sidebarContainer:SetBackdropColor(14/255, 18/255, 26/255, 0.95)
-    sidebarContainer:SetBackdropBorderColor(40/255, 50/255, 65/255, 0.7)
+    sidebarContainer:SetBackdropColor(0.02, 0.025, 0.035, 0.0)
+    sidebarContainer:SetBackdropBorderColor(0.02, 0.025, 0.035, 0.0)
     UI.SidebarContainer = sidebarContainer
 
     -- Card 1: Lifetime Combat Activity (Height: 136px)
@@ -1470,8 +1497,8 @@ function UI:CreateMainWindow()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    card1:SetBackdropColor(20/255, 25/255, 35/255, 1.0)
-    card1:SetBackdropBorderColor(50/255, 60/255, 75/255, 0.8)
+    card1:SetBackdropColor(0.05, 0.075, 0.12, 0.90)
+    card1:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
 
     local card1Title = card1:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     card1Title:SetPoint("TOPLEFT", 8, -6)
@@ -1483,7 +1510,7 @@ function UI:CreateMainWindow()
     card1Div:SetPoint("TOPLEFT", 0, -22)
     card1Div:SetPoint("TOPRIGHT", 0, -22)
     card1Div:SetHeight(1)
-    card1Div:SetColorTexture(40/255, 50/255, 65/255, 0.8)
+    card1Div:SetColorTexture(0.12, 0.16, 0.23, 1.0)
 
     local c1Line1 = card1:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     c1Line1:SetPoint("TOPLEFT", 8, -28)
@@ -1499,7 +1526,7 @@ function UI:CreateMainWindow()
 
     local c1Line4 = card1:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     c1Line4:SetPoint("TOPLEFT", 8, -88)
-    c1Line4:SetText("|cff888888War Split:|r |cff0078ff50% A|r / |cffff383850% H|r")
+    c1Line4:SetText("|cff888888War Split:|r |cff0080ff50% A|r / |cffff202050% H|r")
 
     local c1Line5 = card1:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     c1Line5:SetPoint("TOPLEFT", 8, -108)
@@ -1518,8 +1545,8 @@ function UI:CreateMainWindow()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    card2:SetBackdropColor(20/255, 25/255, 35/255, 1.0)
-    card2:SetBackdropBorderColor(50/255, 60/255, 75/255, 0.8)
+    card2:SetBackdropColor(0.05, 0.075, 0.12, 0.90)
+    card2:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
 
     local card2Title = card2:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     card2Title:SetPoint("TOPLEFT", 8, -6)
@@ -1531,7 +1558,7 @@ function UI:CreateMainWindow()
     card2Div:SetPoint("TOPLEFT", 0, -22)
     card2Div:SetPoint("TOPRIGHT", 0, -22)
     card2Div:SetHeight(1)
-    card2Div:SetColorTexture(40/255, 50/255, 65/255, 0.8)
+    card2Div:SetColorTexture(0.12, 0.16, 0.23, 1.0)
 
     local bountyRows = {}
     for bIdx = 1, 3 do
@@ -1603,8 +1630,8 @@ function UI:CreateMainWindow()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    card3:SetBackdropColor(20/255, 25/255, 35/255, 1.0)
-    card3:SetBackdropBorderColor(50/255, 60/255, 75/255, 0.8)
+    card3:SetBackdropColor(0.05, 0.075, 0.12, 0.90)
+    card3:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
 
     local card3Title = card3:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     card3Title:SetPoint("TOPLEFT", 8, -6)
@@ -1616,7 +1643,7 @@ function UI:CreateMainWindow()
     card3Div:SetPoint("TOPLEFT", 0, -22)
     card3Div:SetPoint("TOPRIGHT", 0, -22)
     card3Div:SetHeight(1)
-    card3Div:SetColorTexture(40/255, 50/255, 65/255, 0.8)
+    card3Div:SetColorTexture(0.12, 0.16, 0.23, 1.0)
 
     local classRows = {}
     local classList = {
@@ -1666,6 +1693,7 @@ function UI:CreateMainWindow()
         Card2 = card2,
         Card3 = card3,
     }
+    UI.SidebarCards = { card1, card2, card3 }
 
     function UI:UpdateSidebar()
         if not UI.Sidebar or not UI.Sidebar.Card1 or InCombatLockdown() then return end
@@ -1720,7 +1748,7 @@ function UI:CreateMainWindow()
             c1.Lines[1]:SetText(string.format("|cff888888Realm Kills:|r |cffffffff%d|r", killsCount))
             c1.Lines[2]:SetText(string.format("|cff88888824H Activity:|r |cffffffff%d|r", kills24h))
             c1.Lines[3]:SetText(string.format("|cff888888PvE Casualties:|r |cffffffff%d|r", pveDeathsCount))
-            c1.Lines[4]:SetText(string.format("|cff888888War Split:|r |cff0078ff%d%% A|r / |cffff3838%d%% H|r", aPct, hPct))
+            c1.Lines[4]:SetText(string.format("|cff888888War Split:|r |cff0080ff%d%% A|r / |cffff2020%d%% H|r", aPct, hPct))
             c1.Lines[5]:SetText(string.format("|cff8888881v1 Solo Rate:|r |cff4ade80%d%%|r", soloPct))
         end
 
@@ -1812,7 +1840,7 @@ function UI:CreateMainWindow()
                 end
             end
             UI.TelemetryText:SetText(string.format(
-                "|cff888888REALM:|r |cffffffff%d|r  |cff444444|  |cff88888824H:|r |cffffffff%d|r  |cff444444|  |cff888888PVE CASUALTIES:|r |cffffffff%d|r  |cff444444|  |cff888888HOT ZONE:|r |cffffd100%s|r  |cff444444|  |cff888888FACTION:|r |cff0078ff%d%% A|r / |cffff3838%d%% H|r",
+                "|cff888888REALM:|r |cffffffff%d|r  |cff444444|  |cff88888824H:|r |cffffffff%d|r  |cff444444|  |cff888888PVE CASUALTIES:|r |cffffffff%d|r  |cff444444|  |cff888888HOT ZONE:|r |cffffd200%s|r  |cff444444|  |cff888888FACTION:|r |cff0080ff%d%% A|r / |cffff2020%d%% H|r",
                 killsCount, kills24h, pveDeathsCount, topZone, aPct, hPct
             ))
         end
@@ -2146,17 +2174,29 @@ function UI:Refresh()
             pill:Show()
             if fid == activeFilter then
                 pill.isActive = true
-                pill:SetBackdropColor(0.18, 0.14, 0.06, 0.95)
-                pill:SetBackdropBorderColor(0.831, 0.686, 0.216, 0.85) -- #D4AF37 Golden border
+                if pill.bg then
+                    pill.bg:SetColorTexture(0.78, 0.60, 0.24, 1.0)
+                end
+                pill:SetBackdropColor(0.78, 0.60, 0.24, 1.0)
+                pill:SetBackdropBorderColor(0.78, 0.60, 0.24, 1.0)
                 if pill.Label then
-                    pill.Label:SetTextColor(0.984, 0.749, 0.141, 1.0) -- #FBBF24 Gold text
+                    pill.Label:SetTextColor(0.05, 0.05, 0.05, 1.0)
+                end
+                if pill.text then
+                    pill.text:SetTextColor(0.05, 0.05, 0.05, 1.0)
                 end
             else
                 pill.isActive = false
-                pill:SetBackdropColor(0.086, 0.122, 0.188, 0.60) -- transparent/muted fill
-                pill:SetBackdropBorderColor(0.122, 0.161, 0.216, 1.0) -- #1F2937 Muted border
+                if pill.bg then
+                    pill.bg:SetColorTexture(0.06, 0.08, 0.12, 0.8)
+                end
+                pill:SetBackdropColor(0.06, 0.08, 0.12, 0.8)
+                pill:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
                 if pill.Label then
-                    pill.Label:SetTextColor(0.612, 0.639, 0.686, 1.0) -- #9CA3AF Grey text
+                    pill.Label:SetTextColor(0.65, 0.65, 0.65, 1.0)
+                end
+                if pill.text then
+                    pill.text:SetTextColor(0.65, 0.65, 0.65, 1.0)
                 end
             end
         end
@@ -9554,8 +9594,10 @@ function UI:ShowSettingsModal()
         local function GetThemeButtonLabel(t)
             if not t then return "Theme: Shadow Network (Web 1:1)" end
             if t.id == "web" then return "Theme: Shadow Network (Web 1:1)"
+            elseif t.id == "slate" then return "Theme: Shadow Network Slate"
+            elseif t.id == "elvui" then return "Theme: ElvUI Minimalist"
             elseif t.id == "classic" then return "Theme: Classic Blizzard Stone"
-            else return "Theme: Shadow Network Slate" end
+            else return "Theme: " .. (t.name or "Custom") end
         end
 
         local themeBtn = UI:CreateButton(dlg, 260, 22, "Toggle Theme")
@@ -9966,7 +10008,10 @@ function UI:ShowSettingsModal()
     -- Update dynamic labels and toggle states
     local cur = UI:GetTheme()
     if UI.SettingsDialog.themeBtn and UI.SettingsDialog.themeBtn.Label then
-        local tLabel = (cur.id == "web") and "Theme: Shadow Network (Web 1:1)" or ((cur.id == "classic") and "Theme: Classic Blizzard Stone" or "Theme: Shadow Network Slate")
+        local tLabel = (cur.id == "web") and "Theme: Shadow Network (Web 1:1)"
+            or ((cur.id == "slate") and "Theme: Shadow Network Slate"
+            or ((cur.id == "elvui") and "Theme: ElvUI Minimalist"
+            or "Theme: Classic Blizzard Stone"))
         UI.SettingsDialog.themeBtn.Label:SetText(tLabel)
     end
     if UI.SettingsDialog.UpdateAccentButtons then

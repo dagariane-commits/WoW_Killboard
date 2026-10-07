@@ -1049,12 +1049,12 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         end
     elseif cmd == "theme" then
         local tArg = arg and arg:lower():match("^%s*(.-)%s*$") or ""
-        if tArg == "classic" or tArg == "elvui" then
+        if tArg == "classic" or tArg == "elvui" or tArg == "slate" or tArg == "web" then
             if KB.UI then KB.UI:SetTheme(tArg) end
         else
-            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "classic"
-            local nextTheme = (cur == "classic") and "elvui" or "classic"
-            if KB.UI then KB.UI:SetTheme(nextTheme) end
+            if KB.UI and KB.UI.CycleTheme then
+                KB.UI:CycleTheme()
+            end
         end
     elseif cmd == "profile" or cmd == "web" or cmd == "url" or cmd == "link" then
         local pTarget = arg and arg:match("^%s*(.-)%s*$")
@@ -1164,7 +1164,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
         SafePrint("  |cffffd100/kb kos [add|remove|list]|r - View or manage realm KOS Blacklist")
         SafePrint("  |cffffd100/kb event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
-        SafePrint("  |cffffd100/kb theme [classic|elvui]|r - Switch between Classic WoW and ElvUI aesthetics")
+        SafePrint("  |cffffd100/kb theme [web|slate|elvui|classic]|r - Switch visual themes")
         SafePrint("  |cffffd100/kb sync|r or |cffffd100/kb reload|r - Flush combat SavedVariables to disk to sync with website")
         SafePrint("  |cffffd100/kb stats|r - Review current combat session battle statistics")
         SafePrint("  |cffffd100/kb bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
@@ -1645,9 +1645,9 @@ function KB:CreateMinimapButton()
         if button == "LeftButton" then
             if KB.UI then KB.UI:Toggle() end
         elseif button == "RightButton" then
-            local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "classic"
-            local nextTheme = (cur == "classic") and "elvui" or "classic"
-            if KB.UI then KB.UI:SetTheme(nextTheme) end
+            if KB.UI and KB.UI.CycleTheme then
+                KB.UI:CycleTheme()
+            end
         end
     end)
 
@@ -1684,9 +1684,9 @@ function KB:CreateMinimapButton()
                     if button == "LeftButton" then
                         if KB.UI then KB.UI:Toggle() end
                     elseif button == "RightButton" then
-                        local cur = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "classic"
-                        local nextTheme = (cur == "classic") and "elvui" or "classic"
-                        if KB.UI then KB.UI:SetTheme(nextTheme) end
+                        if KB.UI and KB.UI.CycleTheme then
+                            KB.UI:CycleTheme()
+                        end
                     end
                 end,
                 OnTooltipShow = function(tooltip)

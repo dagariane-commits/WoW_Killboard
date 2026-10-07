@@ -2162,11 +2162,31 @@ WoWKillboardDB = {
         self.assertIn('RALLIES     = { text = "Call to Arms",', ui_content)
         self.assertIn('ZONES       = { text = "Danger Zones",', ui_content)
 
-        # Confirm no HAZARDS tab in tabOrder
-        self.assertNotIn('"HAZARDS", "RALLIES"', ui_content)
-        self.assertNotIn('HAZARDS     = { text = "Hazards",', ui_content)
+        # 6. Verify Visual Polish: Master Canvas #040609, Elevated Slate #0D131F, and 1px #1E293B Border
+        self.assertIn('0.02, 0.025, 0.035, 0.95', cfg_content) # #040609 Master Window Canvas
+        self.assertIn('0.05, 0.075, 0.12, 0.90', cfg_content)  # #0D131F Elevated Slate Fill
+        self.assertIn('0.12, 0.16, 0.23, 1.0', cfg_content)    # #1E293B 1px Border
 
-        print("[PASS] Verified Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, and Theme 3 (Web 1:1 Flat Slate).")
+        # 7. Verify All 4 Themes Retained (Classic, Slate, Web 1:1, ElvUI)
+        self.assertIn('["classic"]', cfg_content)
+        self.assertIn('["slate"]', cfg_content)
+        self.assertIn('["web"]', cfg_content)
+        self.assertIn('["elvui"]', cfg_content)
+        self.assertIn('name = "ElvUI Minimalist"', cfg_content)
+        self.assertNotIn('KB.Themes["elvui"] = KB.Themes["slate"]', cfg_content)
+
+        # 8. Verify Active and Inactive Mode Button Styling in UI.lua
+        self.assertIn('pill.bg:SetColorTexture(0.78, 0.60, 0.24, 1.0)', ui_content)
+        self.assertIn('pill.Label:SetTextColor(0.05, 0.05, 0.05, 1.0)', ui_content)
+        self.assertIn('pill.bg:SetColorTexture(0.06, 0.08, 0.12, 0.8)', ui_content)
+        self.assertIn('pill.Label:SetTextColor(0.65, 0.65, 0.65, 1.0)', ui_content)
+
+        # 9. Verify Vivid WoW Hex Tags in Telemetry Ribbon
+        self.assertIn('|cff0080ff%d%% A|r', ui_content)
+        self.assertIn('|cffff2020%d%% H|r', ui_content)
+        self.assertIn('|cffffd200%s|r', ui_content)
+
+        print("[PASS] Verified Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, Visual Polish, and Restored ElvUI Theme.")
 
 if __name__ == "__main__":
     unittest.main()

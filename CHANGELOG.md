@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.5] - 2026-10-06 (CurseForge & Multi-Client Release)
 
 ### Added
+- **Visual Polish & Restored ElvUI Theme (`Addon/WoWKillboard/Config.lua`, `UI.lua`, `Core.lua`)**:
+  - **Master Canvas Contrast & Elevated Cards**: Darkened `Theme: Shadow Network (Web 1:1)` master window canvas to `#040609` (`0.02, 0.025, 0.035, 0.95`). Styled Combat Log table container (`UI.MainContainer`) and 3 right-sidebar cards (`Lifetime Activity`, `The Marked`, `All Classes`) with elevated slate fill `#0d131f` (`0.05, 0.075, 0.12, 0.90`) and 1px border `#1e293b` (`0.12, 0.16, 0.23, 1.0`).
+  - **High-Contrast Active Mode Buttons**: Active filter pill buttons (`[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`) now render with solid gold fill (`SetColorTexture(0.78, 0.60, 0.24, 1.0)`) and black text (`SetTextColor(0.05, 0.05, 0.05, 1.0)`); inactive pills use dark slate fill (`SetColorTexture(0.06, 0.08, 0.12, 0.8)`) and muted gray text (`SetTextColor(0.65, 0.65, 0.65, 1.0)`).
+  - **Vivid Telemetry Strip Coloring**: Updated telemetry ribbon and sidebar war split string formatting to vivid Warcraft hex codes: Alliance `|cff0080ff[pct]% A|r`, Horde `|cffff2020[pct]% H|r`, and Hot Zone `|cffffd200[Zone]|r`.
+  - **Restored ElvUI Minimalist Theme**: Restored dedicated `KB.Themes["elvui"]` styling table with `#121212` matte slate backing, solid black 1px razor borders, and gold accents. Addon now retains all 4 distinct themes: `Classic Blizzard Stone`, `Shadow Network Slate`, `Shadow Network (Web 1:1)`, and `ElvUI Minimalist`, with seamless 4-way cycling (`web` -> `slate` -> `elvui` -> `classic`).
 - **Mode Filter Pills: [ World ] [ BGs ] [ Duels ] [ Arenas ] (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Leaderboard.lua`, `Killmail.lua`)**:
   - Replaced legacy `[All] [Solo] [Group] [Raid]` pills with four distinct mode filters: `[ World ]`, `[ BGs ]`, `[ Duels ]`, and `[ Arenas ]`.
   - Persisted selection state in `WoWKillboardDB.combatFilter` (default: `"WORLD"`).
