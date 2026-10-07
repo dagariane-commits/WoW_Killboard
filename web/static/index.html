@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=1.4.76">
+  <link rel="stylesheet" href="/static/style.css?v=1.4.77">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -224,6 +224,34 @@
       <!-- Global Emergency SOS Distress Banner -->
       <div id="global-sos-banner" class="global-sos-banner" style="display: none;"></div>
 
+      <!-- Sticky Top Combat & Leaderboard Filters -->
+      <div id="top-combat-filters" class="top-combat-filters">
+        <!-- Row 1 (Timeframe) -->
+        <div class="top-filter-row top-filter-timeframe">
+          <div class="top-filter-pills" id="top-filter-time-pills">
+            <button class="top-pill-btn" id="filter-time-24h" onclick="filterLeaderboardsByTime('24h')">24 Hours</button>
+            <button class="top-pill-btn" id="filter-time-7d" onclick="filterLeaderboardsByTime('7d')">7 Days</button>
+            <button class="top-pill-btn" id="filter-time-30d" onclick="filterLeaderboardsByTime('30d')">30 Days</button>
+            <button class="top-pill-btn active" id="filter-time-all" onclick="filterLeaderboardsByTime('all')">All-Time</button>
+          </div>
+        </div>
+        <!-- Row 2 (Faction & Modes) -->
+        <div class="top-filter-row top-filter-faction-modes">
+          <div class="top-filter-pills" id="top-filter-faction-pills">
+            <button class="top-pill-btn active" id="filter-faction-all" onclick="filterLeaderboardsByFaction('ALL')">All</button>
+            <button class="top-pill-btn pill-faction-alliance" id="filter-faction-alliance" onclick="filterLeaderboardsByFaction('Alliance')">Alliance</button>
+            <button class="top-pill-btn pill-faction-horde" id="filter-faction-horde" onclick="filterLeaderboardsByFaction('Horde')">Horde</button>
+          </div>
+          <span class="top-filter-divider">|</span>
+          <div class="top-filter-pills" id="top-filter-mode-pills">
+            <button class="top-pill-btn active" id="top-pill-mode-world" onclick="setFilterMode('WORLD')">World</button>
+            <button class="top-pill-btn" id="top-pill-mode-bg" onclick="setFilterMode('BG')">BGs</button>
+            <button class="top-pill-btn" id="top-pill-mode-duel" onclick="setFilterMode('DUEL')">Duels</button>
+            <button class="top-pill-btn" id="top-pill-mode-arena" onclick="setFilterMode('ARENA')">Arenas</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Dynamic Content Area (Feed / Leaderboard / BG Stats / Bounties / Download) -->
       <div id="main-content-area">
         <!-- Rendered by app.js -->
@@ -284,33 +312,7 @@
         </div>
       </section>
 
-      <!-- 3. Third — Champion Filters (shown on LEGENDS view) -->
-      <div class="sidebar-card" id="sidebar-context-filters" style="display: none;">
-        <div class="section-header">
-          <div class="section-title">Champion Filters</div>
-        </div>
-        <div class="sidebar-filters-body" style="display:flex; flex-direction:column; gap:10px; font-size:0.8rem;">
-          <div>
-            <div style="color:#94a3b8; margin-bottom:4px; font-weight:700; font-size:0.75rem;">FACTION</div>
-            <div style="display:flex; gap:6px;">
-              <button class="sidebar-pill-btn active" id="filter-faction-all" onclick="filterLeaderboardsByFaction('ALL')">All</button>
-              <button class="sidebar-pill-btn" id="filter-faction-alliance" onclick="filterLeaderboardsByFaction('Alliance')" style="color:var(--alliance-blue);">Alliance</button>
-              <button class="sidebar-pill-btn" id="filter-faction-horde" onclick="filterLeaderboardsByFaction('Horde')" style="color:var(--horde-red);">Horde</button>
-            </div>
-          </div>
-          <div>
-            <div style="color:#94a3b8; margin-bottom:4px; font-weight:700; font-size:0.75rem;">TIMEFRAME</div>
-            <div style="display:flex; gap:6px;">
-              <button class="sidebar-pill-btn" id="filter-time-24h" onclick="filterLeaderboardsByTime('24h')">24 Hours</button>
-              <button class="sidebar-pill-btn" id="filter-time-7d" onclick="filterLeaderboardsByTime('7d')">7 Days</button>
-              <button class="sidebar-pill-btn" id="filter-time-30d" onclick="filterLeaderboardsByTime('30d')">30 Days</button>
-              <button class="sidebar-pill-btn active" id="filter-time-all" onclick="filterLeaderboardsByTime('ALL')">All-Time</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Bottom — All Classes Matrix (Compressed 2-Column Grid) -->
+      <!-- 3. All Classes Matrix (Compressed 2-Column Grid) -->
       <div class="sidebar-card" id="sidebar-card-classes">
         <div class="section-header">
           <div class="section-title" id="sidebar-title-classes">All Classes</div>
@@ -759,6 +761,6 @@
   <!-- Live Combat Slide-In Toast Notification Banner -->
   <div id="combat-toast-container" class="combat-toast-container"></div>
 
-  <script src="/static/app.js?v=2.3.2"></script>
+  <script src="/static/app.js?v=2.3.3"></script>
 </body>
 </html>

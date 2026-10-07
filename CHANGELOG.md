@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Sticky Top Combat & Leaderboard Filters (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
+  - Repositioned filter controls from `.sidebar-column` into `#top-combat-filters`, anchored directly above `#main-content-area`.
+  - Row 1 (Timeframe): `[ 24 Hours ]`, `[ 7 Days ]`, `[ 30 Days ]`, `[ All-Time ]`.
+  - Row 2 (Faction & Modes): `[ All ]`, `[ Alliance ]`, `[ Horde ]` | `[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`.
+  - Sticky mobile sub-bar: `position: sticky; top: 56px; z-index: 900; background: rgba(11, 15, 23, 0.95); backdrop-filter: blur(8px); padding: 8px 12px;` on `<= 768px`.
+  - Minimum 36px touch target heights, solid gold `#C69B3D` active state, `#1e293b` inactive state.
+  - Seamlessly filters both the live combat feed and competitive leaderboards across timeframe, faction, and mode.
+
 ### Fixed
+- **Compact Single-Line Mobile Killmail Rows (`web/static/style.css`, `web/static/app.js`)**:
+  - Eliminated bloated 85px+ cards and vertical column stretching on mobile viewports (`<= 768px`).
+  - Rendered a compact, single-line horizontal row (height: `38px–42px`): `[Spec Icon] Killer Name (Guild) -> Victim Name (Guild) | Zone | 2m ago`.
+  - Alternating subtle zebra striping (`#090d14` and `#0e1420`), 1px solid `rgba(30, 41, 59, 0.6)` border, victor faction left border accent.
+  - Standard Blizzard class colored names separated by high-contrast gold arrow (`&rarr;`).
+  - Capped initial combat feed display to 12 events with a compact `Load More Recent Kills` expansion trigger.
 - **Combat Feed High-Density Table Restoration (`web/static/style.css`, `web/static/app.js`)**:
   - Reverted bloated full-width `.combat-casualty` cards back to a high-density, fixed-height (`42px - 46px`, exact `44px`) 5-column grid layout (`180px 1fr 44px 1fr 110px`).
   - Col 1: Faction border/badge (`A`/`H`) + Zone and subzone/spatial coordinates.
