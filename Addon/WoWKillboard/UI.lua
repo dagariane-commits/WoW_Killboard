@@ -651,19 +651,116 @@ function UI:CreateClassIcon(parent, classFilename, size)
     return tex
 end
 
+-- Cross-Client Safe Horizontal Gradient Helper
+local function SafeSetHorizontalGradient(tex, r1, g1, b1, a1, r2, g2, b2, a2)
+    if not tex then return end
+    if tex.SetGradient and CreateColor then
+        pcall(function()
+            tex:SetGradient("HORIZONTAL", CreateColor(r1, g1, b1, a1), CreateColor(r2, g2, b2, a2))
+        end)
+    elseif tex.SetGradientAlpha then
+        pcall(function()
+            tex:SetGradientAlpha("HORIZONTAL", r1, g1, b1, a1, r2, g2, b2, a2)
+        end)
+    else
+        tex:SetColorTexture(r1, g1, b1, a1)
+    end
+end
+UI.SafeSetHorizontalGradient = SafeSetHorizontalGradient
+
+-- Helper: Render high-contrast solid faction pill badge
+local function CreateFactionBadge(parent, faction, width, height)
+    local badge = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    badge:SetSize(width or 62, height or 16)
+    badge:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+
+    local icon = badge:CreateTexture(nil, "OVERLAY")
+    icon:SetSize(12, 12)
+    icon:SetPoint("LEFT", badge, "LEFT", 3, 0)
+    badge.Icon = icon
+
+    local text = badge:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    text:SetPoint("LEFT", icon, "RIGHT", 3, 0)
+    text:SetPoint("RIGHT", badge, "RIGHT", -2, 0)
+    text:SetJustifyH("LEFT")
+    text:SetTextColor(1.0, 1.0, 1.0, 1.0) -- Bright crisp white
+    if text.SetFont then
+        local f, s = text:GetFont()
+        text:SetFont(f, (s or 9), "OUTLINE")
+    end
+    text:SetShadowOffset(0, 0)
+    badge.Label = text
+
+    local fLower = tostring(faction or ""):lower()
+    if fLower == "horde" then
+        -- Horde Badge: Solid deep crimson red (0.55, 0.08, 0.08, 0.85) (Hex #8C1414), 1px border bright orange-red (0.85, 0.20, 0.20, 1.0)
+        badge:SetBackdropColor(0.55, 0.08, 0.08, 0.85)
+        badge:SetBackdropBorderColor(0.85, 0.20, 0.20, 1.0)
+        icon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_horde.tga")
+        text:SetText("Horde")
+    elseif fLower == "alliance" then
+        -- Alliance Badge: Solid deep royal blue (0.06, 0.22, 0.58, 0.85) (Hex #103894), 1px border bright cyan/sky blue (0.18, 0.45, 0.85, 1.0)
+        badge:SetBackdropColor(0.06, 0.22, 0.58, 0.85)
+        badge:SetBackdropBorderColor(0.18, 0.45, 0.85, 1.0)
+        icon:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\crest_alliance.tga")
+        text:SetText("Alliance")
+    else
+        badge:SetBackdropColor(0.10, 0.12, 0.16, 0.85)
+        badge:SetBackdropBorderColor(0.20, 0.25, 0.35, 1.0)
+        icon:SetTexture("Interface\\TargetingFrame\\UI-PVP-FFA")
+        text:SetText(tostring(faction or "Contested"))
+    end
+
+    return badge
+end
+UI.CreateFactionBadge = CreateFactionBadge
+
+-- Helper: Apply local player row highlight [YOU] with faction gradient and 1px gold outline
+local function ApplyPlayerRowHighlight(row, faction)
+    if not row then return end
+    row.isPlayerRow = true
+    local f = (faction or (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"):lower()
+    local isHorde = (f == "horde")
+    row:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0) -- Crisp 1px gold border outline
+
+    if not row.highlightGrad then
+        local grad = row:CreateTexture(nil, "BORDER")
+        grad:SetAllPoints(row)
+        row.highlightGrad = grad
+    end
+
+    local r1, g1, b1, a1 = 0.04, 0.15, 0.40, 0.35
+    local r2, g2, b2, a2 = 0.04, 0.15, 0.40, 0.05
+    if isHorde then
+        r1, g1, b1, a1 = 0.40, 0.08, 0.08, 0.35
+        r2, g2, b2, a2 = 0.40, 0.08, 0.08, 0.05
+    end
+    SafeSetHorizontalGradient(row.highlightGrad, r1, g1, b1, a1, r2, g2, b2, a2)
+    row.highlightGrad:Show()
+end
+UI.ApplyPlayerRowHighlight = ApplyPlayerRowHighlight
+
 -- Helper: Update circular portrait medallion and player level
 function UI:UpdatePortrait()
-    if not UI.Medallion then return end
-    if UI.Medallion.Portrait and SetPortraitTexture then
-        SetPortraitTexture(UI.Medallion.Portrait, "player")
-        if not UI.Medallion.Portrait:GetTexture() then
-            UI.Medallion.Portrait:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
+    local pf = UI.PlayerPortrait or (UI.Medallion and UI.Medallion.Frame)
+    local portraitTex = (pf and pf.portraitTex) or (UI.Medallion and UI.Medallion.Portrait)
+    if portraitTex and SetPortraitTexture then
+        SetPortraitTexture(portraitTex, "player")
+        if not portraitTex:GetTexture() then
+            portraitTex:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
         end
     end
-    if UI.Medallion.LevelBadge and UnitLevel then
+
+    local levelBadgeText = (pf and pf.levelBadge and pf.levelBadge.text) or (UI.Medallion and UI.Medallion.LevelBadge)
+    if levelBadgeText and UnitLevel then
         local pLvl = UnitLevel("player")
         if pLvl and pLvl > 0 then
-            UI.Medallion.LevelBadge:SetText(string.format("|cffffd100%d|r", pLvl))
+            levelBadgeText:SetText(tostring(pLvl))
         end
     end
 end
@@ -936,6 +1033,78 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {1.0, 1.0, 1.0, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
+    -- 1. Top-Left Unit-Frame Character Portrait (50x50, anchored (-14, 14), Strata HIGH)
+    local portraitFrame = CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")
+    portraitFrame:SetSize(50, 50)
+    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", -14, 14)
+    portraitFrame:SetFrameStrata("HIGH")
+
+    local portraitTex = portraitFrame:CreateTexture(nil, "BACKGROUND")
+    portraitTex:SetAllPoints(portraitFrame)
+    if SetPortraitTexture then
+        SetPortraitTexture(portraitTex, "player")
+        if not portraitTex:GetTexture() then
+            portraitTex:SetTexture("Interface\\Icons\\Achievement_PVP_P_01")
+        end
+    end
+
+    if portraitFrame.CreateMaskTexture and portraitTex.AddMaskTexture then
+        local mask = portraitFrame:CreateMaskTexture()
+        mask:SetAllPoints(portraitFrame)
+        mask:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        portraitTex:AddMaskTexture(mask)
+        portraitFrame.mask = mask
+    end
+    portraitFrame.portraitTex = portraitTex
+
+    -- Gold Circular Border Ring (62x62 centered over the portrait)
+    local ring = portraitFrame:CreateTexture(nil, "OVERLAY")
+    ring:SetSize(62, 62)
+    ring:SetPoint("CENTER", portraitFrame, "CENTER", 0, 0)
+    ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    portraitFrame.ring = ring
+
+    -- Overlapping Level Circle (Bottom-Right, 22x22, solid dark fill, 1px gold border)
+    local levelBadge = CreateFrame("Frame", nil, portraitFrame, "BackdropTemplate")
+    levelBadge:SetSize(22, 22)
+    levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 4, -4)
+    levelBadge:SetFrameStrata("HIGH")
+    levelBadge:SetFrameLevel(portraitFrame:GetFrameLevel() + 5)
+    levelBadge:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    levelBadge:SetBackdropColor(0.04, 0.05, 0.08, 0.95)
+    levelBadge:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0) -- Gold border
+
+    local levelText = levelBadge:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    levelText:SetPoint("CENTER", levelBadge, "CENTER", 0, 0)
+    levelText:SetTextColor(1.0, 0.82, 0.0, 1.0) -- #FFD100
+    if levelText.SetFont then
+        local f, s = levelText:GetFont()
+        levelText:SetFont(f, (s or 10), "OUTLINE,THICK")
+    end
+    levelText:SetText(tostring(UnitLevel("player") or 1))
+    levelBadge.text = levelText
+    portraitFrame.levelBadge = levelBadge
+
+    portraitFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+    portraitFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    portraitFrame:RegisterEvent("PLAYER_LEVEL_UP")
+    portraitFrame:SetScript("OnEvent", function(self, event, unit)
+        if event == "UNIT_PORTRAIT_UPDATE" and unit ~= "player" then return end
+        UI:UpdatePortrait()
+    end)
+
+    UI.PlayerPortrait = portraitFrame
+    UI.Medallion = {
+        Portrait = portraitTex,
+        LevelBadge = levelText,
+        Frame = portraitFrame,
+    }
+
     -- 2. Header & Top Control Bar (Height 42px, Solid #1A1A1A, 1px solid black bottom divider)
     local headerBar = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
     headerBar:SetSize(960, 42)
@@ -958,9 +1127,9 @@ function UI:CreateMainWindow()
     headerDiv:SetColorTexture(40/255, 50/255, 65/255, 0.8)
     headerBar.Divider = headerDiv
 
-    -- Addon Title
+    -- Addon Title (Shifted to 48px to cleanly clear the circular gold portrait ring)
     local title = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("LEFT", headerBar, "LEFT", 12, 0)
+    title:SetPoint("LEFT", headerBar, "LEFT", 48, 0)
     title:SetTextColor(1.0, 0.82, 0.0, 1.0)
     title:SetText("WoW Killboard")
     if title.SetFont then local f, s = title:GetFont(); title:SetFont(f, (s or 12) + 1, "OUTLINE") end
@@ -1320,12 +1489,65 @@ function UI:CreateMainWindow()
     metricsBar:SetBackdropBorderColor(0.58, 0.45, 0.22, 0.4)
     UI.TopMetricsBar = metricsBar
 
+    -- Faction War Split Visual Progress Bar (Telemetry Strip: 140px x 12px)
+    local splitBar = CreateFrame("Frame", nil, metricsBar, "BackdropTemplate")
+    splitBar:SetSize(140, 12)
+    splitBar:SetPoint("RIGHT", metricsBar, "RIGHT", -12, 0)
+    splitBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    splitBar:SetBackdropColor(0.04, 0.05, 0.08, 0.95)
+    splitBar:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
+    UI.FactionSplitBar = splitBar
+
+    local splitBarLabel = metricsBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    splitBarLabel:SetPoint("RIGHT", splitBar, "LEFT", -8, 0)
+    splitBarLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
+    splitBarLabel:SetText("|cff888888WAR SPLIT:|r")
+    if splitBarLabel.SetFont then local f, s = splitBarLabel:GetFont(); splitBarLabel:SetFont(f, s or 10, "OUTLINE") end
+    splitBarLabel:SetShadowOffset(0, 0)
+    UI.FactionSplitLabel = splitBarLabel
+
+    -- Left Fill (Alliance %): Solid Royal Blue (0.08, 0.35, 0.85, 1.0)
+    local allyFill = splitBar:CreateTexture(nil, "ARTWORK")
+    allyFill:SetPoint("TOPLEFT", splitBar, "TOPLEFT", 1, -1)
+    allyFill:SetPoint("BOTTOMLEFT", splitBar, "BOTTOMLEFT", 1, 1)
+    allyFill:SetWidth(69)
+    allyFill:SetColorTexture(0.08, 0.35, 0.85, 1.0)
+    splitBar.AllianceFill = allyFill
+
+    -- Right Fill (Horde %): Solid Crimson Red (0.85, 0.12, 0.12, 1.0)
+    local hordeFill = splitBar:CreateTexture(nil, "ARTWORK")
+    hordeFill:SetPoint("TOPRIGHT", splitBar, "TOPRIGHT", -1, -1)
+    hordeFill:SetPoint("BOTTOMRIGHT", splitBar, "BOTTOMRIGHT", -1, 1)
+    hordeFill:SetPoint("LEFT", allyFill, "RIGHT", 0, 0)
+    hordeFill:SetColorTexture(0.85, 0.12, 0.12, 1.0)
+    splitBar.HordeFill = hordeFill
+
+    -- Centered text: "57% A | 43% H" in white bold font with a drop shadow
+    local splitText = splitBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    splitText:SetPoint("CENTER", splitBar, "CENTER", 0, 0)
+    splitText:SetTextColor(1.0, 1.0, 1.0, 1.0)
+    if splitText.SetFont then
+        local f, s = splitText:GetFont()
+        splitText:SetFont(f, (s or 9), "OUTLINE,THICK")
+    end
+    splitText:SetShadowColor(0, 0, 0, 1.0)
+    splitText:SetShadowOffset(1, -1)
+    splitText:SetText("50% A | 50% H")
+    splitBar.Text = splitText
+
     local ribbonText = metricsBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    ribbonText:SetPoint("CENTER", metricsBar, "CENTER", 0, 0)
+    ribbonText:SetPoint("LEFT", metricsBar, "LEFT", 12, 0)
+    ribbonText:SetPoint("RIGHT", splitBarLabel, "LEFT", -8, 0)
+    ribbonText:SetJustifyH("LEFT")
     ribbonText:SetTextColor(1.0, 1.0, 1.0, 1.0)
     if ribbonText.SetFont then local f, s = ribbonText:GetFont(); ribbonText:SetFont(f, (s or 10), "OUTLINE") end
     ribbonText:SetShadowOffset(0, 0)
-    ribbonText:SetText("|cff888888REALM:|r |cffffffff0|r  |cff444444|  |cff88888824H:|r |cffffffff0|r  |cff444444|  |cff888888PVE CASUALTIES:|r |cffff80000|r  |cff444444|  |cff888888HOT ZONE:|r |cffffd200Scanning...|r  |cff444444|  |cff888888FACTION:|r |cff0080ff50% A|r / |cffff202050% H|r")
+    ribbonText:SetText("|cff888888REALM:|r |cffffffff0|r  |cff444444|  |cff88888824H:|r |cffffffff0|r  |cff444444|  |cff888888PVE CASUALTIES:|r |cffff80000|r  |cff444444|  |cff888888HOT ZONE:|r |cffffd200Scanning...|r")
     UI.TelemetryText = ribbonText
 
     -- 4. Nav Tabs Bar (30px height) - Exactly 5 clean tabs
@@ -1351,6 +1573,16 @@ function UI:CreateMainWindow()
             activeTab = tabId
             UI:Refresh()
         end)
+
+        -- 2px Solid Bright Gold Bottom Line Accent for Web 1:1 Parity
+        local bottomAccent = btn:CreateTexture(nil, "OVERLAY")
+        bottomAccent:SetHeight(2)
+        bottomAccent:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+        bottomAccent:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
+        bottomAccent:SetColorTexture(0.85, 0.70, 0.25, 1.0)
+        bottomAccent:Hide()
+        btn.bottomAccent = bottomAccent
+
         tabButtons[t.id] = btn
         prevTab = btn
     end
@@ -1851,9 +2083,16 @@ function UI:CreateMainWindow()
                 end
             end
             UI.TelemetryText:SetText(string.format(
-                "|cff888888REALM:|r |cffffffff%d|r  |cff444444|  |cff88888824H:|r |cffffffff%d|r  |cff444444|  |cff888888PVE CASUALTIES:|r |cffff8000%d|r  |cff444444|  |cff888888HOT ZONE:|r |cffffd200%s|r  |cff444444|  |cff888888FACTION:|r |cff0080ff%d%% A|r / |cffff2020%d%% H|r",
-                killsCount, kills24h, pveDeathsCount, topZone, aPct, hPct
+                "|cff888888REALM:|r |cffffffff%d|r  |cff444444|  |cff88888824H:|r |cffffffff%d|r  |cff444444|  |cff888888PVE CASUALTIES:|r |cffff8000%d|r  |cff444444|  |cff888888HOT ZONE:|r |cffffd200%s|r",
+                killsCount, kills24h, pveDeathsCount, topZone
             ))
+        end
+
+        if UI.FactionSplitBar then
+            local barInnerWidth = 138 -- 140 - 2px outer border
+            local aWidth = math.max(1, math.min(barInnerWidth - 1, math.floor(barInnerWidth * (aPct / 100))))
+            UI.FactionSplitBar.AllianceFill:SetWidth(aWidth)
+            UI.FactionSplitBar.Text:SetText(string.format("%d%% A | %d%% H", aPct, hPct))
         end
     end
 
@@ -2158,11 +2397,24 @@ function UI:Refresh()
         if tid == activeTab then
             btn.isActive = true
             if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
-            btn:SetBackdropColor(unpack(theme.btnActiveBg or {0.20, 0.20, 0.20, 1.0}))
-            btn:SetBackdropBorderColor(aR, aG, aB, 1.0)
-            btn.Label:SetTextColor(aR, aG, aB, 1.0)
+            if theme.id == "wkb" or theme.id == "web" then
+                -- Match Web Header: Background dark slate (0.08, 0.11, 0.16, 1.0), 2px solid bright gold bottom line (0.85, 0.70, 0.25, 1.0), font solid white bold (1.0, 1.0, 1.0, 1.0)
+                btn:SetBackdropColor(0.08, 0.11, 0.16, 1.0)
+                btn:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
+                btn.Label:SetTextColor(1.0, 1.0, 1.0, 1.0)
+                if btn.bottomAccent then
+                    btn.bottomAccent:SetColorTexture(0.85, 0.70, 0.25, 1.0)
+                    btn.bottomAccent:Show()
+                end
+            else
+                btn:SetBackdropColor(unpack(theme.btnActiveBg or {0.20, 0.20, 0.20, 1.0}))
+                btn:SetBackdropBorderColor(aR, aG, aB, 1.0)
+                btn.Label:SetTextColor(aR, aG, aB, 1.0)
+                if btn.bottomAccent then btn.bottomAccent:Hide() end
+            end
         else
             btn.isActive = false
+            if btn.bottomAccent then btn.bottomAccent:Hide() end
             if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
             btn:SetBackdropColor(unpack(theme.btnBg))
             btn:SetBackdropBorderColor(unpack(theme.btnBorder))
@@ -2465,12 +2717,20 @@ function UI:RenderLiveFeed()
             if kLvlStr.SetFont then local f, s = kLvlStr:GetFont(); kLvlStr:SetFont(f, s or 9, "OUTLINE") end
             kLvlStr:SetShadowOffset(0, 0)
 
+            local pName = UnitName and UnitName("player")
+            local isLocalKiller = pName and (kName:lower() == pName:lower())
+            local isLocalVictim = pName and (vName:lower() == pName:lower())
+            local isLocalPlayer = isLocalKiller or isLocalVictim
+
             local killerStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             killerStr:SetPoint("LEFT", kLvlStr, "RIGHT", 3, 0)
             killerStr:SetPoint("RIGHT", row, "LEFT", 218, 0)
             killerStr:SetJustifyH("LEFT")
             killerStr:SetWordWrap(false)
             local kColorName = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(kName, kClass) or kName
+            if isLocalKiller then
+                kColorName = kColorName .. " |cffffd100[YOU]|r"
+            end
             killerStr:SetText(kColorName)
             if killerStr.SetFont then local f, s = killerStr:GetFont(); killerStr:SetFont(f, s or 10, "OUTLINE") end
             killerStr:SetShadowOffset(0, 0)
@@ -2515,6 +2775,9 @@ function UI:RenderLiveFeed()
             victimStr:SetJustifyH("LEFT")
             victimStr:SetWordWrap(false)
             local vColorName = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(vName, vClass) or vName
+            if isLocalVictim then
+                vColorName = vColorName .. " |cffffd100[YOU]|r"
+            end
             local vGuildStr = (vGuild and vGuild ~= "" and vGuild ~= "None") and string.format(" |cff888888<%s>|r", vGuild) or ""
             victimStr:SetText(vColorName .. vGuildStr)
             if victimStr.SetFont then local f, s = victimStr:GetFont(); victimStr:SetFont(f, s or 10, "OUTLINE") end
@@ -2532,6 +2795,11 @@ function UI:RenderLiveFeed()
             if locStr.SetFont then local f, s = locStr:GetFont(); locStr:SetFont(f, s or 10, "OUTLINE") end
             locStr:SetShadowOffset(0, 0)
 
+            if isLocalPlayer then
+                local myFac = (isLocalKiller and km.killer and km.killer.faction) or (isLocalVictim and km.victim and km.victim.faction) or (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
+                ApplyPlayerRowHighlight(row, myFac)
+            end
+
             -- Row hover interaction
             row:EnableMouse(true)
             local hoverBg = theme.rowHoverBg or { 0.12, 0.16, 0.23, 0.8 }
@@ -2539,6 +2807,11 @@ function UI:RenderLiveFeed()
                 self:SetBackdropColor(unpack(hoverBg))
             end)
             row:SetScript("OnLeave", function(self)
+                if self.isPlayerRow then
+                    self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
+                else
+                    self:SetBackdropBorderColor(unpack(rowBorder))
+                end
                 self:SetBackdropColor(unpack(rowBg))
             end)
 
@@ -2771,12 +3044,18 @@ function UI:RenderPveFeed()
         if vLvlStr.SetFont then local f, s = vLvlStr:GetFont(); vLvlStr:SetFont(f, s or 9, "OUTLINE") end
         vLvlStr:SetShadowOffset(0, 0)
 
+        local pName = UnitName and UnitName("player")
+        local isLocalVictim = pName and (vName:lower() == pName:lower())
+
         local victimStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         victimStr:SetPoint("LEFT", vLvlStr, "RIGHT", 3, 0)
         victimStr:SetPoint("RIGHT", row, "LEFT", 508, 0)
         victimStr:SetJustifyH("LEFT")
         victimStr:SetWordWrap(false)
         local vColorName = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(vName, vClass) or vName
+        if isLocalVictim then
+            vColorName = vColorName .. " |cffffd100[YOU]|r"
+        end
         local vGuildStr = (vGuild and vGuild ~= "" and vGuild ~= "None") and string.format(" |cff888888<%s>|r", vGuild) or ""
         victimStr:SetText(vColorName .. vGuildStr)
         if victimStr.SetFont then local f, s = victimStr:GetFont(); victimStr:SetFont(f, s or 10, "OUTLINE") end
@@ -2794,6 +3073,11 @@ function UI:RenderPveFeed()
         if locStr.SetFont then local f, s = locStr:GetFont(); locStr:SetFont(f, s or 10, "OUTLINE") end
         locStr:SetShadowOffset(0, 0)
 
+        if isLocalVictim then
+            local myFac = (pd.victim and pd.victim.faction) or (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"
+            ApplyPlayerRowHighlight(row, myFac)
+        end
+
         -- Row hover interaction
         row:EnableMouse(true)
         local hoverBg = theme.rowHoverBg or { 0.12, 0.16, 0.23, 0.8 }
@@ -2801,6 +3085,11 @@ function UI:RenderPveFeed()
             self:SetBackdropColor(unpack(hoverBg))
         end)
         row:SetScript("OnLeave", function(self)
+            if self.isPlayerRow then
+                self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
+            else
+                self:SetBackdropBorderColor(unpack(rowBorder))
+            end
             self:SetBackdropColor(unpack(rowBg))
         end)
 
@@ -3679,13 +3968,9 @@ function UI:RenderLeaderboard()
         if sGuild.SetFont then local f, s = sGuild:GetFont(); sGuild:SetFont(f, s or 10, "OUTLINE") end
         sGuild:SetShadowOffset(0, 0)
 
-        local sFaction = stickyRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        sFaction:SetPoint("LEFT", stickyRow, "LEFT", 304, 0)
-        sFaction:SetWidth(60)
-        sFaction:SetJustifyH("LEFT")
-        sFaction:SetText((myFaction == "Horde") and "|cffff3838Horde|r" or "|cff0078ffAlliance|r")
-        if sFaction.SetFont then local f, s = sFaction:GetFont(); sFaction:SetFont(f, s or 10, "OUTLINE") end
-        sFaction:SetShadowOffset(0, 0)
+        local sFactionBadge = CreateFactionBadge(stickyRow, myFaction, 60, 16)
+        sFactionBadge:SetPoint("LEFT", stickyRow, "LEFT", 304, 0)
+        ApplyPlayerRowHighlight(stickyRow, myFaction)
 
         local sKills = stickyRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         sKills:SetPoint("LEFT", stickyRow, "LEFT", 370, 0)
@@ -3781,12 +4066,17 @@ function UI:RenderLeaderboard()
                 local pIcon = UI:CreateClassIcon(pIconFrame, p.class or "WARRIOR", 16)
                 pIcon:SetAllPoints(pIconFrame)
 
+                local isLocalPlayer = pName and (p.name:lower() == pName:lower())
                 local pNameStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
                 pNameStr:SetPoint("LEFT", pIconFrame, "RIGHT", 4, 0)
                 pNameStr:SetPoint("RIGHT", row, "LEFT", 180, 0)
                 pNameStr:SetJustifyH("LEFT")
                 pNameStr:SetWordWrap(false)
-                pNameStr:SetText(KB.Utils.ColorizeByClass(p.name or "Unknown", p.class or "WARRIOR"))
+                local pDisplayName = KB.Utils.ColorizeByClass(p.name or "Unknown", p.class or "WARRIOR")
+                if isLocalPlayer then
+                    pDisplayName = pDisplayName .. " |cffffd100[YOU]|r"
+                end
+                pNameStr:SetText(pDisplayName)
                 if pNameStr.SetFont then local f, s = pNameStr:GetFont(); pNameStr:SetFont(f, s or 10, "OUTLINE") end
                 pNameStr:SetShadowOffset(0, 0)
 
@@ -3801,14 +4091,13 @@ function UI:RenderLeaderboard()
                 if gFs.SetFont then local f, s = gFs:GetFont(); gFs:SetFont(f, s or 10, "OUTLINE") end
                 gFs:SetShadowOffset(0, 0)
 
-                -- Faction: Alliance (Blue) / Horde (Red)
-                local fFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                fFs:SetPoint("LEFT", row, "LEFT", 304, 0)
-                fFs:SetWidth(60)
-                fFs:SetJustifyH("LEFT")
-                fFs:SetText((p.faction == "Horde") and "|cffff3838Horde|r" or "|cff0078ffAlliance|r")
-                if fFs.SetFont then local f, s = fFs:GetFont(); fFs:SetFont(f, s or 10, "OUTLINE") end
-                fFs:SetShadowOffset(0, 0)
+                -- Faction: Alliance (Blue) / Horde (Red) Badge
+                local fBadge = CreateFactionBadge(row, p.faction, 60, 16)
+                fBadge:SetPoint("LEFT", row, "LEFT", 304, 0)
+
+                if isLocalPlayer then
+                    ApplyPlayerRowHighlight(row, p.faction)
+                end
 
                 -- Kills: White #FFFFFF
                 local kFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -3852,6 +4141,11 @@ function UI:RenderLeaderboard()
                     self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
                 end)
                 row:SetScript("OnLeave", function(self)
+                    if self.isPlayerRow then
+                        self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
+                    else
+                        self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                    end
                     self:SetBackdropColor(unpack(rowBg))
                 end)
 
@@ -3916,13 +4210,9 @@ function UI:RenderLeaderboard()
             if gFs.SetFont then local f, s = gFs:GetFont(); gFs:SetFont(f, s or 10, "OUTLINE") end
             gFs:SetShadowOffset(0, 0)
 
-            local fFs = stickyGuild:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            fFs:SetPoint("LEFT", stickyGuild, "LEFT", 300, 0)
-            fFs:SetWidth(110)
-            fFs:SetJustifyH("LEFT")
-            fFs:SetText((myFaction == "Horde") and "|cffff3838Horde|r" or "|cff0078ffAlliance|r")
-            if fFs.SetFont then local f, s = fFs:GetFont(); fFs:SetFont(f, s or 10, "OUTLINE") end
-            fFs:SetShadowOffset(0, 0)
+            local fBadge = CreateFactionBadge(stickyGuild, myFaction, 70, 16)
+            fBadge:SetPoint("LEFT", stickyGuild, "LEFT", 300, 0)
+            ApplyPlayerRowHighlight(stickyGuild, myFaction)
 
             local kFs = stickyGuild:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             kFs:SetPoint("LEFT", stickyGuild, "LEFT", 430, 0)
@@ -3974,23 +4264,27 @@ function UI:RenderLeaderboard()
                 if rFs.SetFont then local f, s = rFs:GetFont(); rFs:SetFont(f, s or 10, "OUTLINE") end
                 rFs:SetShadowOffset(0, 0)
 
+                local isMyGuild = myGuild and myGuild ~= "" and myGuild ~= "None" and (g.guild:lower() == myGuild:lower())
                 local gFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
                 gFs:SetPoint("LEFT", row, "LEFT", 52, 0)
                 gFs:SetWidth(240)
                 gFs:SetJustifyH("LEFT")
                 gFs:SetWordWrap(false)
+                local guildDisplayName = string.format("<%s>", g.guild or "Unknown")
+                if isMyGuild then
+                    guildDisplayName = guildDisplayName .. " |cffffd100[YOUR GUILD]|r"
+                end
                 gFs:SetTextColor(1.0, 0.84, 0.0, 1.0)
-                gFs:SetText(string.format("<%s>", g.guild or "Unknown"))
+                gFs:SetText(guildDisplayName)
                 if gFs.SetFont then local f, s = gFs:GetFont(); gFs:SetFont(f, s or 10, "OUTLINE") end
                 gFs:SetShadowOffset(0, 0)
 
-                local fFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                fFs:SetPoint("LEFT", row, "LEFT", 300, 0)
-                fFs:SetWidth(110)
-                fFs:SetJustifyH("LEFT")
-                fFs:SetText((g.faction == "Horde") and "|cffff3838Horde|r" or ((g.faction == "Alliance") and "|cff0078ffAlliance|r" or "|cff888888Contested|r"))
-                if fFs.SetFont then local f, s = fFs:GetFont(); fFs:SetFont(f, s or 10, "OUTLINE") end
-                fFs:SetShadowOffset(0, 0)
+                local fBadge = CreateFactionBadge(row, g.faction, 70, 16)
+                fBadge:SetPoint("LEFT", row, "LEFT", 300, 0)
+
+                if isMyGuild then
+                    ApplyPlayerRowHighlight(row, g.faction)
+                end
 
                 local kFs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
                 kFs:SetPoint("LEFT", row, "LEFT", 430, 0)
@@ -4004,6 +4298,11 @@ function UI:RenderLeaderboard()
                     self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
                 end)
                 row:SetScript("OnLeave", function(self)
+                    if self.isPlayerRow then
+                        self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
+                    else
+                        self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                    end
                     self:SetBackdropColor(unpack(rowBg))
                 end)
 
@@ -4091,23 +4390,27 @@ function UI:RenderLeaderboard()
                 local cIcon = UI:CreateClassIcon(cIconFrame, cls, 16)
                 cIcon:SetAllPoints(cIconFrame)
 
+                local isLocalPlayer = pName and (g.name:lower() == pName:lower())
                 local nameTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
                 nameTxt:SetPoint("LEFT", cIconFrame, "RIGHT", 6, 0)
                 nameTxt:SetPoint("RIGHT", row, "LEFT", 272, 0)
                 nameTxt:SetJustifyH("LEFT")
                 nameTxt:SetWordWrap(false)
-                nameTxt:SetText(KB.Utils.ColorizeByClass(g.name or "Unknown", cls))
+                local gDisplayName = KB.Utils.ColorizeByClass(g.name or "Unknown", cls)
+                if isLocalPlayer then
+                    gDisplayName = gDisplayName .. " |cffffd100[YOU]|r"
+                end
+                nameTxt:SetText(gDisplayName)
                 if nameTxt.SetFont then local f, s = nameTxt:GetFont(); nameTxt:SetFont(f, s or 10, "OUTLINE") end
                 nameTxt:SetShadowOffset(0, 0)
 
                 local fac = g.faction or "Alliance"
-                local facTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-                facTxt:SetPoint("LEFT", row, "LEFT", 276, 0)
-                facTxt:SetWidth(100)
-                facTxt:SetJustifyH("LEFT")
-                facTxt:SetText((fac == "Horde") and "|cffff3838Horde|r" or "|cff0078ffAlliance|r")
-                if facTxt.SetFont then local f, s = facTxt:GetFont(); facTxt:SetFont(f, s or 10, "OUTLINE") end
-                facTxt:SetShadowOffset(0, 0)
+                local facBadge = CreateFactionBadge(row, fac, 70, 16)
+                facBadge:SetPoint("LEFT", row, "LEFT", 276, 0)
+
+                if isLocalPlayer then
+                    ApplyPlayerRowHighlight(row, fac)
+                end
 
                 local gldTxt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
                 gldTxt:SetPoint("LEFT", row, "LEFT", 380, 0)
@@ -4132,6 +4435,11 @@ function UI:RenderLeaderboard()
                     self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
                 end)
                 row:SetScript("OnLeave", function(self)
+                    if self.isPlayerRow then
+                        self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
+                    else
+                        self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                    end
                     self:SetBackdropColor(unpack(rowBg))
                 end)
 
@@ -4481,12 +4789,19 @@ function UI:RenderBounties()
                     factionBadge = " |cffc41e3a[H]|r"
                 end
 
+                local pName = UnitName and UnitName("player")
+                local isLocalPlayer = pName and (tName:lower() == pName:lower())
+
                 local targetStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
                 targetStr:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 8, -1)
                 targetStr:SetPoint("RIGHT", row, "LEFT", 160, 0)
                 targetStr:SetJustifyH("LEFT")
                 targetStr:SetWordWrap(false)
                 local targetColored = (KB.Utils and KB.Utils.ColorizeByClass) and KB.Utils.ColorizeByClass(tName, bClass) or string.format("|cffff3838%s|r", tName)
+                if isLocalPlayer then
+                    targetColored = targetColored .. " |cffffd100[YOU]|r"
+                    ApplyPlayerRowHighlight(row, tFaction)
+                end
                 local classDisplay = (bClass ~= "UNKNOWN") and string.format(" |cff888888(%s)|r", bClass:sub(1,1):upper() .. bClass:sub(2):lower()) or ""
                 targetStr:SetText(targetColored .. classDisplay .. factionBadge)
                 if targetStr.SetFont then local f, s = targetStr:GetFont(); targetStr:SetFont(f, s or 11, "OUTLINE") end
@@ -4628,6 +4943,11 @@ function UI:RenderBounties()
                     end
                 end)
                 row:SetScript("OnLeave", function(self)
+                    if self.isPlayerRow then
+                        self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
+                    else
+                        self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                    end
                     self:SetBackdropColor(unpack(rowBg))
                     if pCount > 1 then UI:HidePrivateTooltip() end
                 end)
@@ -5303,15 +5623,13 @@ function UI:RenderRallies()
             if timeLbl.SetFont then local f, s = timeLbl:GetFont(); timeLbl:SetFont(f, s or 10, "OUTLINE") end
             timeLbl:SetShadowOffset(0, 0)
 
-            -- Col 2: Faction
-            local facLbl = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            facLbl:SetPoint("LEFT", row, "LEFT", 58, 0)
-            facLbl:SetWidth(55)
-            facLbl:SetJustifyH("LEFT")
-            local isHorde = (r.faction == "Horde")
-            facLbl:SetText(isHorde and "|cffff3838Horde|r" or "|cff0078ffAlliance|r")
-            if facLbl.SetFont then local f, s = facLbl:GetFont(); facLbl:SetFont(f, s or 10, "OUTLINE") end
-            facLbl:SetShadowOffset(0, 0)
+            -- Col 2: Faction Badge
+            local facBadge = CreateFactionBadge(row, r.faction, 54, 16)
+            facBadge:SetPoint("LEFT", row, "LEFT", 58, 0)
+
+            if r.isSelf then
+                ApplyPlayerRowHighlight(row, r.faction)
+            end
 
             -- Col 3: Requester Name
             local cIconFrame = CreateFrame("Frame", nil, row, "BackdropTemplate")
@@ -5408,6 +5726,11 @@ function UI:RenderRallies()
                 self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
             end)
             row:SetScript("OnLeave", function(self)
+                if self.isPlayerRow then
+                    self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
+                else
+                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                end
                 self:SetBackdropColor(unpack(rowBg))
             end)
 

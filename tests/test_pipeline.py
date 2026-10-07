@@ -2211,7 +2211,37 @@ WoWKillboardDB = {
         self.assertIn('{ id = "elvui",   name = "ElvUI" }', ui_content)
         self.assertIn('{ id = "wkb",     name = "WKB Theme" }', ui_content)
 
-        print("[PASS] Verified Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, Strict 3-Theme Architecture, and 1:1 WKB Mirror.")
+        # 15. Verify Top-Left Unit-Frame Character Portrait & Mask
+        self.assertIn('CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")', ui_content)
+        self.assertIn('portraitFrame:SetFrameStrata("HIGH")', ui_content)
+        self.assertIn('TempPortraitAlphaMask', ui_content)
+        self.assertIn('MiniMap-TrackingBorder', ui_content)
+        self.assertIn('levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 4, -4)', ui_content)
+
+        # 16. Verify Faction War Split Visual Progress Bar in Telemetry Strip
+        self.assertIn('UI.FactionSplitBar = splitBar', ui_content)
+        self.assertIn('allyFill:SetColorTexture(0.08, 0.35, 0.85, 1.0)', ui_content)
+        self.assertIn('hordeFill:SetColorTexture(0.85, 0.12, 0.12, 1.0)', ui_content)
+
+        # 17. Verify Rich Red & Blue Faction Pill Badges
+        self.assertIn('local function CreateFactionBadge(parent, faction, width, height)', ui_content)
+        self.assertIn('0.06, 0.22, 0.58, 0.85', ui_content) # Deep royal blue Alliance
+        self.assertIn('0.55, 0.08, 0.08, 0.85', ui_content) # Deep crimson red Horde
+        self.assertIn('crest_alliance.tga', ui_content)
+        self.assertIn('crest_horde.tga', ui_content)
+
+        # 18. Verify Player Row Highlight [YOU] with Faction Gradient and 1px Gold Outline
+        self.assertIn('local function ApplyPlayerRowHighlight(row, faction)', ui_content)
+        self.assertIn('0.85, 0.70, 0.30, 1.0', ui_content)  # 1px gold border outline
+        self.assertIn('0.04, 0.15, 0.40, 0.35', ui_content) # Alliance gradient
+        self.assertIn('0.40, 0.08, 0.08, 0.35', ui_content) # Horde gradient
+
+        # 19. Verify WKB Theme Web 1:1 Palette Alignment in Config.lua
+        self.assertIn('0.015, 0.020, 0.030, 0.98', cfg_content)
+        self.assertIn('0.08, 0.11, 0.16, 1.0', cfg_content)
+        self.assertIn('0.85, 0.70, 0.25, 1.0', cfg_content)
+
+        print("[PASS] Verified Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, Strict 3-Theme Architecture, Portrait, Faction Badges, and 1:1 WKB Mirror.")
 
 if __name__ == "__main__":
     unittest.main()

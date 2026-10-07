@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.5] - 2026-10-06 (CurseForge & Multi-Client Release)
 
 ### Added
+- **Visual Parity Refactor: Top-Left Character Portrait, Red/Blue Faction Styling & Color Depth (`Addon/WoWKillboard/UI.lua`, `Config.lua`)**:
+  - **Top-Left Character Portrait & Level Badge**:
+    - Created `WoWKillboardPlayerPortrait` (50x50) anchored to master frame `TOPLEFT` at `(-14, 14)` with frame strata `HIGH` to overlap the outer border cleanly.
+    - Integrated circular alpha mask (`Interface\CHARACTERFRAME\TempPortraitAlphaMask`) and 62x62 gold trim ring (`Interface\Minimap\MiniMap-TrackingBorder`).
+    - Added overlapping 22x22 level circle anchored at `BOTTOMRIGHT` `(4, -4)` with bold `#FFD100` level text updating on `PLAYER_LEVEL_UP` and `UNIT_PORTRAIT_UPDATE`.
+    - Shifted master header title 48px to clear the circular portrait ring without clipping.
+  - **Faction War Split Visual Progress Bar (Telemetry Ribbon)**:
+    - Replaced flat text faction split in the top telemetry ribbon with a dedicated dual-color progress bar (`140px x 12px`, `UI.FactionSplitBar`).
+    - Left Fill (Alliance %): Solid Royal Blue `(0.08, 0.35, 0.85, 1.0)`.
+    - Right Fill (Horde %): Solid Crimson Red `(0.85, 0.12, 0.12, 1.0)`.
+    - Centered dynamic text: `57% A | 43% H` in white bold font with black drop shadow.
+  - **Rich Red & Blue Faction Pill Badges (`CreateFactionBadge`)**:
+    - Replaced plain colored text in faction columns across Player Leaderboard, Guild Leaderboard, 24h Gankers, and Call to Arms Rallies with rounded solid pill badges:
+      - Alliance: Solid deep royal blue `#103894` `(0.06, 0.22, 0.58, 0.85)`, 1px bright cyan border `(0.18, 0.45, 0.85, 1.0)`, white text, and `crest_alliance.tga`.
+      - Horde: Solid deep crimson red `#8C1414` `(0.55, 0.08, 0.08, 0.85)`, 1px bright orange-red border `(0.85, 0.20, 0.20, 1.0)`, white text, and `crest_horde.tga`.
+  - **Local Player Row Highlights & Depth (`ApplyPlayerRowHighlight`)**:
+    - Rows belonging to the local player (`[YOU]`) now receive a crisp 1px gold border outline `(0.85, 0.70, 0.30, 1.0)` and faction-tinted horizontal gradient fill (`(0.04, 0.15, 0.40, 0.35)` Alliance / `(0.40, 0.08, 0.08, 0.35)` Horde) across Player Leaderboard, Guild Leaderboard, 24h Gankers, Bounties, Live Combat Feed, and PvE Fatalities.
+  - **WKB Theme 1:1 Palette Alignment**:
+    - Master Canvas: Ultra-dark near-black `#040609` `(0.015, 0.020, 0.030, 0.98)` with 1px brass gold outer border `(0.58, 0.45, 0.22, 1.0)`.
+    - Elevated Card Panels: Deep slate `#0B0F17` `(0.043, 0.059, 0.090, 0.95)` with 1px border `#1E293B` `(0.12, 0.16, 0.23, 1.0)`.
+    - Tab Buttons: Active tab uses dark slate `(0.08, 0.11, 0.16, 1.0)`, 2px solid gold bottom accent line `(0.85, 0.70, 0.25, 1.0)`, and solid white bold text `(1.0, 1.0, 1.0, 1.0)`.
 - **Strict 3-Theme Architecture & 1:1 WKB Web Mirror (`Addon/WoWKillboard/Config.lua`, `UI.lua`, `Core.lua`)**:
   - **Pruned Theme Registry to Strictly 3 Options**: Consolidated themes in `WoWKillboard.Themes` to `CLASSIC` ("Classic Blizzard Stone"), `ELVUI` ("ElvUI"), and `WKB` ("WKB Theme"), eliminating duplicate variants while keeping backward-compatible aliases (`web`, `slate`, `shadownetwork`, etc.).
   - **WKB Theme (1:1 Web Mirror)**: Designed exact mirror of `wowkillboard.com`:

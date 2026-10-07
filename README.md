@@ -74,8 +74,15 @@ flowchart TD
 ## Core Feature Highlights
 
 ### 1. In-Game Addon (`Addon/WoWKillboard/`)
+- **Top-Left Character Portrait & Medallion Badge**:
+  - Circular unit-frame player portrait (`WoWKillboardPlayerPortrait`, 50x50) anchored to the top-left at `(-14, 14)` on strata `HIGH` with circular alpha mask and 62x62 gold trim ring (`MiniMap-TrackingBorder`).
+  - Overlapping 22x22 level circle at `BOTTOMRIGHT` displaying bold gold player level text (`#FFD100`) updating dynamically on `PLAYER_LEVEL_UP`.
+- **Rich Red & Blue Faction Pill Badges & Telemetry Split Bar**:
+  - High-contrast rounded solid pill badges for faction columns: Solid Royal Blue `#103894` with cyan border and Alliance crest for Alliance; Solid Crimson Red `#8C1414` with orange-red border and Horde crest for Horde.
+  - Telemetry ribbon visual progress bar (`UI.FactionSplitBar`, 140x12) rendering dynamic real-time Alliance/Horde war splits with drop-shadowed white text.
+  - Local player row highlight (`[YOU]`): 1px gold border outline (`0.85, 0.70, 0.30, 1.0`) with faction-tinted horizontal gradients across leaderboards and feeds.
 - **Strict 3-Theme Architecture (WKB Theme, ElvUI, Classic)**:
-  - **Theme: WKB Theme (1:1 Web Mirror)**: 100% 1:1 visual parity with `wowkillboard.com`. Master canvas `#040609` (`0.015, 0.023, 0.035, 0.98`) with 1px brass border `#947338`, elevated `#0B0F17` card panels with 1px `#1E293B` borders, solid bright brass gold active pill buttons with black text, alternating row striping, and vivid telemetry ribbon coloring (`|cff0080ff% A|r`, `|cffff2020% H|r`, `|cffffd200Zone|r`, `|cffff8000Casualties|r`).
+  - **Theme: WKB Theme (1:1 Web Mirror)**: 100% 1:1 visual parity with `wowkillboard.com`. Master canvas `#040609` (`0.015, 0.020, 0.030, 0.98`) with 1px brass border `#947338`, elevated `#0B0F17` card panels with 1px `#1E293B` borders, solid bright brass gold active pill buttons with black text, active tab gold bottom line, alternating row striping, and vivid telemetry ribbon coloring (`|cff0080ff% A|r`, `|cffff2020% H|r`, `|cffffd200Zone|r`, `|cffff8000Casualties|r`).
   - **Theme: ElvUI**: Minimalist dark styling featuring master frame `#0A0A0A`, card backdrops `#141414`, strict 1px flat black borders, and flat dark gray buttons with bright white accent borders.
   - **Theme: Classic Blizzard Stone**: Authentic Blizzard dialog stone backgrounds (`UI-DialogBox-Background`), stone and gold borders (`UI-DialogBox-Border`), and parchment accents.
   - **Zero-Taint Theme Dropdown & Switcher**: Select between themes via the Settings dialog dropdown (`Classic`, `ElvUI`, `WKB Theme`), minimap right-click, or `/kb theme [wkb|elvui|classic]`.

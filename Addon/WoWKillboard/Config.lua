@@ -292,16 +292,19 @@ KB.Themes = {
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        mainBg = { 0.015, 0.023, 0.035, 0.98 },      -- Hex #040609 Outer Master Window Canvas
+        mainBg = { 0.015, 0.020, 0.030, 0.98 },      -- Hex #040609 Outer Master Window Canvas
         mainBorder = { 0.58, 0.45, 0.22, 1.0 },     -- Hex #947338 1px solid brass outer border
-        solidBg = { 0.015, 0.023, 0.035, 0.98 },
+        solidBg = { 0.015, 0.020, 0.030, 0.98 },
         titleText = "|cfffbbf24WoW Killboard|r",
         subtitleText = "v%s",
         headerColor = { 0.78, 0.65, 0.35, 1.0 },    -- Muted Web Gold
         subtitleColor = { 0.50, 0.55, 0.62, 1.0 },  -- Slate Gray
         textPrimary = { 0.984, 0.749, 0.141, 1.00 },   -- #FBBF24 Primary Text (Gold Title)
         textSecondary = { 0.612, 0.639, 0.686, 1.00 }, -- #9CA3AF Secondary Text (Slate Muted)
-        canvasBg = { 0.015, 0.023, 0.035, 0.98 },      -- #040609 Master Canvas
+        canvasBg = { 0.015, 0.020, 0.030, 0.98 },      -- #040609 Master Canvas
+        tabActiveBg = { 0.08, 0.11, 0.16, 1.0 },        -- Dark Slate Tab Background
+        tabActiveAccent = { 0.85, 0.70, 0.25, 1.0 },    -- 2px Solid Bright Gold Bottom Line
+        tabActiveText = { 1.0, 1.0, 1.0, 1.0 },         -- Solid White Bold Font
         panelBg = { 0.043, 0.059, 0.090, 0.95 },       -- #0B0F17 Elevated Card Background Fill
         subPanelBg = { 0.060, 0.080, 0.115, 0.60 },
         borderMuted = { 0.12, 0.16, 0.23, 1.0 },       -- #1E293B Flat 1px Border
