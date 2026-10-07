@@ -267,12 +267,17 @@ KB.Themes = {
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        mainBg = { 0.043, 0.059, 0.090, 0.98 },      -- #0B0F17 Main Window Canvas
+        mainBg = { 0.02, 0.025, 0.035, 0.95 },      -- #040609 Master Window Canvas
         mainBorder = { 0.831, 0.686, 0.216, 0.85 }, -- #D4AF37 Flat 1px Border (Gold Sheen)
-        solidBg = { 0.043, 0.059, 0.090, 0.98 },
+        solidBg = { 0.02, 0.025, 0.035, 0.95 },     -- #040609
         titleText = "|cfffbbf24WoW Killboard|r",     -- #FBBF24 Primary Text (Gold Title)
         textPrimary = { 0.984, 0.749, 0.141, 1.00 },   -- #FBBF24 Primary Text (Gold Title)
         textSecondary = { 0.612, 0.639, 0.686, 1.00 }, -- #9CA3AF Secondary Text (Slate Muted)
+        canvasBg = { 0.043, 0.059, 0.090, 0.98 },      -- #0B0F17 Main Window Canvas Token
+        panelBg = { 0.067, 0.094, 0.153, 1.00 },       -- #111827 Card / Panel Background Token
+        subPanelBg = { 0.086, 0.122, 0.188, 0.60 },    -- #161F30 Sub-Panel Token
+        borderMuted = { 0.122, 0.161, 0.216, 1.00 },   -- #1F2937 Flat 1px Border (Muted)
+        borderGold = { 0.831, 0.686, 0.216, 0.85 },    -- #D4AF37 Flat 1px Border (Gold Sheen)
         subtitleText = "v%s",
         insetBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -280,47 +285,49 @@ KB.Themes = {
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        insetBg = { 0.067, 0.094, 0.153, 1.00 },     -- #111827 Card / Panel Background
-        insetBorder = { 0.122, 0.161, 0.216, 1.00 }, -- #1F2937 Flat 1px Border (Muted)
+        insetBg = { 0.05, 0.075, 0.12, 0.90 },       -- #0D131F Combat Log Table Container
+        insetBorder = { 0.12, 0.16, 0.23, 1.0 },     -- #1E293B Flat 1px Border
         cardBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        cardBg = { 0.067, 0.094, 0.153, 1.00 },     -- #111827 Card / Panel Background
-        cardBorder = { 0.122, 0.161, 0.216, 1.00 }, -- #1F2937 Flat 1px Border (Muted)
+        cardBg = { 0.05, 0.075, 0.12, 0.90 },        -- #0D131F Elevated Slate Fill (3 Right-Sidebar Cards)
+        cardBorder = { 0.12, 0.16, 0.23, 1.0 },      -- #1E293B Flat 1px Border
+        sidebarContainerBg = { 0.02, 0.025, 0.035, 0.0 },
+        sidebarContainerBorder = { 0.02, 0.025, 0.035, 0.0 },
         cardHeaderBg = { 0.051, 0.075, 0.122, 1.00 }, -- #0D131F Telemetry Ribbon Fill
-        cardHeaderBorder = { 0.122, 0.161, 0.216, 1.00 },
+        cardHeaderBorder = { 0.12, 0.16, 0.23, 1.0 },
         btnBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        btnBg = { 0.086, 0.122, 0.188, 0.60 },       -- #161F30 Sub-Panel / Row Background
-        btnBorder = { 0.122, 0.161, 0.216, 1.00 },   -- #1F2937 Flat 1px Border (Muted)
-        btnActiveBg = { 0.18, 0.14, 0.06, 0.95 },     -- Dark brass fill
-        btnActiveBorder = { 0.831, 0.686, 0.216, 0.85 }, -- #D4AF37 Flat 1px Border (Gold Sheen)
+        btnBg = { 0.06, 0.08, 0.12, 0.8 },           -- Dark slate fill
+        btnBorder = { 0.12, 0.16, 0.23, 1.0 },       -- #1E293B Muted border
+        btnActiveBg = { 0.78, 0.60, 0.24, 1.0 },      -- Solid gold fill
+        btnActiveBorder = { 0.78, 0.60, 0.24, 1.0 },  -- Solid gold border
         btnHoverBg = { 0.12, 0.16, 0.24, 1.0 },
-        btnHoverBorder = { 0.831, 0.686, 0.216, 0.80 },
-        dividerColor = { 0.122, 0.161, 0.216, 1.00 }, -- #1F2937
+        btnHoverBorder = { 0.78, 0.60, 0.24, 0.80 },
+        dividerColor = { 0.12, 0.16, 0.23, 1.0 },     -- #1E293B
         rowBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        rowBg = { 0.067, 0.094, 0.153, 0.95 },       -- #111827
+        rowBg = { 0.05, 0.075, 0.12, 0.90 },         -- #0D131F
         rowBgAlt = { 0.086, 0.122, 0.188, 0.90 },    -- #161F30
-        rowBorder = { 0.122, 0.161, 0.216, 1.00 },   -- #1F2937
+        rowBorder = { 0.12, 0.16, 0.23, 1.0 },       -- #1E293B
         modalBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        modalBg = { 0.043, 0.059, 0.090, 0.98 },     -- #0B0F17
+        modalBg = { 0.02, 0.025, 0.035, 0.95 },      -- #040609
         modalBorder = { 0.831, 0.686, 0.216, 0.85 }, -- #D4AF37
         bannerBackdrop = {
             bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -328,22 +335,101 @@ KB.Themes = {
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         },
-        bannerBg = { 0.043, 0.059, 0.090, 0.98 },
+        bannerBg = { 0.02, 0.025, 0.035, 0.95 },
         bannerBorder = { 0.831, 0.686, 0.216, 0.85 },
         scrollbarRail = { 0.051, 0.075, 0.122, 1.00 }, -- #0D131F
-        scrollbarRailBorder = { 0.122, 0.161, 0.216, 1.00 },
-        scrollbarThumb = { 0.831, 0.686, 0.216, 0.85 },
+        scrollbarRailBorder = { 0.12, 0.16, 0.23, 1.0 },
+        scrollbarThumb = { 0.78, 0.60, 0.24, 1.0 },
         scrollbarThumbBorder = { 0.984, 0.749, 0.141, 1.00 },
         searchBg = { 0.051, 0.075, 0.122, 1.00 },
-        searchBorder = { 0.122, 0.161, 0.216, 1.00 },
-        searchFocusBorder = { 0.831, 0.686, 0.216, 0.85 },
+        searchBorder = { 0.12, 0.16, 0.23, 1.0 },
+        searchFocusBorder = { 0.78, 0.60, 0.24, 1.0 },
         tagColor = "fbbf24",
         themeBtnText = "|cffffffffTheme: |r|cfffbbf24Web 1:1|r",
+    },
+    ["elvui"] = {
+        id = "elvui",
+        name = "ElvUI Minimalist",
+        mainBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        mainBg = { 18/255, 18/255, 18/255, 1.0 }, -- #121212 Flat dark slate primary window
+        mainBorder = { 0.0, 0.0, 0.0, 1.0 },      -- 1px solid black border
+        solidBg = { 18/255, 18/255, 18/255, 1.0 }, -- #121212
+        titleText = "|cffffd100WoW Killboard|r",
+        subtitleText = "v%s",
+        insetBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        insetBg = { 18/255, 18/255, 18/255, 1.0 }, -- #121212 Flat dark slate inset
+        insetBorder = { 0.0, 0.0, 0.0, 1.0 },     -- 1px solid black border
+        cardBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        cardBg = { 24/255, 24/255, 24/255, 1.0 }, -- #181818 Secondary headers/panels
+        cardBorder = { 0.0, 0.0, 0.0, 1.0 },     -- 1px solid black border
+        cardHeaderBg = { 26/255, 26/255, 26/255, 1.0 }, -- #1A1A1A
+        cardHeaderBorder = { 0.0, 0.0, 0.0, 1.0 },
+        btnBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        btnBg = { 30/255, 30/255, 30/255, 1.0 }, -- #1E1E1E Flat button
+        btnBorder = { 0.0, 0.0, 0.0, 1.0 },     -- 1px solid black border
+        btnActiveBg = { 42/255, 42/255, 42/255, 1.0 },
+        btnActiveBorder = { 1.0, 0.82, 0.0, 1.0 }, -- #FFD100 Gold active accent
+        btnHoverBg = { 42/255, 42/255, 42/255, 1.0 }, -- #2A2A2A Hover highlight
+        btnHoverBorder = { 0.0, 0.0, 0.0, 1.0 },
+        dividerColor = { 0.0, 0.0, 0.0, 1.0 },
+        rowBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        rowBg = { 20/255, 20/255, 20/255, 1.0 },    -- #141414 Alternating row fill
+        rowBgAlt = { 22/255, 22/255, 22/255, 1.0 }, -- #161616 Alternating row fill
+        rowBorder = { 0.0, 0.0, 0.0, 1.0 },        -- 1px solid black divider
+        modalBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        },
+        modalBg = { 18/255, 18/255, 18/255, 1.0 }, -- #121212
+        modalBorder = { 0.0, 0.0, 0.0, 1.0 },
+        bannerBackdrop = {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            edgeSize = 16,
+            insets = { left = 4, right = 4, top = 4, bottom = 4 },
+        },
+        bannerBg = { 13/255, 17/255, 23/255, 0.94 },
+        bannerBorder = { 0.18, 0.20, 0.23, 1.0 },
+        scrollbarRail = { 20/255, 20/255, 20/255, 1.0 }, -- #141414
+        scrollbarRailBorder = { 0.0, 0.0, 0.0, 1.0 },
+        scrollbarThumb = { 42/255, 42/255, 42/255, 1.0 }, -- #2A2A2A
+        scrollbarThumbBorder = { 0.0, 0.0, 0.0, 1.0 },
+        searchBg = { 20/255, 20/255, 20/255, 1.0 }, -- #141414
+        searchBorder = { 0.0, 0.0, 0.0, 1.0 },
+        searchFocusBorder = { 1.0, 0.82, 0.0, 1.0 },
+        tagColor = "ffd100",
+        themeBtnText = "|cffffffffTheme: |r|cffffd100ElvUI|r",
     },
 }
 
 -- Backward compatibility aliases
-KB.Themes["elvui"] = KB.Themes["slate"]
 KB.Themes["shadownetwork"] = KB.Themes["web"]
 KB.Themes["web11"] = KB.Themes["web"]
 KB.Themes["web_slate"] = KB.Themes["web"]
