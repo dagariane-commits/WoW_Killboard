@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.5] - 2026-10-06 (CurseForge & Multi-Client Release)
 
 ### Added
+- **Mode Filter Pills: [ World ] [ BGs ] [ Duels ] [ Arenas ] (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Leaderboard.lua`, `Killmail.lua`)**:
+  - Replaced legacy `[All] [Solo] [Group] [Raid]` pills with four distinct mode filters: `[ World ]`, `[ BGs ]`, `[ Duels ]`, and `[ Arenas ]`.
+  - Persisted selection state in `WoWKillboardDB.combatFilter` (default: `"WORLD"`).
+  - Wired live feed filtering to dynamically filter events by `zone_type == "none"` (open world), `zone_type == "pvp"` (battlegrounds), duel victory flags, and arena matches.
+  - Re-aggregated leaderboard views so operative rankings, kills, and K/D ratios immediately recalculate based on the active mode filter.
+  - Applied tactile visual states: Golden border (`#D4AF37`), gold text (`#FBBF24`), and dark brass fill when active; muted border (`#1F2937`) with grey text (`#9CA3AF`) and transparent backing when inactive.
+- **Tab Navigation Cleanup: Zero Duplication & Strict 5-Tab Modes (`Addon/WoWKillboard/UI.lua`)**:
+  - **PvP Combat Mode (5 Tabs)**: `Intel` (Live Recent Combat Feed), `Leaderboards` (Player & Guild standings), `The Marked` (Bounties & contracts), `Call to Arms` (Open defense distress calls), `Danger Zones` (Zone PvP conflict index). Completely removed misplaced `Hazards` tab from PvP combat navigation rail.
+  - **PvE Hazards Mode (5 Tabs)**: `Casualties` (Recent deaths to mobs/environment), `Deadly Hazards` (Apex executioners & fallen mortals registry), `Notorious Elites` (Apex threats), `Rescue Beacons` (Emergency SOS distress calls), `Zone Mortality` (Danger index by zone). Completely eliminated redundant duplicate `Hazards` tab.
+- **Theme 3: "Shadow Network (Web 1:1 Flat Slate)" (`Addon/WoWKillboard/Config.lua`, `UI.lua`)**:
+  - Added third visual theme replicating the web platform's modern flat charcoal styling without default Blizzard textures.
+  - Implemented `ApplyWebTheme(frame, bgColor, borderColor)` and `CreateWebPillButton(parent, text, width, height)` pure Lua helpers using `WHITE8X8` textures for exact 1px solid borders.
+  - Integrated 1:1 CSS-to-Lua token mapping: Canvas `#0B0F17` `(0.043, 0.059, 0.090, 0.98)`, Card `#111827` `(0.067, 0.094, 0.153, 1.00)`, Sub-panel `#161F30` `(0.086, 0.122, 0.188, 0.90)`, Flat Muted Border `#1F2937` `(0.122, 0.161, 0.216, 1.00)`, Gold Sheen Border `#D4AF37` `(0.831, 0.686, 0.216, 0.85)`, Telemetry Ribbon Fill `#0D131F` `(0.051, 0.075, 0.122, 1.00)`, Primary Gold Text `#FBBF24` `(0.984, 0.749, 0.141, 1.00)`, and Slate Muted Text `#9CA3AF` `(0.612, 0.639, 0.686, 1.00)`.
+  - Updated Settings theme toggle button and cycling logic (`web` -> `slate` -> `classic`) with dynamic theme re-application across all containers, cards, and modal frames.
 - **In-Game Addon & Web 1:1 Layout Parity & Dual-Column Refactor (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Core.lua`, `web/static/app.js`)**:
   - **42px Header & Telemetry Ribbon**: Added Realm Badge, Omni-Search (`[Q Search...]`), segmented Mode Switcher (`[ ⚔ PvP Combat ]` and `[ 💀 PvE Hazards ]`), Settings, Sync, and Close controls. Underneath the header, a 28px telemetry strip displays live realm combat totals, 24h count, PvE casualties, current hot zone, and faction war split.
   - **Dual-Column Architecture**: Refactored main addon frame (960x660) to a ~70% width left main viewport (`MainContainer`) and ~30% width right sidebar (`SidebarContainer`) featuring Lifetime Combat Activity, The Marked active contracts with 1-click `[ Track ]` buttons, and an All Classes combat matrix.

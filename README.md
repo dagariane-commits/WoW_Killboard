@@ -74,12 +74,16 @@ flowchart TD
 ## Core Feature Highlights
 
 ### 1. In-Game Addon (`Addon/WoWKillboard/`)
-- **Dual Theme Architecture (Classic WoW & ElvUI Minimalist)**:
-  - **Classic WoW Theme**: Authentic Blizzard dialog stone backgrounds, gold/brass bevels (`UI-DialogBox-Border`), and warm parchment tooltips.
-  - **ElvUI Minimalist Theme**: Sleek obsidian dark gunmetal backdrop with 1px razor borders and high-contrast cyan accents.
-  - **Instant 1-Click Switcher**: Toggle between themes instantly in-game via the header button `[Theme: Classic]` / `[Theme: ElvUI]` or `/killboard theme`.
+- **Tri-Theme Architecture (Shadow Network Web 1:1, Dark Slate, Classic Stone)**:
+  - **Theme 3: Shadow Network (Web 1:1 Flat Slate)**: 100% 1:1 parity with the web platform. Flat `#0B0F17` charcoal canvas, `#111827` card panels, crisp 1px `#1F2937` borders, and `#D4AF37` gold trims using pure `WHITE8X8` textures with zero Blizzard dialog bevels.
+  - **Theme 2: Shadow Network Slate**: Sleek obsidian dark gunmetal backdrop with subtle 1px border framing and cyan/gold accents.
+  - **Theme 1: Classic Blizzard Stone**: Authentic Blizzard dialog stone backgrounds, gold/brass bevels (`UI-DialogBox-Border`), and warm parchment tooltips.
+  - **Instant 1-Click Switcher**: Cycle between all 3 themes instantly in-game via the Settings theme button or `/kb theme`.
+- **Mode Filter Pills & Clean Tab Navigation (`/kb`)**:
+  - **Contextual Mode Filtering**: Tactile pill buttons (`[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`) in the sub-toolbar immediately filter combat rows and re-aggregate leaderboard standings. Active pills glow with gold border `#D4AF37` and dark brass fill.
+  - **Zero Duplication Navigation**: Strictly 5 clean tabs for PvP (`Intel`, `Leaderboards`, `The Marked`, `Call to Arms`, `Danger Zones`) and 5 clean tabs for PvE (`Casualties`, `Deadly Hazards`, `Notorious Elites`, `Rescue Beacons`, `Zone Mortality`), completely removing duplicate Hazards tabs.
 - **Zero-Taint Isolated Dashboard (`/kb`)**:
-  - 100% template-free Lua design. Zero XML template dependencies. Zero `UISpecialFrames` pollution.
+  - 100% template-free pure Lua widgets (`BackdropTemplate`). Zero XML template dependencies (`UIPanelButtonTemplate`, etc.). Zero `UISpecialFrames` pollution.
   - Safe ESC key event propagation (`SetPropagateKeyboardInput`).
   - Guaranteed **88px clear margin** eliminating navigation tab and filter button overlap.
 - **Strict Realm Isolation & Interactive PvE/PvP Stats Toggle**:

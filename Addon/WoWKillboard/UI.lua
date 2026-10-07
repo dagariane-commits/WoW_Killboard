@@ -82,31 +82,97 @@ local CLASS_COORDS = CLASS_ICON_TCOORDS or {
     EVOKER      = {0, 0.25, 0.75, 1.0},
 }
 
--- Theme Engine: Shadow Network Slate vs Classic Blizzard Stone & Parchment
+-- Helper function to generate a flat modern web card (Theme 3: Web 1:1)
+local function ApplyWebTheme(frame, bgColor, borderColor)
+    if not frame or not frame.SetBackdrop then return end
+    frame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        tile = false,
+        tileSize = 0,
+        edgeSize = 1, -- Exact 1px solid border
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    
+    local bg = bgColor or { 0.067, 0.094, 0.153, 1.0 }
+    local border = borderColor or { 0.122, 0.161, 0.216, 1.0 }
+    
+    frame:SetBackdropColor(bg[1], bg[2], bg[3], bg[4])
+    frame:SetBackdropBorderColor(border[1], border[2], border[3], border[4])
+end
+UI.ApplyWebTheme = ApplyWebTheme
+
+-- Flat Pill Button Styling (100% pure Lua BackdropTemplate)
+local function CreateWebPillButton(parent, text, width, height)
+    local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    btn:SetSize(width or 70, height or 22)
+    
+    btn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    
+    -- Inactive default state
+    btn:SetBackdropColor(0.086, 0.122, 0.188, 0.6)
+    btn:SetBackdropBorderColor(0.122, 0.161, 0.216, 1.0)
+    
+    local fontString = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    fontString:SetPoint("CENTER", 0, 0)
+    fontString:SetText(text or "")
+    fontString:SetTextColor(0.612, 0.639, 0.686, 1.0)
+    if fontString.SetFont then local f, s = fontString:GetFont(); fontString:SetFont(f, s or 10, "OUTLINE") end
+    fontString:SetShadowOffset(0, 0)
+    btn.text = fontString
+    btn.Label = fontString
+    
+    btn:SetScript("OnEnter", function(self)
+        self:SetBackdropBorderColor(0.831, 0.686, 0.216, 0.8)
+        self.text:SetTextColor(1, 1, 1, 1)
+    end)
+    btn:SetScript("OnLeave", function(self)
+        if not self.isActive then
+            self:SetBackdropBorderColor(0.122, 0.161, 0.216, 1.0)
+            self.text:SetTextColor(0.612, 0.639, 0.686, 1.0)
+        else
+            self:SetBackdropBorderColor(0.831, 0.686, 0.216, 0.85)
+            self.text:SetTextColor(0.984, 0.749, 0.141, 1.0)
+        end
+    end)
+    
+    return btn
+end
+UI.CreateWebPillButton = CreateWebPillButton
+
+-- Theme Engine: Shadow Network (Web 1:1) vs Slate vs Classic Blizzard Stone
 function UI:GetCurrentThemeName()
     if WoWKillboardDB and WoWKillboardDB.theme then
         local t = WoWKillboardDB.theme:lower()
-        if t == "classic" or t == "slate" then return t end
-        if t == "elvui" then return "slate" end
+        if t == "web" or t == "shadownetwork" or t == "web11" or t == "web_slate" then return "web" end
+        if t == "classic" then return "classic" end
+        if t == "slate" or t == "elvui" then return "slate" end
     end
     if WoWKillboardSettings and WoWKillboardSettings.theme then
         local t = WoWKillboardSettings.theme:lower()
-        if t == "classic" or t == "slate" then return t end
-        if t == "elvui" then return "slate" end
+        if t == "web" or t == "shadownetwork" or t == "web11" or t == "web_slate" then return "web" end
+        if t == "classic" then return "classic" end
+        if t == "slate" or t == "elvui" then return "slate" end
     end
-    return "slate"
+    return "web"
 end
 
 function UI:GetTheme()
     local name = UI:GetCurrentThemeName()
-    return (KB.Themes and KB.Themes[name]) or (KB.Themes and KB.Themes["slate"]) or (KB.Themes and KB.Themes["classic"]) or {}
+    return (KB.Themes and KB.Themes[name]) or (KB.Themes and KB.Themes["web"]) or (KB.Themes and KB.Themes["slate"]) or (KB.Themes and KB.Themes["classic"]) or {}
 end
 
 function UI:SetTheme(themeName)
     themeName = (themeName or ""):lower()
     if themeName == "elvui" then themeName = "slate" end
-    if themeName ~= "classic" and themeName ~= "slate" then
-        themeName = "slate"
+    if themeName == "shadownetwork" or themeName == "web11" or themeName == "web_slate" then themeName = "web" end
+    if themeName ~= "classic" and themeName ~= "slate" and themeName ~= "web" then
+        themeName = "web"
     end
 
     WoWKillboardDB = WoWKillboardDB or {}
@@ -129,7 +195,14 @@ end
 
 function UI:CycleTheme()
     local current = UI:GetCurrentThemeName()
-    local nextTheme = (current == "classic") and "slate" or "classic"
+    local nextTheme
+    if current == "web" then
+        nextTheme = "slate"
+    elseif current == "slate" then
+        nextTheme = "classic"
+    else
+        nextTheme = "web"
+    end
     UI:SetTheme(nextTheme)
     return nextTheme
 end
@@ -201,6 +274,12 @@ function UI:ApplyTheme()
                     UI.ContentInset.Vignette:SetAlpha(0.65)
                     UI.ContentInset.Vignette:Show()
                 end
+                UI.ContentInset.BgArt:Show()
+            elseif theme.id == "web" then
+                UI.ContentInset.BgArt:Hide()
+                if UI.ContentInset.Vignette then
+                    UI.ContentInset.Vignette:Hide()
+                end
             else
                 UI.ContentInset.BgArt:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\dark_war_bg.tga")
                 UI.ContentInset.BgArt:SetTexCoord(0, 1, 0, 1)
@@ -210,9 +289,18 @@ function UI:ApplyTheme()
                     UI.ContentInset.Vignette:SetAlpha(0.40)
                     UI.ContentInset.Vignette:Show()
                 end
+                UI.ContentInset.BgArt:Show()
             end
-            UI.ContentInset.BgArt:Show()
         end
+    end
+
+    if UI.MainContainer then
+        UI.MainContainer:SetBackdropColor(unpack(theme.insetBg or theme.cardBg))
+        UI.MainContainer:SetBackdropBorderColor(unpack(theme.insetBorder or theme.cardBorder))
+    end
+    if UI.SidebarContainer then
+        UI.SidebarContainer:SetBackdropColor(unpack(theme.cardBg or theme.insetBg))
+        UI.SidebarContainer:SetBackdropBorderColor(unpack(theme.cardBorder or theme.insetBorder))
     end
 
     if UI.HeaderPlate then
@@ -343,7 +431,25 @@ function UI:ApplyTheme()
                 card.HeaderDivider:SetColorTexture(unpack(theme.cardHeaderBorder or {0.35, 0.28, 0.16, 0.8}))
             end
             if card.TitleLabel and card.rawTitle then
-                local tColor = (theme.id == "classic") and "|cffffd100" or "|cffffffff"
+                local tColor = (theme.id == "classic") and "|cffffd100" or ((theme.id == "web") and "|cfffbbf24" or "|cffffffff")
+                card.TitleLabel:SetText(tColor .. card.rawTitle .. "|r")
+            end
+        end
+    end
+    if UI.SidebarCards then
+        for _, card in ipairs(UI.SidebarCards) do
+            if card and card.SetBackdrop then
+                card:SetBackdropColor(unpack(theme.cardBg))
+                card:SetBackdropBorderColor(unpack(theme.cardBorder))
+            end
+            if card.HeaderStrip then
+                card.HeaderStrip:SetColorTexture(unpack(theme.cardHeaderBg or {0.051, 0.075, 0.122, 1.0}))
+            end
+            if card.HeaderDivider then
+                card.HeaderDivider:SetColorTexture(unpack(theme.cardHeaderBorder or {0.122, 0.161, 0.216, 1.0}))
+            end
+            if card.TitleLabel and card.rawTitle then
+                local tColor = (theme.id == "classic") and "|cffffd100" or ((theme.id == "web") and "|cfffbbf24" or "|cffffffff")
                 card.TitleLabel:SetText(tColor .. card.rawTitle .. "|r")
             end
         end
@@ -361,7 +467,7 @@ function UI:ApplyTheme()
         UI.DetailModal:SetBackdropColor(unpack(theme.modalBg))
         UI.DetailModal:SetBackdropBorderColor(unpack(theme.modalBorder))
         if UI.DetailModal.Title then
-            local mColor = (theme.id == "classic") and "|cffffd100" or "|cffffffff"
+            local mColor = (theme.id == "classic") and "|cffffd100" or ((theme.id == "web") and "|cfffbbf24" or "|cffffffff")
             UI.DetailModal.Title:SetText(mColor .. "KILLMAIL COMBAT RECORD|r")
         end
         if UI.DetailModal.CloseBtn then
@@ -1190,14 +1296,13 @@ function UI:CreateMainWindow()
     ribbonText:SetText("REALM: 0 | 24H: 0 | PVE CASUALTIES: 0 | HOT ZONE: Scanning... | FACTION: 50% A / 50% H")
     UI.TelemetryText = ribbonText
 
-    -- 4. Nav Tabs Bar (30px height)
+    -- 4. Nav Tabs Bar (30px height) - Exactly 5 clean tabs
     local tabs = {
         { id = "FEED",        text = "Intel",         w = 64 },
         { id = "LEADERBOARD", text = "Leaderboards",  w = 98 },
         { id = "BOUNTIES",    text = "The Marked",    w = 86 },
-        { id = "HAZARDS",     text = "Hazards",       w = 76 },
         { id = "RALLIES",     text = "Call to Arms",  w = 90 },
-        { id = "ZONES",       text = "Zone Intel",    w = 84 },
+        { id = "ZONES",       text = "Danger Zones",  w = 92 },
     }
 
     tabButtons = {}
@@ -1218,27 +1323,31 @@ function UI:CreateMainWindow()
         prevTab = btn
     end
 
-    -- Quick Feed Filter Pills on right of Nav Bar: Solo | Group | Raid | All
+    -- Mode Filter Pills on right of Nav Bar: [ World ] [ BGs ] [ Duels ] [ Arenas ]
+    -- Ordered right-to-left so they display left-to-right: [ World ] [ BGs ] [ Duels ] [ Arenas ]
     local filterConfigs = {
-        { id = "RAID",  text = "Raid",  w = 46, color = {0.85, 0.45, 0.20} },
-        { id = "GROUP", text = "Group", w = 50, color = {0.3, 0.65, 1.0} },
-        { id = "SOLO",  text = "Solo",  w = 46, color = {1.0, 0.84, 0.0} },
-        { id = "ALL",   text = "All",   w = 40, color = {0.2, 0.85, 0.3} },
+        { id = "ARENA", text = "Arenas", w = 64, tooltip = "Rated & Skirmish Arena Engagements" },
+        { id = "DUEL",  text = "Duels",  w = 58, tooltip = "Sanctioned 1v1 Duel Mortalities" },
+        { id = "BG",    text = "BGs",    w = 54, tooltip = "Battleground Engagements (Warsong, Arathi, Alterac)" },
+        { id = "WORLD", text = "World",  w = 62, tooltip = "Open World Contested Zone Combat" },
     }
 
     filterButtons = {}
     local prevPill = nil
     for _, f in ipairs(filterConfigs) do
-        local pill = UI:CreateButton(mainFrame, f.w, 22, f.text, "GameFontHighlightSmall")
+        local pill = CreateWebPillButton(mainFrame, f.text, f.w, 22)
         if not prevPill then
             pill:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -10, -75)
         else
             pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
         end
-        pill.BaseColor = f.color
+        pill.tooltipText = f.tooltip
         local filterId = f.id
         pill:SetScript("OnClick", function()
-            currentFilter = filterId
+            WoWKillboardDB = WoWKillboardDB or {}
+            WoWKillboardDB.combatFilter = filterId
+            if WoWKillboardSettings then WoWKillboardSettings.combatFilter = filterId end
+            currentMode = filterId
             UI:Refresh()
         end)
         filterButtons[f.id] = pill
@@ -1805,23 +1914,21 @@ function UI:Refresh()
 
     local isPveMode = UI:IsPve()
 
-    -- Dynamic Tab Configuration (Adapts names & widths seamlessly between PvE & PvP rulesets)
-    local tabOrder = { "FEED", "LEADERBOARD", "BOUNTIES", "HAZARDS", "RALLIES", "ZONES" }
+    -- Dynamic Tab Configuration: Exactly 5 clean tabs for PvP and PvE
+    local tabOrder = { "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES" }
     local pveTabDefs = {
-        FEED        = { text = "Casualties",         w = 74 },
+        FEED        = { text = "Casualties",         w = 76 },
         LEADERBOARD = { text = "Deadly Hazards",     w = 104 },
         BOUNTIES    = { text = "Notorious Elites",   w = 108 },
-        HAZARDS     = { text = "Hazards",            w = 72 },
         RALLIES     = { text = "Rescue Beacons",     w = 102 },
-        ZONES       = { text = "Zone Mortality",     w = 96 },
+        ZONES       = { text = "Zone Mortality",     w = 98 },
     }
     local pvpTabDefs = {
         FEED        = { text = "Intel",              w = 56 },
         LEADERBOARD = { text = "Leaderboards",       w = 96 },
         BOUNTIES    = { text = "The Marked",         w = 82 },
-        HAZARDS     = { text = "Hazards",            w = 72 },
         RALLIES     = { text = "Call to Arms",       w = 86 },
-        ZONES       = { text = "Danger Zones",       w = 90 },
+        ZONES       = { text = "Danger Zones",       w = 92 },
     }
     local tabDefs = isPveMode and pveTabDefs or pvpTabDefs
     local prevTab = nil
@@ -1841,13 +1948,13 @@ function UI:Refresh()
         end
     end
 
-    -- Dynamic Quick Filter Pills Configuration (Solo | Group | Raid | All)
-    local filterOrder = { "RAID", "GROUP", "SOLO", "ALL" }
+    -- Dynamic Mode Filter Pills ([ World ] [ BGs ] [ Duels ] [ Arenas ])
+    local filterOrder = { "ARENA", "DUEL", "BG", "WORLD" }
     local pillDefs = {
-        RAID  = { text = "Raid",  w = 46, disabled = false, color = {0.85, 0.45, 0.20}, tooltip = "Raid Battles (5+ Players)" },
-        GROUP = { text = "Group", w = 50, disabled = false, color = {0.3, 0.65, 1.0},   tooltip = "Small Group Battles (2-5 Players)" },
-        SOLO  = { text = "Solo",  w = 46, disabled = false, color = {1.0, 0.84, 0.0},   tooltip = "1v1 Certified Solo Mortalities" },
-        ALL   = { text = "All",   w = 40, disabled = false, color = {0.2, 0.85, 0.3},   tooltip = "All Combat Casualties" },
+        ARENA = { text = "Arenas", w = 64, tooltip = "Rated & Skirmish Arena Engagements" },
+        DUEL  = { text = "Duels",  w = 58, tooltip = "Sanctioned 1v1 Duel Mortalities" },
+        BG    = { text = "BGs",    w = 54, tooltip = "Battleground Engagements (Warsong, Arathi, Alterac)" },
+        WORLD = { text = "World",  w = 62, tooltip = "Open World Contested Zone Combat" },
     }
     local prevPill = nil
     for _, fid in ipairs(filterOrder) do
@@ -1856,8 +1963,6 @@ function UI:Refresh()
         if pill and pDef then
             pill:SetWidth(pDef.w)
             if pill.Label then pill.Label:SetText(pDef.text) end
-            pill.BaseColor = pDef.color
-            pill.isDisabled = pDef.disabled
             pill.tooltipText = pDef.tooltip
             pill:ClearAllPoints()
             if not prevPill then
@@ -1869,15 +1974,29 @@ function UI:Refresh()
 
             local filterId = fid
             pill:SetScript("OnClick", function()
-                currentFilter = filterId
+                WoWKillboardDB = WoWKillboardDB or {}
+                WoWKillboardDB.combatFilter = filterId
+                if WoWKillboardSettings then WoWKillboardSettings.combatFilter = filterId end
+                currentMode = filterId
                 UI:Refresh()
             end)
             pill:SetScript("OnEnter", function(self)
+                self:SetBackdropBorderColor(0.831, 0.686, 0.216, 0.8)
+                if self.Label then self.Label:SetTextColor(1, 1, 1, 1) end
                 if self.tooltipText then
                     UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100" .. (self.Label and self.Label:GetText() or "") .. "|r", self.tooltipText)
                 end
             end)
-            pill:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+            pill:SetScript("OnLeave", function(self)
+                if not self.isActive then
+                    self:SetBackdropBorderColor(0.122, 0.161, 0.216, 1.0)
+                    if self.Label then self.Label:SetTextColor(0.612, 0.639, 0.686, 1.0) end
+                else
+                    self:SetBackdropBorderColor(0.831, 0.686, 0.216, 0.85)
+                    if self.Label then self.Label:SetTextColor(0.984, 0.749, 0.141, 1.0) end
+                end
+                UI:HidePrivateTooltip()
+            end)
         end
     end
 
@@ -2010,35 +2129,35 @@ function UI:Refresh()
             btn:SetBackdropBorderColor(unpack(theme.btnBorder))
             if theme.id == "classic" then
                 btn.Label:SetTextColor(0.85, 0.75, 0.60)
+            elseif theme.id == "web" then
+                btn.Label:SetTextColor(0.612, 0.639, 0.686, 1.0)
             else
                 btn.Label:SetTextColor(0.65, 0.65, 0.65)
             end
         end
     end
 
-    -- Update Filter Pill Active Glow
+    -- Update Filter Pill Active Glow: [ World ] [ BGs ] [ Duels ] [ Arenas ]
+    local activeFilter = (WoWKillboardDB and WoWKillboardDB.combatFilter) or currentMode or "WORLD"
     for fid, pill in pairs(filterButtons) do
-        if pill.isDisabled then
-            pill.isActive = false
-            if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
-            pill:SetBackdropColor(0.08, 0.08, 0.08, 0.6)
-            pill:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.5)
-            pill.Label:SetTextColor(0.45, 0.45, 0.45)
-        elseif fid == currentFilter then
-            pill.isActive = true
-            if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
-            pill:SetBackdropColor(0.20, 0.20, 0.20, 1.0)
-            pill:SetBackdropBorderColor(aR, aG, aB, 1.0)
-            pill.Label:SetTextColor(aR, aG, aB, 1.0)
+        if isPveMode then
+            pill:Hide()
         else
-            pill.isActive = false
-            if theme.btnBackdrop then pill:SetBackdrop(theme.btnBackdrop) end
-            pill:SetBackdropColor(unpack(theme.btnBg))
-            pill:SetBackdropBorderColor(unpack(theme.btnBorder))
-            if theme.id == "classic" then
-                pill.Label:SetTextColor(0.80, 0.70, 0.55)
+            pill:Show()
+            if fid == activeFilter then
+                pill.isActive = true
+                pill:SetBackdropColor(0.18, 0.14, 0.06, 0.95)
+                pill:SetBackdropBorderColor(0.831, 0.686, 0.216, 0.85) -- #D4AF37 Golden border
+                if pill.Label then
+                    pill.Label:SetTextColor(0.984, 0.749, 0.141, 1.0) -- #FBBF24 Gold text
+                end
             else
-                pill.Label:SetTextColor(0.65, 0.65, 0.65)
+                pill.isActive = false
+                pill:SetBackdropColor(0.086, 0.122, 0.188, 0.60) -- transparent/muted fill
+                pill:SetBackdropBorderColor(0.122, 0.161, 0.216, 1.0) -- #1F2937 Muted border
+                if pill.Label then
+                    pill.Label:SetTextColor(0.612, 0.639, 0.686, 1.0) -- #9CA3AF Grey text
+                end
             end
         end
     end
@@ -2062,6 +2181,7 @@ function UI:Refresh()
             activeTab = "FEED"
             UI:RenderPveFeed()
         elseif activeTab == "LEADERBOARD" or activeTab == "HAZARDS" then
+            activeTab = "LEADERBOARD"
             UI:RenderPveLeaderboard()
         elseif activeTab == "BOUNTIES" then
             UI:RenderPveBounties()
@@ -2082,7 +2202,8 @@ function UI:Refresh()
         elseif activeTab == "BOUNTIES" then
             UI:RenderBounties()
         elseif activeTab == "HAZARDS" then
-            UI:RenderPveLeaderboard()
+            activeTab = "LEADERBOARD"
+            UI:RenderLeaderboard()
         elseif activeTab == "RALLIES" then
             UI:RenderRallies()
         elseif activeTab == "ZONES" then
@@ -2104,7 +2225,9 @@ end
 
 -- 1. Render Live Killmail Feed (Tactical Intel)
 function UI:RenderLiveFeed()
-    local kills = KB.Leaderboard:GetRecentKills(currentMode, 50)
+    local activeMode = (WoWKillboardDB and WoWKillboardDB.combatFilter) or currentMode or "WORLD"
+    currentMode = activeMode
+    local kills = KB.Leaderboard:GetRecentKills(activeMode, 50)
     local theme = UI:GetTheme()
     local aR, aG, aB = WoWKB.AccentColor()
 
@@ -2125,21 +2248,18 @@ function UI:RenderLiveFeed()
         kills = filtered
     end
 
-    -- Quick Feed Filters (Solo | Group | Raid | All)
-    if currentFilter and currentFilter ~= "ALL" then
-        local filtered = {}
-        for _, km in ipairs(kills) do
-            local gSize = km.groupSize or (km.killer and km.killer.partySize) or 1
-            if currentFilter == "SOLO" and (km.isSolo or gSize == 1) then
-                table.insert(filtered, km)
-            elseif currentFilter == "GROUP" and (gSize > 1 and gSize <= 5) then
-                table.insert(filtered, km)
-            elseif currentFilter == "RAID" and (gSize > 5 or km.isRaid) then
-                table.insert(filtered, km)
+    -- Strict Mode Filter Verification: [World, BGs, Duels, Arenas]
+    local filteredMode = {}
+    for _, km in ipairs(kills) do
+        if KB.Leaderboard and KB.Leaderboard.MatchesMode then
+            if KB.Leaderboard:MatchesMode(km, activeMode) then
+                table.insert(filteredMode, km)
             end
+        else
+            table.insert(filteredMode, km)
         end
-        kills = filtered
     end
+    kills = filteredMode
 
     local cWidth = 620
 
@@ -3258,8 +3378,9 @@ function UI:ShowPveDeathDetail(pd)
     if m.Raise then m:Raise() end
 end
 
--- 2. Render Leaderboard Tab (PVP LEADERBOARDS)
 function UI:RenderLeaderboard()
+    local activeMode = (WoWKillboardDB and WoWKillboardDB.combatFilter) or currentMode or "WORLD"
+    currentMode = activeMode
     local theme = UI:GetTheme()
     local aR, aG, aB = WoWKB.AccentColor()
 
@@ -9430,14 +9551,21 @@ function UI:ShowSettingsModal()
         themeDesc:SetPoint("TOPLEFT", 24, y - 16)
         themeDesc:SetText("Choose interface theme and customize global highlight/accent color.")
 
+        local function GetThemeButtonLabel(t)
+            if not t then return "Theme: Shadow Network (Web 1:1)" end
+            if t.id == "web" then return "Theme: Shadow Network (Web 1:1)"
+            elseif t.id == "classic" then return "Theme: Classic Blizzard Stone"
+            else return "Theme: Shadow Network Slate" end
+        end
+
         local themeBtn = UI:CreateButton(dlg, 260, 22, "Toggle Theme")
         themeBtn:SetPoint("TOPLEFT", 24, y - 34)
         local curTheme = UI:GetTheme()
-        themeBtn.Label:SetText(curTheme.id == "classic" and "Theme: Classic Blizzard Stone" or "Theme: Shadow Network Slate")
+        themeBtn.Label:SetText(GetThemeButtonLabel(curTheme))
         themeBtn:SetScript("OnClick", function()
             UI:CycleTheme()
             local cur = UI:GetTheme()
-            themeBtn.Label:SetText(cur.id == "classic" and "Theme: Classic Blizzard Stone" or "Theme: Shadow Network Slate")
+            themeBtn.Label:SetText(GetThemeButtonLabel(cur))
             dlg:SetBackdropColor(unpack(cur.mainBg or {0.04, 0.06, 0.09, 0.95}))
             dlg:SetBackdropBorderColor(unpack(cur.modalBorder or {0.58, 0.45, 0.22, 1.0}))
         end)
@@ -9838,7 +9966,8 @@ function UI:ShowSettingsModal()
     -- Update dynamic labels and toggle states
     local cur = UI:GetTheme()
     if UI.SettingsDialog.themeBtn and UI.SettingsDialog.themeBtn.Label then
-        UI.SettingsDialog.themeBtn.Label:SetText(cur.id == "classic" and "Theme: Classic Stone" or "Theme: ElvUI Dark")
+        local tLabel = (cur.id == "web") and "Theme: Shadow Network (Web 1:1)" or ((cur.id == "classic") and "Theme: Classic Blizzard Stone" or "Theme: Shadow Network Slate")
+        UI.SettingsDialog.themeBtn.Label:SetText(tLabel)
     end
     if UI.SettingsDialog.UpdateAccentButtons then
         UI.SettingsDialog:UpdateAccentButtons()
