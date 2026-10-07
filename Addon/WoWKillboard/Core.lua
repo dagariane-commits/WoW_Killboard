@@ -370,12 +370,22 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint(string.format("|cff00ccff[WoWKB Stats]|r Kills: |cff00ff00%d|r | Deaths: |cffff3333%d|r | K/D: |cffffd100%s|r | Dmg: |cffff7700%s|r | Heal: |cff00ff66%s|r",
             s.kills, s.deaths, kd, KB.Utils.FormatNumber(s.damageDone), KB.Utils.FormatNumber(s.healingDone)))
         SafePrint(string.format("  |cffffd700Duels (1v1):|r %dW - %dL | |cff00ccffBattlegrounds:|r %dW - %dL | |cffa335eeArenas:|r %dW - %dL", dW, dL, bgW, bgL, aW, aL))
-    elseif cmd == "bounty" then
+    elseif cmd == "bounty" or cmd == "mark" then
         local target, gold = arg:match("^(%S+)%s+(%d+)$")
         if target and gold then
             KB.BountyEngine:PlaceBounty(target, "UNKNOWN", "Unknown", tonumber(gold))
         else
-            SafePrint("|cffff9900Usage:|r /killboard bounty <TargetName> <GoldAmount> (e.g. /killboard bounty Thrall 250)")
+            SafePrint("|cffff9900Usage:|r /kb mark <TargetName> <GoldAmount> (e.g. /kb mark Thrall 250)")
+        end
+    elseif cmd == "admin" or cmd == "broadcast" or cmd == "announce" then
+        if KB.UI and KB.UI.ShowAnnouncementModal then
+            KB.UI:ShowAnnouncementModal()
+        else
+            SafePrint("|cffff9900[WoWKB]|r Realm Update Broadcaster available.")
+        end
+    elseif cmd == "testnet" then
+        if KB.Sync and KB.Sync.BroadcastTestCasualty then
+            KB.Sync:BroadcastTestCasualty("pve")
         end
     elseif cmd == "backup" or cmd == "sos" or cmd == "warhorn" or cmd == "calltoarms" then
         if arg == "stop" or arg == "resolve" or arg == "clear" or arg == "off" then

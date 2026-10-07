@@ -496,33 +496,8 @@ function markBountyAcceptedLocally(bountyId) {
   } catch (e) {}
 }
 
-async function acceptBountyContract(bountyId, targetName) {
-  let hunter = localStorage.getItem("wow_killboard_hunter_name");
-  if (!hunter) {
-    hunter = prompt(`Declare Hunt: Accept Execution Contract on ${targetName}?\nEnter your Vanguard Hunter Character Name:`);
-    if (!hunter || !hunter.trim()) return;
-    localStorage.setItem("wow_killboard_hunter_name", hunter.trim());
-  }
-
-  try {
-    const res = await fetch("/api/bounties/accept", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        bountyId: bountyId,
-        hunterName: hunter.trim()
-      })
-    });
-    if (res.ok) {
-      markBountyAcceptedLocally(bountyId);
-      alert(`Blood contract accepted! You are now hunting ${targetName}. Deliver the certified killing blow in open combat to claim the gold!`);
-      loadMostWanted();
-    } else {
-      alert("Failed to accept blood bounty contract.");
-    }
-  } catch (err) {
-    console.error("Failed to accept contract:", err);
-  }
+function acceptBountyContract(bountyId, targetName) {
+  alert(`To claim or issue this bounty, track in-game using /kb mark ${targetName || 'player'} <amount>\n\nThe WoW Killboard in-game addon acts as the authoritative combat engine.`);
 }
 
 // Purge any legacy toggle state so Most Wanted is always static
@@ -2295,7 +2270,7 @@ function renderSingleBountyCard(b, isSupporter) {
   const displayTargetLevel = b.target_level || b.level || (b.targetLevel ? b.targetLevel : 60);
 
   return `
-    <div class="stat-card bounty-target-card ${factionCardClass} ${userCardClass}">
+    <div class="stat-card bounty-target-card ${factionCardClass} ${userCardClass}" title="To claim or issue this bounty, track in-game using /kb mark ${escapeHtml(b.target_name || 'player')} <amount>">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div style="display:flex; align-items:center; gap:8px;">
           ${renderClassBadge(b.target_class, 22)}
@@ -7213,9 +7188,8 @@ function loadRalliesView() {
             </div>
             <div style="text-align:right; flex-shrink:0;">
               <div style="font-size:12px; color:#fbbf24; font-weight:700;">Active for <strong>${durationText}</strong></div>
-              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">Mustered ${ago}</div>
-              <div style="font-size:12px; color:#00e5ff; margin-top:6px; font-family:monospace; background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.2); border-radius:4px; padding:4px 10px; display:inline-block;">
-                /w ${escapeHtml(b.character_name)} rally
+              <div style="font-size:12px; color:#00e5ff; margin-top:6px; font-family:monospace; background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.2); border-radius:4px; padding:4px 10px; display:inline-block;" title="Whisper player in-game to auto-join manhunt squad">
+                /w ${escapeHtml(b.character_name)} manhunt
               </div>
             </div>
           </div>

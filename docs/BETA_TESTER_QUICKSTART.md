@@ -67,7 +67,10 @@ For automated background syncing whenever you reload or log out:
 | `/warhorn` or `/kbsos` | Trigger Call to Arms SOS emergency rally beacon |
 | `/warhorn stop` | Stand down active War Horn muster |
 | `/killboard kos` | Review or manage realm KOS Blacklist |
-| `/killboard bounty` | Issue a Mark of Spite on an enemy target |
+| `/killboard bounty` or `/kb mark <name> [gold]` | Issue a Mark of Spite / bounty on an enemy target |
+| `/kb broadcast` | Open community sharing modal with 1-click chat buttons |
+| `/kb admin` | Open admin operations console |
+| `/kb testnet` | Send test gossip payload across addon sync channel |
 | `/kb testkill` | Simulate an open-world PvP kill to test your feed & banner |
 | `/kb stress [N]` | Simulate N (default 25) combat encounters to benchmark FPS and memory |
 | `/kb reset` | Reset local battle history and cached realm totals to 0 |
