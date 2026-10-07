@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dynamically recalculated the Leaderboard Operative Benchmark Comparison banner based on the active mode (`currentMode`).
 
 ### Fixed
+- **Red-Team & Blue-Team Security Hardening (`web/server.py`, `web/static/app.js`, `tests/test_pipeline.py`)**:
+  - **Apostrophe & Quote Breakout Immunity in `safeJsParam`**: Resolved single-quote breakout vulnerability in `safeJsParam()` by escaping single quotes as `%27` (`.replace(/'/g, "%27")`), eliminating JavaScript syntax errors and quote injection vectors when interacting with zones, players, or guilds containing apostrophes (e.g. *Un'Goro Crater*, *Kel'Thuzad*, *Gul'dan*).
+  - **Character Claim Release Authorization Gating**: Closed authentication bypass on `/api/auth/release-claim` where an empty or missing `owner_token` evaded validation; enforced constant-time `hmac.compare_digest` token verification.
+  - **Complete 100% POST Rate Limiting Coverage**: Added sliding-window IP rate limiting buckets across all state mutation endpoints (`/api/characters`, `/api/auth/claim-character`, `/api/auth/release-claim`, `/api/debt/pay`, `/api/events/<event_id>/cancel`, `/api/discord/config`, `/api/kos/blacklist`, `/api/kos/pardon`).
+  - **Input Bounding & String Truncation**: Enforced strict length limits (character names <= 48 chars, guilds <= 64 chars, levels 1-85) across all JSON state-mutation inputs to prevent payload DOS and storage bloat.
 - **Addon Action Blocked & UI Taint Prevention (`Addon/WoWKillboard/Killmail.lua`, `Sync.lua`, `CombatTracker.lua`, `IntelScanner.lua`, `Reinforcements.lua`)**:
   - Eliminated `ADDON_ACTION_BLOCKED: Blocked UNKNOWN() by WoWKillboard (InCombat: YES)` and Blizzard's yellow "Interface action failed because of an AddOn" error when players die in combat.
   - Strictly gated all programmatic `SendChatMessage` transmissions to restricted chat channels (`"CHANNEL"`, `"SAY"`, `"YELL"`) behind `not InCombatLockdown()`.

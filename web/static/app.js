@@ -105,7 +105,7 @@ function escapeHtml(str) {
 
 function safeJsParam(str) {
   if (str === null || str === undefined) return "''";
-  return `decodeURIComponent('${encodeURIComponent(String(str))}')`;
+  return `decodeURIComponent('${encodeURIComponent(String(str)).replace(/'/g, "%27")}')`;
 }
 
 function getClassIconSvg(cls) {

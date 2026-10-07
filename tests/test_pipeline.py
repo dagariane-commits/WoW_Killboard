@@ -1181,6 +1181,13 @@ class TestKillboardPipeline(unittest.TestCase):
         })
         self.assertEqual(res_rel_unauth.status_code, 403)
 
+        # Attempt unauthorized release with empty owner token -> 403 Forbidden
+        res_rel_empty = self.client.post("/api/auth/release-claim", json={
+            "name": "Dagariane",
+            "owner_token": ""
+        })
+        self.assertEqual(res_rel_empty.status_code, 403)
+
         # Authorized release from legitimate owner -> 200 OK
         res_rel_auth = self.client.post("/api/auth/release-claim", json={
             "name": "Dagariane",
@@ -1762,18 +1769,32 @@ WoWKillboardDB = {
         })
         self.assertEqual(res_ev.status_code, 200)
 
-        # 4. Frontend DOM XSS verification: ensure all dynamic onclick handlers use safeJsParam
+        # 4. Frontend DOM XSS verification: ensure all dynamic onclick handlers use safeJsParam with apostrophe escaping
         with open("web/static/app.js", "r", encoding="utf-8") as f:
             app_js = f.read()
 
-        # Verify safeJsParam is defined
+        # Verify safeJsParam is defined and properly escapes single quotes (%27)
         self.assertIn("function safeJsParam(", app_js)
+        self.assertIn(".replace(/'/g, \"%27\")", app_js)
         # Verify no unescaped onclick quotes pattern
         self.assertNotIn("copyCharacterProfileLink('${", app_js)
         self.assertNotIn("filterFeedByZone('${", app_js)
         self.assertNotIn("releaseClaim('${", app_js)
         self.assertNotIn("selectKnownCharacter('${", app_js)
         self.assertNotIn("claimKnownCharacter('${", app_js)
+
+        # 5. Verify 100% POST endpoint rate limit bucket coverage in RATE_LIMIT_STORES
+        from web.server import RATE_LIMIT_STORES
+        required_buckets = [
+            "characters", "claim_character", "release_claim", "debt_pay",
+            "events_cancel", "discord_config", "kos_blacklist", "post_kill",
+            "upload", "stats", "pve_deaths", "client_flavor", "bounties",
+            "bounty_accept", "debt_ledger", "distress", "resolve_beacon",
+            "events", "discord_test", "intel", "feuds", "accept_feud",
+            "oracle", "feedback"
+        ]
+        for b in required_buckets:
+            self.assertIn(b, RATE_LIMIT_STORES, f"Missing rate limit bucket: {b}")
 
         print("[PASS] Verified Phase 5 Security: DOM XSS immunity, rate limit stores, and state mutation input bounding.")
 

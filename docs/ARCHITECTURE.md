@@ -184,3 +184,11 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
     - Heavy radial vignette overlaying charred battlefield imagery for zero-wash contrast.
     - Symmetrized battle-worn atmospheric faction tints: deep midnight cobalt (`rgba(6, 12, 24, 0.92)`) for Alliance and dried blood-iron (`rgba(22, 6, 8, 0.92)`) for Horde.
     - Weathered dark brass borders (`#241c10`) and heavy 18px-24px inset plate shadows across killmail rows, most wanted cards, sidebar rankings, and modal cards.
+
+14. **Defense-in-Depth Security, API Hardening & DOM Sanitization (`server.py`, `app.js`)**:
+    - **100% Parameterized Database Operations**: All SQLite queries strictly parameterized via `?` (zero string interpolation or query concatenation).
+    - **Complete POST Rate Limiting**: In-memory sliding-window IP rate limiting across 100% of state-mutation endpoints (`RATE_LIMIT_STORES`).
+    - **String & Integer Boundary Clamping**: Every incoming payload string is bounded (`name[:48]`, `guild[:64]`, `level 1-85`) to eliminate memory bloat and payload DOS.
+    - **DOM Immunity & Single-Quote Safe JavaScript**: `escapeHtml()` used for all text node injections; `safeJsParam()` escapes single quotes as `%27` (`.replace(/'/g, "%27")`) to guarantee 100% immunity against quote breakouts on apostrophe-containing zones/names (e.g., *Un'Goro Crater*, *Kel'Thuzad*).
+    - **Character Claim Cryptographic Isolation**: High-entropy tokens (`KB-XXXXXXXX`), brute-force lockout (5 attempts / 15m), and constant-time `hmac.compare_digest` release validation preventing unauthorized claim hijackings or releases.
+
