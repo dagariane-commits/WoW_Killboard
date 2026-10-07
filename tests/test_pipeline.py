@@ -2107,25 +2107,58 @@ WoWKillboardDB = {
         print("[PASS] Verified Strict Realm Isolation, RP Ruleset Inclusion, and In-Game Stats Toggle.")
 
     def test_31_mode_filter_pills_tab_cleanup_and_theme3(self):
-        """Verify Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, and Theme 3 (Web 1:1 Flat Slate)."""
+        """Verify Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, and Strict 3-Theme Architecture (WKB 1:1 Web Mirror, ElvUI, Classic)."""
         addon_dir = os.path.join(BASE_DIR, "Addon", "WoWKillboard")
 
-        # 1. Config.lua has combatFilter default and Theme 3 definition
+        # 1. Config.lua has combatFilter default and strict 3-theme architecture
         with open(os.path.join(addon_dir, "Config.lua"), "r", encoding="utf-8") as f:
             cfg_content = f.read()
         self.assertIn('combatFilter = "WORLD"', cfg_content)
-        self.assertIn('["web"]', cfg_content)
-        self.assertIn('Theme: Shadow Network (Web 1:1)', cfg_content)
-        self.assertIn('0.043, 0.059, 0.090, 0.98', cfg_content) # #0B0F17 Main Canvas
-        self.assertIn('0.067, 0.094, 0.153, 1.00', cfg_content) # #111827 Card / Panel Background
-        self.assertIn('0.086, 0.122, 0.188, 0.60', cfg_content) # #161F30 Sub-Panel
-        self.assertIn('0.122, 0.161, 0.216, 1.00', cfg_content) # #1F2937 Flat 1px Border (Muted)
-        self.assertIn('0.831, 0.686, 0.216, 0.85', cfg_content) # #D4AF37 Flat 1px Border (Gold Sheen)
-        self.assertIn('0.051, 0.075, 0.122, 1.00', cfg_content) # #0D131F Telemetry Ribbon
-        self.assertIn('0.984, 0.749, 0.141, 1.00', cfg_content) # #FBBF24 Primary Text (Gold Title)
-        self.assertIn('0.612, 0.639, 0.686, 1.00', cfg_content) # #9CA3AF Secondary Text (Slate Muted)
+        self.assertIn('["CLASSIC"] = {', cfg_content)
+        self.assertIn('["ELVUI"] = {', cfg_content)
+        self.assertIn('["WKB"] = {', cfg_content)
+        self.assertIn('name = "Classic Blizzard Stone"', cfg_content)
+        self.assertIn('name = "ElvUI"', cfg_content)
+        self.assertIn('name = "WKB Theme"', cfg_content)
 
-        # 2. Leaderboard.lua has enhanced zone_type and mode matching
+        # 2. Master Canvas & Card Elevation (Depth) for WKB Theme
+        self.assertIn('0.015, 0.023, 0.035, 0.98', cfg_content) # #040609 Master Canvas
+        self.assertIn('0.58, 0.45, 0.22, 1.0', cfg_content)     # #947338 1px solid brass outer border
+        self.assertIn('0.043, 0.059, 0.090, 0.95', cfg_content) # #0B0F17 Elevated Card Containers
+        self.assertIn('0.12, 0.16, 0.23, 1.0', cfg_content)     # #1E293B Flat 1px Border
+        self.assertIn('0.78, 0.65, 0.35, 1.0', cfg_content)     # Muted Web Gold Header
+        self.assertIn('0.50, 0.55, 0.62, 1.0', cfg_content)     # Slate Gray Subtitle
+        self.assertIn('0.025, 0.035, 0.055, 1.0', cfg_content)  # Solid dark telemetry ribbon
+        self.assertIn('0.58, 0.45, 0.22, 0.4', cfg_content)     # 1px bottom border for telemetry ribbon
+
+        # 3. Mode Filter Pills styling in Config.lua & UI.lua
+        self.assertIn('0.78, 0.60, 0.24, 1.0', cfg_content)     # Solid bright brass gold (#C69B3D)
+        self.assertIn('0.85, 0.70, 0.30, 1.0', cfg_content)     # 1px active gold border
+        self.assertIn('0.05, 0.05, 0.05, 1.0', cfg_content)     # Solid dark black active text
+        self.assertIn('0.06, 0.08, 0.12, 0.8', cfg_content)     # Inset slate inactive fill
+        self.assertIn('0.65, 0.70, 0.75, 1.0', cfg_content)     # Muted gray inactive text
+        self.assertIn('0.15, 0.19, 0.26, 1.0', cfg_content)     # 1px slate inactive border
+
+        # 4. Feed Row Styling in Config.lua
+        self.assertIn('0.060, 0.080, 0.115, 0.6', cfg_content)  # Row Odd
+        self.assertIn('0.043, 0.059, 0.090, 0.4', cfg_content)  # Row Even
+        self.assertIn('0.12, 0.16, 0.23, 0.8', cfg_content)     # Highlight on Mouseover
+
+        # 5. ElvUI Minimalist Theme Verification in Config.lua
+        self.assertIn('0.04, 0.04, 0.04, 0.95', cfg_content)    # #0A0A0A Master frame backdrop
+        self.assertIn('0.08, 0.08, 0.08, 0.90', cfg_content)    # #141414 Card & panel backdrops
+        self.assertIn('0.12, 0.12, 0.12, 1.0', cfg_content)     # Flat dark gray buttons
+
+        # 6. Classic Blizzard Stone Verification in Config.lua
+        self.assertIn('UI-DialogBox-Background', cfg_content)
+        self.assertIn('UI-DialogBox-Border', cfg_content)
+
+        # 7. Backward compatibility aliases in Config.lua
+        self.assertIn('KB.Themes["classic"]', cfg_content)
+        self.assertIn('KB.Themes["elvui"]', cfg_content)
+        self.assertIn('KB.Themes["wkb"]', cfg_content)
+
+        # 8. Leaderboard.lua has enhanced zone_type and mode matching
         with open(os.path.join(addon_dir, "Leaderboard.lua"), "r", encoding="utf-8") as f:
             lb_content = f.read()
         self.assertIn('function LB:MatchesMode(km, mode)', lb_content)
@@ -2133,7 +2166,7 @@ WoWKillboardDB = {
         self.assertIn('local zType = km.zone_type or km.zoneType', lb_content)
         self.assertIn('not isBG and not isArena and not isDuel and (not zType or zType == "none" or zType == "")', lb_content)
 
-        # 3. UI.lua has ApplyWebTheme and CreateWebPillButton helpers
+        # 9. UI.lua has ApplyWebTheme and CreateWebPillButton helpers
         with open(os.path.join(addon_dir, "UI.lua"), "r", encoding="utf-8") as f:
             ui_content = f.read()
         self.assertIn('local function ApplyWebTheme(frame, bgColor, borderColor)', ui_content)
@@ -2141,14 +2174,14 @@ WoWKillboardDB = {
         self.assertIn('UI.ApplyWebTheme = ApplyWebTheme', ui_content)
         self.assertIn('UI.CreateWebPillButton = CreateWebPillButton', ui_content)
 
-        # 4. UI.lua has exactly 4 Mode Filter Pills: [World, BGs, Duels, Arenas]
+        # 10. UI.lua has exactly 4 Mode Filter Pills: [World, BGs, Duels, Arenas]
         self.assertIn('{ id = "ARENA", text = "Arenas"', ui_content)
         self.assertIn('{ id = "DUEL",  text = "Duels"', ui_content)
         self.assertIn('{ id = "BG",    text = "BGs"', ui_content)
         self.assertIn('{ id = "WORLD", text = "World"', ui_content)
         self.assertIn('WoWKillboardDB.combatFilter = filterId', ui_content)
 
-        # 5. UI.lua has exactly 5 tabs in PvP and exactly 5 tabs in PvE (Zero redundant Hazards tab)
+        # 11. UI.lua has exactly 5 tabs in PvP and exactly 5 tabs in PvE (Zero redundant Hazards tab)
         self.assertIn('local tabOrder = { "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES" }', ui_content)
         self.assertIn('FEED        = { text = "Casualties",', ui_content)
         self.assertIn('LEADERBOARD = { text = "Deadly Hazards",', ui_content)
@@ -2162,31 +2195,23 @@ WoWKillboardDB = {
         self.assertIn('RALLIES     = { text = "Call to Arms",', ui_content)
         self.assertIn('ZONES       = { text = "Danger Zones",', ui_content)
 
-        # 6. Verify Visual Polish: Master Canvas #040609, Elevated Slate #0D131F, and 1px #1E293B Border
-        self.assertIn('0.02, 0.025, 0.035, 0.95', cfg_content) # #040609 Master Window Canvas
-        self.assertIn('0.05, 0.075, 0.12, 0.90', cfg_content)  # #0D131F Elevated Slate Fill
-        self.assertIn('0.12, 0.16, 0.23, 1.0', cfg_content)    # #1E293B 1px Border
-
-        # 7. Verify All 4 Themes Retained (Classic, Slate, Web 1:1, ElvUI)
-        self.assertIn('["classic"]', cfg_content)
-        self.assertIn('["slate"]', cfg_content)
-        self.assertIn('["web"]', cfg_content)
-        self.assertIn('["elvui"]', cfg_content)
-        self.assertIn('name = "ElvUI Minimalist"', cfg_content)
-        self.assertNotIn('KB.Themes["elvui"] = KB.Themes["slate"]', cfg_content)
-
-        # 8. Verify Active and Inactive Mode Button Styling in UI.lua
+        # 12. Verify Active and Inactive Mode Button Styling in UI.lua
         self.assertIn('pill.bg:SetColorTexture(0.78, 0.60, 0.24, 1.0)', ui_content)
         self.assertIn('pill.Label:SetTextColor(0.05, 0.05, 0.05, 1.0)', ui_content)
         self.assertIn('pill.bg:SetColorTexture(0.06, 0.08, 0.12, 0.8)', ui_content)
-        self.assertIn('pill.Label:SetTextColor(0.65, 0.65, 0.65, 1.0)', ui_content)
+        self.assertIn('pill.Label:SetTextColor(0.65, 0.70, 0.75, 1.0)', ui_content)
 
-        # 9. Verify Vivid WoW Hex Tags in Telemetry Ribbon
+        # 13. Verify Vivid WoW Hex Tags in Telemetry Ribbon
         self.assertIn('|cff0080ff%d%% A|r', ui_content)
         self.assertIn('|cffff2020%d%% H|r', ui_content)
         self.assertIn('|cffffd200%s|r', ui_content)
 
-        print("[PASS] Verified Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, Visual Polish, and Restored ElvUI Theme.")
+        # 14. Verify Settings Dropdown lists strictly: Classic, ElvUI, and WKB Theme
+        self.assertIn('{ id = "classic", name = "Classic" }', ui_content)
+        self.assertIn('{ id = "elvui",   name = "ElvUI" }', ui_content)
+        self.assertIn('{ id = "wkb",     name = "WKB Theme" }', ui_content)
+
+        print("[PASS] Verified Mode Filter Pills [World, BGs, Duels, Arenas], Clean 5-Tab Navigation, Strict 3-Theme Architecture, and 1:1 WKB Mirror.")
 
 if __name__ == "__main__":
     unittest.main()

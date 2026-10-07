@@ -270,10 +270,10 @@ function KB:Initialize()
         end
     end
 
-    -- Default Theme Migration: ensure all upgraded clients display the new ElvUI specification
-    if not WoWKillboardSettings.hasMigratedToElvUI then
-        WoWKillboardSettings.theme = "elvui"
-        WoWKillboardSettings.hasMigratedToElvUI = true
+    -- Default Theme Migration: ensure all upgraded clients display the new WKB specification
+    if not WoWKillboardSettings.hasMigratedToWKBTheme then
+        WoWKillboardSettings.theme = "wkb"
+        WoWKillboardSettings.hasMigratedToWKBTheme = true
     end
 
     WoWKillboardBounties = WoWKillboardBounties or {}
@@ -1049,7 +1049,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         end
     elseif cmd == "theme" then
         local tArg = arg and arg:lower():match("^%s*(.-)%s*$") or ""
-        if tArg == "classic" or tArg == "elvui" or tArg == "slate" or tArg == "web" then
+        if tArg == "classic" or tArg == "elvui" or tArg == "wkb" or tArg == "web" then
             if KB.UI then KB.UI:SetTheme(tArg) end
         else
             if KB.UI and KB.UI.CycleTheme then
@@ -1164,7 +1164,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
         SafePrint("  |cffffd100/warhorn stop|r - Stand down War Horn and close recruitment")
         SafePrint("  |cffffd100/kb kos [add|remove|list]|r - View or manage realm KOS Blacklist")
         SafePrint("  |cffffd100/kb event <Title> | <Zone> | <Time>|r - Issue War Council Battle Order / Rally")
-        SafePrint("  |cffffd100/kb theme [web|slate|elvui|classic]|r - Switch visual themes")
+        SafePrint("  |cffffd100/kb theme [wkb|elvui|classic]|r - Switch visual themes")
         SafePrint("  |cffffd100/kb sync|r or |cffffd100/kb reload|r - Flush combat SavedVariables to disk to sync with website")
         SafePrint("  |cffffd100/kb stats|r - Review current combat session battle statistics")
         SafePrint("  |cffffd100/kb bounty <Name> <Gold>|r - Declare a blood bounty on an enemy player (Open World)")
@@ -1491,8 +1491,9 @@ end
 function KB:UpdateMinimapTheme()
     local btn = KB.MinimapButton
     if not btn then return end
-    local curTheme = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "classic"
+    local curTheme = (KB.UI and KB.UI.GetCurrentThemeName) and KB.UI:GetCurrentThemeName() or "wkb"
     local isClassic = (curTheme == "classic")
+    local isWKB = (curTheme == "wkb" or curTheme == "web")
 
     -- Ensure native BackdropTemplate does not occlude child textures on un-modded clients
     if btn.SetBackdrop then
@@ -1533,18 +1534,32 @@ function KB:UpdateMinimapTheme()
             btn.TipFrame:SetBackdropBorderColor(0.85, 0.65, 0.20, 0.95)
         end
     else
-        -- ElvUI Minimalist Theme: Sleek square 1px black border with cropped icon
+        -- Flat Themes: WKB (1px brass border) or ElvUI (1px black border)
         if btn.Border then
             btn.Border:Hide()
         end
+        local bColor = isWKB and { 0.58, 0.45, 0.22, 1.0 } or { 0.0, 0.0, 0.0, 1.0 }
+        local bgCol = isWKB and { 0.015, 0.023, 0.035, 1.0 } or { 0.04, 0.04, 0.04, 1.0 }
         if btn.Bg then
             btn.Bg:Show()
-            btn.Bg:SetColorTexture(0.06, 0.06, 0.06, 1.0)
+            btn.Bg:SetColorTexture(unpack(bgCol))
         end
-        if btn.BorderTop then btn.BorderTop:Show() end
-        if btn.BorderBottom then btn.BorderBottom:Show() end
-        if btn.BorderLeft then btn.BorderLeft:Show() end
-        if btn.BorderRight then btn.BorderRight:Show() end
+        if btn.BorderTop then
+            btn.BorderTop:Show()
+            btn.BorderTop:SetColorTexture(unpack(bColor))
+        end
+        if btn.BorderBottom then
+            btn.BorderBottom:Show()
+            btn.BorderBottom:SetColorTexture(unpack(bColor))
+        end
+        if btn.BorderLeft then
+            btn.BorderLeft:Show()
+            btn.BorderLeft:SetColorTexture(unpack(bColor))
+        end
+        if btn.BorderRight then
+            btn.BorderRight:Show()
+            btn.BorderRight:SetColorTexture(unpack(bColor))
+        end
 
         if btn.Icon then
             btn.Icon:Show()
@@ -1561,8 +1576,8 @@ function KB:UpdateMinimapTheme()
                 edgeSize = 1,
                 insets = { left = 0, right = 0, top = 0, bottom = 0 }
             })
-            btn.TipFrame:SetBackdropColor(0.05, 0.05, 0.05, 0.98)
-            btn.TipFrame:SetBackdropBorderColor(0.0, 0.0, 0.0, 1.0)
+            btn.TipFrame:SetBackdropColor(unpack(bgCol))
+            btn.TipFrame:SetBackdropBorderColor(unpack(bColor))
         end
     end
 end
