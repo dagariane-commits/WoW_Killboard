@@ -2090,6 +2090,9 @@ def get_leaderboard():
     elif timeframe == "7D":
         where += " AND timestamp >= ?"
         realm_params.append(now_ts - 7 * 86400)
+    elif timeframe in ("30D", "30DAYS", "MONTH"):
+        where += " AND timestamp >= ?"
+        realm_params.append(now_ts - 30 * 86400)
 
     if realm_filter:
         where += " AND LOWER(realm) = LOWER(?)"
@@ -2117,7 +2120,7 @@ def get_leaderboard():
         top_killers = [dict(r) for r in conn.execute(top_killers_query, tuple(realm_params)).fetchall()]
         
         is_fallback = False
-        if len(top_killers) == 0 and timeframe in ("24H", "7D"):
+        if len(top_killers) == 0 and timeframe in ("24H", "7D", "30D", "30DAYS", "MONTH"):
             # Provide graceful all-time fallback so players never see an empty leaderboard
             fallback_where = "WHERE 1=1"
             if mode == "WORLD":
@@ -3339,6 +3342,9 @@ def get_guilds_leaderboard():
     elif timeframe == "7D":
         where += " AND k.timestamp >= ?"
         guilds_params.append(now_ts - 7 * 86400)
+    elif timeframe in ("30D", "30DAYS", "MONTH"):
+        where += " AND k.timestamp >= ?"
+        guilds_params.append(now_ts - 30 * 86400)
 
     if realm_filter:
         where += " AND LOWER(k.realm) = LOWER(?)"

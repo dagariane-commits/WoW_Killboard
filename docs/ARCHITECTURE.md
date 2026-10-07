@@ -129,7 +129,12 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
      - **Brand & Theater**: Grouped title and active theater badge tightly on the left.
      - **Global Omni-Search (`#global-search-input`)**: Centralized typeahead search bar with `/` keyboard shortcut, instant dropdown (`#search-results-dropdown`), search federation across combatants, guilds, and zones, and keyboard arrow/enter navigation.
      - **Core Combat Views**: Streamlined 5-button nav rail (`Intel`, `Leaderboards`, `Deadly Hazards`, `Bounties`, `Zone Intel`) with responsive hamburger drawer under 1180px.
-     - **Contextual In-Page Mode Filtering & Leaderboard Columns**: In-page filters (`[ World | BGs | Duels | Arenas ]`) dynamically adjust leaderboard table columns to engine metrics: World (`Kills, Solo Kills, Deaths, K/D, Percentile`), BGs (`Kills, Deaths, K/D, W/L, Percentile`), Duels (`Wins, Losses, W/L, Percentile`), and Arenas (`Kills, Deaths, K/D, W/L, Percentile`).
+     - **High-Density Combat Feed Layout**: 5-column fixed-height (`42px - 46px`) grid format (`180px 1fr 44px 1fr 110px`) rendering Faction badge + Zone/coords, Killer (class-colored, level pill, spec icon, guild), VS/Fatal blow badge, Victim (class-colored, level pill, spec icon, guild), and relative timestamp + mode tag (`1v1 SOLO`, `GANG xN`, `BG`).
+     - **Interactive Competitive Leaderboards**:
+       - **Top 3 Podium Showcase**: 3-card banner spotlighting `#1 Champion` (Gold trim), `#2 Contender` (Silver trim), and `#3 Executioner` (Bronze trim) with kill metrics and character profile navigation.
+       - **Class Selector Bar**: 10-pill filter (`All Classes` and all 9 Classic classes) with class colors and instant re-ranking (`1..N`).
+       - **Interactive Column Sorting**: Clickable headers with directional indicator arrows (`▲`/`▼`) for Rank, Combatant, Guild, Faction, Kills, Solo Kills, Deaths, K/D Ratio (enforcing the `kills >= 5` qualifier rule), Wins, Losses, W/L Ratio, and Percentile.
+       - **4-Timeframe Intervals**: `[ 24 Hours ]`, `[ 7 Days ]`, `[ 30 Days ]`, and `[ All-Time ]` with dynamic synchronization across sidebar and header controls.
      - **Multi-Character Roster & Realm Mains**: Complete roster management in `#character-link-modal` allowing players to register characters across all realms, switch active operatives with 1 click, and designate a `⭐ Realm Main` per realm displayed in the sticky header and mobile drawer.
      - **Streamlined Marked Ledger**: Single cohesive view for active bounties and marks with prominent player-placed highlight indicators and standard Warcraft Gold / Silver / Copper (`G / S / C`) currency formatting.
      - **Action Tools & Gold CTA**: War Archivist AI trigger, Upload utility link, real-time Multi-Character Auth Badge (with `⭐ Main` indicator), and primary gold CTA button `[ Get the Addon ]` linking to `/download`.
@@ -137,7 +142,7 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
      - **5-Slot Right Sidebar Hierarchy**:
        1. *Lifetime Combat Activity*: Scoped strictly to the active realm tenant.
        2. *The Marked (Active Bounties)*: Condensed vertical ledger with class crests, realm, bounty pot, and `All →` navigation link.
-       3. *Champion Filters*: Faction (All/Alliance/Horde) and Timeframe (24h/7d/All-Time) on Leaderboard view.
+       3. *Champion Filters*: Faction (All/Alliance/Horde) and Timeframe (24h/7d/30d/All-Time) on Leaderboard view.
        4. *Tabbed 24-Hour Leaderboard Widget*: Instant pill switching between Hot Zones, Top Gankers, and Top Guilds.
        5. *All Classes Combat Matrix*: Compressed 2-column tactical grid.
 

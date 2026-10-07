@@ -8,13 +8,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Combat Feed High-Density Table Restoration (`web/static/style.css`, `web/static/app.js`)**:
+  - Reverted bloated full-width `.combat-casualty` cards back to a high-density, fixed-height (`42px - 46px`, exact `44px`) 5-column grid layout (`180px 1fr 44px 1fr 110px`).
+  - Col 1: Faction border/badge (`A`/`H`) + Zone and subzone/spatial coordinates.
+  - Col 2: Killer name (class-colored), Level badge, Spec icon, Guild in `<brackets>`.
+  - Col 3: `VS` / Fatal Ability badge (or `DUEL` tag).
+  - Col 4: Victim name (class-colored), Level badge, Spec icon, Guild in `<brackets>`.
+  - Col 5: Relative timestamp (`2m ago`, `1d ago`) + mode tag (`1v1 SOLO`, `GANG xN`, `BG`).
+  - Mobile responsiveness: Graceful 2-column flex layout preserving combatant info and timestamps without overflow.
+
+### Added
+- **Interactive Sortable Competitive Leaderboards (`web/static/app.js`, `web/static/style.css`, `web/server.py`)**:
+  - **4-Timeframe Intervals (`[ 24 Hours ]` | `[ 7 Days ]` | `[ 30 Days ]` | `[ All-Time ]`)**:
+    - Backend: Added `30D` / `30DAYS` / `MONTH` interval handling (`now_ts - 30 * 86400`) to `/api/leaderboard` and `/api/guilds` in `web/server.py`.
+    - Frontend: Integrated 4-button pill groups in both the sidebar filter drawer and the leaderboard header controls with instant dynamic syncing.
+  - **Classic Class Selector Bar**:
+    - Added 10-pill selector bar (`All Classes`, `Warrior`, `Paladin`, `Hunter`, `Rogue`, `Priest`, `Shaman`, `Mage`, `Warlock`, `Druid`) with Blizzard class color variables (`--cls-color`) and class SVG icons.
+    - Clicking any class instantly filters and re-ranks the board (`1..N`) for that specific class without network overhead.
+  - **Interactive Column Sorting**:
+    - Interactive sortable table headers with active direction indicators (`▲` / `▼`) and hover cues:
+      - **Rank**: Default ascending order.
+      - **Combatant / Duelist / Gladiator**: Alphabetical sorting (A-Z / Z-A).
+      - **Guild**: Alphabetical sorting by guild name.
+      - **Faction**: Alliance / Horde grouping.
+      - **Kills**: Descending numeric order.
+      - **Solo Kills**: Descending numeric order for certified 1v1 kills.
+      - **Deaths**: Descending numeric order.
+      - **K/D Ratio**: Descending numeric order with strict **K/D Qualifier Rule** (`kills >= 5` required to qualify before unranked players).
+      - **Duel Wins / Losses / W/L Ratio**: Descending numeric order when viewing Duels mode.
+      - **Percentile**: Top 1% down numeric ordering.
+  - **Top 3 Podium Showcase**:
+    - Slim 3-card spotlight banner rendered above the table for the active timeframe and filtered class:
+      - `#1 Champion` (Gold trim, crown badge `👑`, `#ffd100`)
+      - `#2 Contender` (Silver trim, medal badge `🥈`, `#cbd5e1`)
+      - `#3 Executioner` (Bronze trim, crossed swords `⚔️`, `#f59e0b`)
+    - Displays class icon, colorized name, guild tag, kill count, and direct link to character profile.
+  - **Visual Polish on Header Controls**:
+    - Toned down flat yellow button blocks across `#legends-type-pills`, `#legends-time-pills`, and `#champions-mode-pills` to dark slate `#1e293b` with a 2px bottom gold accent line `#d4af37` and crisp white text `#f8fafc`.
+    - Incremented cache-busting version numbers to `style.css?v=1.4.76` and `app.js?v=2.3.2`.
 - **Omni-Viewport Hamburger Menu & Desktop Utility Drawer (`web/static/style.css`, `web/static/index.html`, `web/static/app.js`)**:
   - Removed desktop hiding rules (`display: none !important;`) from `@media (min-width: 1281px)` to force `#mobile-menu-btn` to remain visible across desktop and mobile screens.
   - Applied tactile high-contrast styling globally to `#mobile-menu-btn` and `.mobile-menu-btn`: 38x38px flex container, dark slate background `rgba(15, 23, 42, 0.85)`, 1px border `rgba(51, 65, 85, 0.8)`, unicode hamburger icon `&#9776;`, and gold-bordered hover state (`rgba(148, 115, 56, 0.9)`, `#f1c40f`).
   - Anchored `#mobile-menu-btn` immediately following `#oracle-chat-trigger` (`Archivist`) in the desktop and mobile header tool group.
   - Updated `toggleMobileDrawer()` in `app.js` to manage both `.open` and `.active` states smoothly with backdrop blur and ESC key dismiss.
   - Bound `window.toggleOracleChat` to `toggleOracleChatModal` for dual modal trigger interoperability.
-  - Bumped stylesheet cache-busting query parameter in `index.html` to `?v=1.4.75`.
 
 ## [1.0.5] - 2026-10-06 (CurseForge & Multi-Client Release)
 
