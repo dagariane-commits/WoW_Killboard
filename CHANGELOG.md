@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.5] - 2026-10-06 (CurseForge & Multi-Client Release)
 
 ### Added
+- **In-Game Addon & Web 1:1 Layout Parity & Dual-Column Refactor (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Core.lua`, `web/static/app.js`)**:
+  - **42px Header & Telemetry Ribbon**: Added Realm Badge, Omni-Search (`[Q Search...]`), segmented Mode Switcher (`[ ⚔ PvP Combat ]` and `[ 💀 PvE Hazards ]`), Settings, Sync, and Close controls. Underneath the header, a 28px telemetry strip displays live realm combat totals, 24h count, PvE casualties, current hot zone, and faction war split.
+  - **Dual-Column Architecture**: Refactored main addon frame (960x660) to a ~70% width left main viewport (`MainContainer`) and ~30% width right sidebar (`SidebarContainer`) featuring Lifetime Combat Activity, The Marked active contracts with 1-click `[ Track ]` buttons, and an All Classes combat matrix.
+  - **Directional Consistency**: Aligned in-game combat feed tables and toasts with the web ledger: `TIME | ATTACKER / KILLER | ACTION / SPELL | VICTIM | ZONE`.
+  - **Dual Theme Engine**: Implemented selectable "Shadow Network Slate" and "Classic Blizzard Stone & Parchment" visual styles persisted in `WoWKillboardDB.theme`.
+  - **Functional Separation**: Kept the web platform strictly as a read-only combat ledger with guidance pointing in-game for `/kb mark <target> <gold>`.
+  - **Interactive Enhancements**: Added Notorious Elites target macro generation (`KB_Target`), Community Sharing 1-click broadcast channels, and `/kb mark`, `/kb admin`, `/kb broadcast`, and `/kb testnet` commands.
 - **Multi-Character Roster & Realm Mains (`web/static/app.js`, `web/static/style.css`, `web/static/index.html`)**:
   - Implemented multi-character roster management tab (`⭐ My Characters & Realm Mains`) in the Champion Identity modal (`#character-link-modal`).
   - Players can claim and register all their characters across different realms, toggle between them with a single click, and designate a `⭐ Realm Main` per realm.

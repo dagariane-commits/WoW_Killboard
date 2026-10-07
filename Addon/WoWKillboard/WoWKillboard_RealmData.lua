@@ -1012,10 +1012,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Blackfathom Deeps",
-                elapsedSeconds = 174128,
+                elapsedSeconds = 176786,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 2902,
+                minutesAgo = 2946,
                 subzone = nil,
                 timestamp = 1791160917,
                 zone = "Blackfathom Deeps",
@@ -1049,10 +1049,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Arathi Highlands",
-                elapsedSeconds = 241037,
+                elapsedSeconds = 243695,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 4017,
+                minutesAgo = 4061,
                 subzone = nil,
                 timestamp = 1791094008,
                 zone = "Arathi Highlands",
@@ -1409,5 +1409,5 @@ WoWKillboard_RealmData = {
         "Instance Leaderboard Parity: Dedicated combat columns for World, Battlegrounds, Duels, and Arenas",
         "Economy & Marked Overhaul: Formatted G / S / C currency displays and unified bounty contract highlights",
     },
-    LastSync = 1791335046,
+    LastSync = 1791337703,
 }
