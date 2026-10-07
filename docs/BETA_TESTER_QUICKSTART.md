@@ -58,6 +58,8 @@ For automated background syncing whenever you reload or log out:
 | `/killboard move` or `/wowkb move` | Unlock/lock Kill Banner to drag and reposition anywhere on screen |
 | `/killboard test` or `/wowkb test` | Fire preview Kill Banner with sound and raid warning |
 | `/killboard theme` | Toggle between Classic WoW and ElvUI Minimalist themes |
+| `/kb welcome [reset\|on\|off]` or `/kb beta` | Open or toggle the Early Beta Preview & Feedback guide on login |
+| `/kb changelog` or `/kb update` | Open What's New & Version Changelog modal |
 | `/armory [Name]` | Inspect detailed combat dossier for any combatant |
 | `/kb profile [Name]` | Copy web profile dossier URL for yourself or target |
 | `/kb claim <code>` | Verify character ownership token from web platform (follow with `/reload`) |
@@ -78,6 +80,12 @@ For automated background syncing whenever you reload or log out:
 
 ## 🛠️ Frequently Asked Questions & Troubleshooting
 
+### Q: Why don't I see the Welcome pop-up every time I log in?
+The Welcome dialog is an **onboarding and preview guide** that automatically displays on your first login. To avoid annoying players, it intentionally suppresses itself after you've seen or dismissed it.
+- To view it anytime, type **`/kb welcome`** or **`/kb beta`**.
+- To re-enable it for your next login, type **`/kb welcome reset`** (or uncheck *"Do not show again on login"* inside the window).
+- To read the latest patch notes, type **`/kb changelog`** or **`/kb update`**.
+
 ### Q: How do I verify and lock character ownership?
 1. In World of Warcraft on your character, enter: `/kb claim <CODE>` (e.g. your secret ownership token).
 2. Type **`/reload`** in game. `WoWKillboardSync.exe` (or the web uploader) ingests the token and locks ownership to your character GUID.
@@ -93,7 +101,7 @@ World of Warcraft only writes `SavedVariables` to disk when you **log out**, **e
 **Zero.** WoW Killboard is engineered under strict **Zero Blizzard UI Taint** guardrails:
 - Pure Lua widgets with `BackdropTemplate` (zero XML templates).
 - Zero `UISpecialFrames` global table pollution.
-- Strict `InCombatLockdown()` gating on all frame modifications.
+- Strict `InCombatLockdown()` gating on all frame modifications, sizing, and restricted chat broadcasts (`"CHANNEL"`, `"SAY"`, `"YELL"`).
 - Pre-allocated Kill Banner frames requiring zero memory allocation in combat.
 
 ---

@@ -1,11 +1,11 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-05 23:15:00 EDT  
-> **Git Status**: Branch `main` (Release `v1.0.4` prepared).  
+> **Last Synchronized**: 2026-10-06 20:15:00 EDT  
+> **Git Status**: Branch `main` (Release `v1.0.4` and Web `v2.3.0` live on production).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.4` (CurseForge Community Release).  
-> **Active Focus**: **Unified Dual Telemetry across all Realm Tenants, Asset Cache Busting v2.0.0, and Responsive Header Containment**.  
+> **Active Focus**: **Zero-Taint Combat Lockdown Gating, Multi-Character Roster & Realm Mains, Mode-Specific Leaderboards, and Mobile Responsive Header**.  
 > **Live Production Domain**: [`https://wowkillboard.com/`](https://wowkillboard.com/)
 
 ---
@@ -40,6 +40,29 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Addon Action Blocked & UI Taint Elimination (`Killmail.lua`, `Sync.lua`, `CombatTracker.lua`, `IntelScanner.lua`, `Reinforcements.lua`)**:
+  - Eliminated `ADDON_ACTION_BLOCKED: Blocked UNKNOWN() by WoWKillboard (InCombat: YES)` and Blizzard's yellow warning `"Interface action failed because of an AddOn"` when dying or entering combat.
+  - Strictly gated all programmatic `SendChatMessage` transmissions on restricted channels (`"CHANNEL"`, `"SAY"`, `"YELL"`) behind `if not InCombatLockdown() then`.
+  - Hardened all `GetGuildInfo("player")` invocations with `not InCombatLockdown()` across `CombatTracker.lua`.
+- **Welcome & Onboarding Login Pop-Up Controls (`UI.lua`, `Core.lua`)**:
+  - Synchronized the Welcome Dialog checkbox so unchecking *"Do not show again on login"* cleanly resets `WoWKillboardSettings.hasSeenBetaWelcome = false`.
+  - Added `/kb welcome [reset|on|off]` slash commands allowing players to reset or toggle the welcome pop-up on demand.
+  - Documented that the dialog suppresses itself on subsequent logins by design, and can be viewed anytime via `/kb welcome` or `/kb changelog`.
+- **Responsive Header Layout & Tactile Hamburger Drawer (`web/static/style.css`, `web/static/app.js`, `web/static/index.html` - Asset v2.3.0)**:
+  - Eliminated mobile top header overflow (~500px content shoved off-screen) by compacting the mobile top bar (<= 768px) to Brand Title, compact Claim Hero/Auth pill, and a tactile 44x40px gold hamburger button (`pointer-events: none` on sub-spans).
+  - Smoothly activated the slide-in drawer at <= 1200px for laptops and tablets, preventing button clipping on smaller desktop resolutions.
+  - Mirrored War Archivist AI trigger directly to the mobile drawer for 1-tap mobile access.
+- **Multi-Character Roster & Realm Mains (`web/static/app.js`, `web/static/style.css`, `web/static/index.html`)**:
+  - Added `⭐ My Characters & Realm Mains` in the Champion Identity modal allowing players to claim all characters across realms, toggle between them with 1 click, and designate a `⭐ Realm Main`.
+  - Real-time active character badge in desktop sticky header and mobile drawer.
+- **Mode-Specific Leaderboards & Dossier Switching (`web/server.py`, `web/static/app.js`)**:
+  - Re-architected `/api/leaderboard` to render exact mode-specific metrics: World (Kills, Solo Kills, Deaths, K/D, Pct), BGs (Kills, Deaths, K/D, W/L, Pct), Duels (Wins, Losses, W/L, Pct), Arenas (Kills, Deaths, K/D, W/L, Pct).
+  - Added interactive instance switcher pills (`World`, `Battlegrounds`, `Duels`, `Arenas`, `Overall`) inside the Character Profile Dossier.
+- **Streamlined Marked Page & G/S/C Currency Formatting (`web/static/app.js`, `web/static/style.css`)**:
+  - Unified active bounties and marks into single cohesive view ("The Marked") with player-placed highlight indicators.
+  - Formatted all bounties and rewards as Warcraft Gold / Silver / Copper (`0g 0s 1c`) everywhere.
+- **Field Kit Return Navigation (`web/static/app.js`)**:
+  - Fixed `[← Return to Killboard]` button in `/download` to smoothly route back to `switchTab('INTEL')`.
 - **Unified Dual PvP & PvE Telemetry Across All Realm Tenants (`web/server.py`, `web/static/app.js`, `web/static/index.html`)**:
   - Unified all realm tenants (PvP, PvE, RP, Hardcore, Classic Era, Anniversary, Retail) to track and display BOTH PvP metrics (world PvP, opt-in world PvP, battlegrounds, duels, arenas) and PvE casualties (world hazards, mob executions, boss fatalities) simultaneously.
   - Purged legacy `isPve` view hijacking across the client: eliminated destructive tab relabeling (`Casualties`, `Deadly Hazards`, `Notorious Elites`), removed redirection in `switchTab()`, `loadLeaderboards()`, `loadBounties()`, and `reloadActiveView()`.
