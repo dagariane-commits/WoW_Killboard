@@ -53,6 +53,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Replaced rigid fixed height and hidden overflow on `.telemetry-ribbon` with responsive auto-wrapping (`min-height: 32px; height: auto; flex-wrap: wrap; gap: 8px 14px;`), preventing stats (`REALM KILLS`, `24H KILLS`, `PVE CASUALTIES`, `ACTIVE MARKS`) from being cut off on different screen sizes.
 
 ### Changed
+- **True Sticky Header & Overflow Trap Elimination (`web/static/style.css`)**:
+  - Pinned `.site-header` across all views with `position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(14px); background: rgba(10, 15, 23, 0.95); border-bottom: 1px solid rgba(212, 175, 55, 0.2);`.
+  - Replaced `overflow-x: hidden` on `html` and `body` with `body { overflow-x: clip; }`, eliminating browser scroll traps that broke sticky positioning during feed scrolling while preventing mobile horizontal scrollbars.
+- **Addon Distribution & Documentation Unification (`web/static/index.html`, `web/static/app.js`)**:
+  - Retired the redundant `#addon-dossier-modal` popup overlay.
+  - Consolidated full technical specifications, 4 Core Capabilities, Chronicles & Combat Arsenal module breakdown, Development Roadmap, and Blizzard Add-on Policy Guarantee directly into the dedicated Field Kit page (`loadDownloadView()`).
+  - Unified all documentation, archive download, and sync links to route to the single authoritative `/download` tab.
+- **Navigation Drawer Grouping & Semantic Structure (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
+  - Restructured `#mobile-drawer` into four clear categories: Realm & Identity (character claim badge + interactive realm selector dropdown), Combat Intelligence, Tools & Automation (with high-contrast gold CTA `Get the Addon & Field Kit →`), and a subtle System footer rail.
+  - Removed duplicate documentation items ("War Room Operational Spec" and "Addon Architecture Guide") from the drawer.
+- **Desktop Header Balance & Conditional Search (`web/static/style.css`, `web/static/app.js`)**:
+  - Expanded desktop search input width (`flex: 1; max-width: 400px; min-width: 180px;`) while preserving `/` keyboard shortcut.
+  - Kept primary combat tabs (Intel, Leaderboards, Bounties) visible on desktop viewports (> 1280px) next to search.
+  - Prevented redundant inputs by hiding drawer search on desktop screens (> 1024px) while keeping it accessible on mobile (<= 768px).
 - **Header Navigation Access & Responsive Hamburger Drawer (`web/static/style.css`, `web/static/index.html`)**:
   - Unified desktop and mobile/tablet navigation breakpoints at 1180px.
   - On screens <= 1180px (tablets, small laptops, and mobile devices), the inline navigation rail gracefully hides and the tactile hamburger button (`#mobile-menu-btn`) activates, opening the slide-in drawer containing all sections without any cutoff.

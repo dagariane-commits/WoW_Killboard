@@ -84,7 +84,6 @@ html {
   color-scheme: dark;
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
   box-sizing: border-box;
   -webkit-text-size-adjust: 100%;
 }
@@ -108,7 +107,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
 }
 
@@ -134,13 +133,13 @@ body {
   position: sticky;
   top: 0;
   z-index: 1000;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: rgba(10, 15, 23, 0.95);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.85);
   height: 56px;
   min-height: 56px;
-  background: rgba(4, 6, 9, 0.96);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.85);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -191,8 +190,8 @@ body {
 .header-search-wrap {
   position: relative;
   flex: 1;
-  max-width: 380px;
-  min-width: 170px;
+  max-width: 400px;
+  min-width: 180px;
   display: flex;
   align-items: center;
 }
@@ -1018,19 +1017,92 @@ body {
 }
 
 .mobile-drawer-body {
-  padding: 16px 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+}
+
+.drawer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .mobile-drawer-label {
   font-family: var(--font-tactical);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 1px;
-  color: var(--text-dim);
+  letter-spacing: 0.8px;
+  color: var(--text-dim, #94a3b8);
   text-transform: uppercase;
+  padding: 0 4px;
+}
+
+/* Drawer Realm Picker Dropdown Button */
+.drawer-realm-picker-wrap {
+  width: 100%;
+}
+
+.drawer-realm-picker-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--wow-brass-border, #4a3b27);
+  border-radius: 6px;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 44px;
+}
+
+.drawer-realm-picker-btn:hover {
+  background: rgba(212, 163, 41, 0.1);
+  border-color: var(--wow-gold);
+}
+
+.drawer-realm-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-realm-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.drawer-realm-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.drawer-realm-pill {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  letter-spacing: 0.5px;
+}
+
+.drawer-realm-caret {
+  font-size: 0.85rem;
+  color: var(--wow-gold);
+}
+
+/* Mobile Drawer Search Box - Hidden by default, toggled in media queries */
+.mobile-search-box {
+  display: none;
 }
 
 .mobile-nav-list {
@@ -1056,11 +1128,69 @@ body {
   min-height: 44px;
 }
 
+.mobile-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
 .mobile-nav-item:active, .mobile-nav-item.active {
   background: rgba(212, 163, 41, 0.16);
   border-color: var(--wow-gold);
   color: #fff;
   font-weight: 700;
+}
+
+.mobile-nav-item .drawer-arrow {
+  color: #64748b;
+  font-size: 0.85rem;
+  transition: transform 0.15s ease;
+}
+
+.mobile-nav-item:hover .drawer-arrow {
+  transform: translateX(2px);
+  color: #cbd5e1;
+}
+
+/* Primary High-Contrast Addon CTA in Drawer */
+.mobile-nav-item.primary-addon-cta {
+  background: rgba(212, 163, 41, 0.12);
+  border: 1px solid var(--wow-gold);
+  color: var(--wow-gold);
+  font-weight: 700;
+  box-shadow: 0 0 14px rgba(212, 163, 41, 0.15);
+}
+
+.mobile-nav-item.primary-addon-cta:hover {
+  background: rgba(212, 163, 41, 0.22);
+  border-color: #facc15;
+  color: #fff;
+}
+
+.mobile-nav-item.primary-addon-cta .drawer-arrow {
+  color: var(--wow-gold);
+}
+
+/* Subtle Footer Rail in Drawer */
+.drawer-system-footer {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobile-nav-item.system-nav-item {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.mobile-nav-item.system-nav-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* ----------------- Main Container Layout ----------------- */
@@ -4194,54 +4324,48 @@ body {
 
 /* ----------------- Responsive Media Queries ----------------- */
 
-/* 1. Compact Desktop & Laptops (1201px to 1366px) */
-@media (max-width: 1366px) {
+/* Desktop viewports (> 1280px) — Core combat navigation exposed next to omni-search */
+@media (min-width: 1281px) {
   .site-header {
-    width: 100% !important;
-    box-sizing: border-box !important;
-    overflow: visible !important;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
   }
-  .header-main-row,
-  .header-top-row {
-    width: 100% !important;
-    padding: 0 14px !important;
-    gap: 8px !important;
-    box-sizing: border-box !important;
+  .nav-links-rail {
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
   }
-  .theater-label {
-    display: none !important;
-  }
-  .logo-subtitle {
-    display: none !important;
-  }
-  .header-icon-btn .header-btn-text {
-    display: none !important;
-  }
-  .header-icon-btn {
-    padding: 6px 8px !important;
-  }
-  .header-signout-btn {
-    display: none !important;
-  }
-  .header-search-wrap {
-    max-width: 220px !important;
-    min-width: 120px !important;
-    flex: 1 1 160px !important;
-  }
-  .header-search-wrap .search-kbd {
-    display: none !important;
-  }
-  .nav-btn {
-    padding: 6px 8px !important;
-    font-size: 0.8rem !important;
+  #nav-intel,
+  #nav-legends,
+  #nav-bounties {
+    display: inline-flex !important;
   }
   .mobile-menu-btn {
     display: none !important;
   }
+  .header-search-wrap {
+    flex: 1 !important;
+    max-width: 400px !important;
+    min-width: 180px !important;
+  }
+  .header-search-wrap .search-kbd {
+    display: inline-block !important;
+  }
+  .mobile-search-box {
+    display: none !important;
+  }
 }
 
-/* 2. Tablet Landscape & Small Laptops (769px to 1200px) — Hamburger Takes Over */
-@media (max-width: 1200px) {
+@media (min-width: 1281px) and (max-width: 1400px) {
+  #nav-hazards,
+  #nav-zones {
+    display: none !important;
+  }
+}
+
+/* 1. Compact Desktop & Laptops (769px to 1280px) — Hamburger Takes Over for Compact Nav */
+@media (max-width: 1280px) {
   .site-header {
     position: sticky;
     top: 0;
@@ -4262,6 +4386,21 @@ body {
     min-height: 56px !important;
     width: 100% !important;
     box-sizing: border-box !important;
+  }
+  .theater-label {
+    display: none !important;
+  }
+  .logo-subtitle {
+    display: none !important;
+  }
+  .header-icon-btn .header-btn-text {
+    display: none !important;
+  }
+  .header-icon-btn {
+    padding: 6px 8px !important;
+  }
+  .header-signout-btn {
+    display: none !important;
   }
   .nav-links-rail {
     display: none !important;
@@ -4290,9 +4429,9 @@ body {
     padding: 6px 10px !important;
   }
   .header-search-wrap {
-    max-width: 180px !important;
-    min-width: 90px !important;
-    flex-shrink: 1 !important;
+    max-width: 260px !important;
+    min-width: 120px !important;
+    flex: 1 1 180px !important;
   }
   .header-search-wrap .search-kbd {
     display: none !important;
@@ -4306,6 +4445,13 @@ body {
   }
   .sidebar-column {
     width: 280px;
+  }
+}
+
+/* Redundant Drawer Search Prevention (> 1024px) */
+@media (min-width: 1025px) {
+  .mobile-search-box {
+    display: none !important;
   }
 }
 
@@ -4331,11 +4477,16 @@ body {
     display: none !important;
   }
 
-  html,
+  html {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: visible !important;
+  }
+
   body {
     width: 100% !important;
     max-width: 100% !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
     position: relative !important;
   }
 
@@ -4515,7 +4666,7 @@ body {
     gap: 10px;
     width: 100% !important;
     max-width: 100vw !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
     box-sizing: border-box !important;
   }
 
