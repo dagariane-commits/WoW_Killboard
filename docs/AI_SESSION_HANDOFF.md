@@ -1,11 +1,11 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-06 20:15:00 EDT  
-> **Git Status**: Branch `main` (Release `v1.0.4` and Web `v2.3.0` live on production).  
+> **Last Synchronized**: 2026-10-06 20:28:00 EDT  
+> **Git Status**: Branch `main` (Release `v1.0.4` and Web `v2.3.1` live on production).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.4` (CurseForge Community Release).  
-> **Active Focus**: **Zero-Taint Combat Lockdown Gating, Multi-Character Roster & Realm Mains, Mode-Specific Leaderboards, and Mobile Responsive Header**.  
+> **Active Focus**: **Zero-Taint Combat Lockdown Gating, Red-Team / Blue-Team Defense-in-Depth, safeJsParam Apostrophe Immunity, Multi-Character Roster & Realm Mains, and Mode-Specific Leaderboards**.  
 > **Live Production Domain**: [`https://wowkillboard.com/`](https://wowkillboard.com/)
 
 ---
@@ -40,6 +40,11 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Red-Team / Blue-Team Security Hardening & DOM Sanitization (`web/server.py`, `web/static/app.js`, `tests/test_pipeline.py`)**:
+  - **Apostrophe Immunity in `safeJsParam`**: Eliminated quote breakout / syntax errors on strings with apostrophes (*Un'Goro Crater*, *Kel'Thuzad*, *Gul'dan*) by escaping single quotes as `%27` (`.replace(/'/g, "%27")`).
+  - **Character Claim Release Authorization Gating**: Closed critical auth bypass on `/api/auth/release-claim` where empty `owner_token` bypassed checks; enforced constant-time `hmac.compare_digest` token verification.
+  - **Complete 100% POST Rate Limiting Coverage**: Added sliding-window IP rate limiting across all remaining state-mutation endpoints (`/api/characters`, `/api/auth/claim-character`, `/api/auth/release-claim`, `/api/debt/pay`, `/api/events/<event_id>/cancel`, `/api/discord/config`, `/api/kos/blacklist`, `/api/kos/pardon`).
+  - **Input Bounding & String Truncation**: Enforced strict length limits (character names <= 48, guilds <= 64, levels 1-85) across all JSON inputs.
 - **Addon Action Blocked & UI Taint Elimination (`Killmail.lua`, `Sync.lua`, `CombatTracker.lua`, `IntelScanner.lua`, `Reinforcements.lua`)**:
   - Eliminated `ADDON_ACTION_BLOCKED: Blocked UNKNOWN() by WoWKillboard (InCombat: YES)` and Blizzard's yellow warning `"Interface action failed because of an AddOn"` when dying or entering combat.
   - Strictly gated all programmatic `SendChatMessage` transmissions on restricted channels (`"CHANNEL"`, `"SAY"`, `"YELL"`) behind `if not InCombatLockdown() then`.
