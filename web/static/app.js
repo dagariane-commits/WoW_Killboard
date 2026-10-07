@@ -3227,7 +3227,7 @@ async function loadPersonalArmoryView(charName) {
             </p>
             <div style="margin-top:16px; display:flex; justify-content:center; gap:10px;">
               <button class="nav-btn" style="background:var(--accent-cyan); color:#000; font-weight:700;" onclick="loadArmoryView()">Browse Realm Directory</button>
-              <button class="nav-btn" style="border:1px solid var(--wow-gold); color:var(--wow-gold);" onclick="openAddonDossierModal()">Download Addon</button>
+              <button class="nav-btn" style="border:1px solid var(--wow-gold); color:var(--wow-gold);" onclick="switchTab('DOWNLOAD')">Get the Addon</button>
             </div>
           </div>
         </div>
@@ -4045,11 +4045,11 @@ function loadPortalView() {
         </p>
         <div class="portal-hero-actions">
           <button class="portal-return-pill" onclick="switchTab('INTEL')">
-            <span>⚔️ Enter Live Frontline Feed &rarr;</span>
+            <span>Enter Live Frontline Feed &rarr;</span>
           </button>
-          <button class="portal-fieldkit-pill" onclick="openAddonDossierModal()">
+          <button class="portal-fieldkit-pill" onclick="switchTab('DOWNLOAD')">
             <svg class="portal-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <span>War Room Operational Specification &amp; Download</span>
+            <span>Get the Addon &amp; Field Kit</span>
           </button>
         </div>
       </div>
@@ -4451,21 +4451,28 @@ function handleSelectTheaterVersion(flavor) {
   switchTab("INTEL");
 }
 
-// ----------------- Addon Field Kit Dossier Modal Handlers -----------------
+// ----------------- Addon Field Kit Dossier & Policy Redirection -----------------
 
 function openAddonDossierModal() {
-  const modal = document.getElementById("addon-dossier-modal");
-  if (modal) {
-    modal.style.display = "flex";
-  }
+  switchTab("DOWNLOAD");
 }
+window.openAddonDossierModal = openAddonDossierModal;
 
 function closeAddonDossierModal() {
-  const modal = document.getElementById("addon-dossier-modal");
-  if (modal) {
-    modal.style.display = "none";
-  }
+  // Modal retired in favor of dedicated Field Kit download view
 }
+window.closeAddonDossierModal = closeAddonDossierModal;
+
+function scrollToTosPolicy() {
+  switchTab("DOWNLOAD");
+  setTimeout(() => {
+    const el = document.getElementById("download-tos-policy-block");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, 100);
+}
+window.scrollToTosPolicy = scrollToTosPolicy;
 
 // ----------------- Field Bug Reports & AI Diagnostics Modal -----------------
 
@@ -5205,6 +5212,193 @@ function loadDownloadView() {
               <strong style="color:#fff;">Sync Telemetry:</strong> Run <code>WoWKillboardSync.exe</code> or use our <a href="javascript:void(0)" onclick="switchTab('UPLOAD')" style="color:var(--wow-gold); text-decoration:underline;">Browser Uploader</a> to sync combat stats.
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Direct Operational Overview & 4 Core Capabilities -->
+      <div style="background:#070a10; border:1px solid #1a2234; border-radius:8px; padding:20px 24px;">
+        <h3 style="font-family:var(--font-tactical); font-size:1.05rem; color:var(--wow-gold); margin:0 0 10px 0; letter-spacing:0.5px;">
+          HOW WOW KILLBOARD WORKS
+        </h3>
+        <p style="font-size:0.86rem; color:#cbd5e1; line-height:1.6; margin:0 0 18px 0;">
+          WoW Killboard automatically tracks your PvP battles in the background and uploads your stats to the web. The lightweight in-game addon records your kills and deaths without slowing down your game, while our automated Windows sync app keeps your online profile and server leaderboards updated.
+        </p>
+
+        <div class="dossier-features-grid">
+          <div class="dossier-feature-card">
+            <div class="feature-tag">IN-GAME ADDON</div>
+            <h4 class="feature-head">Lightweight Combat Tracker</h4>
+            <p class="feature-text">
+              Runs silently in the background while you play. It automatically records your honorable kills, open-world deaths, and combat locations without causing interface lag, UI glitches, or "Action Blocked" popups.
+            </p>
+          </div>
+
+          <div class="dossier-feature-card">
+            <div class="feature-tag">DESKTOP SYNC APP</div>
+            <h4 class="feature-head">Automated Windows Sync App</h4>
+            <p class="feature-text">
+              A simple Windows application (<code>WoWKillboardSync.exe</code>) that finds your World of Warcraft installation automatically. When you reload your UI or exit the game, your combat data syncs to the website in seconds—no manual file copying required.
+            </p>
+          </div>
+
+          <div class="dossier-feature-card">
+            <div class="feature-tag">SMART DEDUPLICATION</div>
+            <h4 class="feature-head">Accurate Battle Merging</h4>
+            <p class="feature-text">
+              When multiple group members or a 40-player raid defeat an enemy target, everyone's addon logs the encounter. Our system automatically combines duplicate reports into a single, clean kill record crediting all participants.
+            </p>
+          </div>
+
+          <div class="dossier-feature-card">
+            <div class="feature-tag">BOUNTY SYSTEM</div>
+            <h4 class="feature-head">The Blood Ledger &amp; The Marked</h4>
+            <p class="feature-text">
+              When an enemy player kills or ganks you in the open world, you can place an in-game gold bounty on their head right from your death alert or the website. Any player who takes down your killer can claim the reward, and repeat gankers are posted on the realm Kill on Sight (KOS) board.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chronicles & Combat Arsenal (Modules & Capabilities) -->
+      <div class="dossier-tier-section">
+        <div class="dossier-tier-title-row">
+          <div>
+            <h3 class="dossier-tier-heading">CHRONICLES &amp; COMBAT ARSENAL</h3>
+            <div class="dossier-tier-subhead">100% Free &bull; Open-World Combat Intelligence &bull; In-Game Addon &amp; Web Synchronization</div>
+          </div>
+        </div>
+
+        <div class="dossier-tier-grid">
+          <!-- Column 1: In-Game Combat Addon (Live Modules) -->
+          <div class="dossier-tier-card guest-tier">
+            <div class="tier-card-header">
+              <span class="tier-badge guest">ARSENAL TIER 1 // IN-GAME FIELD KIT</span>
+              <div class="tier-name">In-Game Combat Tracker</div>
+              <div class="tier-sub">In-Game UI &bull; Pure Lua Engine &bull; Real-Time Radar</div>
+            </div>
+            <ul class="tier-features-list">
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Intel &amp; The Blood Ledger:</strong> Live combat stream with Top 10 Azeroth's Most Wanted execution marks and one-click tracking.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Defender of Azeroth &amp; Honor Ranks:</strong> Real-time player leaderboards, guild standings, and classic PvP military rank titles.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>The Marked (Spite Contracts):</strong> Instant gold bounties placed from death alerts and Blood Debtor KOS blacklist.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Vanguard Manhunt &amp; SOS Beacons:</strong> Muster manhunts (<code>/manhunt</code>, <code>/kb manhunt</code>) and dispatch emergency distress calls (<code>/kb sos</code>).</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Zone Intel &amp; Heatmaps:</strong> Sector heatmaps, 1v1 solo kill verification, and Battleground damage/healing metrics.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Mini Tactical HUD:</strong> Draggable floating radar bar (<code>/kb mini</code>) with active session K/D statistics.</span>
+              </li>
+            </ul>
+            <div class="tier-card-action">
+              <button class="tier-cta-btn guest" onclick="switchTab('INTEL');">
+                <span>Explore Intel Feed &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Column 2: Web War Room & Combatant Identity -->
+          <div class="dossier-tier-card free-tier">
+            <div class="tier-card-header">
+              <span class="tier-badge free">ARSENAL TIER 2 // AZEROTH WAR ROOM</span>
+              <div class="tier-name">Champion Identity &amp; War Ledger</div>
+              <div class="tier-sub">Live Synchronization &bull; Armory Identity &bull; Auto-Sync</div>
+            </div>
+            <ul class="tier-features-list">
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Zero-Barrier Windows Courier:</strong> Automated <code>WoWKillboardSync.exe</code> auto-detects installs and syncs combat logs.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Personalized Combat Banner:</strong> Link your Champion to display personalized K/D, solo rates, and rank insignia.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Accurate Battle Merging:</strong> Smart battle grouping merges group kills and credits all participants into a single verified killmail.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Active Manhunt Broadcasts:</strong> Web radar displays live running manhunts, objectives, and elapsed deployment times.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>The Blood Ledger:</strong> Searchable marks registry, active bounty pots, and hunter leaderboards.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet check">&#10004;</span>
+                <span class="tier-text"><strong>Cross-Client Parity:</strong> Unified architecture for WoW Forever Beta, Classic Era, Anniversary, and Retail.</span>
+              </li>
+            </ul>
+            <div class="tier-card-action">
+              <button class="tier-cta-btn free" onclick="openCharacterLinkModal();">
+                <span>Claim Your Character &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Column 3: Planned Features & Roadmap -->
+          <div class="dossier-tier-card roadmap-tier">
+            <div class="tier-card-header">
+              <span class="tier-badge roadmap">ROADMAP // IN DEVELOPMENT</span>
+              <div class="tier-name">Planned Capabilities</div>
+              <div class="tier-sub">Upcoming Expansions &bull; Active Engineering Pipeline</div>
+            </div>
+            <ul class="tier-features-list">
+              <li class="tier-item">
+                <span class="tier-bullet star">&#9733;</span>
+                <span class="tier-text"><strong>Deadly Wilderness Threats (NPCs)</strong> <span class="in-dev-pill">Planned</span>: Wilderness casualties, world boss fatalities, and lethal mob rankings.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet star">&#9733;</span>
+                <span class="tier-text"><strong>Guild Feuds &amp; Rivalry Scorecards</strong> <span class="in-dev-pill">In Dev</span>: Guild vs Guild war declarations, blood debt ledgers, and nemesis scorecards.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet star">&#9733;</span>
+                <span class="tier-text"><strong>StreamBox Broadcaster HUD</strong> <span class="in-dev-pill">In Dev</span>: Transparent, zero-lag OBS overlay for Twitch and YouTube live streamers.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet star">&#9733;</span>
+                <span class="tier-text"><strong>Deep Armory &amp; Gear Inspection</strong> <span class="in-dev-pill">In Dev</span>: Full PvP gear inspects, talent builds, and historical combat progression.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet star">&#9733;</span>
+                <span class="tier-text"><strong>Community Benefactor Insignia</strong> <span class="in-dev-pill">Planned</span>: Honorary gilded community crests and badges on web armory profiles.</span>
+              </li>
+              <li class="tier-item">
+                <span class="tier-bullet star">&#9733;</span>
+                <span class="tier-text"><strong>Discord SOS Defense Webhooks</strong> <span class="in-dev-pill">In Dev</span>: Automated guild alerts dispatched when allies call for backup.</span>
+              </li>
+            </ul>
+            <div class="tier-card-action">
+              <button class="tier-cta-btn roadmap" onclick="switchTab('BOUNTIES');">
+                <span>View Active Manhunts &rarr;</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blizzard ToS & Addon Policy Guarantee Callout -->
+      <div class="dossier-tos-callout" id="download-tos-policy-block">
+        <div class="tos-callout-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="tos-callout-text">
+          <strong>Blizzard Add-on Policy &amp; Terms of Service Guarantee:</strong>
+          In strict accordance with Blizzard's UI &amp; Add-on Policy, the WoW Killboard addon, desktop sync companion, and all combat tracking systems are 100% free and open for all players with zero gameplay advantages, zero paywalls, and zero in-game commercialization.
         </div>
       </div>
     </div>
@@ -6578,7 +6772,7 @@ function renderHeaderAuthBadge() {
 
       const spanMobile = document.createElement("span");
       spanMobile.className = "btn-text-mobile";
-      spanMobile.textContent = "⚔️ Claim Hero";
+      spanMobile.textContent = "Claim Hero";
       signInBtn.appendChild(spanMobile);
 
       badge.appendChild(signInBtn);
@@ -6589,7 +6783,7 @@ function renderHeaderAuthBadge() {
       const mobSignInBtn = document.createElement("button");
       mobSignInBtn.className = "pill-btn";
       mobSignInBtn.style.cssText = "width:100%; padding:8px 12px; font-weight:700; font-size:0.85rem; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:10px;";
-      mobSignInBtn.textContent = "⚔️ Select / Claim Character";
+      mobSignInBtn.textContent = "Select / Claim Character";
       mobSignInBtn.onclick = () => {
         if (typeof toggleMobileDrawer === "function") toggleMobileDrawer(false);
         openCharacterLinkModal();
@@ -7092,6 +7286,25 @@ function updateTheaterNavLabel() {
     if (textSpan) {
       const srvSuffix = currentFlav === "FOREVER" ? ` (${srvInfo.name})` : "";
       textSpan.innerHTML = `<span class="theater-label">Theater:</span> <strong style="color:${flavorColor};">${displayVersion}${srvSuffix}</strong>`;
+    }
+  }
+
+  // Update Drawer Realm Picker Elements
+  const mDrawerVersionEl = document.getElementById("m-theater-version");
+  const mDrawerServerEl = document.getElementById("m-theater-server");
+  if (mDrawerVersionEl) {
+    mDrawerVersionEl.innerText = displayVersion;
+    mDrawerVersionEl.style.color = flavorColor;
+  }
+  if (mDrawerServerEl) {
+    if (currentFlav === "FOREVER") {
+      mDrawerServerEl.style.display = "inline-flex";
+      mDrawerServerEl.innerText = srvInfo.name;
+      mDrawerServerEl.style.color = srvInfo.badgeColor;
+      mDrawerServerEl.style.backgroundColor = srvInfo.badgeBg;
+      mDrawerServerEl.style.borderColor = srvInfo.badgeBorder;
+    } else {
+      mDrawerServerEl.style.display = "none";
     }
   }
 }
