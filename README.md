@@ -74,12 +74,11 @@ flowchart TD
 ## Core Feature Highlights
 
 ### 1. In-Game Addon (`Addon/WoWKillboard/`)
-- **4-Theme Architecture (Shadow Network Web 1:1, Dark Slate, ElvUI Minimalist, Classic Stone)**:
-  - **Theme: Shadow Network (Web 1:1 Flat Slate)**: 100% 1:1 parity with the web platform. Darkened `#040609` master canvas, elevated `#0D131F` card panels with 1px `#1E293B` borders, solid gold active buttons with black text, and vivid telemetry ribbon coloring (`|cff0080ff% A|r`, `|cffff2020% H|r`, `|cffffd200Zone|r`).
-  - **Theme: Shadow Network Slate**: Sleek obsidian dark gunmetal backdrop with subtle 1px border framing and cyan/gold accents.
-  - **Theme: ElvUI Minimalist**: Flat `#121212` dark slate primary backing, solid black 1px razor borders, and ElvUI signature gold accents.
-  - **Theme: Classic Blizzard Stone**: Authentic Blizzard dialog stone backgrounds, gold/brass bevels (`UI-DialogBox-Border`), and warm parchment tooltips.
-  - **Instant 1-Click Switcher**: Cycle between all 4 themes instantly in-game via the Settings theme button, minimap right-click, or `/kb theme`.
+- **Strict 3-Theme Architecture (WKB Theme, ElvUI, Classic)**:
+  - **Theme: WKB Theme (1:1 Web Mirror)**: 100% 1:1 visual parity with `wowkillboard.com`. Master canvas `#040609` (`0.015, 0.023, 0.035, 0.98`) with 1px brass border `#947338`, elevated `#0B0F17` card panels with 1px `#1E293B` borders, solid bright brass gold active pill buttons with black text, alternating row striping, and vivid telemetry ribbon coloring (`|cff0080ff% A|r`, `|cffff2020% H|r`, `|cffffd200Zone|r`, `|cffff8000Casualties|r`).
+  - **Theme: ElvUI**: Minimalist dark styling featuring master frame `#0A0A0A`, card backdrops `#141414`, strict 1px flat black borders, and flat dark gray buttons with bright white accent borders.
+  - **Theme: Classic Blizzard Stone**: Authentic Blizzard dialog stone backgrounds (`UI-DialogBox-Background`), stone and gold borders (`UI-DialogBox-Border`), and parchment accents.
+  - **Zero-Taint Theme Dropdown & Switcher**: Select between themes via the Settings dialog dropdown (`Classic`, `ElvUI`, `WKB Theme`), minimap right-click, or `/kb theme [wkb|elvui|classic]`.
 - **Mode Filter Pills & Clean Tab Navigation (`/kb`)**:
   - **Contextual Mode Filtering**: Tactile pill buttons (`[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`) in the sub-toolbar immediately filter combat rows and re-aggregate leaderboard standings. Active pills glow with gold border `#D4AF37` and dark brass fill.
   - **Zero Duplication Navigation**: Strictly 5 clean tabs for PvP (`Intel`, `Leaderboards`, `The Marked`, `Call to Arms`, `Danger Zones`) and 5 clean tabs for PvE (`Casualties`, `Deadly Hazards`, `Notorious Elites`, `Rescue Beacons`, `Zone Mortality`), completely removing duplicate Hazards tabs.

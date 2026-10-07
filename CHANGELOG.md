@@ -10,11 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.5] - 2026-10-06 (CurseForge & Multi-Client Release)
 
 ### Added
-- **Visual Polish & Restored ElvUI Theme (`Addon/WoWKillboard/Config.lua`, `UI.lua`, `Core.lua`)**:
-  - **Master Canvas Contrast & Elevated Cards**: Darkened `Theme: Shadow Network (Web 1:1)` master window canvas to `#040609` (`0.02, 0.025, 0.035, 0.95`). Styled Combat Log table container (`UI.MainContainer`) and 3 right-sidebar cards (`Lifetime Activity`, `The Marked`, `All Classes`) with elevated slate fill `#0d131f` (`0.05, 0.075, 0.12, 0.90`) and 1px border `#1e293b` (`0.12, 0.16, 0.23, 1.0`).
-  - **High-Contrast Active Mode Buttons**: Active filter pill buttons (`[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`) now render with solid gold fill (`SetColorTexture(0.78, 0.60, 0.24, 1.0)`) and black text (`SetTextColor(0.05, 0.05, 0.05, 1.0)`); inactive pills use dark slate fill (`SetColorTexture(0.06, 0.08, 0.12, 0.8)`) and muted gray text (`SetTextColor(0.65, 0.65, 0.65, 1.0)`).
-  - **Vivid Telemetry Strip Coloring**: Updated telemetry ribbon and sidebar war split string formatting to vivid Warcraft hex codes: Alliance `|cff0080ff[pct]% A|r`, Horde `|cffff2020[pct]% H|r`, and Hot Zone `|cffffd200[Zone]|r`.
-  - **Restored ElvUI Minimalist Theme**: Restored dedicated `KB.Themes["elvui"]` styling table with `#121212` matte slate backing, solid black 1px razor borders, and gold accents. Addon now retains all 4 distinct themes: `Classic Blizzard Stone`, `Shadow Network Slate`, `Shadow Network (Web 1:1)`, and `ElvUI Minimalist`, with seamless 4-way cycling (`web` -> `slate` -> `elvui` -> `classic`).
+- **Strict 3-Theme Architecture & 1:1 WKB Web Mirror (`Addon/WoWKillboard/Config.lua`, `UI.lua`, `Core.lua`)**:
+  - **Pruned Theme Registry to Strictly 3 Options**: Consolidated themes in `WoWKillboard.Themes` to `CLASSIC` ("Classic Blizzard Stone"), `ELVUI` ("ElvUI"), and `WKB` ("WKB Theme"), eliminating duplicate variants while keeping backward-compatible aliases (`web`, `slate`, `shadownetwork`, etc.).
+  - **WKB Theme (1:1 Web Mirror)**: Designed exact mirror of `wowkillboard.com`:
+    - Master Canvas: `#040609` (`0.015, 0.023, 0.035, 0.98`) with 1px solid brass outer border `#947338` (`0.58, 0.45, 0.22, 1.0`).
+    - Elevated Card Containers (`UI.MainContainer`, `Lifetime Activity`, `The Marked`, `All Classes`): `#0B0F17` (`0.043, 0.059, 0.090, 0.95`) with 1px slate border `#1E293B` (`0.12, 0.16, 0.23, 1.0`).
+    - Card Headers: Muted web gold font (`0.78, 0.65, 0.35, 1.0`) and slate gray subtitles (`0.50, 0.55, 0.62, 1.0`).
+    - Telemetry Ribbon: Solid dark strip (`0.025, 0.035, 0.055, 1.0`) with 1px brass bottom border (`0.58, 0.45, 0.22, 0.4`) and vivid hex tags (`|cff0080ff%d%% A|r`, `|cffff2020%d%% H|r`, `|cffffd200%s|r`, `|cffff8000%d|r`).
+    - Mode Filter Pills: Active solid brass gold fill `#C69B3D` (`0.78, 0.60, 0.24, 1.0`) with black text (`0.05, 0.05, 0.05, 1.0`) and 1px gold border (`0.85, 0.70, 0.30, 1.0`); Inactive inset slate fill (`0.06, 0.08, 0.12, 0.8`), muted gray text (`0.65, 0.70, 0.75, 1.0`), and 1px border (`0.15, 0.19, 0.26, 1.0`).
+    - Feed Row Striping: Alternating rows (`0.060, 0.080, 0.115, 0.6` odd, `0.043, 0.059, 0.090, 0.4` even) and hover highlight (`0.12, 0.16, 0.23, 0.8`).
+  - **Restored ElvUI Minimalist Theme**: Master frame `#0A0A0A` (`0.04, 0.04, 0.04, 0.95`), card panels `#141414` (`0.08, 0.08, 0.08, 0.90`), flat 1px black borders (`0.0, 0.0, 0.0, 1.0`), and flat dark gray buttons with bright white accent borders.
+  - **Retained Classic Blizzard Stone**: Authentic Blizzard dialog stone (`UI-DialogBox-Background`), stone and gold borders (`UI-DialogBox-Border`), and parchment widgets.
+  - **Zero-Taint Theme Dropdown Menu**: Settings dialog provides a pure Lua `BackdropTemplate` dropdown listing strictly `Classic`, `ElvUI`, and `WKB Theme` with instant live theme preview.
 - **Mode Filter Pills: [ World ] [ BGs ] [ Duels ] [ Arenas ] (`Addon/WoWKillboard/UI.lua`, `Config.lua`, `Leaderboard.lua`, `Killmail.lua`)**:
   - Replaced legacy `[All] [Solo] [Group] [Raid]` pills with four distinct mode filters: `[ World ]`, `[ BGs ]`, `[ Duels ]`, and `[ Arenas ]`.
   - Persisted selection state in `WoWKillboardDB.combatFilter` (default: `"WORLD"`).
