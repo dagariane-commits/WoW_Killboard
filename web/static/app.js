@@ -1304,10 +1304,10 @@ async function renderStats(kills) {
   }
 }
 
-let feedDisplayLimit = 15;
+let feedDisplayLimit = 12;
 
 function feedShowMoreKills() {
-  feedDisplayLimit += 15;
+  feedDisplayLimit += 12;
   if (cachedKills && cachedKills.length > 0) {
     renderFeed(cachedKills);
   }
@@ -1375,6 +1375,26 @@ function renderFeed(kills) {
     modeFilteredKills = modeFilteredKills.filter(km => km.isArena);
   } else if (currentMode === "DUEL") {
     modeFilteredKills = modeFilteredKills.filter(km => km.isDuel);
+  }
+
+  if (currentLeaderboardFaction && currentLeaderboardFaction !== "ALL") {
+    modeFilteredKills = modeFilteredKills.filter(km => {
+      let killerFaction = ((km.killer && km.killer.faction) || '').trim();
+      if (!killerFaction && km.killer && km.killer.class) {
+        const kc = km.killer.class.toUpperCase();
+        if (kc === 'PALADIN') killerFaction = 'Alliance';
+        else if (kc === 'SHAMAN') killerFaction = 'Horde';
+      }
+      return killerFaction.toLowerCase() === currentLeaderboardFaction.toLowerCase();
+    });
+  }
+
+  if (currentLeaderboardTimeframe && currentLeaderboardTimeframe !== "all") {
+    const now = Date.now() / 1000;
+    const windowSec = currentLeaderboardTimeframe === "24h" ? 86400 : (currentLeaderboardTimeframe === "7d" ? 7 * 86400 : (currentLeaderboardTimeframe === "30d" ? 30 * 86400 : 0));
+    if (windowSec > 0) {
+      modeFilteredKills = modeFilteredKills.filter(km => (now - (km.timestamp || 0)) <= windowSec);
+    }
   }
 
   const modeLabelHeader = currentMode === "BG" ? "Battleground" : (currentMode === "DUEL" ? "Duel" : (currentMode === "ARENA" ? "Arena" : "Open World"));
@@ -1495,43 +1515,64 @@ function renderFeed(kills) {
 
     html += `
       <div class="killmail-row ${modeClass} ${victorClass} ${bountyRowClass}" onclick="openKillModal(${safeJsParam(km.killId)})" title="${escapeHtml(rowTooltip)}">
-        <!-- Col 1: Faction border/badge + Zone/Coords -->
-        <div class="km-col-location">
-          ${factionBadge}
-          <div class="km-location-meta">
-            <span class="km-zone-name">${escapeHtml(km.location.zone)}</span>
-            <span class="km-coords">${escapeHtml(subzoneOrCoords)}</span>
+        <!-- Desktop 5-Column High-Density Grid -->
+        <div class="km-desktop-layout">
+          <!-- Col 1: Faction border/badge + Zone/Coords -->
+          <div class="km-col-location">
+            ${factionBadge}
+            <div class="km-location-meta">
+              <span class="km-zone-name">${escapeHtml(km.location.zone)}</span>
+              <span class="km-coords">${escapeHtml(subzoneOrCoords)}</span>
+            </div>
+          </div>
+
+          <!-- Col 2: Killer name (class-colored), Level badge, Spec icon, Guild in <brackets> -->
+          <div class="km-col-killer">
+            ${killerBadge}
+            ${killerSpecBadge}
+            <span class="clickable-player km-player-name" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.killer.name)})">${killerSpan}</span>
+            <span class="km-lvl-pill">${killerLvlStr}</span>
+            ${killerGuildHtml}
+          </div>
+
+          <!-- Col 3: VS / Fatal Ability icon -->
+          <div class="km-col-vs">
+            <span class="km-vs-badge" title="${escapeHtml(killerSpell || (km.isDuel ? '1v1 Sparring' : 'Fatal Blow'))}">${km.isDuel ? 'DUEL' : 'VS'}</span>
+          </div>
+
+          <!-- Col 4: Victim name (class-colored), Level badge, Spec icon, Guild in <brackets> -->
+          <div class="km-col-victim">
+            ${victimBadge}
+            ${victimSpecBadge}
+            <span class="clickable-player km-player-name" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.victim.name)})">${victimSpan}</span>
+            <span class="km-lvl-pill">${victimLvlStr}</span>
+            ${victimGuildHtml}
+          </div>
+
+          <!-- Col 5: Relative timestamp + Mode tag -->
+          <div class="km-col-time">
+            ${bountyTag}
+            <span class="km-mode-tag ${modeClass}">${modeTagText}</span>
+            <span class="km-time">${timeAgo(km.timestamp)}</span>
           </div>
         </div>
 
-        <!-- Col 2: Killer name (class-colored), Level badge, Spec icon, Guild in <brackets> -->
-        <div class="km-col-killer">
-          ${killerBadge}
-          ${killerSpecBadge}
-          <span class="clickable-player km-player-name" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.killer.name)})">${killerSpan}</span>
-          <span class="km-lvl-pill">${killerLvlStr}</span>
-          ${killerGuildHtml}
-        </div>
-
-        <!-- Col 3: VS / Fatal Ability icon -->
-        <div class="km-col-vs">
-          <span class="km-vs-badge" title="${escapeHtml(killerSpell || (km.isDuel ? '1v1 Sparring' : 'Fatal Blow'))}">${km.isDuel ? 'DUEL' : 'VS'}</span>
-        </div>
-
-        <!-- Col 4: Victim name (class-colored), Level badge, Spec icon, Guild in <brackets> -->
-        <div class="km-col-victim">
-          ${victimBadge}
-          ${victimSpecBadge}
-          <span class="clickable-player km-player-name" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.victim.name)})">${victimSpan}</span>
-          <span class="km-lvl-pill">${victimLvlStr}</span>
-          ${victimGuildHtml}
-        </div>
-
-        <!-- Col 5: Relative timestamp + Mode tag -->
-        <div class="km-col-time">
-          ${bountyTag}
-          <span class="km-mode-tag ${modeClass}">${modeTagText}</span>
-          <span class="km-time">${timeAgo(km.timestamp)}</span>
+        <!-- Mobile Single-Line Compact Row (38px-42px) -->
+        <div class="km-mobile-layout">
+          <div class="km-mobile-combatants">
+            ${killerSpecBadge}
+            <span class="clickable-player km-mobile-killer" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.killer.name)})">${killerSpan}</span>
+            ${killerGuildName ? `<span class="km-mobile-guild clickable-guild" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(killerGuildName)})">&lt;${escapeHtml(killerGuildName)}&gt;</span>` : ''}
+            <span class="km-mobile-arrow">&rarr;</span>
+            <span class="clickable-player km-mobile-victim" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(km.victim.name)})">${victimSpan}</span>
+            ${victimGuildName ? `<span class="km-mobile-guild clickable-guild" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(victimGuildName)})">&lt;${escapeHtml(victimGuildName)}&gt;</span>` : ''}
+          </div>
+          <div class="km-mobile-meta">
+            ${bountyTag ? `<span class="km-mobile-bounty">${bountyTag}</span>` : ''}
+            <span class="km-mobile-zone" title="${escapeHtml(km.location.zone)}">${escapeHtml(km.location.zone)}</span>
+            <span class="km-mobile-sep">|</span>
+            <span class="km-mobile-time">${timeAgo(km.timestamp)}</span>
+          </div>
         </div>
       </div>
     `;
@@ -1541,7 +1582,7 @@ function renderFeed(kills) {
     html += `
       <div class="feed-view-more-wrap">
         <button class="feed-view-more-btn" onclick="feedShowMoreKills()">
-          <span>View More Combat Records (Showing ${visibleKills.length} of ${modeFilteredKills.length})</span>
+          <span>Load More Recent Kills (Showing ${visibleKills.length} of ${modeFilteredKills.length})</span>
           <span>&darr;</span>
         </button>
       </div>
@@ -5098,8 +5139,7 @@ function switchTab(tab) {
   // Context-aware sidebar switching & layout gating
   const sidebarEl = document.querySelector(".sidebar-column");
   const mwSection = document.getElementById("most-wanted-section");
-  const tabbedLb = document.getElementById("sidebar-tabbed-leaderboards");
-  const contextFilters = document.getElementById("sidebar-context-filters");
+  const topFilters = document.getElementById("top-combat-filters");
   const classCard = document.getElementById("sidebar-card-classes");
   const activityCard = document.getElementById("sidebar-combat-activity") || document.getElementById("sidebar-card-activity");
 
@@ -5115,9 +5155,9 @@ function switchTab(tab) {
     // Hide redundant Top Gankers/Guilds when viewing LEGENDS table
     tabbedLb.style.display = (tab === "LEGENDS") ? "none" : "block";
   }
-  if (contextFilters) {
-    // Show filter controls when viewing LEGENDS
-    contextFilters.style.display = (tab === "LEGENDS") ? "block" : "none";
+  if (topFilters) {
+    // Show top combat & leaderboard filters when viewing INTEL or LEGENDS
+    topFilters.style.display = (tab === "INTEL" || tab === "LEGENDS") ? "flex" : "none";
   }
   if (classCard) {
     classCard.style.display = (tab === "INTEL" || tab === "LEGENDS" || tab === "ZONES" || tab === "HAZARDS") ? "block" : "none";
@@ -5360,6 +5400,11 @@ function filterLeaderboardsByFaction(faction) {
     const btn = document.getElementById(`filter-faction-${f}`);
     if (btn) btn.classList.toggle('active', f.toLowerCase() === faction.toLowerCase());
   });
+  if (currentTab === "INTEL" || currentTab === "FEED") {
+    if (cachedKills && cachedKills.length > 0) {
+      renderFeed(cachedKills);
+    }
+  }
   if (typeof updateLeaderboardDisplay === "function" && legendsTabType !== "GUILDS" && rawLeaderboardKillers && rawLeaderboardKillers.length > 0) {
     updateLeaderboardDisplay();
   } else {
@@ -5382,6 +5427,11 @@ function filterLeaderboardsByTime(timeframe) {
         btn.classList.toggle('active', tfList[idx] === currentLeaderboardTimeframe);
       }
     });
+  }
+  if (currentTab === "INTEL" || currentTab === "FEED") {
+    if (cachedKills && cachedKills.length > 0) {
+      renderFeed(cachedKills);
+    }
   }
   loadLeaderboards();
 }
@@ -8567,17 +8617,43 @@ async function checkGlobalSosBeacons() {
 }
 
 function setFilterMode(mode) {
-  currentMode = mode;
-  document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
-  const activePill = document.getElementById(`pill-${mode.toLowerCase()}`);
-  if (activePill) activePill.classList.add("active");
-  const activeMobilePill = document.getElementById(`m-pill-${mode.toLowerCase()}`);
-  if (activeMobilePill) activeMobilePill.classList.add("active");
+  currentMode = (mode || "WORLD").toUpperCase();
+
+  // Synchronize sticky top mode pills and legacy mode pills
+  ['world', 'bg', 'duel', 'arena'].forEach(m => {
+    const isTarget = (m.toUpperCase() === currentMode);
+    const topBtn = document.getElementById(`top-pill-mode-${m}`);
+    if (topBtn) topBtn.classList.toggle('active', isTarget);
+    const oldPill = document.getElementById(`pill-${m}`);
+    if (oldPill) oldPill.classList.toggle('active', isTarget);
+    const oldMobilePill = document.getElementById(`m-pill-${m}`);
+    if (oldMobilePill) oldMobilePill.classList.toggle('active', isTarget);
+  });
+
+  // Synchronize in-feed mode pills if present
+  const feedModeContainer = document.getElementById("feed-mode-pills");
+  if (feedModeContainer) {
+    const btns = feedModeContainer.querySelectorAll(".pill-btn");
+    const modeIdx = { WORLD: 0, BG: 1, DUEL: 2, ARENA: 3 };
+    btns.forEach((btn, idx) => {
+      btn.classList.toggle("active", idx === modeIdx[currentMode]);
+    });
+  }
+
+  // Synchronize champions mode pills if present
+  const champModeContainer = document.getElementById("champions-mode-pills");
+  if (champModeContainer) {
+    const btns = champModeContainer.querySelectorAll(".pill-btn");
+    const modeIdx = { WORLD: 0, BG: 1, DUEL: 2, ARENA: 3 };
+    btns.forEach((btn, idx) => {
+      btn.classList.toggle("active", idx === modeIdx[currentMode]);
+    });
+  }
 
   const statModeEl = document.getElementById("stat-active-mode");
   if (statModeEl) {
     const modeNames = { WORLD: "World PvP", BG: "Battlegrounds", ARENA: "Arenas", DUEL: "Duels" };
-    statModeEl.innerText = modeNames[mode] || mode;
+    statModeEl.innerText = modeNames[currentMode] || currentMode;
   }
 
   loadKills();

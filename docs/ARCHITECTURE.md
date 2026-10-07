@@ -139,12 +139,22 @@ A high-performance Flask REST API and responsive dark-mode frontend built with s
      - **Streamlined Marked Ledger**: Single cohesive view for active bounties and marks with prominent player-placed highlight indicators and standard Warcraft Gold / Silver / Copper (`G / S / C`) currency formatting.
      - **Action Tools & Gold CTA**: War Archivist AI trigger, Upload utility link, real-time Multi-Character Auth Badge (with `⭐ Main` indicator), and primary gold CTA button `[ Get the Addon ]` linking to `/download`.
      - **Responsive Telemetry Ribbon**: Compact, auto-wrapping ribbon (`min-height: 32px; height: auto; flex-wrap: wrap;`), anchoring the live combat feed above the fold with zero horizontal cutoff on any viewport.
-     - **5-Slot Right Sidebar Hierarchy**:
+     - **Sticky Top Combat & Leaderboard Filters (`#top-combat-filters`)**:
+       - Anchored directly above `#main-content-area` across desktop and mobile.
+       - **Row 1 (Timeframe)**: `[ 24 Hours ]`, `[ 7 Days ]`, `[ 30 Days ]`, and `[ All-Time ]`.
+       - **Row 2 (Faction & Modes)**: `[ All ]`, `[ Alliance ]`, `[ Horde ]` | `[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`.
+       - **Mobile Sticky Sub-Bar**: `position: sticky; top: 56px; z-index: 900; background: rgba(11, 15, 23, 0.95); backdrop-filter: blur(8px); padding: 8px 12px;` on `<= 768px` viewports for immediate filter access without scrolling past records.
+       - **Touch Target Integrity**: Minimum 36px touch heights, `#1e293b` inactive background, `#C69B3D` solid gold active state with black text.
+     - **Compact Single-Line Mobile Killmail Rows (`.km-mobile-layout`)**:
+       - Fixed height `38px–42px` single-line row: `[Spec Icon] Killer Name (Guild) -> Victim Name (Guild) | Zone | 2m ago`.
+       - Alternating subtle zebra striping (`#090d14` and `#0e1420`), 1px solid `rgba(30, 41, 59, 0.6)` border, and victor faction left border accent.
+       - Strict dual-layout architecture: `.km-desktop-layout` (5-column grid: `180px 1fr 44px 1fr 110px`) and `.km-mobile-layout` (single-line flex) ensuring zero desktop visual regressions.
+       - Default combat feed capped at 12 events on initial load with a compact `Load More Recent Kills` expansion trigger.
+     - **4-Slot Right Sidebar Hierarchy**:
        1. *Lifetime Combat Activity*: Scoped strictly to the active realm tenant.
        2. *The Marked (Active Bounties)*: Condensed vertical ledger with class crests, realm, bounty pot, and `All →` navigation link.
-       3. *Champion Filters*: Faction (All/Alliance/Horde) and Timeframe (24h/7d/30d/All-Time) on Leaderboard view.
+       3. *All Classes Combat Matrix*: Compressed 2-column tactical grid.
        4. *Tabbed 24-Hour Leaderboard Widget*: Instant pill switching between Hot Zones, Top Gankers, and Top Guilds.
-       5. *All Classes Combat Matrix*: Compressed 2-column tactical grid.
 
 6. **Global Realm Isolation & Multi-Tenant Boundary (`server.py`, `app.js`)**:
    - Each theater / realm represents an isolated database tenant (e.g., `Classic Beta PvP`, `Classic Beta PvE`, `Classic Beta RP`, `Classic Beta Hardcore`).
