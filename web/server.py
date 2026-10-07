@@ -802,9 +802,10 @@ GITHUB_RELEASE_SYNC_URL = os.environ.get(
 )
 GITHUB_RELEASE_ZIP_URL = os.environ.get(
     "GITHUB_RELEASE_ZIP_URL",
-    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.4.zip"
+    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.5.zip"
 )
 
+@app.route("/WoWKillboard-v1.0.5.zip")
 @app.route("/WoWKillboard-v1.0.4.zip")
 @app.route("/WoWKillboard-v1.0.3.zip")
 @app.route("/WoWKillboard-v1.0.2.zip")
@@ -825,14 +826,14 @@ def download_addon():
     root_dir = os.path.dirname(APP_DIR)
     # Check for specific requested file if path has specific version
     req_file = os.path.basename(request.path)
-    if req_file in ("WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    if req_file in ("WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, req_file)
             if os.path.exists(target):
                 return send_from_directory(d, req_file, as_attachment=True)
 
-    # General download (/download, /addon.zip): serve v1.0.4, fallback to v1.0.3, v1.0.2, v1.0.1 then v1.0.0
-    for pkg in ("WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    # General download (/download, /addon.zip): serve v1.0.5, fallback to v1.0.4, v1.0.3, v1.0.2, v1.0.1 then v1.0.0
+    for pkg in ("WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, pkg)
             if os.path.exists(target):
@@ -4049,16 +4050,15 @@ def get_realm_summary():
             },
             "DeadliestZones": deadliest_zones,
             "TopGankers24h": top_gankers,
-            "LatestVersion": "1.0.4",
-            "DownloadUrl": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.4.zip",
+            "LatestVersion": "1.0.5",
+            "DownloadUrl": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.5.zip",
             "CurseForgeUrl": "https://www.curseforge.com/wow/addons/wkb",
             "Changelog": [
-                "Cross-Faction Intel Parity: Identical real-time Intel feed and leaderboard aggregates on active realm",
-                "Faction-Wide Mark of Spite Alerts: Realm channel broadcast, floating on-screen banner & audio warhorn",
-                "Tamper-Proof Channel Chatter Suppression: Official ChatFrame filter guarantees zero player spam",
-                "Frontline Alert Delivery Presets: Both Displays, Heads-Up Only, Silent Chat Log Only, and Muted (/kb alerts)",
-                "Interactive PvE vs. PvP Stats Toggle: Seamlessly switch between Wilderness Bestiary and PvP War Room",
-                "Strict Realm & Ruleset Isolation Architecture (PvP / PvE / RP / HC)"
+                "Zero Blizzard UI Taint Hardening: Strict InCombatLockdown gating on death routines, whisper broadcasts, and guild info checks",
+                "Responsive Navigation Suite: Fluid flex layout, 1180px breakpoint, mobile drawer, and unclipped tactile controls",
+                "Multi-Character Realm Roster: Seamless operative switching, custom realm mains (⭐ Main), and dedicated stats tracking",
+                "Instance Leaderboard Parity: Dedicated combat columns for World, Battlegrounds, Duels, and Arenas",
+                "Economy & Marked Overhaul: Formatted G / S / C currency displays and unified bounty contract highlights"
             ],
             "timestamp": now
         })
@@ -4068,17 +4068,16 @@ def get_version_info():
     """Returns official current addon release version, download endpoints, and changelog summary."""
     return jsonify({
         "status": "ok",
-        "version": "1.0.4",
-        "release_tag": "v1.0.4",
-        "download_url": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.4.zip",
+        "version": "1.0.5",
+        "release_tag": "v1.0.5",
+        "download_url": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.5.zip",
         "curseforge_url": "https://www.curseforge.com/wow/addons/wkb",
         "changelog": [
-            "Cross-Faction Intel Parity: Identical real-time Intel feed and leaderboard aggregates on active realm",
-            "Faction-Wide Mark of Spite Alerts: Realm channel broadcast, floating on-screen banner & audio warhorn",
-            "Tamper-Proof Channel Chatter Suppression: Official ChatFrame filter guarantees zero player spam",
-            "Frontline Alert Delivery Presets: Both Displays, Heads-Up Only, Silent Chat Log Only, and Muted (/kb alerts)",
-            "Interactive PvE vs. PvP Stats Toggle: Seamlessly switch between Wilderness Bestiary and PvP War Room",
-            "Strict Realm & Ruleset Isolation Architecture (PvP / PvE / RP / HC)"
+            "Zero Blizzard UI Taint Hardening: Strict InCombatLockdown gating on death routines, whisper broadcasts, and guild info checks",
+            "Responsive Navigation Suite: Fluid flex layout, 1180px breakpoint, mobile drawer, and unclipped tactile controls",
+            "Multi-Character Realm Roster: Seamless operative switching, custom realm mains (⭐ Main), and dedicated stats tracking",
+            "Instance Leaderboard Parity: Dedicated combat columns for World, Battlegrounds, Duels, and Arenas",
+            "Economy & Marked Overhaul: Formatted G / S / C currency displays and unified bounty contract highlights"
         ]
     })
 

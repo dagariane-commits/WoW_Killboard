@@ -1,10 +1,10 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-06 20:28:00 EDT  
-> **Git Status**: Branch `main` (Release `v1.0.4` and Web `v2.3.1` live on production).  
+> **Last Synchronized**: 2026-10-06 20:35:00 EDT  
+> **Git Status**: Branch `main` (Release `v1.0.5` and Web `v2.4.0` live on production).  
 > **Developer & Lead**: Dagariane.  
-> **Active Release**: `v1.0.4` (CurseForge Community Release).  
+> **Active Release**: `v1.0.5` (CurseForge Community Release).  
 > **Active Focus**: **Zero-Taint Combat Lockdown Gating, Red-Team / Blue-Team Defense-in-Depth, safeJsParam Apostrophe Immunity, Multi-Character Roster & Realm Mains, and Mode-Specific Leaderboards**.  
 > **Live Production Domain**: [`https://wowkillboard.com/`](https://wowkillboard.com/)
 
@@ -31,7 +31,7 @@
 6. **Mandatory Automated Verification**:
    - Run `python tests/validate_lua.py` (Must return `[PASS]` for all 13 Lua files).
    - Run `python -m unittest discover tests` (Must return `OK` across all 30 pipeline/security tests).
-   - Run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.4.zip` (and legacy aliases `v1.0.3`, `v1.0.2`, `v1.0.1`, `v1.0.0`).
+   - Run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.5.zip` (and legacy aliases `v1.0.4`, `v1.0.3`, `v1.0.2`, `v1.0.1`, `v1.0.0`).
 
 ---
 
@@ -296,7 +296,7 @@ sudo journalctl -u wowkillboard.service -f
 
 ### Tabled Item 1: Community Release Strategy (Option 1: Zero-Executable Primary)
 - **The Core Decision**: The community release focuses on **Option 1**:
-  - **In-Game Addon (`WoWKillboard-v1.0.4.zip`)**: Distributed via CurseForge (`wkb`) and GitHub Releases. 100% pure Lua, running in Blizzard's locked sandbox. Zero OS file access, zero external network connections, zero executables.
+  - **In-Game Addon (`WoWKillboard-v1.0.5.zip`)**: Distributed via CurseForge (`wkb`) and GitHub Releases. 100% pure Lua, running in Blizzard's locked sandbox. Zero OS file access, zero external network connections, zero executables.
   - **Web Sync via Drag-and-Drop**: Players sync combat data directly by dragging `WTF\...\SavedVariables\WoWKillboard.lua` onto [`wowkillboard.com/upload`](https://wowkillboard.com/upload) in any browser.
   - **Desktop Companion (`WoWKillboardSync.exe`)**: Positioned strictly as an **optional convenience tool for power users** who want automated background syncing on `/reload` or logout.
 
@@ -335,7 +335,7 @@ sudo journalctl -u wowkillboard.service -f
 | **In-Game Addon** | `Addon/WoWKillboard/*.lua`<br>`WoWKillboard.toc` | Pure Lua 5.1, zero XML taint, `BackdropTemplate`, 15s temporal gang clustering, 1v1 duel validation, bounty engine, in-game leaderboards. |
 | **Desktop Companion** | `sync/watcher.py`<br>`sync/gui.py`<br>`sync/version_info.txt`<br>`assets/icon.ico` | Standalone Python watcher. Multi-drive discovery across C:, D:, E:, verified TLS/SSL, native `.url` shortcuts in Startup folder, embedded PE metadata. |
 | **Web Server & API** | `web/server.py`<br>`web/static/app.js`<br>`web/static/index.html` | Flask API + SQLite WAL mode. CDN-first 302 redirects, sliding-window IP rate limiting, DOM XSS immunity via `escapeHtml()` and `safeJsParam()`, 16MB request limits. |
-| **Distribution Packages** | `WoWKillboard-v1.0.4.zip`<br>`WoWKillboard-v1.0.3.zip`<br>`WoWKillboard-v1.0.2.zip`<br>`WoWKillboardSync.exe` | Mirror archives in root and `web/static/`. Standalone binary verified. |
+| **Distribution Packages** | `WoWKillboard-v1.0.5.zip`<br>`WoWKillboard-v1.0.4.zip`<br>`WoWKillboard-v1.0.3.zip`<br>`WoWKillboard-v1.0.2.zip`<br>`WoWKillboardSync.exe` | Mirror archives in root and `web/static/`. Standalone binary verified. |
 
 ---
 

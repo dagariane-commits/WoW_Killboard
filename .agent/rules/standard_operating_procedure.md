@@ -19,5 +19,5 @@ On EVERY user prompt, systematically execute:
 2. **Pre-Flight Inspection**: Inspect files and active lines before editing.
 3. **Surgical Execution**: Targeted, contiguous edits; zero-taint verification.
 4. **Automated Verification**: Run `python tests/validate_lua.py` and `python -m unittest discover tests`.
-5. **Multi-Client Deployment**: Synchronize files to all 4 WoW directories (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`) and update `WoWKillboard-v1.0.4.zip` (and legacy aliases `v1.0.3`, `v1.0.2`, `v1.0.1`, `v1.0.0`).
+5. **Multi-Client Deployment**: Synchronize files to all 4 WoW directories (`_classic_beta_`, `_classic_era_`, `_anniversary_`, `_retail_`) and update `WoWKillboard-v1.0.5.zip` (and legacy aliases `v1.0.4`, `v1.0.3`, `v1.0.2`, `v1.0.1`, `v1.0.0`).
 6. **Zero-Drift Documentation, CurseForge/Git Parity & Git Commit**: Update `CHANGELOG.md` & `docs/`, commit to Git, ensure 100% CurseForge/Git tag lockstep parity (`git push origin main --tags`), and deliver BLUF summary.
