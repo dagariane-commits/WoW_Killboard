@@ -34,28 +34,28 @@ def main():
         'User-Agent': 'WoWKillboard-Release-Script'
     }
 
-    # 1. Check if release already exists for v1.0.4
+    # 1. Check if release already exists for v1.0.5
     req = urllib.request.Request(
-        'https://api.github.com/repos/dagariane-commits/WoW_Killboard/releases/tags/v1.0.4',
+        'https://api.github.com/repos/dagariane-commits/WoW_Killboard/releases/tags/v1.0.5',
         headers=headers
     )
     release = None
     try:
         with urllib.request.urlopen(req) as resp:
             release = json.loads(resp.read().decode('utf-8'))
-            print(f"Found existing release v1.0.4 with ID: {release['id']}")
+            print(f"Found existing release v1.0.5 with ID: {release['id']}")
     except urllib.error.HTTPError as e:
         if e.code == 404:
-            print("Release v1.0.4 does not exist yet. Creating...")
+            print("Release v1.0.5 does not exist yet. Creating...")
         else:
             print(f"Error checking release: {e.code} {e.read().decode('utf-8')}")
             return
 
     if not release:
         data = {
-            'tag_name': 'v1.0.4',
-            'name': 'v1.0.4: Cross-Faction Intel Parity, Faction Bounty Alerts & Clean Combat Telemetry',
-            'body': 'Official Release v1.0.4\n\n- Cross-Faction Intel Parity: Identical real-time Intel feed and leaderboard aggregates across Alliance and Horde on the same realm\n- Faction-Wide Mark of Spite Alerts: Realm channel broadcast, floating on-screen toast, and warhorn audio chime for friendly bounty declarations\n- Tamper-Proof Channel Chatter Suppression: Official Blizzard ChatFrame filter guarantees zero player spam in dedicated tactical channel\n- Frontline Alert Delivery Presets: Both Displays, Heads-Up Only, Silent Chat Log Only, and Muted (/kb alerts)\n- Interactive PvE vs. PvP Stats Toggle: Seamlessly switch between Wilderness Bestiary and PvP War Room\n- Zero UI Taint: Pure Lua widgets, BackdropTemplate, and strict InCombatLockdown() gating\n- Desktop Companion Synchronizer v1.0.4',
+            'tag_name': 'v1.0.5',
+            'name': 'v1.0.5: Cross-Client Combat Hardening, Responsive Navigation & Multi-Character Roster',
+            'body': 'Official Release v1.0.5\n\n- Zero Blizzard UI Taint Hardening: Strict InCombatLockdown gating on player death routines, chat broadcasts, and guild info checks eliminates Action Blocked popups\n- Responsive Navigation Suite: Fluid flex layout, 1180px adaptive navigation breakpoint, mobile slide-in drawer, and unclipped touch controls\n- Multi-Character Realm Roster: Seamless operative switching, custom realm mains (⭐ Main), and dedicated combat stats tracking across all characters\n- Mode-Specific Leaderboards: Dedicated combat columns for World (Kills, Solo, K/D), BGs, Duels (W/L), and Arenas\n- Economy & Marked Overhaul: Formatted G / S / C currency displays and unified bounty contract highlights\n- Desktop Companion Synchronizer v1.0.5',
             'draft': False,
             'prerelease': False
         }
@@ -68,7 +68,7 @@ def main():
         try:
             with urllib.request.urlopen(create_req) as resp:
                 release = json.loads(resp.read().decode('utf-8'))
-                print(f"Created release v1.0.4 with ID: {release['id']}")
+                print(f"Created release v1.0.5 with ID: {release['id']}")
         except urllib.error.HTTPError as e:
             print(f"HTTP Error creating release: {e.code} {e.read().decode('utf-8')}")
             return
@@ -78,9 +78,10 @@ def main():
 
     # Existing asset names
     existing_assets = {a['name']: a['id'] for a in release.get('assets', [])}
-    print(f"Existing assets for v1.0.4: {list(existing_assets.keys())}")
+    print(f"Existing assets for v1.0.5: {list(existing_assets.keys())}")
 
     assets_to_upload = [
+        ('WoWKillboard-v1.0.5.zip', 'application/zip'),
         ('WoWKillboard-v1.0.4.zip', 'application/zip'),
         ('WoWKillboardSync.exe', 'application/vnd.microsoft.portable-executable')
     ]

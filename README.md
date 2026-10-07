@@ -1,6 +1,6 @@
 # WoW Killboard — Frontline War Room
 
-[![Release](https://img.shields.io/badge/Release-v1.0.4-00e5ff.svg)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/Release-v1.0.5-00e5ff.svg)](CHANGELOG.md)
 [![CI](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml)
 [![WoW Flavors](https://img.shields.io/badge/WoW-Forever%20%7C%20Classic%20Era%20%7C%20Anniversary%20%7C%20Retail-ffd700.svg)](docs/TAINT_AND_COMPATIBILITY.md)
@@ -32,7 +32,7 @@ Comprehensive technical documentation is maintained in the [`docs/`](docs/) dire
 - ☁️ **[Dedicated Linux VPS Deployment](docs/DEPLOYMENT_VPS.md)** — AWS Lightsail runbook, automated SSL/TLS via Caddy, and backup automation.
 - 🗺️ **[Forward Strategic Roadmap](docs/ROADMAP.md)** — Phased roadmap covering public launch, guild war rooms, and ranked seasons.
 - 🚀 **[Public Release & Distribution Playbook](docs/PUBLIC_RELEASE_PLAYBOOK.md)** — Guide for packaging, CurseForge/Wago distribution, and hosting.
-- 📝 **[Semantic Version Change Log](CHANGELOG.md)** — Full changelog trail from initial prototype to v1.0.4 release.
+- 📝 **[Semantic Version Change Log](CHANGELOG.md)** — Full changelog trail from initial prototype to v1.0.5 release.
 - 🤝 **[Contributing Guidelines](CONTRIBUTING.md)** — Development standards and PR checklist for open-source contributors.
 - ⚖️ **[Legal, Safety & Compliance Guide](docs/LEGAL_AND_COMPLIANCE.md)** — Authorship, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
 
@@ -237,8 +237,8 @@ WoW_Killboard/
 │   └── validate_lua.py              # Automated Lua syntax & bracket validator
 ├── CHANGELOG.md                     # Semantic version change log
 ├── CONTRIBUTING.md                  # Open-source contribution guidelines
-├── WoWKillboardSync.exe             # Pre-compiled standalone sync binary (8.8 MB)
-└── WoWKillboard-v1.0.4.zip          # Production-ready addon release package
+├── WoWKillboardSync.exe             # Pre-compiled standalone sync binary (12.3 MB)
+└── WoWKillboard-v1.0.5.zip          # Production-ready addon release package
 ```
 
 ---
@@ -246,7 +246,7 @@ WoW_Killboard/
 ## Quickstart Guide
 
 ### 1. In-Game Addon Installation
-1. Download [`WoWKillboard-v1.0.4.zip`](WoWKillboard-v1.0.4.zip) and extract it into your World of Warcraft AddOns directory:
+1. Download [`WoWKillboard-v1.0.5.zip`](WoWKillboard-v1.0.5.zip) and extract it into your World of Warcraft AddOns directory:
    - **Forever Beta**: `World of Warcraft/_classic_beta_/Interface/AddOns/WoWKillboard`
    - **Classic Era**: `World of Warcraft/_classic_era_/Interface/AddOns/WoWKillboard`
    - **Anniversary**: `World of Warcraft/_anniversary_/Interface/AddOns/WoWKillboard`

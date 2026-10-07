@@ -4,8 +4,8 @@
 #
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 3, 0),
-    prodvers=(1, 0, 3, 0),
+    filevers=(1, 0, 5, 0),
+    prodvers=(1, 0, 5, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -21,12 +21,12 @@ VSVersionInfo(
           [
             StringStruct('CompanyName', 'WoW Killboard Project'),
             StringStruct('FileDescription', 'WoW Killboard Desktop Companion & Synchronization Agent'),
-            StringStruct('FileVersion', '1.0.3.0'),
+            StringStruct('FileVersion', '1.0.5.0'),
             StringStruct('InternalName', 'WoWKillboardSync'),
             StringStruct('LegalCopyright', 'Copyright (C) 2026 WoW Killboard. All rights reserved.'),
             StringStruct('OriginalFilename', 'WoWKillboardSync.exe'),
             StringStruct('ProductName', 'WoW Killboard Desktop Companion'),
-            StringStruct('ProductVersion', '1.0.3.0')
+            StringStruct('ProductVersion', '1.0.5.0')
           ]
         )
       ]

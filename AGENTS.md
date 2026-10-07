@@ -77,7 +77,7 @@ flowchart TD
   - `D:\World of Warcraft\_classic_era_\Interface\AddOns\WoWKillboard\`
   - `D:\World of Warcraft\_anniversary_\Interface\AddOns\WoWKillboard\`
   - `D:\World of Warcraft\_retail_\Interface\AddOns\WoWKillboard\`
-- Rebuild distribution package (`WoWKillboard-v1.0.4.zip` and legacy aliases).
+- Rebuild distribution package (`WoWKillboard-v1.0.5.zip` and legacy aliases).
 - Recompile `WoWKillboardSync.exe` if sync logic was modified.
 
 ### Step 6: Zero-Drift Documentation, CurseForge/Git Parity & Clean Commit
