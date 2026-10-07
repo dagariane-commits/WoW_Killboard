@@ -170,6 +170,22 @@ All HUDs, modals, and overlays are created anonymously (`CreateFrame("Frame", ni
 
 ---
 
+### Vector 12: Automated `SendChatMessage` on Restricted Channels in Combat
+```lua
+-- INSECURE in Combat (Triggers ADDON_ACTION_BLOCKED: Blocked UNKNOWN())
+pcall(SendChatMessage, casualtyMsg, "CHANNEL", nil, chanId)
+pcall(SendChatMessage, casualtyMsg, "SAY")
+pcall(SendChatMessage, casualtyMsg, "YELL")
+```
+**Why this fails:** In World of Warcraft (patch 8.2.5+ / Classic 1.15.x / Retail 11.x), calling `SendChatMessage` with `"CHANNEL"`, `"SAY"`, or `"YELL"` is protected against automated script execution. Invoking these channels without a physical player hardware event (key press or mouse click) or during active `InCombatLockdown()` causes Blizzard's C++ execution engine to block the call immediately, displaying the yellow warning `"Interface action failed because of an AddOn"` and logging `ADDON_ACTION_BLOCKED: Blocked UNKNOWN()`. Notice that `pcall()` does not catch engine-level security restrictions.
+
+**Our Surgical Solution:**
+- All programmatic chat transmissions to `"CHANNEL"`, `"SAY"`, and `"YELL"` across [`Killmail.lua`](../Addon/WoWKillboard/Killmail.lua), [`Sync.lua`](../Addon/WoWKillboard/Sync.lua), [`IntelScanner.lua`](../Addon/WoWKillboard/IntelScanner.lua), and [`Reinforcements.lua`](../Addon/WoWKillboard/Reinforcements.lua) are strictly gated behind `if not InCombatLockdown() then`.
+- Unrestricted channels permitted during combat (`"GUILD"`, `"PARTY"`, `"RAID"`) and peer-to-peer addon communication (`C_ChatInfo.SendAddonMessage`) continue to deliver casualty data without interruption.
+- All `GetGuildInfo("player")` invocations in [`CombatTracker.lua`](../Addon/WoWKillboard/CombatTracker.lua) are safely wrapped with `(not InCombatLockdown() and GetGuildInfo("player")) or "None"` to prevent unit inspection taint in combat.
+
+---
+
 ## 3. Cross-Client Compatibility Matrix
 
 WoW Killboard maintains a single unified codebase supporting all active client flavors:

@@ -266,7 +266,10 @@ WoW_Killboard/
    - `/killboard stats` — View current session damage, healing, kills, and K/D.
    - `/testnet` or `/kb testnet` — Broadcast a simulated casualty across the realm network to test alerts on any player with the addon (0 database writes).
    - `/kb net` or `/kb channel` — Inspect live realm network connection and channel diagnostics.
-   - `/killboard sync` or `/kb sync` — Flush combat SavedVariables to disk (`/reload`) to sync immediately with the live website.
+   - `/kb welcome [reset|on|off]` or `/kb beta` — Open or toggle the Early Beta Preview & Community Feedback guide on login.
+   - `/kb changelog` or `/kb update` — Open What's New & Version Changelog modal.
+   - `/armory [Name]` — Direct in-game character combat dossier lookup.
+   - `/kb claim <code>` — Register web character ownership verification code (followed by `/reload`).
    - `/killboard bounty <Name> <Gold>` — Declare a blood bounty upon an enemy player (open world only).
    - `/kb bug <description>` or `/kb report` — Submit in-game telemetry & bug dispatch directly to the AI Diagnostician (or click `[Report Bug]` in header).
    - `/killboard reset` — Clear local kill database.
