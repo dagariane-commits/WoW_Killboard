@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Omni-Viewport Hamburger Menu & Desktop Utility Drawer (`web/static/style.css`, `web/static/index.html`, `web/static/app.js`)**:
+  - Removed desktop hiding rules (`display: none !important;`) from `@media (min-width: 1281px)` to force `#mobile-menu-btn` to remain visible across desktop and mobile screens.
+  - Applied tactile high-contrast styling globally to `#mobile-menu-btn` and `.mobile-menu-btn`: 38x38px flex container, dark slate background `rgba(15, 23, 42, 0.85)`, 1px border `rgba(51, 65, 85, 0.8)`, unicode hamburger icon `&#9776;`, and gold-bordered hover state (`rgba(148, 115, 56, 0.9)`, `#f1c40f`).
+  - Anchored `#mobile-menu-btn` immediately following `#oracle-chat-trigger` (`Archivist`) in the desktop and mobile header tool group.
+  - Updated `toggleMobileDrawer()` in `app.js` to manage both `.open` and `.active` states smoothly with backdrop blur and ESC key dismiss.
+  - Bound `window.toggleOracleChat` to `toggleOracleChatModal` for dual modal trigger interoperability.
+  - Bumped stylesheet cache-busting query parameter in `index.html` to `?v=1.4.75`.
+
 ## [1.0.5] - 2026-10-06 (CurseForge & Multi-Client Release)
 
 ### Added

@@ -3682,15 +3682,26 @@ function toggleMobileDrawer(forceState) {
   const isOpen = (typeof forceState === "boolean") ? forceState : !drawer.classList.contains("open");
   if (isOpen) {
     drawer.classList.add("open");
+    drawer.classList.add("active");
     backdrop.classList.add("open");
+    backdrop.classList.add("active");
     document.body.style.overflow = "hidden";
   } else {
     drawer.classList.remove("open");
+    drawer.classList.remove("active");
     backdrop.classList.remove("open");
+    backdrop.classList.remove("active");
     document.body.style.overflow = "";
   }
 }
 window.toggleMobileDrawer = toggleMobileDrawer;
+
+function toggleOracleChat(forceOpen) {
+  if (typeof toggleOracleChatModal === "function") {
+    toggleOracleChatModal(forceOpen);
+  }
+}
+window.toggleOracleChat = toggleOracleChat;
 
 function initMobileDrawer() {
   window.toggleMobileDrawer = toggleMobileDrawer;
