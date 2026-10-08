@@ -17,6 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Seamlessly filters both the live combat feed and competitive leaderboards across timeframe, faction, and mode.
 
 ### Fixed
+- **Combat Feed Ability Icon & Zone Column Polish (`Addon/WoWKillboard/UI.lua`)**:
+  - Replaced verbose boilerplate text (`slain by Combat Strike`) in both PvP (`RenderLiveFeed`) and PvE (`RenderPveFeed`) combat feeds with a compact `18x18` ability/spell icon centered in a `44px` column (centered at `x = 248`).
+  - Added interactive mouseover tooltip (`OnEnter`) displaying `GameTooltip:AddLine("Fatal Blow: " .. action)` (with fallback to `UI:ShowPrivateTooltip`) and gold hover border highlight.
+  - Dynamically resolves spell textures via `C_Spell.GetSpellTexture`, `GetSpellTexture`, and `GetSpellInfo` with intelligent fallbacks (melee swords, fire, shadow, frost, marksman, cleave, backstab, environmental fall).
+  - Reallocated ~80px reclaimed column width: expanded `ZONE` column by 64px (from `x = 512` to `x = 448`, spanning to `-6`), eliminating ellipsis truncation for full locations like `Loch Modan (Thelsamar)` and `Undercity (Ruins of Lordaeron)`.
+  - Expanded `ATTACKER / KILLER` (width 168px) and `VICTIM` (width 168px) columns to prevent long player names, guild tags (e.g. `<OLYMPUS XXVII>`, `<Sabatam>`), and `[YOU]` tags from truncating.
+- **Character Portrait & Header Alignment Fine-Tuning (`Addon/WoWKillboard/UI.lua`)**:
+  - Nudged `WoWKillboardPlayerPortrait` down to `(12, -8)` so the outer gold tracking ring does not touch the top window border.
+  - Anchored addon title `WoW Killboard v1.0.5` directly to `portraitFrame` (`"LEFT", portraitFrame, "RIGHT", 10, 0`), ensuring clean vertical centering with the portrait center across all themes and window instantiations.
+- **WKB Theme Restyling for "THE MARKED" Card Track Buttons (`Addon/WoWKillboard/UI.lua`)**:
+  - Restyled `Track` buttons in Card 2 to match the dark WKB theme: dark slate background (`0.08, 0.11, 0.16, 0.9`), subtle 1px slate line border (`0.20, 0.25, 0.35, 1.0`), and clean pale gold text (`0.9, 0.85, 0.7, 1.0`).
+  - Added interactive `OnEnter` and `OnLeave` scripts: shifting border to radiant gold (`0.85, 0.70, 0.25, 1.0`) with bright yellow text on hover, cleanly restoring on mouse exit.
 - **Enlarged Character Portrait Medallion & Dynamic Level Updating (`Addon/WoWKillboard/UI.lua`)**:
   - Enlarged `WoWKillboardPlayerPortrait` to a prominent `48x48` pixels anchored at `(12, -4)` with a proportional `60x60` circular gold tracking ring (`Interface\Minimap\MiniMap-TrackingBorder`) and smooth circular alpha mask (`TempPortraitAlphaMask`).
   - Sized level medallion coin to `20x20` with a centered `28x28` gold tracking border, anchored to `BOTTOMRIGHT` at `(2, -2)` so it stays in the bottom corner without obscuring the character's face.
