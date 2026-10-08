@@ -1080,13 +1080,23 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {1.0, 1.0, 1.0, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
-    -- 1. Integrated Character Portrait Medallion (34x34, vertically centered at y = -21 in 42px header, Strata HIGH)
+    -- 1. Integrated Character Portrait Medallion (48x48, docked TOPLEFT (10, -6), Strata HIGH)
     local portraitFrame = CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")
-    portraitFrame:SetSize(34, 34)
-    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 12, -4)
+    portraitFrame:SetSize(48, 48)
+    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -6)
     portraitFrame:SetFrameStrata("HIGH")
 
-    local portraitTex = portraitFrame:CreateTexture(nil, "BACKGROUND")
+    local portBg = portraitFrame:CreateTexture(nil, "BACKGROUND", nil, -1)
+    portBg:SetAllPoints(portraitFrame)
+    portBg:SetColorTexture(0.04, 0.05, 0.08, 1.0)
+    if portraitFrame.CreateMaskTexture and portBg.AddMaskTexture then
+        local maskBg = portraitFrame:CreateMaskTexture()
+        maskBg:SetAllPoints(portBg)
+        maskBg:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        portBg:AddMaskTexture(maskBg)
+    end
+
+    local portraitTex = portraitFrame:CreateTexture(nil, "ARTWORK")
     portraitTex:SetAllPoints(portraitFrame)
     if SetPortraitTexture then
         SetPortraitTexture(portraitTex, "player")
@@ -1104,18 +1114,18 @@ function UI:CreateMainWindow()
     end
     portraitFrame.portraitTex = portraitTex
 
-    -- Gold Border Ring (42x42 centered proportionally over the portrait)
+    -- Gold Border Ring (56x56 centered proportionally over the 48x48 portrait)
     local border = portraitFrame:CreateTexture(nil, "OVERLAY")
     border:SetPoint("CENTER", portraitFrame, "CENTER", 0, 0)
-    border:SetSize(42, 42)
+    border:SetSize(56, 56)
     border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     portraitFrame.border = border
     portraitFrame.ring = border
 
-    -- Circular Level Medallion (16x16, anchored BOTTOMRIGHT (2, -2), Strata HIGH)
+    -- Circular Level Medallion (18x18, anchored BOTTOMRIGHT (2, -2), Strata HIGH)
     local levelFrame = CreateFrame("Frame", nil, portraitFrame)
     local levelBadge = levelFrame
-    levelBadge:SetSize(16, 16)
+    levelBadge:SetSize(18, 18)
     levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 2, -2)
     levelBadge:SetFrameStrata("HIGH")
     levelBadge:SetFrameLevel(portraitFrame:GetFrameLevel() + 5)
@@ -1134,7 +1144,7 @@ function UI:CreateMainWindow()
 
     local levelBorder = levelFrame:CreateTexture(nil, "OVERLAY")
     levelBorder:SetPoint("CENTER", levelFrame, "CENTER", 0, 0)
-    levelBorder:SetSize(22, 22)
+    levelBorder:SetSize(24, 24)
     levelBorder:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     levelBorder:SetVertexColor(0.85, 0.70, 0.25, 1.0) -- Gold accent
     levelFrame.border = levelBorder
@@ -1191,14 +1201,14 @@ function UI:CreateMainWindow()
     -- 1px bottom divider
     local headerDiv = headerBar:CreateTexture(nil, "OVERLAY")
     headerDiv:SetHeight(1)
-    headerDiv:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 0, 0)
+    headerDiv:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 68, 0)
     headerDiv:SetPoint("BOTTOMRIGHT", headerBar, "BOTTOMRIGHT", 0, 0)
     headerDiv:SetColorTexture(40/255, 50/255, 65/255, 0.8)
     headerBar.Divider = headerDiv
 
-    -- Addon Title (Anchored vertically centered to the right of the character portrait)
+    -- Addon Title (Anchored vertically centered in headerBar, offset 68px to clear portrait dock)
     local title = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("LEFT", portraitFrame, "RIGHT", 10, 0)
+    title:SetPoint("LEFT", headerBar, "LEFT", 68, 0)
     title:SetTextColor(1.0, 0.82, 0.0, 1.0)
     title:SetText("WoW Killboard")
     if title.SetFont then local f, s = title:GetFont(); title:SetFont(f, (s or 12) + 1, "OUTLINE") end
@@ -1404,7 +1414,7 @@ function UI:CreateMainWindow()
         end
 
         if UI.TitleText then
-            UI.TitleText:SetTextColor(aR, aG, aB, 1.0)
+            UI.TitleText:SetTextColor(1.0, 0.82, 0.0, 1.0)
         end
     end
 
@@ -1545,8 +1555,8 @@ function UI:CreateMainWindow()
 
     -- 3. Telemetry Ribbon Strip (28px height horizontal stats bar directly under header)
     local metricsBar = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-    metricsBar:SetSize(940, 28)
-    metricsBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -44)
+    metricsBar:SetHeight(28)
+    metricsBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 68, -44)
     metricsBar:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -10, -44)
     metricsBar:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -1610,7 +1620,7 @@ function UI:CreateMainWindow()
     splitBar.Text = splitText
 
     local ribbonText = metricsBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    ribbonText:SetPoint("LEFT", metricsBar, "LEFT", 12, 0)
+    ribbonText:SetPoint("LEFT", metricsBar, "LEFT", 10, 0)
     ribbonText:SetPoint("RIGHT", splitBarLabel, "LEFT", -8, 0)
     ribbonText:SetJustifyH("LEFT")
     ribbonText:SetTextColor(1.0, 1.0, 1.0, 1.0)
