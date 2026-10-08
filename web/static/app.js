@@ -5465,7 +5465,7 @@ function loadDownloadView() {
       <!-- Hero Masthead -->
       <div class="download-hero-card" style="background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.14) 0%, rgba(10, 13, 20, 0.96) 80%); border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 32px 24px; text-align: center; box-shadow: 0 4px 28px rgba(0,0,0,0.75);">
         <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(212,163,41,0.15); border:1px solid var(--wow-gold); padding:4px 12px; border-radius:12px; margin-bottom:12px;">
-          <span style="font-size:0.75rem; font-weight:800; color:var(--wow-gold); text-transform:uppercase; letter-spacing:0.8px;">OFFICIAL FIELD KIT &bull; v1.0.6 RELEASE</span>
+          <span style="font-size:0.75rem; font-weight:800; color:var(--wow-gold); text-transform:uppercase; letter-spacing:0.8px;">OFFICIAL FIELD KIT &bull; v1.0.7 RELEASE</span>
         </div>
         <h2 style="font-family: var(--font-tactical); font-size: 1.8rem; color: #fff; margin: 0 0 8px 0; letter-spacing: 0.5px;">
           WoW Killboard Field Kit Distribution
@@ -5508,7 +5508,7 @@ function loadDownloadView() {
               <span style="font-size:0.68rem; font-weight:800; color:var(--wow-gold); background:rgba(212,163,41,0.15); border:1px solid var(--wow-gold); padding:2px 8px; border-radius:4px;">
                 DIRECT RELEASE ARCHIVE
               </span>
-              <span style="font-size:0.75rem; color:#94a3b8; font-weight:700;">v1.0.6</span>
+              <span style="font-size:0.75rem; color:#94a3b8; font-weight:700;">v1.0.7</span>
             </div>
             <h3 style="font-size:1.2rem; color:#fff; font-family:var(--font-tactical); margin:0 0 8px 0;">Manual Addon Package</h3>
             <p style="font-size:0.82rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
@@ -5521,7 +5521,7 @@ function loadDownloadView() {
             </div>
           </div>
           <div style="display:flex; flex-direction:column; gap:8px;">
-            <a href="/WoWKillboard-v1.0.6.zip" download style="display:flex; align-items:center; justify-content:center; gap:8px; background:var(--wow-gold); color:#000; font-weight:800; font-size:0.85rem; padding:10px 16px; border-radius:4px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px;">
+            <a href="/WoWKillboard-v1.0.7.zip" download style="display:flex; align-items:center; justify-content:center; gap:8px; background:var(--wow-gold); color:#000; font-weight:800; font-size:0.85rem; padding:10px 16px; border-radius:4px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px;">
               <span>Direct Download (.zip)</span>
             </a>
             <a href="https://github.com/dagariane-commits/WoW_Killboard/releases/latest" target="_blank" rel="noopener" style="text-align:center; font-size:0.75rem; color:#94a3b8; text-decoration:none;">

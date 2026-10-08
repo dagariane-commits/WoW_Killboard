@@ -865,6 +865,9 @@ function UI:OnPlayerRegenDisabled()
     if mainFrame and mainFrame:IsShown() then
         mainFrame:Hide()
     end
+    if UI.CommandDeck and UI.CommandDeck:IsShown() then
+        UI:ToggleCommandDeck(false)
+    end
     if UI.AlertsDialog and UI.AlertsDialog:IsShown() then
         UI.AlertsDialog:Hide()
     end
@@ -1013,6 +1016,426 @@ function UI:HidePrivateTooltip()
     end
 end
 
+-- =========================================================================
+-- COMMAND DECK: Master Slide-Out Tactical Navigation & Operations Drawer
+-- =========================================================================
+function UI:ToggleCommandDeck(show)
+    if InCombatLockdown and InCombatLockdown() then return end
+    if not UI.CommandDeck then
+        UI:CreateCommandDeck()
+    end
+    if not UI.CommandDeck then return end
+    if show == nil then
+        show = not UI.CommandDeck:IsShown()
+    end
+    if show then
+        if UI.CommandDeckDimOverlay then UI.CommandDeckDimOverlay:Show() end
+        UI.CommandDeck:Show()
+        if UI.UpdateRulesetButton then UI:UpdateRulesetButton() end
+    else
+        if UI.CommandDeckDimOverlay then UI.CommandDeckDimOverlay:Hide() end
+        UI.CommandDeck:Hide()
+    end
+end
+
+function UI:CreateCommandDeck()
+    if UI.CommandDeck or not mainFrame then return end
+
+    -- 1. Dim Background Click-Dismiss Overlay
+    local overlay = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+    overlay:SetAllPoints(mainFrame)
+    overlay:SetFrameStrata("DIALOG")
+    overlay:SetFrameLevel(20)
+    overlay:EnableMouse(true)
+    overlay:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    overlay:SetBackdropColor(0, 0, 0, 0.55)
+    overlay:SetBackdropBorderColor(0, 0, 0, 0)
+    overlay:SetScript("OnMouseDown", function()
+        UI:ToggleCommandDeck(false)
+    end)
+    overlay:Hide()
+    UI.CommandDeckDimOverlay = overlay
+
+    -- 2. Slide-Out Command Deck Drawer Frame
+    local deck = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+    deck:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 0, 0)
+    deck:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMLEFT", 0, 0)
+    deck:SetWidth(270)
+    deck:SetFrameStrata("DIALOG")
+    deck:SetFrameLevel(30)
+    deck:EnableMouse(true)
+    deck:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    deck:SetBackdropColor(14/255, 18/255, 26/255, 0.98)
+    deck:SetBackdropBorderColor(0.58, 0.45, 0.22, 0.8)
+
+    -- Right vertical gold dividing line
+    local rBorder = deck:CreateTexture(nil, "OVERLAY")
+    rBorder:SetPoint("TOPRIGHT", deck, "TOPRIGHT", 0, 0)
+    rBorder:SetPoint("BOTTOMRIGHT", deck, "BOTTOMRIGHT", 0, 0)
+    rBorder:SetWidth(1)
+    rBorder:SetColorTexture(0.85, 0.70, 0.25, 0.9)
+    deck.RightBorder = rBorder
+
+    -- Header Title
+    local deckTitle = deck:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    deckTitle:SetPoint("TOPLEFT", deck, "TOPLEFT", 16, -14)
+    deckTitle:SetTextColor(1.0, 0.82, 0.0, 1.0)
+    deckTitle:SetText("COMMAND DECK")
+    if deckTitle.SetFont then local f, s = deckTitle:GetFont(); deckTitle:SetFont(f, (s or 12) + 1, "OUTLINE") end
+
+    local deckSubTitle = deck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    deckSubTitle:SetPoint("TOPLEFT", deckTitle, "BOTTOMLEFT", 0, -2)
+    deckSubTitle:SetTextColor(136/255, 136/255, 136/255, 1.0)
+    deckSubTitle:SetText("Tactical Operations & Settings")
+    if deckSubTitle.SetFont then local f, s = deckSubTitle:GetFont(); deckSubTitle:SetFont(f, s or 9, "OUTLINE") end
+
+    -- Close Drawer Button [X]
+    local closeBtn = CreateFrame("Button", nil, deck, "BackdropTemplate")
+    closeBtn:SetSize(20, 20)
+    closeBtn:SetPoint("TOPRIGHT", deck, "TOPRIGHT", -12, -12)
+    closeBtn:EnableMouse(true)
+    closeBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    closeBtn:SetBackdropColor(30/255, 30/255, 30/255, 1.0)
+    closeBtn:SetBackdropBorderColor(0, 0, 0, 1.0)
+    local closeLbl = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    closeLbl:SetPoint("CENTER", 0, 0)
+    closeLbl:SetTextColor(255/255, 56/255, 56/255, 1.0)
+    closeLbl:SetText("X")
+    if closeLbl.SetFont then local f, s = closeLbl:GetFont(); closeLbl:SetFont(f, s or 10, "OUTLINE") end
+    closeBtn.Label = closeLbl
+    closeBtn:SetScript("OnEnter", function(self) self:SetBackdropColor(42/255, 42/255, 42/255, 1.0) end)
+    closeBtn:SetScript("OnLeave", function(self) self:SetBackdropColor(30/255, 30/255, 30/255, 1.0) end)
+    closeBtn:SetScript("OnClick", function() UI:ToggleCommandDeck(false) end)
+
+    -- Top Header Divider
+    local headDiv = deck:CreateTexture(nil, "OVERLAY")
+    headDiv:SetPoint("TOPLEFT", deck, "TOPLEFT", 12, -48)
+    headDiv:SetPoint("TOPRIGHT", deck, "TOPRIGHT", -12, -48)
+    headDiv:SetHeight(1)
+    headDiv:SetColorTexture(40/255, 50/255, 65/255, 0.8)
+
+    local currentY = -58
+
+    -- Helper to create styled deck button
+    local function CreateDeckNavBtn(id, text, tooltipTitle, tooltipDesc)
+        local btn = CreateFrame("Button", nil, deck, "BackdropTemplate")
+        btn:SetSize(242, 28)
+        btn:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+        btn:EnableMouse(true)
+        btn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        btn:SetBackdropColor(0.06, 0.08, 0.12, 0.85)
+        btn:SetBackdropBorderColor(0.18, 0.24, 0.32, 0.7)
+
+        local lbl = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        lbl:SetPoint("LEFT", btn, "LEFT", 10, 0)
+        lbl:SetTextColor(0.85, 0.88, 0.92, 1.0)
+        lbl:SetText(text)
+        if lbl.SetFont then local f, s = lbl:GetFont(); lbl:SetFont(f, s or 10, "OUTLINE") end
+        btn.Label = lbl
+
+        -- 2px Solid Bright Gold Bottom Line Accent
+        local bottomAccent = btn:CreateTexture(nil, "OVERLAY")
+        bottomAccent:SetHeight(2)
+        bottomAccent:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+        bottomAccent:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
+        bottomAccent:SetColorTexture(0.85, 0.70, 0.25, 1.0)
+        bottomAccent:Hide()
+        btn.bottomAccent = bottomAccent
+
+        btn:SetScript("OnEnter", function(self)
+            if not self.isActive then
+                self:SetBackdropColor(0.12, 0.16, 0.24, 1.0)
+                self:SetBackdropBorderColor(0.85, 0.70, 0.25, 0.9)
+                self.Label:SetTextColor(1.0, 1.0, 1.0, 1.0)
+            end
+            if tooltipTitle then
+                UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, tooltipTitle, tooltipDesc)
+            end
+        end)
+        btn:SetScript("OnLeave", function(self)
+            if not self.isActive then
+                self:SetBackdropColor(0.06, 0.08, 0.12, 0.85)
+                self:SetBackdropBorderColor(0.18, 0.24, 0.32, 0.7)
+                self.Label:SetTextColor(0.85, 0.88, 0.92, 1.0)
+            end
+            UI:HidePrivateTooltip()
+        end)
+        btn:SetScript("OnClick", function()
+            activeTab = id
+            UI:ToggleCommandDeck(false)
+            UI:Refresh()
+        end)
+
+        tabButtons[id] = btn
+        currentY = currentY - 32
+        return btn
+    end
+
+    -- SECTION 1: COMBAT OPERATIONS
+    local cat1 = deck:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    cat1:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    cat1:SetTextColor(100/255, 116/255, 139/255, 1.0)
+    cat1:SetText("COMBAT OPERATIONS")
+    if cat1.SetFont then local f, s = cat1:GetFont(); cat1:SetFont(f, 9, "OUTLINE") end
+    currentY = currentY - 18
+
+    CreateDeckNavBtn("FEED", "⚔  Intel Feed", "|cffffd100Intel Feed|r", "Real-time combat mortality feed & killmails.")
+    CreateDeckNavBtn("LEADERBOARD", "🏆  Leaderboards", "|cffffd100Leaderboards|r", "Top killer standings, guild rankings, and kill counts.")
+    CreateDeckNavBtn("ZONES", "🗺️  Danger Zones", "|cffffd100Danger Zones|r", "Territory conflict heatmap and mortality concentration.")
+
+    -- Divider
+    currentY = currentY - 6
+    local div1 = deck:CreateTexture(nil, "OVERLAY")
+    div1:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    div1:SetPoint("TOPRIGHT", deck, "TOPRIGHT", -14, currentY)
+    div1:SetHeight(1)
+    div1:SetColorTexture(30/255, 38/255, 50/255, 0.8)
+    currentY = currentY - 12
+
+    -- SECTION 2: BOUNTIES & TARGETS
+    local cat2 = deck:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    cat2:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    cat2:SetTextColor(100/255, 116/255, 139/255, 1.0)
+    cat2:SetText("BOUNTIES & TARGETS")
+    if cat2.SetFont then local f, s = cat2:GetFont(); cat2:SetFont(f, 9, "OUTLINE") end
+    currentY = currentY - 18
+
+    CreateDeckNavBtn("BOUNTIES", "💀  The Marked", "|cffffd100The Marked|r", "High-value Nemesis bounty targets and death marks.")
+    CreateDeckNavBtn("RALLIES", "📢  Call to Arms", "|cffffd100Call to Arms|r", "Active defense rally beacons and guild assistance calls.")
+
+    -- Divider
+    currentY = currentY - 6
+    local div2 = deck:CreateTexture(nil, "OVERLAY")
+    div2:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    div2:SetPoint("TOPRIGHT", deck, "TOPRIGHT", -14, currentY)
+    div2:SetHeight(1)
+    div2:SetColorTexture(30/255, 38/255, 50/255, 0.8)
+    currentY = currentY - 12
+
+    -- SECTION 3: CAMPAIGN RULESET
+    local cat3 = deck:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    cat3:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    cat3:SetTextColor(100/255, 116/255, 139/255, 1.0)
+    cat3:SetText("CAMPAIGN RULESET")
+    if cat3.SetFont then local f, s = cat3:GetFont(); cat3:SetFont(f, 9, "OUTLINE") end
+    currentY = currentY - 18
+
+    local modeBar = CreateFrame("Frame", nil, deck, "BackdropTemplate")
+    modeBar:SetSize(242, 26)
+    modeBar:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    modeBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    modeBar:SetBackdropColor(14/255, 18/255, 24/255, 1.0)
+    modeBar:SetBackdropBorderColor(40/255, 50/255, 65/255, 0.7)
+
+    -- [PVP STATS] mode toggle button
+    local pvpBtn = CreateFrame("Button", nil, modeBar, "BackdropTemplate")
+    pvpBtn:SetSize(118, 22)
+    pvpBtn:SetPoint("LEFT", modeBar, "LEFT", 2, 0)
+    pvpBtn:EnableMouse(true)
+    pvpBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    local pvpLabel = pvpBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    pvpLabel:SetPoint("CENTER", 0, 0)
+    pvpLabel:SetText("⚔ PvP Combat")
+    if pvpLabel.SetFont then local f, s = pvpLabel:GetFont(); pvpLabel:SetFont(f, s or 10, "OUTLINE") end
+    pvpBtn.Label = pvpLabel
+
+    -- [PVE STATS] mode toggle button
+    local pveBtn = CreateFrame("Button", nil, modeBar, "BackdropTemplate")
+    pveBtn:SetSize(118, 22)
+    pveBtn:SetPoint("RIGHT", modeBar, "RIGHT", -2, 0)
+    pveBtn:EnableMouse(true)
+    pveBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    local pveLabel = pveBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    pveLabel:SetPoint("CENTER", 0, 0)
+    pveLabel:SetText("💀 PvE Hazards")
+    if pveLabel.SetFont then local f, s = pveLabel:GetFont(); pveLabel:SetFont(f, s or 10, "OUTLINE") end
+    pveBtn.Label = pveLabel
+
+    pvpBtn:SetScript("OnClick", function()
+        if UI:IsPve() then
+            WoWKillboardDB = WoWKillboardDB or {}
+            local realm = (GetRealmName and GetRealmName()) or ""
+            WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
+            if realm ~= "" then WoWKillboardDB.realmRulesets[realm] = "PVP" end
+            WoWKillboardDB.campaignRuleset = "PVP"
+            if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
+            UI:UpdateRulesetButton()
+            UI:Refresh()
+        end
+    end)
+    pvpBtn:SetScript("OnEnter", function(self)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffef4444Contested PvP Combat|r", "View player-versus-player combat ledger, bounties, and rankings.")
+    end)
+    pvpBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+
+    pveBtn:SetScript("OnClick", function()
+        if not UI:IsPve() then
+            WoWKillboardDB = WoWKillboardDB or {}
+            local realm = (GetRealmName and GetRealmName()) or ""
+            WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
+            if realm ~= "" then WoWKillboardDB.realmRulesets[realm] = "PVE" end
+            WoWKillboardDB.campaignRuleset = "PVE"
+            if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
+            UI:UpdateRulesetButton()
+            UI:Refresh()
+        end
+    end)
+    pveBtn:SetScript("OnEnter", function(self)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Wilderness PvE Hazards|r", "View monster executions, environmental hazards, and mortality bestiary.")
+    end)
+    pveBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+
+    UI.RulesetButton = modeBar
+    UI.PvpModeBtn = pvpBtn
+    UI.PveModeBtn = pveBtn
+    currentY = currentY - 32
+
+    -- Divider
+    currentY = currentY - 6
+    local div3 = deck:CreateTexture(nil, "OVERLAY")
+    div3:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    div3:SetPoint("TOPRIGHT", deck, "TOPRIGHT", -14, currentY)
+    div3:SetHeight(1)
+    div3:SetColorTexture(30/255, 38/255, 50/255, 0.8)
+    currentY = currentY - 12
+
+    -- SECTION 4: SYSTEM & PREFERENCES
+    local cat4 = deck:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    cat4:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    cat4:SetTextColor(100/255, 116/255, 139/255, 1.0)
+    cat4:SetText("SYSTEM & PREFERENCES")
+    if cat4.SetFont then local f, s = cat4:GetFont(); cat4:SetFont(f, 9, "OUTLINE") end
+    currentY = currentY - 18
+
+    -- Settings Button
+    local settingsBtn = CreateFrame("Button", nil, deck, "BackdropTemplate")
+    settingsBtn:SetSize(242, 28)
+    settingsBtn:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    settingsBtn:EnableMouse(true)
+    settingsBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    settingsBtn:SetBackdropColor(26/255, 32/255, 42/255, 1.0)
+    settingsBtn:SetBackdropBorderColor(50/255, 60/255, 75/255, 0.8)
+    local settingsLabel = settingsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    settingsLabel:SetPoint("LEFT", settingsBtn, "LEFT", 10, 0)
+    settingsLabel:SetTextColor(204/255, 204/255, 204/255, 1.0)
+    settingsLabel:SetText("⚙  Settings & Preferences")
+    if settingsLabel.SetFont then local f, s = settingsLabel:GetFont(); settingsLabel:SetFont(f, s or 10, "OUTLINE") end
+    settingsBtn.Label = settingsLabel
+    settingsBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(36/255, 44/255, 58/255, 1.0)
+        self:SetBackdropBorderColor(0.85, 0.70, 0.25, 0.9)
+        self.Label:SetTextColor(1.0, 1.0, 1.0, 1.0)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Settings & Preferences|r", "Configure Theme, Alert Banners, Sound, Mute Death Marks, Combat Feed & Data Export.")
+    end)
+    settingsBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(26/255, 32/255, 42/255, 1.0)
+        self:SetBackdropBorderColor(50/255, 60/255, 75/255, 0.8)
+        self.Label:SetTextColor(204/255, 204/255, 204/255, 1.0)
+        UI:HidePrivateTooltip()
+    end)
+    settingsBtn:SetScript("OnClick", function()
+        UI:ToggleCommandDeck(false)
+        UI:ShowSettingsModal()
+    end)
+    UI.SettingsButton = settingsBtn
+    currentY = currentY - 32
+
+    -- Sync Button
+    local syncBtn = CreateFrame("Button", nil, deck, "BackdropTemplate")
+    syncBtn:SetSize(242, 28)
+    syncBtn:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
+    syncBtn:EnableMouse(true)
+    syncBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    syncBtn:SetBackdropColor(18/255, 32/255, 28/255, 1.0)
+    syncBtn:SetBackdropBorderColor(16/255, 185/255, 129/255, 0.7)
+    local syncLabel = syncBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    syncLabel:SetPoint("LEFT", syncBtn, "LEFT", 10, 0)
+    syncLabel:SetTextColor(16/255, 185/255, 129/255, 1.0)
+    syncLabel:SetText("💾  Save & Sync Kills")
+    if syncLabel.SetFont then local f, s = syncLabel:GetFont(); syncLabel:SetFont(f, s or 10, "OUTLINE") end
+    syncBtn.Label = syncLabel
+    syncBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(24/255, 48/255, 38/255, 1.0)
+        self:SetBackdropBorderColor(52/255, 211/255, 153/255, 1.0)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Save & Sync Kills|r", "Flushes all in-memory combat records to SavedVariables on disk via /reload.")
+    end)
+    syncBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(18/255, 32/255, 28/255, 1.0)
+        self:SetBackdropBorderColor(16/255, 185/255, 129/255, 0.7)
+        UI:HidePrivateTooltip()
+    end)
+    syncBtn:SetScript("OnClick", function()
+        if InCombatLockdown and InCombatLockdown() then return end
+        WoWKillboardDB = WoWKillboardDB or {}
+        WoWKillboardDB.lastManualSync = time()
+        ReloadUI()
+    end)
+    UI.SyncButton = syncBtn
+    currentY = currentY - 36
+
+    -- Drawer Footer (Version & ESC Dismiss Hint)
+    local footerVer = deck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    footerVer:SetPoint("BOTTOMLEFT", deck, "BOTTOMLEFT", 14, 28)
+    footerVer:SetTextColor(140/255, 150/255, 165/255, 1.0)
+    footerVer:SetText(string.format("WoW Killboard v%s", KB.Version or "1.0.7"))
+    if footerVer.SetFont then local f, s = footerVer:GetFont(); footerVer:SetFont(f, 9, "OUTLINE") end
+
+    local footerHint = deck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    footerHint:SetPoint("BOTTOMLEFT", deck, "BOTTOMLEFT", 14, 12)
+    footerHint:SetTextColor(90/255, 100/255, 115/255, 1.0)
+    footerHint:SetText("Press ESC or click outside to close")
+    if footerHint.SetFont then local f, s = footerHint:GetFont(); footerHint:SetFont(f, 8, "OUTLINE") end
+
+    deck:Hide()
+    UI.CommandDeck = deck
+    UI:UpdateRulesetButton()
+end
+
 -- Construct the main frame
 function UI:CreateMainWindow()
     if mainFrame then return end
@@ -1044,6 +1467,9 @@ function UI:CreateMainWindow()
     mainFrame:SetScript("OnHide", function(self)
         if self.EnableKeyboard then self:EnableKeyboard(false) end
         if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(true) end
+        if UI.CommandDeck and UI.CommandDeck:IsShown() then
+            UI:ToggleCommandDeck(false)
+        end
     end)
     mainFrame:SetScript("OnKeyDown", function(self, key)
         if not self:IsShown() then
@@ -1051,6 +1477,11 @@ function UI:CreateMainWindow()
             return
         end
         if key == "ESCAPE" then
+            if UI.CommandDeck and UI.CommandDeck:IsShown() then
+                if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
+                UI:ToggleCommandDeck(false)
+                return
+            end
             if UI.DetailModal and UI.DetailModal:IsShown() then
                 if self.SetPropagateKeyboardInput then self:SetPropagateKeyboardInput(false) end
                 UI.DetailModal:Hide()
@@ -1080,10 +1511,10 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {1.0, 1.0, 1.0, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
-    -- 1. Integrated Character Portrait Medallion (48x48, docked TOPLEFT (10, -6), Strata HIGH)
+    -- 1. Integrated Character Portrait Medallion (48x48, docked TOPLEFT (38, -6), Strata HIGH)
     local portraitFrame = CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")
     portraitFrame:SetSize(48, 48)
-    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -6)
+    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 38, -6)
     portraitFrame:SetFrameStrata("HIGH")
 
     local portBg = portraitFrame:CreateTexture(nil, "BACKGROUND", nil, -1)
@@ -1199,17 +1630,52 @@ function UI:CreateMainWindow()
     headerBar:SetBackdropBorderColor(0, 0, 0, 1.0)
     UI.HeaderBar = headerBar
 
+    -- Master Hamburger Navigation Button [☰] (Triggers Slide-Out Command Deck Drawer)
+    local hamburgerBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
+    hamburgerBtn:SetSize(24, 24)
+    hamburgerBtn:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
+    hamburgerBtn:EnableMouse(true)
+    hamburgerBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    hamburgerBtn:SetBackdropColor(24/255, 32/255, 44/255, 0.95)
+    hamburgerBtn:SetBackdropBorderColor(212/255, 175/255, 55/255, 0.8)
+    local hamburgerIcon = hamburgerBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    hamburgerIcon:SetPoint("CENTER", 0, 0)
+    hamburgerIcon:SetTextColor(1.0, 0.82, 0.0, 1.0)
+    hamburgerIcon:SetText("☰")
+    if hamburgerIcon.SetFont then local f, s = hamburgerIcon:GetFont(); hamburgerIcon:SetFont(f, (s or 13), "OUTLINE") end
+    hamburgerBtn.Icon = hamburgerIcon
+
+    hamburgerBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(36/255, 48/255, 68/255, 1.0)
+        self:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Command Deck [☰]|r", "Open tactical operations, campaign ruleset switcher, settings, and killboard feeds.")
+    end)
+    hamburgerBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(24/255, 32/255, 44/255, 0.95)
+        self:SetBackdropBorderColor(212/255, 175/255, 55/255, 0.8)
+        UI:HidePrivateTooltip()
+    end)
+    hamburgerBtn:SetScript("OnClick", function()
+        UI:ToggleCommandDeck()
+    end)
+    UI.HamburgerButton = hamburgerBtn
+
     -- 1px bottom divider
     local headerDiv = headerBar:CreateTexture(nil, "OVERLAY")
     headerDiv:SetHeight(1)
-    headerDiv:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 68, 0)
+    headerDiv:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 94, 0)
     headerDiv:SetPoint("BOTTOMRIGHT", headerBar, "BOTTOMRIGHT", 0, 0)
     headerDiv:SetColorTexture(40/255, 50/255, 65/255, 0.8)
     headerBar.Divider = headerDiv
 
-    -- Addon Title (Anchored vertically centered in headerBar, offset 68px to clear portrait dock)
+    -- Addon Title (Anchored vertically centered in headerBar, offset 94px to clear portrait dock)
     local title = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("LEFT", headerBar, "LEFT", 68, 0)
+    title:SetPoint("LEFT", headerBar, "LEFT", 94, 0)
     title:SetTextColor(1.0, 0.82, 0.0, 1.0)
     title:SetText("WoW Killboard")
     if title.SetFont then local f, s = title:GetFont(); title:SetFont(f, (s or 12) + 1, "OUTLINE") end
@@ -1220,7 +1686,7 @@ function UI:CreateMainWindow()
     local verTag = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     verTag:SetPoint("LEFT", title, "RIGHT", 6, 0)
     verTag:SetTextColor(102/255, 102/255, 102/255, 1.0)
-    verTag:SetText(string.format("v%s", KB.Version or "1.0.6"))
+    verTag:SetText(string.format("v%s", KB.Version or "1.0.7"))
     if verTag.SetFont then local f, s = verTag:GetFont(); verTag:SetFont(f, s or 10, "OUTLINE") end
     verTag:SetShadowOffset(0, 0)
     UI.VersionText = verTag
@@ -1247,7 +1713,7 @@ function UI:CreateMainWindow()
     realmBadge.Label = realmTag
     UI.RealmBadge = realmTag
 
-    -- Right Controls: Close (X), Settings, Sync
+    -- Right Controls: Close (X)
     local closeBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
     closeBtn:SetSize(22, 22)
     closeBtn:SetPoint("RIGHT", headerBar, "RIGHT", -10, 0)
@@ -1272,137 +1738,26 @@ function UI:CreateMainWindow()
     closeBtn:SetScript("OnClick", function() mainFrame:Hide() end)
     UI.CloseButton = closeBtn
 
-    local settingsBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
-    settingsBtn:SetSize(54, 22)
-    settingsBtn:SetPoint("RIGHT", closeBtn, "LEFT", -6, 0)
-    settingsBtn:EnableMouse(true)
-    settingsBtn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    settingsBtn:SetBackdropColor(26/255, 32/255, 42/255, 1.0)
-    settingsBtn:SetBackdropBorderColor(50/255, 60/255, 75/255, 0.8)
-    local settingsLabel = settingsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    settingsLabel:SetPoint("CENTER", 0, 0)
-    settingsLabel:SetTextColor(204/255, 204/255, 204/255, 1.0)
-    settingsLabel:SetText("Settings")
-    if settingsLabel.SetFont then local f, s = settingsLabel:GetFont(); settingsLabel:SetFont(f, s or 10, "OUTLINE") end
-    settingsLabel:SetShadowOffset(0, 0)
-    settingsBtn.Label = settingsLabel
-    settingsBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropColor(36/255, 44/255, 58/255, 1.0)
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Settings & Preferences|r", "Configure Theme, Alert Banners, Sound, Mute Death Marks, Combat Feed & Data Export.")
-    end)
-    settingsBtn:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(26/255, 32/255, 42/255, 1.0)
-        UI:HidePrivateTooltip()
-    end)
-    settingsBtn:SetScript("OnClick", function() UI:ShowSettingsModal() end)
-    UI.SettingsButton = settingsBtn
-
-    local syncBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
-    syncBtn:SetSize(46, 22)
-    syncBtn:SetPoint("RIGHT", settingsBtn, "LEFT", -6, 0)
-    syncBtn:EnableMouse(true)
-    syncBtn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    syncBtn:SetBackdropColor(26/255, 32/255, 42/255, 1.0)
-    syncBtn:SetBackdropBorderColor(16/255, 185/255, 129/255, 0.6)
-    local syncLabel = syncBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    syncLabel:SetPoint("CENTER", 0, 0)
-    syncLabel:SetTextColor(16/255, 185/255, 129/255, 1.0)
-    syncLabel:SetText("Sync")
-    if syncLabel.SetFont then local f, s = syncLabel:GetFont(); syncLabel:SetFont(f, s or 10, "OUTLINE") end
-    syncLabel:SetShadowOffset(0, 0)
-    syncBtn.Label = syncLabel
-    syncBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropColor(36/255, 44/255, 58/255, 1.0)
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Save & Sync Kills|r", "Flushes all in-memory combat records to SavedVariables on disk via /reload.")
-    end)
-    syncBtn:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(26/255, 32/255, 42/255, 1.0)
-        UI:HidePrivateTooltip()
-    end)
-    syncBtn:SetScript("OnClick", function()
-        if InCombatLockdown and InCombatLockdown() then return end
-        WoWKillboardDB = WoWKillboardDB or {}
-        WoWKillboardDB.lastManualSync = time()
-        ReloadUI()
-    end)
-    UI.SyncButton = syncBtn
-
-    -- Mode Switcher Segmented Toggle: [ ⚔ PvP Combat ] and [ 💀 PvE Hazards ]
-    local modeBar = CreateFrame("Frame", nil, headerBar, "BackdropTemplate")
-    modeBar:SetSize(224, 24)
-    modeBar:SetPoint("RIGHT", syncBtn, "LEFT", -10, 0)
-    modeBar:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    modeBar:SetBackdropColor(14/255, 18/255, 24/255, 1.0)
-    modeBar:SetBackdropBorderColor(40/255, 50/255, 65/255, 0.7)
-
-    -- [PVP STATS] mode toggle button
-    local pvpBtn = CreateFrame("Button", nil, modeBar, "BackdropTemplate")
-    pvpBtn:SetSize(110, 20)
-    pvpBtn:SetPoint("LEFT", modeBar, "LEFT", 2, 0)
-    pvpBtn:EnableMouse(true)
-    pvpBtn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    local pvpLabel = pvpBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    pvpLabel:SetPoint("CENTER", 0, 0)
-    pvpLabel:SetText("⚔ PvP Combat")
-    if pvpLabel.SetFont then local f, s = pvpLabel:GetFont(); pvpLabel:SetFont(f, s or 10, "OUTLINE") end
-    pvpBtn.Label = pvpLabel
-
-    -- [PVE STATS] mode toggle button
-    local pveBtn = CreateFrame("Button", nil, modeBar, "BackdropTemplate")
-    pveBtn:SetSize(110, 20)
-    pveBtn:SetPoint("RIGHT", modeBar, "RIGHT", -2, 0)
-    pveBtn:EnableMouse(true)
-    pveBtn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    local pveLabel = pveBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    pveLabel:SetPoint("CENTER", 0, 0)
-    pveLabel:SetText("💀 PvE Hazards")
-    if pveLabel.SetFont then local f, s = pveLabel:GetFont(); pveLabel:SetFont(f, s or 10, "OUTLINE") end
-    pveBtn.Label = pveLabel
-
     function UI:UpdateRulesetButton()
         local isPve = UI:IsPve()
-        local aR, aG, aB, aHex = WoWKB.AccentColor()
-        if isPve then
-            pveBtn:SetBackdropColor(20/255, 45/255, 30/255, 1.0)
-            pveBtn:SetBackdropBorderColor(16/255, 185/255, 129/255, 0.9)
-            pveBtn.Label:SetTextColor(16/255, 185/255, 129/255, 1.0)
+        if UI.PvpModeBtn and UI.PveModeBtn then
+            if isPve then
+                UI.PveModeBtn:SetBackdropColor(20/255, 45/255, 30/255, 1.0)
+                UI.PveModeBtn:SetBackdropBorderColor(16/255, 185/255, 129/255, 0.9)
+                UI.PveModeBtn.Label:SetTextColor(16/255, 185/255, 129/255, 1.0)
 
-            pvpBtn:SetBackdropColor(18/255, 22/255, 28/255, 0.6)
-            pvpBtn:SetBackdropBorderColor(35/255, 45/255, 55/255, 0.5)
-            pvpBtn.Label:SetTextColor(119/255, 119/255, 119/255, 1.0)
-        else
-            pvpBtn:SetBackdropColor(45/255, 20/255, 20/255, 1.0)
-            pvpBtn:SetBackdropBorderColor(239/255, 68/255, 68/255, 0.9)
-            pvpBtn.Label:SetTextColor(239/255, 68/255, 68/255, 1.0)
+                UI.PvpModeBtn:SetBackdropColor(18/255, 22/255, 28/255, 0.6)
+                UI.PvpModeBtn:SetBackdropBorderColor(35/255, 45/255, 55/255, 0.5)
+                UI.PvpModeBtn.Label:SetTextColor(119/255, 119/255, 119/255, 1.0)
+            else
+                UI.PvpModeBtn:SetBackdropColor(45/255, 20/255, 20/255, 1.0)
+                UI.PvpModeBtn:SetBackdropBorderColor(239/255, 68/255, 68/255, 0.9)
+                UI.PvpModeBtn.Label:SetTextColor(239/255, 68/255, 68/255, 1.0)
 
-            pveBtn:SetBackdropColor(18/255, 22/255, 28/255, 0.6)
-            pveBtn:SetBackdropBorderColor(35/255, 45/255, 55/255, 0.5)
-            pveBtn.Label:SetTextColor(119/255, 119/255, 119/255, 1.0)
+                UI.PveModeBtn:SetBackdropColor(18/255, 22/255, 28/255, 0.6)
+                UI.PveModeBtn:SetBackdropBorderColor(35/255, 45/255, 55/255, 0.5)
+                UI.PveModeBtn.Label:SetTextColor(119/255, 119/255, 119/255, 1.0)
+            end
         end
 
         if UI.RealmBadge then
@@ -1419,49 +1774,10 @@ function UI:CreateMainWindow()
         end
     end
 
-    pvpBtn:SetScript("OnClick", function()
-        if UI:IsPve() then
-            WoWKillboardDB = WoWKillboardDB or {}
-            local realm = (GetRealmName and GetRealmName()) or ""
-            WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
-            if realm ~= "" then WoWKillboardDB.realmRulesets[realm] = "PVP" end
-            WoWKillboardDB.campaignRuleset = "PVP"
-            if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
-            UI:UpdateRulesetButton()
-            UI:Refresh()
-        end
-    end)
-    pvpBtn:SetScript("OnEnter", function(self)
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffef4444Contested PvP Combat|r", "View player-versus-player combat ledger, bounties, and rankings.")
-    end)
-    pvpBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
-
-    pveBtn:SetScript("OnClick", function()
-        if not UI:IsPve() then
-            WoWKillboardDB = WoWKillboardDB or {}
-            local realm = (GetRealmName and GetRealmName()) or ""
-            WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
-            if realm ~= "" then WoWKillboardDB.realmRulesets[realm] = "PVE" end
-            WoWKillboardDB.campaignRuleset = "PVE"
-            if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
-            UI:UpdateRulesetButton()
-            UI:Refresh()
-        end
-    end)
-    pveBtn:SetScript("OnEnter", function(self)
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Wilderness PvE Hazards|r", "View monster executions, environmental hazards, and mortality bestiary.")
-    end)
-    pveBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
-
-    UI.RulesetButton = modeBar
-    UI.PvpModeBtn = pvpBtn
-    UI.PveModeBtn = pveBtn
-    UI:UpdateRulesetButton()
-
-    -- Real-Time Tactical Search Input Box
+    -- Real-Time Tactical Search Input Box (Expanded width 180px, cleanly anchored to left of Close button)
     local searchBox = CreateFrame("Frame", nil, headerBar, "BackdropTemplate")
-    searchBox:SetSize(150, 22)
-    searchBox:SetPoint("RIGHT", modeBar, "LEFT", -10, 0)
+    searchBox:SetSize(180, 22)
+    searchBox:SetPoint("RIGHT", closeBtn, "LEFT", -10, 0)
     searchBox:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -1557,7 +1873,7 @@ function UI:CreateMainWindow()
     -- 3. Telemetry Ribbon Strip (28px height horizontal stats bar directly under header)
     local metricsBar = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
     metricsBar:SetHeight(28)
-    metricsBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 68, -44)
+    metricsBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 94, -44)
     metricsBar:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -10, -44)
     metricsBar:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -1630,42 +1946,64 @@ function UI:CreateMainWindow()
     ribbonText:SetText("|cff888888REALM:|r |cffffffff0|r  |cff444444|  |cff88888824H:|r |cffffffff0|r  |cff444444|  |cff888888PVE CASUALTIES:|r |cffff80000|r  |cff444444|  |cff888888HOT ZONE:|r |cffffd200Scanning...|r")
     UI.TelemetryText = ribbonText
 
-    -- 4. Nav Tabs Bar (30px height) - Exactly 5 clean tabs
-    local tabs = {
-        { id = "FEED",        text = "Intel",         w = 64 },
-        { id = "LEADERBOARD", text = "Leaderboards",  w = 98 },
-        { id = "BOUNTIES",    text = "The Marked",    w = 86 },
-        { id = "RALLIES",     text = "Call to Arms",  w = 90 },
-        { id = "ZONES",       text = "Danger Zones",  w = 92 },
-    }
+    -- 4. Sub-Bar Navigation (Active View Badge & Mode Filter Pills)
+    -- Left: Active View Badge (Permanent trigger for Command Deck drawer)
+    local activeViewBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
+    activeViewBtn:SetSize(210, 24)
+    activeViewBtn:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -74)
+    activeViewBtn:EnableMouse(true)
+    activeViewBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    activeViewBtn:SetBackdropColor(0.08, 0.11, 0.16, 0.95)
+    activeViewBtn:SetBackdropBorderColor(0.58, 0.45, 0.22, 0.7)
 
-    tabButtons = {}
-    local prevTab = nil
-    for _, t in ipairs(tabs) do
-        local btn = UI:CreateButton(mainFrame, t.w, 24, t.text, "GameFontHighlightSmall")
-        if not prevTab then
-            btn:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -74)
-        else
-            btn:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
-        end
-        local tabId = t.id
-        btn:SetScript("OnClick", function()
-            activeTab = tabId
-            UI:Refresh()
-        end)
+    local activeViewIcon = activeViewBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    activeViewIcon:SetPoint("LEFT", activeViewBtn, "LEFT", 8, 0)
+    activeViewIcon:SetTextColor(1.0, 0.82, 0.0, 1.0)
+    activeViewIcon:SetText("☰")
+    if activeViewIcon.SetFont then local f, s = activeViewIcon:GetFont(); activeViewIcon:SetFont(f, (s or 12), "OUTLINE") end
+    activeViewBtn.Icon = activeViewIcon
 
-        -- 2px Solid Bright Gold Bottom Line Accent for Web 1:1 Parity
-        local bottomAccent = btn:CreateTexture(nil, "OVERLAY")
-        bottomAccent:SetHeight(2)
-        bottomAccent:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
-        bottomAccent:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
-        bottomAccent:SetColorTexture(0.85, 0.70, 0.25, 1.0)
-        bottomAccent:Hide()
-        btn.bottomAccent = bottomAccent
+    local activeViewLabel = activeViewBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    activeViewLabel:SetPoint("LEFT", activeViewIcon, "RIGHT", 6, 0)
+    activeViewLabel:SetTextColor(1.0, 1.0, 1.0, 1.0)
+    activeViewLabel:SetText("INTEL FEED")
+    if activeViewLabel.SetFont then local f, s = activeViewLabel:GetFont(); activeViewLabel:SetFont(f, s or 10, "OUTLINE") end
+    activeViewBtn.Label = activeViewLabel
 
-        tabButtons[t.id] = btn
-        prevTab = btn
-    end
+    local activeViewArrow = activeViewBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    activeViewArrow:SetPoint("RIGHT", activeViewBtn, "RIGHT", -8, 0)
+    activeViewArrow:SetTextColor(0.85, 0.70, 0.25, 1.0)
+    activeViewArrow:SetText("▾")
+    if activeViewArrow.SetFont then local f, s = activeViewArrow:GetFont(); activeViewArrow:SetFont(f, (s or 10) + 1, "OUTLINE") end
+    activeViewBtn.Arrow = activeViewArrow
+
+    -- 2px Solid Bright Gold Bottom Line Accent
+    local activeViewAccent = activeViewBtn:CreateTexture(nil, "OVERLAY")
+    activeViewAccent:SetHeight(2)
+    activeViewAccent:SetPoint("BOTTOMLEFT", activeViewBtn, "BOTTOMLEFT", 0, 0)
+    activeViewAccent:SetPoint("BOTTOMRIGHT", activeViewBtn, "BOTTOMRIGHT", 0, 0)
+    activeViewAccent:SetColorTexture(0.85, 0.70, 0.25, 1.0)
+    activeViewBtn.bottomAccent = activeViewAccent
+
+    activeViewBtn:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(0.12, 0.16, 0.23, 1.0)
+        self:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Command Deck Navigator|r", "Click to switch views, inspect bounties, adjust ruleset, or open settings.")
+    end)
+    activeViewBtn:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(0.08, 0.11, 0.16, 0.95)
+        self:SetBackdropBorderColor(0.58, 0.45, 0.22, 0.7)
+        UI:HidePrivateTooltip()
+    end)
+    activeViewBtn:SetScript("OnClick", function()
+        UI:ToggleCommandDeck()
+    end)
+    UI.ActiveViewBadge = activeViewBtn
 
     -- Mode Filter Pills on right of Nav Bar: [ World ] [ BGs ] [ Duels ] [ Arenas ]
     -- Ordered right-to-left so they display left-to-right: [ World ] [ BGs ] [ Duels ] [ Arenas ]
@@ -2189,6 +2527,9 @@ function UI:CreateMainWindow()
     -- Detail Modal Frame
     UI:CreateDetailModal()
 
+    -- Slide-Out Command Deck Drawer Frame
+    UI:CreateCommandDeck()
+
     -- Frontline Kill Banner
     UI:InitializeKillBanner()
 
@@ -2300,20 +2641,18 @@ function UI:Refresh()
         ZONES       = { text = "Danger Zones",       w = 92 },
     }
     local tabDefs = isPveMode and pveTabDefs or pvpTabDefs
-    local prevTab = nil
     for _, tid in ipairs(tabOrder) do
         local btn = tabButtons and tabButtons[tid]
         local def = tabDefs[tid]
-        if btn and def then
-            btn:SetWidth(def.w)
-            if btn.Label then btn.Label:SetText(def.text) end
-            btn:ClearAllPoints()
-            if not prevTab then
-                btn:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -74)
-            else
-                btn:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
+        if btn and def and btn.Label then
+            local iconPrefix = ""
+            if tid == "FEED" then iconPrefix = "⚔  "
+            elseif tid == "LEADERBOARD" then iconPrefix = "🏆  "
+            elseif tid == "ZONES" then iconPrefix = "🗺️  "
+            elseif tid == "BOUNTIES" then iconPrefix = "💀  "
+            elseif tid == "RALLIES" then iconPrefix = "📢  "
             end
-            prevTab = btn
+            btn.Label:SetText(iconPrefix .. def.text)
         end
     end
 
@@ -2483,39 +2822,40 @@ function UI:Refresh()
 
     local theme = UI:GetTheme()
 
+    -- Update Sub-Bar Active View Badge
+    if UI.ActiveViewBadge and UI.ActiveViewBadge.Label then
+        local activeTitle = "INTEL FEED"
+        if activeTab == "FEED" then
+            activeTitle = isPveMode and "CASUALTIES" or "INTEL FEED"
+        elseif activeTab == "LEADERBOARD" then
+            activeTitle = isPveMode and "DEADLY HAZARDS" or "LEADERBOARDS"
+        elseif activeTab == "BOUNTIES" then
+            activeTitle = isPveMode and "NOTORIOUS ELITES" or "THE MARKED"
+        elseif activeTab == "RALLIES" then
+            activeTitle = isPveMode and "RESCUE BEACONS" or "CALL TO ARMS"
+        elseif activeTab == "ZONES" then
+            activeTitle = isPveMode and "ZONE MORTALITY" or "DANGER ZONES"
+        end
+        UI.ActiveViewBadge.Label:SetText(activeTitle)
+    end
+
     -- Update Tab Button Highlights
     for tid, btn in pairs(tabButtons) do
         if tid == activeTab then
             btn.isActive = true
-            if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
-            if theme.id == "wkb" or theme.id == "web" then
-                -- Match Web Header: Background dark slate (0.08, 0.11, 0.16, 1.0), 2px solid bright gold bottom line (0.85, 0.70, 0.25, 1.0), font solid white bold (1.0, 1.0, 1.0, 1.0)
-                btn:SetBackdropColor(0.08, 0.11, 0.16, 1.0)
-                btn:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
-                btn.Label:SetTextColor(1.0, 1.0, 1.0, 1.0)
-                if btn.bottomAccent then
-                    btn.bottomAccent:SetColorTexture(0.85, 0.70, 0.25, 1.0)
-                    btn.bottomAccent:Show()
-                end
-            else
-                btn:SetBackdropColor(unpack(theme.btnActiveBg or {0.20, 0.20, 0.20, 1.0}))
-                btn:SetBackdropBorderColor(aR, aG, aB, 1.0)
-                btn.Label:SetTextColor(aR, aG, aB, 1.0)
-                if btn.bottomAccent then btn.bottomAccent:Hide() end
+            btn:SetBackdropColor(0.12, 0.18, 0.28, 1.0)
+            btn:SetBackdropBorderColor(0.85, 0.70, 0.25, 1.0)
+            if btn.Label then btn.Label:SetTextColor(1.0, 0.85, 0.2, 1.0) end
+            if btn.bottomAccent then
+                btn.bottomAccent:SetColorTexture(0.85, 0.70, 0.25, 1.0)
+                btn.bottomAccent:Show()
             end
         else
             btn.isActive = false
             if btn.bottomAccent then btn.bottomAccent:Hide() end
-            if theme.btnBackdrop then btn:SetBackdrop(theme.btnBackdrop) end
-            btn:SetBackdropColor(unpack(theme.btnBg))
-            btn:SetBackdropBorderColor(unpack(theme.btnBorder))
-            if theme.id == "classic" then
-                btn.Label:SetTextColor(0.85, 0.75, 0.60)
-            elseif theme.id == "wkb" or theme.id == "web" then
-                btn.Label:SetTextColor(0.612, 0.639, 0.686, 1.0)
-            else
-                btn.Label:SetTextColor(0.65, 0.65, 0.65)
-            end
+            btn:SetBackdropColor(0.06, 0.08, 0.12, 0.85)
+            btn:SetBackdropBorderColor(0.18, 0.24, 0.32, 0.7)
+            if btn.Label then btn.Label:SetTextColor(0.85, 0.88, 0.92, 1.0) end
         end
     end
 

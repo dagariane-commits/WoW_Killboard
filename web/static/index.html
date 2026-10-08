@@ -13,31 +13,29 @@
 <body>
 
   <!-- Consolidated Sticky Header (56px) -->
+  <!-- Consolidated Sticky Header (56px) with Permanent Hamburger Command Deck -->
   <header class="site-header">
     <div class="header-main-row">
-      <!-- 1. Brand & Active Theater -->
+      <!-- 1. Master Command Deck Trigger & Brand -->
       <div class="header-brand-group">
-        <div class="logo-group" onclick="switchTab('INTEL')">
+        <button id="command-deck-btn" class="command-deck-btn" aria-label="Open Command Deck Navigation" onclick="toggleMobileDrawer()" title="Open Command Deck (Tabs &amp; Tools)">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+
+        <div class="logo-group" onclick="switchTab('INTEL')" title="WoW Killboard — Return to War Room">
           <div class="logo-title">WoW Killboard</div>
         </div>
 
         <div class="header-theater-wrap">
-          <button id="nav-theater" class="nav-btn theater-btn" onclick="switchTab('THEATER')" title="Active Theater of War / Select Version">
-            <span class="theater-label">Theater:</span> <strong id="theater-nav-version" class="theater-version-name">WoW Forever</strong> <span id="theater-nav-server" class="theater-server-pill" onclick="event.stopPropagation(); openServerSelectorModal();" title="Click to Switch Realm Server">PvP</span> <span class="theater-caret">▾</span>
+          <button id="nav-theater" class="nav-btn theater-btn" onclick="openServerSelectorModal()" title="Active Theater of War / Click to Select Realm">
+            <span class="theater-label">Theater:</span> <strong id="theater-nav-version" class="theater-version-name">WoW Forever</strong> <span id="theater-nav-server" class="theater-server-pill">PvP</span> <span class="theater-caret">▾</span>
           </button>
         </div>
       </div>
 
-      <!-- 2. Core Navigation Rail -->
-      <nav class="nav-links-rail" id="nav-rail">
-        <button id="nav-intel" class="nav-btn active" onclick="switchTab('INTEL')">Intel</button>
-        <button id="nav-legends" class="nav-btn" onclick="switchTab('LEGENDS')">Leaderboards</button>
-        <button id="nav-hazards" class="nav-btn" onclick="switchTab('HAZARDS')">Deadly Hazards</button>
-        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')">Bounties &amp; Manhunt</button>
-        <button id="nav-zones" class="nav-btn" onclick="switchTab('ZONES')">Zone Intel</button>
-      </nav>
-
-      <!-- 3. Global Omni-Search -->
+      <!-- 2. Global Omni-Search -->
       <div class="header-search-wrap" id="header-search-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="global-search-input" class="global-search-input" placeholder="Search combatants, guilds, zones... (Press / to focus)" autocomplete="off" spellcheck="false" />
@@ -45,9 +43,8 @@
         <div id="search-results-dropdown" class="search-results-dropdown" style="display: none;"></div>
       </div>
 
-      <!-- 4. Action Tools, Auth, CTA & Mobile -->
+      <!-- 3. Action Tools, Auth, CTA -->
       <div class="header-tools-group">
-
         <!-- Character Authentication & Roster Switcher Badge -->
         <div id="header-auth-badge" class="header-auth-badge"></div>
 
@@ -60,27 +57,19 @@
         <!-- High-Visibility Primary Gold CTA -->
         <button id="header-download-btn" class="header-cta-gold" onclick="switchTab('DOWNLOAD')" title="Download Addon &amp; Windows Desktop Companion">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Get the Addon</span>
-        </button>
-
-        <!-- War Archivist AI Trigger -->
-        <button id="oracle-chat-trigger" class="header-util-btn" onclick="toggleOracleChat()">
-          <span class="icon">&#128214;</span> Archivist
-        </button>
-        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Open Navigation Menu" onclick="toggleMobileDrawer()">
-          &#9776;
+          <span>Get Addon</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Mobile Slide-In Navigation Drawer -->
+  <!-- Slide-In Command Deck Navigation Drawer -->
   <div id="mobile-drawer-backdrop" class="mobile-drawer-backdrop" onclick="toggleMobileDrawer(false)"></div>
-  <aside id="mobile-drawer" class="mobile-drawer">
+  <aside id="mobile-drawer" class="mobile-drawer command-deck-drawer">
     <div class="mobile-drawer-header">
       <div class="logo-group">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--wow-gold)" stroke-width="2" class="logo-swords-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M9.5 17.5 21 6V3h-3L6.5 14.5"/><path d="m11 19-6-6"/><path d="M8 16l-4 4"/><path d="M5 21l-2-2"/></svg>
-        <div class="logo-title" style="font-size: 1.15rem;">WoW Killboard</div>
+        <div class="logo-title" style="font-size: 1.15rem; letter-spacing: 1px;">COMMAND DECK</div>
       </div>
       <button class="drawer-close-btn" onclick="toggleMobileDrawer(false)">&times;</button>
     </div>
@@ -88,7 +77,7 @@
     <div class="mobile-drawer-body">
       <!-- 1. Realm & Identity Section -->
       <div class="drawer-section">
-        <div class="mobile-drawer-label">REALM &amp; IDENTITY</div>
+        <div class="mobile-drawer-label">ACTIVE THEATER &amp; IDENTITY</div>
         
         <!-- Active Character Badge / Claim Character Button -->
         <div id="mobile-auth-badge" class="mobile-auth-badge"></div>
@@ -106,70 +95,73 @@
         </div>
       </div>
 
-      <!-- Search Input (shown only on mobile <= 768px, hidden on desktop > 1024px) -->
-      <div class="mobile-search-box">
-        <input type="text" id="mobile-search-box-input" class="search-input" style="width:100%;" placeholder="Search combatants, guilds, zones..." oninput="handleMobileSearch(event)">
-      </div>
-
-      <!-- 2. Combat Intelligence Section -->
+      <!-- 2. Combat Operations Section -->
       <div class="drawer-section">
-        <div class="mobile-drawer-label">COMBAT INTELLIGENCE</div>
+        <div class="mobile-drawer-label">COMBAT OPERATIONS</div>
         <div class="mobile-nav-list">
           <button class="mobile-nav-item active" id="m-nav-intel" onclick="switchTab('INTEL'); toggleMobileDrawer(false);">
-            <span>Intel</span>
+            <span>⚔️ Live Killfeed &amp; Intel</span>
             <span class="drawer-arrow">&rarr;</span>
           </button>
           <button class="mobile-nav-item" id="m-nav-legends" onclick="switchTab('LEGENDS'); toggleMobileDrawer(false);">
-            <span>Leaderboards</span>
-            <span class="drawer-arrow">&rarr;</span>
-          </button>
-          <button class="mobile-nav-item" id="m-nav-hazards" onclick="switchTab('HAZARDS'); toggleMobileDrawer(false);">
-            <span>Deadly Hazards</span>
-            <span class="drawer-arrow">&rarr;</span>
-          </button>
-          <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
-            <span>Bounties &amp; Manhunt</span>
+            <span>🏆 Player Leaderboards</span>
             <span class="drawer-arrow">&rarr;</span>
           </button>
           <button class="mobile-nav-item" id="m-nav-zones" onclick="switchTab('ZONES'); toggleMobileDrawer(false);">
-            <span>Zone Intel</span>
+            <span>🗺️ Zone Intel &amp; Hotspots</span>
             <span class="drawer-arrow">&rarr;</span>
           </button>
         </div>
       </div>
 
-      <!-- 3. Tools & Automation Section -->
+      <!-- 3. Bounties & Targets Section -->
       <div class="drawer-section">
-        <div class="mobile-drawer-label">TOOLS &amp; AUTOMATION</div>
+        <div class="mobile-drawer-label">BOUNTIES &amp; TARGETS</div>
         <div class="mobile-nav-list">
+          <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
+            <span>🩸 The Blood Ledger (Bounties)</span>
+            <span class="drawer-arrow">&rarr;</span>
+          </button>
+          <button class="mobile-nav-item" id="m-nav-hazards" onclick="switchTab('HAZARDS'); toggleMobileDrawer(false);">
+            <span>💀 Apex Bestiary (PvE Hazards)</span>
+            <span class="drawer-arrow">&rarr;</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. Tactical Tools Section -->
+      <div class="drawer-section">
+        <div class="mobile-drawer-label">TACTICAL TOOLS</div>
+        <div class="mobile-nav-list">
+          <button class="mobile-nav-item" id="m-nav-theater" onclick="switchTab('THEATER'); toggleMobileDrawer(false);">
+            <span>📡 Theater of War</span>
+            <span class="drawer-arrow">&rarr;</span>
+          </button>
           <button class="mobile-nav-item" id="m-nav-upload" onclick="switchTab('UPLOAD'); toggleMobileDrawer(false);">
-            <span>Upload Combat Log</span>
+            <span>📥 Upload Combat Log</span>
             <span class="drawer-arrow">&rarr;</span>
           </button>
           <button class="mobile-nav-item primary-addon-cta" id="m-nav-download" onclick="switchTab('DOWNLOAD'); toggleMobileDrawer(false);">
-            <span>Get the Addon &amp; Field Kit</span>
-            <span class="drawer-arrow">&rarr;</span>
-          </button>
-          <button class="mobile-nav-item" id="m-nav-archivist" onclick="toggleOracleChatModal(); toggleMobileDrawer(false);" style="color:var(--accent-cyan); font-weight:600;">
-            <span>Consult War Archivist (AI)</span>
+            <span>📦 Field Kit &amp; Addon Packages</span>
             <span class="drawer-arrow">&rarr;</span>
           </button>
         </div>
       </div>
 
-      <!-- Optional Mobile Auth Mount -->
-      <div id="mobile-auth-section"></div>
-
-      <!-- 4. System Section (Subtle footer rail) -->
+      <!-- 5. System & Feedback Section -->
       <div class="drawer-section drawer-system-footer">
-        <div class="mobile-drawer-label" style="font-size:0.65rem; color:#64748b;">SYSTEM</div>
-        <div class="mobile-nav-list" style="gap: 4px;">
-          <button class="mobile-nav-item system-nav-item" onclick="openBugReportsModal(); toggleMobileDrawer(false);">
-            <span>Field Bug Dispatches</span>
+        <div class="mobile-drawer-label">SYSTEM &amp; FEEDBACK</div>
+        <div class="mobile-nav-list" style="gap: 6px;">
+          <button class="mobile-nav-item" id="m-nav-archivist" onclick="toggleOracleChat(); toggleMobileDrawer(false);" style="color:var(--accent-cyan); font-weight:600;">
+            <span>🤖 Consult War Archivist (AI)</span>
             <span class="drawer-arrow">&rarr;</span>
           </button>
-          <button class="mobile-nav-item system-nav-item" onclick="scrollToTosPolicy(); toggleMobileDrawer(false);">
-            <span>Blizzard Add-on Policy &amp; Guarantee</span>
+          <button class="mobile-nav-item" onclick="openBugReportsModal(); toggleMobileDrawer(false);" style="color:#ef4444; font-weight:600;">
+            <span>💬 Field Bug Dispatches</span>
+            <span class="drawer-arrow">&rarr;</span>
+          </button>
+          <button class="mobile-nav-item" onclick="promptAdminAccess(); toggleMobileDrawer(false);" style="color:#64748b;">
+            <span>⚙️ Admin Console</span>
             <span class="drawer-arrow">&rarr;</span>
           </button>
         </div>
@@ -467,7 +459,7 @@
       <div class="footer-links">
         <a href="javascript:void(0)" onclick="switchTab('DOWNLOAD')">Field Kit &amp; Specs</a> &bull;
         <a href="javascript:void(0)" onclick="openBugReportsModal()" style="color: #ef4444; font-weight: 600;">Field Bug Dispatches</a> &bull;
-        <a href="/WoWKillboard-v1.0.6.zip" download>Direct Download (.zip)</a> &bull;
+        <a href="/WoWKillboard-v1.0.7.zip" download>Direct Download (.zip)</a> &bull;
         <a href="javascript:void(0)" onclick="switchTab('THEATER')">Theater of War</a> &bull;
         <a href="javascript:void(0)" onclick="promptAdminAccess()" style="color: #64748b;" title="Master Database Administration">Admin Console</a>
       </div>
