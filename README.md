@@ -74,13 +74,19 @@ flowchart TD
 ## Core Feature Highlights
 
 ### 1. In-Game Addon (`Addon/WoWKillboard/`)
-- **Top-Left Character Portrait & Medallion Badge**:
-  - Circular unit-frame player portrait (`WoWKillboardPlayerPortrait`, 50x50) anchored to the top-left at `(-14, 14)` on strata `HIGH` with circular alpha mask and 62x62 gold trim ring (`MiniMap-TrackingBorder`).
-  - Overlapping 22x22 level circle at `BOTTOMRIGHT` displaying bold gold player level text (`#FFD100`) updating dynamically on `PLAYER_LEVEL_UP`.
+- **Integrated Character Portrait Medallion & Dynamic Level Coin**:
+  - Circular unit-frame player portrait (`WoWKillboardPlayerPortrait`, 48x48) anchored to the top-left at `(12, -8)` on strata `HIGH` with circular alpha mask and proportional 60x60 gold tracking ring (`MiniMap-TrackingBorder`).
+  - Overlapping 20x20 circular level medallion at `BOTTOMRIGHT (2, -2)` displaying bold gold player level text updating dynamically on `UNIT_LEVEL`, `PLAYER_LEVEL_UP`, and `PLAYER_XP_UPDATE`. Title string `WoW Killboard v1.0.5` anchored vertically centered with the portrait center at `(10, 0)`.
 - **Rich Red & Blue Faction Pill Badges & Telemetry Split Bar**:
   - High-contrast rounded solid pill badges for faction columns: Solid Royal Blue `#103894` with cyan border and Alliance crest for Alliance; Solid Crimson Red `#8C1414` with orange-red border and Horde crest for Horde.
   - Telemetry ribbon visual progress bar (`UI.FactionSplitBar`, 140x12) rendering dynamic real-time Alliance/Horde war splits with drop-shadowed white text.
-  - Local player row highlight (`[YOU]`): 1px gold border outline (`0.85, 0.70, 0.30, 1.0`) with faction-tinted horizontal gradients across leaderboards and feeds.
+  - Clean local player row highlight (`[YOU]`): subtle semi-transparent background wash on `row.highlightGrad` (`0.12, 0.16, 0.24, 0.35`) with clean text tag `|cffffd100[YOU]|r` (zero harsh border box outlines).
+- **Combat Feed Ability Icons & Zero-Truncation Zone Layout**:
+  - Compact 18x18 ability cell (width 44px, centered at `x = 248`) displaying killing blow/hazard spell icons with interactive `GameTooltip` on hover, eliminating verbose boilerplate phrases.
+  - Reallocated +64px width to the `ZONE` column (starting at `x = 448` and extending to `-6`), eliminating ellipsis clipping for complete locations like `Loch Modan (Thelsamar)` and `Undercity (Ruins of Lordaeron)`.
+  - Expanded `ATTACKER` and `VICTIM` columns to 168px each to fit long player names, `<GUILD>` tags, and `[YOU]` tags without clipping.
+- **Restyled "THE MARKED" Card Track Buttons**:
+  - Dark slate theme `(0.08, 0.11, 0.16, 0.9)` with subtle 1px slate line border `(0.20, 0.25, 0.35, 1.0)` and pale gold text `(0.9, 0.85, 0.7, 1.0)` that shifts to a radiant gold border and bright yellow text on hover.
 - **Strict 3-Theme Architecture (WKB Theme, ElvUI, Classic)**:
   - **Theme: WKB Theme (1:1 Web Mirror)**: 100% 1:1 visual parity with `wowkillboard.com`. Master canvas `#040609` (`0.015, 0.020, 0.030, 0.98`) with 1px brass border `#947338`, elevated `#0B0F17` card panels with 1px `#1E293B` borders, solid bright brass gold active pill buttons with black text, active tab gold bottom line, alternating row striping, and vivid telemetry ribbon coloring (`|cff0080ff% A|r`, `|cffff2020% H|r`, `|cffffd200Zone|r`, `|cffff8000Casualties|r`).
   - **Theme: ElvUI**: Minimalist dark styling featuring master frame `#0A0A0A`, card backdrops `#141414`, strict 1px flat black borders, and flat dark gray buttons with bright white accent borders.
@@ -158,11 +164,20 @@ flowchart TD
 - **Streaming Lua Tokenizer**: High-speed recursive-descent parser.
 
 ### 3. Frontline War Room Web Intelligence Platform (`web/`)
-- **Consolidated 56px Sticky Header & Global Omni-Search**:
-  - Restructured site navigation into an intentional high-density command bridge:
-    - **Header Row**: Brand crests, faction badges, active Theater selector, global typeahead Omni-Search bar (`/` shortcut), real-time Auth Status, and core combat tabs (`Intel`, `Leaderboards`, `Deadly Hazards`, `Bounties`, `Zone Intel`).
-    - **Contextual In-Page Mode Filters**: Dedicated filter pills (`[ ALL | WORLD | BGS | ARENAS | DUELS ]`) embedded directly inside the Recent Combat Feed (`#feed-mode-pills`) and Champions Leaderboard (`#champions-mode-pills`), eliminating sticky header duplication.
-  - Guarantees 6–8 live combat rows remain above the fold on standard 1080p viewports and 150%+ browser zoom levels.
+- **Sticky Top Combat & Leaderboard Filter Toolbar (`#top-combat-filters`)**:
+  - Repositioned filter controls directly above `#main-content-area` across desktop and mobile.
+  - **Row 1 (Timeframe)**: `[ 24 Hours ]`, `[ 7 Days ]`, `[ 30 Days ]`, `[ All-Time ]`.
+  - **Row 2 (Faction & Modes)**: `[ All ]`, `[ Alliance ]`, `[ Horde ]` | `[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`.
+  - **Sticky Mobile Sub-Bar**: `position: sticky; top: 56px; z-index: 900; background: rgba(11, 15, 23, 0.95); backdrop-filter: blur(8px); padding: 8px 12px;` on `<= 768px`.
+  - Minimum 36px touch heights, `#C69B3D` solid gold active state, `#1e293b` inactive background.
+- **High-Density Combat Feed & Compact Single-Line Mobile Rows**:
+  - Dual-layout system: 5-column fixed grid (`180px 1fr 44px 1fr 110px`) on desktop, compact single-line row (`38px–42px`) on mobile.
+  - Mobile format: `[Spec Icon] Killer (Guild) -> Victim (Guild) | Zone | 2m ago` with subtle zebra striping and victor faction accent border.
+  - Capped initial combat feed display to 12 events with a compact `Load More Recent Kills` expansion trigger.
+- **Interactive Sortable Competitive Leaderboards**:
+  - **4-Timeframe Intervals**: `[ 24 Hours ]`, `[ 7 Days ]`, `[ 30 Days ]`, `[ All-Time ]` with instant dynamic syncing.
+  - **10-Class Classic Selector Bar**: All 9 Classic classes with Blizzard class colors and instant re-ranking (`1..N`).
+  - **Interactive Column Sorting**: Clickable table headers with directional indicator arrows (`▲`/`▼`) for Rank, Combatant, Guild, Faction, Kills, Solo Kills, Deaths, K/D Ratio, Wins, Losses, and Percentile.
 - **Dynamic Most Wanted Grid Sizing**:
   - Automatically scales the Most Wanted showcase: renders as a single, sleek row of 5 slots when 5 or fewer bounties exist, pulling the combat feed up by ~180px and eliminating empty-state clutter.
 - **High-Concurrency SQLite WAL Engine & Web Admin Console**:
