@@ -23,13 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dynamically resolves spell textures via `C_Spell.GetSpellTexture`, `GetSpellTexture`, and `GetSpellInfo` with intelligent fallbacks (melee swords, fire, shadow, frost, marksman, cleave, backstab, environmental fall).
   - Reallocated ~80px reclaimed column width: expanded `ZONE` column by 64px (from `x = 512` to `x = 448`, spanning to `-6`), eliminating ellipsis truncation for full locations like `Loch Modan (Thelsamar)` and `Undercity (Ruins of Lordaeron)`.
   - Expanded `ATTACKER / KILLER` (width 168px) and `VICTIM` (width 168px) columns to prevent long player names, guild tags (e.g. `<OLYMPUS XXVII>`, `<Sabatam>`), and `[YOU]` tags from truncating.
-- **In-Header Character Portrait Medallion & Perfect Header Alignment (`Addon/WoWKillboard/UI.lua`)**:
-  - Resized and vertically centered `WoWKillboardPlayerPortrait` (`34x34` pixels) at `TOPLEFT (12, -4)`, aligning its vertical center exactly to `y = -21` within the `42px` top header bar.
-  - Sized the circular gold tracking ring (`Interface\Minimap\MiniMap-TrackingBorder`) proportionally to `42x42` centered at `(0, 0)`, keeping it cleanly bounded within the header with 1px top/bottom padding and zero bleed into the telemetry ribbon.
-  - Docked circular level coin (`16x16`) at `BOTTOMRIGHT (2, -2)` with a centered `22x22` gold border ring and 9px outlined font, completely eliminating collision with the `metricsBar` border and `REALM:` telemetry text.
-  - Horizontally unified all header widgets: anchored addon title `WoW Killboard v1.0.5` directly to `("LEFT", portraitFrame, "RIGHT", 10, 0)`, putting title, version, realm badge, search bar, mode switcher, and sync/settings buttons on the exact same `y = -21` horizontal center axis.
-  - Restored telemetry ribbon text offset to `ribbonText:SetPoint("LEFT", metricsBar, "LEFT", 12, 0)` now that the portrait is fully contained within the header bar.
-  - Reinforced dynamic level updating across `UNIT_PORTRAIT_UPDATE`, `UNIT_LEVEL`, `PLAYER_LEVEL_UP` (passing `forcedLvl`), `PLAYER_ENTERING_WORLD`, `PLAYER_XP_UPDATE`, `PLAYER_ALIVE`, `OnShow`, and `UI:Refresh()`.
+- **Hero Character Portrait Dock & Notched Header Alignment (`Addon/WoWKillboard/UI.lua`)**:
+  - Restored prominent `48x48` hero portrait medallion at `TOPLEFT (10, -6)` with a solid dark circular backing plate and circular alpha mask (`TempPortraitAlphaMask`), making the character's facial features and gear clearly visible.
+  - Sized gold tracking ring proportionally to `56x56` centered over the 48x48 portrait, providing a bold, authentic Blizzard border.
+  - Positioned circular level coin (`18x18`) at `BOTTOMRIGHT (2, -2)` with a centered `24x24` gold tracking border and 9px outlined font, cleanly tucked in the corner without obscuring the character's face.
+  - Architected a dedicated top-left notch: offset both `headerBar.Divider` and `metricsBar` (`UI.TopMetricsBar`) to start at `x = 68`, completely eliminating line slicing, border collision, and text overlap with `REALM:` telemetry stats.
+  - Horizontally unified all header widgets: anchored addon title `WoW Killboard v1.0.5` directly to `("LEFT", headerBar, "LEFT", 68, 0)` at `y = -21`, perfectly level with Search, Mode Switcher, Sync, Settings, and Close buttons.
+  - Locked addon title text color to radiant Blizzard Gold (`1.0, 0.82, 0.0, 1.0`), preventing `UpdateRulesetButton()` from overriding the title with class colors (e.g. Paladin pink).
+  - Maintained instant dynamic level updates across `PLAYER_LEVEL_UP`, `UNIT_LEVEL`, `UNIT_PORTRAIT_UPDATE`, `PLAYER_ENTERING_WORLD`, `PLAYER_XP_UPDATE`, `PLAYER_ALIVE`, `OnShow`, and `UI:Refresh()`.
 - **WKB Theme Restyling for "THE MARKED" Card Track Buttons (`Addon/WoWKillboard/UI.lua`)**:
   - Removed harsh yellow/gold bounding box outlines (`0.85, 0.70, 0.30, 1.0`) on player rows (`isLocalPlayer`, `isLocalKiller`, `isLocalVictim`, `[YOU]`).
   - Completely eliminated yellow border resets across all `OnLeave` scripts (Feed, PvE Feed, Player Leaderboard, Guild Leaderboard, 24h Gankers, Marks of Spite, and Reinforcements).
