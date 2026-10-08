@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Seamlessly filters both the live combat feed and competitive leaderboards across timeframe, faction, and mode.
 
 ### Fixed
+- **Player Row Styling & Harsh Border Elimination (`Addon/WoWKillboard/UI.lua`)**:
+  - Removed harsh yellow/gold bounding box outlines (`0.85, 0.70, 0.30, 1.0`) on player rows (`isLocalPlayer`, `isLocalKiller`, `isLocalVictim`, `[YOU]`).
+  - Completely eliminated yellow border resets across all `OnLeave` scripts (Feed, PvE Feed, Player Leaderboard, Guild Leaderboard, 24h Gankers, Marks of Spite, and Reinforcements).
+  - Kept the `[YOU]` tag strictly as clean colored text: `|cffffd100[YOU]|r`.
+  - Replaced harsh border boxes with a clean, subtle semi-transparent background wash on `row.highlightGrad` (`0.12, 0.16, 0.24, 0.35`) so player rows stand out naturally without visual clutter or taint.
 - **Compact Single-Line Mobile Killmail Rows (`web/static/style.css`, `web/static/app.js`)**:
   - Eliminated bloated 85px+ cards and vertical column stretching on mobile viewports (`<= 768px`).
   - Rendered a compact, single-line horizontal row (height: `38px–42px`): `[Spec Icon] Killer Name (Guild) -> Victim Name (Guild) | Zone | 2m ago`.

@@ -720,13 +720,13 @@ local function CreateFactionBadge(parent, faction, width, height)
 end
 UI.CreateFactionBadge = CreateFactionBadge
 
--- Helper: Apply local player row highlight [YOU] with faction gradient and 1px gold outline
+-- Helper: Apply clean subtle local player row highlight [YOU] without harsh border outlines
 local function ApplyPlayerRowHighlight(row, faction)
     if not row then return end
     row.isPlayerRow = true
-    local f = (faction or (UnitFactionGroup and UnitFactionGroup("player")) or "Alliance"):lower()
-    local isHorde = (f == "horde")
-    row:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0) -- Crisp 1px gold border outline
+
+    -- Do NOT draw any yellow/gold border outline around the combatant's row, name, or icon
+    -- Keep border natural and identical to surrounding rows
 
     if not row.highlightGrad then
         local grad = row:CreateTexture(nil, "BORDER")
@@ -734,13 +734,8 @@ local function ApplyPlayerRowHighlight(row, faction)
         row.highlightGrad = grad
     end
 
-    local r1, g1, b1, a1 = 0.04, 0.15, 0.40, 0.35
-    local r2, g2, b2, a2 = 0.04, 0.15, 0.40, 0.05
-    if isHorde then
-        r1, g1, b1, a1 = 0.40, 0.08, 0.08, 0.35
-        r2, g2, b2, a2 = 0.40, 0.08, 0.08, 0.05
-    end
-    SafeSetHorizontalGradient(row.highlightGrad, r1, g1, b1, a1, r2, g2, b2, a2)
+    -- Subtle semi-transparent background wash (0.12, 0.16, 0.24, 0.35) so the row stands out naturally without harsh edges
+    row.highlightGrad:SetColorTexture(0.12, 0.16, 0.24, 0.35)
     row.highlightGrad:Show()
 end
 UI.ApplyPlayerRowHighlight = ApplyPlayerRowHighlight
@@ -2807,11 +2802,7 @@ function UI:RenderLiveFeed()
                 self:SetBackdropColor(unpack(hoverBg))
             end)
             row:SetScript("OnLeave", function(self)
-                if self.isPlayerRow then
-                    self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
-                else
-                    self:SetBackdropBorderColor(unpack(rowBorder))
-                end
+                self:SetBackdropBorderColor(unpack(rowBorder))
                 self:SetBackdropColor(unpack(rowBg))
             end)
 
@@ -3085,11 +3076,7 @@ function UI:RenderPveFeed()
             self:SetBackdropColor(unpack(hoverBg))
         end)
         row:SetScript("OnLeave", function(self)
-            if self.isPlayerRow then
-                self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
-            else
-                self:SetBackdropBorderColor(unpack(rowBorder))
-            end
+            self:SetBackdropBorderColor(unpack(rowBorder))
             self:SetBackdropColor(unpack(rowBg))
         end)
 
@@ -3924,7 +3911,7 @@ function UI:RenderLeaderboard()
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         })
         stickyRow:SetBackdropColor(30/255, 26/255, 16/255, 1.0) -- #1E1A10
-        stickyRow:SetBackdropBorderColor(aR, aG, aB, 1.0)
+        stickyRow:SetBackdropBorderColor(0, 0, 0, 1.0)
 
         local sRank = stickyRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         sRank:SetPoint("LEFT", stickyRow, "LEFT", 6, 0)
@@ -4141,11 +4128,7 @@ function UI:RenderLeaderboard()
                     self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
                 end)
                 row:SetScript("OnLeave", function(self)
-                    if self.isPlayerRow then
-                        self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
-                    else
-                        self:SetBackdropBorderColor(0, 0, 0, 1.0)
-                    end
+                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
                     self:SetBackdropColor(unpack(rowBg))
                 end)
 
@@ -4190,7 +4173,7 @@ function UI:RenderLeaderboard()
                 insets = { left = 0, right = 0, top = 0, bottom = 0 }
             })
             stickyGuild:SetBackdropColor(30/255, 26/255, 16/255, 1.0)
-            stickyGuild:SetBackdropBorderColor(aR, aG, aB, 1.0)
+            stickyGuild:SetBackdropBorderColor(0, 0, 0, 1.0)
 
             local rFs = stickyGuild:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             rFs:SetPoint("LEFT", stickyGuild, "LEFT", 8, 0)
@@ -4298,11 +4281,7 @@ function UI:RenderLeaderboard()
                     self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
                 end)
                 row:SetScript("OnLeave", function(self)
-                    if self.isPlayerRow then
-                        self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
-                    else
-                        self:SetBackdropBorderColor(0, 0, 0, 1.0)
-                    end
+                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
                     self:SetBackdropColor(unpack(rowBg))
                 end)
 
@@ -4435,11 +4414,7 @@ function UI:RenderLeaderboard()
                     self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
                 end)
                 row:SetScript("OnLeave", function(self)
-                    if self.isPlayerRow then
-                        self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
-                    else
-                        self:SetBackdropBorderColor(0, 0, 0, 1.0)
-                    end
+                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
                     self:SetBackdropColor(unpack(rowBg))
                 end)
 
@@ -4943,11 +4918,7 @@ function UI:RenderBounties()
                     end
                 end)
                 row:SetScript("OnLeave", function(self)
-                    if self.isPlayerRow then
-                        self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
-                    else
-                        self:SetBackdropBorderColor(0, 0, 0, 1.0)
-                    end
+                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
                     self:SetBackdropColor(unpack(rowBg))
                     if pCount > 1 then UI:HidePrivateTooltip() end
                 end)
@@ -5726,11 +5697,7 @@ function UI:RenderRallies()
                 self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
             end)
             row:SetScript("OnLeave", function(self)
-                if self.isPlayerRow then
-                    self:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
-                else
-                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
-                end
+                self:SetBackdropBorderColor(0, 0, 0, 1.0)
                 self:SetBackdropColor(unpack(rowBg))
             end)
 
