@@ -1097,7 +1097,8 @@ function UI:CreateMainWindow()
     end
 
     local portraitTex = portraitFrame:CreateTexture(nil, "ARTWORK")
-    portraitTex:SetAllPoints(portraitFrame)
+    portraitTex:SetSize(42, 42)
+    portraitTex:SetPoint("CENTER", portraitFrame, "CENTER", 0, 0)
     if SetPortraitTexture then
         SetPortraitTexture(portraitTex, "player")
         if not portraitTex:GetTexture() then
@@ -1114,11 +1115,11 @@ function UI:CreateMainWindow()
     end
     portraitFrame.portraitTex = portraitTex
 
-    -- Gold Border Ring (56x56 centered proportionally over the 48x48 portrait)
+    -- Concentric Gold Border Ring (58x58 custom beveled medallion border wrapping neatly around the 42x42 face)
     local border = portraitFrame:CreateTexture(nil, "OVERLAY")
     border:SetPoint("CENTER", portraitFrame, "CENTER", 0, 0)
-    border:SetSize(56, 56)
-    border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    border:SetSize(58, 58)
+    border:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\medallion_border.tga")
     portraitFrame.border = border
     portraitFrame.ring = border
 
@@ -2747,6 +2748,7 @@ function UI:RenderLiveFeed()
             local theme = UI:GetTheme()
             local rowBg = isEven and (theme.rowBgAlt or { 0.043, 0.059, 0.090, 0.4 }) or (theme.rowBg or { 0.060, 0.080, 0.115, 0.6 })
             local rowBorder = theme.rowBorder or { 0.12, 0.16, 0.23, 1.0 }
+            local hoverBg = theme.rowHoverBg or { 0.12, 0.16, 0.23, 0.8 }
 
             row:SetBackdrop({
                 bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -3072,6 +3074,7 @@ function UI:RenderPveFeed()
         local theme = UI:GetTheme()
         local rowBg = isEven and (theme.rowBgAlt or { 0.043, 0.059, 0.090, 0.4 }) or (theme.rowBg or { 0.060, 0.080, 0.115, 0.6 })
         local rowBorder = theme.rowBorder or { 0.12, 0.16, 0.23, 1.0 }
+        local hoverBg = theme.rowHoverBg or { 0.12, 0.16, 0.23, 0.8 }
 
         row:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",

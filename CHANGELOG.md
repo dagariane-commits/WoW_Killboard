@@ -23,14 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dynamically resolves spell textures via `C_Spell.GetSpellTexture`, `GetSpellTexture`, and `GetSpellInfo` with intelligent fallbacks (melee swords, fire, shadow, frost, marksman, cleave, backstab, environmental fall).
   - Reallocated ~80px reclaimed column width: expanded `ZONE` column by 64px (from `x = 512` to `x = 448`, spanning to `-6`), eliminating ellipsis truncation for full locations like `Loch Modan (Thelsamar)` and `Undercity (Ruins of Lordaeron)`.
   - Expanded `ATTACKER / KILLER` (width 168px) and `VICTIM` (width 168px) columns to prevent long player names, guild tags (e.g. `<OLYMPUS XXVII>`, `<Sabatam>`), and `[YOU]` tags from truncating.
-- **Hero Character Portrait Dock & Notched Header Alignment (`Addon/WoWKillboard/UI.lua`)**:
-  - Restored prominent `48x48` hero portrait medallion at `TOPLEFT (10, -6)` with a solid dark circular backing plate and circular alpha mask (`TempPortraitAlphaMask`), making the character's facial features and gear clearly visible.
-  - Sized gold tracking ring proportionally to `56x56` centered over the 48x48 portrait, providing a bold, authentic Blizzard border.
-  - Positioned circular level coin (`18x18`) at `BOTTOMRIGHT (2, -2)` with a centered `24x24` gold tracking border and 9px outlined font, cleanly tucked in the corner without obscuring the character's face.
+- **Hero Character Portrait Concentric Gold Medallion & Header Alignment (`Addon/WoWKillboard/UI.lua`)**:
+  - Replaced the undersized 34px minimap tracking border with a bold, concentric `58x58` custom gold ring (`Textures/medallion_border.tga`) centered over the `42x42` circular player face, eliminating inner-circle cropping and facial obstruction.
+  - Sized circular level coin (`18x18`) at `BOTTOMRIGHT (2, -2)` with a centered `24x24` gold tracking border and 9px outlined font, cleanly tucked in the corner.
   - Architected a dedicated top-left notch: offset both `headerBar.Divider` and `metricsBar` (`UI.TopMetricsBar`) to start at `x = 68`, completely eliminating line slicing, border collision, and text overlap with `REALM:` telemetry stats.
   - Horizontally unified all header widgets: anchored addon title `WoW Killboard v1.0.5` directly to `("LEFT", headerBar, "LEFT", 68, 0)` at `y = -21`, perfectly level with Search, Mode Switcher, Sync, Settings, and Close buttons.
   - Locked addon title text color to radiant Blizzard Gold (`1.0, 0.82, 0.0, 1.0`), preventing `UpdateRulesetButton()` from overriding the title with class colors (e.g. Paladin pink).
   - Maintained instant dynamic level updates across `PLAYER_LEVEL_UP`, `UNIT_LEVEL`, `UNIT_PORTRAIT_UPDATE`, `PLAYER_ENTERING_WORLD`, `PLAYER_XP_UPDATE`, `PLAYER_ALIVE`, `OnShow`, and `UI:Refresh()`.
+- **Combat Feed Ability Icon Hover Lua Error Fix (`Addon/WoWKillboard/UI.lua`)**:
+  - Fixed P0 runtime crash (`UI.lua:2853: bad argument #1 to 'unpack' (table expected, got nil)`) triggered on mouseover of the combat feed ability icon.
+  - Elevated `hoverBg = theme.rowHoverBg or { 0.12, 0.16, 0.23, 0.8 }` to row scope alongside `rowBg` and `rowBorder` in both `RenderLiveFeed` and `RenderPveFeed`, ensuring `abilityFrame:SetScript("OnEnter")` can safely unpack the hover background table.
 - **WKB Theme Restyling for "THE MARKED" Card Track Buttons (`Addon/WoWKillboard/UI.lua`)**:
   - Removed harsh yellow/gold bounding box outlines (`0.85, 0.70, 0.30, 1.0`) on player rows (`isLocalPlayer`, `isLocalKiller`, `isLocalVictim`, `[YOU]`).
   - Completely eliminated yellow border resets across all `OnLeave` scripts (Feed, PvE Feed, Player Leaderboard, Guild Leaderboard, 24h Gankers, Marks of Spite, and Reinforcements).
