@@ -1,11 +1,11 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-06 20:35:00 EDT  
+> **Last Synchronized**: 2026-10-07 21:30:00 EDT  
 > **Git Status**: Branch `main` (Release `v1.0.5` and Web `v2.4.0` live on production).  
 > **Developer & Lead**: Dagariane.  
 > **Active Release**: `v1.0.5` (CurseForge Community Release).  
-> **Active Focus**: **Zero-Taint Combat Lockdown Gating, Red-Team / Blue-Team Defense-in-Depth, safeJsParam Apostrophe Immunity, Multi-Character Roster & Realm Mains, and Mode-Specific Leaderboards**.  
+> **Active Focus**: **In-Game Feed Column Space Optimization, Zero Ellipsis Truncation, Character Portrait Header Integration, Restyled Marked Track Buttons, Sticky Top Filters & Compact Mobile Killmails**.  
 > **Live Production Domain**: [`https://wowkillboard.com/`](https://wowkillboard.com/)
 
 ---
@@ -30,7 +30,7 @@
    - **CurseForge & Git Lockstep Parity (P0 Invariant)**: Whenever an update or release archive is uploaded or pushed to CurseForge, it **MUST** simultaneously be committed, tagged (`git tag -a vX.Y.Z`), and pushed to GitHub (`git push origin main --tags`). Never allow CurseForge and GitHub releases to drift out of sync.
 6. **Mandatory Automated Verification**:
    - Run `python tests/validate_lua.py` (Must return `[PASS]` for all 13 Lua files).
-   - Run `python -m unittest discover tests` (Must return `OK` across all 30 pipeline/security tests).
+   - Run `python -m unittest discover tests` (Must return `OK` across all 31 pipeline/security tests).
    - Run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.5.zip` (and legacy aliases `v1.0.4`, `v1.0.3`, `v1.0.2`, `v1.0.1`, `v1.0.0`).
 
 ---
@@ -40,6 +40,40 @@
 We are systematically fine-tuning the visual presentation and in-game aesthetic of WoW Killboard so it feels natively integrated into World of Warcraft (both authentic Classic WoW and modern ElvUI).
 
 ### What Was Completed:
+- **Combat Feed Ability Icon & Zone Column Space Optimization (`Addon/WoWKillboard/UI.lua`)**:
+  - Replaced verbose boilerplate string (`slain by Combat Strike`) in both PvP (`RenderLiveFeed`) and PvE (`RenderPveFeed`) feeds with a compact 18x18 ability/spell icon centered in a 44px column (`x = 248`).
+  - Added interactive mouseover tooltip (`OnEnter`) displaying `GameTooltip:AddLine("Fatal Blow: " .. action)` (with fallback to `UI:ShowPrivateTooltip`) and gold hover border highlight.
+  - Dynamically resolves spell icons via `C_Spell.GetSpellTexture`, `GetSpellTexture`, and `GetSpellInfo` with intelligent fallbacks (swords, fire, shadow, frost, marksman, cleave, backstab, environmental fall).
+  - Reallocated ~80px reclaimed column width: expanded `ZONE` column by 64px (from `x = 512` to `x = 448`), completely eliminating ellipsis truncation for locations like `Loch Modan (Thelsamar)` and `Undercity (Ruins of Lordaeron)`.
+  - Expanded `ATTACKER / KILLER` (width 168px) and `VICTIM` (width 168px) columns to prevent player names, guild tags (e.g. `<OLYMPUS XXVII>`), and `[YOU]` tags from clipping.
+- **Character Portrait & Header Alignment Fine-Tuning (`Addon/WoWKillboard/UI.lua`)**:
+  - Nudged `WoWKillboardPlayerPortrait` down to `(12, -8)` so the outer gold tracking ring cleanly clears the top window border with a 2px margin.
+  - Anchored addon title `WoW Killboard v1.0.5` directly to `portraitFrame` (`"LEFT", portraitFrame, "RIGHT", 10, 0`), ensuring clean vertical centering with the portrait center across all themes and window instantiations.
+- **WKB Theme Restyling for "THE MARKED" Card Track Buttons (`Addon/WoWKillboard/UI.lua`)**:
+  - Restyled `Track` buttons in Card 2 to match the dark WKB theme: dark slate background (`0.08, 0.11, 0.16, 0.9`), subtle 1px slate line border (`0.20, 0.25, 0.35, 1.0`), and clean pale gold text (`0.9, 0.85, 0.7, 1.0`).
+  - Added interactive `OnEnter` and `OnLeave` scripts: shifting border to radiant gold (`0.85, 0.70, 0.25, 1.0`) with bright yellow text on hover, cleanly restoring on mouse exit.
+- **Enlarged Character Portrait Medallion & Dynamic Level Updating (`Addon/WoWKillboard/UI.lua`)**:
+  - Enlarged `WoWKillboardPlayerPortrait` to a prominent 48x48 pixels with a proportional 60x60 circular gold tracking ring (`Interface\Minimap\MiniMap-TrackingBorder`) and smooth circular alpha mask (`TempPortraitAlphaMask`).
+  - Sized level medallion coin to 20x20 with a centered 28x28 gold tracking border, anchored to `BOTTOMRIGHT` at `(2, -2)` so it stays in the bottom corner without obscuring the character's face.
+  - Registered real-time dynamic level events (`UNIT_LEVEL`, `PLAYER_LEVEL_UP`, `PLAYER_XP_UPDATE`, etc.) and integrated `UI:UpdatePortrait()` into `UI:Refresh()` and `OnShow`.
+- **Harsh Yellow Player Row Bounding Box Removal (`Addon/WoWKillboard/UI.lua`)**:
+  - Removed harsh yellow border box outlines around player rows (`isLocalPlayer`, `isLocalKiller`, `isLocalVictim`, `[YOU]`).
+  - Replaced border box with a clean, subtle semi-transparent background wash on `row.highlightGrad` (`0.12, 0.16, 0.24, 0.35`) and simple colored text tag `|cffffd100[YOU]|r`.
+- **Sticky Top Combat & Leaderboard Filter Toolbar (`web/static/index.html`, `style.css`, `app.js`)**:
+  - Repositioned filter controls out of `.sidebar-column` into `#top-combat-filters`, anchored directly above `#main-content-area`.
+  - Row 1 (Timeframe): `[ 24 Hours ]`, `[ 7 Days ]`, `[ 30 Days ]`, `[ All-Time ]`.
+  - Row 2 (Faction & Modes): `[ All ]`, `[ Alliance ]`, `[ Horde ]` | `[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`.
+  - Sticky mobile sub-bar: `position: sticky; top: 56px; z-index: 900; background: rgba(11, 15, 23, 0.95); backdrop-filter: blur(8px); padding: 8px 12px;` on `<= 768px`.
+  - Minimum 36px touch target heights, solid gold `#C69B3D` active state, `#1e293b` inactive state.
+- **High-Density Combat Feed & Compact Single-Line Mobile Rows (`web/static/style.css`, `web/static/app.js`)**:
+  - Eliminated bloated 85px+ cards and vertical column stretching on mobile viewports (`<= 768px`).
+  - Rendered a compact, single-line horizontal row (height: 38px–42px): `[Spec Icon] Killer Name (Guild) -> Victim Name (Guild) | Zone | 2m ago`.
+  - Alternating subtle zebra striping (`#090d14` and `#0e1420`), 1px solid `rgba(30, 41, 59, 0.6)` border, victor faction left border accent.
+  - Capped initial combat feed display to 12 events with a compact `Load More Recent Kills` expansion trigger.
+- **Interactive Sortable Competitive Leaderboards (`web/static/app.js`, `style.css`, `server.py`)**:
+  - 4-Timeframe intervals (`24H`, `7D`, `30D`, `ALL`).
+  - 10-Class Classic selector bar with class colors and instant re-ranking (`1..N`).
+  - Interactive clickable column headers with directional indicator arrows (`▲`/`▼`) for Rank, Combatant, Guild, Faction, Kills, Solo Kills, Deaths, K/D Ratio, Wins, Losses, and Percentile.
 - **Red-Team / Blue-Team Security Hardening & DOM Sanitization (`web/server.py`, `web/static/app.js`, `tests/test_pipeline.py`)**:
   - **Apostrophe Immunity in `safeJsParam`**: Eliminated quote breakout / syntax errors on strings with apostrophes (*Un'Goro Crater*, *Kel'Thuzad*, *Gul'dan*) by escaping single quotes as `%27` (`.replace(/'/g, "%27")`).
   - **Character Claim Release Authorization Gating**: Closed critical auth bypass on `/api/auth/release-claim` where empty `owner_token` bypassed checks; enforced constant-time `hmac.compare_digest` token verification.

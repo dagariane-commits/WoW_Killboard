@@ -22,7 +22,9 @@ flowchart TD
 1. **[System Architecture](ARCHITECTURE.md)**
    - The 3-tier operational model (In-Game Lua Addon, Desktop File Watcher, Web Platform).
    - Data flow pipelines, FNV-1a cryptographic hashing, and state persistence contracts.
-   - Streamlined 5-button navigation architecture (`Intel`, `Leaderboards`, `Deadly Hazards`, `Bounties`, `Zone Intel`).
+   - Integrated 48x48 character portrait medallion with 20x20 dynamic level coin, compact 18x18 ability cells, and zero-truncation zone layout.
+   - Streamlined 5-button navigation architecture (`Intel`, `Leaderboards`, `The Marked`, `Call to Arms`, `Danger Zones`).
+   - Sticky top filter toolbar, compact single-line mobile casualty rows, and interactive sortable leaderboards.
    - Class, Spec & Level Cohort Percentile Engine with mathematical standing.
 
 2. **[Combat Telemetry & Gang Clustering Engine](COMBAT_ENGINE.md)**

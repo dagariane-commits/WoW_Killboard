@@ -91,6 +91,28 @@ timeline
   - Single-row header: **Logo** &bull; **Theater of War** &bull; **Intel** &bull; **Hall of Legends** &bull; **World Hazards** &bull; **Armory** &bull; **Bounties** &bull; **Warroom**.
   - Embedded 5-mode combat filter pills (`All PvP`, `World`, `BGs`, `Arenas`, `Duels`) placed inside Hall of Legends.
   - Header auth status badge (`👤 Username [Sign Out]` / `[Sign In]`).
+- [x] **Sticky Top Combat & Leaderboard Filter Toolbar**:
+  - Anchored directly above `#main-content-area` across desktop and mobile.
+  - Row 1 (Timeframe): `[ 24 Hours ]`, `[ 7 Days ]`, `[ 30 Days ]`, `[ All-Time ]`.
+  - Row 2 (Faction & Modes): `[ All ]`, `[ Alliance ]`, `[ Horde ]` | `[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`.
+  - Mobile sticky sub-bar: `position: sticky; top: 56px; z-index: 900; background: rgba(11, 15, 23, 0.95); backdrop-filter: blur(8px); padding: 8px 12px;` on `<= 768px`.
+- [x] **High-Density Combat Feed & Compact Single-Line Mobile Rows**:
+  - Dual-layout system: 5-column fixed grid (`180px 1fr 44px 1fr 110px`) on desktop, compact single-line row (`38px–42px`) on mobile.
+  - Capped initial combat feed display to 12 events with a compact `Load More Recent Kills` expansion trigger.
+- [x] **Interactive Sortable Competitive Leaderboards**:
+  - 4-Timeframe intervals (`24H`, `7D`, `30D`, `ALL`).
+  - 10-Class Classic selector bar with class colors and instant re-ranking (`1..N`).
+  - Interactive clickable column headers with directional indicator arrows (`▲`/`▼`) for all metrics.
+- [x] **In-Game Feed Column Space Optimization & Compact Ability Icons**:
+  - Replaced verbose boilerplate text (`slain by Combat Strike`) in PvP and PvE feeds with compact 18x18 ability icons and hover tooltips (`GameTooltip`).
+  - Reallocated ~80px reclaimed column width: expanded `ZONE` by +64px (from `x = 512` to `x = 448`), completely eliminating ellipsis truncation.
+  - Expanded `ATTACKER` and `VICTIM` columns to 168px each, preventing guild tag clipping.
+- [x] **Integrated Character Portrait Medallion & Dynamic Level Updates**:
+  - Prominent 48x48 character portrait at `(12, -8)` with 60x60 gold border ring, overlapping 20x20 circular level medallion at `(2, -2)`, and real-time level updating.
+  - Title text `WoW Killboard v1.0.5` anchored vertically centered to portrait at `(10, 0)`.
+- [x] **Clean Player Row Highlighting & Restyled Marked Track Buttons**:
+  - Completely eliminated harsh yellow bounding box outlines around player rows (`[YOU]`), replacing them with subtle semi-transparent washes `(0.12, 0.16, 0.24, 0.35)`.
+  - Restyled `Track` buttons in "THE MARKED" Card with dark slate theme, pale gold text, and radiant gold hover states.
 - [x] **100% Ad-Free Community Supporter Framework**:
   - Zero commercial ads, zero tracking networks, and zero paywalls on in-game mechanics.
   - Optional community patron preview unlocking live Subzone Recon GPS on active bounties.

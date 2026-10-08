@@ -36,17 +36,18 @@ In-game combat tracker, live kill feed, 1v1 fight detection, local bounties, and
 **WoW Killboard** brings a dedicated combat tracker, live kill feed, and leaderboard directly into your World of Warcraft client. Track your open-world battles, log certified 1v1 encounters, see who is dominating your zone, and view real-time leaderboards right inside the game.
 
 ### Key Features
-* **Live Combat Tracking:** Automatically logs attacker and victim levels, classes, killing blows, and fight locations.
+* **Live Combat Tracking:** Automatically logs attacker and victim levels, classes, killing blows, and fight locations with compact ability icons and full zone names.
 * **1v1 Solo Detection:** Accurately distinguishes certified 1v1 solo fights from group ganks.
+* **Integrated Character Portrait:** Displays your character's portrait inside the header with a golden tracking ring and dynamic circular level medallion.
 * **In-Game Leaderboards:** Track your kills, deaths, K/D ratio, and kill streaks without opening a browser.
 * **Zone Danger Intel:** See active conflict hotspots and high-value enemy outlaws operating in your zone.
 * **Call for Backup (`/warhorn`):** Sound an emergency SOS beacon to nearby allies or guildmates with your location.
 * **PvE Elites & Hazards:** Toggle to PvE mode to track deaths to lethal world bosses/elites (Hogger, Son of Arugal, Stitches) and environmental hazards.
-* **Two Visual Themes:** Switch between authentic **Classic WoW Stone** (default) and **ElvUI Minimalist Dark** right in settings.
+* **Three Visual Themes:** Switch between **WKB Theme** (1:1 Web Mirror, default), **ElvUI Minimalist Dark**, and authentic **Classic WoW Stone** right in settings.
 
 ### How to Use
 * Type **/kb** or **/killboard** (or click the minimap skull) to open the dashboard.
-* Type **/kb theme** (or right-click the minimap skull) to toggle between Classic and Dark visual themes.
+* Type **/kb theme** (or right-click the minimap skull) to cycle between WKB, ElvUI, and Classic visual themes.
 * Type **/warhorn** to call for backup when jumped in open-world PvP.
 * Type **/kb config** to adjust audio cues, alerts, and display options.
 
