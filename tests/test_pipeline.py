@@ -2230,11 +2230,9 @@ WoWKillboardDB = {
         self.assertIn('crest_alliance.tga', ui_content)
         self.assertIn('crest_horde.tga', ui_content)
 
-        # 18. Verify Player Row Highlight [YOU] with Faction Gradient and 1px Gold Outline
+        # 18. Verify Player Row Highlight [YOU] with Clean Subtle Background Wash (Zero Border Box)
         self.assertIn('local function ApplyPlayerRowHighlight(row, faction)', ui_content)
-        self.assertIn('0.85, 0.70, 0.30, 1.0', ui_content)  # 1px gold border outline
-        self.assertIn('0.04, 0.15, 0.40, 0.35', ui_content) # Alliance gradient
-        self.assertIn('0.40, 0.08, 0.08, 0.35', ui_content) # Horde gradient
+        self.assertIn('0.12, 0.16, 0.24, 0.35', ui_content) # Subtle background wash without harsh border outline
 
         # 19. Verify WKB Theme Web 1:1 Palette Alignment in Config.lua
         self.assertIn('0.015, 0.020, 0.030, 0.98', cfg_content)
