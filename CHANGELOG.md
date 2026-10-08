@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-10-07 (CurseForge & Multi-Client Release)
+
 ### Added
 - **Sticky Top Combat & Leaderboard Filters (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
   - Repositioned filter controls from `.sidebar-column` into `#top-combat-filters`, anchored directly above `#main-content-area`.
@@ -27,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Replaced the undersized 34px minimap tracking border with a bold, concentric `58x58` custom gold ring (`Textures/medallion_border.tga`) centered over the `42x42` circular player face, eliminating inner-circle cropping and facial obstruction.
   - Sized circular level coin (`18x18`) at `BOTTOMRIGHT (2, -2)` with a centered `24x24` gold tracking border and 9px outlined font, cleanly tucked in the corner.
   - Architected a dedicated top-left notch: offset both `headerBar.Divider` and `metricsBar` (`UI.TopMetricsBar`) to start at `x = 68`, completely eliminating line slicing, border collision, and text overlap with `REALM:` telemetry stats.
-  - Horizontally unified all header widgets: anchored addon title `WoW Killboard v1.0.5` directly to `("LEFT", headerBar, "LEFT", 68, 0)` at `y = -21`, perfectly level with Search, Mode Switcher, Sync, Settings, and Close buttons.
+  - Horizontally unified all header widgets: anchored addon title `WoW Killboard v1.0.6` directly to `("LEFT", headerBar, "LEFT", 68, 0)` at `y = -21`, perfectly level with Search, Mode Switcher, Sync, Settings, and Close buttons.
   - Locked addon title text color to radiant Blizzard Gold (`1.0, 0.82, 0.0, 1.0`), preventing `UpdateRulesetButton()` from overriding the title with class colors (e.g. Paladin pink).
   - Maintained instant dynamic level updates across `PLAYER_LEVEL_UP`, `UNIT_LEVEL`, `UNIT_PORTRAIT_UPDATE`, `PLAYER_ENTERING_WORLD`, `PLAYER_XP_UPDATE`, `PLAYER_ALIVE`, `OnShow`, and `UI:Refresh()`.
 - **Combat Feed Ability Icon Hover Lua Error Fix (`Addon/WoWKillboard/UI.lua`)**:

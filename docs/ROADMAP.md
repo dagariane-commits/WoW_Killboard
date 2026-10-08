@@ -108,8 +108,8 @@ timeline
   - Reallocated ~80px reclaimed column width: expanded `ZONE` by +64px (from `x = 512` to `x = 448`), completely eliminating ellipsis truncation.
   - Expanded `ATTACKER` and `VICTIM` columns to 168px each, preventing guild tag clipping.
 - [x] **Integrated Character Portrait Medallion & Dynamic Level Updates**:
-  - Prominent 48x48 character portrait at `(12, -8)` with 60x60 gold border ring, overlapping 20x20 circular level medallion at `(2, -2)`, and real-time level updating.
-  - Title text `WoW Killboard v1.0.5` anchored vertically centered to portrait at `(10, 0)`.
+  - Prominent 48x48 character portrait at `(10, -6)` with concentric 58x58 gold medallion bezel (`Textures/medallion_border.tga`), overlapping 18x18 circular level coin at `(2, -2)`, and real-time level updating.
+  - Dedicated notch for header divider & metrics bar at `x = 68`, with title text `WoW Killboard v1.0.6` anchored level at `y = -21` in Blizzard Gold (`#FFD100`).
 - [x] **Clean Player Row Highlighting & Restyled Marked Track Buttons**:
   - Completely eliminated harsh yellow bounding box outlines around player rows (`[YOU]`), replacing them with subtle semi-transparent washes `(0.12, 0.16, 0.24, 0.35)`.
   - Restyled `Track` buttons in "THE MARKED" Card with dark slate theme, pale gold text, and radiant gold hover states.

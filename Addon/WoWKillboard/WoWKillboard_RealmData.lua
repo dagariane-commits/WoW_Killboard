@@ -1401,13 +1401,13 @@ WoWKillboard_RealmData = {
         deaths = 2,
         zone = "The Sepulcher. [TEST SIMULATION]",
     },
-    LatestVersion = "1.0.5",
+    LatestVersion = "1.0.6",
     Changelog = {
+        "Hero Medallion Dock: Concentric gold bezel frame, dynamic player level medallion, and dedicated notch eliminate border clipping and line slicing",
+        "Combat Feed Ability Icons: Compact 18x18 ability cell with interactive tooltip and zone width expansion eliminate ellipsis truncation",
+        "Lua Hover Stability: Row-scoped hover background color table eliminates nil unpack crash on ability icon mouseover",
+        "Visual Clarity Polish: De-escalated player row border outlines across all feed and leaderboard frames into subtle background highlights",
         "Zero Blizzard UI Taint Hardening: Strict InCombatLockdown gating on death routines, whisper broadcasts, and guild info checks",
-        "Responsive Navigation Suite: Fluid flex layout, 1180px breakpoint, mobile drawer, and unclipped tactile controls",
-        "Multi-Character Realm Roster: Seamless operative switching, custom realm mains (⭐ Main), and dedicated stats tracking",
-        "Instance Leaderboard Parity: Dedicated combat columns for World, Battlegrounds, Duels, and Arenas",
-        "Economy & Marked Overhaul: Formatted G / S / C currency displays and unified bounty contract highlights",
     },
     LastSync = 1791343731,
 }
