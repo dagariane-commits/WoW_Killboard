@@ -526,7 +526,7 @@ SlashCmdList["WOWKILLBOARD"] = function(msg)
             if KB.UI and KB.UI.ShowAnnouncementModal then
                 KB.UI:ShowAnnouncementModal()
             else
-                SafePrint("|cffff3333[WoWKB]|r Usage: /kb announce <message>  (e.g., /kb announce Update v1.0.5 releasing in 10 minutes!)")
+                SafePrint("|cffff3333[WoWKB]|r Usage: /kb announce <message>  (e.g., /kb announce Update v1.0.6 releasing in 10 minutes!)")
             end
         else
             if KB.Sync and KB.Sync.BroadcastAdminAlert then

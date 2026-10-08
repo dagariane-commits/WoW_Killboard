@@ -2,7 +2,7 @@
 ## Title: |cff00ccffWoW Killboard|r |cffffd100[Frontline War Room]|r
 ## Notes: Community killboard tracking PvP kills, 1v1 duels, battlegrounds, bounties, and PvE deaths.
 ## Author: Dagariane
-## Version: 1.0.5
+## Version: 1.0.6
 ## SavedVariables: WoWKillboardDB, WoWKillboardSettings, WoWKillboardDebtLedger, WoWKillboardBounties, WoWKillboardDistress, WoWKillboardEvents
 ## IconTexture: Interface\Icons\Achievement_PVP_P_01
 ## X-Category: PvP, Combat, Leaderboard

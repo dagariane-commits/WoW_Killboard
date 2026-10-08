@@ -1,11 +1,11 @@
 # WoW Killboard — Master AI Session Handoff & Continuity Brief
 
 > **Target Audience**: Any AI assistant (Antigravity, Gemini, Claude, etc.) picking up this session.  
-> **Last Synchronized**: 2026-10-07 21:30:00 EDT  
-> **Git Status**: Branch `main` (Release `v1.0.5` and Web `v2.4.0` live on production).  
+> **Last Synchronized**: 2026-10-07 23:45:00 EDT  
+> **Git Status**: Branch `main` (Release `v1.0.6` and Web `v2.4.0` live on production).  
 > **Developer & Lead**: Dagariane.  
-> **Active Release**: `v1.0.5` (CurseForge Community Release).  
-> **Active Focus**: **In-Game Feed Column Space Optimization, Zero Ellipsis Truncation, Character Portrait Header Integration, Restyled Marked Track Buttons, Sticky Top Filters & Compact Mobile Killmails**.  
+> **Active Release**: `v1.0.6` (CurseForge Community Release).  
+> **Active Focus**: **Hero Medallion Dock, Dynamic Level Medallion, Combat Feed Space Optimization, Hover Lua Crash Fix, Zero Documentation Drift & Multi-Client Parity**.  
 > **Live Production Domain**: [`https://wowkillboard.com/`](https://wowkillboard.com/)
 
 ---
@@ -31,7 +31,7 @@
 6. **Mandatory Automated Verification**:
    - Run `python tests/validate_lua.py` (Must return `[PASS]` for all 13 Lua files).
    - Run `python -m unittest discover tests` (Must return `OK` across all 31 pipeline/security tests).
-   - Run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.5.zip` (and legacy aliases `v1.0.4`, `v1.0.3`, `v1.0.2`, `v1.0.1`, `v1.0.0`).
+   - Run `python scripts/deploy.py` to sync all 4 client directories and update `WoWKillboard-v1.0.6.zip` (and legacy aliases `v1.0.5`, `v1.0.4`, `v1.0.3`, `v1.0.2`, `v1.0.1`, `v1.0.0`).
 
 ---
 
@@ -47,8 +47,9 @@ We are systematically fine-tuning the visual presentation and in-game aesthetic 
   - Reallocated ~80px reclaimed column width: expanded `ZONE` column by 64px (from `x = 512` to `x = 448`), completely eliminating ellipsis truncation for locations like `Loch Modan (Thelsamar)` and `Undercity (Ruins of Lordaeron)`.
   - Expanded `ATTACKER / KILLER` (width 168px) and `VICTIM` (width 168px) columns to prevent player names, guild tags (e.g. `<OLYMPUS XXVII>`), and `[YOU]` tags from clipping.
 - **Character Portrait & Header Alignment Fine-Tuning (`Addon/WoWKillboard/UI.lua`)**:
-  - Nudged `WoWKillboardPlayerPortrait` down to `(12, -8)` so the outer gold tracking ring cleanly clears the top window border with a 2px margin.
-  - Anchored addon title `WoW Killboard v1.0.5` directly to `portraitFrame` (`"LEFT", portraitFrame, "RIGHT", 10, 0`), ensuring clean vertical centering with the portrait center across all themes and window instantiations.
+  - Nudged `WoWKillboardPlayerPortrait` to `(10, -6)` with a concentric 58x58 gold bezel medallion (`Textures/medallion_border.tga`) centered over the 42x42 player face.
+  - Sized level coin to 18x18 at `BOTTOMRIGHT (2, -2)` with a 24x24 gold ring and dynamic updating across level/XP events.
+  - Notched header divider and metrics bar at `x = 68`, anchoring title `WoW Killboard v1.0.6` directly to `headerBar` at `y = -21` in Blizzard Gold (`#FFD100`).
 - **WKB Theme Restyling for "THE MARKED" Card Track Buttons (`Addon/WoWKillboard/UI.lua`)**:
   - Restyled `Track` buttons in Card 2 to match the dark WKB theme: dark slate background (`0.08, 0.11, 0.16, 0.9`), subtle 1px slate line border (`0.20, 0.25, 0.35, 1.0`), and clean pale gold text (`0.9, 0.85, 0.7, 1.0`).
   - Added interactive `OnEnter` and `OnLeave` scripts: shifting border to radiant gold (`0.85, 0.70, 0.25, 1.0`) with bright yellow text on hover, cleanly restoring on mouse exit.
@@ -330,7 +331,7 @@ sudo journalctl -u wowkillboard.service -f
 
 ### Tabled Item 1: Community Release Strategy (Option 1: Zero-Executable Primary)
 - **The Core Decision**: The community release focuses on **Option 1**:
-  - **In-Game Addon (`WoWKillboard-v1.0.5.zip`)**: Distributed via CurseForge (`wkb`) and GitHub Releases. 100% pure Lua, running in Blizzard's locked sandbox. Zero OS file access, zero external network connections, zero executables.
+  - **In-Game Addon (`WoWKillboard-v1.0.6.zip`)**: Distributed via CurseForge (`wkb`) and GitHub Releases. 100% pure Lua, running in Blizzard's locked sandbox. Zero OS file access, zero external network connections, zero executables.
   - **Web Sync via Drag-and-Drop**: Players sync combat data directly by dragging `WTF\...\SavedVariables\WoWKillboard.lua` onto [`wowkillboard.com/upload`](https://wowkillboard.com/upload) in any browser.
   - **Desktop Companion (`WoWKillboardSync.exe`)**: Positioned strictly as an **optional convenience tool for power users** who want automated background syncing on `/reload` or logout.
 
@@ -369,7 +370,7 @@ sudo journalctl -u wowkillboard.service -f
 | **In-Game Addon** | `Addon/WoWKillboard/*.lua`<br>`WoWKillboard.toc` | Pure Lua 5.1, zero XML taint, `BackdropTemplate`, 15s temporal gang clustering, 1v1 duel validation, bounty engine, in-game leaderboards. |
 | **Desktop Companion** | `sync/watcher.py`<br>`sync/gui.py`<br>`sync/version_info.txt`<br>`assets/icon.ico` | Standalone Python watcher. Multi-drive discovery across C:, D:, E:, verified TLS/SSL, native `.url` shortcuts in Startup folder, embedded PE metadata. |
 | **Web Server & API** | `web/server.py`<br>`web/static/app.js`<br>`web/static/index.html` | Flask API + SQLite WAL mode. CDN-first 302 redirects, sliding-window IP rate limiting, DOM XSS immunity via `escapeHtml()` and `safeJsParam()`, 16MB request limits. |
-| **Distribution Packages** | `WoWKillboard-v1.0.5.zip`<br>`WoWKillboard-v1.0.4.zip`<br>`WoWKillboard-v1.0.3.zip`<br>`WoWKillboard-v1.0.2.zip`<br>`WoWKillboardSync.exe` | Mirror archives in root and `web/static/`. Standalone binary verified. |
+| **Distribution Packages** | `WoWKillboard-v1.0.6.zip`<br>`WoWKillboard-v1.0.5.zip`<br>`WoWKillboard-v1.0.4.zip`<br>`WoWKillboard-v1.0.3.zip`<br>`WoWKillboardSync.exe` | Mirror archives in root and `web/static/`. Standalone binary verified. |
 
 ---
 
