@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Seamlessly filters both the live combat feed and competitive leaderboards across timeframe, faction, and mode.
 
 ### Fixed
+- **In-Header Character Portrait & Circular Level Medallion (`Addon/WoWKillboard/UI.lua`)**:
+  - Re-anchored `WoWKillboardPlayerPortrait` from outside the window frame (`-14, 14`) directly inside the top header at `(10, -6)` of `WoWKillboardMainFrame`.
+  - Resized portrait frame to `34x34` pixels with proportional `42x42` circular gold tracking border (`Interface\Minimap\MiniMap-TrackingBorder`).
+  - Applied circular alpha mask (`Interface\CHARACTERFRAME\TempPortraitAlphaMask`) via `CreateMaskTexture()` and `AddMaskTexture()`.
+  - Replaced square level box with a circular level medallion (`18x18`, `Interface\Minimap\UI-Minimap-Background`, gold tracking border, strata `HIGH`, frame level `+5`, and centered bright gold level text).
+  - Maintained dynamic event updates on `UNIT_PORTRAIT_UPDATE`, `PLAYER_LEVEL_UP`, and `PLAYER_ENTERING_WORLD` via `UI:UpdatePortrait()`.
 - **Player Row Styling & Harsh Border Elimination (`Addon/WoWKillboard/UI.lua`)**:
   - Removed harsh yellow/gold bounding box outlines (`0.85, 0.70, 0.30, 1.0`) on player rows (`isLocalPlayer`, `isLocalKiller`, `isLocalVictim`, `[YOU]`).
   - Completely eliminated yellow border resets across all `OnLeave` scripts (Feed, PvE Feed, Player Leaderboard, Guild Leaderboard, 24h Gankers, Marks of Spite, and Reinforcements).

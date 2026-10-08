@@ -341,9 +341,10 @@ function UI:ApplyTheme()
             end
         else
             UI.HeaderPlate:Hide()
-            if UI.TitleText and UI.Medallion then
+            if UI.TitleText and (UI.PlayerPortrait or (UI.Medallion and UI.Medallion.Frame)) then
+                local medFrame = UI.PlayerPortrait or UI.Medallion.Frame
                 UI.TitleText:ClearAllPoints()
-                UI.TitleText:SetPoint("LEFT", UI.Medallion, "RIGHT", 14, 6)
+                UI.TitleText:SetPoint("LEFT", medFrame, "RIGHT", 14, 0)
                 UI.TitleText:SetFontObject("GameFontNormalLarge")
                 UI.TitleText:SetText(theme.titleText or "|cffffd100WoW Killboard|r")
             end
@@ -1028,10 +1029,10 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {1.0, 1.0, 1.0, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
-    -- 1. Top-Left Unit-Frame Character Portrait (50x50, anchored (-14, 14), Strata HIGH)
+    -- 1. Integrated Top Header Character Portrait (34x34, anchored (10, -6), Strata HIGH)
     local portraitFrame = CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")
-    portraitFrame:SetSize(50, 50)
-    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", -14, 14)
+    portraitFrame:SetSize(34, 34)
+    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -6)
     portraitFrame:SetFrameStrata("HIGH")
 
     local portraitTex = portraitFrame:CreateTexture(nil, "BACKGROUND")
@@ -1045,45 +1046,52 @@ function UI:CreateMainWindow()
 
     if portraitFrame.CreateMaskTexture and portraitTex.AddMaskTexture then
         local mask = portraitFrame:CreateMaskTexture()
-        mask:SetAllPoints(portraitFrame)
+        mask:SetAllPoints(portraitTex)
         mask:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         portraitTex:AddMaskTexture(mask)
         portraitFrame.mask = mask
     end
     portraitFrame.portraitTex = portraitTex
 
-    -- Gold Circular Border Ring (62x62 centered over the portrait)
-    local ring = portraitFrame:CreateTexture(nil, "OVERLAY")
-    ring:SetSize(62, 62)
-    ring:SetPoint("CENTER", portraitFrame, "CENTER", 0, 0)
-    ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-    portraitFrame.ring = ring
+    -- Gold Border Ring (42x42 centered proportionally over the portrait)
+    local border = portraitFrame:CreateTexture(nil, "OVERLAY")
+    border:SetPoint("CENTER", portraitFrame, "CENTER", 0, 0)
+    border:SetSize(42, 42)
+    border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    portraitFrame.border = border
+    portraitFrame.ring = border
 
-    -- Overlapping Level Circle (Bottom-Right, 22x22, solid dark fill, 1px gold border)
-    local levelBadge = CreateFrame("Frame", nil, portraitFrame, "BackdropTemplate")
-    levelBadge:SetSize(22, 22)
+    -- Circular Level Medallion (18x18, anchored BOTTOMRIGHT (4, -4), Strata HIGH)
+    local levelFrame = CreateFrame("Frame", nil, portraitFrame)
+    local levelBadge = levelFrame
+    levelBadge:SetSize(18, 18)
     levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 4, -4)
     levelBadge:SetFrameStrata("HIGH")
     levelBadge:SetFrameLevel(portraitFrame:GetFrameLevel() + 5)
-    levelBadge:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    levelBadge:SetBackdropColor(0.04, 0.05, 0.08, 0.95)
-    levelBadge:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0) -- Gold border
 
-    local levelText = levelBadge:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    levelText:SetPoint("CENTER", levelBadge, "CENTER", 0, 0)
-    levelText:SetTextColor(1.0, 0.82, 0.0, 1.0) -- #FFD100
+    local levelBg = levelFrame:CreateTexture(nil, "BACKGROUND")
+    levelBg:SetAllPoints(levelFrame)
+    levelBg:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
+    levelBg:SetVertexColor(0.05, 0.05, 0.08, 0.95)
+    levelFrame.bg = levelBg
+
+    local levelBorder = levelFrame:CreateTexture(nil, "OVERLAY")
+    levelBorder:SetAllPoints(levelFrame)
+    levelBorder:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    levelBorder:SetVertexColor(0.85, 0.70, 0.25, 1.0) -- Gold accent
+    levelFrame.border = levelBorder
+
+    local levelText = levelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    levelText:SetPoint("CENTER", levelFrame, "CENTER", 0, 0)
+    levelText:SetTextColor(1.0, 0.82, 0.0, 1.0) -- Bright Blizzard Gold
     if levelText.SetFont then
         local f, s = levelText:GetFont()
-        levelText:SetFont(f, (s or 10), "OUTLINE,THICK")
+        levelText:SetFont(f, (s or 9), "OUTLINE,THICK")
     end
+    levelText:SetShadowOffset(0, 0)
     levelText:SetText(tostring(UnitLevel("player") or 1))
-    levelBadge.text = levelText
-    portraitFrame.levelBadge = levelBadge
+    levelFrame.text = levelText
+    portraitFrame.levelBadge = levelFrame
 
     portraitFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
     portraitFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -1094,6 +1102,7 @@ function UI:CreateMainWindow()
     end)
 
     UI.PlayerPortrait = portraitFrame
+    UI.LevelBadge = levelText
     UI.Medallion = {
         Portrait = portraitTex,
         LevelBadge = levelText,
