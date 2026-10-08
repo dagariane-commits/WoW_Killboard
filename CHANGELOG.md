@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-10-08 (Streamlined Command Deck & Hamburger Navigation)
+
+### Added
+- **Unified Slide-Out Command Deck Navigation (`Addon/WoWKillboard/UI.lua`)**:
+  - Replaced horizontal tab strip and cluttered top-header buttons with an anonymous pure-Lua slide-out Command Deck drawer (`UI.CommandDeck`, strata `DIALOG`, level 30).
+  - Permanent gold `[☰]` Hamburger button placed at `TOPLEFT (8, 0)` in `headerBar` with high-contrast Blizzard gold glyph and hover tooltip.
+  - Re-anchored hero character portrait medallion to `TOPLEFT (38, -6)` and header title string (`WoW Killboard v1.0.7`) to `(94, 0)` with active realm badge.
+  - Reclaimed 324px of header space by moving Ruleset Mode Switcher (`PvP Combat` / `PvE Hazards`), Settings, and Sync into the Command Deck; expanded tactical search input to 180px anchored neatly to the left of the Close (`X`) button.
+  - Replaced the 5 horizontal sub-bar tabs with a sleek Active View Badge (`UI.ActiveViewBadge`) displaying the current active view (e.g., `[ ☰ INTEL FEED ▾ ]`), which also acts as an interactive trigger for the Command Deck.
+  - Preserved Mode Filter Pills (`[ World ] [ BGs ] [ Duels ] [ Arenas ]`) on the right of the sub-bar with ample breathing room.
+  - Organized drawer into 4 distinct operational categories:
+    1. **Combat Operations**: Intel Feed (`FEED`), Leaderboards (`LEADERBOARD`), Danger Zones (`ZONES`).
+    2. **Bounties & Targets**: The Marked (`BOUNTIES`), Call to Arms (`RALLIES`).
+    3. **Campaign Ruleset**: Interactive segmented toggle for `[ ⚔ PvP Combat ]` and `[ 💀 PvE Hazards ]`.
+    4. **System & Preferences**: Direct triggers for `Settings & Preferences` modal and `Save & Sync Kills` (`/reload`).
+  - Full-frame dim click-dismiss backdrop (`UI.CommandDeckDimOverlay`) and ESC key interception in `mainFrame:SetScript("OnKeyDown")` ensuring ESC closes the Command Deck first without dismissing the main frame.
+  - Strict Guardrail 1 Zero Taint & Combat Lockdown Gating: `InCombatLockdown()` gating on all toggle routines and automated drawer dismissal in `UI:OnPlayerRegenDisabled()`.
+- **Permanent Web Hamburger Navigation & 1:1 Parity (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
+  - Made the master Hamburger button (`#command-deck-btn`) permanently visible on all desktop and mobile viewports (`display: inline-flex !important`).
+  - Removed top horizontal `.nav-links-rail` clutter from `#top-navbar` for a clean, minimalist header bar.
+  - Upgraded left slide-out Command Deck drawer with matching 4-category taxonomy, frosted glass backdrop, and quick action tiles.
+
+### Changed
+- **Version Bump to v1.0.7**:
+  - Bumped version to `1.0.7` across `Config.lua`, `WoWKillboard.toc`, `WoWKillboard_RealmData.lua`, `server.py`, `app.js`, `index.html`, and `deploy.py`.
+
 ## [1.0.6] - 2026-10-07 (CurseForge & Multi-Client Release)
 
 ### Added

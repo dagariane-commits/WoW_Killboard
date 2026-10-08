@@ -1,6 +1,6 @@
 # WoW Killboard — Frontline War Room
 
-[![Release](https://img.shields.io/badge/Release-v1.0.6-00e5ff.svg)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/Release-v1.0.7-00e5ff.svg)](CHANGELOG.md)
 [![CI](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml/badge.svg)](https://github.com/dagariane-commits/WoW_Killboard/actions/workflows/codeql.yml)
 [![WoW Flavors](https://img.shields.io/badge/WoW-Forever%20%7C%20Classic%20Era%20%7C%20Anniversary%20%7C%20Retail-ffd700.svg)](docs/TAINT_AND_COMPATIBILITY.md)
@@ -32,7 +32,7 @@ Comprehensive technical documentation is maintained in the [`docs/`](docs/) dire
 - ☁️ **[Dedicated Linux VPS Deployment](docs/DEPLOYMENT_VPS.md)** — AWS Lightsail runbook, automated SSL/TLS via Caddy, and backup automation.
 - 🗺️ **[Forward Strategic Roadmap](docs/ROADMAP.md)** — Phased roadmap covering public launch, guild war rooms, and ranked seasons.
 - 🚀 **[Public Release & Distribution Playbook](docs/PUBLIC_RELEASE_PLAYBOOK.md)** — Guide for packaging, CurseForge/Wago distribution, and hosting.
-- 📝 **[Semantic Version Change Log](CHANGELOG.md)** — Full changelog trail from initial prototype to v1.0.6 release.
+- 📝 **[Semantic Version Change Log](CHANGELOG.md)** — Full changelog trail from initial prototype to v1.0.7 release.
 - 🤝 **[Contributing Guidelines](CONTRIBUTING.md)** — Development standards and PR checklist for open-source contributors.
 - ⚖️ **[Legal, Safety & Compliance Guide](docs/LEGAL_AND_COMPLIANCE.md)** — Authorship, Blizzard Add-on Policy compliance, zero PII, and anti-cheat safety.
 
@@ -74,9 +74,19 @@ flowchart TD
 ## Core Feature Highlights
 
 ### 1. In-Game Addon (`Addon/WoWKillboard/`)
+- **Permanent Hamburger Command Deck & Streamlined Navigation**:
+  - Unified slide-out Command Deck drawer (`UI.CommandDeck`, strata `DIALOG`, level 30) triggered by a permanent gold `[☰]` Hamburger button at `TOPLEFT (8, 0)` on the header bar.
+  - Reclaimed 324px of header space by consolidating ruleset mode switcher, settings, and sync buttons into the Command Deck, expanding the real-time search box to 180px directly adjacent to the close button.
+  - Sub-bar features a sleek Active View Badge (`UI.ActiveViewBadge`) on the left (e.g. `[ ☰ INTEL FEED ▾ ]`) that dynamically triggers the Command Deck, with Mode Filter Pills (`[ World ] [ BGs ] [ Duels ] [ Arenas ]`) centered and anchored cleanly on the right.
+  - Organized drawer into 4 distinct operational categories:
+    1. **Combat Operations**: Intel Feed (`FEED`), Leaderboards (`LEADERBOARD`), Danger Zones (`ZONES`).
+    2. **Bounties & Targets**: The Marked (`BOUNTIES`), Call to Arms (`RALLIES`).
+    3. **Campaign Ruleset**: Segmented toggle for `[ ⚔ PvP Combat ]` and `[ 💀 PvE Hazards ]`.
+    4. **System & Preferences**: Quick access to Settings modal and manual SavedVariables sync (`/reload`).
+  - Strict Guardrail 1 Zero-Taint: Pure Lua widgets, `"BackdropTemplate"`, full-frame dim overlay, safe ESC key interception closing drawer first, and strict `InCombatLockdown()` gating with auto-dismissal on entering combat.
 - **Integrated Character Portrait Medallion & Dynamic Level Coin**:
-  - Circular unit-frame player portrait (`WoWKillboardPlayerPortrait`, 48x48) anchored to the top-left at `(10, -6)` on strata `HIGH` with circular alpha mask and concentric 58x58 gold medallion bezel (`Textures/medallion_border.tga`).
-  - Overlapping 18x18 circular level medallion at `BOTTOMRIGHT (2, -2)` displaying bold gold player level text updating dynamically on `UNIT_LEVEL`, `PLAYER_LEVEL_UP`, and `PLAYER_XP_UPDATE`. Title string `WoW Killboard v1.0.6` anchored level with header controls at `(68, 0)` with dedicated notch.
+  - Circular unit-frame player portrait (`WoWKillboardPlayerPortrait`, 48x48) docked at `TOPLEFT (38, -6)` on strata `HIGH` with circular alpha mask and concentric 58x58 gold medallion bezel (`Textures/medallion_border.tga`).
+  - Overlapping 18x18 circular level medallion at `BOTTOMRIGHT (2, -2)` displaying bold gold player level text updating dynamically on `UNIT_LEVEL`, `PLAYER_LEVEL_UP`, and `PLAYER_XP_UPDATE`. Title string `WoW Killboard v1.0.7` anchored level with header controls at `(94, 0)` with dedicated notch.
 - **Rich Red & Blue Faction Pill Badges & Telemetry Split Bar**:
   - High-contrast rounded solid pill badges for faction columns: Solid Royal Blue `#103894` with cyan border and Alliance crest for Alliance; Solid Crimson Red `#8C1414` with orange-red border and Horde crest for Horde.
   - Telemetry ribbon visual progress bar (`UI.FactionSplitBar`, 140x12) rendering dynamic real-time Alliance/Horde war splits with drop-shadowed white text.
@@ -92,17 +102,6 @@ flowchart TD
   - **Theme: ElvUI**: Minimalist dark styling featuring master frame `#0A0A0A`, card backdrops `#141414`, strict 1px flat black borders, and flat dark gray buttons with bright white accent borders.
   - **Theme: Classic Blizzard Stone**: Authentic Blizzard dialog stone backgrounds (`UI-DialogBox-Background`), stone and gold borders (`UI-DialogBox-Border`), and parchment accents.
   - **Zero-Taint Theme Dropdown & Switcher**: Select between themes via the Settings dialog dropdown (`Classic`, `ElvUI`, `WKB Theme`), minimap right-click, or `/kb theme [wkb|elvui|classic]`.
-- **Mode Filter Pills & Clean Tab Navigation (`/kb`)**:
-  - **Contextual Mode Filtering**: Tactile pill buttons (`[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`) in the sub-toolbar immediately filter combat rows and re-aggregate leaderboard standings. Active pills glow with gold border `#D4AF37` and dark brass fill.
-  - **Zero Duplication Navigation**: Strictly 5 clean tabs for PvP (`Intel`, `Leaderboards`, `The Marked`, `Call to Arms`, `Danger Zones`) and 5 clean tabs for PvE (`Casualties`, `Deadly Hazards`, `Notorious Elites`, `Rescue Beacons`, `Zone Mortality`), completely removing duplicate Hazards tabs.
-- **Zero-Taint Isolated Dashboard (`/kb`)**:
-  - 100% template-free pure Lua widgets (`BackdropTemplate`). Zero XML template dependencies (`UIPanelButtonTemplate`, etc.). Zero `UISpecialFrames` pollution.
-  - Safe ESC key event propagation (`SetPropagateKeyboardInput`).
-  - Guaranteed **88px clear margin** eliminating navigation tab and filter button overlap.
-- **Strict Realm Isolation & Interactive PvE/PvP Stats Toggle**:
-  - **Active Realm Header Display**: Prominently displays the player's active realm and ruleset badge (e.g. `Realm: Crusader Strike [PvP]` or `Realm: Wild Growth [PvE]`).
-  - **Interactive Stats Toggle**: Header toggle button (`[PVP STATS]` / `[PVE STATS]`) switches between Contested PvP and Wilderness PvE statistics on the fly.
-  - **Default Ruleset Lockdown**: RP and PvE servers automatically default to PvE mode, displaying the Wilderness Bestiary and Fallen Mortals instead of PvP leaderboards.
   - **Zero Cross-Realm Leakage**: Normalized realm-matching ensures players on a PvP realm only see combatants from their active realm.
 - **Balanced 3-Card Tactical Stat Header**:
   - `SESSION COMBAT K/D` (Cyan) — Active session kills, deaths, and K/D ratio.
@@ -264,7 +263,7 @@ WoW_Killboard/
 ├── CHANGELOG.md                     # Semantic version change log
 ├── CONTRIBUTING.md                  # Open-source contribution guidelines
 ├── WoWKillboardSync.exe             # Pre-compiled standalone sync binary (12.3 MB)
-└── WoWKillboard-v1.0.6.zip          # Production-ready addon release package
+└── WoWKillboard-v1.0.7.zip          # Production-ready addon release package
 ```
 
 ---
@@ -272,7 +271,7 @@ WoW_Killboard/
 ## Quickstart Guide
 
 ### 1. In-Game Addon Installation
-1. Download [`WoWKillboard-v1.0.6.zip`](WoWKillboard-v1.0.6.zip) and extract it into your World of Warcraft AddOns directory:
+1. Download [`WoWKillboard-v1.0.7.zip`](WoWKillboard-v1.0.7.zip) and extract it into your World of Warcraft AddOns directory:
    - **Forever Beta**: `World of Warcraft/_classic_beta_/Interface/AddOns/WoWKillboard`
    - **Classic Era**: `World of Warcraft/_classic_era_/Interface/AddOns/WoWKillboard`
    - **Anniversary**: `World of Warcraft/_anniversary_/Interface/AddOns/WoWKillboard`

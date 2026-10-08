@@ -67,11 +67,11 @@ def get_addon_version():
             for line in f:
                 if line.startswith("## Version:"):
                     return line.split(":", 1)[1].strip()
-    return "1.0.6"
+    return "1.0.7"
 
 def rebuild_zip():
     version = get_addon_version()
-    zip_names = [f"WoWKillboard-v{version}.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"]
+    zip_names = [f"WoWKillboard-v{version}.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"]
     
     primary_zip = os.path.join(BASE_DIR, zip_names[0])
     with zipfile.ZipFile(primary_zip, "w", zipfile.ZIP_DEFLATED) as z:

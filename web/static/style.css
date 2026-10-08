@@ -572,37 +572,46 @@ body {
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
 }
 
-/* Force hamburger trigger to remain visible on all screen sizes */
+/* Force master Command Deck hamburger trigger to remain visible on all screen sizes */
+#command-deck-btn,
+.command-deck-btn,
 #mobile-menu-btn,
 .mobile-menu-btn {
   display: flex !important;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(51, 65, 85, 0.8);
+  flex-direction: column;
+  gap: 4px;
+  width: 36px;
+  height: 36px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--wow-brass-border, #4a3b27);
   border-radius: 6px;
-  color: #e2e8f0;
+  color: var(--wow-gold, #ffd100);
   font-size: 1.25rem;
   cursor: pointer;
   visibility: visible !important;
   opacity: 1 !important;
-  transition: all 0.15s ease-in-out;
+  transition: all 0.2s ease-in-out;
   flex-shrink: 0;
 }
 
+#command-deck-btn:hover,
+.command-deck-btn:hover,
 #mobile-menu-btn:hover,
 .mobile-menu-btn:hover {
   background: rgba(30, 41, 59, 1);
-  border-color: rgba(148, 115, 56, 0.9);
-  color: #f1c40f;
+  border-color: var(--wow-gold, #ffd100);
+  box-shadow: 0 0 12px rgba(212, 163, 41, 0.35);
+  color: #ffd100;
+  transform: translateY(-1px);
 }
 
+.hamburger-bar,
 .menu-bar {
-  width: 20px;
+  width: 18px;
   height: 2px;
-  background-color: var(--text-main);
+  background-color: var(--wow-gold, #ffd100);
   border-radius: 2px;
   transition: all 0.2s;
   pointer-events: none;
@@ -991,20 +1000,23 @@ body {
   opacity: 1;
 }
 
-.mobile-drawer {
+.mobile-drawer,
+.command-deck-drawer {
   position: fixed;
   top: 0;
-  right: 0;
+  left: 0;
   bottom: 0;
   width: 320px;
   max-width: 85vw;
-  background: #090c14;
-  border-left: 1px solid var(--border-color);
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.8);
+  background: rgba(9, 12, 20, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid var(--border-color, #1e293b);
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.85);
   z-index: 3001;
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
+  transform: translateX(-100%);
   visibility: hidden;
   pointer-events: none;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease;

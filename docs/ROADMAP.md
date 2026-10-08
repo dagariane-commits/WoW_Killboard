@@ -107,9 +107,15 @@ timeline
   - Replaced verbose boilerplate text (`slain by Combat Strike`) in PvP and PvE feeds with compact 18x18 ability icons and hover tooltips (`GameTooltip`).
   - Reallocated ~80px reclaimed column width: expanded `ZONE` by +64px (from `x = 512` to `x = 448`), completely eliminating ellipsis truncation.
   - Expanded `ATTACKER` and `VICTIM` columns to 168px each, preventing guild tag clipping.
+- [x] **Permanent Hamburger Command Deck & Streamlined Header Navigation**:
+  - Replaced cluttered top header buttons and 5 horizontal tabs with a slide-out pure-Lua Command Deck drawer (`UI.CommandDeck`).
+  - Added permanent gold `[☰]` Hamburger button at `TOPLEFT (8, 0)`, docked character portrait at `(38, -6)`, and anchored title string `WoW Killboard v1.0.7` at `(94, 0)`.
+  - Reclaimed 324px of header space by consolidating mode switcher, settings, and sync into the drawer; expanded search box to 180px adjacent to the close button.
+  - Sub-bar features Active View Badge (`UI.ActiveViewBadge`) on the left that triggers the Command Deck, with Mode Filter Pills (`[ World ] [ BGs ] [ Duels ] [ Arenas ]`) centered on the right.
+  - Full-frame dim click-dismiss backdrop, ESC key interception closing drawer first, and strict `InCombatLockdown()` gating with auto-dismissal on entering combat.
 - [x] **Integrated Character Portrait Medallion & Dynamic Level Updates**:
-  - Prominent 48x48 character portrait at `(10, -6)` with concentric 58x58 gold medallion bezel (`Textures/medallion_border.tga`), overlapping 18x18 circular level coin at `(2, -2)`, and real-time level updating.
-  - Dedicated notch for header divider & metrics bar at `x = 68`, with title text `WoW Killboard v1.0.6` anchored level at `y = -21` in Blizzard Gold (`#FFD100`).
+  - Prominent 48x48 character portrait with concentric 58x58 gold medallion bezel (`Textures/medallion_border.tga`), overlapping 18x18 circular level coin at `(2, -2)`, and real-time level updating.
+  - Dedicated notch for header divider & metrics bar at `x = 94`, with title text `WoW Killboard v1.0.7` anchored level at `y = -21` in Blizzard Gold (`#FFD100`).
 - [x] **Clean Player Row Highlighting & Restyled Marked Track Buttons**:
   - Completely eliminated harsh yellow bounding box outlines around player rows (`[YOU]`), replacing them with subtle semi-transparent washes `(0.12, 0.16, 0.24, 0.35)`.
   - Restyled `Track` buttons in "THE MARKED" Card with dark slate theme, pale gold text, and radiant gold hover states.

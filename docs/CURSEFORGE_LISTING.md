@@ -80,12 +80,12 @@ Upload the screenshots located in [`../assets/curseforge/`](../assets/curseforge
 
 > [!IMPORTANT]
 > **CurseForge & Git Lockstep Parity (MANDATORY)**:
-> Whenever you push or upload an update to CurseForge, you **MUST** ensure the exact same code and zip are committed, tagged, and pushed to GitHub (`git tag -a v1.0.6 -m "..."` and `git push origin main --tags`). Users downloading from GitHub or CurseForge must always experience identical features, styling, and bug fixes.
+> Whenever you push or upload an update to CurseForge, you **MUST** ensure the exact same code and zip are committed, tagged, and pushed to GitHub (`git tag -a v1.0.7 -m "..."` and `git push origin main --tags`). Users downloading from GitHub or CurseForge must always experience identical features, styling, and bug fixes.
 
 1. Navigate to the **File** tab on your CurseForge project dashboard.
 2. Click **Upload File**.
-3. Select `WoWKillboard-v1.0.6.zip` (located in the project root: `WoWKillboard-v1.0.6.zip`).
-4. Set **Display Name**: `WKB v1.0.6 (Community Release)`
+3. Select `WoWKillboard-v1.0.7.zip` (located in the project root: `WoWKillboard-v1.0.7.zip`).
+4. Set **Display Name**: `WKB v1.0.7 (Streamlined Command Deck)`
 5. Set **Release Type**: `Release` (or `Beta` if you prefer).
 6. Under **Supported Game Versions**, select:
    - `World of Warcraft Classic` (Classic Era `1.15.x`)
