@@ -17,12 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Seamlessly filters both the live combat feed and competitive leaderboards across timeframe, faction, and mode.
 
 ### Fixed
-- **In-Header Character Portrait & Circular Level Medallion Alignment (`Addon/WoWKillboard/UI.lua`)**:
-  - Vertically centered `WoWKillboardPlayerPortrait` within the 42px top bar at `(10, -4)` of `WoWKillboardMainFrame` so the 42x42 gold border ring sits flush without cutting across the bottom divider line.
-  - Sized portrait frame to `34x34` pixels with circular alpha mask (`TempPortraitAlphaMask`) and centered gold tracking border (`Interface\Minimap\MiniMap-TrackingBorder`).
-  - Restyled level medallion (`18x18`) with circular alpha mask, dark coin backdrop (`0.05, 0.06, 0.09, 0.95`), 26x26 tracking border, and re-anchored to `BOTTOMRIGHT` at `(2, 0)` so it stays completely inside the header bar above the telemetry ribbon.
-  - Shifted addon title text anchor to `(56, 0)` from header bar `LEFT`, giving a clean 8px margin from the circular gold ring.
-  - Maintained dynamic event updates on `UNIT_PORTRAIT_UPDATE`, `PLAYER_LEVEL_UP`, and `PLAYER_ENTERING_WORLD` via `UI:UpdatePortrait()`.
+- **Enlarged Character Portrait Medallion & Dynamic Level Updating (`Addon/WoWKillboard/UI.lua`)**:
+  - Enlarged `WoWKillboardPlayerPortrait` to a prominent `48x48` pixels anchored at `(12, -4)` with a proportional `60x60` circular gold tracking ring (`Interface\Minimap\MiniMap-TrackingBorder`) and smooth circular alpha mask (`TempPortraitAlphaMask`).
+  - Sized level medallion coin to `20x20` with a centered `28x28` gold tracking border, anchored to `BOTTOMRIGHT` at `(2, -2)` so it stays in the bottom corner without obscuring the character's face.
+  - Implemented comprehensive dynamic level updating: registered `UNIT_LEVEL`, `PLAYER_LEVEL_UP`, `PLAYER_XP_UPDATE`, `PLAYER_ENTERING_WORLD`, `PLAYER_ALIVE`, and `ZONE_CHANGED_NEW_AREA` events.
+  - Integrated `UI:UpdatePortrait()` into `UI:Refresh()` and `OnShow` routines, setting player level dynamically on `UI.LevelBadge`, `pf.levelBadge.text`, and `UI.Medallion.LevelBadge`.
+  - Shifted header title anchor to `(74, 0)` and telemetry ribbon text to `(70, 0)` to provide clean 8px margins around the enlarged medallion.
 - **Player Row Styling & Harsh Border Elimination (`Addon/WoWKillboard/UI.lua`)**:
   - Removed harsh yellow/gold bounding box outlines (`0.85, 0.70, 0.30, 1.0`) on player rows (`isLocalPlayer`, `isLocalKiller`, `isLocalVictim`, `[YOU]`).
   - Completely eliminated yellow border resets across all `OnLeave` scripts (Feed, PvE Feed, Player Leaderboard, Guild Leaderboard, 24h Gankers, Marks of Spite, and Reinforcements).

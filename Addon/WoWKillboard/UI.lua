@@ -752,11 +752,17 @@ function UI:UpdatePortrait()
         end
     end
 
-    local levelBadgeText = (pf and pf.levelBadge and pf.levelBadge.text) or (UI.Medallion and UI.Medallion.LevelBadge)
-    if levelBadgeText and UnitLevel then
-        local pLvl = UnitLevel("player")
-        if pLvl and pLvl > 0 then
-            levelBadgeText:SetText(tostring(pLvl))
+    local pLvl = (UnitLevel and UnitLevel("player")) or 1
+    if pLvl and pLvl > 0 then
+        local lvlStr = tostring(pLvl)
+        if UI.LevelBadge and UI.LevelBadge.SetText then
+            UI.LevelBadge:SetText(lvlStr)
+        end
+        if pf and pf.levelBadge and pf.levelBadge.text and pf.levelBadge.text.SetText then
+            pf.levelBadge.text:SetText(lvlStr)
+        end
+        if UI.Medallion and UI.Medallion.LevelBadge and UI.Medallion.LevelBadge.SetText then
+            UI.Medallion.LevelBadge:SetText(lvlStr)
         end
     end
 end
@@ -1029,10 +1035,10 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {1.0, 1.0, 1.0, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
-    -- 1. Integrated Top Header Character Portrait (34x34, anchored (10, -4), Strata HIGH)
+    -- 1. Integrated Character Portrait Medallion (48x48, anchored (12, -4), Strata HIGH)
     local portraitFrame = CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")
-    portraitFrame:SetSize(34, 34)
-    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -4)
+    portraitFrame:SetSize(48, 48)
+    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 12, -4)
     portraitFrame:SetFrameStrata("HIGH")
 
     local portraitTex = portraitFrame:CreateTexture(nil, "BACKGROUND")
@@ -1053,25 +1059,25 @@ function UI:CreateMainWindow()
     end
     portraitFrame.portraitTex = portraitTex
 
-    -- Gold Border Ring (42x42 centered proportionally over the portrait)
+    -- Gold Border Ring (60x60 centered proportionally over the portrait)
     local border = portraitFrame:CreateTexture(nil, "OVERLAY")
     border:SetPoint("CENTER", portraitFrame, "CENTER", 0, 0)
-    border:SetSize(42, 42)
+    border:SetSize(60, 60)
     border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     portraitFrame.border = border
     portraitFrame.ring = border
 
-    -- Circular Level Medallion (18x18, anchored BOTTOMRIGHT (2, 0), Strata HIGH)
+    -- Circular Level Medallion (20x20, anchored BOTTOMRIGHT (2, -2), Strata HIGH)
     local levelFrame = CreateFrame("Frame", nil, portraitFrame)
     local levelBadge = levelFrame
-    levelBadge:SetSize(18, 18)
-    levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 2, 0)
+    levelBadge:SetSize(20, 20)
+    levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 2, -2)
     levelBadge:SetFrameStrata("HIGH")
     levelBadge:SetFrameLevel(portraitFrame:GetFrameLevel() + 5)
 
     local levelBg = levelFrame:CreateTexture(nil, "BACKGROUND")
     levelBg:SetAllPoints(levelFrame)
-    levelBg:SetColorTexture(0.05, 0.06, 0.09, 0.95)
+    levelBg:SetColorTexture(0.04, 0.05, 0.08, 0.95)
     if levelFrame.CreateMaskTexture and levelBg.AddMaskTexture then
         local mask = levelFrame:CreateMaskTexture()
         mask:SetAllPoints(levelBg)
@@ -1083,7 +1089,7 @@ function UI:CreateMainWindow()
 
     local levelBorder = levelFrame:CreateTexture(nil, "OVERLAY")
     levelBorder:SetPoint("CENTER", levelFrame, "CENTER", 0, 0)
-    levelBorder:SetSize(26, 26)
+    levelBorder:SetSize(28, 28)
     levelBorder:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     levelBorder:SetVertexColor(0.85, 0.70, 0.25, 1.0) -- Gold accent
     levelFrame.border = levelBorder
@@ -1093,18 +1099,24 @@ function UI:CreateMainWindow()
     levelText:SetTextColor(1.0, 0.85, 0.0, 1.0) -- Bright Blizzard Gold
     if levelText.SetFont then
         local f, s = levelText:GetFont()
-        levelText:SetFont(f, (s or 9), "OUTLINE,THICK")
+        levelText:SetFont(f, (s or 10), "OUTLINE,THICK")
     end
     levelText:SetShadowOffset(0, 0)
-    levelText:SetText(tostring(UnitLevel("player") or 1))
+    levelText:SetText(tostring((UnitLevel and UnitLevel("player")) or 1))
     levelFrame.text = levelText
     portraitFrame.levelBadge = levelFrame
 
     portraitFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
-    portraitFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    portraitFrame:RegisterEvent("UNIT_LEVEL")
     portraitFrame:RegisterEvent("PLAYER_LEVEL_UP")
+    portraitFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    portraitFrame:RegisterEvent("PLAYER_XP_UPDATE")
+    portraitFrame:RegisterEvent("PLAYER_ALIVE")
+    portraitFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     portraitFrame:SetScript("OnEvent", function(self, event, unit)
-        if event == "UNIT_PORTRAIT_UPDATE" and unit ~= "player" then return end
+        if (event == "UNIT_PORTRAIT_UPDATE" or event == "UNIT_LEVEL") and unit and unit ~= "player" then
+            return
+        end
         UI:UpdatePortrait()
     end)
 
@@ -1138,9 +1150,9 @@ function UI:CreateMainWindow()
     headerDiv:SetColorTexture(40/255, 50/255, 65/255, 0.8)
     headerBar.Divider = headerDiv
 
-    -- Addon Title (Shifted to 56px to cleanly clear the circular gold portrait ring with 8px margin)
+    -- Addon Title (Shifted to 74px to cleanly clear the 60px circular gold portrait ring with 8px margin)
     local title = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("LEFT", headerBar, "LEFT", 56, 0)
+    title:SetPoint("LEFT", headerBar, "LEFT", 74, 0)
     title:SetTextColor(1.0, 0.82, 0.0, 1.0)
     title:SetText("WoW Killboard")
     if title.SetFont then local f, s = title:GetFont(); title:SetFont(f, (s or 12) + 1, "OUTLINE") end
@@ -1552,7 +1564,7 @@ function UI:CreateMainWindow()
     splitBar.Text = splitText
 
     local ribbonText = metricsBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    ribbonText:SetPoint("LEFT", metricsBar, "LEFT", 12, 0)
+    ribbonText:SetPoint("LEFT", metricsBar, "LEFT", 70, 0)
     ribbonText:SetPoint("RIGHT", splitBarLabel, "LEFT", -8, 0)
     ribbonText:SetJustifyH("LEFT")
     ribbonText:SetTextColor(1.0, 1.0, 1.0, 1.0)
@@ -2123,6 +2135,7 @@ end
 -- Refresh UI content based on activeTab and currentMode
 function UI:Refresh()
     if not UI.ContentFrame or InCombatLockdown() then return end
+    UI:UpdatePortrait()
     if KB.SyncRealmData then KB:SyncRealmData() end
     KB.Leaderboard:Rebuild()
 
