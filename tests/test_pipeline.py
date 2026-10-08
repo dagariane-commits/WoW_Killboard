@@ -2216,7 +2216,7 @@ WoWKillboardDB = {
         self.assertIn('portraitFrame:SetFrameStrata("HIGH")', ui_content)
         self.assertIn('TempPortraitAlphaMask', ui_content)
         self.assertIn('MiniMap-TrackingBorder', ui_content)
-        self.assertIn('levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 4, -4)', ui_content)
+        self.assertIn('levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 2, 0)', ui_content)
 
         # 16. Verify Faction War Split Visual Progress Bar in Telemetry Strip
         self.assertIn('UI.FactionSplitBar = splitBar', ui_content)

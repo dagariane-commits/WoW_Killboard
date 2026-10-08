@@ -1029,10 +1029,10 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {1.0, 1.0, 1.0, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
-    -- 1. Integrated Top Header Character Portrait (34x34, anchored (10, -6), Strata HIGH)
+    -- 1. Integrated Top Header Character Portrait (34x34, anchored (10, -4), Strata HIGH)
     local portraitFrame = CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")
     portraitFrame:SetSize(34, 34)
-    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -6)
+    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -4)
     portraitFrame:SetFrameStrata("HIGH")
 
     local portraitTex = portraitFrame:CreateTexture(nil, "BACKGROUND")
@@ -1061,29 +1061,36 @@ function UI:CreateMainWindow()
     portraitFrame.border = border
     portraitFrame.ring = border
 
-    -- Circular Level Medallion (18x18, anchored BOTTOMRIGHT (4, -4), Strata HIGH)
+    -- Circular Level Medallion (18x18, anchored BOTTOMRIGHT (2, 0), Strata HIGH)
     local levelFrame = CreateFrame("Frame", nil, portraitFrame)
     local levelBadge = levelFrame
     levelBadge:SetSize(18, 18)
-    levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 4, -4)
+    levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 2, 0)
     levelBadge:SetFrameStrata("HIGH")
     levelBadge:SetFrameLevel(portraitFrame:GetFrameLevel() + 5)
 
     local levelBg = levelFrame:CreateTexture(nil, "BACKGROUND")
     levelBg:SetAllPoints(levelFrame)
-    levelBg:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
-    levelBg:SetVertexColor(0.05, 0.05, 0.08, 0.95)
+    levelBg:SetColorTexture(0.05, 0.06, 0.09, 0.95)
+    if levelFrame.CreateMaskTexture and levelBg.AddMaskTexture then
+        local mask = levelFrame:CreateMaskTexture()
+        mask:SetAllPoints(levelBg)
+        mask:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        levelBg:AddMaskTexture(mask)
+        levelFrame.mask = mask
+    end
     levelFrame.bg = levelBg
 
     local levelBorder = levelFrame:CreateTexture(nil, "OVERLAY")
-    levelBorder:SetAllPoints(levelFrame)
+    levelBorder:SetPoint("CENTER", levelFrame, "CENTER", 0, 0)
+    levelBorder:SetSize(26, 26)
     levelBorder:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     levelBorder:SetVertexColor(0.85, 0.70, 0.25, 1.0) -- Gold accent
     levelFrame.border = levelBorder
 
     local levelText = levelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     levelText:SetPoint("CENTER", levelFrame, "CENTER", 0, 0)
-    levelText:SetTextColor(1.0, 0.82, 0.0, 1.0) -- Bright Blizzard Gold
+    levelText:SetTextColor(1.0, 0.85, 0.0, 1.0) -- Bright Blizzard Gold
     if levelText.SetFont then
         local f, s = levelText:GetFont()
         levelText:SetFont(f, (s or 9), "OUTLINE,THICK")
@@ -1131,9 +1138,9 @@ function UI:CreateMainWindow()
     headerDiv:SetColorTexture(40/255, 50/255, 65/255, 0.8)
     headerBar.Divider = headerDiv
 
-    -- Addon Title (Shifted to 48px to cleanly clear the circular gold portrait ring)
+    -- Addon Title (Shifted to 56px to cleanly clear the circular gold portrait ring with 8px margin)
     local title = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("LEFT", headerBar, "LEFT", 48, 0)
+    title:SetPoint("LEFT", headerBar, "LEFT", 56, 0)
     title:SetTextColor(1.0, 0.82, 0.0, 1.0)
     title:SetText("WoW Killboard")
     if title.SetFont then local f, s = title:GetFont(); title:SetFont(f, (s or 12) + 1, "OUTLINE") end
