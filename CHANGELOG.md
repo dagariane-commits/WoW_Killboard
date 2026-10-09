@@ -36,6 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Configured homepage default landing view to `LEGENDS` (Defender of Azeroth Leaderboards) with immediate loading feedback so players land directly on champion standings.
   - Hardened `allBounties` and `beacons` collections with `Array.isArray()` checks to prevent payload mapping errors.
 
+### Fixed
+- **Font-Independent Vector Hamburger Icons & Zero Broken Unicode Glyphs (`Addon/WoWKillboard/UI.lua`, `Sync.lua`, `WoWKillboard_RealmData.lua`)**:
+  - Replaced unsupported unicode font strings (`☰` and `▾`) on `UI.HamburgerButton` and `UI.ActiveViewBadge` with pure 2px vector texture bars (`WHITE8X8`) and standard ASCII arrow indicator (`v`). Eliminated missing-glyph square box (`[]`) rendering across all WoW client fonts.
+  - Upgraded all Command Deck drawer buttons (`FEED`, `LEADERBOARD`, `ZONES`, `BOUNTIES`, `RALLIES`, `PvP Combat`, `PvE Hazards`, `Settings & Preferences`, `Save & Sync Kills`) with crisp 16x16 Blizzard icon textures (`INV_Sword_04`, `INV_BannerPVP_02`, `INV_Misc_Map02`, `Ability_Rogue_BloodSplatter`, `INV_Misc_Horn_01`, `Spell_Shadow_SummonImp`, `Trade_Engineering`, `Spell_Holy_Renew`) with modern borderless square zoom (`SetTexCoord(0.08, 0.92, 0.08, 0.92)`).
+  - Stripped all UTF-8 multi-byte emoji prefixes (`⚔`, `🏆`, `🗺️`, `💀`, `📢`, `⚙️`, `💾`, `⭐`) and unicode bullets (`•`)/em-dashes (`—`) across the entire addon codebase, preventing missing box glyphs (`[]` and `[][]`) in chat broadcasts, alert banners, promo buttons, and sync notifications.
+
 ### Changed
 - **Version Bump to v1.0.7**:
   - Bumped version to `1.0.7` across `Config.lua`, `WoWKillboard.toc`, `WoWKillboard_RealmData.lua`, `server.py`, `app.js`, `index.html`, and `deploy.py`.

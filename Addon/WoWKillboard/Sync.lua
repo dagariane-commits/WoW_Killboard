@@ -936,7 +936,7 @@ function S:CheckPeerVersion(peerVer, sender)
             else
                 S.hasNotifiedNewVersion = true
                 local msg = string.format(
-                    "|cff00ccff[WoWKB]|r |cffffd100A newer version of WoW Killboard is available!|r (|cff00ff00v%s|r) — Type |cffffffff/kb changelog|r or update via CurseForge (search 'wkb').",
+                    "|cff00ccff[WoWKB]|r |cffffd100A newer version of WoW Killboard is available!|r (|cff00ff00v%s|r) -- Type |cffffffff/kb changelog|r or update via CurseForge (search 'wkb').",
                     peerVer
                 )
                 if KB.Utils and KB.Utils.SafePrint then
