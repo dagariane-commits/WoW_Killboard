@@ -29,7 +29,7 @@ local SafePrint = function(...)
 end
 
 local mainFrame = nil
-local activeTab = "FEED"   -- "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES"
+local activeTab = "LEADERBOARD"   -- "LEADERBOARD", "FEED", "BOUNTIES", "RALLIES", "ZONES"
 local currentMode = "WORLD"  -- "WORLD", "BG", "DUEL", "ARENA"
 local currentFilter = "ALL"  -- "ALL", "SOLO", "GROUP", "RAID"
 local hlSubTab = "PLAYERS"   -- "PLAYERS" (Player Ranks), "GUILDS" (Guild Ranks), "GANKERS_24H" (Top Gankers 24h)
@@ -39,6 +39,7 @@ local marksSubTab = "ACTIVE" -- "ACTIVE" (Execution List), "RECORDS" (Hall of Fa
 local pveHlSubTab = "PREDATORS" -- "PREDATORS" (Monsters & Elites), "VICTIMS" (Fallen Mortals), "ZONES" (Deadliest Zones)
 
 local tabButtons = {}
+local deckButtons = {}
 local filterButtons = {}
 
 function UI:GetRuleset()
@@ -341,10 +342,10 @@ function UI:ApplyTheme()
             end
         else
             UI.HeaderPlate:Hide()
-            if UI.TitleText and (UI.PlayerPortrait or (UI.Medallion and UI.Medallion.Frame)) then
-                local medFrame = UI.PlayerPortrait or UI.Medallion.Frame
+            if UI.TitleText and (UI.HamburgerButton or UI.PlayerPortrait or (UI.Medallion and UI.Medallion.Frame)) then
+                local anchorFrame = UI.HamburgerButton or UI.PlayerPortrait or UI.Medallion.Frame
                 UI.TitleText:ClearAllPoints()
-                UI.TitleText:SetPoint("LEFT", medFrame, "RIGHT", 10, 0)
+                UI.TitleText:SetPoint("LEFT", anchorFrame, "RIGHT", 10, 0)
                 UI.TitleText:SetFontObject("GameFontNormalLarge")
                 UI.TitleText:SetText(theme.titleText or "|cffffd100WoW Killboard|r")
             end
@@ -1198,12 +1199,11 @@ function UI:CreateCommandDeck()
             UI:HidePrivateTooltip()
         end)
         btn:SetScript("OnClick", function()
-            activeTab = id
             UI:ToggleCommandDeck(false)
-            UI:Refresh()
+            UI:ShowTab(id)
         end)
 
-        tabButtons[id] = btn
+        deckButtons[id] = btn
         currentY = currentY - 32
         return btn
     end
@@ -1558,11 +1558,12 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropColor(unpack(initTheme.mainBg or {1.0, 1.0, 1.0, 1.0}))
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
-    -- 1. Integrated Character Portrait Medallion (48x48, docked TOPLEFT (38, -6), Strata HIGH)
+    -- 1. Integrated Character Portrait Medallion (Hangs off TOPLEFT (-8, 8) like standard Blizzard frames, Strata HIGH)
     local portraitFrame = CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")
-    portraitFrame:SetSize(48, 48)
-    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 38, -6)
+    portraitFrame:SetSize(60, 60)
+    portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", -8, 8)
     portraitFrame:SetFrameStrata("HIGH")
+    portraitFrame:SetFrameLevel(mainFrame:GetFrameLevel() + 20)
 
     local portBg = portraitFrame:CreateTexture(nil, "BACKGROUND", nil, -1)
     portBg:SetAllPoints(portraitFrame)
@@ -1575,7 +1576,7 @@ function UI:CreateMainWindow()
     end
 
     local portraitTex = portraitFrame:CreateTexture(nil, "ARTWORK")
-    portraitTex:SetSize(42, 42)
+    portraitTex:SetSize(50, 50)
     portraitTex:SetPoint("CENTER", portraitFrame, "CENTER", 0, 0)
     if SetPortraitTexture then
         SetPortraitTexture(portraitTex, "player")
@@ -1593,18 +1594,18 @@ function UI:CreateMainWindow()
     end
     portraitFrame.portraitTex = portraitTex
 
-    -- Concentric Gold Border Ring (58x58 custom beveled medallion border wrapping neatly around the 42x42 face)
+    -- Concentric Gold Border Ring (66x66 custom beveled medallion border wrapping neatly around the face)
     local border = portraitFrame:CreateTexture(nil, "OVERLAY")
     border:SetPoint("CENTER", portraitFrame, "CENTER", 0, 0)
-    border:SetSize(58, 58)
+    border:SetSize(66, 66)
     border:SetTexture("Interface\\AddOns\\WoWKillboard\\Textures\\medallion_border.tga")
     portraitFrame.border = border
     portraitFrame.ring = border
 
-    -- Circular Level Medallion (18x18, anchored BOTTOMRIGHT (2, -2), Strata HIGH)
+    -- Circular Level Medallion (20x20, anchored BOTTOMRIGHT (2, -2), Strata HIGH)
     local levelFrame = CreateFrame("Frame", nil, portraitFrame)
     local levelBadge = levelFrame
-    levelBadge:SetSize(18, 18)
+    levelBadge:SetSize(20, 20)
     levelBadge:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 2, -2)
     levelBadge:SetFrameStrata("HIGH")
     levelBadge:SetFrameLevel(portraitFrame:GetFrameLevel() + 5)
@@ -1623,7 +1624,7 @@ function UI:CreateMainWindow()
 
     local levelBorder = levelFrame:CreateTexture(nil, "OVERLAY")
     levelBorder:SetPoint("CENTER", levelFrame, "CENTER", 0, 0)
-    levelBorder:SetSize(24, 24)
+    levelBorder:SetSize(26, 26)
     levelBorder:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     levelBorder:SetVertexColor(0.85, 0.70, 0.25, 1.0) -- Gold accent
     levelFrame.border = levelBorder
@@ -1680,7 +1681,7 @@ function UI:CreateMainWindow()
     -- Master Hamburger Navigation Button (Triggers Slide-Out Command Deck Drawer)
     local hamburgerBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
     hamburgerBtn:SetSize(24, 24)
-    hamburgerBtn:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
+    hamburgerBtn:SetPoint("LEFT", headerBar, "LEFT", 56, 0)
     hamburgerBtn:EnableMouse(true)
     hamburgerBtn:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -1734,14 +1735,14 @@ function UI:CreateMainWindow()
     -- 1px bottom divider
     local headerDiv = headerBar:CreateTexture(nil, "OVERLAY")
     headerDiv:SetHeight(1)
-    headerDiv:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 94, 0)
+    headerDiv:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 0, 0)
     headerDiv:SetPoint("BOTTOMRIGHT", headerBar, "BOTTOMRIGHT", 0, 0)
     headerDiv:SetColorTexture(40/255, 50/255, 65/255, 0.8)
     headerBar.Divider = headerDiv
 
-    -- Addon Title (Anchored vertically centered in headerBar, offset 94px to clear portrait dock)
+    -- Addon Title (Anchored vertically centered in headerBar, to right of hamburger button)
     local title = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("LEFT", headerBar, "LEFT", 94, 0)
+    title:SetPoint("LEFT", hamburgerBtn, "RIGHT", 10, 0)
     title:SetTextColor(1.0, 0.82, 0.0, 1.0)
     title:SetText("WoW Killboard")
     if title.SetFont then local f, s = title:GetFont(); title:SetFont(f, (s or 12) + 1, "OUTLINE") end
@@ -1936,25 +1937,90 @@ function UI:CreateMainWindow()
         self:ClearFocus()
     end)
 
-    -- 3. Telemetry Ribbon Strip (28px height horizontal stats bar directly under header)
-    local metricsBar = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-    metricsBar:SetHeight(28)
-    metricsBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 94, -44)
-    metricsBar:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -10, -44)
-    metricsBar:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    metricsBar:SetBackdropColor(0.025, 0.035, 0.055, 1.0)
-    metricsBar:SetBackdropBorderColor(0.58, 0.45, 0.22, 0.4)
-    UI.TopMetricsBar = metricsBar
+    -- 3. Navigation Sub-Bar (Height 26px, Text-only tabs with hover highlights, War Split on right)
+    local navSubBar = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+    navSubBar:SetSize(940, 26)
+    navSubBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -45)
+    navSubBar:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -10, -45)
+    navSubBar:SetBackdrop(nil)
+    UI.NavSubBar = navSubBar
 
-    -- Faction War Split Visual Progress Bar (Telemetry Strip: 140px x 12px)
-    local splitBar = CreateFrame("Frame", nil, metricsBar, "BackdropTemplate")
+    -- Clean Text Navigation Tabs: Zero border, zero background box, white hover highlight, yellow active highlight + underline
+    local tabOrder = { "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES" }
+    local pveTabDefs = {
+        FEED        = { text = "Casualties",         w = 76,  icon = "Interface\\Icons\\INV_Misc_MonsterHead_02" },
+        LEADERBOARD = { text = "Deadly Hazards",     w = 104, icon = "Interface\\Icons\\Spell_Shadow_SummonImp" },
+        BOUNTIES    = { text = "Notorious Elites",   w = 108, icon = "Interface\\Icons\\Ability_Rogue_BloodSplatter" },
+        RALLIES     = { text = "Rescue Beacons",     w = 102, icon = "Interface\\Icons\\INV_Misc_Horn_01" },
+        ZONES       = { text = "Zone Mortality",     w = 98,  icon = "Interface\\Icons\\INV_Misc_Map02" },
+    }
+    local pvpTabDefs = {
+        FEED        = { text = "Intel",              w = 56,  icon = "Interface\\Icons\\INV_Sword_04" },
+        LEADERBOARD = { text = "Leaderboards",       w = 96,  icon = "Interface\\Icons\\INV_BannerPVP_02" },
+        BOUNTIES    = { text = "The Marked",         w = 82,  icon = "Interface\\Icons\\Ability_Rogue_BloodSplatter" },
+        RALLIES     = { text = "Call to Arms",       w = 86,  icon = "Interface\\Icons\\INV_Misc_Horn_01" },
+        ZONES       = { text = "Danger Zones",       w = 92,  icon = "Interface\\Icons\\INV_Misc_Map02" },
+    }
+
+    local isPveMode = UI:IsPve()
+    local tabDefs = isPveMode and pveTabDefs or pvpTabDefs
+    local prevTabBtn = nil
+    for _, tid in ipairs(tabOrder) do
+        local def = tabDefs[tid]
+        local tBtn = CreateFrame("Button", nil, navSubBar, "BackdropTemplate")
+        tBtn:SetHeight(22)
+        tBtn:SetBackdrop(nil) -- Clean Text: zero border, zero background box
+        tBtn:EnableMouse(true)
+        if not prevTabBtn then
+            tBtn:SetPoint("LEFT", navSubBar, "LEFT", 4, 0)
+        else
+            tBtn:SetPoint("LEFT", prevTabBtn, "RIGHT", 14, 0)
+        end
+
+        local tLabel = tBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        tLabel:SetPoint("CENTER", 0, 0)
+        tLabel:SetText(def.text)
+        if tLabel.SetFont then local f, s = tLabel:GetFont(); tLabel:SetFont(f, (s or 10) + 1, "OUTLINE") end
+        tLabel:SetShadowOffset(0, 0)
+        tBtn.Label = tLabel
+
+        local strWidth = tLabel:GetStringWidth() or def.w
+        tBtn:SetWidth(math.max(def.w, strWidth + 8))
+
+        -- 2px Solid Bright Gold Bottom Line Accent
+        local bottomAccent = tBtn:CreateTexture(nil, "OVERLAY")
+        bottomAccent:SetHeight(2)
+        bottomAccent:SetPoint("BOTTOMLEFT", tBtn, "BOTTOMLEFT", 0, -2)
+        bottomAccent:SetPoint("BOTTOMRIGHT", tBtn, "BOTTOMRIGHT", 0, -2)
+        bottomAccent:SetColorTexture(1.0, 0.82, 0.0, 1.0)
+        bottomAccent:Hide()
+        tBtn.bottomAccent = bottomAccent
+
+        local tabKey = tid
+        tBtn:SetScript("OnClick", function()
+            UI:ShowTab(tabKey)
+        end)
+        tBtn:SetScript("OnEnter", function(self)
+            if not self.isActive then
+                if self.Label then self.Label:SetTextColor(1.0, 1.0, 1.0, 1.0) end
+            end
+        end)
+        tBtn:SetScript("OnLeave", function(self)
+            if not self.isActive then
+                if self.Label then self.Label:SetTextColor(0.70, 0.74, 0.80, 1.0) end
+            else
+                if self.Label then self.Label:SetTextColor(1.0, 0.82, 0.0, 1.0) end
+            end
+        end)
+
+        tabButtons[tid] = tBtn
+        prevTabBtn = tBtn
+    end
+
+    -- Faction War Split Visual Progress Bar (Anchored TOPRIGHT on sub-bar where world/bgs/... was)
+    local splitBar = CreateFrame("Frame", nil, navSubBar, "BackdropTemplate")
     splitBar:SetSize(140, 12)
-    splitBar:SetPoint("RIGHT", metricsBar, "RIGHT", -12, 0)
+    splitBar:SetPoint("RIGHT", navSubBar, "RIGHT", -4, 0)
     splitBar:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -1965,7 +2031,7 @@ function UI:CreateMainWindow()
     splitBar:SetBackdropBorderColor(0.12, 0.16, 0.23, 1.0)
     UI.FactionSplitBar = splitBar
 
-    local splitBarLabel = metricsBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local splitBarLabel = navSubBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     splitBarLabel:SetPoint("RIGHT", splitBar, "LEFT", -8, 0)
     splitBarLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
     splitBarLabel:SetText("|cff888888WAR SPLIT:|r")
@@ -1989,7 +2055,7 @@ function UI:CreateMainWindow()
     hordeFill:SetColorTexture(0.85, 0.12, 0.12, 1.0)
     splitBar.HordeFill = hordeFill
 
-    -- Centered text: "57% A | 43% H" in white bold font with a drop shadow
+    -- Centered text: "50% A | 50% H"
     local splitText = splitBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     splitText:SetPoint("CENTER", splitBar, "CENTER", 0, 0)
     splitText:SetTextColor(1.0, 1.0, 1.0, 1.0)
@@ -2002,131 +2068,71 @@ function UI:CreateMainWindow()
     splitText:SetText("50% A | 50% H")
     splitBar.Text = splitText
 
-    local ribbonText = metricsBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    ribbonText:SetPoint("LEFT", metricsBar, "LEFT", 10, 0)
-    ribbonText:SetPoint("RIGHT", splitBarLabel, "LEFT", -8, 0)
-    ribbonText:SetJustifyH("LEFT")
-    ribbonText:SetTextColor(1.0, 1.0, 1.0, 1.0)
-    if ribbonText.SetFont then local f, s = ribbonText:GetFont(); ribbonText:SetFont(f, (s or 10), "OUTLINE") end
-    ribbonText:SetShadowOffset(0, 0)
-    ribbonText:SetText("|cff888888REALM:|r |cffffffff0|r  |cff444444|  |cff88888824H:|r |cffffffff0|r  |cff444444|  |cff888888PVE CASUALTIES:|r |cffff80000|r  |cff444444|  |cff888888HOT ZONE:|r |cffffd200Scanning...|r")
-    UI.TelemetryText = ribbonText
+    UI.TelemetryText = splitBarLabel
+    UI.TopMetricsBar = nil
 
-    -- 4. Sub-Bar Navigation (Active View Badge & Mode Filter Pills)
-    -- Left: Active View Badge (Permanent trigger for Command Deck drawer)
-    local activeViewBtn = CreateFrame("Button", nil, mainFrame, "BackdropTemplate")
-    activeViewBtn:SetSize(210, 24)
-    activeViewBtn:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -74)
-    activeViewBtn:EnableMouse(true)
-    activeViewBtn:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    activeViewBtn:SetBackdropColor(0.08, 0.11, 0.16, 0.95)
-    activeViewBtn:SetBackdropBorderColor(0.58, 0.45, 0.22, 0.7)
-
-    -- Vector mini 3-bar icon (100% font-independent)
-    local mBarW, mBarH = 11, 2
-    local mb1 = activeViewBtn:CreateTexture(nil, "OVERLAY")
-    mb1:SetSize(mBarW, mBarH)
-    mb1:SetPoint("LEFT", activeViewBtn, "LEFT", 9, 3)
-    mb1:SetColorTexture(1.0, 0.82, 0.0, 1.0)
-
-    local mb2 = activeViewBtn:CreateTexture(nil, "OVERLAY")
-    mb2:SetSize(mBarW, mBarH)
-    mb2:SetPoint("LEFT", activeViewBtn, "LEFT", 9, 0)
-    mb2:SetColorTexture(1.0, 0.82, 0.0, 1.0)
-
-    local mb3 = activeViewBtn:CreateTexture(nil, "OVERLAY")
-    mb3:SetSize(mBarW, mBarH)
-    mb3:SetPoint("LEFT", activeViewBtn, "LEFT", 9, -3)
-    mb3:SetColorTexture(1.0, 0.82, 0.0, 1.0)
-
-    activeViewBtn.Bars = { mb1, mb2, mb3 }
-
-    local activeViewLabel = activeViewBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    activeViewLabel:SetPoint("LEFT", activeViewBtn, "LEFT", 26, 0)
-    activeViewLabel:SetTextColor(1.0, 1.0, 1.0, 1.0)
-    activeViewLabel:SetText("INTEL FEED")
-    if activeViewLabel.SetFont then local f, s = activeViewLabel:GetFont(); activeViewLabel:SetFont(f, s or 10, "OUTLINE") end
-    activeViewBtn.Label = activeViewLabel
-
-    local activeViewArrow = activeViewBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    activeViewArrow:SetPoint("RIGHT", activeViewBtn, "RIGHT", -10, 0)
-    activeViewArrow:SetTextColor(0.85, 0.70, 0.25, 1.0)
-    activeViewArrow:SetText("v")
-    if activeViewArrow.SetFont then local f, s = activeViewArrow:GetFont(); activeViewArrow:SetFont(f, s or 10, "OUTLINE") end
-    activeViewBtn.Arrow = activeViewArrow
-
-    -- 2px Solid Bright Gold Bottom Line Accent
-    local activeViewAccent = activeViewBtn:CreateTexture(nil, "OVERLAY")
-    activeViewAccent:SetHeight(2)
-    activeViewAccent:SetPoint("BOTTOMLEFT", activeViewBtn, "BOTTOMLEFT", 0, 0)
-    activeViewAccent:SetPoint("BOTTOMRIGHT", activeViewBtn, "BOTTOMRIGHT", 0, 0)
-    activeViewAccent:SetColorTexture(0.85, 0.70, 0.25, 1.0)
-    activeViewBtn.bottomAccent = activeViewAccent
-
-    activeViewBtn:SetScript("OnEnter", function(self)
-        self:SetBackdropColor(0.12, 0.16, 0.23, 1.0)
-        self:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
-        if self.Bars then
-            for _, b in ipairs(self.Bars) do b:SetColorTexture(1.0, 1.0, 1.0, 1.0) end
-        end
-        if self.Arrow then self.Arrow:SetTextColor(1.0, 1.0, 1.0, 1.0) end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Command Deck Navigator|r", "Click to switch views, inspect bounties, adjust ruleset, or open settings.")
-    end)
-    activeViewBtn:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(0.08, 0.11, 0.16, 0.95)
-        self:SetBackdropBorderColor(0.58, 0.45, 0.22, 0.7)
-        if self.Bars then
-            for _, b in ipairs(self.Bars) do b:SetColorTexture(1.0, 0.82, 0.0, 1.0) end
-        end
-        if self.Arrow then self.Arrow:SetTextColor(0.85, 0.70, 0.25, 1.0) end
-        UI:HidePrivateTooltip()
-    end)
-    activeViewBtn:SetScript("OnClick", function()
-        UI:ToggleCommandDeck()
-    end)
-    UI.ActiveViewBadge = activeViewBtn
-
-    -- Mode Filter Pills on right of Nav Bar: [ World ] [ BGs ] [ Duels ] [ Arenas ]
-    -- Ordered right-to-left so they display left-to-right: [ World ] [ BGs ] [ Duels ] [ Arenas ]
+    -- 4. Mode Filter Pills: [ World ] [ BGs ] [ Duels ] [ Arenas ]
+    -- Mounted directly inside specific pages (Leaderboards & Intel Feed)
     local filterConfigs = {
         { id = "ARENA", text = "Arenas", w = 64, tooltip = "Rated & Skirmish Arena Engagements" },
         { id = "DUEL",  text = "Duels",  w = 58, tooltip = "Sanctioned 1v1 Duel Mortalities" },
         { id = "BG",    text = "BGs",    w = 54, tooltip = "Battleground Engagements (Warsong, Arathi, Alterac)" },
         { id = "WORLD", text = "World",  w = 62, tooltip = "Open World Contested Zone Combat" },
     }
-
+    UI.FilterConfigs = filterConfigs
     filterButtons = {}
-    local prevPill = nil
-    for _, f in ipairs(filterConfigs) do
-        local pill = CreateWebPillButton(mainFrame, f.text, f.w, 22)
-        if not prevPill then
-            pill:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -10, -75)
-        else
-            pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
+
+    function UI:RenderModeFilterPills(parent, anchorPoint, relFrame, relPoint, xOff, yOff)
+        local activeFilter = (WoWKillboardDB and WoWKillboardDB.combatFilter) or currentMode or "WORLD"
+        local prevPill = nil
+        for _, f in ipairs(filterConfigs) do
+            local pill = filterButtons[f.id]
+            if not pill then
+                pill = CreateWebPillButton(parent, f.text, f.w, 20)
+                filterButtons[f.id] = pill
+            else
+                pill:SetParent(parent)
+                pill:Show()
+            end
+            pill:ClearAllPoints()
+            if not prevPill then
+                pill:SetPoint(anchorPoint or "TOPRIGHT", relFrame or parent, relPoint or "TOPRIGHT", xOff or 0, yOff or 0)
+            else
+                pill:SetPoint("RIGHT", prevPill, "LEFT", -4, 0)
+            end
+            pill.tooltipText = f.tooltip
+            local filterId = f.id
+            pill:SetScript("OnClick", function()
+                WoWKillboardDB = WoWKillboardDB or {}
+                WoWKillboardDB.combatFilter = filterId
+                if WoWKillboardSettings then WoWKillboardSettings.combatFilter = filterId end
+                currentMode = filterId
+                UI:Refresh()
+            end)
+
+            if f.id == activeFilter then
+                pill.isActive = true
+                if pill.bg then pill.bg:SetColorTexture(0.78, 0.60, 0.24, 1.0) end
+                pill:SetBackdropColor(0.78, 0.60, 0.24, 1.0)
+                pill:SetBackdropBorderColor(0.85, 0.70, 0.30, 1.0)
+                if pill.Label then pill.Label:SetTextColor(0.05, 0.05, 0.05, 1.0) end
+            else
+                pill.isActive = false
+                if pill.bg then pill.bg:SetColorTexture(0.06, 0.08, 0.12, 0.8) end
+                pill:SetBackdropColor(0.06, 0.08, 0.12, 0.8)
+                pill:SetBackdropBorderColor(0.15, 0.19, 0.26, 1.0)
+                if pill.Label then pill.Label:SetTextColor(0.65, 0.70, 0.75, 1.0) end
+            end
+
+            prevPill = pill
         end
-        pill.tooltipText = f.tooltip
-        local filterId = f.id
-        pill:SetScript("OnClick", function()
-            WoWKillboardDB = WoWKillboardDB or {}
-            WoWKillboardDB.combatFilter = filterId
-            if WoWKillboardSettings then WoWKillboardSettings.combatFilter = filterId end
-            currentMode = filterId
-            UI:Refresh()
-        end)
-        filterButtons[f.id] = pill
-        prevPill = pill
     end
 
     -- 5. Dual-Column Frame Layout
-    -- Left: MainContainer (~70% width = 646px)
+    -- Left: MainContainer (~70% width = 646px, expanded height 574px)
     local mainContainer = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-    mainContainer:SetSize(646, 544)
-    mainContainer:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -104)
+    mainContainer:SetSize(646, 574)
+    mainContainer:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -74)
     mainContainer:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -2156,7 +2162,7 @@ function UI:CreateMainWindow()
     container:EnableMouseWheel(true)
 
     local content = CreateFrame("Frame", nil, container)
-    content:SetSize(620, 532)
+    content:SetSize(620, 562)
     container:SetScrollChild(content)
     UI.ContentFrame = content
     UI.ScrollContainer = container
@@ -2215,7 +2221,7 @@ function UI:CreateMainWindow()
 
     -- Right: SidebarContainer (~30% width = 284px)
     local sidebarContainer = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-    sidebarContainer:SetSize(284, 544)
+    sidebarContainer:SetSize(284, 574)
     sidebarContainer:SetPoint("TOPLEFT", mainContainer, "TOPRIGHT", 10, 0)
     sidebarContainer:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -2374,11 +2380,11 @@ function UI:CreateMainWindow()
     noBountiesLabel:SetText("No active bounties posted.\nUse |cffffd100/kb mark <name> <gold>|r")
     card2.NoBounties = noBountiesLabel
 
-    -- Card 3: All Classes (Compact 2-Column Matrix) (Height: 178px)
+    -- Card 3: All Classes (Compact 2-Column Matrix) (Height: 208px)
     local card3 = CreateFrame("Frame", nil, sidebarContainer, "BackdropTemplate")
     card3:SetPoint("TOPLEFT", card2, "BOTTOMLEFT", 0, -6)
     card3:SetPoint("TOPRIGHT", card2, "BOTTOMRIGHT", 0, -6)
-    card3:SetHeight(178)
+    card3:SetHeight(208)
     card3:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -2923,23 +2929,40 @@ function UI:Refresh()
         UI.ActiveViewBadge.Label:SetText(activeTitle)
     end
 
-    -- Update Tab Button Highlights
+    -- Update Tab Button Highlights (Text-only with yellow active highlights and gold bottom accent)
     for tid, btn in pairs(tabButtons) do
         if tid == activeTab then
             btn.isActive = true
-            btn:SetBackdropColor(0.12, 0.18, 0.28, 1.0)
-            btn:SetBackdropBorderColor(0.85, 0.70, 0.25, 1.0)
-            if btn.Label then btn.Label:SetTextColor(1.0, 0.85, 0.2, 1.0) end
+            btn:SetBackdrop(nil)
+            if btn.Label then btn.Label:SetTextColor(1.0, 0.82, 0.0, 1.0) end
             if btn.bottomAccent then
-                btn.bottomAccent:SetColorTexture(0.85, 0.70, 0.25, 1.0)
+                btn.bottomAccent:SetColorTexture(1.0, 0.82, 0.0, 1.0)
                 btn.bottomAccent:Show()
             end
         else
             btn.isActive = false
+            btn:SetBackdrop(nil)
             if btn.bottomAccent then btn.bottomAccent:Hide() end
-            btn:SetBackdropColor(0.06, 0.08, 0.12, 0.85)
-            btn:SetBackdropBorderColor(0.18, 0.24, 0.32, 0.7)
-            if btn.Label then btn.Label:SetTextColor(0.85, 0.88, 0.92, 1.0) end
+            if btn.Label then btn.Label:SetTextColor(0.70, 0.74, 0.80, 1.0) end
+        end
+    end
+
+    -- Update Command Deck Drawer Button Highlights
+    if deckButtons then
+        for did, dBtn in pairs(deckButtons) do
+            if did == activeTab then
+                dBtn.isActive = true
+                dBtn:SetBackdropColor(0.12, 0.18, 0.28, 1.0)
+                dBtn:SetBackdropBorderColor(0.85, 0.70, 0.25, 1.0)
+                if dBtn.Label then dBtn.Label:SetTextColor(1.0, 0.85, 0.2, 1.0) end
+                if dBtn.bottomAccent then dBtn.bottomAccent:Show() end
+            else
+                dBtn.isActive = false
+                if dBtn.bottomAccent then dBtn.bottomAccent:Hide() end
+                dBtn:SetBackdropColor(0.06, 0.08, 0.12, 0.85)
+                dBtn:SetBackdropBorderColor(0.18, 0.24, 0.32, 0.7)
+                if dBtn.Label then dBtn.Label:SetTextColor(0.85, 0.88, 0.92, 1.0) end
+            end
         end
     end
 
@@ -3081,9 +3104,9 @@ function UI:RenderLiveFeed()
 
     local cWidth = 620
 
-    -- Section Header Strip (18px height)
+    -- Section Header Strip (22px height)
     local recentHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-    recentHeader:SetSize(cWidth, 18)
+    recentHeader:SetSize(cWidth, 22)
     recentHeader:SetPoint("TOPLEFT", 0, -4)
     recentHeader:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -3101,10 +3124,15 @@ function UI:RenderLiveFeed()
     if recentTitle.SetFont then local f, s = recentTitle:GetFont(); recentTitle:SetFont(f, s or 10, "OUTLINE") end
     recentTitle:SetShadowOffset(0, 0)
 
+    -- Mode Filter Pills on Right: [ World ] [ BGs ] [ Duels ] [ Arenas ]
+    if UI.RenderModeFilterPills then
+        UI:RenderModeFilterPills(recentHeader, "RIGHT", recentHeader, "RIGHT", -4, 0)
+    end
+
     -- Table Column Header Strip (Direction: Attacker / Killer on left, Victim on right)
     local colHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
     colHeader:SetSize(cWidth, 18)
-    colHeader:SetPoint("TOPLEFT", 0, -24)
+    colHeader:SetPoint("TOPLEFT", 0, -28)
     colHeader:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -4387,23 +4415,28 @@ function UI:RenderLeaderboard()
         return btn
     end
 
-    CreatePill(UI.ContentFrame, 0, 80, "Players", hlSubTab == "PLAYERS", function()
+    CreatePill(UI.ContentFrame, 0, 76, "Players", hlSubTab == "PLAYERS", function()
         hlSubTab = "PLAYERS"
         UI:Refresh()
     end)
-    CreatePill(UI.ContentFrame, 86, 74, "Guilds", hlSubTab == "GUILDS", function()
+    CreatePill(UI.ContentFrame, 80, 70, "Guilds", hlSubTab == "GUILDS", function()
         hlSubTab = "GUILDS"
         UI:Refresh()
     end)
-    CreatePill(UI.ContentFrame, 166, 106, "Last 24 Hours", hlSubTab == "GANKERS_24H", function()
+    CreatePill(UI.ContentFrame, 154, 96, "Last 24 Hours", hlSubTab == "GANKERS_24H", function()
         hlSubTab = "GANKERS_24H"
         UI:Refresh()
     end)
 
-    -- Compact Share Button on Right
-    local shareBtn = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
-    shareBtn:SetSize(60, 20)
-    shareBtn:SetPoint("TOPRIGHT", 0, -28)
+    -- Mode Filter Pills on Right of Leaderboard: [ World ] [ BGs ] [ Duels ] [ Arenas ]
+    if UI.RenderModeFilterPills then
+        UI:RenderModeFilterPills(UI.ContentFrame, "TOPRIGHT", UI.ContentFrame, "TOPRIGHT", 0, -28)
+    end
+
+    -- Compact Share Button mounted on Header Bar
+    local shareBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
+    shareBtn:SetSize(54, 16)
+    shareBtn:SetPoint("RIGHT", headerBar, "RIGHT", -4, 0)
     shareBtn:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -4416,7 +4449,7 @@ function UI:RenderLeaderboard()
     shareLbl:SetPoint("CENTER", 0, 0)
     shareLbl:SetTextColor(136/255, 136/255, 136/255, 1.0)
     shareLbl:SetText("Share")
-    if shareLbl.SetFont then local f, s = shareLbl:GetFont(); shareLbl:SetFont(f, s or 10, "OUTLINE") end
+    if shareLbl.SetFont then local f, s = shareLbl:GetFont(); shareLbl:SetFont(f, s or 9, "OUTLINE") end
     shareLbl:SetShadowOffset(0, 0)
     shareBtn.Label = shareLbl
     shareBtn:SetScript("OnClick", function()
