@@ -218,23 +218,27 @@
 
       <!-- Sticky Top Combat & Leaderboard Filters -->
       <div id="top-combat-filters" class="top-combat-filters">
-        <!-- Row 1 (Timeframe) -->
-        <div class="top-filter-row top-filter-timeframe">
+        <div class="top-filter-bar">
+          <!-- Timeframe Pills -->
           <div class="top-filter-pills" id="top-filter-time-pills">
-            <button class="top-pill-btn" id="filter-time-24h" onclick="filterLeaderboardsByTime('24h')">24 Hours</button>
-            <button class="top-pill-btn" id="filter-time-7d" onclick="filterLeaderboardsByTime('7d')">7 Days</button>
-            <button class="top-pill-btn" id="filter-time-30d" onclick="filterLeaderboardsByTime('30d')">30 Days</button>
+            <button class="top-pill-btn" id="filter-time-24h" onclick="filterLeaderboardsByTime('24h')">24h</button>
+            <button class="top-pill-btn" id="filter-time-7d" onclick="filterLeaderboardsByTime('7d')">7d</button>
+            <button class="top-pill-btn" id="filter-time-30d" onclick="filterLeaderboardsByTime('30d')">30d</button>
             <button class="top-pill-btn active" id="filter-time-all" onclick="filterLeaderboardsByTime('all')">All-Time</button>
           </div>
-        </div>
-        <!-- Row 2 (Faction & Modes) -->
-        <div class="top-filter-row top-filter-faction-modes">
+
+          <span class="top-filter-divider">|</span>
+
+          <!-- Faction Pills -->
           <div class="top-filter-pills" id="top-filter-faction-pills">
             <button class="top-pill-btn active" id="filter-faction-all" onclick="filterLeaderboardsByFaction('ALL')">All</button>
             <button class="top-pill-btn pill-faction-alliance" id="filter-faction-alliance" onclick="filterLeaderboardsByFaction('Alliance')">Alliance</button>
             <button class="top-pill-btn pill-faction-horde" id="filter-faction-horde" onclick="filterLeaderboardsByFaction('Horde')">Horde</button>
           </div>
+
           <span class="top-filter-divider">|</span>
+
+          <!-- Combat Mode Pills -->
           <div class="top-filter-pills" id="top-filter-mode-pills">
             <button class="top-pill-btn active" id="top-pill-mode-world" onclick="setFilterMode('WORLD')">World</button>
             <button class="top-pill-btn" id="top-pill-mode-bg" onclick="setFilterMode('BG')">BGs</button>

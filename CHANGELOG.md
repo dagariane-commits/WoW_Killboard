@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Strict Guardrail 1 Zero Taint & Combat Lockdown Gating: `InCombatLockdown()` gating on all toggle routines and automated drawer dismissal in `UI:OnPlayerRegenDisabled()`.
 - **Permanent Web Hamburger Navigation & 1:1 Parity (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
   - Made the master Hamburger button (`#command-deck-btn`) permanently visible on all desktop and mobile viewports (`display: inline-flex !important`).
+  - Set `.site-header` to `position: fixed; top: 0; left: 0; width: 100%;` with `body { padding-top: 56px; }` ensuring the navigation bar, logo, and gold `[☰]` Hamburger button remain permanently pinned at the top of the browser across all scroll depths.
+  - Consolidated `#top-combat-filters` into a single, sleek 28px tactical toolbar strip (`[ 24h | 7d | 30d | All-Time ]` | `[ All | Alliance | Horde ]` | `[ World | BGs | Duels | Arenas ]`).
+  - Eliminated duplicate timeframe and mode filter pills (`#legends-time-pills` and `#champions-mode-pills`) inside the Leaderboard view.
+  - Integrated champion benchmark comparison input into the Leaderboard header controls and removed the empty dashed benchmark placeholder banner.
   - Removed top horizontal `.nav-links-rail` clutter from `#top-navbar` for a clean, minimalist header bar.
   - Upgraded left slide-out Command Deck drawer with matching 4-category taxonomy, frosted glass backdrop, and quick action tiles.
 

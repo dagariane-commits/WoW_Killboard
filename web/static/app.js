@@ -2077,7 +2077,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
   let html = `
     <div style="display: flex; flex-direction: column; gap: 16px;">
       <!-- Champions Header Row with Type Toggle, Timeframe Intervals, and Mode Pills -->
-      <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); margin-bottom:4px;">
+      <div class="legends-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); margin-bottom:8px;">
         <div>
           <h2 class="wow-gold-header" style="font-size: 1.25rem; font-weight:800; letter-spacing:0.5px; margin:0;">
             Defender of Azeroth
@@ -2094,20 +2094,11 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             <button class="pill-btn ${isGuilds ? 'active' : ''}" onclick="setLegendsTabType('GUILDS')">Guild Ranks</button>
           </div>
 
-          <!-- Timeframe Interval Toggle: 24h / 7d / 30d / All-Time -->
-          <div class="filter-pills" id="legends-time-pills" style="display:flex; align-items:center; gap:4px;">
-            <button class="pill-btn ${(currentLeaderboardTimeframe || 'all').toLowerCase() === '24h' ? 'active' : ''}" onclick="filterLeaderboardsByTime('24h')">24 Hours</button>
-            <button class="pill-btn ${(currentLeaderboardTimeframe || 'all').toLowerCase() === '7d' ? 'active' : ''}" onclick="filterLeaderboardsByTime('7d')">7 Days</button>
-            <button class="pill-btn ${(currentLeaderboardTimeframe || 'all').toLowerCase() === '30d' ? 'active' : ''}" onclick="filterLeaderboardsByTime('30d')">30 Days</button>
-            <button class="pill-btn ${(currentLeaderboardTimeframe || 'all').toLowerCase() === 'all' ? 'active' : ''}" onclick="filterLeaderboardsByTime('all')">All-Time</button>
-          </div>
-
-          <!-- Mode Toggle: World / BGs / Duels / Arenas (greyed out) -->
-          <div class="filter-pills" id="champions-mode-pills" style="display:flex; align-items:center; gap:4px;">
-            <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
-            <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
-            <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
-            <button class="pill-btn disabled" style="opacity:0.4; cursor:not-allowed;" title="Arenas unavailable in Classic Era and WoW Forever" onclick="alert('Arenas are unavailable in Classic Era and WoW Forever. Switch the flavor in the top bar to TBC, WotLK, or Retail to enable Arena ladders.')">Arenas</button>
+          <!-- Quick Benchmark Input -->
+          <div class="benchmark-header-wrap" style="display:flex; align-items:center; gap:6px;">
+            <input type="text" id="benchmark-callsign-input" placeholder="Compare champion..." style="background:#07090e; border:1px solid rgba(212, 175, 55, 0.35); color:#fff; font-size:0.75rem; padding:4px 8px; border-radius:4px; width:140px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
+            <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn active" style="padding:4px 10px; font-size:0.72rem;">Compare</button>
+            ${sessionStorage.getItem("wowkb_benchmark_player") ? `<button onclick="setBenchmarkPlayer('')" class="pill-btn" style="padding:4px 6px; font-size:0.7rem; color:#ef4444;" title="Reset Benchmark">&times;</button>` : ''}
           </div>
         </div>
       </div>
@@ -2432,20 +2423,6 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             </div>
           </div>
         </div>
-      `;
-    } else {
-      html += `
-        <div class="legends-comparison-banner" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px dashed rgba(212, 163, 41, 0.45); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 12px 16px; margin-bottom: 4px;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:1.1rem;">⚔️</span>
-            <span style="font-size:0.82rem; color:#cbd5e1;">Benchmark your champion standing against realm leaders in ${escapeHtml(currentMode)}:</span>
-          </div>
-          <div class="benchmark-input-wrap" style="display:flex; align-items:center; gap:8px;">
-            <input type="text" id="benchmark-callsign-input" placeholder="Enter Champion Name..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 10px; border-radius:4px; width:180px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
-            <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn active" style="padding:4px 12px; font-size:0.75rem;">Benchmark</button>
-          </div>
-        </div>
-      `;
     }
 
     // Generate Mode-Specific Colgroup and Total Columns
