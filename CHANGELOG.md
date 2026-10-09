@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Active pill is highlighted in solid bright brass gold (`#C69B3D`) with dark text; inactive pills remain dark slate with light gray text.
 
 ### Changed
+- **Ultra-Compact Single-Row Player Benchmark Tactical Strip (`web/static/app.js`, `web/static/style.css`)**:
+  - Replaced the bloated ~250px multi-row Champion Benchmark card on the Web Leaderboard with a sleek 36px horizontal tactical status ribbon (`.legends-comparison-banner`).
+  - Formatted player identity (`⚔️`, class badge, name, `YOU`/`BENCHMARK` badge, rank `#1`) and all 7 mode-specific combat metrics (`Kills`, `Solo`, `Deaths`, `K/D`, `W/L`, `Delta vs #1`, `Percentile`) into a clean inline flex strip with subtle separators.
+  - Eliminated the redundant duplicate `Compare champion...` input box from inside the card, maintaining a single clean search control in the header toolbar (`.legends-header-controls`).
+  - Added user dismiss/hide toggle (`toggleBenchmarkBanner`) with an inline `×` button on the ribbon and a `[Show My Stats]` restore pill in the header toolbar.
+  - Locked mobile viewport CSS to horizontal touch-scrolling (`overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch`), permanently preventing multi-row 3-column expansion from pushing the podium and leaderboard tables below the fold.
 - **Relocated Faction War Split to Sub-Bar & Removed Top Stat Bar (`Addon/WoWKillboard/UI.lua`)**:
   - Removed the redundant 28px horizontal `metricsBar` / `UI.TopMetricsBar` ribbon strip.
   - Re-anchored the Faction War Split progress bar (`splitBar` Alliance % / Horde %) and label to the right side of the navigation sub-bar (`TOPRIGHT (-14, -50)`), occupying the space previously held by global mode pills.

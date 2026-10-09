@@ -1059,6 +1059,9 @@ const CLASSIC_CLASSES = [
 ];
 
 function getBenchmarkPlayerName() {
+  if (sessionStorage.getItem("wowkb_hide_benchmark") === "1" && !sessionStorage.getItem("wowkb_benchmark_player")) {
+    return "";
+  }
   const raw = sessionStorage.getItem("wowkb_benchmark_player") || 
               localStorage.getItem("wowkb_account_username") || 
               localStorage.getItem("wowkb_user_character") || "";
@@ -1066,6 +1069,7 @@ function getBenchmarkPlayerName() {
 }
 
 function setBenchmarkPlayer(name) {
+  sessionStorage.removeItem("wowkb_hide_benchmark");
   if (name && typeof name === "string" && name.trim()) {
     const clean = name.trim().slice(0, 32);
     sessionStorage.setItem("wowkb_benchmark_player", clean);
@@ -1074,6 +1078,17 @@ function setBenchmarkPlayer(name) {
   }
   loadLeaderboards();
 }
+window.setBenchmarkPlayer = setBenchmarkPlayer;
+
+function toggleBenchmarkBanner() {
+  if (sessionStorage.getItem("wowkb_benchmark_player")) {
+    sessionStorage.removeItem("wowkb_benchmark_player");
+  } else {
+    sessionStorage.setItem("wowkb_hide_benchmark", "1");
+  }
+  loadLeaderboards();
+}
+window.toggleBenchmarkBanner = toggleBenchmarkBanner;
 
 async function loadLeaderboards() {
   const container = document.getElementById("main-content-area");
@@ -2037,6 +2052,197 @@ function renderLeaderboardRowsHtml(sortedKillers, totalCols, bmName, isAccountUs
   return html;
 }
 
+function renderBenchmarkBannerHtml(sortedKillers, bmName, isAccountUser, benchmarkProfile) {
+  if (!bmName) return "";
+
+  let bmMatch = null;
+  let bmRank = null;
+  const pool = (rawLeaderboardKillers && rawLeaderboardKillers.length > 0) ? rawLeaderboardKillers : (sortedKillers || []);
+  if (pool.length > 0) {
+    const foundIdx = pool.findIndex(p => p.name && p.name.toLowerCase() === bmName.toLowerCase());
+    if (foundIdx !== -1) {
+      bmMatch = pool[foundIdx];
+      bmRank = foundIdx + 1;
+    }
+  }
+
+  let rawBmClass = (bmMatch && bmMatch.class) ||
+    (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
+    (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
+  if (bmName && bmName.toLowerCase() === 'dagariane') {
+    rawBmClass = 'PALADIN';
+  }
+  const bmClass = resolveClassName(rawBmClass);
+  let bmFaction = (bmMatch && bmMatch.faction) ||
+    (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
+    (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
+  if (bmName && bmName.toLowerCase() === 'dagariane') {
+    bmFaction = 'Alliance';
+  }
+
+  const isAlliance = (bmFaction || '').toLowerCase() === 'alliance';
+  const factionThemeClass = isAlliance ? 'benchmark-alliance' : 'benchmark-horde';
+  const rankDisplay = bmRank ? `#${bmRank}` : '#>15';
+  const pModes = (benchmarkProfile && benchmarkProfile.modes) || {};
+  const curModeStats = pModes[currentMode] || {};
+  const bmPct = bmMatch ? bmMatch.percentile : (curModeStats && curModeStats.percentile ? curModeStats.percentile : (benchmarkProfile && benchmarkProfile.percentile ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 }));
+  const pctBadge = getWowLogsPercentileBadge(bmPct);
+  let deltaDisplay = '-';
+  let deltaColor = '#94a3b8';
+  const topRank1 = pool.length > 0 ? pool[0] : null;
+
+  let bmStatsHtml = '';
+  if (currentMode === 'DUEL') {
+    const bmWins = bmMatch ? (bmMatch.wins !== undefined ? bmMatch.wins : bmMatch.kills) : (curModeStats.wins !== undefined ? curModeStats.wins : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelWins || 0 : 0));
+    const bmLosses = bmMatch ? (bmMatch.losses || 0) : (curModeStats.losses !== undefined ? curModeStats.losses : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelLosses || 0 : 0));
+    const bmWl = bmMatch ? (bmMatch.wl_ratio !== undefined ? bmMatch.wl_ratio : (bmLosses > 0 ? (bmWins / bmLosses).toFixed(2) : bmWins)) : (curModeStats.wl !== undefined ? curModeStats.wl : (bmLosses > 0 ? (bmWins / bmLosses).toFixed(2) : bmWins));
+
+    if (topRank1) {
+      const topWins = topRank1.wins !== undefined ? topRank1.wins : (topRank1.kills || 0);
+      if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
+        deltaDisplay = '⭐ #1 Apex Leader';
+        deltaColor = 'var(--accent-gold)';
+      } else {
+        const diff = Math.max(0, topWins - bmWins);
+        deltaDisplay = `-${diff} wins to #1 (${escapeHtml(topRank1.name)})`;
+        deltaColor = '#ef4444';
+      }
+    }
+
+    bmStatsHtml = `
+      <div class="bm-stat-item"><span class="bm-label">Rank</span> <span class="bm-val gold">${rankDisplay}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Wins</span> <span class="bm-val green">${bmWins}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Losses</span> <span class="bm-val red">${bmLosses}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">W/L</span> <span class="bm-val gold">${bmWl}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Delta</span> <span class="bm-val" style="color:${deltaColor};">${deltaDisplay}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item">${pctBadge}</div>
+    `;
+  } else if (currentMode === 'BG') {
+    const bmKills = bmMatch ? bmMatch.kills : (curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.bgKills || 0 : 0));
+    const bmDeaths = bmMatch ? (bmMatch.deaths || 0) : (curModeStats.deaths !== undefined ? curModeStats.deaths : 0);
+    const bmKd = bmMatch ? (bmMatch.kd || 0) : (curModeStats.kd !== undefined ? curModeStats.kd : (bmDeaths > 0 ? (bmKills / bmDeaths).toFixed(2) : bmKills));
+    const bmWl = bmMatch ? (bmMatch.wl_ratio || '-') : (curModeStats.wl || '-');
+
+    if (topRank1) {
+      if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
+        deltaDisplay = '⭐ #1 Apex Leader';
+        deltaColor = 'var(--accent-gold)';
+      } else {
+        const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
+        deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
+        deltaColor = '#ef4444';
+      }
+    }
+
+    bmStatsHtml = `
+      <div class="bm-stat-item"><span class="bm-label">Rank</span> <span class="bm-val gold">${rankDisplay}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Kills</span> <span class="bm-val green">${bmKills}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Deaths</span> <span class="bm-val red">${bmDeaths}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">K/D</span> <span class="bm-val gold">${bmKd}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">W/L</span> <span class="bm-val cyan">${bmWl}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Delta</span> <span class="bm-val" style="color:${deltaColor};">${deltaDisplay}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item">${pctBadge}</div>
+    `;
+  } else if (currentMode === 'ARENA') {
+    const bmKills = bmMatch ? bmMatch.kills : (curModeStats.kills || 0);
+    const bmDeaths = bmMatch ? (bmMatch.deaths || 0) : (curModeStats.deaths || 0);
+    const bmKd = bmMatch ? (bmMatch.kd || 0) : (curModeStats.kd || (bmDeaths > 0 ? (bmKills / bmDeaths).toFixed(2) : bmKills));
+    const bmWl = bmMatch ? (bmMatch.wl_ratio || '-') : (curModeStats.wl || '-');
+
+    if (topRank1) {
+      if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
+        deltaDisplay = '⭐ #1 Apex Leader';
+        deltaColor = 'var(--accent-gold)';
+      } else {
+        const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
+        deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
+        deltaColor = '#ef4444';
+      }
+    }
+
+    bmStatsHtml = `
+      <div class="bm-stat-item"><span class="bm-label">Rank</span> <span class="bm-val gold">${rankDisplay}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Kills</span> <span class="bm-val green">${bmKills}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Deaths</span> <span class="bm-val red">${bmDeaths}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">K/D</span> <span class="bm-val gold">${bmKd}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">W/L</span> <span class="bm-val cyan">${bmWl}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Delta</span> <span class="bm-val" style="color:${deltaColor};">${deltaDisplay}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item">${pctBadge}</div>
+    `;
+  } else { // WORLD
+    const bmKills = bmMatch ? bmMatch.kills : (curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.kills || 0 : 0));
+    const bmSolo = bmMatch ? (bmMatch.solo_kills || 0) : (curModeStats.soloKills !== undefined ? curModeStats.soloKills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.soloKills || 0 : 0));
+    const bmDeaths = bmMatch ? (bmMatch.deaths || 0) : (curModeStats.deaths !== undefined ? curModeStats.deaths : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.deaths || 0 : 0));
+    const bmKd = bmMatch ? (bmMatch.kd || 0) : (curModeStats.kd !== undefined ? curModeStats.kd : (bmDeaths > 0 ? (bmKills / bmDeaths).toFixed(2) : bmKills));
+
+    if (topRank1) {
+      if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
+        deltaDisplay = '⭐ #1 Apex Leader';
+        deltaColor = 'var(--accent-gold)';
+      } else {
+        const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
+        deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
+        deltaColor = '#ef4444';
+      }
+    }
+
+    bmStatsHtml = `
+      <div class="bm-stat-item"><span class="bm-label">Rank</span> <span class="bm-val gold">${rankDisplay}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Kills</span> <span class="bm-val green">${bmKills}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Solo</span> <span class="bm-val cyan">${bmSolo}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Deaths</span> <span class="bm-val red">${bmDeaths}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">K/D</span> <span class="bm-val gold">${bmKd}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item"><span class="bm-label">Delta</span> <span class="bm-val" style="color:${deltaColor};">${deltaDisplay}</span></div>
+      <span class="bm-sep">&bull;</span>
+      <div class="bm-stat-item">${pctBadge}</div>
+    `;
+  }
+
+  return `
+    <div class="legends-comparison-banner ${factionThemeClass}">
+      <div class="bm-identity">
+        <span style="font-size:0.9rem;">⚔️</span>
+        <span class="clickable-player" style="display:inline-flex; align-items:center; gap:5px; font-weight:700;" onclick="openCharacterProfile(${safeJsParam(bmName)})">
+          ${renderClassBadge(bmClass, 16)}
+          ${colorizeClass(bmName, bmClass)}
+        </span>
+        <span class="you-badge" style="font-size:0.62rem; padding:1px 5px; border-radius:3px;">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
+      </div>
+
+      <div class="bm-stats-strip">
+        ${bmStatsHtml}
+      </div>
+
+      <div class="bm-actions" style="display:flex; align-items:center; gap:6px;">
+        <button onclick="toggleBenchmarkBanner()" class="pill-btn" style="padding:2px 6px; font-size:0.68rem; color:#94a3b8;" title="Dismiss Player Stats">&times;</button>
+      </div>
+    </div>
+  `;
+}
+window.renderBenchmarkBannerHtml = renderBenchmarkBannerHtml;
+
 function updateLeaderboardDisplay() {
   if (legendsTabType === "GUILDS") return;
 
@@ -2048,6 +2254,11 @@ function updateLeaderboardDisplay() {
   );
 
   const totalCols = (currentMode === 'DUEL') ? 8 : 9;
+
+  const bmWrap = document.getElementById("leaderboard-benchmark-wrap");
+  if (bmWrap) {
+    bmWrap.innerHTML = renderBenchmarkBannerHtml(sortedKillers, bmName, isAccountUser, cachedLeaderboardBenchmarkProfile);
+  }
 
   const podWrap = document.getElementById("leaderboard-podium-wrap");
   if (podWrap) {
@@ -2102,6 +2313,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             <input type="text" id="benchmark-callsign-input" placeholder="Compare champion..." style="background:#07090e; border:1px solid rgba(212, 175, 55, 0.35); color:#fff; font-size:0.75rem; padding:4px 8px; border-radius:4px; width:140px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
             <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn active" style="padding:4px 10px; font-size:0.72rem;">Compare</button>
             ${sessionStorage.getItem("wowkb_benchmark_player") ? `<button onclick="setBenchmarkPlayer('')" class="pill-btn" style="padding:4px 6px; font-size:0.7rem; color:#ef4444;" title="Reset Benchmark">&times;</button>` : ''}
+            ${sessionStorage.getItem("wowkb_hide_benchmark") === '1' ? `<button onclick="sessionStorage.removeItem('wowkb_hide_benchmark'); loadLeaderboards();" class="pill-btn" style="padding:4px 8px; font-size:0.72rem; color:var(--accent-gold);" title="Restore Benchmark Stats">Show My Stats</button>` : ''}
           </div>
         </div>
       </div>
@@ -2171,263 +2383,17 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
     rawLeaderboardKillers = (data && data.topKillers) ? data.topKillers : [];
     cachedLeaderboardBenchmarkProfile = benchmarkProfile;
     const sortedKillers = getSortedAndFilteredKillers();
-    const topRank1 = rawLeaderboardKillers.length > 0 ? rawLeaderboardKillers[0] : null;
     const bmName = getBenchmarkPlayerName();
-    const pModes = (benchmarkProfile && benchmarkProfile.modes) || {};
-    const curModeStats = pModes[currentMode] || {};
-
-    let bmMatch = null;
-    let bmRank = null;
-    if (bmName && rawLeaderboardKillers.length > 0) {
-      const foundIdx = rawLeaderboardKillers.findIndex(p => p.name.toLowerCase() === bmName.toLowerCase());
-      if (foundIdx !== -1) {
-        bmMatch = rawLeaderboardKillers[foundIdx];
-        bmRank = foundIdx + 1;
-      }
-    }
-
     const isAccountUser = Boolean(
       (localStorage.getItem("wowkb_account_username") && localStorage.getItem("wowkb_account_username").toLowerCase() === (bmName || '').toLowerCase()) ||
       (localStorage.getItem("wowkb_user_character") && localStorage.getItem("wowkb_user_character").toLowerCase() === (bmName || '').toLowerCase())
     );
 
-    // Render Operative Benchmark Comparison Banner
-    if (bmName) {
-      let rawBmClass = (bmMatch && bmMatch.class) ||
-        (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
-        (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
-      if (bmName && bmName.toLowerCase() === 'dagariane') {
-        rawBmClass = 'PALADIN';
-      }
-      const bmClass = resolveClassName(rawBmClass);
-      let bmFaction = (bmMatch && bmMatch.faction) ||
-        (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
-        (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
-      if (bmName && bmName.toLowerCase() === 'dagariane') {
-        bmFaction = 'Alliance';
-      }
-
-      const isAlliance = (bmFaction || '').toLowerCase() === 'alliance';
-      const factionThemeClass = isAlliance ? 'banner-alliance' : 'banner-horde';
-      const rankDisplay = bmRank ? `#${bmRank}` : '#>15';
-      const bmPct = bmMatch ? bmMatch.percentile : (curModeStats && curModeStats.percentile ? curModeStats.percentile : (benchmarkProfile && benchmarkProfile.percentile ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 }));
-      const pctBadge = getWowLogsPercentileBadge(bmPct);
-      let deltaDisplay = '-';
-      let deltaColor = '#94a3b8';
-
-      let bmStatsHtml = '';
-      if (currentMode === 'DUEL') {
-        const bmWins = bmMatch ? (bmMatch.wins !== undefined ? bmMatch.wins : bmMatch.kills) : (curModeStats.wins !== undefined ? curModeStats.wins : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelWins || 0 : 0));
-        const bmLosses = bmMatch ? (bmMatch.losses || 0) : (curModeStats.losses !== undefined ? curModeStats.losses : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.duelLosses || 0 : 0));
-        const bmWl = bmMatch ? (bmMatch.wl_ratio !== undefined ? bmMatch.wl_ratio : (bmLosses > 0 ? (bmWins / bmLosses).toFixed(2) : bmWins)) : (curModeStats.wl !== undefined ? curModeStats.wl : (bmLosses > 0 ? (bmWins / bmLosses).toFixed(2) : bmWins));
-
-        if (topRank1) {
-          const topWins = topRank1.wins !== undefined ? topRank1.wins : (topRank1.kills || 0);
-          if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
-            deltaDisplay = '⭐ #1 Apex Leader';
-            deltaColor = 'var(--accent-gold)';
-          } else {
-            const diff = Math.max(0, topWins - bmWins);
-            deltaDisplay = `-${diff} wins to #1 (${escapeHtml(topRank1.name)})`;
-            deltaColor = '#ef4444';
-          }
-        }
-
-        bmStatsHtml = `
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
-            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">WINS</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmWins}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">LOSSES</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#ef4444;">${bmLosses}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">W/L RATIO</div>
-            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${bmWl}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
-            <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
-            <div>${pctBadge}</div>
-          </div>
-        `;
-      } else if (currentMode === 'BG') {
-        const bmKills = bmMatch ? bmMatch.kills : (curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.bgKills || 0 : 0));
-        const bmDeaths = bmMatch ? (bmMatch.deaths || 0) : (curModeStats.deaths !== undefined ? curModeStats.deaths : 0);
-        const bmKd = bmMatch ? (bmMatch.kd || 0) : (curModeStats.kd !== undefined ? curModeStats.kd : (bmDeaths > 0 ? (bmKills / bmDeaths).toFixed(2) : bmKills));
-        const bmWl = bmMatch ? (bmMatch.wl_ratio || '-') : (curModeStats.wl || '-');
-
-        if (topRank1) {
-          if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
-            deltaDisplay = '⭐ #1 Apex Leader';
-            deltaColor = 'var(--accent-gold)';
-          } else {
-            const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
-            deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
-            deltaColor = '#ef4444';
-          }
-        }
-
-        bmStatsHtml = `
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
-            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">KILLS</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmKills}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DEATHS</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#ef4444;">${bmDeaths}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">K/D RATIO</div>
-            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${bmKd}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">W/L RATIO</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#00e5ff;">${bmWl}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
-            <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
-            <div>${pctBadge}</div>
-          </div>
-        `;
-      } else if (currentMode === 'ARENA') {
-        const bmKills = bmMatch ? bmMatch.kills : (curModeStats.kills || 0);
-        const bmDeaths = bmMatch ? (bmMatch.deaths || 0) : (curModeStats.deaths || 0);
-        const bmKd = bmMatch ? (bmMatch.kd || 0) : (curModeStats.kd || (bmDeaths > 0 ? (bmKills / bmDeaths).toFixed(2) : bmKills));
-        const bmWl = bmMatch ? (bmMatch.wl_ratio || '-') : (curModeStats.wl || '-');
-
-        if (topRank1) {
-          if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
-            deltaDisplay = '⭐ #1 Apex Leader';
-            deltaColor = 'var(--accent-gold)';
-          } else {
-            const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
-            deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
-            deltaColor = '#ef4444';
-          }
-        }
-
-        bmStatsHtml = `
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
-            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">KILLS</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmKills}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DEATHS</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#ef4444;">${bmDeaths}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">K/D RATIO</div>
-            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${bmKd}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">W/L RATIO</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#00e5ff;">${bmWl}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
-            <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
-            <div>${pctBadge}</div>
-          </div>
-        `;
-      } else { // WORLD
-        const bmKills = bmMatch ? bmMatch.kills : (curModeStats.kills !== undefined ? curModeStats.kills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.kills || 0 : 0));
-        const bmSolo = bmMatch ? (bmMatch.solo_kills || 0) : (curModeStats.soloKills !== undefined ? curModeStats.soloKills : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.soloKills || 0 : 0));
-        const bmDeaths = bmMatch ? (bmMatch.deaths || 0) : (curModeStats.deaths !== undefined ? curModeStats.deaths : (benchmarkProfile && benchmarkProfile.stats ? benchmarkProfile.stats.deaths || 0 : 0));
-        const bmKd = bmMatch ? (bmMatch.kd || 0) : (curModeStats.kd !== undefined ? curModeStats.kd : (bmDeaths > 0 ? (bmKills / bmDeaths).toFixed(2) : bmKills));
-
-        if (topRank1) {
-          if (topRank1.name.toLowerCase() === bmName.toLowerCase()) {
-            deltaDisplay = '⭐ #1 Apex Leader';
-            deltaColor = 'var(--accent-gold)';
-          } else {
-            const diff = Math.max(0, (topRank1.kills || 0) - bmKills);
-            deltaDisplay = `-${diff} kills to #1 (${escapeHtml(topRank1.name)})`;
-            deltaColor = '#ef4444';
-          }
-        }
-
-        bmStatsHtml = `
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">RANK</div>
-            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${rankDisplay}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">KILLS</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#10b981;">${bmKills}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">SOLO</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#00e5ff;">${bmSolo}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DEATHS</div>
-            <div style="font-size:0.9rem; font-weight:800; color:#ef4444;">${bmDeaths}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">K/D RATIO</div>
-            <div style="font-size:0.9rem; font-weight:800; color:var(--accent-gold);">${bmKd}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">DELTA VS #1</div>
-            <div style="font-size:0.85rem; font-weight:700; color:${deltaColor};">${deltaDisplay}</div>
-          </div>
-          <div>
-            <div style="font-size:0.68rem; color:#856a36; font-family:var(--font-tactical); font-weight:800;">PERCENTILE</div>
-            <div>${pctBadge}</div>
-          </div>
-        `;
-      }
-
-      html += `
-        <div class="legends-comparison-banner ${factionThemeClass}" style="background: linear-gradient(180deg, #0a0d14 0%, #030407 100%); border: 1px solid var(--wow-brass-border, #4a3b27); box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.88), 0 2px 8px rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 12px 16px; margin-bottom: 4px;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:1.15rem;">⚔️</span>
-              <div>
-                <div style="font-size:0.68rem; color:var(--wow-gold, #f59e0b); font-weight:800; letter-spacing:0.5px;">CHAMPION BENCHMARK COMPARISON &bull; ${escapeHtml(currentMode)}</div>
-                <div style="font-size:0.95rem; font-weight:700;">
-                  <span class="clickable-player" onclick="openCharacterProfile(${safeJsParam(bmName)})">${renderClassBadge(bmClass, 18)} ${colorizeClass(bmName, bmClass)}</span>
-                  <span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="benchmark-stats-row" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-            ${bmStatsHtml}
-            <div class="benchmark-input-wrap" style="display:flex; align-items:center; gap:6px;">
-              <input type="text" id="benchmark-callsign-input" placeholder="Compare champion..." style="background:#07090e; border:1px solid #334155; color:#fff; font-size:0.75rem; padding:4px 8px; border-radius:4px; width:130px;" onkeydown="if(event.key==='Enter') setBenchmarkPlayer(this.value)">
-              <button onclick="setBenchmarkPlayer(document.getElementById('benchmark-callsign-input').value)" class="pill-btn" style="padding:4px 8px; font-size:0.72rem;">Compare</button>
-              ${sessionStorage.getItem("wowkb_benchmark_player") ? `<button onclick="setBenchmarkPlayer('')" class="pill-btn" style="padding:4px 6px; font-size:0.7rem; color:#ef4444;" title="Reset Benchmark">&times;</button>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    }
+    html += `
+      <div id="leaderboard-benchmark-wrap">
+        ${renderBenchmarkBannerHtml(sortedKillers, bmName, isAccountUser, benchmarkProfile)}
+      </div>
+    `;
 
     // Generate Mode-Specific Colgroup and Total Columns
     let colgroupHtml = '';
