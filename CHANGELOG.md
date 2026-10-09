@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integrated champion benchmark comparison input into the Leaderboard header controls and removed the empty dashed benchmark placeholder banner.
   - Removed top horizontal `.nav-links-rail` clutter from `#top-navbar` for a clean, minimalist header bar.
   - Upgraded left slide-out Command Deck drawer with matching 4-category taxonomy, frosted glass backdrop, and quick action tiles.
+  - Fixed runtime `ReferenceError: tabbedLb is not defined` in `switchTab()`, resolving button navigation failures across all drawer tabs.
+  - Configured homepage default landing view to `LEGENDS` (Defender of Azeroth Leaderboards) with immediate loading feedback so players land directly on champion standings.
+  - Hardened `allBounties` and `beacons` collections with `Array.isArray()` checks to prevent payload mapping errors.
 
 ### Changed
 - **Version Bump to v1.0.7**:

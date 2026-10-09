@@ -1077,6 +1077,9 @@ function setBenchmarkPlayer(name) {
 
 async function loadLeaderboards() {
   const container = document.getElementById("main-content-area");
+  if (container && (!rawLeaderboardKillers || rawLeaderboardKillers.length === 0)) {
+    container.innerHTML = `<div style="text-align:center; padding:48px 20px; color:#94a3b8; font-family:var(--font-tactical); font-size:0.95rem; letter-spacing:0.5px;">⚔️ Loading Defender of Azeroth Leaderboards...</div>`;
+  }
   const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
   const tfParam = (currentLeaderboardTimeframe || "all").toLowerCase();
   try {
@@ -2663,7 +2666,7 @@ function renderBountiesView(bounties, debts, leaderboards) {
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
   `;
 
-  if (!allBounties || allBounties.length === 0) {
+  if (!allBounties || !Array.isArray(allBounties) || allBounties.length === 0) {
     html += `<div style="color: #64748b; padding:16px;">No active marks right now on this realm. Issue a contract in-game via the WoW Killboard addon (<code style="color:var(--wow-gold);">/kb mark &lt;target&gt; &lt;gold&gt;</code>) to ignite a manhunt.</div>`;
   } else {
     html += allBounties.map(b => renderSingleBountyCard(b, isSupporter)).join('');
@@ -5120,6 +5123,7 @@ function switchTab(tab) {
   const topFilters = document.getElementById("top-combat-filters");
   const classCard = document.getElementById("sidebar-card-classes");
   const activityCard = document.getElementById("sidebar-combat-activity") || document.getElementById("sidebar-card-activity");
+  const tabbedLb = document.getElementById("sidebar-tabbed-leaderboards") || document.getElementById("sidebar-card-tabbed-leaderboards");
 
   const hideSidebar = (tab === "PORTAL" || tab === "THEATER" || tab === "UPLOAD" || tab === "DOWNLOAD");
   if (sidebarEl) {
@@ -5145,7 +5149,7 @@ function switchTab(tab) {
   }
 
   const statsHub = document.getElementById("homepage-stats-hub");
-  if (statsHub) statsHub.style.display = (tab === "INTEL") ? "block" : "none";
+  if (statsHub) statsHub.style.display = (tab === "INTEL" || tab === "LEGENDS") ? "block" : "none";
 
   if (tab === "PORTAL") {
     loadPortalView();
@@ -5435,7 +5439,7 @@ function loadDownloadView() {
     <div style="display:flex; flex-direction:column; gap:24px; max-width:960px; margin:0 auto; padding:10px 0 40px 0;">
       <!-- Top Navigation Return Button -->
       <div style="display:flex; justify-content:flex-start; margin-bottom:-10px;">
-        <button class="pill-btn active" onclick="switchTab('INTEL');" style="display:inline-flex; align-items:center; gap:8px; padding:8px 16px; font-size:0.85rem; cursor:pointer;">
+        <button class="pill-btn active" onclick="switchTab('LEGENDS');" style="display:inline-flex; align-items:center; gap:8px; padding:8px 16px; font-size:0.85rem; cursor:pointer;">
           <span>&larr; Return to Killboard</span>
         </button>
       </div>
@@ -7413,7 +7417,7 @@ function loadRalliesView() {
       const listEl = document.getElementById("rallies-list-container");
       if (!listEl) return;
 
-      if (!beacons || beacons.length === 0) {
+      if (!beacons || !Array.isArray(beacons) || beacons.length === 0) {
         Promise.all([
           fetch("/api/bounties").then(r => r.json()).catch(() => []),
           fetch("/api/kills?limit=3").then(r => r.json()).catch(() => ({ kills: [] }))
@@ -8805,18 +8809,18 @@ document.addEventListener("DOMContentLoaded", () => {
     portalAccessMode = "character";
     renderHeaderAuthBadge();
     syncActiveCharacterTelemetry(charParam);
-    switchTab("INTEL");
+    switchTab("LEGENDS");
     setTimeout(() => {
       openCharacterProfile(charParam);
     }, 200);
   } else {
-    // Direct zero-barrier landing on the live combat feed
+    // Direct zero-barrier landing on the Defender of Azeroth leaderboards
     sessionStorage.setItem("wowkb_has_entered_feed", "1");
     const activeChar = localStorage.getItem("wowkb_user_character");
     if (activeChar) {
       syncActiveCharacterTelemetry(activeChar);
     }
-    switchTab("INTEL");
+    switchTab("LEGENDS");
   }
 
   // Native Privacy-Preserving Analytics Pageview Beacon

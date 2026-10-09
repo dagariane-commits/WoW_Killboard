@@ -1012,10 +1012,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Arathi Highlands",
-                elapsedSeconds = 410580,
+                elapsedSeconds = 412130,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 6843,
+                minutesAgo = 6868,
                 subzone = nil,
                 timestamp = 1791094008,
                 zone = "Arathi Highlands",
@@ -1049,10 +1049,10 @@ WoWKillboard_RealmData = {
             kill_id = nil,
             lastSeen = {
                 displayText = "Blackfathom Deeps",
-                elapsedSeconds = 343671,
+                elapsedSeconds = 345221,
                 hasSubzoneAccess = false,
                 hasTelemetry = true,
-                minutesAgo = 5727,
+                minutesAgo = 5753,
                 subzone = nil,
                 timestamp = 1791160917,
                 zone = "Blackfathom Deeps",
@@ -1455,5 +1455,5 @@ WoWKillboard_RealmData = {
         "Lua Hover Stability: Row-scoped hover background color table eliminates nil unpack crash on ability icon mouseover",
         "Visual Clarity Polish: De-escalated player row border outlines across all feed and leaderboard frames into subtle background highlights",
     },
-    LastSync = 1791504588,
+    LastSync = 1791506139,
 }
