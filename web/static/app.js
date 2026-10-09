@@ -2423,6 +2423,7 @@ function renderLeaderboardView(data, bgData, guildsData, benchmarkProfile) {
             </div>
           </div>
         </div>
+      `;
     }
 
     // Generate Mode-Specific Colgroup and Total Columns
