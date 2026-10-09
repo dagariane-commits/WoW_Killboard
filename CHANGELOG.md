@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Blizzard-Style Overhanging Player Portrait Medallion (`Addon/WoWKillboard/UI.lua`)**:
+  - Re-docked the circular character portrait to `TOPLEFT (-8, 8)` hanging naturally off the top-left corner of the window in classic Blizzard UI fashion (`CharacterFrame` / `SpellBookFrame`).
+  - Configured portrait size to 60x60 with `HIGH` strata and frame level elevated to `mainFrame:GetFrameLevel() + 20` to guarantee crisp visibility above outer frame borders.
+  - Centered 50x50 character face texture, 66x66 concentric gold border ring, and 20x20 level badge anchored at `BOTTOMRIGHT (2, -2)` with `MiniMap-TrackingBorder`.
+  - Re-positioned Master Hamburger Button in `headerBar` to `LEFT (56, 0)` and title text to `LEFT (hamburgerBtn, "RIGHT", 10, 0)` for clean spacing.
+- **Clean Text-Only Sub-Bar Navigation with Hover Highlights (`Addon/WoWKillboard/UI.lua`)**:
+  - Replaced boxed buttons on the navigation bar with sleek, borderless, background-free text links (`Intel`, `Leaderboards`, `The Marked`, `Call to Arms`, `Danger Zones`).
+  - Implemented dynamic hover highlighting: muted silver text (`#B0BCC8`) when idle, crisp white highlight (`#FFFFFF`) on mouseover, and vivid Blizzard gold (`#FFD100`) when selected.
+  - Active tab features a 2px solid gold underline accent line (`bottomAccent`).
+  - Clicking any tab directly executes `UI:ShowTab(id)` to switch views with zero latency.
+- **Contextual Page-Level Mode Filter Pills (`Addon/WoWKillboard/UI.lua`)**:
+  - Relocated Mode Filter Pills (`[ World ] [ BGs ] [ Duels ] [ Arenas ]`) from the global sub-bar into the specific pages where mode filtering operates:
+    1. **Leaderboard Page (`UI:RenderLeaderboard`)**: Mounted at `TOPRIGHT (0, -28)` opposite category pills (`Players`, `Guilds`, `Last 24 Hours`); repositioned `Share` button to the right side of the section header bar.
+    2. **Intel Feed Page (`UI:RenderLiveFeed`)**: Mounted at `RIGHT (-4, 0)` on the `RECENT COMBAT INTEL` header strip.
+  - Clicking any mode pill sets `WoWKillboardDB.combatFilter` and `currentMode`, immediately re-aggregating and re-rendering leaderboard standings or combat kills for that mode.
+  - Active pill is highlighted in solid bright brass gold (`#C69B3D`) with dark text; inactive pills remain dark slate with light gray text.
+
+### Changed
+- **Relocated Faction War Split to Sub-Bar & Removed Top Stat Bar (`Addon/WoWKillboard/UI.lua`)**:
+  - Removed the redundant 28px horizontal `metricsBar` / `UI.TopMetricsBar` ribbon strip.
+  - Re-anchored the Faction War Split progress bar (`splitBar` Alliance % / Horde %) and label to the right side of the navigation sub-bar (`TOPRIGHT (-14, -50)`), occupying the space previously held by global mode pills.
+  - Expanded `mainContainer` and `sidebarContainer` heights from 544px to 574px (starting at `y = -74` instead of `-104`), providing 30px of additional vertical viewport space for combat records and rankings.
+  - Expanded sidebar Card 3 (All Classes) to 208px height to fill the expanded vertical column.
+- **Default Homepage Landing to Leaderboard (`Addon/WoWKillboard/UI.lua`)**:
+  - Configured default `activeTab` to `"LEADERBOARD"` so opening the Killboard window (`/kb` or minimap icon) immediately shows the PvP Leaderboard and local player standing (`[YOU]`), preventing a blank feed on initial launch.
+- **Eliminated Duplicate Hamburger Icon (`Addon/WoWKillboard/UI.lua`)**:
+  - Removed `ActiveViewBadge` from the sub-bar, resolving user confusion over having two adjacent hamburger buttons. The sole command deck trigger is now the Master Hamburger Button on the top header bar.
+  - Separated Command Deck drawer buttons into `deckButtons` table, preventing drawer elements from conflicting with or overwriting sub-bar navigation tabs.
+
 ## [1.0.7] - 2026-10-08 (Streamlined Command Deck & Hamburger Navigation)
 
 ### Added
