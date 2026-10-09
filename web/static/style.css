@@ -2458,32 +2458,88 @@ body {
 
 /* ----------------- Hall of Legends Operative Comparison ----------------- */
 .legends-comparison-banner {
-  background: linear-gradient(135deg, rgba(212, 163, 41, 0.12) 0%, rgba(15, 23, 42, 0.95) 75%);
-  border: 1px solid var(--wow-gold, #f59e0b);
-  border-radius: 8px;
-  padding: 12px 18px;
+  background: linear-gradient(180deg, #0a0d14 0%, #030407 100%);
+  border: 1px solid var(--wow-brass-border, #4a3b27);
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.88), 0 2px 6px rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+  padding: 4px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(212, 163, 41, 0.08);
+  min-height: 36px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
+.legends-comparison-banner::-webkit-scrollbar {
+  display: none;
+}
+
+.legends-comparison-banner.banner-alliance,
 .legends-comparison-banner.benchmark-alliance {
-  background: 
-    linear-gradient(90deg, rgba(6, 12, 26, 0.92) 0%, rgba(4, 8, 18, 0.95) 50%, rgba(2, 4, 10, 0.98) 100%),
-    url('/static/images/banner_alliance_tactical.jpg') center center / cover no-repeat !important;
-  border: 1px solid rgba(37, 75, 140, 0.45) !important;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9), 0 4px 16px rgba(0, 0, 0, 0.7) !important;
+  border-left: 3.5px solid #3b82f6 !important;
+  background: linear-gradient(90deg, rgba(10, 20, 36, 0.95) 0%, #05080f 100%) !important;
 }
 
+.legends-comparison-banner.banner-horde,
 .legends-comparison-banner.benchmark-horde {
-  background: 
-    linear-gradient(90deg, rgba(26, 6, 8, 0.92) 0%, rgba(16, 4, 6, 0.95) 50%, rgba(8, 2, 3, 0.98) 100%),
-    url('/static/images/banner_horde_tactical.png') center center / cover no-repeat !important;
-  border: 1px solid rgba(135, 22, 22, 0.45) !important;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9), 0 4px 16px rgba(0, 0, 0, 0.7) !important;
+  border-left: 3.5px solid #ef4444 !important;
+  background: linear-gradient(90deg, rgba(36, 10, 12, 0.95) 0%, #0f0505 100%) !important;
+}
+
+.bm-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.bm-stats-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  font-size: 0.78rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.bm-stats-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.bm-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.bm-stat-item .bm-label {
+  font-size: 0.65rem;
+  color: #856a36;
+  font-family: var(--font-tactical, sans-serif);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.bm-stat-item .bm-val {
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.bm-stat-item .bm-val.gold { color: var(--accent-gold, #f59e0b); }
+.bm-stat-item .bm-val.green { color: #10b981; }
+.bm-stat-item .bm-val.red { color: #ef4444; }
+.bm-stat-item .bm-val.cyan { color: #00e5ff; }
+
+.bm-sep {
+  color: rgba(255, 255, 255, 0.18);
+  font-size: 0.68rem;
 }
 
 /* ----------------- Hall of Legends Tables & Wrappers ----------------- */
@@ -5490,30 +5546,18 @@ body {
   }
 
   .legends-comparison-banner {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 12px !important;
-    padding: 10px 12px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    padding: 4px 10px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
-  .benchmark-stats-row {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 8px 10px !important;
-    width: 100% !important;
-  }
-
-  .benchmark-input-wrap {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    margin-top: 6px !important;
-    display: flex !important;
-  }
-
-  .benchmark-input-wrap input {
-    flex: 1 !important;
-    width: 100% !important;
-    min-width: 0 !important;
+  .bm-stats-strip {
+    flex-wrap: nowrap !important;
   }
 
   .legends-table-wrapper {
