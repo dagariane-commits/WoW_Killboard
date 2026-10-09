@@ -1132,7 +1132,8 @@ function UI:CreateCommandDeck()
     local currentY = -58
 
     -- Helper to create styled deck button
-    local function CreateDeckNavBtn(id, text, tooltipTitle, tooltipDesc)
+    -- Helper to create styled deck button
+    local function CreateDeckNavBtn(id, text, iconTexture, tooltipTitle, tooltipDesc)
         local btn = CreateFrame("Button", nil, deck, "BackdropTemplate")
         btn:SetSize(242, 28)
         btn:SetPoint("TOPLEFT", deck, "TOPLEFT", 14, currentY)
@@ -1146,8 +1147,24 @@ function UI:CreateCommandDeck()
         btn:SetBackdropColor(0.06, 0.08, 0.12, 0.85)
         btn:SetBackdropBorderColor(0.18, 0.24, 0.32, 0.7)
 
+        local icon = btn:CreateTexture(nil, "OVERLAY")
+        icon:SetSize(16, 16)
+        icon:SetPoint("LEFT", btn, "LEFT", 10, 0)
+        if iconTexture then
+            icon:SetTexture(iconTexture)
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            icon:Show()
+        else
+            icon:Hide()
+        end
+        btn.NavIcon = icon
+
         local lbl = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        lbl:SetPoint("LEFT", btn, "LEFT", 10, 0)
+        if iconTexture then
+            lbl:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+        else
+            lbl:SetPoint("LEFT", btn, "LEFT", 10, 0)
+        end
         lbl:SetTextColor(0.85, 0.88, 0.92, 1.0)
         lbl:SetText(text)
         if lbl.SetFont then local f, s = lbl:GetFont(); lbl:SetFont(f, s or 10, "OUTLINE") end
@@ -1199,9 +1216,9 @@ function UI:CreateCommandDeck()
     if cat1.SetFont then local f, s = cat1:GetFont(); cat1:SetFont(f, 9, "OUTLINE") end
     currentY = currentY - 18
 
-    CreateDeckNavBtn("FEED", "⚔  Intel Feed", "|cffffd100Intel Feed|r", "Real-time combat mortality feed & killmails.")
-    CreateDeckNavBtn("LEADERBOARD", "🏆  Leaderboards", "|cffffd100Leaderboards|r", "Top killer standings, guild rankings, and kill counts.")
-    CreateDeckNavBtn("ZONES", "🗺️  Danger Zones", "|cffffd100Danger Zones|r", "Territory conflict heatmap and mortality concentration.")
+    CreateDeckNavBtn("FEED", "Intel Feed", "Interface\\Icons\\INV_Sword_04", "|cffffd100Intel Feed|r", "Real-time combat mortality feed & killmails.")
+    CreateDeckNavBtn("LEADERBOARD", "Leaderboards", "Interface\\Icons\\INV_BannerPVP_02", "|cffffd100Leaderboards|r", "Top killer standings, guild rankings, and kill counts.")
+    CreateDeckNavBtn("ZONES", "Danger Zones", "Interface\\Icons\\INV_Misc_Map02", "|cffffd100Danger Zones|r", "Territory conflict heatmap and mortality concentration.")
 
     -- Divider
     currentY = currentY - 6
@@ -1220,8 +1237,8 @@ function UI:CreateCommandDeck()
     if cat2.SetFont then local f, s = cat2:GetFont(); cat2:SetFont(f, 9, "OUTLINE") end
     currentY = currentY - 18
 
-    CreateDeckNavBtn("BOUNTIES", "💀  The Marked", "|cffffd100The Marked|r", "High-value Nemesis bounty targets and death marks.")
-    CreateDeckNavBtn("RALLIES", "📢  Call to Arms", "|cffffd100Call to Arms|r", "Active defense rally beacons and guild assistance calls.")
+    CreateDeckNavBtn("BOUNTIES", "The Marked", "Interface\\Icons\\Ability_Rogue_BloodSplatter", "|cffffd100The Marked|r", "High-value Nemesis bounty targets and death marks.")
+    CreateDeckNavBtn("RALLIES", "Call to Arms", "Interface\\Icons\\INV_Misc_Horn_01", "|cffffd100Call to Arms|r", "Active defense rally beacons and guild assistance calls.")
 
     -- Divider
     currentY = currentY - 6
@@ -1263,9 +1280,16 @@ function UI:CreateCommandDeck()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
+    local pvpIcon = pvpBtn:CreateTexture(nil, "OVERLAY")
+    pvpIcon:SetSize(14, 14)
+    pvpIcon:SetPoint("LEFT", pvpBtn, "LEFT", 6, 0)
+    pvpIcon:SetTexture("Interface\\Icons\\INV_Sword_04")
+    pvpIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    pvpBtn.Icon = pvpIcon
+
     local pvpLabel = pvpBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    pvpLabel:SetPoint("CENTER", 0, 0)
-    pvpLabel:SetText("⚔ PvP Combat")
+    pvpLabel:SetPoint("LEFT", pvpIcon, "RIGHT", 4, 0)
+    pvpLabel:SetText("PvP Combat")
     if pvpLabel.SetFont then local f, s = pvpLabel:GetFont(); pvpLabel:SetFont(f, s or 10, "OUTLINE") end
     pvpBtn.Label = pvpLabel
 
@@ -1280,9 +1304,16 @@ function UI:CreateCommandDeck()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
+    local pveIcon = pveBtn:CreateTexture(nil, "OVERLAY")
+    pveIcon:SetSize(14, 14)
+    pveIcon:SetPoint("LEFT", pveBtn, "LEFT", 6, 0)
+    pveIcon:SetTexture("Interface\\Icons\\Spell_Shadow_SummonImp")
+    pveIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    pveBtn.Icon = pveIcon
+
     local pveLabel = pveBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    pveLabel:SetPoint("CENTER", 0, 0)
-    pveLabel:SetText("💀 PvE Hazards")
+    pveLabel:SetPoint("LEFT", pveIcon, "RIGHT", 4, 0)
+    pveLabel:SetText("PvE Hazards")
     if pveLabel.SetFont then local f, s = pveLabel:GetFont(); pveLabel:SetFont(f, s or 10, "OUTLINE") end
     pveBtn.Label = pveLabel
 
@@ -1355,10 +1386,18 @@ function UI:CreateCommandDeck()
     })
     settingsBtn:SetBackdropColor(26/255, 32/255, 42/255, 1.0)
     settingsBtn:SetBackdropBorderColor(50/255, 60/255, 75/255, 0.8)
+
+    local settingsIcon = settingsBtn:CreateTexture(nil, "OVERLAY")
+    settingsIcon:SetSize(16, 16)
+    settingsIcon:SetPoint("LEFT", settingsBtn, "LEFT", 10, 0)
+    settingsIcon:SetTexture("Interface\\Icons\\Trade_Engineering")
+    settingsIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    settingsBtn.Icon = settingsIcon
+
     local settingsLabel = settingsBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    settingsLabel:SetPoint("LEFT", settingsBtn, "LEFT", 10, 0)
+    settingsLabel:SetPoint("LEFT", settingsIcon, "RIGHT", 8, 0)
     settingsLabel:SetTextColor(204/255, 204/255, 204/255, 1.0)
-    settingsLabel:SetText("⚙  Settings & Preferences")
+    settingsLabel:SetText("Settings & Preferences")
     if settingsLabel.SetFont then local f, s = settingsLabel:GetFont(); settingsLabel:SetFont(f, s or 10, "OUTLINE") end
     settingsBtn.Label = settingsLabel
     settingsBtn:SetScript("OnEnter", function(self)
@@ -1393,10 +1432,18 @@ function UI:CreateCommandDeck()
     })
     syncBtn:SetBackdropColor(18/255, 32/255, 28/255, 1.0)
     syncBtn:SetBackdropBorderColor(16/255, 185/255, 129/255, 0.7)
+
+    local syncIcon = syncBtn:CreateTexture(nil, "OVERLAY")
+    syncIcon:SetSize(16, 16)
+    syncIcon:SetPoint("LEFT", syncBtn, "LEFT", 10, 0)
+    syncIcon:SetTexture("Interface\\Icons\\Spell_Holy_Renew")
+    syncIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    syncBtn.Icon = syncIcon
+
     local syncLabel = syncBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    syncLabel:SetPoint("LEFT", syncBtn, "LEFT", 10, 0)
+    syncLabel:SetPoint("LEFT", syncIcon, "RIGHT", 8, 0)
     syncLabel:SetTextColor(16/255, 185/255, 129/255, 1.0)
-    syncLabel:SetText("💾  Save & Sync Kills")
+    syncLabel:SetText("Save & Sync Kills")
     if syncLabel.SetFont then local f, s = syncLabel:GetFont(); syncLabel:SetFont(f, s or 10, "OUTLINE") end
     syncBtn.Label = syncLabel
     syncBtn:SetScript("OnEnter", function(self)
@@ -1630,7 +1677,7 @@ function UI:CreateMainWindow()
     headerBar:SetBackdropBorderColor(0, 0, 0, 1.0)
     UI.HeaderBar = headerBar
 
-    -- Master Hamburger Navigation Button [☰] (Triggers Slide-Out Command Deck Drawer)
+    -- Master Hamburger Navigation Button (Triggers Slide-Out Command Deck Drawer)
     local hamburgerBtn = CreateFrame("Button", nil, headerBar, "BackdropTemplate")
     hamburgerBtn:SetSize(24, 24)
     hamburgerBtn:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
@@ -1643,21 +1690,40 @@ function UI:CreateMainWindow()
     })
     hamburgerBtn:SetBackdropColor(24/255, 32/255, 44/255, 0.95)
     hamburgerBtn:SetBackdropBorderColor(212/255, 175/255, 55/255, 0.8)
-    local hamburgerIcon = hamburgerBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    hamburgerIcon:SetPoint("CENTER", 0, 0)
-    hamburgerIcon:SetTextColor(1.0, 0.82, 0.0, 1.0)
-    hamburgerIcon:SetText("☰")
-    if hamburgerIcon.SetFont then local f, s = hamburgerIcon:GetFont(); hamburgerIcon:SetFont(f, (s or 13), "OUTLINE") end
-    hamburgerBtn.Icon = hamburgerIcon
+
+    -- Vector 3-bar hamburger lines (100% font-independent, zero missing glyphs)
+    local barW, barH = 14, 2
+    local bar1 = hamburgerBtn:CreateTexture(nil, "OVERLAY")
+    bar1:SetSize(barW, barH)
+    bar1:SetPoint("CENTER", hamburgerBtn, "CENTER", 0, 4)
+    bar1:SetColorTexture(1.0, 0.82, 0.0, 1.0)
+
+    local bar2 = hamburgerBtn:CreateTexture(nil, "OVERLAY")
+    bar2:SetSize(barW, barH)
+    bar2:SetPoint("CENTER", hamburgerBtn, "CENTER", 0, 0)
+    bar2:SetColorTexture(1.0, 0.82, 0.0, 1.0)
+
+    local bar3 = hamburgerBtn:CreateTexture(nil, "OVERLAY")
+    bar3:SetSize(barW, barH)
+    bar3:SetPoint("CENTER", hamburgerBtn, "CENTER", 0, -4)
+    bar3:SetColorTexture(1.0, 0.82, 0.0, 1.0)
+
+    hamburgerBtn.Bars = { bar1, bar2, bar3 }
 
     hamburgerBtn:SetScript("OnEnter", function(self)
         self:SetBackdropColor(36/255, 48/255, 68/255, 1.0)
         self:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Command Deck [☰]|r", "Open tactical operations, campaign ruleset switcher, settings, and killboard feeds.")
+        if self.Bars then
+            for _, b in ipairs(self.Bars) do b:SetColorTexture(1.0, 1.0, 1.0, 1.0) end
+        end
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Command Deck [MENU]|r", "Open tactical operations, campaign ruleset switcher, settings, and killboard feeds.")
     end)
     hamburgerBtn:SetScript("OnLeave", function(self)
         self:SetBackdropColor(24/255, 32/255, 44/255, 0.95)
         self:SetBackdropBorderColor(212/255, 175/255, 55/255, 0.8)
+        if self.Bars then
+            for _, b in ipairs(self.Bars) do b:SetColorTexture(1.0, 0.82, 0.0, 1.0) end
+        end
         UI:HidePrivateTooltip()
     end)
     hamburgerBtn:SetScript("OnClick", function()
@@ -1961,25 +2027,37 @@ function UI:CreateMainWindow()
     activeViewBtn:SetBackdropColor(0.08, 0.11, 0.16, 0.95)
     activeViewBtn:SetBackdropBorderColor(0.58, 0.45, 0.22, 0.7)
 
-    local activeViewIcon = activeViewBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    activeViewIcon:SetPoint("LEFT", activeViewBtn, "LEFT", 8, 0)
-    activeViewIcon:SetTextColor(1.0, 0.82, 0.0, 1.0)
-    activeViewIcon:SetText("☰")
-    if activeViewIcon.SetFont then local f, s = activeViewIcon:GetFont(); activeViewIcon:SetFont(f, (s or 12), "OUTLINE") end
-    activeViewBtn.Icon = activeViewIcon
+    -- Vector mini 3-bar icon (100% font-independent)
+    local mBarW, mBarH = 11, 2
+    local mb1 = activeViewBtn:CreateTexture(nil, "OVERLAY")
+    mb1:SetSize(mBarW, mBarH)
+    mb1:SetPoint("LEFT", activeViewBtn, "LEFT", 9, 3)
+    mb1:SetColorTexture(1.0, 0.82, 0.0, 1.0)
+
+    local mb2 = activeViewBtn:CreateTexture(nil, "OVERLAY")
+    mb2:SetSize(mBarW, mBarH)
+    mb2:SetPoint("LEFT", activeViewBtn, "LEFT", 9, 0)
+    mb2:SetColorTexture(1.0, 0.82, 0.0, 1.0)
+
+    local mb3 = activeViewBtn:CreateTexture(nil, "OVERLAY")
+    mb3:SetSize(mBarW, mBarH)
+    mb3:SetPoint("LEFT", activeViewBtn, "LEFT", 9, -3)
+    mb3:SetColorTexture(1.0, 0.82, 0.0, 1.0)
+
+    activeViewBtn.Bars = { mb1, mb2, mb3 }
 
     local activeViewLabel = activeViewBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    activeViewLabel:SetPoint("LEFT", activeViewIcon, "RIGHT", 6, 0)
+    activeViewLabel:SetPoint("LEFT", activeViewBtn, "LEFT", 26, 0)
     activeViewLabel:SetTextColor(1.0, 1.0, 1.0, 1.0)
     activeViewLabel:SetText("INTEL FEED")
     if activeViewLabel.SetFont then local f, s = activeViewLabel:GetFont(); activeViewLabel:SetFont(f, s or 10, "OUTLINE") end
     activeViewBtn.Label = activeViewLabel
 
     local activeViewArrow = activeViewBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    activeViewArrow:SetPoint("RIGHT", activeViewBtn, "RIGHT", -8, 0)
+    activeViewArrow:SetPoint("RIGHT", activeViewBtn, "RIGHT", -10, 0)
     activeViewArrow:SetTextColor(0.85, 0.70, 0.25, 1.0)
-    activeViewArrow:SetText("▾")
-    if activeViewArrow.SetFont then local f, s = activeViewArrow:GetFont(); activeViewArrow:SetFont(f, (s or 10) + 1, "OUTLINE") end
+    activeViewArrow:SetText("v")
+    if activeViewArrow.SetFont then local f, s = activeViewArrow:GetFont(); activeViewArrow:SetFont(f, s or 10, "OUTLINE") end
     activeViewBtn.Arrow = activeViewArrow
 
     -- 2px Solid Bright Gold Bottom Line Accent
@@ -1993,11 +2071,19 @@ function UI:CreateMainWindow()
     activeViewBtn:SetScript("OnEnter", function(self)
         self:SetBackdropColor(0.12, 0.16, 0.23, 1.0)
         self:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
+        if self.Bars then
+            for _, b in ipairs(self.Bars) do b:SetColorTexture(1.0, 1.0, 1.0, 1.0) end
+        end
+        if self.Arrow then self.Arrow:SetTextColor(1.0, 1.0, 1.0, 1.0) end
         UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Command Deck Navigator|r", "Click to switch views, inspect bounties, adjust ruleset, or open settings.")
     end)
     activeViewBtn:SetScript("OnLeave", function(self)
         self:SetBackdropColor(0.08, 0.11, 0.16, 0.95)
         self:SetBackdropBorderColor(0.58, 0.45, 0.22, 0.7)
+        if self.Bars then
+            for _, b in ipairs(self.Bars) do b:SetColorTexture(1.0, 0.82, 0.0, 1.0) end
+        end
+        if self.Arrow then self.Arrow:SetTextColor(0.85, 0.70, 0.25, 1.0) end
         UI:HidePrivateTooltip()
     end)
     activeViewBtn:SetScript("OnClick", function()
@@ -2627,32 +2713,30 @@ function UI:Refresh()
     -- Dynamic Tab Configuration: Exactly 5 clean tabs for PvP and PvE
     local tabOrder = { "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES" }
     local pveTabDefs = {
-        FEED        = { text = "Casualties",         w = 76 },
-        LEADERBOARD = { text = "Deadly Hazards",     w = 104 },
-        BOUNTIES    = { text = "Notorious Elites",   w = 108 },
-        RALLIES     = { text = "Rescue Beacons",     w = 102 },
-        ZONES       = { text = "Zone Mortality",     w = 98 },
+        FEED        = { text = "Casualties",         w = 76,  icon = "Interface\\Icons\\INV_Misc_MonsterHead_02" },
+        LEADERBOARD = { text = "Deadly Hazards",     w = 104, icon = "Interface\\Icons\\Spell_Shadow_SummonImp" },
+        BOUNTIES    = { text = "Notorious Elites",   w = 108, icon = "Interface\\Icons\\Ability_Rogue_BloodSplatter" },
+        RALLIES     = { text = "Rescue Beacons",     w = 102, icon = "Interface\\Icons\\INV_Misc_Horn_01" },
+        ZONES       = { text = "Zone Mortality",     w = 98,  icon = "Interface\\Icons\\INV_Misc_Map02" },
     }
     local pvpTabDefs = {
-        FEED        = { text = "Intel",              w = 56 },
-        LEADERBOARD = { text = "Leaderboards",       w = 96 },
-        BOUNTIES    = { text = "The Marked",         w = 82 },
-        RALLIES     = { text = "Call to Arms",       w = 86 },
-        ZONES       = { text = "Danger Zones",       w = 92 },
+        FEED        = { text = "Intel",              w = 56,  icon = "Interface\\Icons\\INV_Sword_04" },
+        LEADERBOARD = { text = "Leaderboards",       w = 96,  icon = "Interface\\Icons\\INV_BannerPVP_02" },
+        BOUNTIES    = { text = "The Marked",         w = 82,  icon = "Interface\\Icons\\Ability_Rogue_BloodSplatter" },
+        RALLIES     = { text = "Call to Arms",       w = 86,  icon = "Interface\\Icons\\INV_Misc_Horn_01" },
+        ZONES       = { text = "Danger Zones",       w = 92,  icon = "Interface\\Icons\\INV_Misc_Map02" },
     }
     local tabDefs = isPveMode and pveTabDefs or pvpTabDefs
     for _, tid in ipairs(tabOrder) do
         local btn = tabButtons and tabButtons[tid]
         local def = tabDefs[tid]
-        if btn and def and btn.Label then
-            local iconPrefix = ""
-            if tid == "FEED" then iconPrefix = "⚔  "
-            elseif tid == "LEADERBOARD" then iconPrefix = "🏆  "
-            elseif tid == "ZONES" then iconPrefix = "🗺️  "
-            elseif tid == "BOUNTIES" then iconPrefix = "💀  "
-            elseif tid == "RALLIES" then iconPrefix = "📢  "
+        if btn and def then
+            if btn.Label then
+                btn.Label:SetText(def.text)
             end
-            btn.Label:SetText(iconPrefix .. def.text)
+            if btn.NavIcon and def.icon then
+                btn.NavIcon:SetTexture(def.icon)
+            end
         end
     end
 
@@ -6943,7 +7027,7 @@ function UI:ShowWelcomeModal(isManual)
             "To stream kills to the web leaderboard (wowkillboard.com) and download rival bounties, run our companion app: WoWKillboardSync.exe. Place it anywhere (Desktop or WoW folder) and double-click to run while playing!")
 
         AddNotice(inset, -158, "3. Promote & Share With Guild & Realm (/kb promo)", "ff00e5ff",
-            "Want to track duels or world PvP with friends and rivals? Search 'wkb' on the CurseForge App, visit https://www.curseforge.com/wow/addons/wkb, or click [📢 Promo Macros] below for ready-to-use macros!")
+            "Want to track duels or world PvP with friends and rivals? Search 'wkb' on the CurseForge App, visit https://www.curseforge.com/wow/addons/wkb, or click [Promo Macros] below for ready-to-use macros!")
 
         -- Web Download & Feedback Link Section
         local linkTitle = dlg:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -6994,7 +7078,7 @@ function UI:ShowWelcomeModal(isManual)
             end
         end)
 
-        local promoBtn = UI:CreateButton(dlg, 200, 26, "|cffffd100[📢] Promo Macros (/kb promo)|r", "GameFontHighlightSmall")
+        local promoBtn = UI:CreateButton(dlg, 200, 26, "|cffffd100Promo Macros (/kb promo)|r", "GameFontHighlightSmall")
         promoBtn:SetPoint("LEFT", inGameFbBtn, "RIGHT", 8, 0)
         promoBtn:SetScript("OnClick", function()
             if UI.ShowPromoModal then
@@ -7396,7 +7480,7 @@ function UI:ShowChangelogModal(isManual)
         AddLogHeader(content, -174, "Version 1.0.5  (Release Update)", "ff38bdf8")
         AddLogBullet(content, -192, "Zero UI Taint Hardening", "Strict InCombatLockdown gating on player deaths, chat broadcasts, and guild info checks eliminates Action Blocked popups.")
         AddLogBullet(content, -228, "Responsive Navigation Suite", "Fluid flex layout, mobile drawer, unclipped tactile controls, and 1180px adaptive navigation breakpoint.")
-        AddLogBullet(content, -264, "Multi-Character Realm Roster", "Seamless operative switching, custom realm mains (⭐ Main), and dedicated stats tracking across all characters.")
+        AddLogBullet(content, -264, "Multi-Character Realm Roster", "Seamless operative switching, custom realm mains ([Main] Tag), and dedicated stats tracking across all characters.")
         AddLogBullet(content, -300, "Instance Leaderboard Parity", "Dedicated combat columns for World (Kills, Solo, K/D), BGs, Duels (W/L), and Arenas.")
         AddLogBullet(content, -336, "Economy & Currency Displays", "Universal Gold / Silver / Copper (G/S/C) reward formatting and unified Marked contract highlights.")
 
@@ -8880,7 +8964,7 @@ local function GetEventHeaderText(killmail, isNpc)
         zoneStr = string.format("%s (%s)", zName:upper(), subZone:upper())
     end
 
-    return string.format("|cffffd100%s  •  %s|r", eventTitle, zoneStr)
+    return string.format("|cffffd100%s  |  %s|r", eventTitle, zoneStr)
 end
 
 local function GetKillingBlowText(killmail)
@@ -9017,7 +9101,7 @@ function UI:InitializeKillBanner()
             y = math.floor((y or -120) + 0.5),
         }
         if self.headerText then
-            self.headerText:SetText(string.format("|cffffd100MOVE / PREVIEW  •  %s (%d, %d)|r", point or "TOP", math.floor((x or 0) + 0.5), math.floor((y or -120) + 0.5)))
+            self.headerText:SetText(string.format("|cffffd100MOVE / PREVIEW  |  %s (%d, %d)|r", point or "TOP", math.floor((x or 0) + 0.5), math.floor((y or -120) + 0.5)))
         end
         if UI.AlertsDialog and UI.AlertsDialog.UpdateControls then
             UI.AlertsDialog:UpdateControls()
@@ -9074,7 +9158,7 @@ function UI:InitializeKillBanner()
     local headerText = Content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     headerText:SetPoint("TOP", Content, "TOP", 0, -8)
     headerText:SetTextColor(1, 0.82, 0, 1) -- #FFD100
-    headerText:SetText("CASUALTY REPORT  •  WESTFALL (SENTINEL HILL)")
+    headerText:SetText("CASUALTY REPORT  |  WESTFALL (SENTINEL HILL)")
     headerText:SetShadowOffset(1, -1)
     headerText:SetShadowColor(0, 0, 0, 1.0)
 
@@ -9590,7 +9674,7 @@ function UI:ToggleBannerLock(explicitState)
         banner.KillerSubText:SetText(string.format("<%s>", pGuild))
 
         -- 2. Center: Incident Action Block & Drag Indicator
-        banner.CenterHeader:SetText(string.format("|cffffd100MOVE / PREVIEW  •  %s (%d, %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -120))
+        banner.CenterHeader:SetText(string.format("|cffffd100MOVE / PREVIEW  |  %s (%d, %d)|r", pos.point or "TOP", pos.x or 0, pos.y or -120))
         banner.CenterIcon:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
         banner.CenterIcon:SetTexCoord(0, 1, 0, 1)
         banner.CenterIcon:SetVertexColor(1.0, 0.15, 0.15, 1.0)
@@ -9986,7 +10070,7 @@ function UI:GetShareData(category)
             end)
         end
         if #outlaws == 0 then
-            compact = string.format("[WoWKB: Most Wanted Outlaws] No active outlaw bounties currently registered — %s", cta)
+            compact = string.format("[WoWKB: Most Wanted Outlaws] No active outlaw bounties currently registered -- %s", cta)
             detailedLines = {
                 "== [WoWKB] Most Wanted Outlaws ==",
                 "No active outlaw bounties currently registered.",
@@ -10000,7 +10084,7 @@ function UI:GetShareData(category)
                 local fac = ResolveFaction(b.targetFaction, b.targetName)
                 table.insert(parts, string.format("#%d %s (%s - %dg)", i, b.targetName, fac, gold))
             end
-            compact = string.format("[WoWKB: Most Wanted Outlaws] %s — %s", table.concat(parts, " | "), cta)
+            compact = string.format("[WoWKB: Most Wanted Outlaws] %s -- %s", table.concat(parts, " | "), cta)
 
             detailedLines = { "== [WoWKB] Most Wanted Outlaws ==" }
             for i = 1, math.min(5, #outlaws) do
@@ -10018,7 +10102,7 @@ function UI:GetShareData(category)
         title = string.format("Top PvP Champions - %s", modeLabel)
         local killers = KB.Leaderboard and KB.Leaderboard.GetTopKillers and KB.Leaderboard:GetTopKillers(mode, 5) or {}
         if #killers == 0 then
-            compact = string.format("[WoWKB: Top PvP Champions - %s] No recorded champions in this category yet — %s", modeLabel, cta)
+            compact = string.format("[WoWKB: Top PvP Champions - %s] No recorded champions in this category yet -- %s", modeLabel, cta)
             detailedLines = {
                 string.format("== [WoWKB] Top PvP Champions [%s] ==", modeLabel),
                 "No champions recorded for this category yet.",
@@ -10031,7 +10115,7 @@ function UI:GetShareData(category)
                 local fac = ResolveFaction(p.faction, p.name)
                 table.insert(parts, string.format("#%d %s (%s - %d kills)", i, p.name, fac, p.kills))
             end
-            compact = string.format("[WoWKB: Top PvP Champions - %s] %s — %s", modeLabel, table.concat(parts, " | "), cta)
+            compact = string.format("[WoWKB: Top PvP Champions - %s] %s -- %s", modeLabel, table.concat(parts, " | "), cta)
 
             detailedLines = { string.format("== [WoWKB] Top PvP Champions [%s] ==", modeLabel) }
             for i, p in ipairs(killers) do
@@ -10048,7 +10132,7 @@ function UI:GetShareData(category)
         title = string.format("Top War Guilds - %s", modeLabel)
         local guilds = KB.Leaderboard and KB.Leaderboard.GetTopGuilds and KB.Leaderboard:GetTopGuilds(mode, 5) or {}
         if #guilds == 0 then
-            compact = string.format("[WoWKB: Top War Guilds - %s] No recorded War Guilds in this category yet — %s", modeLabel, cta)
+            compact = string.format("[WoWKB: Top War Guilds - %s] No recorded War Guilds in this category yet -- %s", modeLabel, cta)
             detailedLines = {
                 string.format("== [WoWKB] Top War Guilds [%s] ==", modeLabel),
                 "No guilds recorded for this category yet.",
@@ -10060,7 +10144,7 @@ function UI:GetShareData(category)
                 local g = guilds[i]
                 table.insert(parts, string.format("#%d <%s> (%d kills)", i, g.guild, g.kills))
             end
-            compact = string.format("[WoWKB: Top War Guilds - %s] %s — %s", modeLabel, table.concat(parts, " | "), cta)
+            compact = string.format("[WoWKB: Top War Guilds - %s] %s -- %s", modeLabel, table.concat(parts, " | "), cta)
 
             detailedLines = { string.format("== [WoWKB] Top War Guilds [%s] ==", modeLabel) }
             for i, g in ipairs(guilds) do
@@ -10073,7 +10157,7 @@ function UI:GetShareData(category)
         title = "Top Gankers (24h)"
         local gankers = (WoWKillboard_RealmData and WoWKillboard_RealmData.TopGankers24h) or (WoWKillboardDB and WoWKillboardDB.RealmData and WoWKillboardDB.RealmData.TopGankers24h) or {}
         if #gankers == 0 then
-            compact = string.format("[WoWKB: Top Gankers 24h] No active 24h gankers currently listed — %s", cta)
+            compact = string.format("[WoWKB: Top Gankers 24h] No active 24h gankers currently listed -- %s", cta)
             detailedLines = {
                 "== [WoWKB] Top Gankers (24h) ==",
                 "No active gankers recorded in the last 24 hours.",
@@ -10086,7 +10170,7 @@ function UI:GetShareData(category)
                 local fac = ResolveFaction(g.faction, g.name)
                 table.insert(parts, string.format("#%d %s (%s - %d kills)", i, g.name or "Unknown", fac, g.kills or 0))
             end
-            compact = string.format("[WoWKB: Top Gankers 24h] %s — %s", table.concat(parts, " | "), cta)
+            compact = string.format("[WoWKB: Top Gankers 24h] %s -- %s", table.concat(parts, " | "), cta)
 
             detailedLines = { "== [WoWKB] Top Gankers (24h) ==" }
             for i = 1, math.min(5, #gankers) do
