@@ -1469,7 +1469,7 @@ function UI:CreateCommandDeck()
     local footerVer = deck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     footerVer:SetPoint("BOTTOMLEFT", deck, "BOTTOMLEFT", 14, 28)
     footerVer:SetTextColor(140/255, 150/255, 165/255, 1.0)
-    footerVer:SetText(string.format("WoW Killboard v%s", KB.Version or "1.0.7"))
+    footerVer:SetText(string.format("WoW Killboard v%s", KB.Version or "1.0.8"))
     if footerVer.SetFont then local f, s = footerVer:GetFont(); footerVer:SetFont(f, 9, "OUTLINE") end
 
     local footerHint = deck:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -1753,7 +1753,7 @@ function UI:CreateMainWindow()
     local verTag = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     verTag:SetPoint("LEFT", title, "RIGHT", 6, 0)
     verTag:SetTextColor(102/255, 102/255, 102/255, 1.0)
-    verTag:SetText(string.format("v%s", KB.Version or "1.0.7"))
+    verTag:SetText(string.format("v%s", KB.Version or "1.0.8"))
     if verTag.SetFont then local f, s = verTag:GetFont(); verTag:SetFont(f, s or 10, "OUTLINE") end
     verTag:SetShadowOffset(0, 0)
     UI.VersionText = verTag

@@ -802,9 +802,10 @@ GITHUB_RELEASE_SYNC_URL = os.environ.get(
 )
 GITHUB_RELEASE_ZIP_URL = os.environ.get(
     "GITHUB_RELEASE_ZIP_URL",
-    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.7.zip"
+    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.8.zip"
 )
 
+@app.route("/WoWKillboard-v1.0.8.zip")
 @app.route("/WoWKillboard-v1.0.7.zip")
 @app.route("/WoWKillboard-v1.0.6.zip")
 @app.route("/WoWKillboard-v1.0.5.zip")
@@ -828,14 +829,14 @@ def download_addon():
     root_dir = os.path.dirname(APP_DIR)
     # Check for specific requested file if path has specific version
     req_file = os.path.basename(request.path)
-    if req_file in ("WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    if req_file in ("WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, req_file)
             if os.path.exists(target):
                 return send_from_directory(d, req_file, as_attachment=True)
 
-    # General download (/download, /addon.zip): serve v1.0.7, fallback to older versions
-    for pkg in ("WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    # General download (/download, /addon.zip): serve v1.0.8, fallback to older versions
+    for pkg in ("WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, pkg)
             if os.path.exists(target):
@@ -4062,15 +4063,16 @@ def get_realm_summary():
             },
             "DeadliestZones": deadliest_zones,
             "TopGankers24h": top_gankers,
-            "LatestVersion": "1.0.7",
-            "DownloadUrl": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.7.zip",
+            "LatestVersion": "1.0.8",
+            "DownloadUrl": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.8.zip",
             "CurseForgeUrl": "https://www.curseforge.com/wow/addons/wkb",
             "Changelog": [
-                "Streamlined UI Architecture: Permanent Hamburger Command Deck (☰) consolidating all operational tabs and preferences",
-                "Hero Medallion Dock: Concentric gold bezel frame, dynamic player level medallion, and dedicated notch eliminate border clipping and line slicing",
-                "Combat Feed Ability Icons: Compact 18x18 ability cell with interactive tooltip and zone width expansion eliminate ellipsis truncation",
-                "Lua Hover Stability: Row-scoped hover background color table eliminates nil unpack crash on ability icon mouseover",
-                "Visual Clarity Polish: De-escalated player row border outlines across all feed and leaderboard frames into subtle background highlights"
+                "Blizzard-Style Overhanging Portrait: Re-docked circular character medallion to TOPLEFT (-8, 8) with elevated frame strata",
+                "Text-Only Sub-Bar Navigation: Sleek borderless text links (Intel, Leaderboards, The Marked, Call to Arms, Danger Zones) with hover highlights",
+                "Contextual Mode Filtering: Relocated [World] [BGs] [Duels] [Arenas] filter pills directly onto Leaderboards and Intel pages",
+                "Faction War Split Sub-Bar: Relocated Alliance/Horde split bar to sub-bar right, removing the top stat bar and expanding combat viewport by +30px",
+                "Ultra-Compact Benchmark Ribbon: 36px inline tactical status ribbon with show/hide toggle and touch-scrolling",
+                "Clean Single Hamburger: Eliminated redundant second hamburger badge and defaulted landing to Leaderboards"
             ],
             "timestamp": now
         })
@@ -4080,16 +4082,17 @@ def get_version_info():
     """Returns official current addon release version, download endpoints, and changelog summary."""
     return jsonify({
         "status": "ok",
-        "version": "1.0.7",
-        "release_tag": "v1.0.7",
-        "download_url": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.7.zip",
+        "version": "1.0.8",
+        "release_tag": "v1.0.8",
+        "download_url": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.8.zip",
         "curseforge_url": "https://www.curseforge.com/wow/addons/wkb",
         "changelog": [
-            "Streamlined UI Architecture: Permanent Hamburger Command Deck (☰) consolidating all operational tabs and preferences",
-            "Hero Medallion Dock: Concentric gold bezel frame, dynamic player level medallion, and dedicated notch eliminate border clipping and line slicing",
-            "Combat Feed Ability Icons: Compact 18x18 ability cell with interactive tooltip and zone width expansion eliminate ellipsis truncation",
-            "Lua Hover Stability: Row-scoped hover background color table eliminates nil unpack crash on ability icon mouseover",
-            "Visual Clarity Polish: De-escalated player row border outlines across all feed and leaderboard frames into subtle background highlights"
+            "Blizzard-Style Overhanging Portrait: Re-docked circular character medallion to TOPLEFT (-8, 8) with elevated frame strata",
+            "Text-Only Sub-Bar Navigation: Sleek borderless text links (Intel, Leaderboards, The Marked, Call to Arms, Danger Zones) with hover highlights",
+            "Contextual Mode Filtering: Relocated [World] [BGs] [Duels] [Arenas] filter pills directly onto Leaderboards and Intel pages",
+            "Faction War Split Sub-Bar: Relocated Alliance/Horde split bar to sub-bar right, removing the top stat bar and expanding combat viewport by +30px",
+            "Ultra-Compact Benchmark Ribbon: 36px inline tactical status ribbon with show/hide toggle and touch-scrolling",
+            "Clean Single Hamburger: Eliminated redundant second hamburger badge and defaulted landing to Leaderboards"
         ]
     })
 
