@@ -72,150 +72,48 @@ flowchart TD
 
 ## Core Feature Highlights
 
-### 1. In-Game Addon (`Addon/WoWKillboard/`)
-- **Permanent Hamburger Command Deck & Streamlined Navigation**:
-  - Unified slide-out Command Deck drawer (`UI.CommandDeck`, strata `DIALOG`, level 30) triggered by a permanent gold `[☰]` Hamburger button at `TOPLEFT (8, 0)` on the header bar.
-  - Reclaimed 324px of header space by consolidating ruleset mode switcher, settings, and sync buttons into the Command Deck, expanding the real-time search box to 180px directly adjacent to the close button.
-  - Sub-bar features a sleek Active View Badge (`UI.ActiveViewBadge`) on the left (e.g. `[ ☰ INTEL FEED ▾ ]`) that dynamically triggers the Command Deck, with Mode Filter Pills (`[ World ] [ BGs ] [ Duels ] [ Arenas ]`) centered and anchored cleanly on the right.
-  - Organized drawer into 4 distinct operational categories:
-    1. **Combat Operations**: Intel Feed (`FEED`), Leaderboards (`LEADERBOARD`), Danger Zones (`ZONES`).
-    2. **Bounties & Targets**: The Marked (`BOUNTIES`), Call to Arms (`RALLIES`).
-    3. **Campaign Ruleset**: Segmented toggle for `[ ⚔ PvP Combat ]` and `[ 💀 PvE Hazards ]`.
-    4. **System & Preferences**: Quick access to Settings modal and manual SavedVariables sync (`/reload`).
-  - Strict Guardrail 1 Zero-Taint: Pure Lua widgets, `"BackdropTemplate"`, full-frame dim overlay, safe ESC key interception closing drawer first, and strict `InCombatLockdown()` gating with auto-dismissal on entering combat.
-- **Integrated Character Portrait Medallion & Dynamic Level Coin**:
-  - Circular unit-frame player portrait (`WoWKillboardPlayerPortrait`, 48x48) docked at `TOPLEFT (38, -6)` on strata `HIGH` with circular alpha mask and concentric 58x58 gold medallion bezel (`Textures/medallion_border.tga`).
-  - Overlapping 18x18 circular level medallion at `BOTTOMRIGHT (2, -2)` displaying bold gold player level text updating dynamically on `UNIT_LEVEL`, `PLAYER_LEVEL_UP`, and `PLAYER_XP_UPDATE`. Title string `WoW Killboard v1.0.8` anchored level with header controls at `(94, 0)` with dedicated notch.
-- **Rich Red & Blue Faction Pill Badges & Telemetry Split Bar**:
-  - High-contrast rounded solid pill badges for faction columns: Solid Royal Blue `#103894` with cyan border and Alliance crest for Alliance; Solid Crimson Red `#8C1414` with orange-red border and Horde crest for Horde.
-  - Telemetry ribbon visual progress bar (`UI.FactionSplitBar`, 140x12) rendering dynamic real-time Alliance/Horde war splits with drop-shadowed white text.
-  - Clean local player row highlight (`[YOU]`): subtle semi-transparent background wash on `row.highlightGrad` (`0.12, 0.16, 0.24, 0.35`) with clean text tag `|cffffd100[YOU]|r` (zero harsh border box outlines).
-- **Combat Feed Ability Icons & Zero-Truncation Zone Layout**:
-  - Compact 18x18 ability cell (width 44px, centered at `x = 248`) displaying killing blow/hazard spell icons with interactive `GameTooltip` on hover, eliminating verbose boilerplate phrases.
-  - Reallocated +64px width to the `ZONE` column (starting at `x = 448` and extending to `-6`), eliminating ellipsis clipping for complete locations like `Loch Modan (Thelsamar)` and `Undercity (Ruins of Lordaeron)`.
-  - Expanded `ATTACKER` and `VICTIM` columns to 168px each to fit long player names, `<GUILD>` tags, and `[YOU]` tags without clipping.
-- **Restyled "THE MARKED" Card Track Buttons**:
-  - Dark slate theme `(0.08, 0.11, 0.16, 0.9)` with subtle 1px slate line border `(0.20, 0.25, 0.35, 1.0)` and pale gold text `(0.9, 0.85, 0.7, 1.0)` that shifts to a radiant gold border and bright yellow text on hover.
-- **Strict 3-Theme Architecture (WKB Theme, ElvUI, Classic)**:
-  - **Theme: WKB Theme (1:1 Web Mirror)**: 100% 1:1 visual parity with `wowkillboard.com`. Master canvas `#040609` (`0.015, 0.020, 0.030, 0.98`) with 1px brass border `#947338`, elevated `#0B0F17` card panels with 1px `#1E293B` borders, solid bright brass gold active pill buttons with black text, active tab gold bottom line, alternating row striping, and vivid telemetry ribbon coloring (`|cff0080ff% A|r`, `|cffff2020% H|r`, `|cffffd200Zone|r`, `|cffff8000Casualties|r`).
-  - **Theme: ElvUI**: Minimalist dark styling featuring master frame `#0A0A0A`, card backdrops `#141414`, strict 1px flat black borders, and flat dark gray buttons with bright white accent borders.
-  - **Theme: Classic Blizzard Stone**: Authentic Blizzard dialog stone backgrounds (`UI-DialogBox-Background`), stone and gold borders (`UI-DialogBox-Border`), and parchment accents.
-  - **Zero-Taint Theme Dropdown & Switcher**: Select between themes via the Settings dialog dropdown (`Classic`, `ElvUI`, `WKB Theme`), minimap right-click, or `/kb theme [wkb|elvui|classic]`.
-  - **Zero Cross-Realm Leakage**: Normalized realm-matching ensures players on a PvP realm only see combatants from their active realm.
-- **Balanced 3-Card Tactical Stat Header**:
-  - `SESSION COMBAT K/D` (Cyan) — Active session kills, deaths, and K/D ratio.
-  - `1v1 DUELS RECORD` (Gold) — Dedicated duel tracking (wins, losses, win %).
-  - `BATTLEGROUNDS RECORD` (Blue) — Battleground matches (wins, losses, win %).
-- **1v1 Duel Match Engine**:
-  - Automatically captures duel outcomes (knockouts and forfeits) via `CHAT_MSG_SYSTEM`.
-  - Mints certified duel killmails with exact location GPS tags.
-- **Temporal Hostile Gang Clustering**:
-  - Sliding 15-second window correlates all hostile combatants engaging a victim to distinguish certified 1v1 solo kills from gang ganks.
-- **Battleground Telemetry**:
-  - Scoreboard integration (`UPDATE_BATTLEFIELD_SCORE`): Real-time damage done, healing done, and objective scores.
-- **Guild War Tracking & In-Game Leaderboards**:
-  - In-game guild affiliation indexing via `GetGuildInfo(unit)`.
-  - In-game Top War Guilds ranking table inside the `/kb` dashboard.
-- **War Horn: Call to Arms & Vanguard Manhunt (World PvP Only)**:
-  - Sound the emergency War Horn via `/warhorn`, `/killboard warhorn`, `/manhunt`, `/kb manhunt`, or header button `[ 📯 WAR HORN ]`.
-  - **Strict Open-World PvP Gating**: Cannot be sounded in dungeons, raids, battlegrounds, or arenas (`IsInInstance()` protection).
-  - Transmits exact GPS coordinates, zone, subzone, and hostile attacker telemetry to Guild Chat, Party/Raid, Yell, and P2P addon channels.
-  - Automatically enables a 10-minute Auto-Invite listener (`EnsureRaidConversion`): whispering `"rally"`, `"war"`, `"backup"`, or `"invite"` automatically invites the ally to the vanguard squad!
-  - Pops up an on-screen Reinforcement Alert dialog for guildmates with 1-click `"⚔️ Answer the Call"` response.
-- **The Blood Ledger: Execution Contracts & The Marked (World PvP Only)**:
-  - Place gold bounties upon enemy players via `/kb bounty <Target> <Gold>`.
-  - **Strict Open-World PvP Gating**: Bounties can strictly only be declared on the open battlefields of Azeroth. Blocked inside instances/BGs.
-  - In-game death vengeance prompt: Falling to an enemy in open-world combat prompts the victim to immediately declare a blood bounty.
-  - **Delayed Last-Seen Vicinity**: Bounty rows display the last confirmed combat zone and elapsed time (`Last Sighted: Stranglethorn Vale ~14m ago`).
-  - Anti-win-trade heuristics (level deltas, guild collusion protection, duplicate kill cooldowns).
-  - Anti-name-change evasion via permanent character GUID tracking (`Player-XXXX-XXXXXXXX`).
-  - **The Marked (Defaulted Debts)**: Debtor sirens (`PlaySound(8959)`) and screen alarms when an Oathbreaker is near.
-  - 1-click mail redemption portal with a 10% administrative fee.
+### 1. In-Game Combat Addon (`Addon/WoWKillboard/`)
+- **Blizzard-Style Overhanging Portrait Medallion**:
+  - 60x60 circular player portrait docked at `TOPLEFT (-8, 8)` hanging naturally off the top-left corner in classic Blizzard UI fashion (`CharacterFrame` / `SpellBookFrame`).
+  - Concentric 66x66 gold medallion bezel (`Textures/medallion_border.tga`) with overlapping 20x20 circular level badge (`BOTTOMRIGHT (2, -2)`).
+- **Text-Only Sub-Bar Navigation**:
+  - Clean, borderless text links (`Intel`, `Leaderboards`, `The Marked`, `Call to Arms`, `Danger Zones`) with dynamic hover highlighting and a 2px gold active underline accent (`bottomAccent`).
+- **Contextual Page-Level Mode Filtering**:
+  - Contextual Mode Filter Pills (`[ World ] [ BGs ] [ Duels ] [ Arenas ]`) mounted directly within the views where filtering operates (opposite category pills on the Leaderboard, and on the header strip of Recent Combat Intel).
+- **Tactical Combat Feed & Zero-Truncation Layout**:
+  - 18x18 ability cell displaying fatal blow and hazard spell icons with interactive tooltips on hover.
+  - Generous column widths (168px combatants, +64px expanded zone width) preventing name, guild tag, or subzone ellipsis clipping.
+- **Strict 3-Theme Architecture (`/kb theme`)**:
+  - **WKB Theme (Default)**: 1:1 visual parity with `wowkillboard.com` (obsidian canvas `#040609`, brass borders `#947338`, elevated card panels `#0B0F17`).
+  - **Classic Forever**: Authentic Blizzard dialog stone backdrops (`UI-DialogBox-Background`), beveled borders (`UI-DialogBox-Border`), and parchment accents.
+  - **ElvUI Minimalist**: Dark slate frame (`#0A0A0A`), strict 1px flat borders, and white accent outlines.
+- **1v1 Duel Match Engine & 15s Temporal Gang Clustering**:
+  - Distinguishes certified 1v1 solo triumphs from group ganks using a 15-second sliding correlation window. Captures duel knockouts and forfeits via `CHAT_MSG_SYSTEM` with exact GPS coordinates.
+- **The Blood Ledger: Bounties & The Marked (World PvP Only)**:
+  - Declare in-game gold bounties (`/kb bounty <Target> <Gold>`) upon open-world killers.
+  - Integrated anti-win-trade heuristics, delayed last-seen vicinity intel, and debtor warning sirens (`PlaySound(8959)`) when an Oathbreaker is near.
+- **War Horn & Vanguard Manhunt (`/warhorn`)**:
+  - Transmits emergency SOS distress calls with GPS coordinates to Guild, Party/Raid, and local channels.
+  - Automatic 10-minute Auto-Invite squad listener (`whisper "invite"` or `"rally"`).
+- **Deadly Hazards & Wilderness Elites**:
+  - Dedicated PvE casualty tracking for world bosses and notorious elites (Hogger, Son of Arugal, Stitches) completely isolated from PvP leaderboards.
+- **Strict Zero-Taint Security**:
+  - 100% pure Lua widgets using `"BackdropTemplate"`, custom ESC key listeners, zero XML template inheritance, and strict `InCombatLockdown()` gating.
 
-- **Head-to-Head Blood Feuds & Rules of Engagement (ROE)**:
-  - Supports 1v1 and Guild Wars with customized kill goals (e.g. first to 100 kills).
-  - Anti-Lowbie Floor (Level 55+), 2x Underdog Multipliers (1v2, 1v3), and Zerg Filter (0 points for 3+ on 1).
-  - Web UI tab **"⚔️ Blood Feuds & Blacklist"** tracks real-time progress and declares victors.
-- **Zero-Gold Wagers & Realm KOS Blacklist**:
-  - Defeated guilds and rogue gankers permanently branded onto the **Realm KOS Blacklist**.
-  - Proximity warning sirens (`PlaySound(8959)`) and alert dialogs (`UI:ShowKOSAlert`) in-game.
-- **30-Day Anti-Guild-Hop Deserter Stain**:
-  - Stamped 30-day penance bound to permanent `Player-GUID`. Leaving or `/gquit`ing a blacklisted guild preserves the KOS stain.
-- **Tactical Intel & Gank Sighting Recon Wire**:
-  - In-game enemy spotting commands (`/spot [notes]`, `/scout [notes]`, `/kb spot`) capture targets and GPS coordinates.
-  - Broadcasts across Guild, Group/Raid, and P2P Addon channels. Live web recon ticker with Discord embeds.
-- **In-Game Player Armory Lookup (`/armory [Name]`, `/killboard armory [Name]`)**:
-  - Direct chat combat dossier: reports character class, level, faction, Classic Military Honor Rank, K/D, solo triumphs, KOS status, and active blood bounties without leaving the game client.
-- **In-Game Database Management & 1-Click Reset (`/kb` -> `Settings`)**:
-  - Dedicated Section 5 in Settings with a prominent red `[Reset Local Database]` button.
-  - Instantly wipes local combat records (`WoWKillboardDB.kills`), resets cached realm carnage to 0, clears session stats, and refreshes the UI without requiring a reload.
-- **In-Game Frontline Combat Stress Testing (`/kb stress [N]`)**:
-  - Dynamically injects up to 250 verified synthetic kills into memory in a single frame.
-  - Profiles microsecond execution time (`debugprofilestop`) and memory allocation delta (`collectgarbage`), confirming 0 FPS drops and zero Blizzard UI taint (`ActionBlocked`).
-- **Early Preview Welcome & Community Feedback Modal (`/kb welcome`, `/kb feedback`)**:
-  - Unobtrusive first-time login popup explaining early stage development, encouraging sharing freely across guildmates and friends, and soliciting direct feedback.
-  - Interactive actions: 1-click in-game feedback dispatcher (`UI:ShowBugReportModal()`), copyable web feedback link with auto-highlighting, and "Do not show on future logins" checkbox.
+### 2. Desktop Ingestion Courier (`WoWKillboardSync.exe`)
+- **Zero-Python Standalone Executable**: Single portable Windows binary requiring no runtime dependencies or configuration.
+- **Multi-Drive Auto-Discovery**: Automatically locates active WoW installations and `SavedVariables` across drives `C:`, `D:`, and `E:`.
+- **High-Speed Streaming Parser**: Rapid recursive-descent Lua tokenizer syncing combat records on `/reload` or game exit.
 
-### 2. Desktop Ingestion Agent (`WoWKillboardSync.exe`)
-- **Standalone Windows Executable**: Zero Python installation required for players.
-- **Multi-Drive Auto-Discovery**: Automatically discovers `SavedVariables/WoWKillboard.lua` across `C:`, `D:`, and `E:` drives for Retail, Classic, Classic Era, and Forever Beta.
-- **Streaming Lua Tokenizer**: High-speed recursive-descent parser.
-
-### 3. Frontline War Room Web Intelligence Platform (`web/`)
-- **Sticky Top Combat & Leaderboard Filter Toolbar (`#top-combat-filters`)**:
-  - Repositioned filter controls directly above `#main-content-area` across desktop and mobile.
-  - **Row 1 (Timeframe)**: `[ 24 Hours ]`, `[ 7 Days ]`, `[ 30 Days ]`, `[ All-Time ]`.
-  - **Row 2 (Faction & Modes)**: `[ All ]`, `[ Alliance ]`, `[ Horde ]` | `[ World ]`, `[ BGs ]`, `[ Duels ]`, `[ Arenas ]`.
-  - **Sticky Mobile Sub-Bar**: `position: sticky; top: 56px; z-index: 900; background: rgba(11, 15, 23, 0.95); backdrop-filter: blur(8px); padding: 8px 12px;` on `<= 768px`.
-  - Minimum 36px touch heights, `#C69B3D` solid gold active state, `#1e293b` inactive background.
-- **High-Density Combat Feed & Compact Single-Line Mobile Rows**:
-  - Dual-layout system: 5-column fixed grid (`180px 1fr 44px 1fr 110px`) on desktop, compact single-line row (`38px–42px`) on mobile.
-  - Mobile format: `[Spec Icon] Killer (Guild) -> Victim (Guild) | Zone | 2m ago` with subtle zebra striping and victor faction accent border.
-  - Capped initial combat feed display to 12 events with a compact `Load More Recent Kills` expansion trigger.
-- **Interactive Sortable Competitive Leaderboards**:
-  - **4-Timeframe Intervals**: `[ 24 Hours ]`, `[ 7 Days ]`, `[ 30 Days ]`, `[ All-Time ]` with instant dynamic syncing.
-  - **10-Class Classic Selector Bar**: All 9 Classic classes with Blizzard class colors and instant re-ranking (`1..N`).
-  - **Interactive Column Sorting**: Clickable table headers with directional indicator arrows (`▲`/`▼`) for Rank, Combatant, Guild, Faction, Kills, Solo Kills, Deaths, K/D Ratio, Wins, Losses, and Percentile.
-- **Dynamic Most Wanted Grid Sizing**:
-  - Automatically scales the Most Wanted showcase: renders as a single, sleek row of 5 slots when 5 or fewer bounties exist, pulling the combat feed up by ~180px and eliminating empty-state clutter.
-- **High-Concurrency SQLite WAL Engine & Web Admin Console**:
-  - Configured Write-Ahead Logging (`PRAGMA journal_mode=WAL;`), 10-second busy timeout, and normalized synchronous mode for non-blocking concurrent reads and burst write throughput.
-  - Linked **Admin Console** directly in the site footer for 1-click cloud database wipes via master secret key.
-- **Dark Warcraft Tactical War Room & Mobile/Tablet Responsive Overhaul**:
-  - Immersive dark fantasy aesthetic with radial faction illumination (Alliance Blue & Horde Crimson), ambient tactical grid, and glassmorphic panels (`backdrop-filter: blur(16px)`).
-  - Integrated Google typography: `'Cinzel'` for regal war room titles, `'Rajdhani'` for telemetry/meters, and `'Inter'` for combat feeds.
-  - Multi-tiered responsiveness: Desktop Ultra-Wide (>1400px), Standard Desktop (1024px-1280px), Tablet Portrait/Landscape (768px-1024px), and Mobile Phones (320px-768px).
-  - Clean dual-row command bridge: scrollable horizontal navigation rail (`#nav-rail`) plus slide-out Mobile Navigation Drawer (`#mobile-drawer`) with $\ge 44\text{px}$ touch targets and zero horizontal viewport blowout.
-- **Most Deadly NPC Leaderboard & Fallen Mortals Stream (`#nav-deadly_npcs`, `/api/pve/leaderboard`)**:
-  - Dedicated leaderboard ranking the realm's deadliest monsters, elites, and world bosses (e.g. Hogger, Son of Arugal, Stitches, Mor'Ladim, Devilsaur).
-  - Top Fallen Mortals graveyard tracking characters with the most PvE deaths.
-  - Live Fallen Mortals stream showing creature executions in real time.
-  - Strict PvE isolation: Zero pollution of PvP feeds, K/D ratios, or bounty contracts.
-- **Client Flavor Identification & Dynamic Feature Gating**:
-  - Header command bar switcher supporting **Classic Era / Anniversary (Vanilla 1.15)**, **TBC (2.4.3)**, **WotLK (3.3.5)**, and **Modern Retail**.
-  - Dynamic Player Armory class gating: unavailable classes (Death Knight, Monk, Demon Hunter, Evoker) are kept visible but styled grey with `disabled` lock tags.
-  - Dynamic combat mode gating: Unavailable modes (such as Arenas in Classic Era) are greyed out with tooltip guidance.
-- **Native Realm Player Armory Directory (`#nav-armory`, `/api/armory`)**:
-  - Authoritative realm-wide character directory indexing all active PvP combatants.
-  - Multi-faceted filters: live name/guild search, Faction pills (All, Alliance, Horde), Class dropdown (all 13 classes), and sorting (Most Lethal, Highest K/D, Solo Specialists, Level, Recently Active).
-  - Authentic Classic PvP Military Honor Ranks: calculates Scout through High Warlord (Horde) and Private through Grand Marshal (Alliance) based on kills and K/D.
-  - Retribution and Bounty indicators: highlighted KOS Blacklist, 30-Day Deserter stains, and active blood bounty gold tags.
-  - Native sidebar **"🏰 Player Armory"** quick-search jump tool with external mirrors (Blizzard Armory, Ironforge.pro, Warcraft Logs).
-- **Live Frontline Carnage Ticker**: Tactical dark-slate combat stream capturing open-world skirmishes and battleground massacres.
-- **Tactical Intel Sighting Wire**: Live battlefield recon ticker streaming enemy player sightings and ambush reports.
-- **Head-to-Head Blood Feuds & Realm Blacklist**: Real-time feud progress bars, custom ROE metrics, defeated guild blacklists, and 30-day deserter countdown cards.
-- **The Blood Ledger — Azeroth's Most Wanted**: Authentic top 10 most wanted outlaw gallery showcasing active blood targets with portraits, bounties, and last-seen zone telemetry.
-- **The Marked — Hall of Fame & Records**: Dedicated leaderboards celebrating Top Mark Hunters, Highest Execution Rewards, Most Elusive Outlaws, and Fastest Collected Manhunts.
-- **Delayed Last-Seen Intel & Tiered Recon**: Public contracts show confirmed combat Zone (e.g. `Last Sighted: Stranglethorn Vale ~14m ago`), with exact Subzone landmark (`Booty Bay`) unlocked for community supporters.
-- **Interactive Character Combat Dossiers**: Click any character name to view lifetime kills, deaths, K/D, solo kills, damage/healing meters, and historical guild affiliation timeline.
-- **External Armory Links**: 1-click links to Official Blizzard Armory, Classic Vanilla Armory (`Ironforge.pro`), and Warcraft Logs.
-- **War Guilds Leaderboards & Guild Dossiers**: Dedicated Guilds tab ranking top guilds by kills, deaths, K/D, and active combatant count, with roster inspection.
-- **Combat Dossiers**: Click any killmail to open detailed combatant cards, damage meters, and location telemetry.
-- **The Marked**: Public pillory of Oathbreakers in default with days-in-default counters.
-- **Vanguard Manhunt & SOS Beacons (Discord Gateway)**: Real-time distress call tracking, squad recruitment, and Discord Webhook forwarding.
-- **War Correspondent HUD (OBS Overlay)**: Direct `/war-hud/<CharacterName>` (and `/streambox/<CharacterName>`) overlay for OBS Studio and streamers with transparent background and auto-updating kill/death ticker.
-- **Frontline Field Manual & Codex**: Comprehensive tactical archives covering Features, FAQ, About, Tactical Fog of War, Vanguard Benefactor, War Correspondent HUD, and the Warcraft Accord.
-- **100% Ad-Free Experience**: Zero commercial banners, tracking scripts, or ad networks. Supported entirely through voluntary contributions from players and community guild patrons.
+### 3. Frontline War Room Web Platform (`web/`)
+- **Authoritative Realm Leaderboards**: Sortable standings across 4 timeframe intervals (`24h`, `7d`, `30d`, `All-Time`) with interactive column sorting and 9-class classic filtering.
+- **Player & Guild Combat Dossiers**: Detailed match histories, solo kill ratios, damage/healing metrics, and historical guild affiliation timelines.
+- **The Blood Ledger Outlaw Gallery**: Real-time top 10 most wanted bounties with character portraits, bounty pools, and last-seen zone telemetry.
+- **Realm Player Armory Directory**: Complete character directory with Classic PvP Military Honor Ranks (Private to Grand Marshal / Scout to High Warlord) and KOS blacklist badges.
+- **High-Concurrency SQLite WAL Engine**: Non-blocking concurrent reads and burst write throughput via Write-Ahead Logging and 10-second busy timeouts.
+- **Zero-Barrier Web Uploader**: Direct drag-and-drop browser ingestion (`wowkillboard.com/upload`) for players who prefer not to run background software.
+- **StreamBox Broadcaster HUD**: Transparent, auto-refreshing OBS Studio overlay (`/war-hud/<CharacterName>`) for content creators.
+- **100% Ad-Free Experience**: Zero commercial banners, tracking scripts, or ad networks. Supported entirely through community contributions.
 
 ---
 
