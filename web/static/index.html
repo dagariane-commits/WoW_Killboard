@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=1.4.80">
+  <link rel="stylesheet" href="/static/style.css?v=1.4.81">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -28,10 +28,17 @@
           <div class="logo-title">WoW Killboard</div>
         </div>
 
-        <div class="header-theater-wrap">
-          <button id="nav-theater" class="nav-btn theater-btn" onclick="openServerSelectorModal()" title="Active Theater of War / Click to Select Realm">
+        <div class="header-theater-wrap" id="header-theater-wrap">
+          <button id="nav-theater" class="nav-btn theater-btn" onclick="toggleTheaterDropdown(event)" title="Active Theater of War / Click to Select Realm">
             <span class="theater-label">Theater:</span> <strong id="theater-nav-version" class="theater-version-name">WoW Forever</strong> <span id="theater-nav-server" class="theater-server-pill">PvP</span> <span class="theater-caret">▾</span>
           </button>
+          <div id="theater-dropdown" class="theater-dropdown-popover" style="display: none;" onclick="event.stopPropagation()">
+            <div class="theater-dropdown-header">
+              <span>Select Realm Ruleset</span>
+              <span class="theater-dropdown-badge">WoW Forever</span>
+            </div>
+            <div class="theater-dropdown-list" id="theater-dropdown-list"></div>
+          </div>
         </div>
       </div>
 
@@ -436,16 +443,16 @@
   </div>
 
   <!-- WoW Forever Realm / Server Selector Modal -->
-  <div class="modal-overlay" id="server-modal" style="display: none;">
-    <div class="modal-card modal-card-lg">
+  <div class="modal-overlay" id="server-modal" style="display: none;" onclick="if(event.target===this) closeServerSelectorModal()">
+    <div class="modal-card realm-modal-card">
       <div class="modal-header">
         <div>
-          <strong style="color: var(--wow-gold); font-size: 1.15rem; font-family: var(--font-display);">WoW Forever — Select Realm Server</strong>
-          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">Choose your active realm ruleset. All combat records, kill feeds, and bounties filter to this server.</div>
+          <strong style="color: var(--wow-gold); font-size: 1.1rem; font-family: var(--font-display);">WoW Forever — Select Realm Server</strong>
+          <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Choose your active realm ruleset. All combat records and bounties filter to this server.</div>
         </div>
         <button class="modal-close" onclick="closeServerSelectorModal()">&times;</button>
       </div>
-      <div id="server-modal-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+      <div id="server-modal-grid" class="realm-modal-list">
         <!-- Filled by app.js with the 4 servers: PvP, PvE, RP, Hardcore -->
       </div>
     </div>
@@ -757,6 +764,6 @@
   <!-- Live Combat Slide-In Toast Notification Banner -->
   <div id="combat-toast-container" class="combat-toast-container"></div>
 
-  <script src="/static/app.js?v=2.3.5"></script>
+  <script src="/static/app.js?v=2.3.6"></script>
 </body>
 </html>

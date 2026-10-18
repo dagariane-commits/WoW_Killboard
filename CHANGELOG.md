@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Tactical Anchored Realm Dropdown & Compact Modal Architecture (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
+  - Replaced the bulky, screen-blocking 820px modal overlay on desktop navbar click with an anchored tactical dropdown popover (`#theater-dropdown`, 320px width) directly docked beneath the `Theater: WoW Forever [PvE] ▾` button.
+  - Streamlined realm selection items into clean, clickable single-row elements with icons, titles, rulesets, and active realm indicators, eliminating verbose paragraphs and redundant action buttons.
+  - Redesigned `#server-modal` for mobile viewports and dialog fallbacks into a compact tactical card (`.realm-modal-card`, 440px max-width) with single-column layout and backdrop dismiss.
+  - Added click-outside and `Escape` key event listeners for immediate, lightweight dismissal.
 - **Professional Project Overview & Release Copy Alignment (`README.md`, `docs/PUBLIC_RELEASE_PLAYBOOK.md`, `docs/CURSEFORGE_LISTING.md`)**:
   - Replaced informal placeholder introduction with a confident, community-driven technical overview of WoW Killboard.
   - Articulated the project's core capabilities: real-time in-game battle logging, certified 1v1 duel validation, battleground scoreboards, open-world blood bounties, wilderness hazards, and zero-taint engineering across all 4 WoW client flavors.

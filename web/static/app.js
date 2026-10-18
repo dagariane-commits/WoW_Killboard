@@ -4563,40 +4563,76 @@ function getCurrentForeverServer() {
   return (localStorage.getItem("wowkb_forever_server") || "PVP").toUpperCase();
 }
 
+function renderRealmRows(activeSrv) {
+  return Object.values(FOREVER_SERVERS).map(s => {
+    const isAct = s.id === activeSrv;
+    return `
+      <div class="realm-select-row ${isAct ? 'active' : ''}" onclick="handleSelectForeverServer(${safeJsParam(s.id)})">
+        <div class="realm-row-left">
+          <span class="realm-row-icon">${s.icon}</span>
+          <div class="realm-row-info">
+            <div class="realm-row-title">${escapeHtml(s.title)}</div>
+            <div class="realm-row-ruleset">${escapeHtml(s.ruleset)}</div>
+          </div>
+        </div>
+        <div class="realm-row-status ${isAct ? 'active' : 'inactive'}">
+          ${isAct ? '✓ Active Realm' : s.popStatus}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTheaterDropdown() {
+  const list = document.getElementById("theater-dropdown-list");
+  if (!list) return;
+  const activeSrv = getCurrentForeverServer();
+  list.innerHTML = renderRealmRows(activeSrv);
+}
+
+function toggleTheaterDropdown(event) {
+  if (event) event.stopPropagation();
+  if (window.innerWidth <= 768) {
+    openServerSelectorModal();
+    return;
+  }
+  const dd = document.getElementById("theater-dropdown");
+  if (!dd) return;
+  if (dd.style.display === "none" || !dd.style.display) {
+    renderTheaterDropdown();
+    dd.style.display = "block";
+  } else {
+    dd.style.display = "none";
+  }
+}
+
+function closeTheaterDropdown() {
+  const dd = document.getElementById("theater-dropdown");
+  if (dd) dd.style.display = "none";
+}
+
+document.addEventListener("click", (e) => {
+  const dd = document.getElementById("theater-dropdown");
+  const wrap = document.getElementById("header-theater-wrap");
+  if (dd && dd.style.display !== "none") {
+    if (wrap && !wrap.contains(e.target)) {
+      dd.style.display = "none";
+    }
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeTheaterDropdown();
+  }
+});
+
 function openServerSelectorModal() {
   const modal = document.getElementById("server-modal");
   const grid = document.getElementById("server-modal-grid");
   if (!modal || !grid) return;
   const activeSrv = getCurrentForeverServer();
-
-  grid.innerHTML = Object.values(FOREVER_SERVERS).map(s => {
-    const isAct = s.id === activeSrv;
-    return `
-      <div class="server-card ${isAct ? 'active' : ''}" onclick="handleSelectForeverServer(${safeJsParam(s.id)})">
-        <div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span class="server-card-badge" style="background:${s.badgeBg}; border:1px solid ${s.badgeBorder}; color:${s.badgeColor};">
-              ${s.badge}
-            </span>
-            <span style="font-size:0.7rem; color:${isAct ? 'var(--wow-gold)' : '#64748b'}; font-weight:700;">
-              ${isAct ? 'ACTIVE REALM' : s.popStatus}
-            </span>
-          </div>
-          <h4 style="font-size:1.15rem; color:#fff; font-family:var(--font-tactical); margin:0 0 4px 0; display:flex; align-items:center; gap:6px;">
-            <span>${s.icon}</span> <span>${escapeHtml(s.title)}</span>
-          </h4>
-          <div style="font-size:0.75rem; color:var(--wow-gold); font-weight:600; margin-bottom:8px;">${escapeHtml(s.ruleset)}</div>
-          <p style="font-size:0.76rem; color:#94a3b8; line-height:1.4; margin:0 0 14px 0;">
-            ${escapeHtml(s.desc)}
-          </p>
-        </div>
-        <button style="width:100%; box-sizing:border-box; padding:8px 12px; font-weight:800; font-size:0.78rem; background:${isAct ? 'linear-gradient(135deg, #d97706, #b45309)' : 'rgba(255,255,255,0.06)'}; border:1px solid ${isAct ? 'var(--wow-gold)' : 'rgba(255,255,255,0.12)'}; color:${isAct ? '#fff' : '#cbd5e1'}; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; gap:6px;">
-          <span>${isAct ? '✓ Selected Realm' : 'Select Server &rarr;'}</span>
-        </button>
-      </div>
-    `;
-  }).join('');
-
+  grid.innerHTML = renderRealmRows(activeSrv);
   modal.style.display = "flex";
 }
 
@@ -4610,6 +4646,7 @@ function closeServerSelectorModal() {
 function handleSelectForeverServer(serverId) {
   const chosen = (serverId || "PVP").toUpperCase();
   localStorage.setItem("wowkb_forever_server", chosen);
+  closeTheaterDropdown();
   closeServerSelectorModal();
   handleFlavorChange("FOREVER", chosen);
   switchTab("INTEL");
