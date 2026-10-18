@@ -5216,8 +5216,6 @@ body {
     border-radius: 2px !important;
     pointer-events: none !important;
   }
-}
-
 
   .mobile-flavor-badge {
     display: inline-flex !important;
@@ -5262,10 +5260,10 @@ body {
   .combat-toast-container {
     bottom: 12px !important;
     right: 12px !important;
-    left: 12px !important;
-    width: auto !important;
+    left: auto !important;
+    width: 320px !important;
     max-width: calc(100vw - 24px) !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   /* 4. Compact Realm Stats Bar (2x2 Grid) */
@@ -7869,35 +7867,43 @@ body.portal-active .container {
 }
 
 /* ----------------- Live Combat Toast Notifications (1:1 Addon Parity) ----------------- */
+/* ----------------- Live Combat Toast Notifications (Windows Desktop Notification Style) ----------------- */
 .combat-toast-container {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none;
-  max-width: 380px;
-  width: calc(100vw - 48px);
-  overflow: hidden;
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  left: auto !important;
+  top: auto !important;
+  width: 320px !important;
+  max-width: calc(100vw - 32px) !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  pointer-events: none !important;
+  overflow: visible !important;
 }
 
 .combat-toast {
+  position: relative;
   pointer-events: auto;
-  background: linear-gradient(180deg, #151a24 0%, #0a0d14 100%);
-  border: 1px solid rgba(197, 160, 89, 0.5);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 12px rgba(212, 163, 41, 0.2);
-  border-radius: 6px;
-  padding: 10px 14px;
+  background: rgba(13, 17, 23, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 163, 41, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 2px 6px rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 10px 12px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   cursor: pointer;
-  transform: translateX(120%);
+  box-sizing: border-box;
+  width: 100%;
+  transform: translateX(115%);
   opacity: 0;
   visibility: hidden;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, visibility 0.35s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.25s ease;
 }
 
 .combat-toast.visible {
@@ -7906,37 +7912,62 @@ body.portal-active .container {
   visibility: visible;
 }
 
+.combat-toast:hover {
+  border-color: var(--wow-gold, #ffd100);
+  background: rgba(18, 24, 34, 0.98);
+}
+
 .combat-toast.bounty-claim {
-  border: 1.5px solid #ffd100;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.9), 0 0 16px rgba(255, 209, 0, 0.4);
+  border-color: #ffd100;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 16px rgba(255, 209, 0, 0.35);
 }
 
 .combat-toast-icon {
-  font-size: 1.3rem;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
 
 .combat-toast-content {
   flex: 1;
   min-width: 0;
+  padding-right: 14px;
 }
 
 .combat-toast-header {
-  font-family: var(--font-tactical);
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--wow-gold);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-family: var(--font-tactical);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--wow-gold, #ffd100);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  gap: 6px;
+}
+
+.combat-toast-header .zone-tag {
+  font-size: 0.64rem;
+  color: #94a3b8;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .combat-toast-body {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 700;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -7944,9 +7975,36 @@ body.portal-active .container {
 }
 
 .combat-toast-sub {
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  margin-top: 2px;
+  font-size: 0.68rem;
+  color: #64748b;
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.combat-toast-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.combat-toast-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 

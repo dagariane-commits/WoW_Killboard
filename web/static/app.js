@@ -675,13 +675,32 @@ function colorizeClass(name, cls) {
   return `<span style="color: ${color}; font-weight: 700;">${escapeHtml(name || "Unknown")}</span>`;
 }
 
-// Live Combat Toast Alert System (1:1 Addon Parity)
+// Live Combat Toast Alert System (Windows Desktop Notification Style)
 let knownKillIds = new Set();
 let isInitialKillsLoad = true;
+const MAX_CONCURRENT_TOASTS = 2; // Strict limit: at most 2 small desktop notifications in bottom right
+
+function dismissCombatToast(toast) {
+  if (!toast) return;
+  toast.classList.remove("visible");
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
+    }
+  }, 350);
+}
 
 function showCombatToast(km) {
   const container = document.getElementById("combat-toast-container");
   if (!container || !km) return;
+
+  // Prune older notifications so they never clutter the screen
+  while (container.children.length >= MAX_CONCURRENT_TOASTS) {
+    const oldest = container.firstElementChild;
+    if (oldest) {
+      container.removeChild(oldest);
+    }
+  }
 
   const killerName = (km.killer && km.killer.name) || "Unknown";
   const killerCls = ((km.killer && km.killer.class) || "WARRIOR").toUpperCase();
@@ -698,17 +717,18 @@ function showCombatToast(km) {
   const title = isBounty ? "BOUNTY CLAIMED" : (km.isSolo ? "1v1 SOLO SLAIN" : "COMBAT CASUALTY");
 
   toast.innerHTML = `
+    <button class="combat-toast-close" title="Dismiss notification" onclick="event.stopPropagation(); dismissCombatToast(this.closest('.combat-toast'));">&times;</button>
     <div class="combat-toast-icon">${icon}</div>
     <div class="combat-toast-content">
       <div class="combat-toast-header">
         <span>${title}</span>
-        <span>${zone}</span>
+        <span class="zone-tag">${escapeHtml(zone)}</span>
       </div>
       <div class="combat-toast-body">
-        ${colorizeClass(killerName, killerCls)} slayed ${colorizeClass(victimName, victimCls)}
+        ${colorizeClass(killerName, killerCls)} <span style="color:#94a3b8; font-weight:400;">slayed</span> ${colorizeClass(victimName, victimCls)}
       </div>
       <div class="combat-toast-sub">
-        ${isBounty ? `<span style="color:#ffd100; font-weight:800;">💰 ${km.bountyRewardGold || ''}g Claimed</span> &bull; ` : ''}Click to view Battle Report
+        <span>${isBounty ? `<strong style="color:#ffd100;">💰 ${km.bountyRewardGold || ''}g Bounty</strong>` : 'Click to inspect report'}</span>
       </div>
     </div>
   `;
@@ -719,15 +739,11 @@ function showCombatToast(km) {
   });
 
   setTimeout(() => {
-    toast.classList.remove("visible");
-    setTimeout(() => {
-      if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
-      }
-    }, 400);
-  }, 5500);
+    dismissCombatToast(toast);
+  }, 4500);
 }
 window.showCombatToast = showCombatToast;
+window.dismissCombatToast = dismissCombatToast;
 
 // Data Fetching
 async function loadKills() {
@@ -744,9 +760,10 @@ async function loadKills() {
       isInitialKillsLoad = false;
     } else {
       const newKills = incomingKills.filter(k => !knownKillIds.has(k.killId));
-      newKills.forEach(k => {
-        knownKillIds.add(k.killId);
-        showCombatToast(k);
+      const toastsToTrigger = newKills.slice(0, 2);
+      newKills.forEach(k => knownKillIds.add(k.killId));
+      toastsToTrigger.forEach((k, idx) => {
+        setTimeout(() => showCombatToast(k), idx * 250);
       });
     }
 

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Windows Desktop Notification Style Combat Toasts (`web/static/style.css`, `web/static/app.js`, `web/static/index.html`)**:
+  - Eliminated rogue closing brace in CSS that leaked mobile layout constraints and caused toast notifications to stretch full-width across desktop screens.
+  - Re-anchored `.combat-toast-container` strictly into the bottom-right screen corner (`bottom: 20px; right: 20px; left: auto; width: 320px;`).
+  - Styled `.combat-toast` into an authentic compact Windows desktop notification card (320px width, acrylic blur backdrop, gold/brass metallic trim, compact kill details, and an inline `×` dismiss button).
+  - Capped active notifications to a strict maximum of 2, auto-pruning older toasts and throttling burst arrivals to prevent screen clutter.
 - **Tactical Anchored Realm Dropdown & Compact Modal Architecture (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
   - Replaced the bulky, screen-blocking 820px modal overlay on desktop navbar click with an anchored tactical dropdown popover (`#theater-dropdown`, 320px width) directly docked beneath the `Theater: WoW Forever [PvE] ▾` button.
   - Streamlined realm selection items into clean, clickable single-row elements with icons, titles, rulesets, and active realm indicators, eliminating verbose paragraphs and redundant action buttons.
