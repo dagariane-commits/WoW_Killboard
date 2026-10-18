@@ -34,28 +34,35 @@ def main():
         'User-Agent': 'WoWKillboard-Release-Script'
     }
 
-    # 1. Check if release already exists for v1.0.5
+    # 1. Check if release already exists for v1.0.7
     req = urllib.request.Request(
-        'https://api.github.com/repos/dagariane-commits/WoW_Killboard/releases/tags/v1.0.5',
+        'https://api.github.com/repos/dagariane-commits/WoW_Killboard/releases/tags/v1.0.7',
         headers=headers
     )
     release = None
     try:
         with urllib.request.urlopen(req) as resp:
             release = json.loads(resp.read().decode('utf-8'))
-            print(f"Found existing release v1.0.5 with ID: {release['id']}")
+            print(f"Found existing release v1.0.7 with ID: {release['id']}")
     except urllib.error.HTTPError as e:
         if e.code == 404:
-            print("Release v1.0.5 does not exist yet. Creating...")
+            print("Release v1.0.7 does not exist yet. Creating...")
         else:
             print(f"Error checking release: {e.code} {e.read().decode('utf-8')}")
             return
 
     if not release:
         data = {
-            'tag_name': 'v1.0.5',
-            'name': 'v1.0.5: Cross-Client Combat Hardening, Responsive Navigation & Multi-Character Roster',
-            'body': 'Official Release v1.0.5\n\n- Zero Blizzard UI Taint Hardening: Strict InCombatLockdown gating on player death routines, chat broadcasts, and guild info checks eliminates Action Blocked popups\n- Responsive Navigation Suite: Fluid flex layout, 1180px adaptive navigation breakpoint, mobile slide-in drawer, and unclipped touch controls\n- Multi-Character Realm Roster: Seamless operative switching, custom realm mains (⭐ Main), and dedicated combat stats tracking across all characters\n- Mode-Specific Leaderboards: Dedicated combat columns for World (Kills, Solo, K/D), BGs, Duels (W/L), and Arenas\n- Economy & Marked Overhaul: Formatted G / S / C currency displays and unified bounty contract highlights\n- Desktop Companion Synchronizer v1.0.5',
+            'tag_name': 'v1.0.7',
+            'name': 'v1.0.7: Streamlined UI, Hero Medallion Dock & Compact Benchmark Ribbon',
+            'body': 'Official Release v1.0.7\n\n'
+                    '- **Overhanging Character Portrait**: Blizzard-style circular portrait medallion anchored at TOPLEFT (-8, 8) with elevated frame strata.\n'
+                    '- **Text-Only Sub-Bar Navigation**: Borderless, sleek navigation links (Intel, Leaderboards, The Marked, Call to Arms, Danger Zones) with hover highlights.\n'
+                    '- **Contextual Page-Level Mode Pills**: Relocated [World] [BGs] [Duels] [Arenas] filter pills directly into the Leaderboard and Combat Intel headers.\n'
+                    '- **Faction War Split on Sub-Bar**: Relocated Alliance/Horde split bar to sub-bar right, removing the redundant top stat ribbon and expanding combat viewport by +30px.\n'
+                    '- **Ultra-Compact Web Benchmark Ribbon**: Condensed champion comparison card into an inline 36px tactical status ribbon with show/hide toggle and mobile touch-scrolling.\n'
+                    '- **Default Homepage Landing**: Window and web platform land directly on Leaderboards with player standing.\n'
+                    '- **Cross-Client Parity**: Full support for WoW Classic Era, Anniversary, Forever Beta, and Retail with zero Blizzard UI taint.',
             'draft': False,
             'prerelease': False
         }
@@ -68,7 +75,7 @@ def main():
         try:
             with urllib.request.urlopen(create_req) as resp:
                 release = json.loads(resp.read().decode('utf-8'))
-                print(f"Created release v1.0.5 with ID: {release['id']}")
+                print(f"Created release v1.0.7 with ID: {release['id']}")
         except urllib.error.HTTPError as e:
             print(f"HTTP Error creating release: {e.code} {e.read().decode('utf-8')}")
             return
@@ -78,11 +85,12 @@ def main():
 
     # Existing asset names
     existing_assets = {a['name']: a['id'] for a in release.get('assets', [])}
-    print(f"Existing assets for v1.0.5: {list(existing_assets.keys())}")
+    print(f"Existing assets for v1.0.7: {list(existing_assets.keys())}")
 
     assets_to_upload = [
+        ('WoWKillboard-v1.0.7.zip', 'application/zip'),
+        ('WoWKillboard-v1.0.6.zip', 'application/zip'),
         ('WoWKillboard-v1.0.5.zip', 'application/zip'),
-        ('WoWKillboard-v1.0.4.zip', 'application/zip'),
         ('WoWKillboardSync.exe', 'application/vnd.microsoft.portable-executable')
     ]
 

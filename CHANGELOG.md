@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed `ActiveViewBadge` from the sub-bar, resolving user confusion over having two adjacent hamburger buttons. The sole command deck trigger is now the Master Hamburger Button on the top header bar.
   - Separated Command Deck drawer buttons into `deckButtons` table, preventing drawer elements from conflicting with or overwriting sub-bar navigation tabs.
 
+### Fixed
+- **Direct Download & GitHub Release v1.0.7 Parity (`web/server.py`, `scripts/upload_release.py`)**:
+  - Published official GitHub Release `v1.0.7` with `WoWKillboard-v1.0.7.zip` and `WoWKillboardSync.exe` binary assets.
+  - Eliminated browser 404 error when clicking "DIRECT DOWNLOAD (.ZIP)" by ensuring GitHub `/releases/latest` resolves to `v1.0.7`.
+  - Added robust local static file fallback in `web/server.py` for `/download`, `/addon.zip`, and versioned `.zip` endpoints.
+
 ## [1.0.7] - 2026-10-08 (Streamlined Command Deck & Hamburger Navigation)
 
 ### Added

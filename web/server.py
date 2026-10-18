@@ -834,12 +834,14 @@ def download_addon():
             if os.path.exists(target):
                 return send_from_directory(d, req_file, as_attachment=True)
 
-    # General download (/download, /addon.zip): serve v1.0.7, fallback to v1.0.6, v1.0.5, v1.0.4, v1.0.3, v1.0.2, v1.0.1 then v1.0.0
+    # General download (/download, /addon.zip): serve v1.0.7, fallback to older versions
     for pkg in ("WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, pkg)
             if os.path.exists(target):
                 return send_from_directory(d, pkg, as_attachment=True)
+
+    # Fallback to GitHub Releases CDN if local archive missing
     resp = redirect(GITHUB_RELEASE_ZIP_URL, code=302)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     resp.headers["Pragma"] = "no-cache"
@@ -877,6 +879,8 @@ def download_sync_exe():
         return send_from_directory(root_dir, "WoWKillboardSync.exe", as_attachment=True)
     if os.path.exists(dist_exe):
         return send_from_directory(os.path.join(root_dir, "dist"), "WoWKillboardSync.exe", as_attachment=True)
+
+    # Fallback to GitHub Releases CDN if local binary missing
     resp = redirect(GITHUB_RELEASE_SYNC_URL, code=302)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     resp.headers["Pragma"] = "no-cache"
