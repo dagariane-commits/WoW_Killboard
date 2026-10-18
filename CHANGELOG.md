@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Professional Project Overview & Release Copy Alignment (`README.md`, `docs/PUBLIC_RELEASE_PLAYBOOK.md`, `docs/CURSEFORGE_LISTING.md`)**:
+  - Replaced informal placeholder introduction with a confident, community-driven technical overview of WoW Killboard.
+  - Articulated the project's core capabilities: real-time in-game battle logging, certified 1v1 duel validation, battleground scoreboards, open-world blood bounties, wilderness hazards, and zero-taint engineering across all 4 WoW client flavors.
+  - Standardized active beta status messaging and community feedback channels across repository documentation and public distribution kits.
+
 ## [1.0.8] - 2026-10-18 (Overhanging Portrait Medallion, Text Tabs & Contextual Mode Architecture)
 
 ### Added

@@ -8,13 +8,12 @@
 [![Desktop Sync](https://img.shields.io/badge/Desktop%20Sync-Standalone%20EXE-blue.svg)](dist/WoWKillboardSync.exe)
 [![License](https://img.shields.io/badge/License-GPLv3-lightgrey.svg)](LICENSE)
 
-Hey everyone! I'm just a dude who used AI to help create my very first World of Warcraft addon.
+**WoW Killboard** is an independent, community-driven combat telemetry suite and killboard designed for World of Warcraft. It provides real-time in-game battle logging, certified 1v1 duel validation, battleground scoreboards, open-world blood bounties, and wilderness hazard telemetry across **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and modern **Retail** clients.
 
-**WoW Killboard** is a community killboard for WoW that tracks open-world PvP kills, certified 1v1 duels, battleground stats, blood bounties, and wilderness PvE deaths across **World of Warcraft: Forever**, **Classic Era**, **Anniversary**, and modern **Retail** clients.
+Engineered with strict zero-taint standards, WoW Killboard runs anonymously inside Blizzard's Lua sandbox to deliver high-performance combat intelligence without causing interface lockups, frame stutters, or "Action Blocked" combat restrictions.
 
-*(Note: Hands-on testing has primarily been focused in WoW Forever Beta. The code is written with parity in mind for Classic Era, Anniversary, and Retail as well, but multi-version testing is ongoing!)*
-
-I really hope you like it! It's currently in early beta, so please test it out, give me your feedback, and let me know what you'd like to see added so I can keep making it better.
+> [!NOTE]
+> **Active Beta Status**: Live testing is currently focused in **WoW Forever Beta**. The codebase is engineered for cross-client parity across **Classic Era**, **Anniversary**, and **Retail**, with multi-flavor verification ongoing. Feedback, issue reports, and feature requests are actively welcomed to guide continued development.
 
 ---
 

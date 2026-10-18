@@ -63,11 +63,11 @@ Compress-Archive -Path "Addon\WoWKillboard" -DestinationPath "WoWKillboard-v1.0.
 1. Log into the [CurseForge Author Portal](https://authors.curseforge.com/).
 2. Create New Project -> Category: `PvP` / `Combat` / `Information`.
 3. Description template:
-   > Hey everyone! I'm just a dude who used AI to help create my very first World of Warcraft addon.
+   > **WoW Killboard** brings a dedicated combat tracker, live kill feed, and realm leaderboard directly into your World of Warcraft client. Track your open-world battles, log certified 1v1 encounters, see who is dominating your zone, and view real-time leaderboards right inside the game.
    >
-   > **WoW Killboard** is a community killboard that tracks your open-world PvP kills, certified 1v1 duels, battleground stats, blood bounties, and wilderness PvE deaths. It works across WoW Forever, Classic Era, Anniversary, and Retail.
+   > Engineered with strict zero-taint standards, WoW Killboard tracks combat telemetry, blood bounties, and wilderness hazards across WoW Forever, Classic Era, Anniversary, and Retail.
    >
-   > I really hope you like it! Please drop your feedback, feature ideas, or bug reports on CurseForge or our website so I can continue enhancing it.
+   > Currently in active beta. Please share your feedback, bug reports, and feature suggestions to help shape future updates!
 4. Upload `WoWKillboard-v1.0.7.zip`.
 5. Supported Flavors: Select `WoW Classic`, `Classic Era`, and `Mainline`.
 6. Upload promotional banner (`../assets/curseforge/logo.png`) and in-game UI screenshots.

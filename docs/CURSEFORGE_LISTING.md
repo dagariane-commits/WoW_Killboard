@@ -56,7 +56,7 @@ Visit **[wowkillboard.com](https://wowkillboard.com)** to check out realm-wide l
 
 ### Compatibility & Feedback
 * **Game Flavors:** Hands-on testing has primarily been focused in **WoW Forever (Classic Beta)**. The codebase is written with parity in mind for **Classic Era**, **Anniversary**, and **Retail** as well.
-* **Community Driven:** I'm an indie hobbyist learning and building this for fun. If you run into any quirks or have suggestions, please leave a comment!
+* **Community Driven:** An independent open-source project. If you encounter any bugs, have feature requests, or have suggestions, please leave a comment or join the discussion!
 ```
 
 ---
