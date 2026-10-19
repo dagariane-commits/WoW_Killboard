@@ -27,7 +27,13 @@ logger = logging.getLogger("WoWKillboard")
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(APP_DIR, "static")
 DB_PATH = os.environ.get("DB_PATH", os.path.join(APP_DIR, "killboard.db"))
-ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "REDACTED_ADMIN_KEY")
+# Fail-closed: never ship a static fallback. If ADMIN_SECRET_KEY is unset, generate an
+# unguessable per-process key so all admin endpoints are effectively disabled.
+ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "").strip()
+if not ADMIN_SECRET_KEY:
+    import secrets as _secrets
+    ADMIN_SECRET_KEY = _secrets.token_hex(32)
+    logger.warning("ADMIN_SECRET_KEY not set: admin endpoints are disabled (random ephemeral key in use).")
 
 try:
     from sync.watcher import LuaTableParser

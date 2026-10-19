@@ -2000,12 +2000,12 @@ function CT:OnDuelCompleted(winnerName, loserName, isFlee)
     local function ExtractNameAndRealm(raw)
         if not raw then return "", "" end
         raw = raw:match("^%s*(.-)%s*$") -- trim
-        -- Check hyphen (e.g. PlayerOne-RealmName)
+        -- Check hyphen (e.g. PlayerName-RealmName)
         local n, r = raw:match("^([^-]+)%-(.+)$")
         if n and r then
             return n:match("^%s*(.-)%s*$"), r:match("^%s*(.-)%s*$")
         end
-        -- Check space (e.g. PlayerOne RealmName)
+        -- Check space (e.g. PlayerName RealmName)
         n, r = raw:match("^([%S]+)%s+(.+)$")
         if n and r then
             return n:match("^%s*(.-)%s*$"), r:match("^%s*(.-)%s*$")

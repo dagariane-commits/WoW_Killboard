@@ -140,6 +140,9 @@ sudo systemctl restart wowkillboard
 ```
 
 ### Administrative Database Resets
+> [!IMPORTANT]
+> `ADMIN_SECRET_KEY` **must** be set in the service environment (`setup_vps.sh` generates one automatically; on Render set it in the dashboard). There is no built-in fallback: if it is unset, the server uses a random ephemeral key and all `/api/admin/*` endpoints reject every request. Generate one with `openssl rand -hex 32`.
+
 To wipe all combat records, leaderboards, and character claims back to zero for launch:
 
 #### Option 1: From Local Windows PowerShell (No SSH Needed)

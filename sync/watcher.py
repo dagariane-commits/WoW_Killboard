@@ -1174,9 +1174,8 @@ class KillboardWatcher:
                     if os.path.exists(addon_dir):
                         target_paths.append(os.path.join(addon_dir, "WoWKillboard_RealmData.lua"))
 
-            local_repo_addon = os.path.join("Addon", "WoWKillboard", "WoWKillboard_RealmData.lua")
-            if os.path.exists(os.path.dirname(local_repo_addon)):
-                target_paths.append(local_repo_addon)
+            # NOTE: Never write into the repo's Addon/ template. That file ships in release
+            # archives and must stay a neutral, PII-free template (no player names/GUIDs).
 
             # Universal Addon Directories across all drives and WoW flavors
             for ad in find_all_wow_addon_dirs():

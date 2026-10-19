@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Fail-Closed Admin Secret (`web/server.py`, `render.yaml`, `tests/test_pipeline.py`, `docs/DEPLOYMENT_VPS.md`)**:
+  - Removed the static hardcoded `ADMIN_SECRET_KEY` fallback. When the environment variable is unset, the server now generates an unguessable per-process key and logs a warning, disabling `/api/admin/*` instead of accepting a publicly known value.
+  - Declared `ADMIN_SECRET_KEY` in `render.yaml` so Render deployments prompt for it.
+  - Test suite now injects its own `ADMIN_SECRET_KEY` rather than depending on a production default.
+- **Documentation PII Sanitization (`CHANGELOG.md`, `tests/test_pipeline.py`, `Addon/WoWKillboard/CombatTracker.lua`)**:
+  - Replaced real player character names and personal realm identifiers in historical changelog examples, code comments, and test fixtures with neutral placeholders.
+  - Removed residual references to the retired static admin key from historical changelog entries.
+- **Distribution Template Leak Fix (`Addon/WoWKillboard/WoWKillboard_RealmData.lua`, `sync/watcher.py`)**:
+  - Reset the shipped `WoWKillboard_RealmData.lua` to a neutral empty template; it had been re-populated with live player names and GUIDs from developer sync runs and bundled into release archives.
+  - Removed the sync agent's write target into the repository `Addon/` folder so the distribution template can no longer be overwritten with live realm data. End-user WoW AddOns/SavedVariables targets are unchanged.
+
 ### Changed
 - **Windows Desktop Notification Style Combat Toasts (`web/static/style.css`, `web/static/app.js`, `web/static/index.html`)**:
   - Eliminated rogue closing brace in CSS that leaked mobile layout constraints and caused toast notifications to stretch full-width across desktop screens.
@@ -1078,7 +1090,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Addon P2P Delimiter Shift & Error Resilience (`Addon/WoWKillboard/Sync.lua`)**: Replaced `[^:]+` regex with delimiter-preserving tokenizer `ParseMessageParts()` to prevent empty field (`::`) drops and column shifting. Wrapped addon message event dispatchers in `pcall` to shield combat sessions from unhandled Lua errors on malformed peer packets.
   - **Debt Ledger GUID Spoofing Defense (`web/server.py`)**: Disallowed unauthenticated killmail payloads from rewriting established debtor names or altering KOS blacklist entries via spoofed player GUIDs.
 - **Pre-Release Distribution Sanitization (`WoWKillboard_RealmData.lua`, `Core.lua`)**:
-  - Purged all hardcoded developer testing data, character names (`PlayerOne`, `Dagariane`, `PlayerTwo`), and personal player GUIDs from `WoWKillboard_RealmData.lua`, leaving a pristine, neutral template for fresh user downloads.
+  - Purged all hardcoded developer testing data, character names, and personal player GUIDs from `WoWKillboard_RealmData.lua`, leaving a pristine, neutral template for fresh user downloads.
   - Hardened `/kb reset` with a strict confirmation guardrail (`/kb reset confirm`), preventing accidental data loss if a player mistypes the command during normal play.
   - Verified absence of hardcoded personal paths (`C:\Users\...`), private tokens, or unvetted globals across all distribution archives.
 
@@ -1141,7 +1153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Duel Opponent Telemetry & Same-Faction Inheritance (`CombatTracker.lua`, `web/server.py`)**:
-  - Implemented automatic same-faction inheritance for 1v1 duels: in World of Warcraft, duels can only be initiated between members of the same faction. If a combatant's faction is unknown, it immediately inherits the duel partner's confirmed faction (e.g. PlayerOne automatically resolved to Alliance).
+  - Implemented automatic same-faction inheritance for 1v1 duels: in World of Warcraft, duels can only be initiated between members of the same faction. If a combatant's faction is unknown, it immediately inherits the duel partner's confirmed faction (e.g. an unknown duel partner automatically resolved to Alliance).
   - Added self-healing database migration in `init_db()` to update legacy duel records in `kills` where faction was marked as 'Unknown'.
   - Added `CT.ActiveDuelOpponent` caching in `CombatTracker.lua`:
     - Registered `DUEL_REQUESTED` event to immediately scan and store the challenger's class, level, and guild upon duel challenge.
@@ -1177,11 +1189,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Duel Combat Telemetry & Connected Realm Parsing (`CombatTracker.lua`, `sync/watcher.py`)**:
-  - Implemented `ExtractNameAndRealm(raw)` regex in `CT:OnDuelCompleted()` to strip hyphenated or space-delimited connected realm strings from `CHAT_MSG_SYSTEM` duel announcements (e.g. `PlayerOne RealmName` -> `PlayerOne`, `Dagariane RealmName` -> `Dagariane`).
+  - Implemented `ExtractNameAndRealm(raw)` regex in `CT:OnDuelCompleted()` to strip hyphenated or space-delimited connected realm strings from `CHAT_MSG_SYSTEM` duel announcements (e.g. `PlayerOne RealmName` -> `PlayerOne`, `PlayerTwo-OtherRealm` -> `PlayerTwo`).
   - Enforced canonical `playerName` for the local combatant in duel outcome tracking.
   - Added `_strip_realm()` defensive parsing in `sync/watcher.py:upload_kill()` to ensure combatants sent to the REST API are cleanly separated from realm tags.
 - **Character Web Link Generation & Lua Multi-Return Fix (`UI.lua`, `Core.lua`)**:
-  - Remediated multi-return leakage where `UI:ShowCharacterWebLink(UnitName("player"))` passed the player's realm name (`RealmName`) as the class parameter (`class=RealmName`).
+  - Remediated multi-return leakage where `UI:ShowCharacterWebLink(UnitName("player"))` passed the player's realm name as the class parameter (`class=<RealmName>`).
   - Wrapped `(UnitName("player"))` and `(UnitName("target"))` in parentheses across UI medallion, web button, and slash commands.
   - Added valid WoW class table validation (`WARRIOR`, `PALADIN`, `HUNTER`, etc.) in `UI:ShowCharacterWebLink()` to prevent non-class strings from entering query strings.
   - Formatted generated URLs with both `name=` and `character=` parameters for universal client-side compatibility.
@@ -2192,7 +2204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Applied uniformly across both Classic and ElvUI themes in `UI:ApplyTheme()`, resolving missing `WoW Forever` in ElvUI.
 - **Master War Archivist Public Protection (`web/static/app.js`)**:
   - Gated the red "Master War Archivist • Database Administration" reset panel in `loadUploadView()`.
-  - Completely hidden from regular public view by default; revealed only via secret key unlock or administrative URL parameter (`?admin=REDACTED_ADMIN_KEY`).
+  - Completely hidden from regular public view by default; revealed only via secret key unlock or administrative URL parameter (`?admin=1` plus admin key prompt).
 
 ## [1.4.39] - 2026-09-27
 
@@ -2421,7 +2433,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `#nav-upload` to the desktop navigation rail and `#m-nav-upload` to the mobile slide-in drawer.
   - Includes interactive visual dropzone, local SavedVariables file path instructions, copy-paste text fallback, and live telemetry banners.
 - **Master Archivist Administrative Reset Protocol (`POST /api/admin/reset`, `--reset-db`)**:
-  - Engineered administrative database purge system gated by `ADMIN_SECRET_KEY` (`REDACTED_ADMIN_KEY`).
+  - Engineered administrative database purge system gated by `ADMIN_SECRET_KEY` (environment-provided).
   - Added `POST /api/admin/reset` endpoint and `--reset-db` server startup CLI flag to safely drop and re-initialize all 13 SQLite tables for clean state testing.
   - Integrated restricted Master War Archivist reset controls directly into the Web Upload interface with confirmation guards.
 - **Authentic Classic WoW Dialog & Quest Parchment UI Overhaul (`UI.lua`, `Config.lua`)**:

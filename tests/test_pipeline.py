@@ -15,6 +15,8 @@ import unittest
 # Ensure web/ is importable and isolated from production database
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.environ["DB_PATH"] = os.path.join(BASE_DIR, "tests", "test_killboard.db")
+TEST_ADMIN_SECRET = "test-only-admin-secret"
+os.environ["ADMIN_SECRET_KEY"] = TEST_ADMIN_SECRET
 sys.path.insert(0, os.path.join(BASE_DIR, "web"))
 sys.path.insert(0, os.path.join(BASE_DIR, "sync"))
 
@@ -1081,7 +1083,7 @@ class TestKillboardPipeline(unittest.TestCase):
         self.assertEqual(res_bad_reset.status_code, 403)
 
         # 5. Test Admin Reset with Valid Key -> 200 OK
-        res_good_reset = self.client.post("/api/admin/reset", json={"secret": "REDACTED_ADMIN_KEY"})
+        res_good_reset = self.client.post("/api/admin/reset", json={"secret": TEST_ADMIN_SECRET})
         self.assertEqual(res_good_reset.status_code, 200)
         self.assertTrue(res_good_reset.get_json()["success"])
 
@@ -1297,7 +1299,7 @@ class TestKillboardPipeline(unittest.TestCase):
             ["claimTokens"] = {
                 ["Dagariane"] = {
                     ["realm"] = "Classic Beta PvP",
-                    ["guid"] = "Player-0000-00000000",
+                    ["guid"] = "Player-0000-00000001",
                     ["time"] = 1790732145,
                     ["code"] = "KB-5ACD",
                 },
@@ -1554,7 +1556,7 @@ WoWKillboardDB = {
         chars_payload = [
             {
                 "name": "TestDuelist",
-                "realm": "RealmName",
+                "realm": "TestRealm",
                 "class": "MAGE",
                 "race": "Gnome",
                 "level": 60,
