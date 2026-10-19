@@ -17,7 +17,7 @@ WoWKillboard_RealmData = {
     PveTopExecutioners = {},
     PveTopVictims = {},
     PveDeadliestZone = {},
-    LatestVersion = "1.0.8",
+    LatestVersion = "1.0.9",
     Changelog = {
         "Streamlined UI Architecture: Permanent Hamburger Command Deck (☰) consolidating all operational tabs and preferences",
         "Hero Medallion Dock: Concentric gold bezel frame, dynamic player level medallion, and dedicated notch eliminate border clipping and line slicing",

@@ -808,9 +808,10 @@ GITHUB_RELEASE_SYNC_URL = os.environ.get(
 )
 GITHUB_RELEASE_ZIP_URL = os.environ.get(
     "GITHUB_RELEASE_ZIP_URL",
-    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.8.zip"
+    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.9.zip"
 )
 
+@app.route("/WoWKillboard-v1.0.9.zip")
 @app.route("/WoWKillboard-v1.0.8.zip")
 @app.route("/WoWKillboard-v1.0.7.zip")
 @app.route("/WoWKillboard-v1.0.6.zip")
@@ -835,14 +836,14 @@ def download_addon():
     root_dir = os.path.dirname(APP_DIR)
     # Check for specific requested file if path has specific version
     req_file = os.path.basename(request.path)
-    if req_file in ("WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    if req_file in ("WoWKillboard-v1.0.9.zip", "WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, req_file)
             if os.path.exists(target):
                 return send_from_directory(d, req_file, as_attachment=True)
 
-    # General download (/download, /addon.zip): serve v1.0.8, fallback to older versions
-    for pkg in ("WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    # General download (/download, /addon.zip): serve v1.0.9, fallback to older versions
+    for pkg in ("WoWKillboard-v1.0.9.zip", "WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, pkg)
             if os.path.exists(target):
@@ -4069,10 +4070,11 @@ def get_realm_summary():
             },
             "DeadliestZones": deadliest_zones,
             "TopGankers24h": top_gankers,
-            "LatestVersion": "1.0.8",
-            "DownloadUrl": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.8.zip",
+            "LatestVersion": "1.0.9",
+            "DownloadUrl": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.9.zip",
             "CurseForgeUrl": "https://www.curseforge.com/wow/addons/wkb",
             "Changelog": [
+                "Security Re-pack: Shipped realm data template is now empty (no player names/GUIDs) and admin endpoints fail closed without a configured key",
                 "Blizzard-Style Overhanging Portrait: Re-docked circular character medallion to TOPLEFT (-8, 8) with elevated frame strata",
                 "Text-Only Sub-Bar Navigation: Sleek borderless text links (Intel, Leaderboards, The Marked, Call to Arms, Danger Zones) with hover highlights",
                 "Contextual Mode Filtering: Relocated [World] [BGs] [Duels] [Arenas] filter pills directly onto Leaderboards and Intel pages",
@@ -4088,11 +4090,12 @@ def get_version_info():
     """Returns official current addon release version, download endpoints, and changelog summary."""
     return jsonify({
         "status": "ok",
-        "version": "1.0.8",
-        "release_tag": "v1.0.8",
-        "download_url": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.8.zip",
+        "version": "1.0.9",
+        "release_tag": "v1.0.9",
+        "download_url": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.9.zip",
         "curseforge_url": "https://www.curseforge.com/wow/addons/wkb",
         "changelog": [
+            "Security Re-pack: Shipped realm data template is now empty (no player names/GUIDs) and admin endpoints fail closed without a configured key",
             "Blizzard-Style Overhanging Portrait: Re-docked circular character medallion to TOPLEFT (-8, 8) with elevated frame strata",
             "Text-Only Sub-Bar Navigation: Sleek borderless text links (Intel, Leaderboards, The Marked, Call to Arms, Danger Zones) with hover highlights",
             "Contextual Mode Filtering: Relocated [World] [BGs] [Duels] [Arenas] filter pills directly onto Leaderboards and Intel pages",

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-10-19 (Security Re-pack)
+
 ### Security
 - **Fail-Closed Admin Secret (`web/server.py`, `render.yaml`, `tests/test_pipeline.py`, `docs/DEPLOYMENT_VPS.md`)**:
   - Removed the static hardcoded `ADMIN_SECRET_KEY` fallback. When the environment variable is unset, the server now generates an unguessable per-process key and logs a warning, disabling `/api/admin/*` instead of accepting a publicly known value.

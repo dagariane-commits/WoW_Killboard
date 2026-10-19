@@ -67,7 +67,7 @@ def get_addon_version():
             for line in f:
                 if line.startswith("## Version:"):
                     return line.split(":", 1)[1].strip()
-    return "1.0.8"
+    return "1.0.9"
 
 def rebuild_zip():
     version = get_addon_version()
