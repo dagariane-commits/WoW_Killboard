@@ -1448,6 +1448,7 @@ function renderFeed(kills) {
             <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
             <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
             <button class="pill-btn disabled" style="opacity:0.4; cursor:not-allowed;" title="Arenas" onclick="setFilterMode('ARENA')">Arenas</button>
+            <button class="pill-btn" onclick="switchTab('HAZARDS')" title="Inspect PvE & Environmental Casualties" style="border-color:rgba(249,115,22,0.45); color:#fb923c;">💀 PvE Hazards</button>
           </div>
           <button class="pill-btn" onclick="loadKills(); loadSidebar();" title="Refresh Live Combat Feed" style="padding:2px 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Refresh</button>
         </div>
@@ -1460,7 +1461,8 @@ function renderFeed(kills) {
       <div style="text-align: center; padding: 48px 20px; color: #94a3b8; background: rgba(10, 14, 23, 0.45); border: 1px dashed rgba(255, 255, 255, 0.08); border-radius: 8px; margin-top: 10px;">
         <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.8;">⚔️</div>
         <h3 style="color: #cbd5e1; font-size: 1.05rem; margin-bottom: 6px;">No ${modeLabelHeader} PvP records found yet.</h3>
-        <p style="font-size: 0.85rem; color: #64748b;">Engage in combat across Azeroth or switch modes above to inspect active skirmishes.</p>
+        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">Engage in combat across Azeroth or switch modes above to inspect active skirmishes.</p>
+        <button class="pill-btn" onclick="switchTab('HAZARDS')" style="padding:6px 14px; font-size:0.8rem; border-color:rgba(249,115,22,0.5); color:#fb923c; background:rgba(249,115,22,0.1); cursor:pointer;">💀 Inspect PvE &amp; Environmental Casualties</button>
       </div>
     </div>`;
     container.innerHTML = html;
@@ -3141,6 +3143,28 @@ function buildCharacterDossierHtml(data) {
     `;
   }
 
+  let pveDeathsHtml = "";
+  if (data.recentPveDeaths && data.recentPveDeaths.length > 0) {
+    pveDeathsHtml = `
+      <div style="margin-top:12px;">
+        <h4 style="color:#fb923c; font-size:0.9rem; margin-bottom:8px;">Recent PvE &amp; Environmental Casualties (${data.recentPveDeaths.length})</h4>
+        <div style="display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto;">
+          ${data.recentPveDeaths.map(pd => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#07090e; padding:6px 10px; border-radius:4px; font-size:0.75rem; border:1px solid rgba(249,115,22,0.28);">
+              <div>
+                Slain by: <strong style="color:#fb923c;">${escapeHtml(pd.npc_name || 'Environmental Hazard')}</strong>
+                <small style="color:#94a3b8;">(${escapeHtml(pd.npc_spell || 'Fatal Impact')})</small>
+              </div>
+              <div style="text-align:right; color:#94a3b8;">
+                <span>${escapeHtml(pd.zone || 'Azeroth')}${pd.subzone && pd.subzone !== pd.zone ? ` &bull; ${escapeHtml(pd.subzone)}` : ''}</span> &bull; <span>${timeAgo(pd.timestamp)}</span>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
   const dossierHeroClass = data.faction === 'Alliance' ? 'dossier-hero-alliance' : (data.faction === 'Horde' ? 'dossier-hero-horde' : '');
 
   return `
@@ -3206,6 +3230,7 @@ function buildCharacterDossierHtml(data) {
     ${historyHtml}
     ${killsHtml}
     ${deathsHtml}
+    ${pveDeathsHtml}
   `;
 }
 
@@ -3357,8 +3382,8 @@ function buildDossierGridTiles(data, mode) {
         <div style="font-size:1.2rem; font-weight:800; color:#00e5ff;">${solo}</div>
       </div>
       <div class="dossier-stat">
-        <div style="font-size:0.7rem; color:#94a3b8;">WORLD DEATHS</div>
-        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${deaths}</div>
+        <div style="font-size:0.7rem; color:#94a3b8;">WORLD DEATHS${stats.pveDeaths > 0 ? ' (PVP / PVE)' : ''}</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${deaths}${stats.pveDeaths > 0 ? ` <span style="font-size:0.85rem; color:#fb923c;">/ ${stats.pveDeaths}</span>` : ''}</div>
       </div>
       <div class="dossier-stat">
         <div style="font-size:0.7rem; color:#94a3b8;">K/D RATIO</div>
@@ -3390,8 +3415,8 @@ function buildDossierGridTiles(data, mode) {
       <div style="font-size:1.2rem; font-weight:800; color:#10b981;">${stats.kills || 0}</div>
     </div>
     <div class="dossier-stat">
-      <div style="font-size:0.7rem; color:#94a3b8;">DEATHS</div>
-      <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${stats.deaths || 0}</div>
+      <div style="font-size:0.7rem; color:#94a3b8;">DEATHS${stats.pveDeaths > 0 ? ' (PVP / PVE)' : ''}</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">${stats.deaths || 0}${stats.pveDeaths > 0 ? ` <span style="font-size:0.85rem; color:#fb923c;">/ ${stats.pveDeaths}</span>` : ''}</div>
     </div>
     <div class="dossier-stat">
       <div style="font-size:0.7rem; color:#94a3b8;">K/D RATIO</div>
@@ -5467,7 +5492,7 @@ function loadDownloadView() {
       <!-- Hero Masthead -->
       <div class="download-hero-card" style="background: radial-gradient(circle at 50% 15%, rgba(212, 163, 41, 0.14) 0%, rgba(10, 13, 20, 0.96) 80%); border: 1px solid var(--wow-brass-border, #4a3b27); border-radius: 8px; padding: 32px 24px; text-align: center; box-shadow: 0 4px 28px rgba(0,0,0,0.75);">
         <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(212,163,41,0.15); border:1px solid var(--wow-gold); padding:4px 12px; border-radius:12px; margin-bottom:12px;">
-          <span style="font-size:0.75rem; font-weight:800; color:var(--wow-gold); text-transform:uppercase; letter-spacing:0.8px;">OFFICIAL FIELD KIT &bull; v1.0.9 RELEASE</span>
+          <span style="font-size:0.75rem; font-weight:800; color:var(--wow-gold); text-transform:uppercase; letter-spacing:0.8px;">OFFICIAL FIELD KIT &bull; v1.1.0 RELEASE</span>
         </div>
         <h2 style="font-family: var(--font-tactical); font-size: 1.8rem; color: #fff; margin: 0 0 8px 0; letter-spacing: 0.5px;">
           WoW Killboard Field Kit Distribution
@@ -5510,7 +5535,7 @@ function loadDownloadView() {
               <span style="font-size:0.68rem; font-weight:800; color:var(--wow-gold); background:rgba(212,163,41,0.15); border:1px solid var(--wow-gold); padding:2px 8px; border-radius:4px;">
                 DIRECT RELEASE ARCHIVE
               </span>
-              <span style="font-size:0.75rem; color:#94a3b8; font-weight:700;">v1.0.9</span>
+              <span style="font-size:0.75rem; color:#94a3b8; font-weight:700;">v1.1.0</span>
             </div>
             <h3 style="font-size:1.2rem; color:#fff; font-family:var(--font-tactical); margin:0 0 8px 0;">Manual Addon Package</h3>
             <p style="font-size:0.82rem; color:#94a3b8; line-height:1.45; margin:0 0 14px 0;">
@@ -5523,7 +5548,7 @@ function loadDownloadView() {
             </div>
           </div>
           <div style="display:flex; flex-direction:column; gap:8px;">
-            <a href="/WoWKillboard-v1.0.9.zip" download style="display:flex; align-items:center; justify-content:center; gap:8px; background:var(--wow-gold); color:#000; font-weight:800; font-size:0.85rem; padding:10px 16px; border-radius:4px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px;">
+            <a href="/WoWKillboard-v1.1.0.zip" download style="display:flex; align-items:center; justify-content:center; gap:8px; background:var(--wow-gold); color:#000; font-weight:800; font-size:0.85rem; padding:10px 16px; border-radius:4px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px;">
               <span>Direct Download (.zip)</span>
             </a>
             <a href="https://github.com/dagariane-commits/WoW_Killboard/releases/latest" target="_blank" rel="noopener" style="text-align:center; font-size:0.75rem; color:#94a3b8; text-decoration:none;">
@@ -6040,11 +6065,11 @@ function loadUploadView() {
             <span>Need the WoW Killboard Addon?</span>
           </div>
           <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 3px;">
-            Download the lightweight, zero-taint addon package (v1.0.9) for World PvP &amp; Battlegrounds.
+            Download the lightweight, zero-taint addon package (v1.1.0) for World PvP &amp; Battlegrounds.
           </div>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <a href="/WoWKillboard-v1.0.9.zip" download style="display: inline-flex; align-items: center; gap: 6px; background: var(--wow-gold); color: #000; font-weight: 800; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none; text-transform: uppercase;">
+          <a href="/WoWKillboard-v1.1.0.zip" download style="display: inline-flex; align-items: center; gap: 6px; background: var(--wow-gold); color: #000; font-weight: 800; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none; text-transform: uppercase;">
             <span>Direct Download (.zip)</span>
           </a>
           <a href="https://www.curseforge.com/wow/addons/wkb" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(241, 100, 54, 0.2); border: 1px solid #f16436; color: #fb923c; font-weight: 700; font-size: 0.8rem; padding: 8px 16px; border-radius: 4px; text-decoration: none;">

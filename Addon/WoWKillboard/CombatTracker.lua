@@ -2470,7 +2470,69 @@ frame:SetScript("OnEvent", function(self, event, ...)
             end
         end
 
+    elseif event == "MIRROR_TIMER_START" then
+        local timer, value, maxvalue, scale, paused, label = ...
+        if timer and CanAccess(timer) then
+            local tUpper = tostring(timer):upper()
+            if tUpper == "BREATH" then
+                CT.ActiveMirrorHazard = {
+                    timer = "BREATH",
+                    name = "Deep Water Hazard",
+                    spell = "Asphyxiation / Drowning",
+                    damage = 0,
+                    lastSeen = time(),
+                }
+                CT.LastEnvironmentalHazard = CT.ActiveMirrorHazard
+            elseif tUpper == "EXHAUSTION" then
+                CT.ActiveMirrorHazard = {
+                    timer = "EXHAUSTION",
+                    name = "Exhausting Depths",
+                    spell = "Terminal Fatigue",
+                    damage = 0,
+                    lastSeen = time(),
+                }
+                CT.LastEnvironmentalHazard = CT.ActiveMirrorHazard
+            end
+        end
+
+    elseif event == "MIRROR_TIMER_STOP" then
+        local timer = ...
+        if timer and CanAccess(timer) and CT.ActiveMirrorHazard and CT.ActiveMirrorHazard.timer == tostring(timer):upper() then
+            -- Keep LastEnvironmentalHazard for a short grace window in case MIRROR_TIMER_STOP fires right on PLAYER_DEAD
+            CT.ActiveMirrorHazard.lastSeen = time()
+            CT.LastEnvironmentalHazard = CT.ActiveMirrorHazard
+            CT.ActiveMirrorHazard = nil
+        end
+
     elseif event == "PLAYER_DEAD" then
+        if CT.ActiveMirrorHazard then
+            CT.ActiveMirrorHazard.lastSeen = time()
+            CT.LastEnvironmentalHazard = CT.ActiveMirrorHazard
+        elseif type(GetMirrorTimerInfo) == "function" then
+            for i = 1, 3 do
+                local timer, value = GetMirrorTimerInfo(i)
+                if timer and CanAccess(timer) and timer ~= "UNKNOWN" then
+                    local tUpper = tostring(timer):upper()
+                    if tUpper == "BREATH" then
+                        CT.LastEnvironmentalHazard = {
+                            name = "Deep Water Hazard",
+                            spell = "Asphyxiation / Drowning",
+                            damage = 0,
+                            lastSeen = time(),
+                        }
+                        break
+                    elseif tUpper == "EXHAUSTION" then
+                        CT.LastEnvironmentalHazard = {
+                            name = "Exhausting Depths",
+                            spell = "Terminal Fatigue",
+                            damage = 0,
+                            lastSeen = time(),
+                        }
+                        break
+                    end
+                end
+            end
+        end
         local playerGUID = UnitGUID("player")
         if playerGUID then
             CT:ProcessDeath(playerGUID, UnitName("player"), COMBATLOG_OBJECT_TYPE_PLAYER, nil, nil)
@@ -2672,6 +2734,8 @@ end
 
 frame:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
 frame:RegisterEvent("CHAT_MSG_SYSTEM")
+frame:RegisterEvent("MIRROR_TIMER_START")
+frame:RegisterEvent("MIRROR_TIMER_STOP")
 frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("PLAYER_ALIVE")
 frame:RegisterEvent("PLAYER_UNGHOST")

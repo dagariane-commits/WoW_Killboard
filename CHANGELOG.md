@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-19 (Unified Multi-User Cross-Machine Sync & PvE/Environmental Mortality Parity)
+
+### Added
+- **Mirror Timer Environmental Hazard Attribution (`Addon/WoWKillboard/CombatTracker.lua`)**:
+  - Registered `MIRROR_TIMER_START` and `MIRROR_TIMER_STOP` alongside `GetMirrorTimerInfo` inspection on `PLAYER_DEAD` so drowning (`BREATH` -> `"Deep Water Hazard"` / `"Asphyxiation / Drowning"`) and fatigue (`EXHAUSTION` -> `"Exhausting Depths"` / `"Terminal Fatigue"`) deaths are accurately attributed on clients where `COMBAT_LOG_EVENT_UNFILTERED` is restricted (WoW Forever Beta 16000+ and Modern Retail 12.0+).
+- **Character Profile PvE & Environmental Mortality Ledger (`web/server.py`, `web/static/app.js`)**:
+  - Extended `/api/character/<name>` and `/api/armory` to index characters from `pve_deaths` and `characters`, returning `stats.pveDeaths` and `recentPveDeaths`.
+  - Updated `buildCharacterDossierHtml` and `buildDossierGridTiles` to display `DEATHS (PVP / PVE)` and a `Recent PvE & Environmental Casualties` feed directly inside every player's Champion Profile modal.
+- **One-Click PvE Hazards Discovery Across Web & In-Game Feeds (`web/static/app.js`, `Addon/WoWKillboard/UI.lua`)**:
+  - Added a `💀 PvE Hazards` filter button directly in the main `Intel` combat feed header (`#feed-mode-pills`) on `wowkillboard.com` and in the empty-feed state.
+  - Added an interactive in-game jump banner (`[X PvE / Environmental Casualties Recorded] — Click to inspect PvE Hazards Feed`) in `UI:RenderLiveFeed()` and updated the `Total Kills` KPI sublabel to display `(+X PvE)` when a player on a PvP realm has recorded PvE/environmental deaths.
+
+### Fixed
+- **Cross-Machine Personal PvE Death Import & Schema Normalization (`Addon/WoWKillboard/Core.lua`, `Addon/WoWKillboard/Leaderboard.lua`, `Addon/WoWKillboard/UI.lua`, `sync/watcher.py`)**:
+  - Fixed `KB:SyncRealmData()` and `sync_realm_data_to_client()` so flat SQLite `RecentPveDeaths` records (`death_id`, `victim_name`, `npc_name`, `zone`, etc.) are automatically normalized into nested `pveRecord` structures (`deathId`, `victim`, `npc`, `location`) and imported into `WoWKillboardDB.pveDeaths` for the active player across machines.
+  - Updated `UI:UpdateSidebar()` and `UI:Refresh()` to deduplicate and count both `WoWKillboardDB.pveDeaths` and `WoWKillboard_RealmData.RecentPveDeaths` so sidebar and top-ribbon `PvE Casualties` counters match across all computers.
+  - Updated `KM:RecordPveDeath()` in `Addon/WoWKillboard/Killmail.lua` to immediately rebuild leaderboard aggregates, append to the Combat Wire, and refresh the UI if visible.
+  - Unified `"Classic Beta PvP"` and `"Classic Beta PvE"` realm filter matching for PvE mortality records in `web/server.py` (`/api/upload`, `/api/pve/deaths`, `/api/pve/leaderboard`) and `LB:MatchesRealm()` so manual SavedVariables uploads and desktop syncs never isolate PvE casualties from PvP realm players.
+
 ## [1.0.9] - 2026-10-19 (Security Re-pack)
 
 ### Security

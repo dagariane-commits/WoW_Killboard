@@ -808,9 +808,10 @@ GITHUB_RELEASE_SYNC_URL = os.environ.get(
 )
 GITHUB_RELEASE_ZIP_URL = os.environ.get(
     "GITHUB_RELEASE_ZIP_URL",
-    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.9.zip"
+    "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.1.0.zip"
 )
 
+@app.route("/WoWKillboard-v1.1.0.zip")
 @app.route("/WoWKillboard-v1.0.9.zip")
 @app.route("/WoWKillboard-v1.0.8.zip")
 @app.route("/WoWKillboard-v1.0.7.zip")
@@ -836,14 +837,14 @@ def download_addon():
     root_dir = os.path.dirname(APP_DIR)
     # Check for specific requested file if path has specific version
     req_file = os.path.basename(request.path)
-    if req_file in ("WoWKillboard-v1.0.9.zip", "WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    if req_file in ("WoWKillboard-v1.1.0.zip", "WoWKillboard-v1.0.9.zip", "WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, req_file)
             if os.path.exists(target):
                 return send_from_directory(d, req_file, as_attachment=True)
 
-    # General download (/download, /addon.zip): serve v1.0.9, fallback to older versions
-    for pkg in ("WoWKillboard-v1.0.9.zip", "WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
+    # General download (/download, /addon.zip): serve v1.1.0, fallback to older versions
+    for pkg in ("WoWKillboard-v1.1.0.zip", "WoWKillboard-v1.0.9.zip", "WoWKillboard-v1.0.8.zip", "WoWKillboard-v1.0.7.zip", "WoWKillboard-v1.0.6.zip", "WoWKillboard-v1.0.5.zip", "WoWKillboard-v1.0.4.zip", "WoWKillboard-v1.0.3.zip", "WoWKillboard-v1.0.2.zip", "WoWKillboard-v1.0.1.zip", "WoWKillboard-v1.0.0.zip"):
         for d in (STATIC_DIR, root_dir):
             target = os.path.join(d, pkg)
             if os.path.exists(target):
@@ -1723,6 +1724,24 @@ def upload_saved_variables():
         kills_to_ingest.extend(parsed)
 
     processed_count = 0
+    pve_processed = 0
+    discovered_realm = None
+    for k in kills_to_ingest:
+        if isinstance(k, dict):
+            kr = normalize_realm_filter(k.get("realm") or k.get("killer", {}).get("realm") or k.get("victim", {}).get("realm"))
+            if kr:
+                discovered_realm = kr
+                break
+    if not discovered_realm and isinstance(parsed, dict):
+        chars_scan = parsed.get("characters") or (parsed.get("WoWKillboardDB", {}) if isinstance(parsed.get("WoWKillboardDB"), dict) else {}).get("characters")
+        if isinstance(chars_scan, dict):
+            for c_val in chars_scan.values():
+                if isinstance(c_val, dict):
+                    cr = normalize_realm_filter(c_val.get("realm"))
+                    if cr:
+                        discovered_realm = cr
+                        break
+
     with get_db() as conn:
         for k in kills_to_ingest:
             if isinstance(k, dict) and "killId" in k:
@@ -1750,8 +1769,13 @@ def upload_saved_variables():
                         if past_char and past_char["class"] and past_char["class"] != "UNKNOWN":
                             v_class = past_char["class"]
 
-                    pd_realm = normalize_realm_filter(pd.get("realm") or pd.get("victim", {}).get("realm")) or "Classic Beta PvE"
+                    pd_realm = normalize_realm_filter(pd.get("realm") or pd.get("victim", {}).get("realm")) or discovered_realm or "Classic Beta PvP"
                     pd_ruleset = pd.get("ruleset") or "PVE"
+                    v_guid = pd.get("player", {}).get("guid") or pd.get("victim", {}).get("guid", "Player-0")
+                    v_level = int(pd.get("player", {}).get("level") or pd.get("victim", {}).get("level") or 0)
+                    v_guild = pd.get("player", {}).get("guild") or pd.get("victim", {}).get("guild", "None")
+                    v_faction = pd.get("player", {}).get("faction") or pd.get("victim", {}).get("faction", "Alliance")
+                    pd_ts = int(pd.get("timestamp") or time.time())
 
                     conn.execute("""
                         INSERT OR REPLACE INTO pve_deaths (
@@ -1760,22 +1784,36 @@ def upload_saved_variables():
                             map_id, zone, subzone, coord_x, coord_y, realm, ruleset, raw_json
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
-                        pd["deathId"], pd.get("timestamp", int(time.time())),
+                        pd["deathId"], pd_ts,
                         pd.get("npc", {}).get("name") or pd.get("creature", {}).get("name", "Unknown"),
                         pd.get("npc", {}).get("id") or pd.get("creature", {}).get("id", 0),
                         pd.get("npc", {}).get("guid") or pd.get("creature", {}).get("guid", "Creature-0"),
                         pd.get("npc", {}).get("spell", "Physical Strike"),
                         pd.get("npc", {}).get("damage", 0),
                         v_name,
-                        pd.get("player", {}).get("guid") or pd.get("victim", {}).get("guid", "Player-0"),
-                        int(pd.get("player", {}).get("level") or pd.get("victim", {}).get("level") or 0),
+                        v_guid,
+                        v_level,
                         v_class,
-                        pd.get("player", {}).get("guild") or pd.get("victim", {}).get("guild", "None"),
-                        pd.get("player", {}).get("faction") or pd.get("victim", {}).get("faction", "Alliance"),
+                        v_guild,
+                        v_faction,
                         pd.get("location", {}).get("mapId", 0), pd.get("location", {}).get("zone", "Unknown"),
                         pd.get("location", {}).get("subZone", ""), pd.get("location", {}).get("x", 0.0),
                         pd.get("location", {}).get("y", 0.0), pd_realm, pd_ruleset, json.dumps(pd)
                     ))
+                    if v_name and v_name != "Unknown":
+                        conn.execute("""
+                            INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+                            VALUES (?, ?, ?, ?, 'Unknown', ?, ?, ?, ?)
+                            ON CONFLICT(name) DO UPDATE SET
+                                realm = COALESCE(excluded.realm, characters.realm),
+                                class = CASE WHEN excluded.class != 'UNKNOWN' THEN excluded.class ELSE characters.class END,
+                                level = CASE WHEN excluded.level > 0 AND excluded.level <= 85 THEN excluded.level ELSE characters.level END,
+                                faction = CASE WHEN excluded.faction != 'Unknown' THEN excluded.faction ELSE characters.faction END,
+                                guild = CASE WHEN excluded.guild != 'None' THEN excluded.guild ELSE characters.guild END,
+                                last_seen = MAX(characters.last_seen, excluded.last_seen)
+                        """, (v_name, pd_realm, v_guid, v_class, v_level, v_faction, v_guild, pd_ts))
+                    processed_count += 1
+                    pve_processed += 1
                 except Exception:
                     pass
 
@@ -2311,7 +2349,7 @@ def pve_deaths_endpoint():
         coord_x = float(loc.get("x") or 0.0)
         coord_y = float(loc.get("y") or 0.0)
         ts = int(data.get("timestamp") or time.time())
-        p_realm = normalize_realm_filter(data.get("realm") or victim.get("realm")) or "Classic Beta PvE"
+        p_realm = normalize_realm_filter(data.get("realm") or victim.get("realm")) or "Classic Beta PvP"
         p_ruleset = str(data.get("ruleset") or "PVE").strip()[:32]
 
         with get_db() as conn:
@@ -2334,6 +2372,18 @@ def pve_deaths_endpoint():
                 victim_name, victim_guid, victim_level, victim_class, victim_guild, victim_faction,
                 map_id, zone, subzone, coord_x, coord_y, p_realm, p_ruleset, json.dumps(data)
             ))
+            if victim_name and victim_name != "Unknown":
+                conn.execute("""
+                    INSERT INTO characters (name, realm, guid, class, race, level, faction, guild, last_seen)
+                    VALUES (?, ?, ?, ?, 'Unknown', ?, ?, ?, ?)
+                    ON CONFLICT(name) DO UPDATE SET
+                        realm = COALESCE(excluded.realm, characters.realm),
+                        class = CASE WHEN excluded.class != 'UNKNOWN' THEN excluded.class ELSE characters.class END,
+                        level = CASE WHEN excluded.level > 0 AND excluded.level <= 85 THEN excluded.level ELSE characters.level END,
+                        faction = CASE WHEN excluded.faction != 'Unknown' THEN excluded.faction ELSE characters.faction END,
+                        guild = CASE WHEN excluded.guild != 'None' THEN excluded.guild ELSE characters.guild END,
+                        last_seen = MAX(characters.last_seen, excluded.last_seen)
+                """, (victim_name, p_realm, victim_guid, victim_class, victim_level, victim_faction, victim_guild, ts))
             conn.commit()
 
         return jsonify({"success": True, "deathId": death_id}), 201
@@ -2355,8 +2405,11 @@ def pve_deaths_endpoint():
                 conds.append("victim_name LIKE ?")
                 params.append(f"%{victim_name}%")
             if realm_filter:
-                conds.append("LOWER(realm) = LOWER(?)")
-                params.append(realm_filter)
+                if realm_filter.lower() in ("classic beta pvp", "classic beta pve"):
+                    conds.append("LOWER(realm) IN ('classic beta pvp', 'classic beta pve')")
+                else:
+                    conds.append("LOWER(realm) = LOWER(?)")
+                    params.append(realm_filter)
             if conds:
                 query += " WHERE " + " AND ".join(conds)
             query += " ORDER BY timestamp DESC LIMIT ?"
@@ -2375,8 +2428,11 @@ def get_pve_leaderboard():
         where = "WHERE 1=1"
         params = []
         if realm_filter:
-            where += " AND LOWER(realm) = LOWER(?)"
-            params.append(realm_filter)
+            if realm_filter.lower() in ("classic beta pvp", "classic beta pve"):
+                where += " AND LOWER(realm) IN ('classic beta pvp', 'classic beta pve')"
+            else:
+                where += " AND LOWER(realm) = LOWER(?)"
+                params.append(realm_filter)
 
         top_npcs_rows = conn.execute(f"""
             SELECT npc_name, npc_id, COUNT(*) AS kills,
@@ -2563,6 +2619,10 @@ def get_armory_directory():
             UNION
             SELECT DISTINCT victim_name AS name FROM kills WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''
             UNION
+            SELECT DISTINCT victim_name AS name FROM pve_deaths WHERE victim_name IS NOT NULL AND victim_name != 'Unknown' AND victim_name != ''
+            UNION
+            SELECT DISTINCT name FROM characters WHERE name IS NOT NULL AND name != 'Unknown' AND name != ''
+            UNION
             SELECT DISTINCT character_name AS name FROM character_guild_history WHERE character_name IS NOT NULL AND character_name != ''
         """
         all_names = [r[0] for r in conn.execute(names_query).fetchall()]
@@ -2594,8 +2654,14 @@ def get_armory_directory():
                 UNION
                 SELECT victim_name AS name, victim_class AS class, victim_level AS level, victim_guild AS guild, victim_faction AS faction
                 FROM kills WHERE victim_name = ?
+                UNION
+                SELECT victim_name AS name, victim_class AS class, victim_level AS level, victim_guild AS guild, victim_faction AS faction
+                FROM pve_deaths WHERE victim_name = ?
+                UNION
+                SELECT name, class, level, guild, faction
+                FROM characters WHERE name = ?
                 LIMIT 1
-            """, (name, name)).fetchone()
+            """, (name, name, name, name)).fetchone()
 
             if not char_row:
                 continue
@@ -3149,6 +3215,19 @@ def get_character_profile(name):
         """, (name,)).fetchall()
         recent_deaths = [dict(r) for r in recent_deaths_rows]
 
+        # PvE & Environmental Casualties for this character
+        pve_deaths_count = conn.execute("""
+            SELECT COUNT(*) FROM pve_deaths WHERE LOWER(victim_name) = LOWER(?)
+        """, (name,)).fetchone()[0] or 0
+
+        recent_pve_rows = conn.execute("""
+            SELECT death_id, timestamp, npc_name, npc_id, npc_spell, npc_damage, zone, subzone, coord_x, coord_y, realm
+            FROM pve_deaths WHERE LOWER(victim_name) = LOWER(?)
+            ORDER BY timestamp DESC
+            LIMIT 10
+        """, (name,)).fetchall()
+        recent_pve_deaths = [dict(r) for r in recent_pve_rows]
+
         current_guild = guild_history[0]["guild_name"] if guild_history else (char_data.get("guild") or "None")
         faction = char_data.get("faction", "Unknown")
 
@@ -3271,6 +3350,7 @@ def get_character_profile(name):
             "stats": {
                 "kills": total_kills,
                 "deaths": total_deaths,
+                "pveDeaths": pve_deaths_count,
                 "kd": kd,
                 "soloKills": kills_stat["solo_kills"] or 0,
                 "duelKills": kills_stat["duel_kills"] or 0,
@@ -3317,6 +3397,7 @@ def get_character_profile(name):
             "guildHistory": guild_history,
             "recentKills": recent_kills,
             "recentDeaths": recent_deaths,
+            "recentPveDeaths": recent_pve_deaths,
             "armoryUrls": armory_urls
         })
 
@@ -4070,8 +4151,8 @@ def get_realm_summary():
             },
             "DeadliestZones": deadliest_zones,
             "TopGankers24h": top_gankers,
-            "LatestVersion": "1.0.9",
-            "DownloadUrl": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.9.zip",
+            "LatestVersion": "1.1.0",
+            "DownloadUrl": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.1.0.zip",
             "CurseForgeUrl": "https://www.curseforge.com/wow/addons/wkb",
             "Changelog": [
                 "Security Re-pack: Shipped realm data template is now empty (no player names/GUIDs) and admin endpoints fail closed without a configured key",
@@ -4090,9 +4171,9 @@ def get_version_info():
     """Returns official current addon release version, download endpoints, and changelog summary."""
     return jsonify({
         "status": "ok",
-        "version": "1.0.9",
-        "release_tag": "v1.0.9",
-        "download_url": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.0.9.zip",
+        "version": "1.1.0",
+        "release_tag": "v1.1.0",
+        "download_url": "https://github.com/dagariane-commits/WoW_Killboard/releases/latest/download/WoWKillboard-v1.1.0.zip",
         "curseforge_url": "https://www.curseforge.com/wow/addons/wkb",
         "changelog": [
             "Security Re-pack: Shipped realm data template is now empty (no player names/GUIDs) and admin endpoints fail closed without a configured key",

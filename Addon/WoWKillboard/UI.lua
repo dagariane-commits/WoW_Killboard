@@ -2494,12 +2494,32 @@ function UI:CreateMainWindow()
         end
 
         local pveDeathsCount = 0
+        local seenPve = {}
         if WoWKillboardDB and WoWKillboardDB.pveDeaths then
-            for _, pd in pairs(WoWKillboardDB.pveDeaths) do
+            for dId, pd in pairs(WoWKillboardDB.pveDeaths) do
                 if not KB.Leaderboard or KB.Leaderboard:MatchesRealm(pd) then
-                    pveDeathsCount = pveDeathsCount + 1
+                    local key = pd.deathId or pd.death_id or dId
+                    if key and not seenPve[key] then
+                        seenPve[key] = true
+                        pveDeathsCount = pveDeathsCount + 1
+                    end
                 end
             end
+        end
+        local rDataPve = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+        if rDataPve and rDataPve.RecentPveDeaths then
+            for _, pd in ipairs(rDataPve.RecentPveDeaths) do
+                if pd and type(pd) == "table" and (not KB.Leaderboard or KB.Leaderboard:MatchesRealm(pd)) then
+                    local key = pd.deathId or pd.death_id or ((pd.victim_name or (pd.victim and pd.victim.name) or "") .. tostring(pd.timestamp or 0))
+                    if key and not seenPve[key] then
+                        seenPve[key] = true
+                        pveDeathsCount = pveDeathsCount + 1
+                    end
+                end
+            end
+        end
+        if KB.Leaderboard and KB.Leaderboard.PveAggregates and KB.Leaderboard.PveAggregates.totalDeaths then
+            pveDeathsCount = math.max(pveDeathsCount, KB.Leaderboard.PveAggregates.totalDeaths)
         end
 
         local totFaction = aKills + hKills
@@ -2798,28 +2818,42 @@ function UI:Refresh()
         end
     end
 
-    local pveSummary = nil
-    local myPveDeaths = 0
-    if isPveMode then
-        pveSummary = KB.Leaderboard and KB.Leaderboard.GetPveSummary and KB.Leaderboard:GetPveSummary() or {
-            totalDeaths = 0,
-            uniqueMonsters = 0,
-            topMonster = "None Encountered",
-            topMonsterKills = 0,
-            deadliestZone = "Unknown",
-            deadliestZoneDeaths = 0,
-        }
-        myPveDeaths = s.pveDeaths or 0
-        if WoWKillboardDB and WoWKillboardDB.pveDeaths then
-            local pName = UnitName("player")
-            local localMyD = 0
-            for _, pd in pairs(WoWKillboardDB.pveDeaths) do
-                if pd.victim and pd.victim.name and pName and (pd.victim.name:lower() == pName:lower()) then
+    local pveSummary = KB.Leaderboard and KB.Leaderboard.GetPveSummary and KB.Leaderboard:GetPveSummary() or {
+        totalDeaths = 0,
+        uniqueMonsters = 0,
+        topMonster = "None Encountered",
+        topMonsterKills = 0,
+        deadliestZone = "Unknown",
+        deadliestZoneDeaths = 0,
+    }
+    local myPveDeaths = s.pveDeaths or 0
+    do
+        local pName = UnitName("player")
+        local seenMyPve = {}
+        local localMyD = 0
+        local function CheckMyPve(pd, fallbackKey)
+            if not pd or type(pd) ~= "table" or not pName or pName == "" then return end
+            local vName = (pd.victim and pd.victim.name) or pd.victim_name
+            if vName and (vName:lower() == pName:lower() or vName:lower():match("^" .. pName:lower() .. "%-")) then
+                local key = pd.deathId or pd.death_id or fallbackKey or (vName .. tostring(pd.timestamp or 0))
+                if key and not seenMyPve[key] then
+                    seenMyPve[key] = true
                     localMyD = localMyD + 1
                 end
             end
-            myPveDeaths = math.max(myPveDeaths, localMyD)
         end
+        if WoWKillboardDB and WoWKillboardDB.pveDeaths then
+            for k, pd in pairs(WoWKillboardDB.pveDeaths) do
+                CheckMyPve(pd, k)
+            end
+        end
+        local rDataPve = WoWKillboard_RealmData or (WoWKillboardDB and WoWKillboardDB.RealmData)
+        if rDataPve and rDataPve.RecentPveDeaths then
+            for idx, pd in ipairs(rDataPve.RecentPveDeaths) do
+                CheckMyPve(pd, "r_" .. tostring(idx))
+            end
+        end
+        myPveDeaths = math.max(myPveDeaths, localMyD)
     end
 
     local aR, aG, aB, aHex = WoWKB.AccentColor()
@@ -2849,6 +2883,8 @@ function UI:Refresh()
                 UI.StatCards.KD.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
                 if isPveMode then
                     UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d", myPveDeaths or 0))
+                elseif (myPveDeaths or 0) > 0 then
+                    UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d K / %d D (+%d PvE)", myKills or 0, myDeaths or 0, myPveDeaths))
                 else
                     UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d Kills / %d Deaths", myKills or 0, myDeaths or 0))
                 end
@@ -3187,6 +3223,31 @@ function UI:RenderLiveFeed()
         emptyText:SetShadowOffset(0, 0)
 
         yOffset = yOffset - 58
+        local recentPve = (KB.Leaderboard and KB.Leaderboard.GetRecentPveDeaths) and KB.Leaderboard:GetRecentPveDeaths(10) or {}
+        if #recentPve > 0 then
+            local pveJumpBtn = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
+            pveJumpBtn:SetSize(cWidth, 28)
+            pveJumpBtn:SetPoint("TOPLEFT", 0, yOffset)
+            pveJumpBtn:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+                insets = { left = 0, right = 0, top = 0, bottom = 0 }
+            })
+            pveJumpBtn:SetBackdropColor(0.18, 0.08, 0.04, 0.9)
+            pveJumpBtn:SetBackdropBorderColor(1.0, 0.5, 0.0, 0.8)
+            local pveJumpLbl = pveJumpBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            pveJumpLbl:SetPoint("CENTER", 0, 0)
+            pveJumpLbl:SetText(string.format("|cffff8000[%d PvE / Environmental Casualties Recorded]|r — Click to inspect PvE Hazards Feed", #recentPve))
+            if pveJumpLbl.SetFont then local f, s = pveJumpLbl:GetFont(); pveJumpLbl:SetFont(f, s or 10, "OUTLINE") end
+            pveJumpBtn:SetScript("OnClick", function()
+                if InCombatLockdown and InCombatLockdown() then return end
+                WoWKillboardDB = WoWKillboardDB or {}
+                WoWKillboardDB.activeRuleset = "PVE"
+                UI:SelectTab(1)
+            end)
+            yOffset = yOffset - 32
+        end
         UI.ContentFrame:SetHeight(math.abs(yOffset) + 16)
         return
     end
@@ -3402,6 +3463,33 @@ function UI:RenderLiveFeed()
 
             yOffset = yOffset - 24
         end
+    end
+
+    local recentPve = (KB.Leaderboard and KB.Leaderboard.GetRecentPveDeaths) and KB.Leaderboard:GetRecentPveDeaths(10) or {}
+    if #recentPve > 0 then
+        yOffset = yOffset - 4
+        local pveJumpBtn = CreateFrame("Button", nil, UI.ContentFrame, "BackdropTemplate")
+        pveJumpBtn:SetSize(cWidth, 26)
+        pveJumpBtn:SetPoint("TOPLEFT", 0, yOffset)
+        pveJumpBtn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        pveJumpBtn:SetBackdropColor(0.18, 0.08, 0.04, 0.9)
+        pveJumpBtn:SetBackdropBorderColor(1.0, 0.5, 0.0, 0.8)
+        local pveJumpLbl = pveJumpBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        pveJumpLbl:SetPoint("CENTER", 0, 0)
+        pveJumpLbl:SetText(string.format("|cffff8000[%d PvE / Environmental Casualties Recorded]|r — Click to inspect PvE Hazards Feed", #recentPve))
+        if pveJumpLbl.SetFont then local f, s = pveJumpLbl:GetFont(); pveJumpLbl:SetFont(f, s or 10, "OUTLINE") end
+        pveJumpBtn:SetScript("OnClick", function()
+            if InCombatLockdown and InCombatLockdown() then return end
+            WoWKillboardDB = WoWKillboardDB or {}
+            WoWKillboardDB.activeRuleset = "PVE"
+            UI:SelectTab(1)
+        end)
+        yOffset = yOffset - 30
     end
 
     UI.ContentFrame:SetHeight(math.abs(yOffset) + 16)

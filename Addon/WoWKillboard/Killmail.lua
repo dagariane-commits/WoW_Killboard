@@ -334,5 +334,16 @@ function KM:RecordPveDeath(data)
         })
     end
 
+    -- Rebuild Leaderboard Aggregates & Refresh UI Immediately so PvE/Environmental deaths appear live
+    if KB.Leaderboard and KB.Leaderboard.Rebuild then
+        KB.Leaderboard:Rebuild()
+    end
+    if KB.UI and KB.UI.AddCombatWireEntry then
+        KB.UI:AddCombatWireEntry(string.format("%s slain by %s (%s) in %s", pveRecord.victim.name or "Unknown", pveRecord.npc.name or "Hazard", pveRecord.npc.spell or "Fatal Strike", pveRecord.location.zone or "Azeroth"), "PVE")
+    end
+    if KB.UI and KB.UI.RefreshIfVisible then
+        KB.UI:RefreshIfVisible()
+    end
+
     return pveRecord
 end

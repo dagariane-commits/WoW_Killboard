@@ -166,17 +166,64 @@ function KB:SyncRealmData()
         end
     end
 
-    if rData.RecentPveDeaths and myRealm ~= "" then
+    if rData.RecentPveDeaths then
+        WoWKillboardDB.pveDeaths = WoWKillboardDB.pveDeaths or {}
         for _, pd in ipairs(rData.RecentPveDeaths) do
             if pd and type(pd) == "table" then
-                if not pd.realm or pd.realm == "" or pd.realm == "Unknown" then
+                -- Normalize flat SQLite fields into nested pveRecord structure for full cross-machine parity
+                local dId = pd.deathId or pd.death_id
+                if not pd.deathId and dId then
+                    pd.deathId = dId
+                end
+                if not pd.victim and pd.victim_name then
+                    pd.victim = {
+                        name = pd.victim_name,
+                        guid = pd.victim_guid or "PLAYER",
+                        level = tonumber(pd.victim_level) or 0,
+                        class = pd.victim_class or "UNKNOWN",
+                        guild = pd.victim_guild or "None",
+                        faction = pd.victim_faction or "Unknown",
+                        realm = pd.realm or myRealm,
+                    }
+                end
+                if not pd.npc and pd.npc_name then
+                    pd.npc = {
+                        name = pd.npc_name,
+                        id = tonumber(pd.npc_id) or 0,
+                        guid = pd.npc_guid or "CREATURE",
+                        spell = pd.npc_spell or "Combat Strike",
+                        damage = tonumber(pd.npc_damage) or 0,
+                    }
+                end
+                if not pd.location and pd.zone then
+                    pd.location = {
+                        mapId = tonumber(pd.map_id) or 0,
+                        zone = pd.zone or "Unknown Zone",
+                        subZone = pd.subzone or "",
+                        x = tonumber(pd.coord_x) or 0,
+                        y = tonumber(pd.coord_y) or 0,
+                    }
+                end
+                if myRealm ~= "" and (not pd.realm or pd.realm == "" or pd.realm == "Unknown") then
                     pd.realm = myRealm
                 end
                 if not pd.ruleset or pd.ruleset == "" then
                     pd.ruleset = "PVE"
                 end
-                if pd.victim and (not pd.victim.realm or pd.victim.realm == "" or pd.victim.realm == "Unknown") then
+                if pd.victim and myRealm ~= "" and (not pd.victim.realm or pd.victim.realm == "" or pd.victim.realm == "Unknown") then
                     pd.victim.realm = myRealm
+                end
+
+                -- Import personal PvE/Environmental casualties from synced cloud data into local SavedVariables
+                local vName = (pd.victim and pd.victim.name) or pd.victim_name
+                local matchRealm = not KB.Leaderboard or KB.Leaderboard:MatchesRealm(pd)
+                if IsPlayerMatch(vName) and matchRealm and dId and not WoWKillboardDB.pveDeaths[dId] then
+                    if myRealm ~= "" then
+                        pd.realm = myRealm
+                        if pd.victim then pd.victim.realm = myRealm end
+                    end
+                    WoWKillboardDB.pveDeaths[dId] = pd
+                    imported = imported + 1
                 end
             end
         end

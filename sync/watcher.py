@@ -25,7 +25,7 @@ except ImportError:
     except ImportError:
         sync_gui = None
 
-SYNC_VERSION = "1.0.5"
+SYNC_VERSION = "1.1.0"
 
 def safe_urlopen(req, timeout=5):
     """Executes urllib.request.urlopen with User-Agent and verified TLS/SSL context."""
@@ -1049,13 +1049,44 @@ class KillboardWatcher:
             sanitized_recent_kills.append(rk)
         recent_kills = sanitized_recent_kills
 
-        # Stamp realm on PvE deaths
+        # Stamp realm and normalize schema on PvE deaths (both flat SQLite and nested Lua fields)
         for pd in recent_pve_deaths:
             if isinstance(pd, dict):
+                pd.pop("raw_json", None)
+                d_id = pd.get("deathId") or pd.get("death_id")
+                if d_id:
+                    pd["deathId"] = d_id
+                    pd["death_id"] = d_id
                 if not pd.get("realm") or pd.get("realm") in (None, "", "Unknown"):
                     pd["realm"] = discovered_realm
                 if not pd.get("ruleset") or pd.get("ruleset") in (None, "", "Unknown"):
                     pd["ruleset"] = "PVE"
+                if not isinstance(pd.get("victim"), dict) and pd.get("victim_name"):
+                    pd["victim"] = {
+                        "name": pd.get("victim_name", "Unknown"),
+                        "guid": pd.get("victim_guid", "Player-0"),
+                        "level": int(pd.get("victim_level") or 0),
+                        "class": pd.get("victim_class", "UNKNOWN"),
+                        "guild": pd.get("victim_guild", "None"),
+                        "faction": pd.get("victim_faction", "Alliance"),
+                        "realm": pd["realm"],
+                    }
+                if not isinstance(pd.get("npc"), dict) and pd.get("npc_name"):
+                    pd["npc"] = {
+                        "name": pd.get("npc_name", "Unknown"),
+                        "id": int(pd.get("npc_id") or 0),
+                        "guid": pd.get("npc_guid", "Creature-0"),
+                        "spell": pd.get("npc_spell", "Combat Strike"),
+                        "damage": int(pd.get("npc_damage") or 0),
+                    }
+                if not isinstance(pd.get("location"), dict) and pd.get("zone"):
+                    pd["location"] = {
+                        "mapId": int(pd.get("map_id") or 0),
+                        "zone": pd.get("zone", "Unknown Zone"),
+                        "subZone": pd.get("subzone", ""),
+                        "x": float(pd.get("coord_x") or 0.0),
+                        "y": float(pd.get("coord_y") or 0.0),
+                    }
                 if isinstance(pd.get("victim"), dict) and (not pd["victim"].get("realm") or pd["victim"].get("realm") in (None, "", "Unknown")):
                     pd["victim"]["realm"] = pd["realm"]
 

@@ -53,7 +53,26 @@ function LB:MatchesRealm(km)
     if kmRealm and kmRealm ~= "" and kmRealm ~= "Unknown" then
         local cleanKm = kmRealm:lower():gsub("%s+", "")
         local cleanMy = myRealm:lower():gsub("%s+", "")
-        return cleanKm == cleanMy
+        if cleanKm == cleanMy then
+            return true
+        end
+        -- Cross-machine / Forever Beta fallback: if a record involves the active local player or uses Forever Beta PvE/PvP default aliases on a Forever Beta realm, accept it
+        local myName = (UnitName and UnitName("player")) or ""
+        if myName ~= "" then
+            local myClean = myName:lower()
+            local kName = ((km.killer and km.killer.name) or km.killer_name or ""):match("^([^-]+)") or ""
+            local vName = ((km.victim and km.victim.name) or km.victim_name or ""):match("^([^-]+)") or ""
+            if kName:lower() == myClean or vName:lower() == myClean then
+                if cleanKm:find("classicbeta") or cleanKm:find("wowforever") or cleanMy:find("classicbeta") or cleanMy:find("wowforever") then
+                    return true
+                end
+            end
+        end
+        -- Also treat "Classic Beta PvE" and "Classic Beta PvP" as unified Forever Beta cluster for PvE death records
+        if (km.deathId or km.death_id or km.npc or km.npc_name) and (cleanKm == "classicbetapve" or cleanKm == "classicbetapvp") and (cleanMy == "classicbetapve" or cleanMy == "classicbetapvp") then
+            return true
+        end
+        return false
     end
 
     -- Bounty Support: If this is an active bounty declared by or targeting active player, or in local database

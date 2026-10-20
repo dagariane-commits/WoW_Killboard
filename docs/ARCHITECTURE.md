@@ -44,7 +44,7 @@ The in-game addon is a modular Lua package designed to run without third-party l
 | **`Config.lua`** | Addon defaults, faction color constants, sound alert IDs | N/A (Static Configuration Table) |
 | **`Utils.lua`** | FNV-1a hashing, number/gold formatters, GPS coordinate resolution | `C_Map.GetBestMapForUnit`, `C_Map.GetPlayerMapPosition` |
 | **`UnitScanner.lua`** | Proximity level, class, race, and guild cache | `UnitLevel`, `UnitClass`, `UnitRace`, `UnitFactionGroup`, `GetGuildInfo` |
-| **`CombatTracker.lua`**| Real-time combat logging, hostile gang clustering, meter aggregation | `COMBAT_LOG_EVENT_UNFILTERED`, `CHAT_MSG_SYSTEM`, `UPDATE_BATTLEFIELD_SCORE` |
+| **`CombatTracker.lua`**| Real-time combat logging, hostile gang clustering, meter aggregation, mirror-timer environmental hazard attribution (`MIRROR_TIMER_START` / `BREATH` / `EXHAUSTION`) | `COMBAT_LOG_EVENT_UNFILTERED`, `CHAT_MSG_SYSTEM`, `MIRROR_TIMER_START`, `UPDATE_BATTLEFIELD_SCORE` |
 | **`Killmail.lua`** | Standardized telemetry generation, chat broadcast, sound triggers | `PlaySound`, `SendChatMessage`, SavedVariables persistence |
 | **`BountyEngine.lua`** | Blood bounties, execution contracts, open-world gating (`IsInInstance()`), anti-win-trade, debtor sirens | `GetMoney`, `SendMail`, proximity nameplate hooks |
 | **`Leaderboard.lua`** | In-memory aggregation engine supporting `WORLD`, `BG`, `DUEL`, and `ARENA` indexed dynamically by `zone_type` and instance flags | Internal Aggregation Tables |

@@ -1654,7 +1654,9 @@ WoWKillboardDB = {
         self.assertEqual(res_health.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
         self.assertEqual(res_health.headers.get("Permissions-Policy"), "camera=(), microphone=(), geolocation=()")
 
-        # 2. Verify /WoWKillboard-v1.0.8.zip, /WoWKillboard-v1.0.7.zip, /WoWKillboard-v1.0.6.zip, /WoWKillboard-v1.0.5.zip, /WoWKillboard-v1.0.4.zip, /WoWKillboard-v1.0.3.zip, /WoWKillboard-v1.0.2.zip and /WoWKillboard-v1.0.1.zip download endpoints (local file serving under TESTING)
+        # 2. Verify /WoWKillboard-v1.1.0.zip through /WoWKillboard-v1.0.1.zip download endpoints (local file serving under TESTING)
+        res_pkg_v110 = self.client.get("/WoWKillboard-v1.1.0.zip")
+        self.assertEqual(res_pkg_v110.status_code, 200)
         res_pkg_v109 = self.client.get("/WoWKillboard-v1.0.9.zip")
         self.assertEqual(res_pkg_v109.status_code, 200)
         res_pkg_v108 = self.client.get("/WoWKillboard-v1.0.8.zip")
@@ -1674,12 +1676,12 @@ WoWKillboardDB = {
         res_pkg = self.client.get("/WoWKillboard-v1.0.1.zip")
         self.assertEqual(res_pkg.status_code, 200)
 
-        # 2b. Verify /api/version returns 1.0.9
+        # 2b. Verify /api/version returns 1.1.0
         res_ver = self.client.get("/api/version")
         self.assertEqual(res_ver.status_code, 200)
         ver_data = json.loads(res_ver.data.decode("utf-8"))
-        self.assertEqual(ver_data.get("version"), "1.0.9")
-        self.assertEqual(ver_data.get("release_tag"), "v1.0.9")
+        self.assertEqual(ver_data.get("version"), "1.1.0")
+        self.assertEqual(ver_data.get("release_tag"), "v1.1.0")
 
         # Verify CDN-first 302 redirects under production mode (TESTING=False)
         try:
