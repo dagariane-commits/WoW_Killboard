@@ -403,6 +403,13 @@ function UI:ApplyTheme()
             UI:ApplyButtonStyle(b, theme)
         end
     end
+    if UI.HeaderBar then
+        UI.HeaderBar:SetBackdropColor(unpack(theme.headerBarBg or theme.cardHeaderBg or {18/255, 22/255, 30/255, 1.0}))
+        UI.HeaderBar:SetBackdropBorderColor(unpack(theme.headerBarBorder or theme.cardBorder or {0, 0, 0, 1.0}))
+        if UI.HeaderBar.Divider then
+            UI.HeaderBar.Divider:SetColorTexture(unpack(theme.cardHeaderBorder or theme.dividerColor or {40/255, 50/255, 65/255, 0.8}))
+        end
+    end
     if UI.CloseButton then
         UI.CloseButton:SetSize(22, 22)
         UI.CloseButton:ClearAllPoints()
@@ -1559,7 +1566,8 @@ function UI:CreateMainWindow()
     mainFrame:SetBackdropBorderColor(unpack(initTheme.mainBorder or {1.0, 1.0, 1.0, 1.0}))
 
     -- 1. Integrated Character Portrait Medallion (Hangs off TOPLEFT (-8, 8) like standard Blizzard frames, Strata HIGH)
-    local portraitFrame = CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")
+    -- Reference: CreateFrame("Frame", "WoWKillboardPlayerPortrait", mainFrame, "BackdropTemplate")
+    local portraitFrame = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
     portraitFrame:SetSize(60, 60)
     portraitFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", -8, 8)
     portraitFrame:SetFrameStrata("HIGH")
@@ -1664,7 +1672,7 @@ function UI:CreateMainWindow()
         Frame = portraitFrame,
     }
 
-    -- 2. Header & Top Control Bar (Height 42px, Solid #1A1A1A, 1px solid black bottom divider)
+    -- 2. Header & Top Control Bar (Height 42px, Theme-driven backdrop & bottom divider)
     local headerBar = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
     headerBar:SetSize(960, 42)
     headerBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 0, 0)
@@ -1674,8 +1682,8 @@ function UI:CreateMainWindow()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    headerBar:SetBackdropColor(18/255, 22/255, 30/255, 1.0)
-    headerBar:SetBackdropBorderColor(0, 0, 0, 1.0)
+    headerBar:SetBackdropColor(unpack(initTheme.headerBarBg or initTheme.cardHeaderBg or {18/255, 22/255, 30/255, 1.0}))
+    headerBar:SetBackdropBorderColor(unpack(initTheme.headerBarBorder or initTheme.cardBorder or {0, 0, 0, 1.0}))
     UI.HeaderBar = headerBar
 
     -- Master Hamburger Navigation Button (Triggers Slide-Out Command Deck Drawer)
@@ -2068,7 +2076,7 @@ function UI:CreateMainWindow()
     splitText:SetText("50% A | 50% H")
     splitBar.Text = splitText
 
-    UI.TelemetryText = splitBarLabel
+    UI.TelemetryText = nil
     UI.TopMetricsBar = nil
 
     -- 4. Mode Filter Pills: [ World ] [ BGs ] [ Duels ] [ Arenas ]
@@ -2613,7 +2621,10 @@ function UI:CreateMainWindow()
             end
         end
 
-        -- Update Top Telemetry Ribbon
+        -- Update Top Telemetry Ribbon & Faction Split Label
+        if UI.FactionSplitLabel then
+            UI.FactionSplitLabel:SetText("|cff888888WAR SPLIT:|r")
+        end
         if UI.TelemetryText then
             local topZone = "Azeroth"
             if KB.Leaderboard and KB.Leaderboard.GetTopZones then
@@ -2632,7 +2643,7 @@ function UI:CreateMainWindow()
             local barInnerWidth = 138 -- 140 - 2px outer border
             local aWidth = math.max(1, math.min(barInnerWidth - 1, math.floor(barInnerWidth * (aPct / 100))))
             UI.FactionSplitBar.AllianceFill:SetWidth(aWidth)
-            UI.FactionSplitBar.Text:SetText(string.format("%d%% A | %d%% H", aPct, hPct))
+            UI.FactionSplitBar.Text:SetText(string.format("|cff0080ff%d%% A|r | |cffff2020%d%% H|r", aPct, hPct))
         end
     end
 
@@ -2867,85 +2878,6 @@ function UI:Refresh()
         hordePct = 50,
     }
 
-    if UI.StatCards then
-        -- Segment 1: Total Kills
-        if UI.StatCards.KD then
-            if UI.StatCards.KD.TitleLabel then
-                UI.StatCards.KD.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
-                UI.StatCards.KD.TitleLabel:SetText(isPveMode and "Total Deaths" or "Total Kills")
-            end
-            if UI.StatCards.KD.PrimaryLabel then
-                UI.StatCards.KD.PrimaryLabel:SetTextColor(1.0, 1.0, 1.0, 1.0)
-                local val = isPveMode and (pveSummary and pveSummary.totalDeaths or 0) or (modeSummary and modeSummary.totalKills or totalKillsCount or 0)
-                UI.StatCards.KD.PrimaryLabel:SetText(tostring(val))
-            end
-            if UI.StatCards.KD.SubLabel then
-                UI.StatCards.KD.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
-                if isPveMode then
-                    UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d", myPveDeaths or 0))
-                elseif (myPveDeaths or 0) > 0 then
-                    UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d K / %d D (+%d PvE)", myKills or 0, myDeaths or 0, myPveDeaths))
-                else
-                    UI.StatCards.KD.SubLabel:SetText(string.format("Personal: %d Kills / %d Deaths", myKills or 0, myDeaths or 0))
-                end
-            end
-        end
-
-        -- Segment 2: 1v1 Solo Ratio (or Top Threat in PvE)
-        if UI.StatCards.DUELS then
-            if UI.StatCards.DUELS.TitleLabel then
-                UI.StatCards.DUELS.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
-                UI.StatCards.DUELS.TitleLabel:SetText(isPveMode and "Top Threat" or "1v1 Solo Ratio")
-            end
-            if UI.StatCards.DUELS.PrimaryLabel then
-                if isPveMode then
-                    UI.StatCards.DUELS.PrimaryLabel:SetTextColor(1.0, 56/255, 56/255, 1.0) -- Hostile Red #FF3838
-                    UI.StatCards.DUELS.PrimaryLabel:SetText(pveSummary and pveSummary.topMonster or "None")
-                else
-                    UI.StatCards.DUELS.PrimaryLabel:SetTextColor(74/255, 222/255, 128/255, 1.0) -- Green #4ADE80
-                    local sPct = (modeSummary and modeSummary.soloPct) or ((totalKillsCount > 0 and soloKillsCount) and math.floor((soloKillsCount / totalKillsCount) * 100)) or 0
-                    UI.StatCards.DUELS.PrimaryLabel:SetText(string.format("%d%%", sPct))
-                end
-            end
-            if UI.StatCards.DUELS.SubLabel then
-                UI.StatCards.DUELS.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
-                if isPveMode then
-                    UI.StatCards.DUELS.SubLabel:SetTextColor(aR, aG, aB, 1.0)
-                    UI.StatCards.DUELS.SubLabel:SetText(string.format("%d Kills", pveSummary and pveSummary.topMonsterKills or 0))
-                else
-                    local sCount = (modeSummary and modeSummary.soloKills) or soloKillsCount or 0
-                    UI.StatCards.DUELS.SubLabel:SetText(string.format("%d Encounters", sCount))
-                end
-            end
-        end
-
-        -- Segment 3: Faction Balance (or Deadliest Zone in PvE)
-        if UI.StatCards.BGS then
-            if UI.StatCards.BGS.TitleLabel then
-                UI.StatCards.BGS.TitleLabel:SetTextColor(136/255, 136/255, 136/255, 1.0)
-                UI.StatCards.BGS.TitleLabel:SetText(isPveMode and "Deadliest Zone" or "Faction Balance")
-            end
-            if UI.StatCards.BGS.PrimaryLabel then
-                if isPveMode then
-                    UI.StatCards.BGS.PrimaryLabel:SetTextColor(aR, aG, aB, 1.0)
-                    UI.StatCards.BGS.PrimaryLabel:SetText(pveSummary and pveSummary.deadliestZone or "Azeroth")
-                else
-                    local aPct = (modeSummary and modeSummary.alliancePct) or 50
-                    local hPct = (modeSummary and modeSummary.hordePct) or 50
-                    UI.StatCards.BGS.PrimaryLabel:SetText(string.format("|cff0078ffA: %d%%|r  |cffff3838H: %d%%|r", aPct, hPct))
-                end
-            end
-            if UI.StatCards.BGS.SubLabel then
-                UI.StatCards.BGS.SubLabel:SetTextColor(102/255, 102/255, 102/255, 1.0)
-                if isPveMode then
-                    UI.StatCards.BGS.SubLabel:SetText(string.format("%d Casualties", pveSummary and pveSummary.deadliestZoneDeaths or 0))
-                else
-                    UI.StatCards.BGS.SubLabel:SetText("Realm Balance")
-                end
-            end
-        end
-    end
-
     local theme = UI:GetTheme()
 
     -- Update Sub-Bar Active View Badge
@@ -3150,8 +3082,8 @@ function UI:RenderLiveFeed()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    recentHeader:SetBackdropColor(24/255, 24/255, 24/255, 1.0)
-    recentHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
+    recentHeader:SetBackdropColor(unpack(theme.cardHeaderBg or theme.headerBarBg or { 24/255, 24/255, 24/255, 1.0 }))
+    recentHeader:SetBackdropBorderColor(unpack(theme.cardHeaderBorder or theme.cardBorder or { 0, 0, 0, 1.0 }))
 
     local recentTitle = recentHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     recentTitle:SetPoint("LEFT", recentHeader, "LEFT", 8, 0)
@@ -3175,8 +3107,8 @@ function UI:RenderLiveFeed()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    colHeader:SetBackdropColor(22/255, 22/255, 22/255, 1.0)
-    colHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
+    colHeader:SetBackdropColor(unpack(theme.cardBg or { 22/255, 22/255, 22/255, 1.0 }))
+    colHeader:SetBackdropBorderColor(unpack(theme.rowBorder or { 0, 0, 0, 1.0 }))
 
     local function CreateColHeaderLabel(parent, x, w, text, rightAnchor, justify)
         local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -3212,8 +3144,8 @@ function UI:RenderLiveFeed()
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         })
-        emptyFrame:SetBackdropColor(20/255, 20/255, 20/255, 1.0)
-        emptyFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
+        emptyFrame:SetBackdropColor(unpack(theme.cardBg or { 20/255, 20/255, 20/255, 1.0 }))
+        emptyFrame:SetBackdropBorderColor(unpack(theme.cardBorder or { 0, 0, 0, 1.0 }))
 
         local emptyText = emptyFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         emptyText:SetPoint("CENTER", 0, 0)
@@ -3244,7 +3176,16 @@ function UI:RenderLiveFeed()
                 if InCombatLockdown and InCombatLockdown() then return end
                 WoWKillboardDB = WoWKillboardDB or {}
                 WoWKillboardDB.activeRuleset = "PVE"
-                UI:SelectTab(1)
+                WoWKillboardDB.campaignRuleset = "PVE"
+                if GetRealmName then
+                    local r = GetRealmName()
+                    if r and r ~= "" then
+                        WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
+                        WoWKillboardDB.realmRulesets[r] = "PVE"
+                    end
+                end
+                if UI.RefreshNavTabs then UI:RefreshNavTabs() end
+                UI:ShowTab("FEED")
             end)
             yOffset = yOffset - 32
         end
@@ -3366,12 +3307,8 @@ function UI:RenderLiveFeed()
             abilityFrame:SetScript("OnEnter", function(self)
                 self:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
                 row:SetBackdropColor(unpack(hoverBg))
-                if GameTooltip and GameTooltip.SetOwner then
-                    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                    GameTooltip:AddLine("Fatal Blow: " .. (actionText or "Combat Strike"), 1, 1, 1)
-                    GameTooltip:Show()
-                elseif UI.ShowPrivateTooltip then
-                    UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "Fatal Blow", actionText or "Combat Strike")
+                if UI.ShowPrivateTooltip then
+                    UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Fatal Blow|r", actionText or "Combat Strike")
                 end
             end)
             abilityFrame:SetScript("OnLeave", function(self)
@@ -3379,9 +3316,6 @@ function UI:RenderLiveFeed()
                 if not (MouseIsOver and MouseIsOver(row)) then
                     row:SetBackdropBorderColor(unpack(rowBorder))
                     row:SetBackdropColor(unpack(rowBg))
-                end
-                if GameTooltip and GameTooltip.Hide then
-                    GameTooltip:Hide()
                 end
                 if UI.HidePrivateTooltip then
                     UI:HidePrivateTooltip()
@@ -3487,7 +3421,16 @@ function UI:RenderLiveFeed()
             if InCombatLockdown and InCombatLockdown() then return end
             WoWKillboardDB = WoWKillboardDB or {}
             WoWKillboardDB.activeRuleset = "PVE"
-            UI:SelectTab(1)
+            WoWKillboardDB.campaignRuleset = "PVE"
+            if GetRealmName then
+                local r = GetRealmName()
+                if r and r ~= "" then
+                    WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
+                    WoWKillboardDB.realmRulesets[r] = "PVE"
+                end
+            end
+            if UI.RefreshNavTabs then UI:RefreshNavTabs() end
+            UI:ShowTab("FEED")
         end)
         yOffset = yOffset - 30
     end
@@ -3534,8 +3477,8 @@ function UI:RenderPveFeed()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    recentHeader:SetBackdropColor(24/255, 24/255, 24/255, 1.0)
-    recentHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
+    recentHeader:SetBackdropColor(unpack(theme.cardHeaderBg or theme.headerBarBg or { 24/255, 24/255, 24/255, 1.0 }))
+    recentHeader:SetBackdropBorderColor(unpack(theme.cardHeaderBorder or theme.cardBorder or { 0, 0, 0, 1.0 }))
 
     local recentTitle = recentHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     recentTitle:SetPoint("LEFT", recentHeader, "LEFT", 8, 0)
@@ -3554,8 +3497,8 @@ function UI:RenderPveFeed()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    colHeader:SetBackdropColor(22/255, 22/255, 22/255, 1.0)
-    colHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
+    colHeader:SetBackdropColor(unpack(theme.cardBg or { 22/255, 22/255, 22/255, 1.0 }))
+    colHeader:SetBackdropBorderColor(unpack(theme.rowBorder or { 0, 0, 0, 1.0 }))
 
     local function CreateColHeaderLabel(parent, x, w, text, rightAnchor, justify)
         local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -3591,8 +3534,8 @@ function UI:RenderPveFeed()
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         })
-        emptyFrame:SetBackdropColor(20/255, 20/255, 20/255, 1.0)
-        emptyFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
+        emptyFrame:SetBackdropColor(unpack(theme.cardBg or { 20/255, 20/255, 20/255, 1.0 }))
+        emptyFrame:SetBackdropBorderColor(unpack(theme.cardBorder or { 0, 0, 0, 1.0 }))
 
         local emptyText = emptyFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         emptyText:SetPoint("CENTER", 0, 0)
@@ -3704,12 +3647,8 @@ function UI:RenderPveFeed()
         abilityFrame:SetScript("OnEnter", function(self)
             self:SetBackdropBorderColor(1.0, 0.82, 0.0, 1.0)
             row:SetBackdropColor(unpack(hoverBg))
-            if GameTooltip and GameTooltip.SetOwner then
-                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                GameTooltip:AddLine("Fatal Blow: " .. actionText, 1, 1, 1)
-                GameTooltip:Show()
-            elseif UI.ShowPrivateTooltip then
-                UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "Fatal Blow", actionText)
+            if UI.ShowPrivateTooltip then
+                UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Fatal Blow|r", actionText)
             end
         end)
         abilityFrame:SetScript("OnLeave", function(self)
@@ -3717,9 +3656,6 @@ function UI:RenderPveFeed()
             if not (MouseIsOver and MouseIsOver(row)) then
                 row:SetBackdropBorderColor(unpack(rowBorder))
                 row:SetBackdropColor(unpack(rowBg))
-            end
-            if GameTooltip and GameTooltip.Hide then
-                GameTooltip:Hide()
             end
             if UI.HidePrivateTooltip then
                 UI:HidePrivateTooltip()
@@ -4000,6 +3936,7 @@ end
 -- 3B. Render PvE Bounties Tab (Notorious Elites & Apex Threats)
 function UI:RenderPveBounties()
     local theme = UI:GetTheme()
+    local cWidth = (UI.ContentFrame and UI.ContentFrame:GetWidth()) or 620
 
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, -8)
@@ -4015,14 +3952,17 @@ function UI:RenderPveBounties()
 
     -- Apex Intel Notice Banner
     local noticePlate = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-    noticePlate:SetSize(820, 32)
+    noticePlate:SetSize(cWidth, 32)
     noticePlate:SetPoint("TOPLEFT", 0, -42)
     noticePlate:SetBackdrop(theme.rowBackdrop)
     noticePlate:SetBackdropColor(0.04, 0.08, 0.05, 0.95)
     noticePlate:SetBackdropBorderColor(0.1, 0.65, 0.35, 0.85)
 
     local noticeText = noticePlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    noticeText:SetPoint("CENTER", 0, 0)
+    noticeText:SetPoint("LEFT", 10, 0)
+    noticeText:SetPoint("RIGHT", -10, 0)
+    noticeText:SetJustifyH("CENTER")
+    noticeText:SetWordWrap(true)
     noticeText:SetText("|cff38bdf8APEX INTEL:|r |cffffffffBeware roaming elites on major roads and borders. Casualty counts reflect confirmed player deaths recorded on this realm.|r")
     noticeText:SetShadowOffset(1, -1)
     noticeText:SetShadowColor(0, 0, 0, 1)
@@ -4055,11 +3995,11 @@ function UI:RenderPveBounties()
     local yOffset = -86
     for idx, wm in ipairs(notoriousElites) do
         local card = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-        card:SetSize(820, 68)
+        card:SetSize(cWidth, 68)
         card:SetPoint("TOPLEFT", 0, yOffset)
         card:SetBackdrop(theme.rowBackdrop)
-        card:SetBackdropColor(0.05, 0.05, 0.07, 0.95)
-        card:SetBackdropBorderColor(0.45, 0.35, 0.18, 0.85)
+        card:SetBackdropColor(unpack(theme.cardBg or { 0.05, 0.05, 0.07, 0.95 }))
+        card:SetBackdropBorderColor(unpack(theme.cardBorder or { 0.45, 0.35, 0.18, 0.85 }))
 
         local icon = card:CreateTexture(nil, "ARTWORK")
         icon:SetSize(42, 42)
@@ -4139,6 +4079,7 @@ end
 -- 4B. Render PvE Zones Tab (Zone Mortality & Danger Index)
 function UI:RenderPveZones()
     local theme = UI:GetTheme()
+    local cWidth = (UI.ContentFrame and UI.ContentFrame:GetWidth()) or 620
 
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, -8)
@@ -4191,13 +4132,13 @@ function UI:RenderPveZones()
     local yOffset = -52
     for idx, z in ipairs(displayZones) do
         local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-        row:SetSize(820, 36)
+        row:SetSize(cWidth, 36)
         row:SetPoint("TOPLEFT", 0, yOffset)
         local isEven = (idx % 2 == 0)
-        local baseBg = isEven and theme.rowBgAlt or theme.rowBg
+        local baseBg = isEven and (theme.rowBgAlt or { 0.043, 0.059, 0.090, 0.4 }) or (theme.rowBg or { 0.060, 0.080, 0.115, 0.6 })
         row:SetBackdrop(theme.rowBackdrop)
         row:SetBackdropColor(unpack(baseBg))
-        row:SetBackdropBorderColor(unpack(theme.rowBorder))
+        row:SetBackdropBorderColor(unpack(theme.rowBorder or { 0.12, 0.16, 0.23, 1.0 }))
 
         local rNum = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         rNum:SetPoint("LEFT", 12, 0)
@@ -4210,7 +4151,7 @@ function UI:RenderPveZones()
 
         local dangerStr = (idx <= 3) and "|cffff2222[EXTREME DANGER]|r" or ((idx <= 6) and "|cffff8800[HIGH DANGER]|r" or "|cff00e5ff[MODERATE]|r")
         local dLabel = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        dLabel:SetPoint("LEFT", 320, 0)
+        dLabel:SetPoint("LEFT", 260, 0)
         dLabel:SetText(dangerStr)
 
         local countStr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -4226,6 +4167,7 @@ end
 -- 5B. Render PvE Rallies Tab (Rescue Beacons & SOS)
 function UI:RenderPveRallies()
     local theme = UI:GetTheme()
+    local cWidth = (UI.ContentFrame and UI.ContentFrame:GetWidth()) or 620
 
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 10, -8)
@@ -4235,6 +4177,9 @@ function UI:RenderPveRallies()
 
     local sub = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+    sub:SetPoint("RIGHT", UI.ContentFrame, "RIGHT", -150, 0)
+    sub:SetJustifyH("LEFT")
+    sub:SetWordWrap(true)
     sub:SetText("|cffb8a080Emergency distress beacons from adventurers pinned down by elites or perilous hazards.|r")
     sub:SetShadowOffset(1, -1)
     sub:SetShadowColor(0, 0, 0, 1)
@@ -4251,7 +4196,7 @@ function UI:RenderPveRallies()
 
     -- Instructions Card
     local banner = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-    banner:SetSize(820, 64)
+    banner:SetSize(cWidth, 64)
     banner:SetPoint("TOPLEFT", 0, -42)
     banner:SetBackdrop(theme.rowBackdrop)
     banner:SetBackdropColor(0.08, 0.06, 0.02, 0.95)
@@ -4305,7 +4250,7 @@ function UI:RenderPveRallies()
 
     for idx, b in ipairs(beacons) do
         local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-        row:SetSize(820, 40)
+        row:SetSize(cWidth, 40)
         row:SetPoint("TOPLEFT", 0, yOffset)
         row:SetBackdrop(theme.rowBackdrop)
         row:SetBackdropColor(0.06, 0.05, 0.03, 0.95)
@@ -4321,9 +4266,10 @@ function UI:RenderPveRallies()
         bName:SetText(string.format("|cffffaa00%s|r |cffcbd5e1in %s|r", b.character_name or "Ally", b.zone or "Wilderness"))
 
         local bNote = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        bNote:SetPoint("LEFT", 300, 0)
-        bNote:SetPoint("RIGHT", -120, 0)
+        bNote:SetPoint("LEFT", 230, 0)
+        bNote:SetPoint("RIGHT", -90, 0)
         bNote:SetJustifyH("LEFT")
+        bNote:SetWordWrap(false)
         bNote:SetText(string.format("|cff94a3b8\"%s\"|r", b.message or "Requesting immediate backup!"))
 
         local bTime = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -4437,7 +4383,7 @@ function UI:RenderLeaderboard()
 
     local cWidth = (UI.ContentFrame and UI.ContentFrame:GetWidth()) or 620
 
-    -- Flat Section Header (18px height, #181818 background, 1px border)
+    -- Flat Section Header (18px height, theme-driven background, 1px border)
     local headerBar = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
     headerBar:SetSize(cWidth, 18)
     headerBar:SetPoint("TOPLEFT", 0, -4)
@@ -4447,8 +4393,8 @@ function UI:RenderLeaderboard()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    headerBar:SetBackdropColor(24/255, 24/255, 24/255, 1.0) -- #181818
-    headerBar:SetBackdropBorderColor(0, 0, 0, 1.0)
+    headerBar:SetBackdropColor(unpack(theme.cardHeaderBg or theme.headerBarBg or { 24/255, 24/255, 24/255, 1.0 }))
+    headerBar:SetBackdropBorderColor(unpack(theme.cardHeaderBorder or theme.cardBorder or { 0, 0, 0, 1.0 }))
 
     local headerTitle = headerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     headerTitle:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
@@ -4573,8 +4519,8 @@ function UI:RenderLeaderboard()
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         })
-        colHeader:SetBackdropColor(22/255, 22/255, 22/255, 1.0) -- #161616
-        colHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
+        colHeader:SetBackdropColor(unpack(theme.cardBg or { 22/255, 22/255, 22/255, 1.0 }))
+        colHeader:SetBackdropBorderColor(unpack(theme.rowBorder or { 0, 0, 0, 1.0 }))
 
         for _, col in ipairs(labels) do
             local lbl = colHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -4734,7 +4680,8 @@ function UI:RenderLeaderboard()
                 row:SetSize(cWidth, 24)
                 row:SetPoint("TOPLEFT", 0, yOffset)
                 local isEven = (idx % 2 == 0)
-                local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
+                local rowBg = isEven and (theme.rowBgAlt or { 22/255, 22/255, 22/255, 1.0 }) or (theme.rowBg or { 20/255, 20/255, 20/255, 1.0 })
+                local rowBorder = theme.rowBorder or { 0, 0, 0, 1.0 }
 
                 row:SetBackdrop({
                     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -4743,7 +4690,7 @@ function UI:RenderLeaderboard()
                     insets = { left = 0, right = 0, top = 0, bottom = 0 }
                 })
                 row:SetBackdropColor(unpack(rowBg))
-                row:SetBackdropBorderColor(0, 0, 0, 1.0)
+                row:SetBackdropBorderColor(unpack(rowBorder))
 
                 local div = row:CreateTexture(nil, "OVERLAY")
                 div:SetPoint("BOTTOMLEFT", 0, 0)
@@ -4847,11 +4794,12 @@ function UI:RenderLeaderboard()
                 pctFs:SetShadowOffset(0, 0)
 
                 row:EnableMouse(true)
+                local hoverBg = theme.rowHoverBg or { 36/255, 36/255, 36/255, 1.0 }
                 row:SetScript("OnEnter", function(self)
-                    self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
+                    self:SetBackdropColor(unpack(hoverBg))
                 end)
                 row:SetScript("OnLeave", function(self)
-                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                    self:SetBackdropBorderColor(unpack(rowBorder))
                     self:SetBackdropColor(unpack(rowBg))
                 end)
 
@@ -4944,7 +4892,8 @@ function UI:RenderLeaderboard()
                 row:SetSize(cWidth, 24)
                 row:SetPoint("TOPLEFT", 0, yOffset)
                 local isEven = (idx % 2 == 0)
-                local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
+                local rowBg = isEven and (theme.rowBgAlt or { 22/255, 22/255, 22/255, 1.0 }) or (theme.rowBg or { 20/255, 20/255, 20/255, 1.0 })
+                local rowBorder = theme.rowBorder or { 0, 0, 0, 1.0 }
 
                 row:SetBackdrop({
                     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -4953,7 +4902,7 @@ function UI:RenderLeaderboard()
                     insets = { left = 0, right = 0, top = 0, bottom = 0 }
                 })
                 row:SetBackdropColor(unpack(rowBg))
-                row:SetBackdropBorderColor(0, 0, 0, 1.0)
+                row:SetBackdropBorderColor(unpack(rowBorder))
 
                 local div = row:CreateTexture(nil, "OVERLAY")
                 div:SetPoint("BOTTOMLEFT", 0, 0)
@@ -5000,11 +4949,12 @@ function UI:RenderLeaderboard()
                 kFs:SetShadowOffset(0, 0)
 
                 row:EnableMouse(true)
+                local hoverBg = theme.rowHoverBg or { 36/255, 36/255, 36/255, 1.0 }
                 row:SetScript("OnEnter", function(self)
-                    self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
+                    self:SetBackdropColor(unpack(hoverBg))
                 end)
                 row:SetScript("OnLeave", function(self)
-                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                    self:SetBackdropBorderColor(unpack(rowBorder))
                     self:SetBackdropColor(unpack(rowBg))
                 end)
 
@@ -5051,7 +5001,8 @@ function UI:RenderLeaderboard()
                 row:SetSize(cWidth, 24)
                 row:SetPoint("TOPLEFT", 0, yOffset)
                 local isEven = (idx % 2 == 0)
-                local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
+                local rowBg = isEven and (theme.rowBgAlt or { 22/255, 22/255, 22/255, 1.0 }) or (theme.rowBg or { 20/255, 20/255, 20/255, 1.0 })
+                local rowBorder = theme.rowBorder or { 0, 0, 0, 1.0 }
 
                 row:SetBackdrop({
                     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -5060,7 +5011,7 @@ function UI:RenderLeaderboard()
                     insets = { left = 0, right = 0, top = 0, bottom = 0 }
                 })
                 row:SetBackdropColor(unpack(rowBg))
-                row:SetBackdropBorderColor(0, 0, 0, 1.0)
+                row:SetBackdropBorderColor(unpack(rowBorder))
 
                 local div = row:CreateTexture(nil, "OVERLAY")
                 div:SetPoint("BOTTOMLEFT", 0, 0)
@@ -5133,11 +5084,12 @@ function UI:RenderLeaderboard()
                 killsTxt:SetShadowOffset(0, 0)
 
                 row:EnableMouse(true)
+                local hoverBg = theme.rowHoverBg or { 36/255, 36/255, 36/255, 1.0 }
                 row:SetScript("OnEnter", function(self)
-                    self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
+                    self:SetBackdropColor(unpack(hoverBg))
                 end)
                 row:SetScript("OnLeave", function(self)
-                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                    self:SetBackdropBorderColor(unpack(rowBorder))
                     self:SetBackdropColor(unpack(rowBg))
                 end)
 
@@ -5156,7 +5108,7 @@ function UI:RenderBounties()
 
     local cWidth = (UI.ContentFrame and UI.ContentFrame:GetWidth()) or 620
 
-    -- Flat Section Header (18px height, #181818 background, 1px border)
+    -- Flat Section Header (18px height, theme-driven background, 1px border)
     local headerBar = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
     headerBar:SetSize(cWidth, 18)
     headerBar:SetPoint("TOPLEFT", 0, -4)
@@ -5166,8 +5118,8 @@ function UI:RenderBounties()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    headerBar:SetBackdropColor(24/255, 24/255, 24/255, 1.0) -- #181818
-    headerBar:SetBackdropBorderColor(0, 0, 0, 1.0)
+    headerBar:SetBackdropColor(unpack(theme.cardHeaderBg or theme.headerBarBg or { 24/255, 24/255, 24/255, 1.0 }))
+    headerBar:SetBackdropBorderColor(unpack(theme.cardHeaderBorder or theme.cardBorder or { 0, 0, 0, 1.0 }))
 
     local headerTitle = headerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     headerTitle:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
@@ -5280,8 +5232,8 @@ function UI:RenderBounties()
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         })
-        colHeader:SetBackdropColor(22/255, 22/255, 22/255, 1.0) -- #161616
-        colHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
+        colHeader:SetBackdropColor(unpack(theme.cardBg or { 22/255, 22/255, 22/255, 1.0 }))
+        colHeader:SetBackdropBorderColor(unpack(theme.rowBorder or { 0, 0, 0, 1.0 }))
 
         for _, col in ipairs(labels) do
             local lbl = colHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -5442,7 +5394,8 @@ function UI:RenderBounties()
                 row:SetSize(cWidth, 34)
                 row:SetPoint("TOPLEFT", 0, yOffset)
                 local isEven = (idx % 2 == 0)
-                local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
+                local rowBg = isEven and (theme.rowBgAlt or { 22/255, 22/255, 22/255, 1.0 }) or (theme.rowBg or { 20/255, 20/255, 20/255, 1.0 })
+                local rowBorder = theme.rowBorder or { 0, 0, 0, 1.0 }
 
                 row:SetBackdrop({
                     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -5451,7 +5404,7 @@ function UI:RenderBounties()
                     insets = { left = 0, right = 0, top = 0, bottom = 0 }
                 })
                 row:SetBackdropColor(unpack(rowBg))
-                row:SetBackdropBorderColor(0, 0, 0, 1.0)
+                row:SetBackdropBorderColor(unpack(rowBorder))
 
                 local div = row:CreateTexture(nil, "OVERLAY")
                 div:SetPoint("BOTTOMLEFT", 0, 0)
@@ -5629,8 +5582,9 @@ function UI:RenderBounties()
                 end)
 
                 row:EnableMouse(true)
+                local hoverBg = theme.rowHoverBg or { 36/255, 36/255, 36/255, 1.0 }
                 row:SetScript("OnEnter", function(self)
-                    self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
+                    self:SetBackdropColor(unpack(hoverBg))
                     if pCount > 1 then
                         local tipBody = "Declared Placers:\n"
                         for _, p in ipairs(b.placers or {}) do
@@ -5641,7 +5595,7 @@ function UI:RenderBounties()
                     end
                 end)
                 row:SetScript("OnLeave", function(self)
-                    self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                    self:SetBackdropBorderColor(unpack(rowBorder))
                     self:SetBackdropColor(unpack(rowBg))
                     if pCount > 1 then UI:HidePrivateTooltip() end
                 end)
@@ -5674,7 +5628,8 @@ function UI:RenderBounties()
                 row:SetSize(cWidth, 24)
                 row:SetPoint("TOPLEFT", 0, yOffset)
                 local isEven = (idx % 2 == 0)
-                local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
+                local rowBg = isEven and (theme.rowBgAlt or { 22/255, 22/255, 22/255, 1.0 }) or (theme.rowBg or { 20/255, 20/255, 20/255, 1.0 })
+                local rowBorder = theme.rowBorder or { 0, 0, 0, 1.0 }
 
                 row:SetBackdrop({
                     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -5683,7 +5638,7 @@ function UI:RenderBounties()
                     insets = { left = 0, right = 0, top = 0, bottom = 0 }
                 })
                 row:SetBackdropColor(unpack(rowBg))
-                row:SetBackdropBorderColor(0, 0, 0, 1.0)
+                row:SetBackdropBorderColor(unpack(rowBorder))
 
                 local div = row:CreateTexture(nil, "OVERLAY")
                 div:SetPoint("BOTTOMLEFT", 0, 0)
@@ -5751,7 +5706,8 @@ function UI:RenderBounties()
                 row:SetSize(cWidth, 24)
                 row:SetPoint("TOPLEFT", 0, yOffset)
                 local isEven = (idx % 2 == 0)
-                local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
+                local rowBg = isEven and (theme.rowBgAlt or { 22/255, 22/255, 22/255, 1.0 }) or (theme.rowBg or { 20/255, 20/255, 20/255, 1.0 })
+                local rowBorder = theme.rowBorder or { 0, 0, 0, 1.0 }
 
                 row:SetBackdrop({
                     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -5760,7 +5716,7 @@ function UI:RenderBounties()
                     insets = { left = 0, right = 0, top = 0, bottom = 0 }
                 })
                 row:SetBackdropColor(unpack(rowBg))
-                row:SetBackdropBorderColor(0, 0, 0, 1.0)
+                row:SetBackdropBorderColor(unpack(rowBorder))
 
                 local div = row:CreateTexture(nil, "OVERLAY")
                 div:SetPoint("BOTTOMLEFT", 0, 0)
@@ -5816,6 +5772,7 @@ end
 -- 4. Render Battleground Gladiator Telemetry
 function UI:RenderBGMetrics()
     local gladiators = KB.Leaderboard:GetBattlegroundGladiators(15)
+    local cWidth = (UI.ContentFrame and UI.ContentFrame:GetWidth()) or 620
     local yOffset = -10
 
     local title = UI.ContentFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -5825,7 +5782,7 @@ function UI:RenderBGMetrics()
     yOffset = yOffset - 40
     for rank, g in ipairs(gladiators) do
         local row = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
-        row:SetSize(820, 30)
+        row:SetSize(cWidth, 30)
         row:SetPoint("TOPLEFT", 0, yOffset)
         local theme = UI:GetTheme()
         local isEven = (rank % 2 == 0)
@@ -5865,7 +5822,7 @@ function UI:RenderZones()
 
     local cWidth = (UI.ContentFrame and UI.ContentFrame:GetWidth()) or 620
 
-    -- Flat Section Header (18px height, #181818 background, 1px border)
+    -- Flat Section Header (18px height, theme-driven background, 1px border)
     local headerBar = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
     headerBar:SetSize(cWidth, 18)
     headerBar:SetPoint("TOPLEFT", 0, -4)
@@ -5875,8 +5832,8 @@ function UI:RenderZones()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    headerBar:SetBackdropColor(24/255, 24/255, 24/255, 1.0) -- #181818
-    headerBar:SetBackdropBorderColor(0, 0, 0, 1.0)
+    headerBar:SetBackdropColor(unpack(theme.cardHeaderBg or theme.headerBarBg or { 24/255, 24/255, 24/255, 1.0 }))
+    headerBar:SetBackdropBorderColor(unpack(theme.cardHeaderBorder or theme.cardBorder or { 0, 0, 0, 1.0 }))
 
     local headerTitle = headerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     headerTitle:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
@@ -5897,8 +5854,8 @@ function UI:RenderZones()
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         })
-        secHeader:SetBackdropColor(24/255, 24/255, 24/255, 1.0)
-        secHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
+        secHeader:SetBackdropColor(unpack(theme.cardHeaderBg or theme.headerBarBg or { 24/255, 24/255, 24/255, 1.0 }))
+        secHeader:SetBackdropBorderColor(unpack(theme.cardHeaderBorder or theme.cardBorder or { 0, 0, 0, 1.0 }))
 
         local title = secHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         title:SetPoint("LEFT", secHeader, "LEFT", 8, 0)
@@ -5919,8 +5876,8 @@ function UI:RenderZones()
             edgeSize = 1,
             insets = { left = 0, right = 0, top = 0, bottom = 0 }
         })
-        colHeader:SetBackdropColor(22/255, 22/255, 22/255, 1.0)
-        colHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
+        colHeader:SetBackdropColor(unpack(theme.cardBg or { 22/255, 22/255, 22/255, 1.0 }))
+        colHeader:SetBackdropBorderColor(unpack(theme.rowBorder or { 0, 0, 0, 1.0 }))
 
         for _, col in ipairs(labels) do
             local lbl = colHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -5973,7 +5930,8 @@ function UI:RenderZones()
             row:SetSize(cWidth, 24)
             row:SetPoint("TOPLEFT", 0, yOffset)
             local isEven = (idx % 2 == 0)
-            local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
+            local rowBg = isEven and (theme.rowBgAlt or { 22/255, 22/255, 22/255, 1.0 }) or (theme.rowBg or { 20/255, 20/255, 20/255, 1.0 })
+            local rowBorder = theme.rowBorder or { 0, 0, 0, 1.0 }
 
             row:SetBackdrop({
                 bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -5982,7 +5940,7 @@ function UI:RenderZones()
                 insets = { left = 0, right = 0, top = 0, bottom = 0 }
             })
             row:SetBackdropColor(unpack(rowBg))
-            row:SetBackdropBorderColor(0, 0, 0, 1.0)
+            row:SetBackdropBorderColor(unpack(rowBorder))
 
             local div = row:CreateTexture(nil, "OVERLAY")
             div:SetPoint("BOTTOMLEFT", 0, 0)
@@ -6018,10 +5976,12 @@ function UI:RenderZones()
             kFs:SetShadowOffset(0, 0)
 
             row:EnableMouse(true)
+            local hoverBg = theme.rowHoverBg or { 36/255, 36/255, 36/255, 1.0 }
             row:SetScript("OnEnter", function(self)
-                self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
+                self:SetBackdropColor(unpack(hoverBg))
             end)
             row:SetScript("OnLeave", function(self)
+                self:SetBackdropBorderColor(unpack(rowBorder))
                 self:SetBackdropColor(unpack(rowBg))
             end)
 
@@ -6071,7 +6031,8 @@ function UI:RenderZones()
             row:SetSize(cWidth, 24)
             row:SetPoint("TOPLEFT", 0, yOffset)
             local isEven = (idx % 2 == 0)
-            local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
+            local rowBg = isEven and (theme.rowBgAlt or { 22/255, 22/255, 22/255, 1.0 }) or (theme.rowBg or { 20/255, 20/255, 20/255, 1.0 })
+            local rowBorder = theme.rowBorder or { 0, 0, 0, 1.0 }
 
             row:SetBackdrop({
                 bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -6080,7 +6041,7 @@ function UI:RenderZones()
                 insets = { left = 0, right = 0, top = 0, bottom = 0 }
             })
             row:SetBackdropColor(unpack(rowBg))
-            row:SetBackdropBorderColor(0, 0, 0, 1.0)
+            row:SetBackdropBorderColor(unpack(rowBorder))
 
             local div = row:CreateTexture(nil, "OVERLAY")
             div:SetPoint("BOTTOMLEFT", 0, 0)
@@ -6116,10 +6077,12 @@ function UI:RenderZones()
             kFs:SetShadowOffset(0, 0)
 
             row:EnableMouse(true)
+            local hoverBg = theme.rowHoverBg or { 36/255, 36/255, 36/255, 1.0 }
             row:SetScript("OnEnter", function(self)
-                self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
+                self:SetBackdropColor(unpack(hoverBg))
             end)
             row:SetScript("OnLeave", function(self)
+                self:SetBackdropBorderColor(unpack(rowBorder))
                 self:SetBackdropColor(unpack(rowBg))
             end)
 
@@ -6136,7 +6099,7 @@ function UI:RenderRallies()
     local aR, aG, aB = WoWKB.AccentColor()
     local cWidth = (UI.ContentFrame and UI.ContentFrame:GetWidth()) or 620
 
-    -- Flat Section Header (18px height, #181818 background, 1px border)
+    -- Flat Section Header (18px height, theme-driven background, 1px border)
     local headerBar = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
     headerBar:SetSize(cWidth, 18)
     headerBar:SetPoint("TOPLEFT", 0, -4)
@@ -6146,8 +6109,8 @@ function UI:RenderRallies()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    headerBar:SetBackdropColor(24/255, 24/255, 24/255, 1.0) -- #181818
-    headerBar:SetBackdropBorderColor(0, 0, 0, 1.0)
+    headerBar:SetBackdropColor(unpack(theme.cardHeaderBg or theme.headerBarBg or { 24/255, 24/255, 24/255, 1.0 }))
+    headerBar:SetBackdropBorderColor(unpack(theme.cardHeaderBorder or theme.cardBorder or { 0, 0, 0, 1.0 }))
 
     local headerTitle = headerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     headerTitle:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
@@ -6156,7 +6119,7 @@ function UI:RenderRallies()
     if headerTitle.SetFont then local f, s = headerTitle:GetFont(); headerTitle:SetFont(f, s or 10, "OUTLINE") end
     headerTitle:SetShadowOffset(0, 0)
 
-    -- Top Broadcast Action: Single compact banner (26px height, #161616, 1px border)
+    -- Top Broadcast Action: Single compact banner (26px height, theme-driven background, 1px border)
     local isMyBeaconActive = KB.Reinforcements and KB.Reinforcements.IsBeaconActive and KB.Reinforcements:IsBeaconActive()
     local bannerFrame = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
     bannerFrame:SetSize(cWidth, 26)
@@ -6167,8 +6130,8 @@ function UI:RenderRallies()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    bannerFrame:SetBackdropColor(22/255, 22/255, 22/255, 1.0)
-    bannerFrame:SetBackdropBorderColor(0, 0, 0, 1.0)
+    bannerFrame:SetBackdropColor(unpack(theme.cardBg or { 22/255, 22/255, 22/255, 1.0 }))
+    bannerFrame:SetBackdropBorderColor(unpack(theme.cardBorder or { 0, 0, 0, 1.0 }))
 
     local bannerText = bannerFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     bannerText:SetPoint("LEFT", bannerFrame, "LEFT", 10, 0)
@@ -6226,7 +6189,7 @@ function UI:RenderRallies()
 
     local yOffset = -56
 
-    -- Table Column Header Strip (18px height, #161616, 1px border)
+    -- Table Column Header Strip (18px height, theme-driven background, 1px border)
     local colHeader = CreateFrame("Frame", nil, UI.ContentFrame, "BackdropTemplate")
     colHeader:SetSize(cWidth, 18)
     colHeader:SetPoint("TOPLEFT", 0, yOffset)
@@ -6236,8 +6199,8 @@ function UI:RenderRallies()
         edgeSize = 1,
         insets = { left = 0, right = 0, top = 0, bottom = 0 }
     })
-    colHeader:SetBackdropColor(22/255, 22/255, 22/255, 1.0)
-    colHeader:SetBackdropBorderColor(0, 0, 0, 1.0)
+    colHeader:SetBackdropColor(unpack(theme.cardBg or { 22/255, 22/255, 22/255, 1.0 }))
+    colHeader:SetBackdropBorderColor(unpack(theme.rowBorder or { 0, 0, 0, 1.0 }))
 
     local function CreateColHeaderLabel(x, w, text, rightAnchor)
         local lbl = colHeader:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -6289,7 +6252,8 @@ function UI:RenderRallies()
             row:SetSize(cWidth, 24)
             row:SetPoint("TOPLEFT", 0, yOffset)
             local isEven = (idx % 2 == 0)
-            local rowBg = isEven and { 22/255, 22/255, 22/255, 1.0 } or { 20/255, 20/255, 20/255, 1.0 }
+            local rowBg = isEven and (theme.rowBgAlt or { 22/255, 22/255, 22/255, 1.0 }) or (theme.rowBg or { 20/255, 20/255, 20/255, 1.0 })
+            local rowBorder = theme.rowBorder or { 0, 0, 0, 1.0 }
 
             row:SetBackdrop({
                 bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -6298,7 +6262,7 @@ function UI:RenderRallies()
                 insets = { left = 0, right = 0, top = 0, bottom = 0 }
             })
             row:SetBackdropColor(unpack(rowBg))
-            row:SetBackdropBorderColor(0, 0, 0, 1.0)
+            row:SetBackdropBorderColor(unpack(rowBorder))
 
             local div = row:CreateTexture(nil, "OVERLAY")
             div:SetPoint("BOTTOMLEFT", 0, 0)
@@ -6416,11 +6380,12 @@ function UI:RenderRallies()
             end)
 
             row:EnableMouse(true)
+            local hoverBg = theme.rowHoverBg or { 36/255, 36/255, 36/255, 1.0 }
             row:SetScript("OnEnter", function(self)
-                self:SetBackdropColor(36/255, 36/255, 36/255, 1.0)
+                self:SetBackdropColor(unpack(hoverBg))
             end)
             row:SetScript("OnLeave", function(self)
-                self:SetBackdropBorderColor(0, 0, 0, 1.0)
+                self:SetBackdropBorderColor(unpack(rowBorder))
                 self:SetBackdropColor(unpack(rowBg))
             end)
 

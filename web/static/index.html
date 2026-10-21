@@ -42,7 +42,17 @@
         </div>
       </div>
 
-      <!-- 2. Global Omni-Search -->
+      <!-- 2. Primary Desktop Navigation Bar -->
+      <nav class="nav-links-rail desktop-primary-nav" aria-label="Primary Navigation">
+        <button id="nav-legends" class="nav-btn active" onclick="switchTab('LEGENDS')" title="Realm Player &amp; Guild Leaderboards">Leaderboards</button>
+        <button id="nav-intel" class="nav-btn" onclick="switchTab('INTEL')" title="Real-Time Killmail Stream &amp; Combat Log Feed">Live Intel</button>
+        <button id="nav-bounties" class="nav-btn" onclick="switchTab('BOUNTIES')" title="The Blood Ledger — Active Player Bounties">The Marked</button>
+        <button id="nav-rallies" class="nav-btn" onclick="switchTab('RALLIES')" title="Call to Arms — Active Posse Hunts &amp; War Rallies">Call to Arms</button>
+        <button id="nav-zones" class="nav-btn" onclick="switchTab('ZONES')" title="Contested Zone Warfare &amp; Hotspot Heatmaps">War Zones</button>
+        <button id="nav-hazards" class="nav-btn nav-btn-hazards" onclick="switchTab('HAZARDS')" title="Apex Bestiary — Deadliest NPCs &amp; PvE Casualties">💀 PvE Hazards</button>
+      </nav>
+
+      <!-- 3. Global Omni-Search -->
       <div class="header-search-wrap" id="header-search-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="global-search-input" class="global-search-input" placeholder="Search combatants, guilds, zones... (Press / to focus)" autocomplete="off" spellcheck="false" />
@@ -127,6 +137,10 @@
         <div class="mobile-nav-list">
           <button class="mobile-nav-item" id="m-nav-bounties" onclick="switchTab('BOUNTIES'); toggleMobileDrawer(false);">
             <span>🩸 The Blood Ledger (Bounties)</span>
+            <span class="drawer-arrow">&rarr;</span>
+          </button>
+          <button class="mobile-nav-item" id="m-nav-rallies" onclick="switchTab('RALLIES'); toggleMobileDrawer(false);">
+            <span>📯 Call to Arms (War Rallies)</span>
             <span class="drawer-arrow">&rarr;</span>
           </button>
           <button class="mobile-nav-item" id="m-nav-hazards" onclick="switchTab('HAZARDS'); toggleMobileDrawer(false);">
@@ -251,6 +265,7 @@
             <button class="top-pill-btn" id="top-pill-mode-bg" onclick="setFilterMode('BG')">BGs</button>
             <button class="top-pill-btn" id="top-pill-mode-duel" onclick="setFilterMode('DUEL')">Duels</button>
             <button class="top-pill-btn" id="top-pill-mode-arena" onclick="setFilterMode('ARENA')">Arenas</button>
+            <button class="top-pill-btn pill-pve-hazards" id="top-pill-mode-hazards" onclick="switchTab('HAZARDS')" title="Inspect PvE &amp; Environmental Casualties">💀 PvE Hazards</button>
           </div>
         </div>
       </div>

@@ -442,23 +442,17 @@ function updateFlavorUi() {
   // 4. Update mode pills (e.g. Arenas disabled in Classic Era / Forever Beta)
   const arenaPill = document.getElementById("pill-arena");
   const mArenaPill = document.getElementById("m-pill-arena");
+  const topArenaPill = document.getElementById("top-pill-mode-arena");
   if (cfg.disabledModes && cfg.disabledModes.ARENA) {
-    if (arenaPill) {
-      arenaPill.classList.add("disabled");
-      arenaPill.title = `🔒 Arenas Unavailable in ${cfg.name} (${cfg.disabledModes.ARENA})`;
-      arenaPill.onclick = (e) => {
+    [arenaPill, mArenaPill, topArenaPill].forEach(pill => {
+      if (!pill) return;
+      pill.classList.add("disabled");
+      pill.title = `🔒 Arenas Unavailable in ${cfg.name} (${cfg.disabledModes.ARENA})`;
+      pill.onclick = (e) => {
         e.preventDefault();
-        alert(`🔒 Arenas are unavailable in ${cfg.name} (${cfg.disabledModes.ARENA}). Switch the flavor in the top bar to TBC, WotLK, or Retail to enable Arena ladders.`);
+        showToast(`Arenas are unavailable in ${cfg.name} (${cfg.disabledModes.ARENA}). Switch the theater in the top bar to TBC, WotLK, or Retail to enable Arena ladders.`, "ARENA TELEMETRY LOCKED", "🔒");
       };
-    }
-    if (mArenaPill) {
-      mArenaPill.classList.add("disabled");
-      mArenaPill.title = `🔒 Arenas Unavailable in ${cfg.name} (${cfg.disabledModes.ARENA})`;
-      mArenaPill.onclick = (e) => {
-        e.preventDefault();
-        alert(`🔒 Arenas are unavailable in ${cfg.name} (${cfg.disabledModes.ARENA}). Switch the flavor in the top bar to TBC, WotLK, or Retail to enable Arena ladders.`);
-      };
-    }
+    });
     if (currentMode === "ARENA") {
       setFilterMode("WORLD");
     }
@@ -472,6 +466,11 @@ function updateFlavorUi() {
       mArenaPill.classList.remove("disabled");
       mArenaPill.title = "View Arena Matches";
       mArenaPill.onclick = () => { setFilterMode("ARENA"); toggleMobileDrawer(false); };
+    }
+    if (topArenaPill) {
+      topArenaPill.classList.remove("disabled");
+      topArenaPill.title = "View Arena Matches";
+      topArenaPill.onclick = () => setFilterMode("ARENA");
     }
   }
 }
@@ -497,7 +496,7 @@ function markBountyAcceptedLocally(bountyId) {
 }
 
 function acceptBountyContract(bountyId, targetName) {
-  alert(`To claim or issue this bounty, track in-game using /kb mark ${targetName || 'player'} <amount>\n\nThe WoW Killboard in-game addon acts as the authoritative combat engine.`);
+  showToast(`To claim or issue this bounty, track in-game using /kb mark ${targetName || 'player'} <amount>. The WoW Killboard in-game addon acts as the authoritative combat engine.`, "BOUNTY CONTRACT PROTOCOL", "🩸");
 }
 
 // Purge any legacy toggle state so Most Wanted is always static
@@ -745,6 +744,63 @@ function showCombatToast(km) {
 window.showCombatToast = showCombatToast;
 window.dismissCombatToast = dismissCombatToast;
 
+function showToast(message, title = "TACTICAL DISPATCH", icon = "⚔️") {
+  const container = document.getElementById("combat-toast-container");
+  if (!container) return;
+
+  while (container.children.length >= 3) {
+    container.firstElementChild.remove();
+  }
+
+  const msgStr = String(message || "");
+  const isError = /error|failed|denied|invalid|locked|blocked|unavailable|please|cannot|missing|unreachable|required/i.test(msgStr) || icon === "⚠️" || icon === "🔒" || icon === "❌";
+  const isSuccess = /success|confirmed|unlocked|saved|claimed|posted|activated|complete/i.test(msgStr) || icon === "✅" || icon === "🪙" || icon === "📯";
+
+  let resolvedHeader = title;
+  let resolvedIcon = icon;
+  if (title === "TACTICAL DISPATCH" && icon === "⚔️") {
+    if (isError) {
+      resolvedHeader = "TACTICAL ALERT";
+      resolvedIcon = "⚠️";
+    } else if (isSuccess) {
+      resolvedHeader = "DISPATCH CONFIRMED";
+      resolvedIcon = "✅";
+    }
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `combat-toast ${isSuccess ? "bounty-claim" : ""}`;
+  if (isError) {
+    toast.style.borderColor = "rgba(239, 68, 68, 0.75)";
+  }
+
+  toast.innerHTML = `
+    <button class="combat-toast-close" onclick="event.stopPropagation(); dismissCombatToast(this.parentElement);" title="Dismiss">&times;</button>
+    <div class="combat-toast-icon">${resolvedIcon}</div>
+    <div class="combat-toast-content">
+      <div class="combat-toast-header" style="${isError ? 'color:#f87171;' : isSuccess ? 'color:#34d399;' : ''}">
+        <span>${escapeHtml(resolvedHeader)}</span>
+        <span class="zone-tag">WKB COMMAND</span>
+      </div>
+      <div class="combat-toast-body" style="white-space:normal; overflow:visible; text-overflow:clip; line-height:1.35;">
+        ${escapeHtml(msgStr)}
+      </div>
+    </div>
+  `;
+
+  toast.onclick = () => dismissCombatToast(toast);
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.classList.add("visible");
+  });
+
+  setTimeout(() => {
+    dismissCombatToast(toast);
+  }, 4800);
+}
+window.showToast = showToast;
+
 // Data Fetching
 async function loadKills() {
   const currentRealm = (typeof getCurrentRealm === "function") ? getCurrentRealm() : "Classic Beta PvP";
@@ -792,83 +848,115 @@ function renderPveFeed(deaths) {
     return;
   }
 
-  let html = `
-    <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 10px 16px;">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span style="font-size:0.85rem; color:#38bdf8; font-weight:700;">🛡️ FOREVER PVE CAMPAIGN &bull; WILDERNESS HAZARD CASUALTY FEED</span>
-      </div>
-      <span class="combat-feed-counter" style="color:var(--wow-gold); font-weight:800;">${safeDeaths.length} Fallen Mortals</span>
-    </div>
-  `;
-
-  safeDeaths.forEach(d => {
-    const vCls = (d.victim_class || "WARRIOR").toUpperCase();
+  const rowsHtml = safeDeaths.map(d => {
+    const vCls = resolveClassName(d.victim_class || "WARRIOR");
     const vColor = CLASS_COLORS[vCls] || CLASS_COLORS.UNKNOWN;
-    const vLvl = d.victim_level || "??";
+    const vLvl = d.victim_level || "60";
     const zoneStr = d.subzone ? `${d.zone} (${d.subzone})` : (d.zone || "Wilderness");
     const ago = timeAgo(d.timestamp);
+    const npcName = d.npc_name || d.killer_name || "Environment";
+    const npcSpell = d.npc_spell || d.killer_spell || "Fatal Strike";
+    const npcDamage = d.npc_damage || d.damage_amount || 0;
+    const dmgStr = npcDamage > 0 ? ` (${formatNumber(npcDamage)} dmg)` : "";
+    const vGuild = (d.victim_guild && d.victim_guild !== "Unguilded" && d.victim_guild !== "None") ? d.victim_guild : "";
+    const vFac = (d.victim_faction || "Neutral").toLowerCase();
+    const vFacClass = vFac === "alliance" ? "alliance" : (vFac === "horde" ? "horde" : "neutral");
+    const vFacLetter = vFac === "alliance" ? "A" : (vFac === "horde" ? "H" : "N");
 
-    // Generate realistic forensic fatality narrative
-    let deathNarrative = "";
-    const npcLower = (d.npc_name || "").toLowerCase();
-    const spellLower = (d.npc_spell || "").toLowerCase();
-    const isEnv = npcLower.includes("environment") || npcLower.includes("fall") || npcLower.includes("hazard");
-
+    const npcLower = npcName.toLowerCase();
+    const spellLower = npcSpell.toLowerCase();
+    let typeIcon = "💀";
+    let badgeLabel = "PVE";
     if (spellLower.includes("fall") || npcLower.includes("fall") || spellLower.includes("impact")) {
-      deathNarrative = `Plunged from elevation suffering fatal fall impact while traversing high ground in ${zoneStr}.`;
+      typeIcon = "🪂";
+      badgeLabel = "FALLING";
     } else if (spellLower.includes("drown") || spellLower.includes("asphyxiation")) {
-      deathNarrative = `Drowned in deep waters beneath the surface of ${zoneStr}.`;
-    } else if (spellLower.includes("lava") || spellLower.includes("fire")) {
-      deathNarrative = `Incinerated by molten environmental hazard in ${zoneStr}.`;
+      typeIcon = "🌊";
+      badgeLabel = "DROWNING";
+    } else if (spellLower.includes("lava") || spellLower.includes("fire") || spellLower.includes("slime")) {
+      typeIcon = "🌋";
+      badgeLabel = "HAZARD";
     } else if (spellLower.includes("fatigue")) {
-      deathNarrative = `Succumbed to terminal oceanic fatigue while exploring beyond ${zoneStr}.`;
-    } else if (d.npc_name && d.npc_name !== "Unknown Monster" && !isEnv) {
-      const dmgStr = d.npc_damage > 0 ? ` for ${formatNumber(d.npc_damage)} lethal damage` : '';
-      deathNarrative = `Slain in combat by ${escapeHtml(d.npc_name)} executing ${escapeHtml(d.npc_spell || 'Fatal Strike')}${dmgStr} in ${zoneStr}.`;
-    } else {
-      deathNarrative = `Succumbed to fatal wilderness hazard while exploring ${zoneStr}.`;
+      typeIcon = "⏳";
+      badgeLabel = "FATIGUE";
     }
 
-    html += `
-      <div class="kill-card pve-hazard-card" style="border-left: 3px solid #ef4444; margin-bottom: 12px; background: rgba(8, 12, 18, 0.95); border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.25);">
-        <div class="kill-card-header" style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:rgba(239,68,68,0.08); border-bottom:1px solid rgba(255,255,255,0.06);">
-          <span class="kill-zone" style="color:#e2e8f0; font-size:0.80rem; font-weight:700;">📍 ${escapeHtml(zoneStr)}</span>
-          <span class="kill-time" style="color:#94a3b8; font-size:0.75rem;">${ago}</span>
-        </div>
-        <div class="kill-content" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px;">
-          <!-- Monster / NPC Executioner -->
-          <div class="combatant-block" style="display:flex; align-items:center; gap:12px;">
-            <div style="width:42px; height:42px; border-radius:6px; border:1px solid #ef4444; background:rgba(239,68,68,0.18); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">💀</div>
-            <div>
-              <div style="font-weight:800; color:#ef4444; font-size:1.08rem;">${escapeHtml(d.npc_name)}</div>
-              <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">${d.npc_spell ? escapeHtml(d.npc_spell) : 'Melee Strike'} &bull; <strong style="color:#fca5a5;">${formatNumber(d.npc_damage || 0)} dmg</strong></div>
+    const vGuildTagHtml = vGuild
+      ? `<span class="km-guild-tag clickable-guild" onclick="event.stopPropagation(); openGuildProfile(${safeJsParam(vGuild)})">&lt;${escapeHtml(vGuild)}&gt;</span>`
+      : "";
+    const mobileVGuildHtml = vGuild
+      ? `<span class="km-mobile-guild">&lt;${escapeHtml(vGuild)}&gt;</span>`
+      : "";
+
+    return `
+      <div class="killmail-row km-pve-hazard winner-horde" onclick="openCharacterProfile(${safeJsParam(d.victim_name)})" title="Click to inspect ${escapeHtml(d.victim_name || 'Unknown')} — Slain by ${escapeHtml(npcName)} via ${escapeHtml(npcSpell)}${escapeHtml(dmgStr)}">
+        <!-- Desktop 5-Column Layout -->
+        <div class="km-desktop-layout">
+          <!-- Col 1: Zone & Time -->
+          <div class="km-col-location">
+            <div class="km-faction-badge-sm horde" title="PvE / Environmental Hazard">${typeIcon}</div>
+            <div class="km-location-meta">
+              <span class="km-zone-name">${escapeHtml(zoneStr)}</span>
+              <span class="km-coords">${escapeHtml(ago)}</span>
             </div>
           </div>
 
-          <div style="font-weight:900; color:#ef4444; font-size:0.75rem; letter-spacing:1px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:4px 10px; border-radius:4px;">FATALITY</div>
+          <!-- Col 2: Hazard / NPC Executioner (Right-Aligned) -->
+          <div class="km-col-killer">
+            <span class="km-lvl-pill" style="color:#fca5a5; border-color:rgba(239,68,68,0.35); background:rgba(239,68,68,0.12);" title="Fatal Ability / Cause">${escapeHtml(npcSpell)}${escapeHtml(dmgStr)}</span>
+            <span class="km-player-name" style="color: #ef4444; font-weight: 800;">${escapeHtml(npcName)}</span>
+          </div>
 
-          <!-- Fallen Player Victim -->
-          <div class="combatant-block" style="display:flex; align-items:center; gap:12px; text-align:right;">
-            <div>
-              <div style="font-weight:800; font-size:1.08rem; cursor:pointer;" onclick="openCharacterProfile(${safeJsParam(d.victim_name)})">
-                <span style="color:${vColor};">${escapeHtml(d.victim_name)}</span> <span style="font-size:0.75rem; color:#94a3b8;">(${vLvl})</span>
-              </div>
-              <div style="font-size:0.72rem; color:#cbd5e1; margin-top:2px;">&lt;${escapeHtml(d.victim_guild || 'Unguilded')}&gt;</div>
-            </div>
-            ${renderClassBadge(vCls, 38)}
+          <!-- Col 3: VS Separator -->
+          <div class="km-col-vs">
+            <span class="km-vs-badge" style="color:#f87171; border-color:rgba(239,68,68,0.45);">SLAIN</span>
+          </div>
+
+          <!-- Col 4: Fallen Player (Left-Aligned) -->
+          <div class="km-col-victim">
+            <span class="km-faction-badge-sm ${vFacClass}" style="width:15px; height:15px; font-size:0.58rem;">${vFacLetter}</span>
+            ${renderClassBadge(vCls, 16)}
+            <span class="km-player-name clickable-player" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(d.victim_name)})" style="color: ${vColor};">${escapeHtml(d.victim_name || "Unknown")}</span>
+            <span class="km-lvl-pill">L${escapeHtml(String(vLvl))}</span>
+            ${vGuildTagHtml}
+          </div>
+
+          <!-- Col 5: Hazard Badge & Mortality Tag -->
+          <div class="km-col-time">
+            <span class="km-mode-tag km-pve-hazard">${typeIcon} ${escapeHtml(badgeLabel)}</span>
           </div>
         </div>
 
-        <!-- Forensic Death Description Banner -->
-        <div style="margin: 0 16px 12px 16px; padding: 8px 12px; background: rgba(0, 0, 0, 0.45); border-left: 2px solid #ef4444; border-radius: 4px; font-size: 0.80rem; color: #e2e8f0; line-height: 1.45;">
-          <strong style="color: #ef4444; font-size: 0.72rem; letter-spacing: 0.5px; text-transform: uppercase; margin-right: 6px;">FORENSIC ANALYSIS:</strong>
-          <span>${deathNarrative}</span>
+        <!-- Mobile Single-Line Layout -->
+        <div class="km-mobile-layout">
+          <div class="km-mobile-combatants">
+            <span class="km-mobile-killer" style="color: #ef4444;">${typeIcon} ${escapeHtml(npcName)}</span>
+            <span class="km-mobile-arrow">&rarr;</span>
+            <span class="km-mobile-victim clickable-player" onclick="event.stopPropagation(); openCharacterProfile(${safeJsParam(d.victim_name)})" style="color: ${vColor};">${escapeHtml(d.victim_name || "Unknown")}</span>
+            ${mobileVGuildHtml}
+          </div>
+          <div class="km-mobile-meta">
+            <span class="km-mobile-zone">${escapeHtml(d.zone || "Wilderness")}</span>
+            <span class="km-mobile-sep">&bull;</span>
+            <span class="km-mobile-time">${escapeHtml(ago)}</span>
+          </div>
         </div>
       </div>
     `;
-  });
+  }).join("");
 
-  container.innerHTML = html;
+  container.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div class="feed-header-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:8px; border-bottom:1px solid var(--wow-brass-border, #4a3b27); gap:10px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px; color:#ef4444;">🛡️ FOREVER PVE CAMPAIGN &mdash; WILDERNESS HAZARD CASUALTY FEED</span>
+          <span class="feed-count-pill" style="border-color:rgba(239,68,68,0.45); color:#fca5a5;">${safeDeaths.length} Fallen Mortals</span>
+        </div>
+        <button class="pill-btn" onclick="switchTab('HAZARDS')" style="padding:3px 10px; font-size:0.75rem; background:rgba(239,68,68,0.14); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); cursor:pointer;">💀 Open Apex Bestiary</button>
+      </div>
+      ${rowsHtml}
+    </div>
+  `;
 }
 
 async function loadSidebar() {
@@ -1443,13 +1531,6 @@ function renderFeed(kills) {
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <span class="wow-gold-header" style="font-size:1.05rem; font-weight:800; letter-spacing:0.5px;">THE SHADOW NETWORK &mdash; RECENT COMBAT FEED</span>
           <span class="feed-count-pill">${modeFilteredKills.length}</span>
-          <div class="filter-pills" id="feed-mode-pills" style="display:inline-flex; align-items:center; gap:4px; margin-left:4px;">
-            <button class="pill-btn ${currentMode === 'WORLD' ? 'active' : ''}" onclick="setFilterMode('WORLD')">World</button>
-            <button class="pill-btn ${currentMode === 'BG' ? 'active' : ''}" onclick="setFilterMode('BG')">BGs</button>
-            <button class="pill-btn ${currentMode === 'DUEL' ? 'active' : ''}" onclick="setFilterMode('DUEL')">Duels</button>
-            <button class="pill-btn disabled" style="opacity:0.4; cursor:not-allowed;" title="Arenas" onclick="setFilterMode('ARENA')">Arenas</button>
-            <button class="pill-btn" onclick="switchTab('HAZARDS')" title="Inspect PvE & Environmental Casualties" style="border-color:rgba(249,115,22,0.45); color:#fb923c;">💀 PvE Hazards</button>
-          </div>
           <button class="pill-btn" onclick="loadKills(); loadSidebar();" title="Refresh Live Combat Feed" style="padding:2px 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); cursor:pointer;">🔄 Refresh</button>
         </div>
         <span style="font-size:0.75rem; color:#856a36;">The Shadow Network &bull; Type <code style="color:var(--wow-gold);">/reload</code> in WoW to sync</span>
@@ -1809,10 +1890,7 @@ function renderPodiumShowcase(killers) {
 
   const cardsHtml = topThree.map((p, idx) => {
     const spot = podiumSpots[idx];
-    let pClass = resolveClassName(p.class);
-    if (p.name && p.name.toLowerCase() === 'dagariane') {
-      pClass = 'PALADIN';
-    }
+    const pClass = resolveClassName(p.class);
     const guildText = (p.guild && p.guild !== "None") ? `&lt;${escapeHtml(p.guild)}&gt;` : "Unguilded";
     const metricCount = (currentMode === "DUEL")
       ? (p.wins !== undefined ? p.wins : p.kills)
@@ -1926,12 +2004,8 @@ function renderLeaderboardRowsHtml(sortedKillers, totalCols, bmName, isAccountUs
     const rowClass = isCurrent ? 'class="leaderboard-row current-player-row"' : 'class="leaderboard-row"';
     const youBadge = isCurrent ? `<span class="you-badge">${isAccountUser ? 'YOU' : 'BENCHMARK'}</span>` : '';
 
-    let pClass = resolveClassName(p.class);
-    let pFaction = p.faction || 'Neutral';
-    if (p.name && p.name.toLowerCase() === 'dagariane') {
-      pClass = 'PALADIN';
-      pFaction = 'Alliance';
-    }
+    const pClass = resolveClassName(p.class);
+    const pFaction = p.faction || 'Neutral';
 
     let rowCellsHtml = '';
     if (currentMode === 'DUEL') {
@@ -1985,17 +2059,9 @@ function renderLeaderboardRowsHtml(sortedKillers, totalCols, bmName, isAccountUs
   // Pinned benchmark user row if outside filtered list
   const benchmarkProfile = cachedLeaderboardBenchmarkProfile;
   if (bmName && !bmMatch && benchmarkProfile) {
-    let rawBmClass = (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
-      (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
-    if (bmName && bmName.toLowerCase() === 'dagariane') {
-      rawBmClass = 'PALADIN';
-    }
+    const rawBmClass = (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) || 'WARRIOR';
     const bmClass = resolveClassName(rawBmClass);
-    let bmFaction = (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
-      (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
-    if (bmName && bmName.toLowerCase() === 'dagariane') {
-      bmFaction = 'Alliance';
-    }
+    const bmFaction = (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) || 'Alliance';
     const bmGuild = (benchmarkProfile && (benchmarkProfile.guild || (benchmarkProfile.character && benchmarkProfile.character.guild))) || 'None';
     const bmPct = (benchmarkProfile && benchmarkProfile.percentile) ? benchmarkProfile.percentile : { percentile: 50, topPct: 50, cohortLabel: 'Operative Benchmark', totalInCohort: 100 };
     const pctBadge = getWowLogsPercentileBadge(bmPct);
@@ -2085,19 +2151,13 @@ function renderBenchmarkBannerHtml(sortedKillers, bmName, isAccountUser, benchma
     }
   }
 
-  let rawBmClass = (bmMatch && bmMatch.class) ||
+  const rawBmClass = (bmMatch && bmMatch.class) ||
     (benchmarkProfile && (benchmarkProfile.class || (benchmarkProfile.character && benchmarkProfile.character.class))) ||
-    (bmName && bmName.toLowerCase() === 'dagariane' ? 'PALADIN' : 'WARRIOR');
-  if (bmName && bmName.toLowerCase() === 'dagariane') {
-    rawBmClass = 'PALADIN';
-  }
+    'WARRIOR';
   const bmClass = resolveClassName(rawBmClass);
-  let bmFaction = (bmMatch && bmMatch.faction) ||
+  const bmFaction = (bmMatch && bmMatch.faction) ||
     (benchmarkProfile && (benchmarkProfile.faction || (benchmarkProfile.character && benchmarkProfile.character.faction))) ||
-    (bmName && bmName.toLowerCase() === 'dagariane' ? 'Alliance' : 'Alliance');
-  if (bmName && bmName.toLowerCase() === 'dagariane') {
-    bmFaction = 'Alliance';
-  }
+    'Alliance';
 
   const isAlliance = (bmFaction || '').toLowerCase() === 'alliance';
   const factionThemeClass = isAlliance ? 'benchmark-alliance' : 'benchmark-horde';
@@ -4983,10 +5043,10 @@ function saveOracleKey() {
     const key = input.value.trim();
     if (key) {
       localStorage.setItem("wowkb_gemini_api_key", key);
-      alert("Arcane Key saved into local cache. The War Archivist will now use deep generative synthesis.");
+      showToast("Arcane Key saved into local cache. The War Archivist will now use deep generative synthesis.", "ARCHIVIST KEY SAVED", "✅");
     } else {
       localStorage.removeItem("wowkb_gemini_api_key");
-      alert("Arcane Key cleared. Reverting to local Archivist intelligence.");
+      showToast("Arcane Key cleared. Reverting to local Archivist intelligence.", "ARCHIVIST KEY CLEARED", "🤖");
     }
     const drawer = document.getElementById("oracle-key-drawer");
     if (drawer) drawer.style.display = "none";
@@ -5142,7 +5202,7 @@ function switchTab(tab) {
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   const activeBtn = document.getElementById(`nav-${tab.toLowerCase()}`);
   if (activeBtn) activeBtn.classList.add("active");
-  if (tab === "RALLIES") {
+  if (tab === "RALLIES" && !activeBtn) {
     const bBtn = document.getElementById("nav-bounties");
     if (bBtn) bBtn.classList.add("active");
   }
@@ -5150,9 +5210,14 @@ function switchTab(tab) {
   document.querySelectorAll(".mobile-nav-item").forEach(b => b.classList.remove("active"));
   const activeMobileBtn = document.getElementById(`m-nav-${tab.toLowerCase()}`);
   if (activeMobileBtn) activeMobileBtn.classList.add("active");
-  if (tab === "RALLIES") {
+  if (tab === "RALLIES" && !activeMobileBtn) {
     const mbBtn = document.getElementById("m-nav-bounties");
     if (mbBtn) mbBtn.classList.add("active");
+  }
+
+  const hazardsTopPill = document.getElementById("top-pill-mode-hazards");
+  if (hazardsTopPill) {
+    hazardsTopPill.classList.toggle("active", tab === "HAZARDS");
   }
 
   const isPortal = (tab === "PORTAL" || tab === "DOWNLOAD");
@@ -6296,7 +6361,7 @@ function processUploadFile(file) {
 function handleUploadPasteSubmit() {
   const textEl = document.getElementById("upload-paste-text");
   if (!textEl || !textEl.value.trim()) {
-    alert("Please paste valid SavedVariables Lua or JSON text first.");
+    showToast("Please paste valid SavedVariables Lua or JSON text first.", "UPLOAD VALIDATION", "⚠️");
     return;
   }
   submitUploadContent(textEl.value, "Pasted Text");
@@ -6347,7 +6412,7 @@ function handleAdminResetSubmit() {
   const keyInput = document.getElementById("admin-reset-key");
   const key = keyInput ? keyInput.value.trim() : "";
   if (!key) {
-    alert("Please enter the Administrative Secret Key.");
+    showToast("Please enter the Administrative Secret Key.", "ADMIN AUTH REQUIRED", "🔒");
     return;
   }
   if (!confirm("⚠️ WARNING: This will permanently reset all combat records, leaderboards, bounties, and war statistics. Proceed?")) {
@@ -6872,7 +6937,7 @@ async function claimKnownCharacter(name, cls, lvl, faction, guild, realm) {
     });
     const d = await res.json();
     if (!res.ok || d.error) {
-      alert(d.error || "Failed to claim character.");
+      showToast(d.error || "Failed to claim character.", "CLAIM ERROR", "⚠️");
       return;
     }
     if (d.owner_token) {
@@ -6884,7 +6949,7 @@ async function claimKnownCharacter(name, cls, lvl, faction, guild, realm) {
       showClaimCodeModal(name, d.claim_code);
     }
   } catch (err) {
-    alert("Error claiming character: " + err.message);
+    showToast("Error claiming character: " + err.message, "CLAIM ERROR", "⚠️");
   }
 }
 
@@ -6906,7 +6971,7 @@ async function releaseClaim(name) {
     });
     const d = await res.json();
     if (!res.ok || d.error) {
-      alert("Error releasing claim: " + (d.error || "Unknown error"));
+      showToast("Error releasing claim: " + (d.error || "Unknown error"), "RELEASE ERROR", "⚠️");
       return;
     }
     const currentActive = (localStorage.getItem("wowkb_user_character") || "").toLowerCase();
@@ -6915,7 +6980,7 @@ async function releaseClaim(name) {
     }
     loadKnownCharacters();
   } catch (err) {
-    alert("Network error: " + err.message);
+    showToast("Network error: " + err.message, "NETWORK ERROR", "⚠️");
   }
 }
 
@@ -6990,7 +7055,7 @@ async function handleCustomCharacterClaim(event) {
 
   const name = nameInput ? nameInput.value.trim() : "";
   if (!name) {
-    alert("Please enter a character name.");
+    showToast("Please enter a character name.", "CHARACTER REGISTRATION", "⚠️");
     return;
   }
 
@@ -7027,10 +7092,10 @@ async function handleCustomCharacterClaim(event) {
         showClaimCodeModal(name, d.claim_code);
       }
     } else {
-      alert("Error claiming character: " + (d.error || "Unknown error"));
+      showToast("Error claiming character: " + (d.error || "Unknown error"), "CLAIM ERROR", "⚠️");
     }
   } catch (err) {
-    alert("Network error claiming character: " + err.message);
+    showToast("Network error claiming character: " + err.message, "NETWORK ERROR", "⚠️");
   }
 }
 
@@ -7344,7 +7409,7 @@ async function handleCreateRallySubmit(event) {
   if (selectTarget && selectTarget.value === "__CUSTOM__") {
     zone = customInput ? customInput.value.trim() : "";
     if (!zone) {
-      alert("Please type your custom location.");
+      showToast("Please type your custom location.", "RALLY LOCATION REQUIRED", "⚠️");
       if (customInput) customInput.focus();
       return;
     }
@@ -7390,12 +7455,12 @@ async function handleCreateRallySubmit(event) {
     if (res.ok) {
       closeRallyMusterModal();
       loadRalliesView();
-      alert(`Vanguard War Rally broadcasted for ${commanderName} in ${zone}!`);
+      showToast(`Vanguard War Rally broadcasted for ${commanderName} in ${zone}!`, "CALL TO ARMS BROADCASTED", "📯");
     } else {
-      alert("Failed to broadcast rally: " + (d.error || "Unknown error"));
+      showToast("Failed to broadcast rally: " + (d.error || "Unknown error"), "RALLY BROADCAST ERROR", "⚠️");
     }
   } catch (err) {
-    alert("Network error broadcasting rally: " + err.message);
+    showToast("Network error broadcasting rally: " + err.message, "NETWORK ERROR", "⚠️");
   }
 }
 
@@ -7711,12 +7776,12 @@ function updateNavigationLabels() {
   const navRallies = document.getElementById("nav-rallies");
   const navZones = document.getElementById("nav-zones");
 
-  if (navIntel) navIntel.innerText = "Intel";
   if (navLegends) navLegends.innerText = "Leaderboards";
-  if (navBounties) navBounties.innerText = "Bounties & Manhunt";
-  if (navHazards) navHazards.innerText = "Deadly Hazards";
-  if (navRallies) navRallies.innerText = "Manhunt";
-  if (navZones) navZones.innerText = "Zone Intel";
+  if (navIntel) navIntel.innerText = "Live Intel";
+  if (navBounties) navBounties.innerText = "The Marked";
+  if (navRallies) navRallies.innerText = "Call to Arms";
+  if (navZones) navZones.innerText = "War Zones";
+  if (navHazards) navHazards.innerText = "💀 PvE Hazards";
 
   // 2. Mobile Drawer Navigation Items
   const mNavIntel = document.getElementById("m-nav-intel");
@@ -7726,12 +7791,12 @@ function updateNavigationLabels() {
   const mNavRallies = document.getElementById("m-nav-rallies");
   const mNavZones = document.getElementById("m-nav-zones");
 
-  if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "Intel";
-  if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "Leaderboards";
-  if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "Bounties & Manhunt";
-  if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "Deadly Hazards";
-  if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "Manhunt";
-  if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "Zone Intel";
+  if (mNavLegends && mNavLegends.querySelector("span")) mNavLegends.querySelector("span").innerText = "🏆 Player Leaderboards";
+  if (mNavIntel && mNavIntel.querySelector("span")) mNavIntel.querySelector("span").innerText = "⚔️ Live Killfeed & Intel";
+  if (mNavBounties && mNavBounties.querySelector("span")) mNavBounties.querySelector("span").innerText = "🩸 The Blood Ledger (Bounties)";
+  if (mNavRallies && mNavRallies.querySelector("span")) mNavRallies.querySelector("span").innerText = "📯 Call to Arms (War Rallies)";
+  if (mNavZones && mNavZones.querySelector("span")) mNavZones.querySelector("span").innerText = "🗺️ Zone Intel & Hotspots";
+  if (mNavHazards && mNavHazards.querySelector("span")) mNavHazards.querySelector("span").innerText = "💀 Apex Bestiary (PvE Hazards)";
 
   // 3. Most Wanted Header
   const mwTitle = document.querySelector(".most-wanted-title");
@@ -8277,7 +8342,7 @@ function loadFeudsView() {
 function generateStreamBoxUrl() {
   const charInput = document.getElementById("sb-input-char");
   if (!charInput || !charInput.value.trim()) {
-    alert("Please enter a character name.");
+    showToast("Please enter a character name.", "STREAM HUD GENERATOR", "⚠️");
     return;
   }
   const name = charInput.value.trim();
@@ -8294,7 +8359,7 @@ function copyStreamBoxUrl() {
   const textEl = document.getElementById("sb-url-text");
   if (!textEl) return;
   navigator.clipboard.writeText(textEl.innerText).then(() => {
-    alert("War Correspondent HUD URL copied to clipboard!");
+    showToast("War Correspondent HUD URL copied to clipboard!", "HUD URL COPIED", "✅");
   });
 }
 
@@ -8491,7 +8556,7 @@ async function loadDefenseView() {
 function copyWhisperCommand(playerName, keyword = "backup") {
   const cmd = `/w ${playerName} ${keyword}`;
   navigator.clipboard.writeText(cmd).then(() => {
-    alert(`Copied in-game command: "${cmd}"\nPaste into World of Warcraft chat to whisper this combatant.`);
+    showToast(`Copied in-game command: "${cmd}" — Paste into World of Warcraft chat to whisper this combatant.`, "WHISPER COMMAND COPIED", "📋");
   });
 }
 
@@ -8499,7 +8564,7 @@ async function resolveDistressBeacon(beaconId) {
   try {
     const res = await fetch(`/api/backup/resolve/${encodeURIComponent(beaconId)}`, { method: "POST" });
     if (res.ok) {
-      alert("Distress beacon marked as RESOLVED.");
+      showToast("Distress beacon marked as RESOLVED.", "BEACON RESOLVED", "✅");
       loadDefenseView();
       checkGlobalSosBeacons();
     }
@@ -8527,7 +8592,7 @@ async function submitGuildEvent() {
   const desc = document.getElementById("event-input-desc")?.value.trim() || "Guild PvP Operation";
 
   if (!title || !zone) {
-    alert("Please provide an Event Title and Rally Zone.");
+    showToast("Please provide an Event Title and Rally Zone.", "GUILD EVENT VALIDATION", "⚠️");
     return;
   }
 
@@ -8540,11 +8605,11 @@ async function submitGuildEvent() {
       })
     });
     if (res.ok) {
-      alert("Guild Event announced and broadcasted to Discord!");
+      showToast("Guild Event announced and broadcasted to Discord!", "GUILD EVENT PUBLISHED", "✅");
       closeEventModal();
       loadDefenseView();
     } else {
-      alert("Failed to submit event.");
+      showToast("Failed to submit event.", "EVENT SUBMISSION ERROR", "⚠️");
     }
   } catch (e) {
     console.error("Failed to publish event:", e);
@@ -8558,7 +8623,7 @@ async function saveDiscordConfig() {
   const events = document.getElementById("discord-chk-events")?.checked;
 
   if (!url) {
-    alert("Please enter a valid Discord Webhook URL.");
+    showToast("Please enter a valid Discord Webhook URL.", "DISCORD WEBHOOK REQUIRED", "⚠️");
     return;
   }
 
@@ -8574,10 +8639,10 @@ async function saveDiscordConfig() {
       })
     });
     if (res.ok) {
-      alert("Discord Webhook configuration saved!");
+      showToast("Discord Webhook configuration saved!", "DISCORD CONFIG SAVED", "✅");
       loadDefenseView();
     } else {
-      alert("Failed to save Discord config.");
+      showToast("Failed to save Discord config.", "DISCORD CONFIG ERROR", "⚠️");
     }
   } catch (e) {
     console.error("Failed to save discord config:", e);
@@ -8595,12 +8660,12 @@ async function testDiscordWebhook() {
     });
     const d = await res.json();
     if (res.ok) {
-      alert("Test ping successfully sent to your Discord channel!");
+      showToast("Test ping successfully sent to your Discord channel!", "DISCORD PING SENT", "✅");
     } else {
-      alert(d.error || "Failed to send test ping.");
+      showToast(d.error || "Failed to send test ping.", "DISCORD PING FAILED", "⚠️");
     }
   } catch (e) {
-    alert("Error sending test webhook: " + e.message);
+    showToast("Error sending test webhook: " + e.message, "DISCORD PING ERROR", "⚠️");
   }
 }
 
@@ -8690,7 +8755,7 @@ function setFilterMode(mode) {
 }
 
 function openPlaceBountyModal() {
-  alert("Mark of Spite contracts are issued directly in-game via the WoW Killboard addon.\n\nTarget an enemy player and type:\n/kb mark <target> <gold_amount>\n\nThe contract will immediately sync to the realm ledger upon your next combat record.");
+  showToast("Mark of Spite contracts are issued directly in-game via /kb mark <target> <gold_amount>. Contracts sync automatically upon your next combat record.", "BOUNTY CONTRACT PROTOCOL", "🩸");
 }
 
 // Supporter Mode & Subzone Intel Helpers
@@ -8732,9 +8797,9 @@ function handleSupporterClick() {
   toggleSupporterMode();
   const active = isSupporterActive();
   if (active) {
-    alert("Honorary Benefactor Insignia and Community Supporter crests are currently in development as planned community perks.");
+    showToast("Honorary Benefactor Insignia and Community Supporter crests are currently in development as planned community perks.", "SUPPORTER PREVIEW ENABLED", "⭐");
   } else {
-    alert("Supporter Mode preview disabled.");
+    showToast("Supporter Mode preview disabled.", "SUPPORTER PREVIEW", "ℹ️");
   }
 }
 
@@ -8763,9 +8828,9 @@ function openDeclareFeudModal() {
       roe_underdog_bonus: true
     })
   }).then(res => res.json()).then(d => {
-    alert(d.message || "Blood Feud challenge declared!");
+    showToast(d.message || "Blood Feud challenge declared!", "BLOOD FEUD DECLARED", "⚔️");
     loadFeudsView();
-  }).catch(e => alert("Error declaring feud: " + e.message));
+  }).catch(e => showToast("Error declaring feud: " + e.message, "FEUD ERROR", "⚠️"));
 }
 
 function openBrandKosModal() {
@@ -8789,9 +8854,9 @@ function openBrandKosModal() {
   }).then(async res => {
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Failed to brand entity");
-    alert(d.message || "Entity consigned to KOS Blacklist!");
+    showToast(d.message || "Entity consigned to KOS Blacklist!", "KOS TARGET BRANDED", "🩸");
     loadFeudsView();
-  }).catch(e => alert("Error blacklisting entity: " + e.message));
+  }).catch(e => showToast("Error blacklisting entity: " + e.message, "KOS ERROR", "⚠️"));
 }
 
 // ----------------- Tactical Intel Recon Wire (In-game only) -----------------
@@ -8900,10 +8965,10 @@ async function openAnalyticsModal() {
                    localStorage.getItem("wowkb_is_admin") === "true");
   if (!isAdmin) {
     const key = prompt("Restricted Telemetry: Enter Staff Engineer / Admin Key:");
-    if (key === "valor2026" || key === "dagariane") {
+    if (key === "valor2026") {
       localStorage.setItem("wowkb_is_admin", "true");
     } else {
-      alert("Access Denied: Analytics modal is restricted to authorized administrators.");
+      showToast("Access Denied: Analytics modal is restricted to authorized administrators.", "ACCESS DENIED", "🔒");
       return;
     }
   }

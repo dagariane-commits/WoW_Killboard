@@ -187,8 +187,20 @@ body {
 }
 
 .header-main-row .nav-btn {
-  padding: 6px 10px !important;
-  font-size: 0.82rem !important;
+  padding: 6px 8px !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 0.2px;
+}
+
+.header-main-row .nav-btn.nav-btn-hazards {
+  color: #f87171 !important;
+}
+
+.header-main-row .nav-btn.nav-btn-hazards:hover,
+.header-main-row .nav-btn.nav-btn-hazards.active {
+  color: #ef4444 !important;
+  border-bottom-color: #ef4444 !important;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
 }
 
 /* Global Omni-Search in Header */
@@ -2541,6 +2553,35 @@ body {
   border-color: #ef4444 !important;
 }
 
+.top-pill-btn.pill-pve-hazards {
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(127, 29, 29, 0.22);
+}
+
+.top-pill-btn.pill-pve-hazards:hover {
+  background: rgba(185, 28, 28, 0.38);
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.top-pill-btn.pill-pve-hazards.active {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #f87171 !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.45) !important;
+}
+
+.top-pill-btn.disabled,
+.top-pill-btn:disabled {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+  color: #64748b !important;
+  background: transparent !important;
+  border: 1px dashed rgba(255, 255, 255, 0.14) !important;
+  box-shadow: none !important;
+}
+
 /* ----------------- Killmail Feed Rows (Streamlined Minimal WoW) ----------------- */
 
 .killmail-row {
@@ -2559,6 +2600,24 @@ body {
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.killmail-row.km-pve-hazard {
+  border-left-color: #ef4444 !important;
+  background: linear-gradient(90deg, rgba(153, 27, 27, 0.22) 0%, rgba(11, 15, 23, 0.96) 28%) !important;
+}
+
+.km-mode-tag.km-pve-hazard {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #f87171;
+  font-family: var(--font-tactical);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
 }
 
 .km-desktop-layout {
@@ -4898,8 +4957,8 @@ body {
 
 /* ----------------- Responsive Media Queries ----------------- */
 
-/* Desktop viewports (> 1280px) — Core combat navigation exposed next to omni-search */
-@media (min-width: 1281px) {
+/* Desktop viewports (> 1024px) — Core combat navigation exposed next to omni-search */
+@media (min-width: 1025px) {
   .site-header {
     position: fixed;
     top: 0;
@@ -4911,17 +4970,20 @@ body {
   .nav-links-rail {
     display: flex !important;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
   }
   #nav-intel,
   #nav-legends,
-  #nav-bounties {
+  #nav-bounties,
+  #nav-rallies,
+  #nav-zones,
+  #nav-hazards {
     display: inline-flex !important;
   }
   .header-search-wrap {
     flex: 1 !important;
-    max-width: 400px !important;
-    min-width: 180px !important;
+    max-width: 340px !important;
+    min-width: 140px !important;
   }
   .header-search-wrap .search-kbd {
     display: inline-block !important;
@@ -4931,15 +4993,21 @@ body {
   }
 }
 
-@media (min-width: 1281px) and (max-width: 1400px) {
-  #nav-hazards,
-  #nav-zones {
+@media (min-width: 1025px) and (max-width: 1360px) {
+  .theater-label {
     display: none !important;
+  }
+  .header-icon-btn .header-btn-text {
+    display: none !important;
+  }
+  .header-main-row .nav-btn {
+    padding: 6px 6px !important;
+    font-size: 0.74rem !important;
   }
 }
 
-/* 1. Compact Desktop & Laptops (769px to 1280px) — Hamburger Takes Over for Compact Nav */
-@media (max-width: 1280px) {
+/* 1. Compact Tablets & Small Laptops (769px to 1024px) — Hamburger Takes Over for Compact Nav */
+@media (max-width: 1024px) {
   .site-header {
     position: fixed;
     top: 0;
