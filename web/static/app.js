@@ -5185,6 +5185,31 @@ function formatScribeMarkdown(text) {
 }
 
 // Tab Switching
+function setCampaignMode(mode) {
+  const chosen = (mode || "PVP").toUpperCase();
+  const pvpBtn = document.getElementById("btn-mode-pvp");
+  const pveBtn = document.getElementById("btn-mode-pve");
+  const mPvpBtn = document.getElementById("m-btn-mode-pvp");
+  const mPveBtn = document.getElementById("m-btn-mode-pve");
+
+  if (chosen === "PVE") {
+    if (pvpBtn) pvpBtn.classList.remove("active");
+    if (pveBtn) pveBtn.classList.add("active");
+    if (mPvpBtn) mPvpBtn.classList.remove("active");
+    if (mPveBtn) mPveBtn.classList.add("active");
+    switchTab("HAZARDS");
+  } else {
+    if (pvpBtn) pvpBtn.classList.add("active");
+    if (pveBtn) pveBtn.classList.remove("active");
+    if (mPvpBtn) mPvpBtn.classList.add("active");
+    if (mPveBtn) mPveBtn.classList.remove("active");
+    if (currentTab === "HAZARDS" || currentTab === "DEADLY_NPCS") {
+      switchTab("LEGENDS");
+    }
+  }
+}
+window.setCampaignMode = setCampaignMode;
+
 function switchTab(tab) {
   // Normalize alias tabs
   if (tab === "FEED") tab = "INTEL";
@@ -5218,6 +5243,22 @@ function switchTab(tab) {
   const hazardsTopPill = document.getElementById("top-pill-mode-hazards");
   if (hazardsTopPill) {
     hazardsTopPill.classList.toggle("active", tab === "HAZARDS");
+  }
+
+  // Synchronize segmented campaign ruleset mode toggle buttons [ ⚔️ PvP Stats | 💀 PvE Stats ]
+  const isPveMode = (tab === "HAZARDS" || tab === "DEADLY_NPCS");
+  const pvpModeBtn = document.getElementById("btn-mode-pvp");
+  const pveModeBtn = document.getElementById("btn-mode-pve");
+  const mPvpModeBtn = document.getElementById("m-btn-mode-pvp");
+  const mPveModeBtn = document.getElementById("m-btn-mode-pve");
+
+  if (pvpModeBtn && pveModeBtn) {
+    pvpModeBtn.classList.toggle("active", !isPveMode);
+    pveModeBtn.classList.toggle("active", isPveMode);
+  }
+  if (mPvpModeBtn && mPveModeBtn) {
+    mPvpModeBtn.classList.toggle("active", !isPveMode);
+    mPveModeBtn.classList.toggle("active", isPveMode);
   }
 
   const isPortal = (tab === "PORTAL" || tab === "DOWNLOAD");

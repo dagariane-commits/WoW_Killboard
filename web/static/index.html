@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WoW Killboard — World of Warcraft PvP Intelligence & Leaderboards</title>
-  <link rel="stylesheet" href="/static/style.css?v=1.4.82">
+  <link rel="stylesheet" href="/static/style.css?v=1.4.83">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
@@ -50,6 +50,16 @@
         <button id="nav-rallies" class="nav-btn" onclick="switchTab('RALLIES')" title="Call to Arms — Active Posse Hunts &amp; War Rallies">Call to Arms</button>
         <button id="nav-zones" class="nav-btn" onclick="switchTab('ZONES')" title="Contested Zone Warfare &amp; Hotspot Heatmaps">War Zones</button>
         <button id="nav-hazards" class="nav-btn nav-btn-hazards" onclick="switchTab('HAZARDS')" title="Apex Bestiary — Deadliest NPCs &amp; PvE Casualties">💀 PvE Hazards</button>
+
+        <!-- Segmented Campaign Ruleset Mode Switcher: [ ⚔️ PvP Stats | 💀 PvE Stats ] -->
+        <div class="header-mode-toggle" id="header-mode-toggle" title="Switch active campaign ruleset between Contested PvP Warfare and Wilderness PvE Hazards">
+          <button class="mode-toggle-segment active pvp" id="btn-mode-pvp" onclick="setCampaignMode('PVP')" title="Contested Player vs Player Warfare">
+            <span class="mode-toggle-icon">⚔️</span> <span>PvP Stats</span>
+          </button>
+          <button class="mode-toggle-segment pve" id="btn-mode-pve" onclick="setCampaignMode('PVE')" title="Wilderness PvE Hazards &amp; Apex Bestiary">
+            <span class="mode-toggle-icon">💀</span> <span>PvE Stats</span>
+          </button>
+        </div>
       </nav>
 
       <!-- 3. Global Omni-Search -->
@@ -108,6 +118,19 @@
               <span class="drawer-realm-pill" id="m-theater-server">PvP</span>
             </div>
             <span class="drawer-realm-caret">▾</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Campaign Ruleset Mode Switcher -->
+      <div class="drawer-section">
+        <div class="mobile-drawer-label">CAMPAIGN RULESET</div>
+        <div class="drawer-mode-toggle-wrap">
+          <button class="drawer-mode-btn active pvp" id="m-btn-mode-pvp" onclick="setCampaignMode('PVP'); toggleMobileDrawer(false);" title="Contested Player vs Player Warfare">
+            <span>⚔️ Contested PvP</span>
+          </button>
+          <button class="drawer-mode-btn pve" id="m-btn-mode-pve" onclick="setCampaignMode('PVE'); toggleMobileDrawer(false);" title="Wilderness PvE Hazards &amp; Apex Bestiary">
+            <span>💀 Wilderness PvE</span>
           </button>
         </div>
       </div>
@@ -779,6 +802,6 @@
   <!-- Live Combat Slide-In Toast Notification Banner -->
   <div id="combat-toast-container" class="combat-toast-container"></div>
 
-  <script src="/static/app.js?v=2.3.7"></script>
+  <script src="/static/app.js?v=2.3.8"></script>
 </body>
 </html>

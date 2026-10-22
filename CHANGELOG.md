@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Dedicated Sub-Bar [ ⚔️ PvP Combat | 💀 PvE Hazards ] Segmented Mode Toggle (`Addon/WoWKillboard/UI.lua`)**:
+  - Mounted an unmistakable dual-segmented toggle button on the in-game navigation sub-bar directly adjacent to the text tabs and telemetry bar.
+  - Implemented dynamic state synchronization: clicking `PvE Hazards` instantly highlights emerald green (`#10b981`), switches the active campaign ruleset to `PVE`, updates sub-bar tab titles to `Casualties`, `Deadly Hazards`, `Notorious Elites`, `Rescue Beacons`, and `Zone Mortality`, updates the right-hand telemetry to `PVE RULES: WILDERNESS`, and refreshes the view.
+  - Clicking `PvP Combat` returns to gold/crimson (`#ffd100`), updates tabs back to `Intel`, `Leaderboards`, `The Marked`, `Call to Arms`, `Danger Zones`, restores `WAR SPLIT:`, and re-aggregates PvP kills.
+- **Web Header & Mobile Drawer Campaign Mode Switcher (`web/static/index.html`, `web/static/style.css`, `web/static/app.js`)**:
+  - Added a dedicated `.header-mode-toggle` pill (`[ ⚔️ PvP Stats | 💀 PvE Stats ]`) directly inside the desktop primary navigation bar next to tabs.
+  - Added a prominent `CAMPAIGN RULESET` section in the mobile slide-out Command Deck drawer with matching dual toggles.
+  - Implemented two-way state synchronization in `setCampaignMode(mode)` and `switchTab(tab)` so switching modes or clicking tabs automatically reflects the active mode across desktop and mobile.
+
+### Changed
+- **Command Deck Drawer Clarification & Settings Alignment (`Addon/WoWKillboard/UI.lua`, `web/static/index.html`)**:
+  - Clarified the hamburger button's purpose across Addon and Web as `Command Deck & Settings`, resolving user ambiguity between primary navigation tabs and secondary system utilities.
+  - Updated button tooltips and drawer section titles to guide users directly to sound packs, minimap button toggles, sync diagnostics, data resets, and advanced tools.
+
 ## [1.1.0] - 2026-10-19 (Unified Multi-User Cross-Machine Sync & PvE/Environmental Mortality Parity)
 
 ### Added

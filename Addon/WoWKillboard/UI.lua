@@ -1324,16 +1324,21 @@ function UI:CreateCommandDeck()
     if pveLabel.SetFont then local f, s = pveLabel:GetFont(); pveLabel:SetFont(f, s or 10, "OUTLINE") end
     pveBtn.Label = pveLabel
 
+        function UI:SetCampaignRuleset(ruleset)
+        ruleset = (ruleset or "PVP"):upper()
+        WoWKillboardDB = WoWKillboardDB or {}
+        local realm = (GetRealmName and GetRealmName()) or ""
+        WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
+        if realm ~= "" then WoWKillboardDB.realmRulesets[realm] = ruleset end
+        WoWKillboardDB.campaignRuleset = ruleset
+        if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
+        UI:UpdateRulesetButton()
+        UI:Refresh()
+    end
+
     pvpBtn:SetScript("OnClick", function()
         if UI:IsPve() then
-            WoWKillboardDB = WoWKillboardDB or {}
-            local realm = (GetRealmName and GetRealmName()) or ""
-            WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
-            if realm ~= "" then WoWKillboardDB.realmRulesets[realm] = "PVP" end
-            WoWKillboardDB.campaignRuleset = "PVP"
-            if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
-            UI:UpdateRulesetButton()
-            UI:Refresh()
+            UI:SetCampaignRuleset("PVP")
         end
     end)
     pvpBtn:SetScript("OnEnter", function(self)
@@ -1343,14 +1348,7 @@ function UI:CreateCommandDeck()
 
     pveBtn:SetScript("OnClick", function()
         if not UI:IsPve() then
-            WoWKillboardDB = WoWKillboardDB or {}
-            local realm = (GetRealmName and GetRealmName()) or ""
-            WoWKillboardDB.realmRulesets = WoWKillboardDB.realmRulesets or {}
-            if realm ~= "" then WoWKillboardDB.realmRulesets[realm] = "PVE" end
-            WoWKillboardDB.campaignRuleset = "PVE"
-            if KB.Leaderboard and KB.Leaderboard.Rebuild then KB.Leaderboard:Rebuild() end
-            UI:UpdateRulesetButton()
-            UI:Refresh()
+            UI:SetCampaignRuleset("PVE")
         end
     end)
     pveBtn:SetScript("OnEnter", function(self)
@@ -1725,7 +1723,7 @@ function UI:CreateMainWindow()
         if self.Bars then
             for _, b in ipairs(self.Bars) do b:SetColorTexture(1.0, 1.0, 1.0, 1.0) end
         end
-        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Command Deck [MENU]|r", "Open tactical operations, campaign ruleset switcher, settings, and killboard feeds.")
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Command Deck & Settings [MENU]|r", "Open audio alerts, sound packs, realm sync diagnostics, minimap toggle, and tactical views.")
     end)
     hamburgerBtn:SetScript("OnLeave", function(self)
         self:SetBackdropColor(24/255, 32/255, 44/255, 0.95)
@@ -1834,6 +1832,51 @@ function UI:CreateMainWindow()
                 UI.PveModeBtn.Label:SetTextColor(119/255, 119/255, 119/255, 1.0)
             end
         end
+
+        -- Synchronize Navigation Sub-Bar Segmented Mode Switcher
+        if UI.SubBarPvpBtn and UI.SubBarPveBtn then
+            if isPve then
+                UI.SubBarPveBtn:SetBackdropColor(16/255, 60/255, 35/255, 1.0)
+                UI.SubBarPveBtn:SetBackdropBorderColor(16/255, 185/255, 129/255, 1.0)
+                if UI.SubBarPveBtn.Label then UI.SubBarPveBtn.Label:SetTextColor(16/255, 230/255, 150/255, 1.0) end
+
+                UI.SubBarPvpBtn:SetBackdropColor(14/255, 18/255, 24/255, 0.5)
+                UI.SubBarPvpBtn:SetBackdropBorderColor(35/255, 45/255, 55/255, 0.5)
+                if UI.SubBarPvpBtn.Label then UI.SubBarPvpBtn.Label:SetTextColor(100/255, 116/255, 139/255, 1.0) end
+            else
+                UI.SubBarPvpBtn:SetBackdropColor(60/255, 20/255, 20/255, 1.0)
+                UI.SubBarPvpBtn:SetBackdropBorderColor(255/255, 209/255, 0/255, 1.0)
+                if UI.SubBarPvpBtn.Label then UI.SubBarPvpBtn.Label:SetTextColor(255/255, 209/255, 0/255, 1.0) end
+
+                UI.SubBarPveBtn:SetBackdropColor(14/255, 18/255, 24/255, 0.5)
+                UI.SubBarPveBtn:SetBackdropBorderColor(35/255, 45/255, 55/255, 0.5)
+                if UI.SubBarPveBtn.Label then UI.SubBarPveBtn.Label:SetTextColor(100/255, 116/255, 139/255, 1.0) end
+            end
+        end
+
+        -- Synchronize Sub-Bar War Split Telemetry
+        if UI.FactionSplitLabel and UI.FactionSplitBar then
+            if isPve then
+                UI.FactionSplitLabel:SetText("|cff10b981PVE RULES:|r")
+                if UI.FactionSplitBar.Text then
+                    UI.FactionSplitBar.Text:SetText("|cff10b981WILDERNESS|r")
+                end
+                if UI.FactionSplitBar.AllianceFill then
+                    UI.FactionSplitBar.AllianceFill:SetColorTexture(16/255, 80/255, 50/255, 1.0)
+                    UI.FactionSplitBar.AllianceFill:SetWidth(138)
+                end
+                if UI.FactionSplitBar.HordeFill then UI.FactionSplitBar.HordeFill:Hide() end
+            else
+                UI.FactionSplitLabel:SetText("|cff888888WAR SPLIT:|r")
+                if UI.FactionSplitBar.AllianceFill then
+                    UI.FactionSplitBar.AllianceFill:SetColorTexture(0.08, 0.35, 0.85, 1.0)
+                end
+                if UI.FactionSplitBar.HordeFill then UI.FactionSplitBar.HordeFill:Show() end
+                if UI.UpdateFactionSplit then UI:UpdateFactionSplit() end
+            end
+        end
+
+        if UI.UpdateTabLabels then UI:UpdateTabLabels() end
 
         if UI.RealmBadge then
             local realm = (GetRealmName and GetRealmName()) or "Classic Beta PvP"
@@ -1970,6 +2013,10 @@ function UI:CreateMainWindow()
         ZONES       = { text = "Danger Zones",       w = 92,  icon = "Interface\\Icons\\INV_Misc_Map02" },
     }
 
+    UI.tabOrder = tabOrder
+    UI.pveTabDefs = pveTabDefs
+    UI.pvpTabDefs = pvpTabDefs
+
     local isPveMode = UI:IsPve()
     local tabDefs = isPveMode and pveTabDefs or pvpTabDefs
     local prevTabBtn = nil
@@ -2023,6 +2070,106 @@ function UI:CreateMainWindow()
 
         tabButtons[tid] = tBtn
         prevTabBtn = tBtn
+    end
+
+    -- Dual Segmented Campaign Mode Switcher: [ ⚔️ PvP Combat | 💀 PvE Hazards ]
+    local modeSwitcher = CreateFrame("Frame", nil, navSubBar, "BackdropTemplate")
+    modeSwitcher:SetSize(192, 22)
+    modeSwitcher:SetPoint("RIGHT", navSubBar, "RIGHT", -230, 0)
+    modeSwitcher:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    modeSwitcher:SetBackdropColor(12/255, 16/255, 22/255, 0.95)
+    modeSwitcher:SetBackdropBorderColor(45/255, 55/255, 70/255, 0.8)
+    UI.SubBarModeSwitcher = modeSwitcher
+
+    -- Sub-Bar PvP Segment Button
+    local subPvpBtn = CreateFrame("Button", nil, modeSwitcher, "BackdropTemplate")
+    subPvpBtn:SetSize(94, 18)
+    subPvpBtn:SetPoint("LEFT", modeSwitcher, "LEFT", 2, 0)
+    subPvpBtn:EnableMouse(true)
+    subPvpBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    local subPvpIcon = subPvpBtn:CreateTexture(nil, "OVERLAY")
+    subPvpIcon:SetSize(12, 12)
+    subPvpIcon:SetPoint("LEFT", subPvpBtn, "LEFT", 5, 0)
+    subPvpIcon:SetTexture("Interface\\Icons\\INV_Sword_04")
+    subPvpIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    subPvpBtn.Icon = subPvpIcon
+    local subPvpLabel = subPvpBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    subPvpLabel:SetPoint("LEFT", subPvpIcon, "RIGHT", 4, 0)
+    subPvpLabel:SetText("PvP Combat")
+    if subPvpLabel.SetFont then local f, s = subPvpLabel:GetFont(); subPvpLabel:SetFont(f, s or 9, "OUTLINE") end
+    subPvpBtn.Label = subPvpLabel
+    subPvpBtn:SetScript("OnClick", function()
+        if UI:IsPve() then UI:SetCampaignRuleset("PVP") end
+    end)
+    subPvpBtn:SetScript("OnEnter", function(self)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cffffd100Contested PvP Warfare|r", "Switch to player-versus-player combat ledger, 1v1 duels, battlegrounds, and blood bounties.")
+    end)
+    subPvpBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+    UI.SubBarPvpBtn = subPvpBtn
+
+    -- Sub-Bar PvE Segment Button
+    local subPveBtn = CreateFrame("Button", nil, modeSwitcher, "BackdropTemplate")
+    subPveBtn:SetSize(94, 18)
+    subPveBtn:SetPoint("RIGHT", modeSwitcher, "RIGHT", -2, 0)
+    subPveBtn:EnableMouse(true)
+    subPveBtn:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
+    })
+    local subPveIcon = subPveBtn:CreateTexture(nil, "OVERLAY")
+    subPveIcon:SetSize(12, 12)
+    subPveIcon:SetPoint("LEFT", subPveBtn, "LEFT", 5, 0)
+    subPveIcon:SetTexture("Interface\\Icons\\Spell_Shadow_SummonImp")
+    subPveIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    subPveBtn.Icon = subPveIcon
+    local subPveLabel = subPveBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    subPveLabel:SetPoint("LEFT", subPveIcon, "RIGHT", 4, 0)
+    subPveLabel:SetText("PvE Hazards")
+    if subPveLabel.SetFont then local f, s = subPveLabel:GetFont(); subPveLabel:SetFont(f, s or 9, "OUTLINE") end
+    subPveBtn.Label = subPveLabel
+    subPveBtn:SetScript("OnClick", function()
+        if not UI:IsPve() then UI:SetCampaignRuleset("PVE") end
+    end)
+    subPveBtn:SetScript("OnEnter", function(self)
+        UI:ShowPrivateTooltip(self, "BOTTOM", "TOP", 0, 4, "|cff10b981Wilderness PvE Hazards|r", "Switch to monster executions, world boss casualties, environmental hazards, and mortality bestiary.")
+    end)
+    subPveBtn:SetScript("OnLeave", function() UI:HidePrivateTooltip() end)
+    UI.SubBarPveBtn = subPveBtn
+
+    function UI:UpdateTabLabels()
+        local isPve = UI:IsPve()
+        local defs = isPve and UI.pveTabDefs or UI.pvpTabDefs
+        if tabButtons and defs then
+            local prevTab = nil
+            for _, tid in ipairs(UI.tabOrder or { "FEED", "LEADERBOARD", "BOUNTIES", "RALLIES", "ZONES" }) do
+                local btn = tabButtons[tid]
+                local def = defs[tid]
+                if btn and def and btn.Label then
+                    btn.Label:SetText(def.text)
+                    local strWidth = btn.Label:GetStringWidth() or def.w
+                    btn:SetWidth(math.max(def.w, strWidth + 8))
+                    btn:ClearAllPoints()
+                    if not prevTab then
+                        btn:SetPoint("LEFT", navSubBar, "LEFT", 4, 0)
+                    else
+                        btn:SetPoint("LEFT", prevTab, "RIGHT", 14, 0)
+                    end
+                    prevTab = btn
+                end
+            end
+        end
     end
 
     -- Faction War Split Visual Progress Bar (Anchored TOPRIGHT on sub-bar where world/bgs/... was)
